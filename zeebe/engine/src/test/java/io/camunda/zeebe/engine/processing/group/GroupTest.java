@@ -11,7 +11,10 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -29,7 +32,7 @@ public class GroupTest {
     final var groupRecord = engine.group().newGroup(name).create();
 
     final var createdGroup = groupRecord.getValue();
-    Assertions.assertThat(createdGroup).isNotNull().hasFieldOrPropertyWithValue("name", name);
+    assertThat(createdGroup).hasName(name);
   }
 
   @Test
@@ -64,9 +67,7 @@ public class GroupTest {
         engine.group().updateGroup(groupKey).withName(updatedName).update();
 
     final var updatedGroup = updatedGroupRecord.getValue();
-    Assertions.assertThat(updatedGroup)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("name", updatedName);
+    assertThat(updatedGroup).hasName(updatedName);
   }
 
   @Test
@@ -106,6 +107,7 @@ public class GroupTest {
 
   @Test
   public void shouldAddEntityToGroup() {
+    // given
     final var userKey =
         engine
             .user()
@@ -117,6 +119,8 @@ public class GroupTest {
             .getKey();
     final var name = UUID.randomUUID().toString();
     final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+
+    // when
     final var updatedGroup =
         engine
             .group()
@@ -126,10 +130,8 @@ public class GroupTest {
             .add()
             .getValue();
 
-    Assertions.assertThat(updatedGroup)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("entityKey", userKey)
-        .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
+    // then
+    assertThat(updatedGroup).hasEntityKey(userKey).hasEntityType(EntityType.USER);
   }
 
   @Test
@@ -139,6 +141,7 @@ public class GroupTest {
     final var notPresentUpdateRecord =
         engine.group().addEntity(notPresentGroupKey).expectRejection().add();
 
+    // then
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
@@ -164,8 +167,8 @@ public class GroupTest {
             .expectRejection()
             .add();
 
-    Assertions.assertThat(createdGroup).isNotNull().hasFieldOrPropertyWithValue("name", name);
-
+    // then
+    assertThat(createdGroup).hasName(name);
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
@@ -175,6 +178,7 @@ public class GroupTest {
 
   @Test
   public void shouldRemoveEntityToGroup() {
+    // given
     final var userKey =
         engine
             .user()
@@ -187,7 +191,9 @@ public class GroupTest {
     final var name = UUID.randomUUID().toString();
     final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
     engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
-    final var removedEntity =
+
+    // when
+    final var groupWithRemovedEntity =
         engine
             .group()
             .removeEntity(groupKey)
@@ -196,11 +202,11 @@ public class GroupTest {
             .remove()
             .getValue();
 
-    Assertions.assertThat(removedEntity)
-        .isNotNull()
-        .hasFieldOrPropertyWithValue("groupKey", groupKey)
-        .hasFieldOrPropertyWithValue("entityKey", userKey)
-        .hasFieldOrPropertyWithValue("entityType", EntityType.USER);
+    // then
+    assertThat(groupWithRemovedEntity)
+        .hasGroupKey(groupKey)
+        .hasEntityKey(userKey)
+        .hasEntityType(EntityType.USER);
   }
 
   @Test
@@ -210,6 +216,7 @@ public class GroupTest {
     final var notPresentUpdateRecord =
         engine.group().addEntity(notPresentGroupKey).expectRejection().add();
 
+    // then
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
@@ -235,12 +242,48 @@ public class GroupTest {
             .expectRejection()
             .remove();
 
-    Assertions.assertThat(createdGroup).isNotNull().hasFieldOrPropertyWithValue("name", name);
-
+    // then
+    assertThat(createdGroup).hasName(name);
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
             "Expected to remove an entity with key '%s' and type '%s' from group with key '%s', but the entity does not exist."
                 .formatted(1L, EntityType.USER, groupKey));
+  }
+
+  @Test
+  public void shouldDeleteGroup() {
+    // given
+    final var name = UUID.randomUUID().toString();
+    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    engine
+        .authorization()
+        .permission()
+        .withOwnerKey(groupKey)
+        .withOwnerType(AuthorizationOwnerType.ROLE)
+        .withResourceType(AuthorizationResourceType.ROLE)
+        .withAction(PermissionAction.REMOVE)
+        .add();
+
+    // when
+    final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();
+
+    // then
+    assertThat(deletedGroup).hasGroupKey(groupKey);
+  }
+
+  @Test
+  public void shouldRejectIfGroupIsNotPresentOnDeletion() {
+    // when
+    final var notPresentGroupKey = 1L;
+    final var notPresentUpdateRecord =
+        engine.group().deleteGroup(notPresentGroupKey).expectRejection().delete();
+
+    // then
+    assertThat(notPresentUpdateRecord)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to delete group with key '%s', but a group with this key does not exist."
+                .formatted(notPresentGroupKey));
   }
 }

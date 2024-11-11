@@ -34,25 +34,28 @@ public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, Group
 
   @Override
   public void applyState(final long key, final GroupRecord value) {
+    // get the record key from the GroupRecord, as the key argument
+    // may belong to the distribution command
+    final var groupKey = value.getGroupKey();
 
     // delete group key from entity states (user, mapping)
-    final var entitiesByTypeMap = groupState.getEntitiesByType(key);
+    final var entitiesByTypeMap = groupState.getEntitiesByType(groupKey);
     entitiesByTypeMap.forEach(
         (entityType, entityKeys) -> {
-          final var removalConsumer = getRemovalFunction(entityType, key, value);
-          entityKeys.forEach(entityKey -> removalConsumer.accept(entityKey, key));
+          final var removalConsumer = getRemovalFunction(entityType, value);
+          entityKeys.forEach(entityKey -> removalConsumer.accept(entityKey, groupKey));
         });
 
     // delete group from authorization state
-    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(key);
-    authorizationState.deleteOwnerTypeByKey(key);
+    authorizationState.deleteAuthorizationsByOwnerKeyPrefix(groupKey);
+    authorizationState.deleteOwnerTypeByKey(groupKey);
 
     // delete group from group state
-    groupState.delete(key);
+    groupState.delete(groupKey);
   }
 
   private BiConsumer<Long, Long> getRemovalFunction(
-      final EntityType entityType, final long groupKey, final GroupRecord groupRecord) {
+      final EntityType entityType, final GroupRecord groupRecord) {
     return switch (entityType) {
       case EntityType.USER -> userState::removeGroup;
       case EntityType.MAPPING -> mappingState::removeGroup;
@@ -60,7 +63,9 @@ public class GroupDeletedApplier implements TypedEventApplier<GroupIntent, Group
           throw new IllegalStateException(
               String.format(
                   "Expected to remove entity '%d' for group '%d', but entities of type '%s' are not supported by groups.",
-                  groupRecord.getEntityKey(), groupKey, groupRecord.getEntityType()));
+                  groupRecord.getEntityKey(),
+                  groupRecord.getGroupKey(),
+                  groupRecord.getEntityType()));
     };
   }
 }
