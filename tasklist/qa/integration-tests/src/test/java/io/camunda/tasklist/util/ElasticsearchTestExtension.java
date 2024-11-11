@@ -92,7 +92,7 @@ public class ElasticsearchTestExtension
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
     if (indexPrefix == null) {
-      indexPrefix = TestUtil.createRandomString(10) + "-tasklist";
+      indexPrefix = TestUtil.createRandomString(10);
     }
     tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     if (tasklistProperties.getElasticsearch().isCreateSchema()) {

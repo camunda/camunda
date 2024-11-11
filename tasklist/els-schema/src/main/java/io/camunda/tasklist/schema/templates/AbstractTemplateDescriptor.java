@@ -10,6 +10,8 @@ package io.camunda.tasklist.schema.templates;
 import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.SCHEMA_FOLDER_ELASTICSEARCH;
 import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.SCHEMA_FOLDER_OPENSEARCH;
+import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatAllVersionsIndexNameRegexPattern;
+import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatFullQualifiedIndexName;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,11 +29,7 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    final String indexPrefix =
-        ELASTIC_SEARCH.equals(tasklistProperties.getDatabase())
-            ? tasklistProperties.getElasticsearch().getIndexPrefix()
-            : tasklistProperties.getOpenSearch().getIndexPrefix();
-    return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
+    return formatFullQualifiedIndexName(getIndexPrefix(), getIndexName(), getVersion());
   }
 
   @Override
@@ -45,6 +43,12 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", tasklistProperties.getIndexPrefix(), getIndexName());
+    return formatAllVersionsIndexNameRegexPattern(getIndexPrefix(), getIndexName());
+  }
+
+  private String getIndexPrefix() {
+    return ELASTIC_SEARCH.equals(tasklistProperties.getDatabase())
+        ? tasklistProperties.getElasticsearch().getIndexPrefix()
+        : tasklistProperties.getOpenSearch().getIndexPrefix();
   }
 }
