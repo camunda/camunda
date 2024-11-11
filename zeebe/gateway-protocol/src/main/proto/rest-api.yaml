@@ -2180,7 +2180,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserCreateResponse"
         "400":
-          $ref: "#/components/responses/Unauthorized"
+          description: >
+            Unable to create the user.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "401":
           description: |
             The request to create a user was unauthorized.
@@ -2274,7 +2280,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/AuthorizationSearchResponse"
         "400":
-          $ref: "#/components/responses/Unauthorized"
+          description: >
+            The user delete failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
