@@ -39,6 +39,7 @@ jobs:
         id: auth-saas
         uses: google-github-actions/auth@v2
         with:
+          token_format: 'access_token'
           workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
           service_account: 'github-actions-zeebe-io@camunda-saas-registry.iam.gserviceaccount.com'
       - name: Setup BuildKit
