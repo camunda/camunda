@@ -9,9 +9,7 @@ package io.camunda.operate.schema;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.exceptions.MigrationException;
-import io.camunda.operate.property.MigrationProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.migration.Migrator;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,11 +29,7 @@ public class SchemaStartup {
 
   @Autowired private IndexSchemaValidator schemaValidator;
 
-  @Autowired private Migrator migrator;
-
   @Autowired private OperateProperties operateProperties;
-
-  @Autowired private MigrationProperties migrationProperties;
 
   @PostConstruct
   public void initializeSchema() throws MigrationException {
