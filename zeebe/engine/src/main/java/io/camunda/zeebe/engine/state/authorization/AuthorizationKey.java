@@ -5,9 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.security.entity;
+package io.camunda.zeebe.engine.state.authorization;
 
-import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.Set;
-
-public record Permission(PermissionType type, Set<String> resourceIds) {}
+public record AuthorizationKey(Long ownerKey, String resourceType, String permissionType) {}

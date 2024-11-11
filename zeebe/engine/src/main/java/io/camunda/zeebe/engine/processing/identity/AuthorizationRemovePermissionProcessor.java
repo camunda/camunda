@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public final class AuthorizationAddPermissionProcessor
+public final class AuthorizationRemovePermissionProcessor
     implements DistributedTypedRecordProcessor<AuthorizationRecord> {
 
   private final KeyGenerator keyGenerator;
@@ -30,7 +30,7 @@ public final class AuthorizationAddPermissionProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final PermissionsBehavior permissionsBehavior;
 
-  public AuthorizationAddPermissionProcessor(
+  public AuthorizationRemovePermissionProcessor(
       final Writers writers,
       final KeyGenerator keyGenerator,
       final ProcessingState processingState,
@@ -60,7 +60,7 @@ public final class AuthorizationAddPermissionProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     stateWriter.appendFollowUpEvent(
-        command.getKey(), AuthorizationIntent.PERMISSION_ADDED, command.getValue());
+        command.getKey(), AuthorizationIntent.PERMISSION_REMOVED, command.getValue());
     distributionBehavior.acknowledgeCommand(command);
   }
 
@@ -68,12 +68,13 @@ public final class AuthorizationAddPermissionProcessor
       final TypedRecord<AuthorizationRecord> command,
       final AuthorizationRecord authorizationRecord) {
     final long key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord);
-    responseWriter.writeEventOnCommand(
-        key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord, command);
+    stateWriter.appendFollowUpEvent(
+        key, AuthorizationIntent.PERMISSION_REMOVED, authorizationRecord);
     distributionBehavior
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
+    responseWriter.writeEventOnCommand(
+        key, AuthorizationIntent.PERMISSION_REMOVED, authorizationRecord, command);
   }
 }

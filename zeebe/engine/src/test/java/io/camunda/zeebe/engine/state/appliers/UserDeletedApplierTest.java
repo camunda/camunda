@@ -19,7 +19,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,10 +55,10 @@ public class UserDeletedApplierTest {
     authorizationState.insertOwnerTypeByKey(userRecord.getUserKey(), AuthorizationOwnerType.USER);
 
     authorizationState.createOrAddPermission(
-        userRecord.getUserKey(), PROCESS_DEFINITION, CREATE, List.of("process1", "process2"));
+        userRecord.getUserKey(), PROCESS_DEFINITION, CREATE, Set.of("process1", "process2"));
 
     authorizationState.createOrAddPermission(
-        userRecord.getUserKey(), DECISION_DEFINITION, DELETE, List.of("definition1"));
+        userRecord.getUserKey(), DECISION_DEFINITION, DELETE, Set.of("definition1"));
 
     final var ownerType = authorizationState.getOwnerType(userRecord.getUserKey());
 

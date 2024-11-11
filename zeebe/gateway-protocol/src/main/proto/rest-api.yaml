@@ -3478,6 +3478,7 @@ components:
         resourceIds:
           type: array
           description: A list of resource IDs the permission relates to.
+          uniqueItems: true
           items:
             type: string
     AuthorizationPatchRequest:

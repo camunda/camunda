@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,7 +80,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       "1",
                       OwnerTypeEnum.USER.getValue(),
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
-                      List.of(new Permission(PermissionType.CREATE, List.of("2"))))))
+                      List.of(new Permission(PermissionType.CREATE, Set.of("2"))))))
           .sortValues(new Object[] {"v"})
           .build();
 

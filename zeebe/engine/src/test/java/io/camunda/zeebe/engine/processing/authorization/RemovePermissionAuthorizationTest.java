@@ -25,14 +25,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
-public class AddPermissionAuthorizationTest {
+public class RemovePermissionAuthorizationTest {
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldAddPermission() {
-    // given no user
+  public void shouldRemovePermission() {
+    // given
     final var ownerKey =
         engine
             .user()
@@ -42,18 +42,28 @@ public class AddPermissionAuthorizationTest {
             .withPassword("zabraboof")
             .create()
             .getKey();
+    engine
+        .authorization()
+        .permission()
+        .withAction(PermissionAction.ADD)
+        .withOwnerKey(ownerKey)
+        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withPermission(PermissionType.CREATE, "foo")
+        .withPermission(PermissionType.DELETE, "bar")
+        .add()
+        .getValue();
 
     // when
     final var response =
         engine
             .authorization()
             .permission()
-            .withAction(PermissionAction.ADD)
+            .withAction(PermissionAction.REMOVE)
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.CREATE, "foo")
             .withPermission(PermissionType.DELETE, "bar")
-            .add()
+            .remove()
             .getValue();
 
     // then
@@ -64,7 +74,7 @@ public class AddPermissionAuthorizationTest {
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceType)
         .containsExactly(
-            PermissionAction.ADD,
+            PermissionAction.REMOVE,
             ownerKey,
             AuthorizationOwnerType.USER,
             AuthorizationResourceType.DEPLOYMENT);
@@ -85,12 +95,12 @@ public class AddPermissionAuthorizationTest {
         engine
             .authorization()
             .permission()
-            .withAction(PermissionAction.ADD)
+            .withAction(PermissionAction.REMOVE)
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.CREATE, "foo")
             .expectRejection()
-            .add();
+            .remove();
 
     // then
     Assertions.assertThat(rejection)
