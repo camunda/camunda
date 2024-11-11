@@ -88,7 +88,7 @@ public class ListViewProcessInstanceFromIncidentHandler
       final List<Long> keysWithinOnePI = elementInstancePath.get(i);
       treePath.appendProcessInstance(keysWithinOnePI.get(0));
       if (keysWithinOnePI.get(0).equals(processInstanceKey)) {
-        // we stop building the tree path when we reach current processInstanceKey
+        // we reached the leaf of the tree path, when we reached current processInstanceKey
         break;
       }
       // get call activity id from processCache
@@ -100,7 +100,7 @@ public class ListViewProcessInstanceFromIncidentHandler
         treePath.appendFlowNode(
             cachedProcess.get().callElementIds().get(callingElementPath.get(i)));
       } else {
-        LOGGER.debug(
+        LOGGER.warn(
             "No process found in cache. TreePath won't contain proper callActivityId. processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}",
             processInstanceKey,
             processDefinitionPath.get(i),
@@ -120,8 +120,7 @@ public class ListViewProcessInstanceFromIncidentHandler
     final Map<String, Object> updateFields = new LinkedHashMap<>();
     updateFields.put(TREE_PATH, entity.getTreePath());
 
-    final Long processInstanceKey = entity.getProcessInstanceKey();
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+    batchRequest.update(indexName, entity.getId(), updateFields);
   }
 
   @Override

@@ -141,8 +141,7 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
     // when
     underTest.flush(inputEntity, mockRequest);
     // then
-    verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).update(indexName, inputEntity.getId(), expectedUpdateFields);
   }
 
   @Test

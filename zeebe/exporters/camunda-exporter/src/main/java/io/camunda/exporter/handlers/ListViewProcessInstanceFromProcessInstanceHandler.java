@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
@@ -124,6 +125,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       }
     } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
       piEntity.setStartDate(timestamp).setState(ProcessInstanceState.ACTIVE);
+      // default tree path that may be updated later by Incident record handler:
+      // PI_<processInstanceKey>
+      piEntity.setTreePath(
+          new TreePath().startTreePath(recordValue.getProcessInstanceKey()).toString());
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }

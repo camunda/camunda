@@ -301,7 +301,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         .isEqualTo(processInstanceRecordValue.getParentElementInstanceKey());
     assertThat(processInstanceForListViewEntity.getJoinRelation())
         .isEqualTo(new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
-    assertThat(processInstanceForListViewEntity.getTreePath()).isNull();
+    assertThat(processInstanceForListViewEntity.getTreePath())
+        .isEqualTo("PI_" + processInstanceRecordValue.getProcessInstanceKey());
 
     // process name and version tag is read from the cache
     assertThat(processInstanceForListViewEntity.getProcessName()).isEqualTo("test-process-name");
