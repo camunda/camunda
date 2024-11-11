@@ -8,38 +8,31 @@
 package io.camunda.search.result;
 
 import io.camunda.util.ObjectBuilder;
-import java.util.List;
 import java.util.function.Function;
 
-public record DecisionRequirementsQueryResultConfig(List<FieldFilter> fieldFilters)
+public record DecisionRequirementsQueryResultConfig(boolean includeXml)
     implements QueryResultConfig {
-
-  @Override
-  public List<FieldFilter> getFieldFilters() {
-    return fieldFilters;
-  }
 
   public static DecisionRequirementsQueryResultConfig of(
       final Function<Builder, ObjectBuilder<DecisionRequirementsQueryResultConfig>> fn) {
-    return QueryResultConfigBuilders.decisionRequirements(fn);
+    return fn.apply(new Builder()).build();
   }
 
-  public static final class Builder extends AbstractBuilder<Builder>
+  public static final class Builder
       implements ObjectBuilder<DecisionRequirementsQueryResultConfig> {
 
-    public Builder xml() {
-      currentFieldFilter = new FieldFilter("xml", null);
-      return this;
-    }
+    private static final Boolean DEFAULT_INCLUDE_XML = false;
 
-    @Override
-    protected Builder self() {
+    private Boolean includeXml = DEFAULT_INCLUDE_XML;
+
+    public Builder includeXml(final boolean includeXml) {
+      this.includeXml = includeXml;
       return this;
     }
 
     @Override
     public DecisionRequirementsQueryResultConfig build() {
-      return new DecisionRequirementsQueryResultConfig(fieldFilters);
+      return new DecisionRequirementsQueryResultConfig(includeXml);
     }
   }
 }

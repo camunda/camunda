@@ -8,38 +8,29 @@
 package io.camunda.search.result;
 
 import io.camunda.util.ObjectBuilder;
-import java.util.List;
 import java.util.function.Function;
 
-public record ProcessInstanceQueryResultConfig(List<FieldFilter> fieldFilters)
-    implements QueryResultConfig {
-
-  @Override
-  public List<FieldFilter> getFieldFilters() {
-    return fieldFilters;
-  }
+public record ProcessInstanceQueryResultConfig(Boolean onlyKey) implements QueryResultConfig {
 
   public static ProcessInstanceQueryResultConfig of(
       final Function<Builder, ObjectBuilder<ProcessInstanceQueryResultConfig>> fn) {
-    return QueryResultConfigBuilders.processInstance(fn);
+    return fn.apply(new Builder()).build();
   }
 
-  public static final class Builder extends AbstractBuilder<Builder>
-      implements ObjectBuilder<ProcessInstanceQueryResultConfig> {
+  public static final class Builder implements ObjectBuilder<ProcessInstanceQueryResultConfig> {
 
-    public Builder key() {
-      currentFieldFilter = new FieldFilter("key", null);
-      return this;
-    }
+    private static final Boolean DEFAULT_ONLY_KEY = false;
 
-    @Override
-    protected Builder self() {
+    private Boolean onlyKey = DEFAULT_ONLY_KEY;
+
+    public Builder onlyKey(final boolean onlyKey) {
+      this.onlyKey = onlyKey;
       return this;
     }
 
     @Override
     public ProcessInstanceQueryResultConfig build() {
-      return new ProcessInstanceQueryResultConfig(fieldFilters);
+      return new ProcessInstanceQueryResultConfig(onlyKey);
     }
   }
 }
