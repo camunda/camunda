@@ -129,6 +129,6 @@ jobs:
               \"variables\": $variables
             }"
         env:
-          IMAGE: ${{ steps.build-zeebe-docker.outputs.image }}
+          IMAGE: zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
           access_token: ${{ env.access_token }}
 
