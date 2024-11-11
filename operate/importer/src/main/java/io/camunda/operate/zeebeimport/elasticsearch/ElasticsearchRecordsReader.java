@@ -277,11 +277,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        final String message =
-            String.format(
-                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-                aliasName, ex.getMessage());
-        throw new OperateRuntimeException(message, ex);
+        throw new OperateRuntimeException(readBatchErrorMessage(aliasName, ex.getMessage()), ex);
       }
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
@@ -293,11 +289,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         batchSizeThrottle.throttle();
         return readNextBatchBySequence(sequence, lastSequence);
       } else {
-        final String message =
-            String.format(
-                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-                aliasName, e.getMessage());
-        throw new OperateRuntimeException(message, e);
+        throw new OperateRuntimeException(readBatchErrorMessage(aliasName, e.getMessage()), e);
       }
     }
   }
@@ -316,24 +308,14 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     } catch (final ElasticsearchStatusException ex) {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
-      } else {
-        final String message =
-            String.format(
-                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-                aliasName, ex.getMessage());
-        throw new OperateRuntimeException(message, ex);
       }
+      throw new OperateRuntimeException(readBatchErrorMessage(aliasName, ex.getMessage()), ex);
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
         batchSizeThrottle.throttle();
         return readNextBatchByPositionAndPartition(positionFrom, positionTo);
-      } else {
-        final String message =
-            String.format(
-                "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-                aliasName, e.getMessage());
-        throw new OperateRuntimeException(message, e);
       }
+      throw new OperateRuntimeException(readBatchErrorMessage(aliasName, e.getMessage()), e);
     }
   }
 
@@ -350,6 +332,12 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   @Override
   public BlockingQueue<Callable<Boolean>> getImportJobs() {
     return importJobs;
+  }
+
+  private String readBatchErrorMessage(final String aliasName, final String message) {
+    return String.format(
+        "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
+        aliasName, message);
   }
 
   private ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException {
