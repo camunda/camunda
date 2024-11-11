@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.util;
 import io.camunda.search.filter.Operation;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedIntegerFilter;
 import io.camunda.zeebe.gateway.protocol.rest.AdvancedLongFilter;
-import io.camunda.zeebe.gateway.protocol.rest.BasicAdvancedLongFilter;
+import io.camunda.zeebe.gateway.protocol.rest.BasicLongFilter;
 import io.camunda.zeebe.gateway.protocol.rest.BasicLongFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.LongFilterProperty;
@@ -24,7 +24,7 @@ public class AdvancedSearchFilterUtil {
   }
 
   public static List<Operation<Long>> mapBasicLongFilter(final BasicLongFilterProperty value) {
-    if (!(value instanceof final BasicAdvancedLongFilter filter)) {
+    if (!(value instanceof final BasicLongFilter filter)) {
       throw new IllegalStateException("Unexpected value instance: " + value);
     }
 

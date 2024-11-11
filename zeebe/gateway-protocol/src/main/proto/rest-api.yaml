@@ -2898,7 +2898,7 @@ components:
         - type: integer
           format: int32
         - $ref: "#/components/schemas/AdvancedIntegerFilter"
-    BasicAdvancedLongFilter:
+    BasicLongFilter:
       description: Basic advanced long (int64) filter.
       type: object
       properties:
@@ -2922,7 +2922,7 @@ components:
     AdvancedLongFilter:
       description: Advanced long (int64) filter.
       allOf:
-        - $ref: "#/components/schemas/BasicAdvancedLongFilter"
+        - $ref: "#/components/schemas/BasicLongFilter"
         - type: object
           properties:
             $gt:
@@ -2947,7 +2947,7 @@ components:
       oneOf:
         - type: integer
           format: int64
-        - $ref: "#/components/schemas/BasicAdvancedLongFilter"
+        - $ref: "#/components/schemas/BasicLongFilter"
     LongFilterProperty:
       description: Long property with full advanced search capabilities.
       type: object

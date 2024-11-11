@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.deserializer;
 
-import io.camunda.zeebe.gateway.protocol.rest.BasicAdvancedLongFilter;
+import io.camunda.zeebe.gateway.protocol.rest.BasicLongFilter;
 import io.camunda.zeebe.gateway.protocol.rest.BasicLongFilterProperty;
 
 public class BasicLongFilterPropertyDeserializer
@@ -15,7 +15,7 @@ public class BasicLongFilterPropertyDeserializer
 
   @Override
   protected Class<? extends BasicLongFilterProperty> getFinalType() {
-    return BasicAdvancedLongFilter.class;
+    return BasicLongFilter.class;
   }
 
   @Override
@@ -25,7 +25,7 @@ public class BasicLongFilterPropertyDeserializer
 
   @Override
   protected BasicLongFilterProperty createFromImplicitValue(final Long value) {
-    final var filter = new BasicAdvancedLongFilter();
+    final var filter = new BasicLongFilter();
     filter.set$Eq(value);
     return filter;
   }
