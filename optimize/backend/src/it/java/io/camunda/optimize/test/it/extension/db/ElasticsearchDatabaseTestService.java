@@ -92,7 +92,6 @@ import io.camunda.optimize.service.db.es.schema.index.ProcessInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.TerminatedUserSessionIndexES;
 import io.camunda.optimize.service.db.es.schema.index.VariableUpdateInstanceIndexES;
 import io.camunda.optimize.service.db.es.schema.index.report.SingleProcessReportIndexES;
-import io.camunda.optimize.service.db.repository.es.TaskRepositoryES;
 import io.camunda.optimize.service.db.schema.DatabaseSchemaManager;
 import io.camunda.optimize.service.db.schema.DefaultIndexMappingCreator;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
@@ -146,14 +145,12 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   private String elasticsearchDatabaseVersion;
 
   private OptimizeElasticsearchClient optimizeElasticsearchClient;
-  private final TaskRepositoryES taskRepositoryES;
 
   public ElasticsearchDatabaseTestService(
       final String customIndexPrefix, final boolean haveToClean) {
     super(customIndexPrefix, haveToClean);
     initEsClient();
     setTestIndexRepository(new TestIndexRepositoryES(optimizeElasticsearchClient));
-    taskRepositoryES = new TaskRepositoryES(optimizeElasticsearchClient);
   }
 
   private static ClientAndServer initMockServer() {

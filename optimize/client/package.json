@@ -117,7 +117,7 @@
     "rollup-plugin-license": "3.5.3",
     "sass": "^1.77.2",
     "styled-components": "^6.1.9",
-    "testcafe": "^3.3.0",
+    "testcafe": "^3.7.0",
     "testcafe-browser-provider-browserstack": "^1.15.1",
     "tree-kill": "^1.2.2",
     "typescript": "^5.1.6",

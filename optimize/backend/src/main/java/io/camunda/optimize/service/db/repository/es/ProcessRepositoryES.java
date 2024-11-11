@@ -54,8 +54,9 @@ public class ProcessRepositoryES implements ProcessRepository {
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(esClient, PROCESS_OVERVIEW_INDEX_NAME)
-                    .query(q -> q.ids(i -> i.values(processDefinitionKeys.stream().toList()))));
-    SearchResponse<ProcessOverviewDto> searchResponse;
+                    .query(q -> q.ids(i -> i.values(processDefinitionKeys.stream().toList())))
+                    .size(LIST_FETCH_LIMIT));
+    final SearchResponse<ProcessOverviewDto> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, ProcessOverviewDto.class);
     } catch (IOException e) {
