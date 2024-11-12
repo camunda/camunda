@@ -76,7 +76,7 @@ test.beforeEach(async ({page, loginPage}) => {
   await expect(page).toHaveURL('/tasklist');
 });
 
-test.describe.only('task details page', () => {
+test.describe('task details page', () => {
   test('load task details when a task is selected', async ({tasksPage}) => {
     await tasksPage.openTask('usertask_to_be_completed');
 
