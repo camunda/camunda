@@ -8,6 +8,7 @@
 package io.camunda.it.auth;
 
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE;
+import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE_DECISION_INSTANCE;
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DECISION_DEFINITION;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
@@ -47,7 +48,7 @@ class DecisionInstanceAuthorizationIT {
           "password",
           List.of(
               new Permissions(DEPLOYMENT, CREATE, List.of("*")),
-              new Permissions(DECISION_DEFINITION, CREATE, List.of("*")),
+              new Permissions(DECISION_DEFINITION, CREATE_DECISION_INSTANCE, List.of("*")),
               new Permissions(DECISION_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
   private static final User RESTRICTED_USER =
       new User(
@@ -110,7 +111,7 @@ class DecisionInstanceAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_INSTANCE' on resource 'DECISION_DEFINITION'");
+            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'DECISION_DEFINITION'");
   }
 
   @TestTemplate

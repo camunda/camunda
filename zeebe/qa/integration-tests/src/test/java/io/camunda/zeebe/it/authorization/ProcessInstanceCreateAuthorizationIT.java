@@ -107,7 +107,9 @@ public class ProcessInstanceCreateAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.CREATE, List.of(PROCESS_ID)));
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
+            List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when then
@@ -126,7 +128,9 @@ public class ProcessInstanceCreateAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.CREATE, List.of(PROCESS_ID)));
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
+            List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when then
@@ -160,7 +164,7 @@ public class ProcessInstanceCreateAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'CREATE' on resource 'PROCESS_DEFINITION'");
+              "Unauthorized to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
     }
   }
 
@@ -187,7 +191,7 @@ public class ProcessInstanceCreateAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'CREATE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
+              "Unauthorized to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
               PROCESS_ID);
     }
   }

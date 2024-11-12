@@ -95,7 +95,7 @@ public class ProcessInstanceCancelAuthorizationIT {
   }
 
   @Test
-  void shouldBeAuthorizedToCreateInstanceWithUser() {
+  void shouldBeAuthorizedToCancelInstanceWithUser() {
     // given
     final var processInstanceEvent =
         defaultUserClient
@@ -110,7 +110,9 @@ public class ProcessInstanceCancelAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.UPDATE, List.of(PROCESS_ID)));
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
+            List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when
@@ -126,7 +128,7 @@ public class ProcessInstanceCancelAuthorizationIT {
   }
 
   @Test
-  void shouldBeUnauthorizedToCreateInstanceIfNoPermissions() {
+  void shouldBeUnauthorizedToCancelInstanceIfNoPermissions() {
     // given
     final var processInstanceEvent =
         defaultUserClient
@@ -150,7 +152,7 @@ public class ProcessInstanceCancelAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'UPDATE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
+              "Unauthorized to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
               PROCESS_ID);
     }
   }

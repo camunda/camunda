@@ -114,7 +114,7 @@ public class JobBatchActivateAuthorizationIT {
         password,
         new Permissions(
             ResourceTypeEnum.PROCESS_DEFINITION,
-            PermissionTypeEnum.UPDATE,
+            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
             List.of(processId1, processId2)));
 
     try (final var client = authUtil.createClient(username, password)) {
@@ -144,7 +144,9 @@ public class JobBatchActivateAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.UPDATE, List.of(processId1)));
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
+            List.of(processId1)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when

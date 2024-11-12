@@ -8,6 +8,7 @@
 package io.camunda.it.auth;
 
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE;
+import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ;
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
@@ -45,7 +46,7 @@ class ProcessInstanceAuthorizationIT {
           "password",
           List.of(
               new Permissions(DEPLOYMENT, CREATE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, CREATE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
   private static final User USER1_USER =
@@ -121,7 +122,7 @@ class ProcessInstanceAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_INSTANCE' on resource 'PROCESS_DEFINITION'");
+            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
   @TestTemplate
@@ -166,7 +167,7 @@ class ProcessInstanceAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_INSTANCE' on resource 'PROCESS_DEFINITION'");
+            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
   @TestTemplate
@@ -207,7 +208,7 @@ class ProcessInstanceAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_INSTANCE' on resource 'PROCESS_DEFINITION'");
+            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
   @TestTemplate
@@ -252,7 +253,7 @@ class ProcessInstanceAuthorizationIT {
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_INSTANCE' on resource 'PROCESS_DEFINITION'");
+            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
   private long getProcessInstanceKey(final ZeebeClient zeebeClient, final String processId) {

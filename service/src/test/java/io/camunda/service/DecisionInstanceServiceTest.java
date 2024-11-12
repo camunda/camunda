@@ -140,6 +140,6 @@ class DecisionInstanceServiceTest {
     final var exception = assertThrows(ForbiddenException.class, executable);
     assertThat(exception.getMessage())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_INSTANCE' on resource 'DECISION_DEFINITION'");
+            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'DECISION_DEFINITION'");
   }
 }
