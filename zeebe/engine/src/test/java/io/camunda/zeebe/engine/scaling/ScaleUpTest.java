@@ -26,7 +26,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,10 +33,6 @@ import org.junit.Test;
 
 public class ScaleUpTest {
   @Rule public final EngineRule engine = EngineRule.multiplePartition(3);
-
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
 
   @Before
   public void beforeEach() {
