@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -63,7 +62,7 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
-    Set<String> authorizedResourceIdentifiers = Collections.emptySet();
+    Set<String> authorizedResourceIdentifiers = new HashSet<>();
 
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
@@ -89,7 +88,7 @@ public final class AuthorizationCheckBehavior {
 
     final var userKey = getUserKey(request);
     if (userKey.isEmpty()) {
-      return Collections.emptySet();
+      return new HashSet<>();
     }
 
     return getUserAuthorizedResourceIdentifiers(
@@ -107,7 +106,7 @@ public final class AuthorizationCheckBehavior {
           getRoleAuthorizedResourceIdentifiers(List.of(ownerKey), resourceType, permissionType);
       // TODO add MAPPING
       // TODO add GROUP
-      default -> Collections.emptySet();
+      default -> new HashSet<>();
     };
   }
 
@@ -117,14 +116,14 @@ public final class AuthorizationCheckBehavior {
       final PermissionType permissionType) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
-      return Collections.emptySet();
+      return new HashSet<>();
     }
     final var user = userOptional.get();
 
     // The default user has all permissions
     if (user.getUserType().equals(UserType.DEFAULT)) {
       // TODO this should change when we introduce a default "admin" role to the default user
-      return Set.of(WILDCARD_PERMISSION);
+      return new HashSet<>(Set.of(WILDCARD_PERMISSION));
     }
 
     // Get resource identifiers for this user
