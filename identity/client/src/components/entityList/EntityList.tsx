@@ -45,7 +45,7 @@ const StyledTableCell = styled(TableCell)<{ $isClickable?: boolean }>`
 
 type HandleExpand = (event: unknown, shouldExpand: boolean) => void;
 
-export type EntityData = { [key: string]: string | object | boolean } & {
+export type EntityData = { [p: string]: string | object | boolean | number } & {
   id?: string | never;
 };
 

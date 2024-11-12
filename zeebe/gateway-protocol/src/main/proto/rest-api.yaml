@@ -4475,11 +4475,20 @@ components:
     UserChangeset:
       description: |
         JSON object with changed user attribute values.
-      type: "object"
+      type: object
       properties:
         name:
-          type: "string"
+          type: string
           description: The new name of the user.
+        username:
+          type: string
+          description: The new username of the user.
+        email:
+          type: string
+          description: The new email of the user.
+        password:
+          type: string
+          description: The new password of the user.
     RoleCreateRequest:
       type: "object"
       properties:
