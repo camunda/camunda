@@ -96,6 +96,6 @@ class DecisionInstanceServiceTest {
                         .sort(s -> s.evaluationDate().asc())
                         .page(p -> p.size(20))
                         .resultConfig(
-                            r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude())));
+                            r -> r.includeEvaluatedInputs(false).includeEvaluatedOutputs(false))));
   }
 }

@@ -18,6 +18,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.VariableFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,8 +49,7 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     return Arrays.asList("operate-variable-8.3.0_alias");
   }
 
-  private SearchQuery getVariablesQuery(
-      final Map<String, List<Operation<Object>>> variableFilters) {
+  private SearchQuery getVariablesQuery(final Map<String, List<UntypedOperation>> variableFilters) {
     return or(
         variableFilters.entrySet().stream()
             .map(entry -> variableOperations(VAR_NAME, VAR_VALUE, entry.getKey(), entry.getValue()))

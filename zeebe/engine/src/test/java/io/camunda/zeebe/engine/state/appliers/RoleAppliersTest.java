@@ -22,7 +22,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -122,7 +122,7 @@ public class RoleAppliersTest {
     roleEntityAddedApplier.applyState(roleKey, roleRecord);
     authorizationState.insertOwnerTypeByKey(roleKey, AuthorizationOwnerType.ROLE);
     authorizationState.createOrAddPermission(
-        roleKey, AuthorizationResourceType.ROLE, PermissionType.DELETE, List.of("role1", "role2"));
+        roleKey, AuthorizationResourceType.ROLE, PermissionType.DELETE, Set.of("role1", "role2"));
 
     // when
     roleDeletedApplier.applyState(roleKey, roleRecord);

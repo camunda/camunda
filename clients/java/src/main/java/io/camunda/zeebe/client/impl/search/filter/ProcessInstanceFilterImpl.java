@@ -17,6 +17,9 @@ package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.zeebe.client.impl.util.FilterUtil;
+import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
 
@@ -32,7 +35,14 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processInstanceKey(final Long processInstanceKey) {
-    filter.setProcessInstanceKey(processInstanceKey);
+    filter.setProcessInstanceKey(FilterUtil.longFilterProperty(processInstanceKey));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter processInstanceKey(
+      final LongFilterProperty processInstanceKeyFilter) {
+    filter.setProcessInstanceKey(processInstanceKeyFilter);
     return this;
   }
 
@@ -50,6 +60,13 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion) {
+    filter.setProcessDefinitionVersion(FilterUtil.integerFilterProperty(processDefinitionVersion));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter processDefinitionVersion(
+      final IntegerFilterProperty processDefinitionVersion) {
     filter.setProcessDefinitionVersion(processDefinitionVersion);
     return this;
   }
@@ -63,18 +80,38 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey) {
+    filter.setProcessDefinitionKey(FilterUtil.longFilterProperty(processDefinitionKey));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter processDefinitionKey(final LongFilterProperty processDefinitionKey) {
     filter.setProcessDefinitionKey(processDefinitionKey);
     return this;
   }
 
   @Override
   public ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey) {
+    filter.setParentProcessInstanceKey(FilterUtil.longFilterProperty(parentProcessInstanceKey));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter parentProcessInstanceKey(
+      final LongFilterProperty parentProcessInstanceKey) {
     filter.setParentProcessInstanceKey(parentProcessInstanceKey);
     return this;
   }
 
   @Override
   public ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey) {
+    filter.setParentFlowNodeInstanceKey(FilterUtil.longFilterProperty(parentFlowNodeInstanceKey));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter parentFlowNodeInstanceKey(
+      final LongFilterProperty parentFlowNodeInstanceKey) {
     filter.setParentFlowNodeInstanceKey(parentFlowNodeInstanceKey);
     return this;
   }

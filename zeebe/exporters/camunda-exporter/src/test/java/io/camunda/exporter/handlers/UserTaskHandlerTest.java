@@ -12,10 +12,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.TestFormCache;
+import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.protocol.record.Record;
@@ -47,7 +50,8 @@ public class UserTaskHandlerTest {
           UserTaskIntent.UPDATED);
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-tasklist-task";
-  private final UserTaskHandler underTest = new UserTaskHandler(indexName);
+  private final TestFormCache formCache = new TestFormCache();
+  private final UserTaskHandler underTest = new UserTaskHandler(indexName, formCache);
 
   @Test
   void testGetHandledValueType() {
@@ -141,7 +145,8 @@ public class UserTaskHandlerTest {
   void shouldUpdateEntityFromRecord() {
     // given
     final var dateTime = OffsetDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME);
-    final long processInstanceKey = 123;
+    final var processInstanceKey = 123L;
+    final var formKey = 456L;
     final UserTaskRecordValue taskRecordValue =
         ImmutableUserTaskRecordValue.builder()
             .from(factory.generateObject(UserTaskRecordValue.class))
@@ -150,6 +155,7 @@ public class UserTaskHandlerTest {
             .withCandidateGroupsList(Arrays.asList("group1", "group2"))
             .withCandidateUsersList(Arrays.asList("user1", "user2"))
             .withProcessInstanceKey(processInstanceKey)
+            .withFormKey(formKey)
             .build();
 
     final Record<UserTaskRecordValue> taskRecord =
@@ -159,6 +165,8 @@ public class UserTaskHandlerTest {
                 r.withIntent(UserTaskIntent.CREATED)
                     .withValue(taskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
+
+    formCache.put(String.valueOf(formKey), new CachedFormEntity("my-form", 987L));
 
     // when
     final TaskEntity taskEntity = new TaskEntity().setId("id");
@@ -179,6 +187,8 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getProcessDefinitionVersion())
         .isEqualTo(taskRecordValue.getProcessDefinitionVersion());
     assertThat(taskEntity.getFormKey()).isEqualTo(String.valueOf(taskRecordValue.getFormKey()));
+    assertThat(taskEntity.getFormId()).isEqualTo("my-form");
+    assertThat(taskEntity.getFormVersion()).isEqualTo(987L);
     assertThat(taskEntity.getExternalFormReference())
         .isEqualTo(taskRecordValue.getExternalFormReference());
     assertThat(taskEntity.getCustomHeaders()).isEqualTo(taskRecordValue.getCustomHeaders());
@@ -198,6 +208,7 @@ public class UserTaskHandlerTest {
     assertThat(taskEntity.getCreationTime())
         .isEqualTo(
             ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(taskRecord.getTimestamp())));
+    assertThat(taskEntity.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
   }
 
   @Test

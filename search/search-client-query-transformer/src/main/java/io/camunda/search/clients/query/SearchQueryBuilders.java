@@ -14,6 +14,8 @@ import io.camunda.search.clients.query.SearchHasParentQuery.Builder;
 import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.Operator;
+import io.camunda.search.filter.UntypedOperation;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -55,7 +57,7 @@ public final class SearchQueryBuilders {
     if (nonNullQueries == null || nonNullQueries.isEmpty()) {
       return null;
     } else if (nonNullQueries.size() == 1) {
-      return nonNullQueries.get(0);
+      return nonNullQueries.getFirst();
     } else {
       return mapper.apply(nonNullQueries);
     }
@@ -284,7 +286,7 @@ public final class SearchQueryBuilders {
     if (fieldValues == null || fieldValues.isEmpty()) {
       return null;
     } else if (fieldValues.size() == 1) {
-      return term(field, fieldValues.get(0));
+      return term(field, fieldValues.getFirst());
     } else {
       return SearchTermsQuery.of(q -> q.field(field).intTerms(fieldValues)).toSearchQuery();
     }
@@ -296,7 +298,7 @@ public final class SearchQueryBuilders {
     if (fieldValues == null || fieldValues.isEmpty()) {
       return null;
     } else if (fieldValues.size() == 1) {
-      return term(field, fieldValues.get(0));
+      return term(field, fieldValues.getFirst());
     } else {
       return SearchTermsQuery.of(q -> q.field(field).longTerms(fieldValues)).toSearchQuery();
     }
@@ -307,7 +309,7 @@ public final class SearchQueryBuilders {
     if (fieldValues == null || fieldValues.isEmpty()) {
       return null;
     } else if (fieldValues.size() == 1) {
-      return term(field, fieldValues.get(0));
+      return term(field, fieldValues.getFirst());
     } else {
       return SearchTermsQuery.of(q -> q.field(field).stringTerms(fieldValues)).toSearchQuery();
     }
@@ -326,9 +328,8 @@ public final class SearchQueryBuilders {
     }
   }
 
-  private static IllegalStateException unexpectedOperation(
-      final String type, final Operation<?> op) {
-    return new IllegalStateException("Unexpected %s operation: %s".formatted(type, op.operator()));
+  private static IllegalStateException unexpectedOperation(final String type, final Operator op) {
+    return new IllegalStateException("Unexpected %s operation: %s".formatted(type, op));
   }
 
   public static <C extends List<Operation<Integer>>> List<SearchQuery> intOperations(
@@ -350,7 +351,7 @@ public final class SearchQueryBuilders {
                   case LOWER_THAN -> lt(field, op.value());
                   case LOWER_THAN_EQUALS -> lte(field, op.value());
                   case IN -> intTerms(field, op.values());
-                  default -> throw unexpectedOperation("Integer", op);
+                  default -> throw unexpectedOperation("Integer", op.operator());
                 });
           });
       return searchQueries;
@@ -376,7 +377,7 @@ public final class SearchQueryBuilders {
                   case LOWER_THAN -> lt(field, op.value());
                   case LOWER_THAN_EQUALS -> lte(field, op.value());
                   case IN -> longTerms(field, op.values());
-                  default -> throw unexpectedOperation("Long", op);
+                  default -> throw unexpectedOperation("Long", op.operator());
                 });
           });
       return searchQueries;
@@ -399,7 +400,7 @@ public final class SearchQueryBuilders {
                   case NOT_EXISTS -> mustNot(exists(field));
                   case IN -> stringTerms(field, op.values());
                   case LIKE -> wildcardQuery(field, op.value());
-                  default -> throw unexpectedOperation("String", op);
+                  default -> throw unexpectedOperation("String", op.operator());
                 });
           });
       return searchQueries;
@@ -443,7 +444,7 @@ public final class SearchQueryBuilders {
               rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(formatted));
           case LOWER_THAN_EQUALS ->
               rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(formatted));
-          default -> throw unexpectedOperation("Date", op);
+          default -> throw unexpectedOperation("Date", op.operator());
         }
       }
       if (rangeQueryBuilder != null) {
@@ -453,7 +454,7 @@ public final class SearchQueryBuilders {
     }
   }
 
-  public static <C extends List<Operation<Object>>> List<SearchQuery> variableOperations(
+  public static <C extends List<UntypedOperation>> List<SearchQuery> variableOperations(
       final String varName, final String varValue, final String name, final C operations) {
     if (operations == null || operations.isEmpty()) {
       return null;
@@ -475,7 +476,7 @@ public final class SearchQueryBuilders {
                   case LOWER_THAN_EQUALS ->
                       range(q -> q.field(varValue).lte(op.value())).toSearchQuery();
                   case IN -> objectTerms(varValue, op.values());
-                  default -> throw unexpectedOperation("Variable", op);
+                  default -> throw unexpectedOperation("Date", op.operator());
                 });
           });
       return searchQueries;

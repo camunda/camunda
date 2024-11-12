@@ -44,10 +44,7 @@ public final class CamundaRdbmsTestApplication
       super.withProperty("camunda.database.type", "rdbms")
           .withProperty("spring.datasource.url", jdbcDatabaseContainer.getJdbcUrl())
           .withProperty("spring.datasource.username", jdbcDatabaseContainer.getUsername())
-          .withProperty("spring.datasource.password", jdbcDatabaseContainer.getPassword())
-          .withProperty("spring.datasource.password", jdbcDatabaseContainer.getPassword())
-          .withProperty("logging.level.io.camunda.db.rdbms", "DEBUG")
-          .withProperty("logging.level.org.mybatis", "DEBUG");
+          .withProperty("spring.datasource.password", jdbcDatabaseContainer.getPassword());
     }
 
     LOGGER.info("Start spring application ...");

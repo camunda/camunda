@@ -114,7 +114,7 @@ public class BpmnCompensationSubscriptionBehaviour {
             subscription -> subscription.getRecord().getCompensableActivityScopeKey() == scopeKey);
   }
 
-  private Optional<String> getCompensationHandlerId(final ExecutableActivity element) {
+  public Optional<String> getCompensationHandlerId(final ExecutableActivity element) {
     return element.getBoundaryEvents().stream()
         .map(ExecutableBoundaryEvent::getCompensation)
         .filter(Objects::nonNull)
@@ -418,6 +418,18 @@ public class BpmnCompensationSubscriptionBehaviour {
               commandWriter.appendFollowUpCommand(
                   elementInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
             });
+  }
+
+  public void deleteSubscriptionsOfProcessInstanceFilter(
+      final BpmnElementContext context,
+      final Predicate<CompensationSubscription> compensationSubscriptionFilter) {
+    // delete all compensation subscriptions of the process instance matching the filter
+    compensationSubscriptionState
+        .findSubscriptionsByProcessInstanceKey(
+            context.getTenantId(), context.getProcessInstanceKey())
+        .stream()
+        .filter(compensationSubscriptionFilter)
+        .forEach(this::appendCompensationSubscriptionDeleteEvent);
   }
 
   public void deleteSubscriptionsOfProcessInstance(final BpmnElementContext context) {

@@ -100,6 +100,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         new ProcessInstanceMigrationCatchEventBehaviour(
             processingState.getProcessMessageSubscriptionState(),
             bpmnBehaviors.catchEventBehavior(),
+            bpmnBehaviors.compensationSubscriptionBehaviour(),
             writers.command(),
             commandDistributionBehavior,
             processingState.getDistributionState(),
@@ -228,24 +229,42 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceProcessDefinition,
         elementInstanceRecord,
         EnumSet.of(
-            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
+            BpmnEventType.MESSAGE,
+            BpmnEventType.TIMER,
+            BpmnEventType.SIGNAL,
+            BpmnEventType.ERROR,
+            BpmnEventType.ESCALATION));
     requireNoEventSubprocessInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
         EnumSet.of(
-            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
+            BpmnEventType.MESSAGE,
+            BpmnEventType.TIMER,
+            BpmnEventType.SIGNAL,
+            BpmnEventType.ERROR,
+            BpmnEventType.ESCALATION));
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
         EnumSet.of(
-            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
+            BpmnEventType.MESSAGE,
+            BpmnEventType.TIMER,
+            BpmnEventType.SIGNAL,
+            BpmnEventType.ERROR,
+            BpmnEventType.ESCALATION,
+            BpmnEventType.COMPENSATION));
     requireNoBoundaryEventInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
         EnumSet.of(
-            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
+            BpmnEventType.MESSAGE,
+            BpmnEventType.TIMER,
+            BpmnEventType.SIGNAL,
+            BpmnEventType.ERROR,
+            BpmnEventType.ESCALATION,
+            BpmnEventType.COMPENSATION));
     requireMappedCatchEventsToStayAttachedToSameElement(
         processInstanceKey,
         sourceProcessDefinition,
@@ -356,6 +375,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       migrationCatchEventBehaviour.handleCatchEvents(
           elementInstance,
           targetProcessDefinition,
+          sourceProcessDefinition,
           sourceElementIdToTargetElementId,
           elementInstanceRecord,
           targetElementId,

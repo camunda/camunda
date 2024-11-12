@@ -16,11 +16,16 @@
 package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 
 public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by processInstanceKey */
   ProcessInstanceFilter processInstanceKey(final Long processInstanceKey);
+
+  /** Filter by processInstanceKey using {@link LongFilterProperty} */
+  ProcessInstanceFilter processInstanceKey(final LongFilterProperty processInstanceKeyFilter);
 
   /** Filter by processDefinitionId */
   ProcessInstanceFilter processDefinitionId(final String processDefinitionId);
@@ -31,17 +36,31 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by processDefinitionVersion */
   ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion);
 
+  /** Filter by processDefinitionVersion using {@link IntegerFilterProperty} */
+  ProcessInstanceFilter processDefinitionVersion(
+      final IntegerFilterProperty processDefinitionVersion);
+
   /** Filter by processDefinitionVersionTag */
   ProcessInstanceFilter processDefinitionVersionTag(final String processDefinitionVersionTag);
 
   /** Filter by processDefinitionKey */
   ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
 
+  /** Filter by processDefinitionKey using {@link LongFilterProperty} */
+  ProcessInstanceFilter processDefinitionKey(final LongFilterProperty processDefinitionKey);
+
   /** Filter by parentProcessInstanceKey */
   ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
 
+  /** Filter by parentProcessInstanceKey using {@link LongFilterProperty} */
+  ProcessInstanceFilter parentProcessInstanceKey(final LongFilterProperty parentProcessInstanceKey);
+
   /** Filter by parentFlowNodeInstanceKey */
   ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
+
+  /** Filter by parentFlowNodeInstanceKey using {@link LongFilterProperty} */
+  ProcessInstanceFilter parentFlowNodeInstanceKey(
+      final LongFilterProperty parentFlowNodeInstanceKey);
 
   /** Filter by treePath */
   ProcessInstanceFilter treePath(final String treePath);

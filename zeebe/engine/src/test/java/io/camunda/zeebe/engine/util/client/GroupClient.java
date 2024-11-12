@@ -39,6 +39,10 @@ public class GroupClient {
     return new GroupRemoveEntityClient(writer, groupKey);
   }
 
+  public GroupDeleteClient deleteGroup(final long groupKey) {
+    return new GroupDeleteClient(writer, groupKey);
+  }
+
   public static class GroupCreateClient {
 
     private static final Function<Long, Record<GroupRecordValue>> SUCCESS_SUPPLIER =
@@ -211,6 +215,45 @@ public class GroupClient {
     }
 
     public GroupRemoveEntityClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class GroupDeleteClient {
+
+    private static final Function<Long, Record<GroupRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.groupRecords()
+                .withIntent(GroupIntent.DELETED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<GroupRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.groupRecords()
+                .onlyCommandRejections()
+                .withIntent(GroupIntent.DELETE)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private final CommandWriter writer;
+    private final GroupRecord groupRecord;
+
+    private Function<Long, Record<GroupRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public GroupDeleteClient(final CommandWriter writer, final long key) {
+      this.writer = writer;
+      groupRecord = new GroupRecord();
+      groupRecord.setGroupKey(key);
+    }
+
+    public Record<GroupRecordValue> delete() {
+      final long position = writer.writeCommand(GroupIntent.DELETE, groupRecord);
+      return expectation.apply(position);
+    }
+
+    public GroupDeleteClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }

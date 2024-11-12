@@ -39,8 +39,9 @@ jobs:
         id: auth-saas
         uses: google-github-actions/auth@v2
         with:
+          token_format: 'access_token'
           workload_identity_provider: 'projects/618877442292/locations/global/workloadIdentityPools/github/providers/camunda'
-          service_account: 'github-actions@camunda-saas-registry.iam.gserviceaccount.com'
+          service_account: 'github-actions-zeebe-io@camunda-saas-registry.iam.gserviceaccount.com'
       - name: Setup BuildKit
         uses: docker/setup-buildx-action@v3
       - name: Login to SaaS image registry
@@ -55,11 +56,12 @@ jobs:
           registry: gcr.io
           username: oauth2accesstoken
           password: ${{ steps.auth-zeebe.outputs.access_token }}
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - id: image-tag
         name: Calculate image tag
         shell: bash
@@ -128,6 +130,6 @@ jobs:
               \"variables\": $variables
             }"
         env:
-          IMAGE: ${{ steps.build-zeebe-docker.outputs.image }}
+          IMAGE: zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
           access_token: ${{ env.access_token }}
 

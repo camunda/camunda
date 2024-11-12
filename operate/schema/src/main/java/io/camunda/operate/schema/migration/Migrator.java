@@ -9,6 +9,8 @@ package io.camunda.operate.schema.migration;
 
 import static io.camunda.operate.schema.SchemaManager.*;
 import static io.camunda.operate.util.CollectionUtil.filter;
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.exceptions.MigrationException;
@@ -159,7 +161,12 @@ public class Migrator {
               : operateProperties.getElasticsearch().getIndexPrefix();
       if (migrationProperties.isDeleteSrcSchema()) {
         final String olderBaseIndexName =
-            String.format("%s-%s-%s_", indexPrefix, indexDescriptor.getIndexName(), olderVersion);
+            String.format(
+                "%s%s-%s-%s_",
+                formatIndexPrefix(indexPrefix),
+                OPERATE,
+                indexDescriptor.getIndexName(),
+                olderVersion);
         final String deleteIndexPattern = String.format("%s*", olderBaseIndexName);
         LOGGER.info("Deleted previous indices for pattern {}", deleteIndexPattern);
         schemaManager.deleteIndicesFor(deleteIndexPattern);
@@ -258,8 +265,10 @@ public class Migrator {
         DatabaseInfo.isOpensearch()
             ? operateProperties.getOpensearch().getIndexPrefix()
             : operateProperties.getElasticsearch().getIndexPrefix();
-    final String srcIndex = String.format("%s-%s-%s", indexPrefix, indexName, srcVersion);
-    final String dstIndex = String.format("%s-%s-%s", indexPrefix, indexName, dstVersion);
+    final String srcIndex =
+        String.format("%s%s-%s-%s", formatIndexPrefix(indexPrefix), OPERATE, indexName, srcVersion);
+    final String dstIndex =
+        String.format("%s%s-%s-%s", formatIndexPrefix(indexPrefix), OPERATE, indexName, dstVersion);
 
     // forbid migration when migration steps can't be combined
     if (onlyAffectedVersions.stream().anyMatch(s -> s instanceof ProcessorStep)

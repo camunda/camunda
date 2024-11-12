@@ -112,19 +112,26 @@ trap childExitHandler SIGCHLD
 if [ "$1" = "start" ] ; then
   shift
   # setup the JVM
-  if [ "x$JAVA" = "x" ]; then
-    if [ "x$JAVA_HOME" != "x" ]; then
-      echo Setting JAVA property to "$JAVA_HOME/bin/java"
-      JAVA="$JAVA_HOME/bin/java"
-    else
-      echo JAVA_HOME is not set. Unexpected results may occur.
-      echo Set JAVA_HOME to the directory of your local JDK to avoid this message.
+  if [ "x$JAVA_HOME" != "x" ]; then
+
+    # turns out not all java installations put the binary in bin/java . so this should be a find command.
+    if [ "x$JAVA" == "x" ]; then
+      JAVA=$(find -L "$JAVA_HOME" -name "java" | head -n 1)
+      echo Setting JAVA property to "$JAVA" in "$JAVA_HOME"
+    fi
+  else
+    echo JAVA_HOME is not set. Unexpected results may occur.
+    echo Set JAVA_HOME to the directory of your local JDK to avoid this message.
+    if [ "x$JAVA" == "x" ]; then
       JAVA="java"
     fi
+    # We want to set JAVA_HOME so that we can set elasticsearch to use JAVA_HOME
+    export JAVA_HOME=$(which "$JAVA" | xargs dirname | xargs dirname)
   fi
 
   JAVA_VERSION=$("$JAVA" -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^0\./s///' | cut -d'.' -f1)
   echo Java version is $("$JAVA" -version 2>&1 | head -1 | cut -d'"' -f2)
+
   if [[ "$JAVA_VERSION" -lt "$EXPECTED_JAVA_VERSION" ]]; then
     echo "You must use at least JDK $EXPECTED_JAVA_VERSION to start Camunda Platform Run."
     childExitHandler $$ 1
@@ -168,8 +175,8 @@ if [ "$1" = "start" ] ; then
   echo "(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)"
   echo
   ELASTICSEARCH_LOG_FILE=$PARENTDIR/log/elasticsearch.log
-  $PARENTDIR/elasticsearch-${ELASTICSEARCH_VERSION}/bin/elasticsearch -E xpack.ml.enabled=false -E xpack.security.enabled=false </dev/null > "$ELASTICSEARCH_LOG_FILE" 2>&1 &
-  echo $! > $ELASTIC_PID_PATH
+  "$PARENTDIR/elasticsearch-${ELASTICSEARCH_VERSION}/bin/elasticsearch" -E xpack.ml.enabled=false -E xpack.security.enabled=false </dev/null > "$ELASTICSEARCH_LOG_FILE" 2>&1 &
+  echo $! > "$ELASTIC_PID_PATH"
 
 
   function checkStartup {
@@ -217,25 +224,25 @@ Please stop it or remove the file $PID_PATH."
       exit 1
     fi
 
-    pushd $PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/
-    echo ./bin/camunda $extraArgs >> $PARENTDIR/log/camunda.log 2>> $PARENTDIR/log/camunda.log &
-    ./bin/camunda $extraArgs >> $PARENTDIR/log/camunda.log 2>> $PARENTDIR/log/camunda.log &
+    pushd "$PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/"
+    echo ./bin/camunda $extraArgs >> "$PARENTDIR/log/camunda.log" 2>> "$PARENTDIR/log/camunda.log" &
+    ./bin/camunda $extraArgs >> "$PARENTDIR/log/camunda.log" 2>> "$PARENTDIR/log/camunda.log" &
     echo $! > "$PID_PATH"
     popd
 
-    $JAVA -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
+    "$JAVA" -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> "$PARENTDIR/log/connectors.log" 2>> "$PARENTDIR/log/connectors.log" &
     echo $! > "$CONNECTORS_PID_PATH"
     if [ -s "$POLLING_CAMUNDA_PID_PATH" ]; then
       wait $(cat "$POLLING_CAMUNDA_PID_PATH")
     fi
     cat endpoints.txt
   else
-    $JAVA -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*'" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> $PARENTDIR/log/connectors.log 2>> $PARENTDIR/log/connectors.log &
+    "$JAVA" -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*'" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> "$PARENTDIR/log/connectors.log" 2>> "$PARENTDIR/log/connectors.log" &
     echo $! > "$CONNECTORS_PID_PATH"
 
-    pushd $PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/
-    echo ./bin/camunda $extraArgs 2>&1 | tee $PARENTDIR/log/camunda.log
-    ./bin/camunda $extraArgs 2>&1 | tee $PARENTDIR/log/camunda.log
+    pushd "$PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/"
+    echo ./bin/camunda $extraArgs 2>&1 | tee "$PARENTDIR/log/camunda.log"
+    ./bin/camunda $extraArgs 2>&1 | tee "$PARENTDIR/log/camunda.log"
     popd
   fi
 #   wait $(cat "$CONNECTORS_PID_PATH")

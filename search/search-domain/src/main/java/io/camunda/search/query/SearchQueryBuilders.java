@@ -114,6 +114,15 @@ public final class SearchQueryBuilders {
     return fn.apply(roleSearchQuery()).build();
   }
 
+  public static TenantQuery.Builder tenantSearchQuery() {
+    return new TenantQuery.Builder();
+  }
+
+  public static TenantQuery tenantSearchQuery(
+      final Function<TenantQuery.Builder, ObjectBuilder<TenantQuery>> fn) {
+    return fn.apply(tenantSearchQuery()).build();
+  }
+
   public static AuthorizationQuery.Builder authorizationSearchQuery() {
     return new AuthorizationQuery.Builder();
   }

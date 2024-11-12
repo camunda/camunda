@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRe
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -95,5 +94,5 @@ public class AuthorizationServices
       long ownerKey,
       PermissionAction action,
       AuthorizationResourceType resourceType,
-      Map<PermissionType, List<String>> permissions) {}
+      Map<PermissionType, Set<String>> permissions) {}
 }

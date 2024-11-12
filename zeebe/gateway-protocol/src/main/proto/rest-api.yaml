@@ -61,12 +61,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/TopologyResponse"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /license:
     get:
       tags:
@@ -82,12 +77,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LicenseResponse"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /jobs/activation:
     post:
       tags:
@@ -117,12 +107,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}/failure:
     post:
       tags:
@@ -171,12 +156,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}/error:
     post:
       tags:
@@ -225,12 +205,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}/completion:
     post:
       tags:
@@ -279,12 +254,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}:
     patch:
       tags:
@@ -331,12 +301,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /incidents/{incidentKey}/resolution:
     post:
@@ -371,11 +336,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /user-tasks/{userTaskKey}/completion:
     post:
@@ -425,12 +386,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}/assignment:
     post:
       tags:
@@ -478,12 +435,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}:
     get:
       tags:
@@ -529,12 +482,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
     patch:
       tags:
         - User task
@@ -581,12 +530,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}/form:
     get:
       tags:
@@ -628,11 +573,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: "Not found"
           content:
@@ -640,11 +581,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}/assignee:
     delete:
       tags:
@@ -686,12 +624,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /user-tasks/search:
     post:
       tags:
@@ -729,12 +662,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}/variables:
     post:
       tags:
@@ -780,12 +709,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /variables/search:
     post:
@@ -824,12 +748,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /variables/{variableKey}:
     get:
       tags:
@@ -867,11 +787,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: "Not found"
           content:
@@ -879,11 +795,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /clock:
     put:
       tags:
@@ -914,11 +827,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /clock/reset:
     post:
       tags:
@@ -936,11 +846,8 @@ paths:
         "204":
           description: The clock was successfully reset to the system time.
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-definitions/search:
     post:
       tags:
@@ -978,12 +885,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-definitions/{processDefinitionKey}:
     get:
       tags:
@@ -1031,12 +934,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-definitions/{processDefinitionKey}/xml:
     get:
       tags:
@@ -1091,12 +990,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-definitions/{processDefinitionsKey}/form:
     get:
       tags:
@@ -1138,11 +1033,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: "Not found"
           content:
@@ -1150,11 +1041,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances:
     post:
       tags:
@@ -1196,11 +1084,8 @@ paths:
         "400":
           description: The provided data is not valid.
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}:
     get:
       tags:
@@ -1237,11 +1122,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: The request lacks valid authentication credentials.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: The process instance with the given key was not found.
           content:
@@ -1249,11 +1130,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/search:
     post:
       tags:
@@ -1290,11 +1168,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/cancellation:
     post:
       tags:
@@ -1332,11 +1207,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/migration:
     post:
       tags:
@@ -1381,11 +1253,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/modification:
     post:
       tags:
@@ -1429,11 +1298,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /flownode-instances/search:
     post:
@@ -1472,12 +1337,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /flownode-instances/{flownodeInstanceKey}:
     get:
       tags:
@@ -1525,12 +1386,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-definitions/search:
     post:
       tags:
@@ -1568,12 +1425,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-definitions/{decisionDefinitionKey}:
     get:
       tags:
@@ -1621,12 +1474,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-definitions/{decisionDefinitionKey}/xml:
     get:
       tags:
@@ -1674,12 +1523,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-requirements/search:
     post:
       tags:
@@ -1717,12 +1562,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-requirements/{decisionRequirementsKey}:
     get:
       tags:
@@ -1770,12 +1611,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-requirements/{decisionRequirementsKey}/xml:
     get:
       tags:
@@ -1823,12 +1660,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /decision-instances/search:
     post:
@@ -1867,12 +1699,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /decision-instances/{decisionInstanceKey}:
     get:
@@ -1921,12 +1748,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /decision-definitions/evaluation:
     post:
@@ -1976,11 +1798,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /authorizations/{ownerKey}:
     patch:
@@ -2016,13 +1834,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: |
-            The request to patch the authorization was unauthorized.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "403":
           description: |
             The request to patch an authorization was denied.
@@ -2043,11 +1855,8 @@ paths:
             The request to add or remove permissions to an authorization was in conflict.
             More details are provided in the response body.
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /authorizations/search:
     post:
       tags:
@@ -2084,63 +1893,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-
-  /users:
-    post:
-      tags:
-        - User
-      operationId: createUser
-      summary: Create user
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserRequest"
-        required: true
-      responses:
-        "202":
-          description: |
-            The user was created successfully.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserCreateResponse"
-        "400":
-          description: |
-            The user could not be created.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: |
-            The request to create a user was unauthorized.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: |
-            The request to create a user was denied.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /messages/publication:
     post:
@@ -2173,11 +1926,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: Internal server error.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /messages/correlation:
     post:
       tags:
@@ -2219,11 +1969,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: Internal server error
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /documents:
     post:
@@ -2326,12 +2072,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
     delete:
       tags:
         - Document
@@ -2368,12 +2110,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /document/{documentId}/links:
     post:
       tags:
@@ -2421,6 +2159,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /users:
+    post:
+      tags:
+        - User
+      operationId: createUser
+      summary: Create user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+        required: true
+      responses:
+        "202":
+          description: |
+            The user was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCreateResponse"
+        "400":
+          description: |
+            Unable to create the user.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: |
+            The request to create a user was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /users/search:
     post:
       tags:
@@ -2457,12 +2236,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /users/{userKey}/authorizations/search:
     post:
@@ -2508,12 +2282,41 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
+          $ref: "#/components/responses/InternalServerError"
+
+  /users/{userKey}:
+    delete:
+        tags:
+            - User
+        operationId: deleteUser
+        summary: Delete user
+        description: |
+            Deletes a user.
+        parameters:
+            - name: userKey
+              in: path
+              required: true
+              description: The key of the user to delete.
               schema:
-                $ref: "#/components/schemas/ProblemDetail"
+                  type: integer
+                  format: int64
+        responses:
+            "204":
+              description: The user was deleted successfully.
+            "400":
+              description: The provided data is not valid.
+              content:
+                application/problem+json:
+                  schema:
+                    $ref: "#/components/schemas/ProblemDetail"
+            "404":
+              description: The user is not found.
+              content:
+                application/problem+json:
+                  schema:
+                    $ref: "#/components/schemas/ProblemDetail"
+            "500":
+              $ref: "#/components/responses/InternalServerError"
 
   /incidents/search:
     post:
@@ -2548,11 +2351,8 @@ paths:
             The incident search query failed.
             More details are provided in the response body.
         "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /incidents/{incidentKey}:
     get:
       tags:
@@ -2600,12 +2400,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /deployments:
     post:
       tags:
@@ -2691,11 +2487,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /element-instances/{elementInstanceKey}/variables:
     post:
@@ -2733,11 +2525,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /signals/broadcast:
     post:
@@ -2772,11 +2560,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   schemas:
@@ -2823,9 +2607,9 @@ components:
           type: string
           description: The assignee of the user task.
         priority:
-          type: integer
-          format: int32
           description: The priority of the user task.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
         elementId:
           type: string
           description: The element ID of the user task.
@@ -2973,12 +2757,12 @@ components:
           type: string
         scopeKey:
           description: The key of the scope of this variable.
-          type: integer
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         processInstanceKey:
           description: The key of the process instance of this variable.
-          type: integer
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         tenantId:
           description: Tenant ID of this variable.
           type: string
@@ -3104,14 +2888,115 @@ components:
         filter:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+    AdvancedIntegerFilter:
+      description: Advanced integer (int32) filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: integer
+          format: int32
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: integer
+          format: int32
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: integer
+          format: int32
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: integer
+          format: int32
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: integer
+          format: int32
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: integer
+          format: int32
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: integer
+            format: int32
+    IntegerFilterProperty:
+      description: Integer property with advanced search capabilities.
+      type: object
+      oneOf:
+        - type: integer
+          format: int32
+        - $ref: "#/components/schemas/AdvancedIntegerFilter"
+    BasicLongFilter:
+      description: Basic advanced long (int64) filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: integer
+          format: int64
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: integer
+          format: int64
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: integer
+            format: int64
+    AdvancedLongFilter:
+      description: Advanced long (int64) filter.
+      allOf:
+        - $ref: "#/components/schemas/BasicLongFilter"
+        - type: object
+          properties:
+            $gt:
+              description: Greater than comparison with the provided value.
+              type: integer
+              format: int64
+            $gte:
+              description: Greater than or equal comparison with the provided value.
+              type: integer
+              format: int64
+            $lt:
+              description: Lower than comparison with the provided value.
+              type: integer
+              format: int64
+            $lte:
+              description: Lower than or equal comparison with the provided value.
+              type: integer
+              format: int64
+    BasicLongFilterProperty:
+      description: Long property with basic advanced search capabilities.
+      type: object
+      oneOf:
+        - type: integer
+          format: int64
+        - $ref: "#/components/schemas/BasicLongFilter"
+    LongFilterProperty:
+      description: Long property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: integer
+          format: int64
+        - $ref: "#/components/schemas/AdvancedLongFilter"
     ProcessInstanceFilterRequest:
       description: Process instance search filter.
       type: object
       properties:
         processInstanceKey:
-          type: integer
           description: The key of this process instance.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         processDefinitionId:
           type: string
           description: The process definition ID.
@@ -3119,24 +3004,24 @@ components:
           type: string
           description: The process definition name.
         processDefinitionVersion:
-          type: integer
           description: The process definition version.
-          format: int32
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
         processDefinitionVersionTag:
           type: string
           description: The process definition version tag.
         processDefinitionKey:
-          type: integer
           description: The process definition key.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         parentProcessInstanceKey:
-          type: integer
           description: The parent process instance key.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         parentFlowNodeInstanceKey:
-          type: integer
           description: The parent flow node instance key.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         treePath:
           type: string
           description: The path of keys to this process instance, separated by '/'.
@@ -3728,6 +3613,7 @@ components:
         resourceIds:
           type: array
           description: A list of resource IDs the permission relates to.
+          uniqueItems: true
           items:
             type: string
     AuthorizationPatchRequest:
@@ -4604,9 +4490,9 @@ components:
           format: int64
           description: The key of the process instance.
         decisionDefinitionKey:
-          type: integer
-          format: int64
           description: The key of the decision.
+          allOf:
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         decisionDefinitionId:
           type: string
           description: The ID of the DMN decision.
@@ -5280,6 +5166,20 @@ components:
           description: The version of the form.
           type: integer
           format: int64
+  responses:
+    InternalServerError:
+      description: >
+        An internal error occurred while processing the request.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    Unauthorized:
+      description: The request lacks valid authentication credentials.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
 
   securitySchemes:
     bearerAuth:

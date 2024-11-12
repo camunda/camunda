@@ -11,7 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatException;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.exporter.cache.ProcessCache.CacheLoaderFailedException;
+import io.camunda.exporter.cache.ExporterEntityCache.CacheLoaderFailedException;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
+import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
+import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
@@ -131,13 +134,13 @@ class ProcessCacheImplIT {
 
   static ProcessCacheArgument getESProcessCache(final String indexName) {
     return new ProcessCacheArgument(
-        new ProcessCacheImpl(10, new ElasticSearchProcessCacheLoader(elsClient, indexName)),
+        new ExporterEntityCacheImpl(10, new ElasticSearchProcessCacheLoader(elsClient, indexName)),
         ProcessCacheImplIT::indexInElasticSearch);
   }
 
   static ProcessCacheArgument getOSProcessCache(final String indexName) {
     return new ProcessCacheArgument(
-        new ProcessCacheImpl(10, new OpenSearchProcessCacheLoader(osClient, indexName)),
+        new ExporterEntityCacheImpl(10, new OpenSearchProcessCacheLoader(osClient, indexName)),
         ProcessCacheImplIT::indexInOpenSearch);
   }
 
@@ -167,5 +170,7 @@ class ProcessCacheImplIT {
     }
   }
 
-  record ProcessCacheArgument(ProcessCache processCache, Consumer<ProcessEntity> indexer) {}
+  record ProcessCacheArgument(
+      ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      Consumer<ProcessEntity> indexer) {}
 }

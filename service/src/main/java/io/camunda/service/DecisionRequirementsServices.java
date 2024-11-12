@@ -60,7 +60,7 @@ public final class DecisionRequirementsServices
                         .page(query.page())
                         .resultConfig(
                             ofNullable(query.resultConfig())
-                                .orElseGet(() -> defaultSearchResultConfig()))));
+                                .orElseGet(this::defaultSearchResultConfig))));
   }
 
   /**
@@ -68,7 +68,7 @@ public final class DecisionRequirementsServices
    * fetched from the database.
    */
   private DecisionRequirementsQueryResultConfig defaultSearchResultConfig() {
-    return DecisionRequirementsQueryResultConfig.of(r -> r.xml().exclude());
+    return DecisionRequirementsQueryResultConfig.of(r -> r);
   }
 
   public DecisionRequirementsEntity getByKey(final Long key) {

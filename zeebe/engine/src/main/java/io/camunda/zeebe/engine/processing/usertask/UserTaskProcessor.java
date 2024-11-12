@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUse
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -39,6 +40,9 @@ import java.util.Optional;
 @ExcludeAuthorizationCheck
 public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
+  private static final String USER_TASK_COMPLETION_REJECTION =
+      "Completion of the User Task with key '%d' was rejected by Task Listener";
+
   private final UserTaskCommandProcessors commandProcessors;
   private final ProcessState processState;
   private final MutableUserTaskState userTaskState;
@@ -49,6 +53,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final StateWriter stateWriter;
 
   public UserTaskProcessor(
       final ProcessingState state,
@@ -69,6 +74,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    stateWriter = writers.state();
   }
 
   @Override
@@ -77,6 +83,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     switch (intent) {
       case ASSIGN, CLAIM, COMPLETE, UPDATE -> processOperationCommand(command, intent);
       case COMPLETE_TASK_LISTENER -> processCompleteTaskListener(command);
+      case DENY_TASK_LISTENER -> processDenyTaskListener(command);
       default -> throw new UnsupportedOperationException("Unexpected user task intent: " + intent);
     }
   }
@@ -95,6 +102,20 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
         .ifPresentOrElse(
             listener -> createTaskListenerJob(listener, context, persistedRecord),
             () -> commandProcessor.onFinalizeCommand(command, persistedRecord));
+  }
+
+  private void processDenyTaskListener(final TypedRecord<UserTaskRecord> command) {
+    final var lifecycleState = userTaskState.getLifecycleState(command.getKey());
+    final var persistedRecord = userTaskState.getUserTask(command.getKey());
+
+    // Improvement: introduce switch case based on lifecycle stages in the future
+    if (lifecycleState == LifecycleState.COMPLETING) {
+      writeRejectionForCommand(command, persistedRecord, UserTaskIntent.COMPLETION_DENIED);
+    } else {
+      throw new IllegalArgumentException(
+          "Expected to reject operation for user task: '%d', but operation could not be determined from the task's current lifecycle state: '%s'"
+              .formatted(command.getValue().getUserTaskKey(), lifecycleState));
+    }
   }
 
   private void processOperationCommand(
@@ -182,6 +203,30 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
                 jobBehavior.createNewTaskListenerJob(
                     context, listenerJobProperties, listener, taskRecordValue))
         .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+  }
+
+  private void writeRejectionForCommand(
+      final TypedRecord<UserTaskRecord> command,
+      final UserTaskRecord persistedRecord,
+      final UserTaskIntent intent) {
+
+    final var recordRequestMetadata =
+        userTaskState.findRecordRequestMetadata(persistedRecord.getUserTaskKey());
+
+    stateWriter.appendFollowUpEvent(persistedRecord.getUserTaskKey(), intent, persistedRecord);
+
+    recordRequestMetadata.ifPresent(
+        metadata -> {
+          responseWriter.writeRejection(
+              command.getKey(),
+              UserTaskIntent.COMPLETE,
+              command.getValue(),
+              command.getValueType(),
+              RejectionType.INVALID_STATE,
+              USER_TASK_COMPLETION_REJECTION.formatted(persistedRecord.getUserTaskKey()),
+              metadata.getRequestId(),
+              metadata.getRequestStreamId());
+        });
   }
 
   private ExecutableUserTask getUserTaskElement(final UserTaskRecord userTaskRecord) {

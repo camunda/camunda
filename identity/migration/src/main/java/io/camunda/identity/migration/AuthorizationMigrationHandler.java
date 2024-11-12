@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
@@ -59,7 +60,7 @@ public class AuthorizationMigrationHandler {
           (owner, value) -> {
             value.forEach(
                 (resourceType, permissionAndResources) -> {
-                  final Map<PermissionType, List<String>> permissions =
+                  final Map<PermissionType, Set<String>> permissions =
                       permissionAndResources.entrySet().stream()
                           .flatMap(
                               e ->
@@ -69,7 +70,7 @@ public class AuthorizationMigrationHandler {
                               Collectors.groupingBy(
                                   SimpleEntry::getKey,
                                   Collectors.flatMapping(
-                                      e -> e.getValue().stream(), Collectors.toList())));
+                                      e -> e.getValue().stream(), Collectors.toSet())));
                   final long ownerKey = getOwnerKeyForUsername(owner);
                   authorizationService.patchAuthorization(
                       new PatchAuthorizationRequest(
