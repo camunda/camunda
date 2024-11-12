@@ -183,12 +183,12 @@ test.describe('task details page', () => {
     await waitForAssertion({
       assertion: async () => {
         await expect(page.getByText('jobWorkerVar')).toBeVisible();
+        await expect(page.getByText('zeebeVar')).toBeVisible();
       },
       onFailure: async () => {
         await page.reload();
       },
     });
-    await expect(page.getByText('zeebeVar')).toBeVisible();
     await expect(tasksPage.assignToMeButton).not.toBeVisible();
     await expect(tasksPage.unassignButton).not.toBeVisible();
     await expect(tasksPage.completeTaskButton).not.toBeVisible();
