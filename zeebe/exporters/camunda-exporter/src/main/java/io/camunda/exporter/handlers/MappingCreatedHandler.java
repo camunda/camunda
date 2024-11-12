@@ -12,6 +12,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.MappingEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import java.util.List;
 
@@ -34,7 +35,8 @@ public class MappingCreatedHandler implements ExportHandler<MappingEntity, Mappi
 
   @Override
   public boolean handlesRecord(final Record<MappingRecordValue> record) {
-    return getHandledValueType().equals(record.getValueType());
+    return getHandledValueType().equals(record.getValueType())
+        && MappingIntent.CREATED.equals(record.getIntent());
   }
 
   @Override
