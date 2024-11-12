@@ -56,7 +56,7 @@ public class GroupCreatedUpdatedHandlerTest {
   void shouldGenerateIds() {
     // given
     final Record<GroupRecordValue> groupRecord =
-        factory.generateRecordWithIntent(ValueType.GROUP, GroupIntent.DELETED);
+        factory.generateRecordWithIntent(ValueType.GROUP, GroupIntent.CREATED);
 
     // when
     final var idList = underTest.generateIds(groupRecord);

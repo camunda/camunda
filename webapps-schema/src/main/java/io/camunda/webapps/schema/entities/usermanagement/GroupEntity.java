@@ -12,8 +12,6 @@ import java.util.Set;
 
 public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
-  public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
-
   private Long groupKey;
   private String name;
   private Set<Long> assignedMemberKeys;

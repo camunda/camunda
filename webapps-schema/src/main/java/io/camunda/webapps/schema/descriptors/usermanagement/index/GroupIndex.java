@@ -14,10 +14,6 @@ public class GroupIndex extends UserManagementIndexDescriptor {
   public static final String INDEX_NAME = "groups";
   public static final String INDEX_VERSION = "8.7.0";
 
-  public static final String GROUPKEY = "groupKey";
-  public static final String NAME = "name";
-  public static final String ASSIGNEDMEMBERKEYS = "assignedMemberKeys";
-
   public GroupIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
