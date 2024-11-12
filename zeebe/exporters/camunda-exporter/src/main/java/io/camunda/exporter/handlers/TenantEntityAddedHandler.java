@@ -9,13 +9,11 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -64,10 +62,17 @@ public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, Ten
   @Override
   public void flush(final TenantEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(TenantIndex.ASSIGNED_MEMBER_KEYS, entity.getAssignedMemberKeys());
+    // the script to add a single value to the assignedMemberKeys field
+    final String script =
+        "if (ctx._source.assignedMemberKeys == null) "
+            + "{ ctx._source.assignedMemberKeys = [params.newKey]; } "
+            + "else if (!ctx._source.assignedMemberKeys.contains(params.newKey)) "
+            + "{ ctx._source.assignedMemberKeys.add(params.newKey); }";
 
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    final Map<String, Object> params =
+        Map.of("newKey", entity.getAssignedMemberKeys().iterator().next());
+
+    batchRequest.updateWithScript(indexName, entity.getId(), script, params);
   }
 
   @Override
