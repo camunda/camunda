@@ -12,7 +12,6 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -92,15 +91,22 @@ public class TenantEntityAddedHandlerTest {
   void shouldFlushOnlyAssignedMemberKeysField() throws PersistenceException {
     // given
     final TenantEntity tenantEntity = new TenantEntity().setId("tenant-1");
-    tenantEntity.setAssignedMemberKeys(Set.of(123L, 456L)); // Simulate keys already present
+    tenantEntity.setAssignedMemberKeys(new HashSet<>(Set.of(123L)));
     final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final String expectedScript =
+        "if (ctx._source.assignedMemberKeys == null) "
+            + "{ ctx._source.assignedMemberKeys = [params.newKey]; } "
+            + "else if (!ctx._source.assignedMemberKeys.contains(params.newKey))"
+            + " { ctx._source.assignedMemberKeys.add(params.newKey); }";
+
+    final Map<String, Object> expectedParams = Map.of("newKey", 123L);
 
     // when
     underTest.flush(tenantEntity, mockRequest);
 
     // then
-    final Map<String, Object> expectedUpdateFields =
-        Map.of(TenantIndex.ASSIGNED_MEMBER_KEYS, Set.of(123L, 456L));
-    verify(mockRequest, times(1)).update(indexName, tenantEntity.getId(), expectedUpdateFields);
+    verify(mockRequest, times(1))
+        .updateWithScript(indexName, tenantEntity.getId(), expectedScript, expectedParams);
   }
 }
