@@ -16,6 +16,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +80,11 @@ final class OpensearchClientIT {
     // given - a record with a negative timestamp will not be indexed because its field in ES is a
     // date, which must be a positive number of milliseconds since the UNIX epoch
     final var invalidRecord =
-        recordFactory.generateRecord(ValueType.VARIABLE, b -> b.withTimestamp(Long.MIN_VALUE));
+        recordFactory.generateRecord(
+            ValueType.VARIABLE,
+            b ->
+                b.withTimestamp(Long.MIN_VALUE)
+                    .withBrokerVersion(VersionUtil.getVersionLowerCase()));
     client.index(invalidRecord, new RecordSequence(PARTITION_ID, 1));
     client.putComponentTemplate();
     client.putIndexTemplate(ValueType.VARIABLE);
@@ -95,11 +100,14 @@ final class OpensearchClientIT {
   void shouldPutIndexTemplate() {
     // given
     final var valueType = ValueType.VARIABLE;
-    final String indexTemplateName = indexRouter.indexPrefixForValueType(valueType);
+    final String indexTemplateName =
+        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
     final String indexTemplateAlias = indexRouter.aliasNameForValueType(valueType);
     final Template expectedTemplate =
         templateReader.readIndexTemplate(
-            valueType, indexRouter.searchPatternForValueType(valueType), indexTemplateAlias);
+            valueType,
+            indexRouter.searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase()),
+            indexTemplateAlias);
 
     // required since all index templates are composed with it
     client.putComponentTemplate();
