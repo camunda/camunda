@@ -640,15 +640,19 @@ public final class ProcessingStateMachine {
                   writeRecords();
                 });
           } else {
+            // Instead of using the position of typedCommand, we want to pick the position of the
+            // last processed command to be marked as finalized in order for it to be skipped later.
+            final var lastProcessedCommandPosition =
+                Math.max(typedCommand.getPosition(), writtenPosition)
+                    - pendingWrites.size()
+                    + lastProcessedCommandIndex
+                    + 1;
+            finalizeCommandProcessing(lastProcessedCommandPosition);
+
             // We write various type of records. The positions are always increasing and
             // incremented by 1 for one record (even in a batch), so we can count the amount
             // of written records via the lastWritten and now written position.
-            final var lastProcessedCommandPosition =
-                writtenPosition - pendingWrites.size() + lastProcessedCommandIndex + 1;
-            finalizeCommandProcessing(lastProcessedCommandPosition);
-
-            final var amount = writtenPosition - lastWrittenPosition;
-            metrics.recordsWritten(amount);
+            metrics.recordsWritten(pendingWrites.size());
             updateState();
           }
         });
