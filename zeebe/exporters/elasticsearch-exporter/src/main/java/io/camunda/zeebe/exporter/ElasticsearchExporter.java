@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -59,7 +59,7 @@ public class ElasticsearchExporter implements Exporter {
   private MeterRegistry registry;
 
   private long lastPosition = -1;
-  private Map<String, Boolean> indexTemplatesCreated;
+  private Set<String> indexTemplatesCreated;
 
   @Override
   public void configure(final Context context) {
@@ -72,7 +72,7 @@ public class ElasticsearchExporter implements Exporter {
     pluginRepository.load(configuration.getInterceptorPlugins());
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
-    indexTemplatesCreated = new HashMap<>();
+    indexTemplatesCreated = new HashSet<>();
     registry = context.getMeterRegistry();
   }
 
@@ -120,7 +120,7 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    if (!indexTemplatesCreated.containsKey(record.getBrokerVersion())) {
+    if (!indexTemplatesCreated.contains(record.getBrokerVersion())) {
       createIndexTemplates(record.getBrokerVersion());
 
       updateRetentionPolicyForExistingIndices();
@@ -357,7 +357,7 @@ public class ElasticsearchExporter implements Exporter {
       }
     }
 
-    indexTemplatesCreated.put(version, true);
+    indexTemplatesCreated.add(version);
   }
 
   private void createIndexLifecycleManagementPolicy() {
@@ -370,14 +370,6 @@ public class ElasticsearchExporter implements Exporter {
   private void createComponentTemplate() {
     if (!client.putComponentTemplate()) {
       log.warn("Failed to acknowledge the creation or update of the component template");
-    }
-  }
-
-  private void createValueIndexTemplate(final ValueType valueType) {
-    if (!client.putIndexTemplate(valueType)) {
-      log.warn(
-          "Failed to acknowledge the creation or update of the index template for value type {}",
-          valueType);
     }
   }
 

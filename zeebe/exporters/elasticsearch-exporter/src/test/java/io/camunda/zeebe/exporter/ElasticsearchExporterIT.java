@@ -428,6 +428,7 @@ final class ElasticsearchExporterIT {
               .get(firstRecordIndexName)
               .aliases();
       assertThat(firstRecordIndexAliases.size()).isEqualTo(1);
+      assertThat(firstRecordIndexName).contains("8.6.0");
 
       final var secondRecordIndexName = indexRouter.indexFor(record2);
       final var secondRecordIndexAliases =
@@ -439,6 +440,7 @@ final class ElasticsearchExporterIT {
               .get(secondRecordIndexName)
               .aliases();
       assertThat(secondRecordIndexAliases.size()).isEqualTo(1);
+      assertThat(secondRecordIndexName).contains("8.7.0");
     }
 
     private void assertIndexSettingsHasLifecyclePolicy(

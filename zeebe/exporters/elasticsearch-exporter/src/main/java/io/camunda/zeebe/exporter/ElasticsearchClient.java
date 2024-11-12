@@ -164,15 +164,7 @@ class ElasticsearchClient implements AutoCloseable {
    * @return true if request was acknowledged
    */
   public boolean putIndexTemplate(final ValueType valueType) {
-    final String templateName =
-        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
-    final Template template =
-        templateReader.readIndexTemplate(
-            valueType,
-            indexRouter.searchPatternForValueType(valueType),
-            indexRouter.aliasNameForValueType(valueType));
-
-    return putIndexTemplate(templateName, template);
+    return putIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
   }
 
   public boolean putIndexTemplate(final ValueType valueType, final String version) {

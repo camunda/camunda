@@ -10,7 +10,6 @@ package io.camunda.zeebe.exporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.util.VersionUtil;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -73,12 +72,6 @@ final class RecordIndexRouter {
    * separator and a wildcard, without the date. This allows one to search for this pattern and get
    * all indices regardless of their date.
    */
-  String searchPatternForValueType(final ValueType valueType) {
-    return indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase())
-        + INDEX_DELIMITER
-        + "*";
-  }
-
   String searchPatternForValueType(final ValueType valueType, final String version) {
     return indexPrefixForValueType(valueType, version) + INDEX_DELIMITER + "*";
   }
