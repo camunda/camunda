@@ -36,6 +36,7 @@ import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
+import io.camunda.exporter.handlers.MappingCreatedHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
@@ -375,6 +376,15 @@ public class CamundaExporterHandlerIT {
       throws IOException {
     final var handler = getHandler(config, OperationFromVariableDocumentHandler.class);
     testForOperationHandlers(handler, config, clientAdapter);
+  }
+
+  @TestTemplate
+  void shouldExportUsingMappingCreatedHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, MappingCreatedHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
   }
 
   @SuppressWarnings("unchecked")
