@@ -33,13 +33,17 @@ public final class DbRedistributionState implements MutableRedistributionState {
   @Override
   public RedistributionStage getStage() {
     final var persistedState = redistributionColumnFamily.get(key);
-    return RedistributionStage.indexToStage(persistedState.stage.getValue());
+    return persistedState == null
+        ? new RedistributionStage.Done()
+        : RedistributionStage.indexToStage(persistedState.stage.getValue());
   }
 
   @Override
   public RedistributionProgress getProgress() {
     final var persistedState = redistributionColumnFamily.get(key);
-    return persistedState.progress.getValue();
+    return persistedState == null
+        ? new RedistributionProgress()
+        : persistedState.progress.getValue();
   }
 
   @Override
