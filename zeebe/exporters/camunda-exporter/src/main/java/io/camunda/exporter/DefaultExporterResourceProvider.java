@@ -132,29 +132,22 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 new BatchOperationTemplate(globalPrefix, isElasticsearch)));
 
     indexDescriptorsMap =
-        Map.of(
-            DecisionIndex.class,
-            new DecisionIndex(globalPrefix, isElasticsearch),
-            DecisionRequirementsIndex.class,
-            new DecisionRequirementsIndex(globalPrefix, isElasticsearch),
-            MetricIndex.class,
-            new MetricIndex(globalPrefix, isElasticsearch),
-            ProcessIndex.class,
-            new ProcessIndex(globalPrefix, isElasticsearch),
-            FormIndex.class,
-            new FormIndex(globalPrefix, isElasticsearch),
-            TasklistMetricIndex.class,
-            new TasklistMetricIndex(globalPrefix, isElasticsearch),
-            UserIndex.class,
-            new UserIndex(globalPrefix, isElasticsearch),
-            AuthorizationIndex.class,
-            new AuthorizationIndex(globalPrefix, isElasticsearch),
-            MappingIndex.class,
-            new MappingIndex(globalPrefix, isElasticsearch),
-            TenantIndex.class,
-            new TenantIndex(globalPrefix, isElasticsearch),
-            GroupIndex.class,
-            new GroupIndex(globalPrefix, isElasticsearch));
+        Map.ofEntries(
+            Map.entry(DecisionIndex.class, new DecisionIndex(globalPrefix, isElasticsearch)),
+            Map.entry(
+                DecisionRequirementsIndex.class,
+                new DecisionRequirementsIndex(globalPrefix, isElasticsearch)),
+            Map.entry(MetricIndex.class, new MetricIndex(globalPrefix, isElasticsearch)),
+            Map.entry(ProcessIndex.class, new ProcessIndex(globalPrefix, isElasticsearch)),
+            Map.entry(FormIndex.class, new FormIndex(globalPrefix, isElasticsearch)),
+            Map.entry(
+                TasklistMetricIndex.class, new TasklistMetricIndex(globalPrefix, isElasticsearch)),
+            Map.entry(UserIndex.class, new UserIndex(globalPrefix, isElasticsearch)),
+            Map.entry(
+                AuthorizationIndex.class, new AuthorizationIndex(globalPrefix, isElasticsearch)),
+            Map.entry(MappingIndex.class, new MappingIndex(globalPrefix, isElasticsearch)),
+            Map.entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
+            Map.entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)));
 
     final var processCache =
         new ExporterEntityCacheImpl<Long, CachedProcessEntity>(
