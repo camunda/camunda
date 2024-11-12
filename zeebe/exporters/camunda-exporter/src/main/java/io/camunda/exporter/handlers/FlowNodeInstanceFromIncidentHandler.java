@@ -105,7 +105,7 @@ public class FlowNodeInstanceFromIncidentHandler
       updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
     }
     updateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, entity.getIncidentKey());
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
   @Override

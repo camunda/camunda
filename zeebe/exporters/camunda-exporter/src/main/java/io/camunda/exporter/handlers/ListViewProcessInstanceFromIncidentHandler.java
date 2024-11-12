@@ -116,7 +116,7 @@ public class ListViewProcessInstanceFromIncidentHandler
     final Map<String, Object> updateFields = new LinkedHashMap<>();
     updateFields.put(TREE_PATH, entity.getTreePath());
 
-    batchRequest.update(indexName, entity.getId(), updateFields);
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
   @Override
