@@ -59,7 +59,17 @@ jobs:
       - name: Setup Maven
         uses: ./.github/actions/setup-maven
         with:
+<<<<<<< HEAD
           secrets: ${{ toJSON(secrets) }}
+=======
+          harbor: true
+          maven-cache-key-modifier: optimize-tests
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+>>>>>>> b4ad29b5 (ci: switch e2e tests to run on chrome)
 
       - name: Build frontend
         uses: ./.github/actions/build-frontend
