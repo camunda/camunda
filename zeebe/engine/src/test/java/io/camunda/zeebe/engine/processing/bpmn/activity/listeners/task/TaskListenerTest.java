@@ -73,7 +73,7 @@ public class TaskListenerTest {
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldCompleteProcessWhenAllCompleteTaskListenersAreExecuted() {
+  public void shouldCompleteUserTaskAfterAllCompleteTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
         createProcessInstance(
@@ -132,7 +132,7 @@ public class TaskListenerTest {
     ENGINE
         .userTask()
         .ofInstance(processInstanceKey)
-        .withVariable("foo_var", "bar")
+        .withVariable("ignored", "variables")
         .withAssignee("me")
         .withAction("my_assign_action")
         .assign();
@@ -163,6 +163,8 @@ public class TaskListenerTest {
             Assertions.assertThat(userTask)
                 .hasAssignee("me")
                 .hasAction("my_assign_action")
+                .describedAs(
+                    "Expected all variables provided during UserTask assignment to be ignored")
                 .hasVariables(Collections.emptyMap()));
   }
 
