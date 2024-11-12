@@ -9,7 +9,7 @@ package io.camunda.it.auth;
 
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE;
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_INSTANCE;
+import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,17 +47,19 @@ class ProcessInstanceAuthorizationIT {
               new Permissions(DEPLOYMENT, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_INSTANCE, List.of("*"))));
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
   private static final User USER1_USER =
       new User(
           USER1,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_INSTANCE, List.of(PROCESS_ID_1))));
+          List.of(
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_ID_1))));
   private static final User USER2_USER =
       new User(
           USER2,
           "password",
-          List.of(new Permissions(PROCESS_DEFINITION, READ_INSTANCE, List.of(PROCESS_ID_2))));
+          List.of(
+              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_ID_2))));
 
   @RegisterExtension
   static final BrokerWithCamundaExporterITInvocationProvider PROVIDER =

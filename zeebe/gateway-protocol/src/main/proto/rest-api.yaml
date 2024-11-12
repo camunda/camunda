@@ -3748,7 +3748,7 @@ components:
       enum:
         - CREATE
         - READ
-        - READ_INSTANCE
+        - READ_PROCESS_INSTANCE
         - READ_USER_TASK
         - UPDATE
         - DELETE
