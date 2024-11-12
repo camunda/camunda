@@ -184,7 +184,6 @@ public final class ElasticsearchRepository implements ArchiverRepository {
 
   @Override
   public void close() throws Exception {
-    // TODO: verify if I close the transport that any pending futures are cancelled
     client._transport().close();
   }
 
