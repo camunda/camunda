@@ -112,7 +112,7 @@ public class AddPermissionAuthorizationTest {
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
-        .withPermission(PermissionType.DELETE, "bar")
+        .withPermission(PermissionType.DELETE, "bar", "baz")
         .add()
         .getValue();
 
@@ -133,11 +133,13 @@ public class AddPermissionAuthorizationTest {
         .describedAs("Permission already exists")
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to add '%s' permission for resource '%s' and resource identifiers '%s', but this permission for resource identifiers '%s' already exist"
+            "Expected to add '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' already exist. Existing resource ids are: '%s'"
                 .formatted(
                     PermissionType.DELETE,
                     AuthorizationResourceType.DEPLOYMENT,
                     "[bar, foo]",
-                    "[bar]"));
+                    ownerKey,
+                    "[bar]",
+                    "[bar, baz]"));
   }
 }

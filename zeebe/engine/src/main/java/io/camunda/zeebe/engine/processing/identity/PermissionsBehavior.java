@@ -20,13 +20,14 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
+import java.util.HashSet;
 
 public class PermissionsBehavior {
 
   public static final String OWNER_NOT_FOUND_MESSAGE =
       "Expected to find owner with key: '%d', but none was found";
   public static final String PERMISSION_ALREADY_EXISTS_MESSAGE =
-      "Expected to add '%s' permission for resource '%s' and resource identifiers '%s', but this permission for resource identifiers '%s' already exist";
+      "Expected to add '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' already exist. Existing resource ids are: '%s'";
 
   private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -75,15 +76,16 @@ public class PermissionsBehavior {
       final AuthorizationRecord record) {
     for (final PermissionValue permission : record.getPermissions()) {
       final var addedResourceIds = permission.getResourceIds();
-      final var duplicateResourceIds =
+      final var currentResourceIds =
           authCheckBehavior.getAuthorizedResourceIdentifiers(
               record.getOwnerKey(),
               record.getOwnerType(),
               record.getResourceType(),
               permission.getPermissionType());
-      duplicateResourceIds.retainAll(addedResourceIds);
 
-      if (!duplicateResourceIds.isEmpty()) {
+      final var duplicates = new HashSet<>(currentResourceIds);
+      duplicates.retainAll(addedResourceIds);
+      if (!duplicates.isEmpty()) {
         return Either.left(
             new Rejection(
                 RejectionType.ALREADY_EXISTS,
@@ -91,7 +93,9 @@ public class PermissionsBehavior {
                     permission.getPermissionType(),
                     record.getResourceType(),
                     addedResourceIds,
-                    duplicateResourceIds)));
+                    record.getOwnerKey(),
+                    duplicates,
+                    currentResourceIds)));
       }
     }
 
