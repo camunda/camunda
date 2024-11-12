@@ -2289,7 +2289,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /document/{documentId}/links:
+  /documents/{documentId}/links:
     post:
       tags:
         - Document
