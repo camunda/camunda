@@ -75,7 +75,7 @@ public final class RedistributionBehavior {
     // find partitions to redistribute to
     final var currentPartitions = routingState.currentPartitions();
     final var desiredPartitions = routingState.desiredPartitions();
-    final var newPartitions = new IntHashSet(desiredPartitions.size() - currentPartitions.size());
+    final var newPartitions = new IntHashSet(desiredPartitions.size());
     newPartitions.addAll(desiredPartitions);
     newPartitions.removeAll(currentPartitions);
 
