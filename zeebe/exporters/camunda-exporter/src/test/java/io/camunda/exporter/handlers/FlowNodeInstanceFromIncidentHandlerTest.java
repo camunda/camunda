@@ -46,25 +46,8 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
 
   @Test
   public void shouldHandleRecord() {
-    final Set<IncidentIntent> intents2Handle =
-        Set.of(IncidentIntent.CREATED, IncidentIntent.MIGRATED);
-
-    intents2Handle.stream()
-        .forEach(
-            intent -> {
-              final Record<IncidentRecordValue> incidentRecord =
-                  factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(intent));
-              assertThat(underTest.handlesRecord(incidentRecord))
-                  .as("Handles intent %s", intent)
-                  .isTrue();
-            });
-  }
-
-  @Test
-  public void shouldNotHandleRecord() {
-    final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.RESOLVED));
-    assertThat(underTest.handlesRecord(incidentRecord)).isFalse();
+    final Record<IncidentRecordValue> incidentRecord = factory.generateRecord(ValueType.INCIDENT);
+    assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
   }
 
   @Test
@@ -109,19 +92,21 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
             .setBpmnProcessId("someProcess")
             .setTenantId("tenantId")
             .setIncidentKey(987L)
-            .setTreePath("111/222/333");
+            .setTreePath("111/222/333")
+            .setLevel(2);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(FlowNodeInstanceTemplate.TREE_PATH, inputEntity.getTreePath());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.LEVEL, inputEntity.getLevel());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, inputEntity.getIncidentKey());
 
     // when
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1))
-        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+    verify(mockRequest, times(1)).update(indexName, inputEntity.getId(), expectedUpdateFields);
   }
 
   @Test
@@ -155,22 +140,22 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
               // then
               assertThat(flowNodeInstanceEntity.getId()).isEqualTo("666");
               assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo("333/444/555/666");
+              assertThat(flowNodeInstanceEntity.getIncidentKey())
+                  .isEqualTo(incidentRecord.getKey());
             });
   }
 
   @Test
-  public void testUpdateEntityWithDefaultTreePath() {
+  public void shouldUpdateEntityForResolvedIncident() {
     // given
     final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.MIGRATED));
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.RESOLVED));
 
     // when
     final FlowNodeInstanceEntity flowNodeInstanceEntity = new FlowNodeInstanceEntity();
     underTest.updateEntity(incidentRecord, flowNodeInstanceEntity);
 
     // then
-    final IncidentRecordValue value = incidentRecord.getValue();
-    assertThat(flowNodeInstanceEntity.getTreePath())
-        .isEqualTo(value.getProcessInstanceKey() + "/" + value.getElementInstanceKey());
+    assertThat(flowNodeInstanceEntity.getIncidentKey()).isNull();
   }
 }
