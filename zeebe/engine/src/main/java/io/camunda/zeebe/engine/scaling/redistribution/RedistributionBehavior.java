@@ -44,6 +44,13 @@ public final class RedistributionBehavior {
     redistributionState = processingState.getRedistributionState();
   }
 
+  public void startRedistribution(final long redistributionKey) {
+    stateWriter.appendFollowUpEvent(
+        redistributionKey, RedistributionIntent.STARTED, new RedistributionRecord());
+    commandWriter.appendFollowUpCommand(
+        redistributionKey, RedistributionIntent.CONTINUE, new RedistributionRecord());
+  }
+
   public void continueRedistribution(final long redistributionKey) {
     // get current state and matching redistributor
     final var stage = redistributionState.getStage();
