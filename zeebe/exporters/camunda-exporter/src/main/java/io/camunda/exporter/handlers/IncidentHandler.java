@@ -169,7 +169,7 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
         if (callActivityId.isPresent()) {
           treePath.appendFlowNode(callActivityId.get());
         } else {
-          LOGGER.debug(
+          LOGGER.warn(
               "No process found in cache. TreePath won't contain proper callActivityId. processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}",
               processInstanceKey,
               processDefinitionPath.get(i),
