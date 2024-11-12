@@ -7,15 +7,10 @@
  */
 package io.camunda.search.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-public final record VariableEntity(
-    Long key,
-    String name,
-    String value,
-    String fullValue,
-    Boolean isPreview,
-    Long scopeKey,
-    Long processInstanceKey,
-    String tenantId) {}
+public enum ValueTypeEnum {
+  STRING,
+  LONG,
+  DOUBLE,
+  BOOLEAN,
+  NULL
+}
