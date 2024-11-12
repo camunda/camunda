@@ -10,7 +10,7 @@ package io.camunda.exporter;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
+import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -28,7 +28,7 @@ public class DefaultExporterResourceProviderTest {
   void shouldHaveCorrectFullQualifiedNamesForIndexAndTemplates(final ExporterConfiguration config) {
     final var provider = new DefaultExporterResourceProvider();
 
-    provider.init(config, mock(ProcessCacheLoaderFactory.class));
+    provider.init(config, mock(ExporterEntityCacheProvider.class));
 
     provider
         .getIndexDescriptors()

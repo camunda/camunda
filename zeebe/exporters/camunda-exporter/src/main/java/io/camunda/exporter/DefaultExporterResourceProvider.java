@@ -9,8 +9,10 @@ package io.camunda.exporter;
 
 import static java.util.Map.entry;
 
-import io.camunda.exporter.cache.ProcessCacheImpl;
-import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
+import io.camunda.exporter.cache.ExporterEntityCacheImpl;
+import io.camunda.exporter.cache.ExporterEntityCacheProvider;
+import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationHandler;
@@ -92,7 +94,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public void init(
       final ExporterConfiguration configuration,
-      final ProcessCacheLoaderFactory processCacheLoaderFactory) {
+      final ExporterEntityCacheProvider entityCacheProvider) {
     final var globalPrefix = configuration.getIndex().getPrefix();
     isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
@@ -142,10 +144,16 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new AuthorizationIndex(globalPrefix, isElasticsearch));
 
     final var processCache =
-        new ProcessCacheImpl(
+        new ExporterEntityCacheImpl<Long, CachedProcessEntity>(
             10000,
-            processCacheLoaderFactory.create(
+            entityCacheProvider.getProcessCacheLoader(
                 indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName()));
+
+    final var formCache =
+        new ExporterEntityCacheImpl<String, CachedFormEntity>(
+            10000,
+            entityCacheProvider.getFormCacheLoader(
+                indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()));
 
     exportHandlers =
         Set.of(
@@ -195,7 +203,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(TasklistMetricIndex.class).getFullQualifiedName()),
             new EmbeddedFormHandler(
                 indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName(), new XMLUtil()),
-            new FormHandler(indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()),
+            new FormHandler(
+                indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName(), formCache),
             new EventFromIncidentHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
             new EventFromJobHandler(
@@ -205,9 +214,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new EventFromProcessMessageSubscriptionHandler(
                 templateDescriptorsMap.get(EventTemplate.class).getFullQualifiedName(), false),
             new UserTaskHandler(
-                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
+                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(), formCache),
             new UserTaskJobBasedHandler(
-                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
+                templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName(), formCache),
             new UserTaskProcessInstanceHandler(
                 templateDescriptorsMap.get(TaskTemplate.class).getFullQualifiedName()),
             new UserTaskVariableHandler(

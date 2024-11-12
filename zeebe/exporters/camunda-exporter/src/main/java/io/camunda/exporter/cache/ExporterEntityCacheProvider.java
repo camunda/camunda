@@ -8,8 +8,12 @@
 package io.camunda.exporter.cache;
 
 import com.github.benmanes.caffeine.cache.CacheLoader;
+import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 
-@FunctionalInterface
-public interface ProcessCacheLoaderFactory {
-  CacheLoader<Long, CachedProcessEntity> create(String processIndexName);
+public interface ExporterEntityCacheProvider {
+
+  CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(String processIndexName);
+
+  CacheLoader<String, CachedFormEntity> getFormCacheLoader(String formIndexName);
 }

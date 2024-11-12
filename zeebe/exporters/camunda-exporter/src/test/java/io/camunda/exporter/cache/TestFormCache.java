@@ -7,26 +7,26 @@
  */
 package io.camunda.exporter.cache;
 
-import io.camunda.exporter.cache.process.CachedProcessEntity;
+import io.camunda.exporter.cache.form.CachedFormEntity;
 import java.util.HashMap;
 import java.util.Optional;
 
-public class TestProcessCache implements ExporterEntityCache<Long, CachedProcessEntity> {
+public class TestFormCache implements ExporterEntityCache<String, CachedFormEntity> {
 
-  private final HashMap<Long, CachedProcessEntity> cache = new HashMap<>();
+  private final HashMap<String, CachedFormEntity> cache = new HashMap<>();
 
   @Override
-  public Optional<CachedProcessEntity> get(final Long entityKey) {
+  public Optional<CachedFormEntity> get(final String entityKey) {
     return Optional.ofNullable(cache.get(entityKey));
   }
 
   @Override
-  public void put(final Long entityKey, final CachedProcessEntity processEntity) {
+  public void put(final String entityKey, final CachedFormEntity processEntity) {
     cache.put(entityKey, processEntity);
   }
 
   @Override
-  public void remove(final Long entityKey) {
+  public void remove(final String entityKey) {
     cache.remove(entityKey);
   }
 

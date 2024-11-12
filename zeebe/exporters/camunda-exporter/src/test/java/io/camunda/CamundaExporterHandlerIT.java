@@ -381,7 +381,7 @@ public class CamundaExporterHandlerIT {
   private <S extends ExporterEntity<S>, T extends RecordValue> ExportHandler<S, T> getHandler(
       final ExporterConfiguration config, final Class<?> handlerClass) {
     final var provider = new DefaultExporterResourceProvider();
-    provider.init(config, ClientAdapter.of(config)::getProcessCacheLoader);
+    provider.init(config, ClientAdapter.of(config).getExporterEntityCacheProvider());
 
     return provider.getExportHandlers().stream()
         .filter(handler -> handler.getClass().equals(handlerClass))
@@ -397,7 +397,7 @@ public class CamundaExporterHandlerIT {
   private CamundaExporter getExporter(
       final ExporterConfiguration config, final ExportHandler<?, ?> handler) {
     final var provider = spy(new DefaultExporterResourceProvider());
-    provider.init(config, ClientAdapter.of(config)::getProcessCacheLoader);
+    provider.init(config, ClientAdapter.of(config).getExporterEntityCacheProvider());
 
     doReturn(Set.of(handler)).when(provider).getExportHandlers();
 

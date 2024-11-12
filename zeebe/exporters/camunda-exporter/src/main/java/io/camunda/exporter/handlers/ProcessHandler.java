@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.handlers;
 
-import io.camunda.exporter.cache.CachedProcessEntity;
-import io.camunda.exporter.cache.ProcessCache;
+import io.camunda.exporter.cache.ExporterEntityCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.exporter.utils.XMLUtil;
@@ -25,10 +25,12 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final String indexName;
   private final XMLUtil xmlUtil;
-  private final ProcessCache processCache;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
   public ProcessHandler(
-      final String indexName, final XMLUtil xmlUtil, final ProcessCache processCache) {
+      final String indexName,
+      final XMLUtil xmlUtil,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.indexName = indexName;
     this.xmlUtil = xmlUtil;
     this.processCache = processCache;

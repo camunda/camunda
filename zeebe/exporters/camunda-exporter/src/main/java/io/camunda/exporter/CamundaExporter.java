@@ -83,7 +83,7 @@ public class CamundaExporter implements Exporter {
     this.controller = controller;
     clientAdapter = ClientAdapter.of(configuration);
 
-    provider.init(configuration, clientAdapter::getProcessCacheLoader);
+    provider.init(configuration, clientAdapter.getExporterEntityCacheProvider());
 
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager =

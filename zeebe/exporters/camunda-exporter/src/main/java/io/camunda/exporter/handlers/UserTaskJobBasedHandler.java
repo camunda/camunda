@@ -13,6 +13,8 @@ import static io.camunda.zeebe.protocol.Protocol.USER_TASK_CANDIDATE_USERS_HEADE
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.exporter.cache.ExporterEntityCache;
+import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
@@ -51,9 +53,12 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
           JobIntent.FAILED);
 
   private final String indexName;
+  private final ExporterEntityCache<String, CachedFormEntity> formCache;
 
-  public UserTaskJobBasedHandler(final String indexName) {
+  public UserTaskJobBasedHandler(
+      final String indexName, final ExporterEntityCache<String, CachedFormEntity> formCache) {
     this.indexName = indexName;
+    this.formCache = formCache;
   }
 
   @Override
@@ -198,6 +203,12 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
       final var isEmbeddedForm = EMBEDDED_FORMS_PATTERN.matcher(formKey).matches();
       entity.setFormKey(formKey);
       entity.setIsFormEmbedded(isEmbeddedForm);
+
+      if (!isEmbeddedForm) {
+        formCache
+            .get(formKey)
+            .ifPresent(c -> entity.setFormId(c.formId()).setFormVersion(c.formVersion()));
+      }
     }
   }
 

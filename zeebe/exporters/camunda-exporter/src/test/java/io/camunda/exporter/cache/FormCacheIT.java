@@ -12,17 +12,17 @@ import static org.assertj.core.api.Assertions.assertThatException;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.exporter.cache.ExporterEntityCache.CacheLoaderFailedException;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
-import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
-import io.camunda.exporter.cache.process.OpenSearchProcessCacheLoader;
+import io.camunda.exporter.cache.form.CachedFormEntity;
+import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
+import io.camunda.exporter.cache.form.OpenSearchFormCacheLoader;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
-import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -35,13 +35,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
-class ProcessCacheImplIT {
+class FormCacheIT {
 
   @Container
   private static final ElasticsearchContainer ELASTICSEARCH_CONTAINER =
@@ -53,7 +54,7 @@ class ProcessCacheImplIT {
 
   private static ElasticsearchClient elsClient;
   private static OpenSearchClient osClient;
-  private static final ProcessIndex PROCESS_INDEX = new ProcessIndex("test", true);
+  private static final FormIndex FORM_INDEX = new FormIndex("test", true);
 
   @BeforeAll
   static void init() {
@@ -69,108 +70,108 @@ class ProcessCacheImplIT {
 
   @BeforeEach
   void setup() {
-    new ElasticsearchEngineClient(elsClient).createIndex(PROCESS_INDEX, new IndexSettings());
-    new OpensearchEngineClient(osClient).createIndex(PROCESS_INDEX, new IndexSettings());
+    new ElasticsearchEngineClient(elsClient).createIndex(FORM_INDEX, new IndexSettings());
+    new OpensearchEngineClient(osClient).createIndex(FORM_INDEX, new IndexSettings());
   }
 
   @AfterEach
   void cleanup() throws IOException {
-    elsClient.indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
-    osClient.indices().delete(req -> req.index(PROCESS_INDEX.getFullQualifiedName()));
+    elsClient.indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+    osClient.indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
   }
 
   @ParameterizedTest
-  @MethodSource("provideProcessCache")
-  void shouldReturnEmptyOptionalIfProcessDoesNotExist(
-      final ProcessCacheArgument processCacheArgument) {
+  @MethodSource("provideFormCache")
+  void shouldReturnEmptyOptionalIfFormDoesNotExist(final FormCacheArgument formCacheArgument) {
     // when
-    final var process = processCacheArgument.processCache().get(1L);
+    final var form = formCacheArgument.formCache().get("1");
 
     // then
-    assertThat(process).isEmpty();
+    assertThat(form).isEmpty();
   }
 
   @ParameterizedTest
-  @MethodSource("provideProcessCache")
-  void shouldLoadProcessEntityFromBackend(final ProcessCacheArgument processCacheArgument)
+  @MethodSource("provideFormCache")
+  void shouldLoadFormEntityFromBackend(final FormCacheArgument formCacheArgument)
       throws IOException {
     // given
-    final var processEntity = new ProcessEntity().setId("3").setName("test").setVersionTag("v1");
-    processCacheArgument.indexer().accept(processEntity);
+    final var formEntity = new FormEntity().setId("3").setFormId("test").setVersion(1L);
+    formCacheArgument.indexer().accept(formEntity);
 
     // when
-    final var process = processCacheArgument.processCache().get(3L);
+    final var form = formCacheArgument.formCache().get("3");
 
     // then
-    final var expectedCachedProcessEntity = new CachedProcessEntity("test", "v1");
-    assertThat(process).isPresent().get().isEqualTo(expectedCachedProcessEntity);
+    final var expectedCachedFormEntity = new CachedFormEntity("test", 1L);
+    assertThat(form).isPresent().get().isEqualTo(expectedCachedFormEntity);
   }
 
   @ParameterizedTest
-  @MethodSource("provideFailingProcessCache")
-  void shouldThrowExceptionIfQueryToElasticFailed(final ProcessCacheArgument processCacheArgument) {
+  @MethodSource("provideFailingFormCache")
+  void shouldThrowExceptionIfQueryToElasticFailed(final FormCacheArgument formCacheArgument) {
     // given
-    final var failingProcessCache = processCacheArgument.processCache();
+    final var failingFormCache = formCacheArgument.formCache();
 
     // when - then
     assertThatException()
-        .isThrownBy(() -> failingProcessCache.get(1L))
+        .isThrownBy(() -> failingFormCache.get("1"))
         .isInstanceOf(CacheLoaderFailedException.class);
   }
 
-  static Stream<Arguments> provideProcessCache() {
+  static Stream<Arguments> provideFormCache() {
     return Stream.of(
-        Arguments.of(
-            Named.of("ElasticSearch", getESProcessCache(PROCESS_INDEX.getFullQualifiedName()))),
-        Arguments.of(
-            Named.of("OpenSearch", getOSProcessCache(PROCESS_INDEX.getFullQualifiedName()))));
+        Arguments.of(Named.of("ElasticSearch", getESFormCache(FORM_INDEX.getFullQualifiedName()))),
+        Arguments.of(Named.of("OpenSearch", getOSFormCache(FORM_INDEX.getFullQualifiedName()))));
   }
 
-  static Stream<Arguments> provideFailingProcessCache() {
+  static Stream<Arguments> provideFailingFormCache() {
     return Stream.of(
-        Arguments.of(Named.of("ElasticSearch", getESProcessCache("invalid-index-name"))),
-        Arguments.of(Named.of("OpenSearch", getOSProcessCache("invalid-index-name"))));
+        Arguments.of(Named.of("ElasticSearch", getESFormCache("invalid-index-name"))),
+        Arguments.of(Named.of("OpenSearch", getOSFormCache("invalid-index-name"))));
   }
 
-  static ProcessCacheArgument getESProcessCache(final String indexName) {
-    return new ProcessCacheArgument(
-        new ExporterEntityCacheImpl(10, new ElasticSearchProcessCacheLoader(elsClient, indexName)),
-        ProcessCacheImplIT::indexInElasticSearch);
+  static FormCacheArgument getESFormCache(final String indexName) {
+    return new FormCacheArgument(
+        new ExporterEntityCacheImpl<String, CachedFormEntity>(
+            10, new ElasticSearchFormCacheLoader(elsClient, indexName)),
+        FormCacheIT::indexInElasticSearch);
   }
 
-  static ProcessCacheArgument getOSProcessCache(final String indexName) {
-    return new ProcessCacheArgument(
-        new ExporterEntityCacheImpl(10, new OpenSearchProcessCacheLoader(osClient, indexName)),
-        ProcessCacheImplIT::indexInOpenSearch);
+  static FormCacheArgument getOSFormCache(final String indexName) {
+    return new FormCacheArgument(
+        new ExporterEntityCacheImpl<String, CachedFormEntity>(
+            10, new OpenSearchFormCacheLoader(osClient, indexName)),
+        FormCacheIT::indexInOpenSearch);
   }
 
-  private static void indexInElasticSearch(final ProcessEntity processEntity) {
+  private static void indexInElasticSearch(final FormEntity formEntity) {
     try {
       elsClient.index(
           request ->
               request
-                  .index(PROCESS_INDEX.getFullQualifiedName())
-                  .id(processEntity.getId())
-                  .document(processEntity));
+                  .index(FORM_INDEX.getFullQualifiedName())
+                  .id(formEntity.getId())
+                  .document(formEntity)
+                  .refresh(co.elastic.clients.elasticsearch._types.Refresh.True));
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  private static void indexInOpenSearch(final ProcessEntity processEntity) {
+  private static void indexInOpenSearch(final FormEntity formEntity) {
     try {
       osClient.index(
           request ->
               request
-                  .index(PROCESS_INDEX.getFullQualifiedName())
-                  .id(processEntity.getId())
-                  .document(processEntity));
+                  .index(FORM_INDEX.getFullQualifiedName())
+                  .id(formEntity.getId())
+                  .document(formEntity)
+                  .refresh(Refresh.True));
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
-  record ProcessCacheArgument(
-      ExporterEntityCache<Long, CachedProcessEntity> processCache,
-      Consumer<ProcessEntity> indexer) {}
+  record FormCacheArgument(
+      ExporterEntityCache<String, CachedFormEntity> formCache, Consumer<FormEntity> indexer) {}
 }

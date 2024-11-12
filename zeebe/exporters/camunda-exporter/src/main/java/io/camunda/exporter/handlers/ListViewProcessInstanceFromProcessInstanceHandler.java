@@ -11,8 +11,8 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
-import io.camunda.exporter.cache.CachedProcessEntity;
-import io.camunda.exporter.cache.ProcessCache;
+import io.camunda.exporter.cache.ExporterEntityCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
@@ -44,11 +44,13 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
 
   private final boolean concurrencyMode;
-  private final ProcessCache processCache;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final String indexName;
 
   public ListViewProcessInstanceFromProcessInstanceHandler(
-      final String indexName, final boolean concurrencyMode, final ProcessCache processCache) {
+      final String indexName,
+      final boolean concurrencyMode,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.indexName = indexName;
     this.concurrencyMode = concurrencyMode;
     this.processCache = processCache;

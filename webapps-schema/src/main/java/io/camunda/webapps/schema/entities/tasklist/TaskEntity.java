@@ -54,6 +54,12 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
   private String formKey;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String formId;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private Long formVersion;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private boolean isFormEmbedded;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -251,6 +257,24 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
 
   public TaskEntity setFormKey(final String formKey) {
     this.formKey = formKey;
+    return this;
+  }
+
+  public String getFormId() {
+    return formId;
+  }
+
+  public TaskEntity setFormId(final String formId) {
+    this.formId = formId;
+    return this;
+  }
+
+  public Long getFormVersion() {
+    return formVersion;
+  }
+
+  public TaskEntity setFormVersion(final Long formVersion) {
+    this.formVersion = formVersion;
     return this;
   }
 
