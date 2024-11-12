@@ -16,23 +16,14 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
   open,
   onClose,
   onSuccess,
-  entity: { id, email: currentEmail, name: currentName, username },
+  entity,
 }) => {
-  const { t } = useTranslate();
-  const [apiCall, { loading, namedErrors }] = useApiCall(updateUser);
-  const [name, setName] = useState(currentName);
-  const [email, setEmail] = useState(currentEmail);
-  const [password, setPassword] = useState("");
+  const {t} = useTranslate();
+  const [callUpdateUser, { loading, namedErrors }] = useApiCall(updateUser);
+  const [user, setUser] = useState<User>(entity);
 
   const handleSubmit = async () => {
-    const { success } = await apiCall({
-      id: id!,
-      name,
-      email,
-      username,
-      password,
-    });
-
+    const {success} = await callUpdateUser(user);
     if (success) {
       onSuccess();
     }
@@ -50,31 +41,31 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
     >
       <TextField
         label={t("Name")}
-        value={name}
+        value={user.name}
         placeholder={t("Name")}
-        onChange={setName}
+        onChange={name => setUser({...user, name})}
         errors={namedErrors?.name}
         autoFocus
       />
       <TextField
         label={t("Email")}
-        value={email}
+        value={user.email}
         placeholder={t("Email")}
-        onChange={setEmail}
+        onChange={email => setUser({...user, email})}
         errors={namedErrors?.email}
       />
       <TextField
         label={t("Username")}
-        value={username}
+        value={user.username}
         placeholder={t("Username")}
         errors={namedErrors?.username}
         disabled
       />
       <TextField
         label={t("Password")}
-        value={password}
+        value={user.password}
         placeholder={t("Password")}
-        onChange={setPassword}
+        onChange={password => setUser({...user, password})}
         errors={namedErrors?.password}
         type="password"
         helperText={t("Leave empty to keep current password")}

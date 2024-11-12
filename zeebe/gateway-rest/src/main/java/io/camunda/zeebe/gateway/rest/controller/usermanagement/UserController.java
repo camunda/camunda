@@ -77,6 +77,12 @@ public class UserController {
         () ->
             userServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .updateUser(request.userKey(), request.name()));
+                .updateUser(
+                    new UserDTO(
+                        request.userKey(),
+                        request.username(),
+                        request.name(),
+                        request.email(),
+                        request.password())));
   }
 }
