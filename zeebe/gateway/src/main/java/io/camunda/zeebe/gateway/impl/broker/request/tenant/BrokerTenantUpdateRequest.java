@@ -23,11 +23,6 @@ public class BrokerTenantUpdateRequest extends BrokerExecuteCommand<TenantRecord
     request.setKey(key);
   }
 
-  public BrokerTenantUpdateRequest setTenantId(final String tenantId) {
-    tenantDto.setTenantId(tenantId);
-    return this;
-  }
-
   public BrokerTenantUpdateRequest setName(final String name) {
     tenantDto.setName(name);
     return this;

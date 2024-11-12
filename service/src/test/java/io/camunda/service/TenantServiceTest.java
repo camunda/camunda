@@ -127,7 +127,7 @@ public class TenantServiceTest {
   @Test
   public void shouldUpdateTenantName() {
     // given
-    final var tenantDTO = new TenantDTO(100L, "UpdatedTenantName", "UpdatedTenantId");
+    final var tenantDTO = new TenantDTO(100L, "ignored", "UpdatedTenantId");
 
     // when
     services.updateTenant(tenantDTO);
@@ -139,6 +139,5 @@ public class TenantServiceTest {
     assertThat(request.getKey()).isEqualTo(tenantDTO.tenantKey());
     final TenantRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
-    assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantDTO.tenantId());
   }
 }
