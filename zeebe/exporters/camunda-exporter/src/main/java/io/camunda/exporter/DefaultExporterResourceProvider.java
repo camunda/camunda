@@ -32,6 +32,7 @@ import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
+import io.camunda.exporter.handlers.ListViewProcessInstanceFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MappingCreatedHandler;
@@ -156,7 +157,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         new ExporterEntityCacheImpl<Long, CachedProcessEntity>(
             10000,
             entityCacheProvider.getProcessCacheLoader(
-                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName()));
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()));
 
     final var formCache =
         new ExporterEntityCacheImpl<String, CachedFormEntity>(
@@ -242,6 +243,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromIncidentHandler(
                 templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+            new ListViewProcessInstanceFromIncidentHandler(
+                templateDescriptorsMap.get(ListViewTemplate.class).getFullQualifiedName(),
+                processCache),
             new MappingCreatedHandler(
                 indexDescriptorsMap.get(MappingIndex.class).getFullQualifiedName()),
             new MappingDeletedHandler(
