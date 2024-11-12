@@ -20,36 +20,36 @@ import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionProgres
 import java.util.Objects;
 
 public final class DbRedistributionState implements MutableRedistributionState {
-  private final ColumnFamily<DbString, PersistedState> columnFamily;
+  private final ColumnFamily<DbString, PersistedState> redistributionColumnFamily;
   private final DbString key = new DbString();
 
   public DbRedistributionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     key.wrapString("redistributionState");
-    columnFamily =
+    redistributionColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.REDISTRIBUTION, transactionContext, key, new PersistedState());
   }
 
   @Override
   public RedistributionStage getStage() {
-    final var persistedState = columnFamily.get(key);
+    final var persistedState = redistributionColumnFamily.get(key);
     return RedistributionStage.indexToStage(persistedState.stage.getValue());
   }
 
   @Override
   public RedistributionProgress getProgress() {
-    final var persistedState = columnFamily.get(key);
+    final var persistedState = redistributionColumnFamily.get(key);
     return persistedState.progress.getValue();
   }
 
   @Override
   public void updateState(final RedistributionStage stage, final RedistributionProgress progress) {
     final var persistedState =
-        Objects.requireNonNullElseGet(columnFamily.get(key), PersistedState::new);
+        Objects.requireNonNullElseGet(redistributionColumnFamily.get(key), PersistedState::new);
     persistedState.stage.setValue(RedistributionStage.stageToIndex(stage));
     persistedState.progress.getValue().copyFrom(progress);
-    columnFamily.upsert(key, persistedState);
+    redistributionColumnFamily.upsert(key, persistedState);
   }
 
   private static final class PersistedState extends UnpackedObject implements DbValue {
