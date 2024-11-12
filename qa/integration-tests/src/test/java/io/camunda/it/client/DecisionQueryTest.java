@@ -738,8 +738,6 @@ class DecisionQueryTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .isEqualTo(
-            "Decision Instance with decisionInstanceKey=%d not found"
-                .formatted(decisionInstanceKey));
+        .isEqualTo("Decision instance with key %d not found".formatted(decisionInstanceKey));
   }
 }

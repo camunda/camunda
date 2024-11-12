@@ -19,11 +19,10 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
-import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.function.Function;
 
 public final class DecisionInstanceServices
     extends SearchQueryService<
@@ -54,13 +53,19 @@ public final class DecisionInstanceServices
    */
   @Override
   public SearchQueryResult<DecisionInstanceEntity> search(final DecisionInstanceQuery query) {
-    return baseSearch(
-        q ->
-            q.filter(query.filter())
-                .sort(query.sort())
-                .page(query.page())
-                .resultConfig(
-                    ofNullable(query.resultConfig()).orElseGet(this::defaultSearchResultConfig)));
+    return decisionInstanceSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.decisionDefinition().readInstance())))
+        .searchDecisionInstances(
+            decisionInstanceSearchQuery(
+                q ->
+                    q.filter(query.filter())
+                        .sort(query.sort())
+                        .page(query.page())
+                        .resultConfig(
+                            ofNullable(query.resultConfig())
+                                .orElseGet(this::defaultSearchResultConfig))));
   }
 
   /**
@@ -73,26 +78,20 @@ public final class DecisionInstanceServices
    *     once
    */
   public DecisionInstanceEntity getByKey(final long decisionInstanceKey) {
-    final var result = baseSearch(q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey)));
-    if (result.total() < 1) {
-      throw new NotFoundException(
-          "Decision Instance with decisionInstanceKey=%d not found".formatted(decisionInstanceKey));
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          String.format(
-              "Found Decision Definition with key %d more than once", decisionInstanceKey));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
+    final var result =
+        decisionInstanceSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchDecisionInstances(
+                decisionInstanceSearchQuery(
+                    q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))));
+    final var decisionInstanceEntity =
+        getSingleResultOrThrow(result, decisionInstanceKey, "Decision instance");
+    final var authorization = Authorization.of(a -> a.decisionDefinition().readInstance());
+    if (!securityContextProvider.isAuthorized(
+        decisionInstanceEntity.decisionId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
     }
-  }
-
-  private SearchQueryResult<DecisionInstanceEntity> baseSearch(
-      final Function<DecisionInstanceQuery.Builder, ObjectBuilder<DecisionInstanceQuery>> fn) {
-    return decisionInstanceSearchClient
-        .withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.decisionDefinition().readInstance())))
-        .searchDecisionInstances(decisionInstanceSearchQuery(fn));
+    return decisionInstanceEntity;
   }
 
   /**
