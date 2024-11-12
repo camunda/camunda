@@ -33,7 +33,7 @@ class TaskFormView {
     this.incrementButton = this.form.getByRole('button', {name: 'Increment'});
     this.decrementButton = this.form.getByRole('button', {name: 'Decrement'});
     this.dateInput = this.form.getByPlaceholder('mm/dd/yyyy');
-    this.timeInput = this.form.getByPlaceholder('hh:mm ?m');
+    this.timeInput = this.form.getByPlaceholder('hh:mm --');
     this.checkbox = this.form.getByLabel('Checkbox');
     this.selectDropdown = this.form.getByText('Select').last();
     this.checkbox = this.form.getByLabel('Checkbox');

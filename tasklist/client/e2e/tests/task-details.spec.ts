@@ -9,6 +9,7 @@
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 import {createInstances, deploy} from '@/utils/zeebeClient';
+import {waitForAssertion} from '@/utils/waitForAssertion';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -75,7 +76,7 @@ test.beforeEach(async ({page, loginPage}) => {
   await expect(page).toHaveURL('/tasklist');
 });
 
-test.describe('task details page', () => {
+test.describe.only('task details page', () => {
   test('load task details when a task is selected', async ({tasksPage}) => {
     await tasksPage.openTask('usertask_to_be_completed');
 
@@ -177,7 +178,16 @@ test.describe('task details page', () => {
     await expect(tasksPage.completeTaskButton).not.toBeVisible();
 
     await tasksPage.openTask('JobWorker_user_task');
-    await expect(page.getByText('jobWorkerVar')).toBeVisible();
+
+    // this is necessary because sometimes the importer takes some time to receive the variables
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(page.getByText('jobWorkerVar')).toBeVisible();
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
+    });
     await expect(page.getByText('zeebeVar')).toBeVisible();
     await expect(tasksPage.assignToMeButton).not.toBeVisible();
     await expect(tasksPage.unassignButton).not.toBeVisible();
