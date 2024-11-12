@@ -13,10 +13,6 @@ public class MappingIndex extends UserManagementIndexDescriptor {
   public static final String INDEX_NAME = "mappings";
   public static final String INDEX_VERSION = "8.7.0";
 
-  public static final String MAPPING_KEY = "mappingKey";
-  public static final String CLAIM_NAME = "claimName";
-  public static final String CLAIM_VALUE = "claimValue";
-
   public MappingIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
