@@ -8,9 +8,9 @@
 package io.camunda.optimize.service.db.os.report.interpreter.groupby;
 
 import static io.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS.createModelElementAggregationFilter;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.FILTER_LIMITED_AGGREGATION;
 import static io.camunda.optimize.service.db.os.report.service.VariableAggregationServiceOS.FILTERED_INSTANCE_COUNT_AGGREGATION;

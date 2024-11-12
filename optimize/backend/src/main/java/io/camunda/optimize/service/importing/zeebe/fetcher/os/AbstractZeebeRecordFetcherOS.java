@@ -12,7 +12,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.INDEX_NOT_FOUND_E
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.importing.page.PositionBasedImportPage;
 import io.camunda.optimize.service.importing.zeebe.fetcher.AbstractZeebeRecordFetcher;

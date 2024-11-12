@@ -5,21 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.os.externalcode.client.dsl;
-
-import static java.lang.String.format;
+package io.camunda.optimize.service.db.os.client.dsl;
 
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.BucketSortAggregation;
 import org.opensearch.client.opensearch._types.aggregations.Buckets;
-import org.opensearch.client.opensearch._types.aggregations.CalendarInterval;
-import org.opensearch.client.opensearch._types.aggregations.CardinalityAggregation;
 import org.opensearch.client.opensearch._types.aggregations.ChildrenAggregation;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
 import org.opensearch.client.opensearch._types.aggregations.CompositeTermsAggregationSource;
@@ -33,55 +27,11 @@ import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
 import org.opensearch.client.opensearch._types.aggregations.ValueCountAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.springframework.lang.Nullable;
 
 public interface AggregationDSL {
-  static BucketSortAggregation bucketSortAggregation(
-      @Nullable final Integer size, final SortOptions... sortOptions) {
-    return BucketSortAggregation.of(a -> a.sort(Arrays.asList(sortOptions)).size(size));
-  }
-
-  static CardinalityAggregation cardinalityAggregation(final String field) {
-    return CardinalityAggregation.of(a -> a.field(field));
-  }
-
-  static CardinalityAggregation cardinalityAggregation(
-      final String field, final int precisionThreshold) {
-    return CardinalityAggregation.of(a -> a.field(field).precisionThreshold(precisionThreshold));
-  }
 
   static ValueCountAggregation valueCountAggregation(final String field) {
     return ValueCountAggregation.of(a -> a.field(field));
-  }
-
-  static CalendarInterval calendarIntervalByAlias(final String alias) {
-    return Arrays.stream(CalendarInterval.values())
-        .filter(ci -> Arrays.asList(ci.aliases()).contains(alias))
-        .findFirst()
-        .orElseThrow(
-            () -> {
-              final List<String> legalAliases =
-                  Arrays.stream(CalendarInterval.values())
-                      .flatMap(v -> Arrays.stream(v.aliases()))
-                      .sorted()
-                      .toList();
-              return new OptimizeRuntimeException(
-                  format(
-                      "Unknown CalendarInterval alias %s! Legal aliases: %s", alias, legalAliases));
-            });
-  }
-
-  static DateHistogramAggregation dateHistogramAggregation(
-      final String field,
-      final String calendarIntervalAlias,
-      final String format,
-      final boolean keyed) {
-    return DateHistogramAggregation.of(
-        a ->
-            a.field(field)
-                .calendarInterval(calendarIntervalByAlias(calendarIntervalAlias))
-                .format(format)
-                .keyed(keyed));
   }
 
   static FieldDateMath fieldDateMath(final double value) {

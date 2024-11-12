@@ -14,9 +14,9 @@ import static io.camunda.optimize.service.db.DatabaseConstants.REPORT_SHARE_INDE
 import io.camunda.optimize.dto.optimize.query.sharing.DashboardShareRestDto;
 import io.camunda.optimize.dto.optimize.query.sharing.ReportShareRestDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
-import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.RequestDSL;
+import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.reader.SharingReader;
 import io.camunda.optimize.service.db.schema.index.DashboardShareIndex;
 import io.camunda.optimize.service.db.schema.index.ReportShareIndex;

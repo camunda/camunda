@@ -7,8 +7,8 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.distributedby.process;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.termAggregation;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.withSubaggregations;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.termAggregation;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.withSubaggregations;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_PROCESS;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;

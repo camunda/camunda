@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.os.externalcode.client.dsl;
+package io.camunda.optimize.service.db.os.client.dsl;
 
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.Arrays;
@@ -19,17 +19,13 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Script;
 import org.opensearch.client.opensearch._types.ScriptField;
-import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
-import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.ExistsQuery;
-import org.opensearch.client.opensearch._types.query_dsl.HasChildQuery;
 import org.opensearch.client.opensearch._types.query_dsl.IdsQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
-import org.opensearch.client.opensearch._types.query_dsl.MatchNoneQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
@@ -43,6 +39,7 @@ import org.opensearch.client.opensearch._types.query_dsl.WildcardQuery;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
 
 public interface QueryDSL {
+
   String DEFAULT_SCRIPT_LANG = "painless";
 
   private static <A> List<A> nonNull(final A[] items) {
@@ -74,10 +71,6 @@ public interface QueryDSL {
     return terms(field, values, FieldValue::of);
   }
 
-  static Query constantScore(final Query query) {
-    return ConstantScoreQuery.of(q -> q.filter(query)).toQuery();
-  }
-
   static Query exists(final String field) {
     return ExistsQuery.of(q -> q.field(field)).toQuery();
   }
@@ -102,17 +95,8 @@ public interface QueryDSL {
     return RangeQuery.of(q -> q.field(field).gte(json(gte)).lte(json(lte))).toQuery();
   }
 
-  static <A> Query gtLt(final String field, final A gt, final A lt) {
-    return RangeQuery.of(q -> q.field(field).gt(json(gt)).lt(json(lt))).toQuery();
-  }
-
   static <A> Query gtLte(final String field, final A gt, final A lte) {
     return RangeQuery.of(q -> q.field(field).gt(json(gt)).lte(json(lte))).toQuery();
-  }
-
-  static Query hasChildQuery(final String type, final Query query) {
-    return HasChildQuery.of(q -> q.query(query).type(type).scoreMode(ChildScoreMode.None))
-        .toQuery();
   }
 
   static Query ids(final List<String> ids) {
@@ -200,10 +184,6 @@ public interface QueryDSL {
     return new MatchAllQuery.Builder().build().toQuery();
   }
 
-  static Query matchNone() {
-    return new MatchNoneQuery.Builder().build().toQuery();
-  }
-
   static Query nested(final String path, final Query query, final ChildScoreMode scoreMode) {
     return NestedQuery.of(q -> q.path(path).query(query).scoreMode(scoreMode)).toQuery();
   }
@@ -255,17 +235,6 @@ public interface QueryDSL {
     return new Script.Builder()
         .inline(b -> b.source(script).params(params).lang(DEFAULT_SCRIPT_LANG))
         .build();
-  }
-
-  static SortOptions sortOptions(final String field, final SortOrder sortOrder) {
-    return SortOptions.of(so -> so.field(sf -> sf.field(field).order(sortOrder)));
-  }
-
-  static SortOptions sortOptions(
-      final String field, final SortOrder sortOrder, final String missing) {
-    return SortOptions.of(
-        so ->
-            so.field(sf -> sf.field(field).order(sortOrder).missing(m -> m.stringValue(missing))));
   }
 
   static SourceConfig sourceInclude(final String... fields) {

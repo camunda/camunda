@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.plan;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.UnitDSL.seconds;
+import static io.camunda.optimize.service.db.os.client.dsl.UnitDSL.seconds;
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
 import io.camunda.optimize.dto.optimize.query.report.CommandEvaluationResult;
@@ -15,7 +15,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationScrollableDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
+import io.camunda.optimize.service.db.os.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.GroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.ViewInterpreterOS;

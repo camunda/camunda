@@ -8,8 +8,8 @@
 package io.camunda.optimize.service.db.os.writer;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.INSTANT_DASHBOARD_INDEX_NAME;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.longTerms;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.not;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.longTerms;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.not;
 import static java.lang.String.format;
 
 import io.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto;
