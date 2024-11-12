@@ -21,8 +21,8 @@
 
   <modules>
     <module>migration-api</module>
-    <module>tasklist-migration</module>
-    <module>webapp</module>
+    <module>process-migration</module>
+    <module>migration-app</module>
   </modules>
 
   <properties>

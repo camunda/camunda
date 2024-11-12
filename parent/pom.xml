@@ -2259,7 +2259,7 @@
       <!-- Migration Module -->
       <dependency>
         <groupId>io.camunda.migration</groupId>
-        <artifactId>tasklist-migration</artifactId>
+        <artifactId>process-migration</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -2271,10 +2271,9 @@
 
       <dependency>
         <groupId>io.camunda.migration</groupId>
-        <artifactId>migration-webapp</artifactId>
+        <artifactId>migration-app</artifactId>
         <version>${project.version}</version>
       </dependency>
-
 
     </dependencies>
   </dependencyManagement>
