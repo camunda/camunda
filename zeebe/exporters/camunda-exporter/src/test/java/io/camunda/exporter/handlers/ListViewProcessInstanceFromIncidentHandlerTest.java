@@ -95,11 +95,6 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
   }
 
   private Record<IncidentRecordValue> createIncidentRecord(
-      final List<List<Long>> elementInstancePath) {
-    return createIncidentRecord(elementInstancePath, null, null);
-  }
-
-  private Record<IncidentRecordValue> createIncidentRecord(
       final List<List<Long>> elementInstancePath,
       final List<Integer> callingElementPath,
       final List<Long> processDefinitionPath) {
@@ -172,7 +167,7 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
     processCache.put(
         processDefinitionKey2, new CachedProcessEntity(null, null, List.of("0", callActivityId2)));
 
-    // when parent proces instance
+    // when parent process instance
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity1 =
         new ProcessInstanceForListViewEntity().setId(String.valueOf(pi1Key));
     underTest.updateEntity(incidentRecord, processInstanceForListViewEntity1);
@@ -186,7 +181,6 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
     // then
     assertThat(processInstanceForListViewEntity2.getTreePath())
         .isEqualTo("PI_111/FN_callActivity1/FNI_123/PI_222");
-    underTest.updateEntity(incidentRecord, processInstanceForListViewEntity2);
 
     // when called process 3rd level
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity3 =

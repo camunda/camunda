@@ -13,6 +13,7 @@ import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -21,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,10 +79,10 @@ public class ListViewProcessInstanceFromIncidentHandler
 
     final Long processInstanceKey = Long.valueOf(entity.getId());
 
-    // example of how the tree path is build when current instance is on the third level of calling
+    // example of how the tree path is built when current instance is on the third level of calling
     // hierarchy:
     // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/
-    // PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>PI_<currentProcessInstanceKey>
+    // PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>/PI_<currentProcessInstanceKey>
     final TreePath treePath = new TreePath();
     for (int i = 0; i < elementInstancePath.size(); i++) {
       final List<Long> keysWithinOnePI = elementInstancePath.get(i);
@@ -91,14 +91,11 @@ public class ListViewProcessInstanceFromIncidentHandler
         // we reached the leaf of the tree path, when we reached current processInstanceKey
         break;
       }
-      // get call activity id from processCache
-      final Optional<CachedProcessEntity> cachedProcess =
-          processCache.get(processDefinitionPath.get(i));
-      if (cachedProcess.isPresent()
-          && cachedProcess.get().callElementIds() != null
-          && callingElementPath.get(i) != null) {
-        treePath.appendFlowNode(
-            cachedProcess.get().callElementIds().get(callingElementPath.get(i)));
+      final var callActivityId =
+          ProcessCacheUtil.getCallActivityId(
+              processCache, processDefinitionPath.get(i), callingElementPath.get(i));
+      if (callActivityId.isPresent()) {
+        treePath.appendFlowNode(callActivityId.get());
       } else {
         LOGGER.warn(
             "No process found in cache. TreePath won't contain proper callActivityId. processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}",
