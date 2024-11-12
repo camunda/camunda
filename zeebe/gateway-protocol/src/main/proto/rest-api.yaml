@@ -5062,12 +5062,12 @@ components:
           type: integer
           format: int64
         firstSortValues:
-          description: The first items in the results. Correlates to the `searchBefore` field of an ensuing request.
+          description: The sort values of the first item in the result set. Use this in the `searchBefore` field of an ensuing request.
           type: array
           items:
             type: object
         lastSortValues:
-          description: The last items in the results.  Correlates to the `searchAfter` field of an ensuing request.
+          description: The sort values of the last item in the result set. Use this in the `searchAfter` field of an ensuing request.
           type: array
           items:
             type: object
