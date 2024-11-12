@@ -108,7 +108,6 @@ public class AddPermissionAuthorizationTest {
     engine
         .authorization()
         .permission()
-        .withAction(PermissionAction.ADD)
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
@@ -121,7 +120,6 @@ public class AddPermissionAuthorizationTest {
         engine
             .authorization()
             .permission()
-            .withAction(PermissionAction.ADD)
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.DELETE, "foo", "bar")
