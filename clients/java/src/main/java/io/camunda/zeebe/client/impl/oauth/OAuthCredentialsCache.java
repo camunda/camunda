@@ -148,7 +148,7 @@ public final class OAuthCredentialsCache {
     return this;
   }
 
-  public synchronized int size() {
+  public int size() {
     return credentialsByClientId.get().size();
   }
 
