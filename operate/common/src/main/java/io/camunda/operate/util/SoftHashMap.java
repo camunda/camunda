@@ -1,21 +1,13 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.util;
 
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.SoftReference;
 import java.util.ArrayList;
@@ -96,7 +88,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
    *     referenced (retained), preventing them from being eagerly garbage collected by the JVM.
    */
   @SuppressWarnings({"unchecked"})
-  public SoftHashMap(int retentionSize) {
+  public SoftHashMap(final int retentionSize) {
     super();
     this.retentionSize = Math.max(0, retentionSize);
     queue = new ReferenceQueue<>();
@@ -112,7 +104,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
    * @param source the backing map to populate this {@code SoftHashMap}
    * @see #SoftHashMap(Map,int)
    */
-  public SoftHashMap(Map<K, V> source) {
+  public SoftHashMap(final Map<K, V> source) {
     this(DEFAULT_RETENTION_SIZE);
     putAll(source);
   }
@@ -135,12 +127,12 @@ public class SoftHashMap<K, V> implements Map<K, V> {
    * @param retentionSize the total number of most recent entries in the map that will be strongly
    *     referenced (retained), preventing them from being eagerly garbage collected by the JVM.
    */
-  public SoftHashMap(Map<K, V> source, int retentionSize) {
+  public SoftHashMap(final Map<K, V> source, final int retentionSize) {
     this(retentionSize);
     putAll(source);
   }
 
-  private void addToStrongReferences(V result) {
+  private void addToStrongReferences(final V result) {
     strongReferencesLock.lock();
     try {
       strongReferences.add(result);
@@ -150,6 +142,9 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     }
   }
 
+  @SuppressFBWarnings(
+      value = "RV_RETURN_VALUE_IGNORED",
+      justification = "Poll is only used to trim the list")
   private void trimStrongReferencesIfNecessary() {
     // trim the strong ref queue if necessary:
     while (strongReferences.size() > retentionSize) {
@@ -171,28 +166,33 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     }
   }
 
+  @Override
   public int size() {
     processQueue(); // throw out garbage collected values first
     return map.size();
   }
 
+  @Override
   public boolean isEmpty() {
     processQueue();
     return map.isEmpty();
   }
 
-  public boolean containsKey(Object key) {
+  @Override
+  public boolean containsKey(final Object key) {
     processQueue();
     return map.containsKey(key);
   }
 
-  public boolean containsValue(Object value) {
+  @Override
+  public boolean containsValue(final Object value) {
     processQueue();
     final Collection values = values();
     return values != null && values.contains(value);
   }
 
-  public V get(Object key) {
+  @Override
+  public V get(final Object key) {
     processQueue();
 
     V result = null;
@@ -217,7 +217,8 @@ public class SoftHashMap<K, V> implements Map<K, V> {
    * Creates a new entry, but wraps the value in a SoftValue instance to enable auto garbage
    * collection.
    */
-  public V put(K key, V value) {
+  @Override
+  public V put(final K key, final V value) {
     processQueue(); // throw out garbage collected values first
     final SoftValue<V, K> sv = new SoftValue<V, K>(value, key, queue);
     final SoftValue<V, K> previous = map.put(key, sv);
@@ -225,22 +226,25 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     return previous != null ? previous.get() : null;
   }
 
-  public V remove(Object key) {
+  @Override
+  public V remove(final Object key) {
     processQueue(); // throw out garbage collected values first
     final SoftValue<V, K> raw = map.remove(key);
     return raw != null ? raw.get() : null;
   }
 
-  public void putAll(Map<? extends K, ? extends V> m) {
+  @Override
+  public void putAll(final Map<? extends K, ? extends V> m) {
     if (m == null || m.isEmpty()) {
       processQueue();
       return;
     }
-    for (Map.Entry<? extends K, ? extends V> entry : m.entrySet()) {
+    for (final Map.Entry<? extends K, ? extends V> entry : m.entrySet()) {
       put(entry.getKey(), entry.getValue());
     }
   }
 
+  @Override
   public void clear() {
     strongReferencesLock.lock();
     try {
@@ -252,11 +256,13 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     map.clear();
   }
 
+  @Override
   public Set<K> keySet() {
     processQueue();
     return map.keySet();
   }
 
+  @Override
   public Collection<V> values() {
     processQueue();
     final Collection<K> keys = map.keySet();
@@ -265,7 +271,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
       return Collections.EMPTY_SET;
     }
     final Collection<V> values = new ArrayList<V>(keys.size());
-    for (K key : keys) {
+    for (final K key : keys) {
       final V v = get(key);
       if (v != null) {
         values.add(v);
@@ -274,6 +280,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     return values;
   }
 
+  @Override
   public Set<Map.Entry<K, V>> entrySet() {
     processQueue(); // throw out garbage collected values first
     final Collection<K> keys = map.keySet();
@@ -283,7 +290,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
     }
 
     final Map<K, V> kvPairs = new HashMap<K, V>(keys.size());
-    for (K key : keys) {
+    for (final K key : keys) {
       final V v = get(key);
       if (v != null) {
         kvPairs.put(key, v);
@@ -308,7 +315,7 @@ public class SoftHashMap<K, V> implements Map<K, V> {
      * @param queue the soft reference queue to poll to determine if the entry had been reaped by
      *     the GC.
      */
-    private SoftValue(V value, K key, ReferenceQueue<? super V> queue) {
+    private SoftValue(final V value, final K key, final ReferenceQueue<? super V> queue) {
       super(value, queue);
       this.key = key;
     }

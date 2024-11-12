@@ -2,75 +2,65 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+@ZeebeIntegration
+@AutoCloseResources
 public class ModifyProcessInstanceTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @AutoCloseResource ZeebeClient client;
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  ZeebeResourcesHelper resourcesHelper;
   private String processId;
   private String processId2;
   private long processDefinitionKey;
 
-  @Before
-  public void deploy() {
-    processId = helper.getBpmnProcessId();
-    processId2 = helper.getBpmnProcessId();
-    processDefinitionKey =
-        CLIENT_RULE.deployProcess(
-            Bpmn.createExecutableProcess(processId).startEvent().endEvent().done());
-    CLIENT_RULE.deployProcess(
-        Bpmn.createExecutableProcess(processId2)
-            .startEvent()
-            .userTask("A")
-            .parallelGateway()
-            .userTask("B")
-            .moveToLastGateway()
-            .userTask("C")
-            .endEvent()
-            .done());
+  @BeforeEach
+  public void init() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
-  @Test
-  public void shouldModifyExistingProcessInstance() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldModifyExistingProcessInstance(final boolean useRest, final TestInfo testInfo) {
     // given
+    deploy(testInfo);
     final var processInstance =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId2)
-            .latestVersion()
-            .send()
-            .join();
+        client.newCreateInstanceCommand().bpmnProcessId(processId2).latestVersion().send().join();
     final var processInstanceKey = processInstance.getProcessInstanceKey();
 
     final var activatedUserTask =
@@ -81,9 +71,7 @@ public class ModifyProcessInstanceTest {
 
     // when
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newModifyProcessInstanceCommand(processInstanceKey)
+        getCommand(client, useRest, processInstanceKey)
             .activateElement("B")
             .withVariables(Map.of("foo", "bar"), "B")
             .and()
@@ -138,17 +126,14 @@ public class ModifyProcessInstanceTest {
         .isEqualTo("\"bar\"");
   }
 
-  @Test
-  public void shouldModifyExistingProcessInstanceWithSingleVariable() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldModifyExistingProcessInstanceWithSingleVariable(
+      final boolean useRest, final TestInfo testInfo) {
     // given
+    deploy(testInfo);
     final var processInstance =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId2)
-            .latestVersion()
-            .send()
-            .join();
+        client.newCreateInstanceCommand().bpmnProcessId(processId2).latestVersion().send().join();
     final var processInstanceKey = processInstance.getProcessInstanceKey();
 
     final var activatedUserTask =
@@ -159,9 +144,7 @@ public class ModifyProcessInstanceTest {
 
     // when
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newModifyProcessInstanceCommand(processInstanceKey)
+        getCommand(client, useRest, processInstanceKey)
             .activateElement("B")
             .withVariable("foo", "bar", "B")
             .and()
@@ -216,55 +199,80 @@ public class ModifyProcessInstanceTest {
         .isEqualTo("\"bar\"");
   }
 
-  @Test
-  public void shouldRejectCommandWhenProcessInstanceUnknown() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectCommandWhenProcessInstanceUnknown(
+      final boolean useRest, final TestInfo testInfo) {
     // when
+    deploy(testInfo);
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newModifyProcessInstanceCommand(
-                processDefinitionKey) // needs to be a valid key since we extract the partition from
-            // it
-            .activateElement("element")
-            .send();
+        getCommand(client, useRest, processDefinitionKey).activateElement("element").send();
 
     // then
-    assertThatThrownBy(command::join)
-        .isInstanceOf(ClientStatusException.class)
-        .hasMessageContaining(
-            String.format(
-                "Expected to modify process instance but no process instance found with key '%d'",
-                processDefinitionKey));
+    if (useRest) {
+      assertThatThrownBy(command::join)
+          .isInstanceOf(ProblemException.class)
+          .hasMessageContaining(
+              String.format(
+                  "Expected to modify process instance but no process instance found with key '%d'",
+                  processDefinitionKey));
+    } else {
+      assertThatThrownBy(command::join)
+          .isInstanceOf(ClientStatusException.class)
+          .hasMessageContaining(
+              String.format(
+                  "Expected to modify process instance but no process instance found with key '%d'",
+                  processDefinitionKey));
+    }
   }
 
-  @Test
-  public void shouldRejectCommandForUnknownTerminationTarget() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectCommandForUnknownTerminationTarget(
+      final boolean useRest, final TestInfo testInfo) {
     // given
+    deploy(testInfo);
     final var processInstance =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId2)
-            .latestVersion()
-            .send()
-            .join();
+        client.newCreateInstanceCommand().bpmnProcessId(processId2).latestVersion().send().join();
 
     // when
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newModifyProcessInstanceCommand(processInstance.getProcessInstanceKey())
+        getCommand(client, useRest, processInstance.getProcessInstanceKey())
             .terminateElement(123)
             .send();
 
     // then
     assertThatThrownBy(command::join)
-        .isInstanceOf(ClientStatusException.class)
         .hasMessageContaining(
             """
             Expected to modify instance of process \
-            'process-shouldRejectCommandForUnknownTerminationTarget' but it contains one or \
+            'process-shouldRejectCommandForUnknownTerminationTarget-2' but it contains one or \
             more terminate instructions with an element instance that could not be found: \
             '123'""");
+  }
+
+  private ModifyProcessInstanceCommandStep1 getCommand(
+      final ZeebeClient client, final boolean useRest, final long processInstanceKey) {
+    final ModifyProcessInstanceCommandStep1 modifyCommand =
+        client.newModifyProcessInstanceCommand(processInstanceKey);
+    return useRest ? modifyCommand.useRest() : modifyCommand.useGrpc();
+  }
+
+  private void deploy(final TestInfo testInfo) {
+    processId = "process-" + testInfo.getTestMethod().get().getName();
+    processId2 = processId + "-2";
+    processDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess(processId).startEvent().endEvent().done());
+    resourcesHelper.deployProcess(
+        Bpmn.createExecutableProcess(processId2)
+            .startEvent()
+            .userTask("A")
+            .parallelGateway()
+            .userTask("B")
+            .moveToLastGateway()
+            .userTask("C")
+            .endEvent()
+            .done());
   }
 }

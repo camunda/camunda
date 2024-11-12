@@ -2,47 +2,47 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.impl.job;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_LONG_POLLING_TIMEOUT;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PROBE_TIMEOUT;
 import static io.camunda.zeebe.scheduler.clock.ActorClock.currentTimeMillis;
 
-import com.google.rpc.Code;
-import com.google.rpc.Status;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.gateway.Loggers;
-import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.metrics.LongPollingMetrics;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
-import io.grpc.protobuf.StatusProto;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import org.slf4j.Logger;
 
 /**
  * Adds long polling to the handling of activate job requests. When there are no jobs available to
  * activate, the response will be kept open.
  */
-public final class LongPollingActivateJobsHandler implements ActivateJobsHandler {
+public final class LongPollingActivateJobsHandler<T> implements ActivateJobsHandler<T> {
 
   private static final String JOBS_AVAILABLE_TOPIC = "jobsAvailable";
   private static final Logger LOG = Loggers.LONG_POLLING;
   private static final String ERROR_MSG_ACTIVATED_EXHAUSTED =
       "Expected to activate jobs of type '%s', but no jobs available and at least one broker returned 'RESOURCE_EXHAUSTED'. Please try again later.";
 
-  private final RoundRobinActivateJobsHandler activateJobsHandler;
+  private final RoundRobinActivateJobsHandler<T> activateJobsHandler;
   private final BrokerClient brokerClient;
 
-  private final Map<String, InFlightLongPollingActivateJobsRequestsState> jobTypeState =
+  private final Map<String, InFlightLongPollingActivateJobsRequestsState<T>> jobTypeState =
       new ConcurrentHashMap<>();
   private final Duration longPollingTimeout;
   private final long probeTimeoutMillis;
@@ -52,14 +52,22 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
 
   private ActorControl actor;
 
+  private final Function<String, Exception> noJobsReceivedExceptionProvider;
+
   private LongPollingActivateJobsHandler(
       final BrokerClient brokerClient,
       final long maxMessageSize,
       final long longPollingTimeout,
       final long probeTimeoutMillis,
-      final int failedAttemptThreshold) {
+      final int failedAttemptThreshold,
+      final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
+      final Function<String, Exception> noJobsReceivedExceptionProvider,
+      final Function<String, Throwable> requestCanceledExceptionProvider) {
     this.brokerClient = brokerClient;
-    activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient, maxMessageSize);
+    activateJobsHandler =
+        new RoundRobinActivateJobsHandler<>(
+            brokerClient, maxMessageSize, activationResultMapper, requestCanceledExceptionProvider);
+    this.noJobsReceivedExceptionProvider = noJobsReceivedExceptionProvider;
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;
@@ -128,15 +136,15 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
    *
    * https://textik.com/#a2725e317ed87a9d
    * @param request The request to handle
-   * @param responseObserver The stream to write the responses to
    */
   @Override
   public void activateJobs(
       final BrokerActivateJobsRequest request,
-      final ServerStreamObserver<ActivateJobsResponse> responseObserver,
+      final ResponseObserver<T> responseObserver,
+      final Consumer<Runnable> setCancelHandler,
       final long requestTimeout) {
     final var longPollingRequest =
-        new InflightActivateJobsRequest(
+        new InflightActivateJobsRequest<>(
             ACTIVATE_JOBS_REQUEST_ID_GENERATOR.getAndIncrement(),
             request,
             responseObserver,
@@ -145,19 +153,20 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
     // Eagerly removing the request on cancellation may free up some resources
     // We are not allowed to change the responseObserver after we completed this call
     // this means we can't do it async in the following actor call.
-    responseObserver.setOnCancelHandler(() -> onRequestCancel(jobType, longPollingRequest));
+    setCancelHandler.accept(() -> onRequestCancel(jobType, longPollingRequest));
     actor.run(
         () -> {
-          final InFlightLongPollingActivateJobsRequestsState state =
+          final InFlightLongPollingActivateJobsRequestsState<T> state =
               jobTypeState.computeIfAbsent(
-                  jobType, type -> new InFlightLongPollingActivateJobsRequestsState(type, metrics));
+                  jobType,
+                  type -> new InFlightLongPollingActivateJobsRequestsState<>(type, metrics));
 
           tryToActivateJobsOnAllPartitions(state, longPollingRequest);
         });
   }
 
   private void onRequestCancel(
-      final String type, final InflightActivateJobsRequest longPollingRequest) {
+      final String type, final InflightActivateJobsRequest<T> longPollingRequest) {
     actor.run(
         () -> {
           final var state = jobTypeState.get(type);
@@ -168,8 +177,8 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
   }
 
   private void tryToActivateJobsOnAllPartitions(
-      final InFlightLongPollingActivateJobsRequestsState state,
-      final InflightActivateJobsRequest request) {
+      final InFlightLongPollingActivateJobsRequestsState<T> state,
+      final InflightActivateJobsRequest<T> request) {
 
     final BrokerClusterState topology = brokerClient.getTopologyManager().getTopology();
     if (topology != null) {
@@ -204,8 +213,8 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
   }
 
   private void handleNoReceivedJobsFromAllPartitions(
-      final InFlightLongPollingActivateJobsRequestsState state,
-      final InflightActivateJobsRequest request,
+      final InFlightLongPollingActivateJobsRequestsState<T> state,
+      final InflightActivateJobsRequest<T> request,
       final Boolean containedResourceExhaustedResponse) {
     if (containedResourceExhaustedResponse) {
       actor.submit(
@@ -213,13 +222,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
             state.removeActiveRequest(request);
             final var type = request.getType();
             final var errorMsg = String.format(ERROR_MSG_ACTIVATED_EXHAUSTED, type);
-            final var status =
-                Status.newBuilder()
-                    .setCode(Code.RESOURCE_EXHAUSTED_VALUE)
-                    .setMessage(errorMsg)
-                    .build();
-
-            request.onError(StatusProto.toStatusException(status));
+            request.onError(noJobsReceivedExceptionProvider.apply(errorMsg));
           });
     } else {
       actor.submit(
@@ -234,7 +237,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
   }
 
   private void completeOrResubmitRequest(
-      final InflightActivateJobsRequest request, final boolean activateImmediately) {
+      final InflightActivateJobsRequest<T> request, final boolean activateImmediately) {
     if (request.isLongPollingDisabled()) {
       // request is not supposed to use the
       // long polling capabilities -> just
@@ -251,7 +254,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
     final var state =
         jobTypeState.computeIfAbsent(
             request.getType(),
-            type1 -> new InFlightLongPollingActivateJobsRequestsState(type1, metrics));
+            type1 -> new InFlightLongPollingActivateJobsRequestsState<>(type1, metrics));
 
     if (!request.hasScheduledTimer()) {
       scheduleLongPollingTimeout(state, request);
@@ -266,13 +269,14 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
     }
   }
 
-  void internalActivateJobsRetry(final InflightActivateJobsRequest request) {
+  void internalActivateJobsRetry(final InflightActivateJobsRequest<T> request) {
     actor.run(
         () -> {
           final String jobType = request.getType();
-          final InFlightLongPollingActivateJobsRequestsState state =
+          final InFlightLongPollingActivateJobsRequestsState<T> state =
               jobTypeState.computeIfAbsent(
-                  jobType, type -> new InFlightLongPollingActivateJobsRequestsState(type, metrics));
+                  jobType,
+                  type -> new InFlightLongPollingActivateJobsRequestsState<>(type, metrics));
 
           if (state.shouldAttempt(failedAttemptThreshold)) {
             tryToActivateJobsOnAllPartitions(state, request);
@@ -303,8 +307,8 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
   }
 
   private void handlePendingRequests(
-      final InFlightLongPollingActivateJobsRequestsState state, final String jobType) {
-    final Queue<InflightActivateJobsRequest> pendingRequests = state.getPendingRequests();
+      final InFlightLongPollingActivateJobsRequestsState<T> state, final String jobType) {
+    final Queue<InflightActivateJobsRequest<T>> pendingRequests = state.getPendingRequests();
 
     if (!pendingRequests.isEmpty()) {
       pendingRequests.forEach(
@@ -320,8 +324,8 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
   }
 
   private void markRequestAsPending(
-      final InFlightLongPollingActivateJobsRequestsState state,
-      final InflightActivateJobsRequest request) {
+      final InFlightLongPollingActivateJobsRequestsState<T> state,
+      final InflightActivateJobsRequest<T> request) {
     LOG.trace(
         "Worker '{}' asked for '{}' jobs of type '{}', but none are available. This request will"
             + " be kept open until a new job of this type is created or until timeout of '{}'.",
@@ -333,8 +337,8 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
   }
 
   private void scheduleLongPollingTimeout(
-      final InFlightLongPollingActivateJobsRequestsState state,
-      final InflightActivateJobsRequest request) {
+      final InFlightLongPollingActivateJobsRequestsState<T> state,
+      final InflightActivateJobsRequest<T> request) {
     final Duration requestTimeout = request.getLongPollingTimeout(longPollingTimeout);
     final ScheduledTimer timeout =
         actor.schedule(
@@ -351,7 +355,7 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
     jobTypeState.forEach(
         (type, state) -> {
           if (state.getLastUpdatedTime() < (now - probeTimeoutMillis)) {
-            final InflightActivateJobsRequest probeRequest = state.getNextPendingRequest();
+            final InflightActivateJobsRequest<T> probeRequest = state.getNextPendingRequest();
             if (probeRequest != null) {
               tryToActivateJobsOnAllPartitions(state, probeRequest);
             } else {
@@ -364,52 +368,76 @@ public final class LongPollingActivateJobsHandler implements ActivateJobsHandler
         });
   }
 
-  public static Builder newBuilder() {
-    return new Builder();
+  public static <T> Builder<T> newBuilder() {
+    return new Builder<>();
   }
 
-  public static class Builder {
-
-    private static final long DEFAULT_LONG_POLLING_TIMEOUT = 10_000; // 10 seconds
-    private static final long DEFAULT_PROBE_TIMEOUT = 10_000; // 10 seconds
-    // Minimum number of responses with jobCount 0 to infer that no jobs are available
-    private static final int EMPTY_RESPONSE_THRESHOLD = 3;
+  public static class Builder<T> {
 
     private BrokerClient brokerClient;
     private long maxMessageSize;
     private long longPollingTimeout = DEFAULT_LONG_POLLING_TIMEOUT;
     private long probeTimeoutMillis = DEFAULT_PROBE_TIMEOUT;
-    private int minEmptyResponses = EMPTY_RESPONSE_THRESHOLD;
+    // Minimum number of responses with jobCount 0 to infer that no jobs are available
+    private int minEmptyResponses = DEFAULT_LONG_POLLING_EMPTY_RESPONSE_THRESHOLD;
+    private Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper;
+    private Function<String, Exception> noJobsReceivedExceptionProvider;
+    private Function<String, Throwable> requestCanceledExceptionProvider;
 
-    public Builder setBrokerClient(final BrokerClient brokerClient) {
+    public Builder<T> setBrokerClient(final BrokerClient brokerClient) {
       this.brokerClient = brokerClient;
       return this;
     }
 
-    public Builder setMaxMessageSize(final long maxMessageSize) {
+    public Builder<T> setMaxMessageSize(final long maxMessageSize) {
       this.maxMessageSize = maxMessageSize;
       return this;
     }
 
-    public Builder setLongPollingTimeout(final long longPollingTimeout) {
+    public Builder<T> setLongPollingTimeout(final long longPollingTimeout) {
       this.longPollingTimeout = longPollingTimeout;
       return this;
     }
 
-    public Builder setProbeTimeoutMillis(final long probeTimeoutMillis) {
+    public Builder<T> setProbeTimeoutMillis(final long probeTimeoutMillis) {
       this.probeTimeoutMillis = probeTimeoutMillis;
       return this;
     }
 
-    public Builder setMinEmptyResponses(final int minEmptyResponses) {
+    public Builder<T> setMinEmptyResponses(final int minEmptyResponses) {
       this.minEmptyResponses = minEmptyResponses;
       return this;
     }
 
-    public LongPollingActivateJobsHandler build() {
+    public Builder<T> setActivationResultMapper(
+        final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper) {
+      this.activationResultMapper = activationResultMapper;
+      return this;
+    }
+
+    public Builder<T> setNoJobsReceivedExceptionProvider(
+        final Function<String, Exception> noJobsReceivedExceptionProvider) {
+      this.noJobsReceivedExceptionProvider = noJobsReceivedExceptionProvider;
+      return this;
+    }
+
+    public Builder<T> setRequestCanceledExceptionProvider(
+        final Function<String, Throwable> requestCanceledExceptionProvider) {
+      this.requestCanceledExceptionProvider = requestCanceledExceptionProvider;
+      return this;
+    }
+
+    public LongPollingActivateJobsHandler<T> build() {
       Objects.requireNonNull(brokerClient, "brokerClient");
-      return new LongPollingActivateJobsHandler(
-          brokerClient, maxMessageSize, longPollingTimeout, probeTimeoutMillis, minEmptyResponses);
+      return new LongPollingActivateJobsHandler<>(
+          brokerClient,
+          maxMessageSize,
+          longPollingTimeout,
+          probeTimeoutMillis,
+          minEmptyResponses,
+          activationResultMapper,
+          noJobsReceivedExceptionProvider,
+          requestCanceledExceptionProvider);
     }
   }
 }

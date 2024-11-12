@@ -1,26 +1,19 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.zeebeimport.v860.record.value;
 
 import io.camunda.tasklist.zeebeimport.v860.record.RecordValueWithPayloadImpl;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements JobRecordValue {
 
@@ -39,6 +32,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private String errorCode;
   private String tenantId;
   private JobKind jobKind;
+  private JobListenerEventType jobListenerEventType;
+  private Set<String> changedAttributes;
 
   public JobRecordValueImpl() {}
 
@@ -56,9 +51,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return type;
   }
 
+  public void setType(final String type) {
+    this.type = type;
+  }
+
   @Override
   public Map<String, String> getCustomHeaders() {
     return customHeaders;
+  }
+
+  public void setCustomHeaders(final Map<String, String> customHeaders) {
+    this.customHeaders = customHeaders;
   }
 
   @Override
@@ -66,9 +69,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return worker;
   }
 
+  public void setWorker(final String worker) {
+    this.worker = worker;
+  }
+
   @Override
   public int getRetries() {
     return retries;
+  }
+
+  public void setRetries(final int retries) {
+    this.retries = retries;
   }
 
   @Override
@@ -86,6 +97,10 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return deadline;
   }
 
+  public void setDeadline(final long deadline) {
+    this.deadline = deadline;
+  }
+
   @Override
   public long getTimeout() {
     return 0;
@@ -96,9 +111,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return errorMessage;
   }
 
+  public void setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
+
   @Override
   public String getErrorCode() {
     return errorCode;
+  }
+
+  public void setErrorCode(final String errorCode) {
+    this.errorCode = errorCode;
   }
 
   @Override
@@ -106,9 +129,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return elementId;
   }
 
+  public void setElementId(final String elementId) {
+    this.elementId = elementId;
+  }
+
   @Override
   public long getElementInstanceKey() {
     return elementInstanceKey;
+  }
+
+  public void setElementInstanceKey(final long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   @Override
@@ -116,9 +147,17 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return bpmnProcessId;
   }
 
+  public void setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
   @Override
   public int getProcessDefinitionVersion() {
     return processDefinitionVersion;
+  }
+
+  public void setProcessDefinitionVersion(final int processDefinitionVersion) {
+    this.processDefinitionVersion = processDefinitionVersion;
   }
 
   @Override
@@ -140,48 +179,30 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     return this;
   }
 
-  public void setProcessDefinitionVersion(final int processDefinitionVersion) {
-    this.processDefinitionVersion = processDefinitionVersion;
+  @Override
+  public JobListenerEventType getJobListenerEventType() {
+    return jobListenerEventType;
   }
 
-  public void setBpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessId = bpmnProcessId;
+  public JobRecordValueImpl setJobListenerEventType(
+      final JobListenerEventType jobListenerEventType) {
+    this.jobListenerEventType = jobListenerEventType;
+    return this;
   }
 
-  public void setElementInstanceKey(final long elementInstanceKey) {
-    this.elementInstanceKey = elementInstanceKey;
+  @Override
+  public Set<String> getChangedAttributes() {
+    return changedAttributes;
   }
 
-  public void setElementId(final String elementId) {
-    this.elementId = elementId;
+  public void setChangedAttributes(final Set<String> changedAttributes) {
+    this.changedAttributes = changedAttributes;
   }
 
-  public void setErrorCode(final String errorCode) {
-    this.errorCode = errorCode;
-  }
-
-  public void setErrorMessage(final String errorMessage) {
-    this.errorMessage = errorMessage;
-  }
-
-  public void setDeadline(final long deadline) {
-    this.deadline = deadline;
-  }
-
-  public void setRetries(final int retries) {
-    this.retries = retries;
-  }
-
-  public void setWorker(final String worker) {
-    this.worker = worker;
-  }
-
-  public void setCustomHeaders(final Map<String, String> customHeaders) {
-    this.customHeaders = customHeaders;
-  }
-
-  public void setType(final String type) {
-    this.type = type;
+  @Override
+  public JobResultValueImpl getResult() {
+    // Not used by importer, dummy implementation for compiler
+    return null;
   }
 
   @Override
@@ -211,7 +232,9 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         errorMessage,
         errorCode,
         tenantId,
-        jobKind);
+        jobKind,
+        jobListenerEventType,
+        changedAttributes);
   }
 
   @Override
@@ -240,7 +263,9 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(errorCode, that.errorCode)
         && Objects.equals(tenantId, that.tenantId)
-        && jobKind == that.jobKind;
+        && jobKind == that.jobKind
+        && jobListenerEventType == that.jobListenerEventType
+        && Objects.equals(changedAttributes, that.changedAttributes);
   }
 
   @Override
@@ -283,6 +308,19 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + '\''
         + ", jobKind="
         + jobKind
+        + '\''
+        + ", jobListenerEventType="
+        + jobListenerEventType
+        + ", changedAttributes="
+        + changedAttributes
         + '}';
+  }
+
+  public static class JobResultValueImpl implements JobResultValue {
+    @Override
+    public boolean isDenied() {
+      // Not used by importer, dummy implementation for compiler
+      return false;
+    }
   }
 }

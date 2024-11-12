@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
@@ -14,14 +14,15 @@ import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.VariableState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -43,19 +44,22 @@ public class BpmnJobActivationBehavior {
   private final SideEffectWriter sideEffectWriter;
   private final KeyGenerator keyGenerator;
   private final JobMetrics jobMetrics;
+  private final InstantSource clock;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
-      final VariableState variableState,
+      final ProcessingState state,
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final JobMetrics jobMetrics) {
+      final JobMetrics jobMetrics,
+      final InstantSource clock) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
-    jobVariablesCollector = new JobVariablesCollector(variableState);
+    jobVariablesCollector = new JobVariablesCollector(state);
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
+    this.clock = clock;
   }
 
   public void publishWork(final long jobKey, final JobRecord jobRecord) {
@@ -63,6 +67,7 @@ public class BpmnJobActivationBehavior {
     wrappedJobRecord.wrapWithoutVariables(jobRecord);
 
     final String jobType = wrappedJobRecord.getType();
+    final JobKind jobKind = wrappedJobRecord.getJobKind();
     final String tenantId = wrappedJobRecord.getTenantId();
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(
@@ -90,24 +95,23 @@ public class BpmnJobActivationBehavior {
       sideEffectWriter.appendSideEffect(
           () -> {
             jobStream.push(activatedJob);
-            jobMetrics.jobPush(jobType);
+            jobMetrics.jobPush(jobType, jobKind);
             return true;
           });
     } else {
-      notifyJobAvailable(jobType);
+      notifyJobAvailable(jobType, jobKind);
     }
   }
 
   public void notifyJobAvailableAsSideEffect(final JobRecord jobRecord) {
-    final String jobType = jobRecord.getType();
-    notifyJobAvailable(jobType);
+    notifyJobAvailable(jobRecord.getType(), jobRecord.getJobKind());
   }
 
-  private void notifyJobAvailable(final String jobType) {
+  private void notifyJobAvailable(final String jobType, final JobKind jobKind) {
     sideEffectWriter.appendSideEffect(
         () -> {
           jobStreamer.notifyWorkAvailable(jobType);
-          jobMetrics.jobNotification(jobType);
+          jobMetrics.jobNotification(jobType, jobKind);
           return true;
         });
   }
@@ -115,7 +119,7 @@ public class BpmnJobActivationBehavior {
   private void setJobProperties(
       final JobRecord jobRecord, final JobActivationProperties properties) {
     // we push the job immediately, so the deadline is always calculated from the current time
-    final var deadline = ActorClock.currentTimeMillis() + properties.timeout();
+    final var deadline = clock.millis() + properties.timeout();
     jobRecord.setDeadline(deadline);
     jobRecord.setWorker(properties.worker());
   }

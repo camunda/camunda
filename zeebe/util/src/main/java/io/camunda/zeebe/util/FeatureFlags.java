@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.util;
 
@@ -16,7 +16,7 @@ public record FeatureFlags(
     boolean enableMessageTTLCheckerAsync,
     boolean enableTimerDueDateCheckerAsync,
     boolean enableStraightThroughProcessingLoopDetector,
-    boolean enableDynamicClusterTopology
+    boolean enablePartitionScaling
     /*, boolean foo*/ ) {
 
   /* To add a new feature toggle, please follow these steps:
@@ -52,8 +52,7 @@ public record FeatureFlags(
   private static final boolean ENABLE_MSG_TTL_CHECKER_ASYNC = false;
   private static final boolean ENABLE_DUE_DATE_CHECKER_ASYNC = false;
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
-
-  private static final boolean ENABLE_DYNAMIC_CLUSTER_TOPOLOGY = true;
+  private static final boolean ENABLE_PARTITION_SCALING = false;
 
   public static FeatureFlags createDefault() {
     return new FeatureFlags(
@@ -62,7 +61,7 @@ public record FeatureFlags(
         ENABLE_MSG_TTL_CHECKER_ASYNC,
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
-        ENABLE_DYNAMIC_CLUSTER_TOPOLOGY
+        ENABLE_PARTITION_SCALING
         /*, FOO_DEFAULT*/ );
   }
 
@@ -78,7 +77,7 @@ public record FeatureFlags(
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
-        true /* ENABLE_DYNAMIC_CLUSTER_TOPOLOGY */
+        true /* ENABLE_PARTITION_SCALING */
         /*, FOO_DEFAULT*/ );
   }
 

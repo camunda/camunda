@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.log;
 
@@ -34,14 +34,15 @@ public interface LogStreamWriter {
    * @return the event position, a negative value if fails to write the event, or 0 if the value is
    *     empty
    */
-  default Either<WriteFailure, Long> tryWrite(final LogAppendEntry appendEntry) {
-    return tryWrite(appendEntry, LogEntryDescriptor.KEY_NULL_VALUE);
+  default Either<WriteFailure, Long> tryWrite(
+      final WriteContext context, final LogAppendEntry appendEntry) {
+    return tryWrite(context, appendEntry, LogEntryDescriptor.KEY_NULL_VALUE);
   }
 
   /** {@inheritDoc} */
   default Either<WriteFailure, Long> tryWrite(
-      final LogAppendEntry appendEntry, final long sourcePosition) {
-    return tryWrite(Collections.singletonList(appendEntry), sourcePosition);
+      final WriteContext context, final LogAppendEntry appendEntry, final long sourcePosition) {
+    return tryWrite(context, Collections.singletonList(appendEntry), sourcePosition);
   }
 
   /**
@@ -52,8 +53,9 @@ public interface LogStreamWriter {
    * @return the last (i.e. highest) event position, a negative value if fails to write the events,
    *     or 0 if the batch is empty
    */
-  default Either<WriteFailure, Long> tryWrite(final List<LogAppendEntry> appendEntries) {
-    return tryWrite(appendEntries, LogEntryDescriptor.KEY_NULL_VALUE);
+  default Either<WriteFailure, Long> tryWrite(
+      final WriteContext context, final List<LogAppendEntry> appendEntries) {
+    return tryWrite(context, appendEntries, LogEntryDescriptor.KEY_NULL_VALUE);
   }
 
   /**
@@ -66,11 +68,14 @@ public interface LogStreamWriter {
    *     or 0 if the batch is empty
    */
   Either<WriteFailure, Long> tryWrite(
-      final List<LogAppendEntry> appendEntries, final long sourcePosition);
+      final WriteContext context,
+      final List<LogAppendEntry> appendEntries,
+      final long sourcePosition);
 
   enum WriteFailure {
     CLOSED,
-    FULL,
+    WRITE_LIMIT_EXHAUSTED,
+    REQUEST_LIMIT_EXHAUSTED,
     INVALID_ARGUMENT
   }
 }

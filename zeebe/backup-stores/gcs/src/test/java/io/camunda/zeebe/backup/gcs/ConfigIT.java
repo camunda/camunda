@@ -2,13 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.backup.gcs;
 
 import com.google.cloud.storage.BucketInfo;
-import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException.CouldNotAccessBucketException;
 import io.camunda.zeebe.backup.gcs.util.GcsContainer;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.assertj.core.api.Assertions;
@@ -41,7 +40,7 @@ public class ConfigIT {
   }
 
   @Test
-  void shouldFailValidationIfBucketDoesNotExist() {
+  void shouldNotFailValidationIfBucketDoesNotExist() {
     // given
     final var bucketName = RandomStringUtils.randomAlphabetic(12);
     final var config =
@@ -52,8 +51,7 @@ public class ConfigIT {
             .build();
 
     // then
-    Assertions.assertThatThrownBy(() -> GcsBackupStore.validateConfig(config))
-        .isInstanceOf(CouldNotAccessBucketException.class)
-        .hasMessageContaining(config.bucketName());
+    Assertions.assertThatCode(() -> GcsBackupStore.validateConfig(config))
+        .doesNotThrowAnyException();
   }
 }

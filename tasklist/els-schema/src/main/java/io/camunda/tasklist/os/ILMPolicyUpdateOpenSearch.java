@@ -1,23 +1,13 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.os;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.es.ILMPolicyUpdateElasticSearch;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
@@ -30,7 +20,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
-import org.opensearch.client.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +31,7 @@ import org.springframework.stereotype.Component;
 public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
   private static final String TASKLIST_DELETE_ARCHIVED_INDICES = "tasklist_delete_archived_indices";
-  private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateElasticSearch.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ILMPolicyUpdateOpenSearch.class);
 
   @Autowired private RetryOpenSearchClient retryOpenSearchClient;
 
@@ -52,60 +41,38 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
   @Override
   public void applyIlmPolicyToAllIndices() throws IOException {
-    final String taskListIndexWildCard = tasklistProperties.getOpenSearch().getIndexPrefix() + "-*";
-    final String archiveTemplatePatterndNameRegex =
-        "^"
-            + tasklistProperties.getOpenSearch().getIndexPrefix()
-            + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
-    LOGGER.info("Applying ISM policy to all existent indices");
-    final Response policyExists =
-        retryOpenSearchClient.getLifecyclePolicy(TASKLIST_DELETE_ARCHIVED_INDICES);
-    if (policyExists == null) {
-      LOGGER.info("ISM policy does not exist, creating it");
-      schemaManager.createIndexLifeCycles();
-    }
-    applyIlmPolicyToIndexTemplate(true);
-    final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
+    LOGGER.info("Applying ISM policy to index templates and existing indices");
 
-    final Set<String> response = retryOpenSearchClient.getIndexNames(taskListIndexWildCard);
-    for (final String indexName : response) {
-      if (indexNamePattern.matcher(indexName).matches()) {
-        retryOpenSearchClient.putLifeCyclePolicy(indexName, TASKLIST_DELETE_ARCHIVED_INDICES);
-      }
-    }
+    // Ensure that the ISM policy exists before applying it to any templates or indices
+    schemaManager.createIndexLifeCyclesIfNotExist();
+
+    // Apply the ISM policy to the index templates
+    applyIlmPolicyToIndexTemplate(true);
+
+    // Apply the ISM policy to existing indices created from those templates
+    applyIlmPolicyToExistingIndices();
   }
 
   @Override
   public void removeIlmPolicyFromAllIndices() throws IOException {
-    final String taskListIndexWildCard = tasklistProperties.getOpenSearch().getIndexPrefix() + "-*";
-    final String archiveTemplatePatterndNameRegex =
-        "^"
-            + tasklistProperties.getOpenSearch().getIndexPrefix()
-            + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
+    LOGGER.info("Removing ISM policy from index templates and existing indices");
 
-    LOGGER.info("Removing ISM policy to all existent indices");
-    final Set<String> response = retryOpenSearchClient.getIndexNames(taskListIndexWildCard);
+    // Remove the ISM policy from the index templates
     applyIlmPolicyToIndexTemplate(false);
-    final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
-    for (final String indexName : response) {
-      if (indexNamePattern.matcher(indexName).matches()) {
-        retryOpenSearchClient.putLifeCyclePolicy(indexName, null);
-      }
-    }
+
+    // Remove the ISM policy from existing indices
+    removeIlmPolicyFromExistingIndices();
   }
 
   private void applyIlmPolicyToIndexTemplate(final boolean applyPolicy) throws IOException {
     final String taskListIndexWildCard = tasklistProperties.getOpenSearch().getIndexPrefix() + "-*";
     final JsonArray templates =
         retryOpenSearchClient.getIndexTemplateSettings(taskListIndexWildCard);
-    // Integration tests are not creating the templates, so we need to check if they exist
+
     if (templates != null) {
       for (final JsonObject templateData : templates.getValuesAs(JsonObject.class)) {
         final String templateName = templateData.getString("name");
         final JsonObject template = templateData.getJsonObject("index_template");
-
-        final JsonArray indexPatterns = template.getJsonArray("index_patterns");
-
         final JsonObject innerTemplate = template.getJsonObject("template");
 
         final JsonObject existingSettings =
@@ -115,57 +82,110 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
 
         final JsonObjectBuilder settingsBuilder = Json.createObjectBuilder();
 
-        if (existingSettings != null) {
-          for (final String key : existingSettings.keySet()) {
-            settingsBuilder.add(key, existingSettings.get(key));
+        for (final String key : existingSettings.keySet()) {
+          settingsBuilder.add(key, existingSettings.get(key));
+        }
+
+        if (applyPolicy) {
+          settingsBuilder.add(
+              "plugins.index_state_management.policy_id", TASKLIST_DELETE_ARCHIVED_INDICES);
+        } else {
+          settingsBuilder.add("plugins.index_state_management.policy_id", JsonObject.NULL);
+        }
+
+        final String requiredPolicyId = applyPolicy ? TASKLIST_DELETE_ARCHIVED_INDICES : null;
+
+        if (isPolicyAlreadyAppliedForTemplate(existingSettings, requiredPolicyId)) {
+          LOGGER.info(
+              "ISM policy already {} index template {}",
+              applyPolicy ? "applied to" : "removed from",
+              templateName);
+          continue;
+        }
+
+        final JsonObject newSettings = settingsBuilder.build();
+
+        final JsonObjectBuilder updatedInnerTemplateBuilder =
+            Json.createObjectBuilder().add("settings", newSettings);
+
+        for (final String key : innerTemplate.keySet()) {
+          if (!"settings".equals(key)) { // do not overwrite new settings
+            updatedInnerTemplateBuilder.add(key, innerTemplate.get(key));
           }
+        }
 
-          if (applyPolicy) {
-            settingsBuilder.add(
-                "plugins.index_state_management.policy_id", TASKLIST_DELETE_ARCHIVED_INDICES);
-          } else {
-            settingsBuilder.add("plugins.index_state_management.policy_id", JsonObject.NULL);
+        final JsonObject updatedInnerTemplate = updatedInnerTemplateBuilder.build();
+
+        final JsonObjectBuilder updatedTemplateBuilder =
+            Json.createObjectBuilder()
+                .add("index_patterns", template.getJsonArray("index_patterns"))
+                .add("template", updatedInnerTemplate);
+
+        for (final String key : template.keySet()) {
+          if (!"index_patterns".equals(key) && !"template".equals(key)) {
+            updatedTemplateBuilder.add(key, template.get(key));
+            LOGGER.info("ISM Policy updated for index template {}", templateName);
           }
+        }
 
-          final String requiredPolicyId = applyPolicy ? TASKLIST_DELETE_ARCHIVED_INDICES : null;
+        final String updatedTemplate = updatedTemplateBuilder.build().toString();
+        retryOpenSearchClient.putIndexTemplateSettings(templateName, updatedTemplate);
+      }
+    }
+  }
 
-          if (isPolicyAlreadyApplied(existingSettings, requiredPolicyId)) {
-            LOGGER.info("ISM policy already applied to index template {}", templateName);
+  private void applyIlmPolicyToExistingIndices() throws IOException {
+    final String taskListIndexWildCard = tasklistProperties.getOpenSearch().getIndexPrefix() + "-*";
+    final String archiveTemplatePatterndNameRegex =
+        "^"
+            + tasklistProperties.getOpenSearch().getIndexPrefix()
+            + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
+
+    final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
+    final Set<String> response = retryOpenSearchClient.getIndexNames(taskListIndexWildCard);
+
+    for (final String indexName : response) {
+      if (indexNamePattern.matcher(indexName).matches()) {
+        try {
+          // Check if the ISM policy is already applied to the index using the explain API
+          if (isPolicyAlreadyAppliedForIndex(indexName, retryOpenSearchClient, false)) {
+            LOGGER.info("ISM policy already applied for index {}", indexName);
             continue;
           }
 
-          final JsonObject newSettings = settingsBuilder.build();
-
-          final JsonObjectBuilder updatedInnerTemplateBuilder =
-              Json.createObjectBuilder().add("settings", newSettings);
-
-          for (final String key : innerTemplate.keySet()) {
-            if (!"settings".equals(key)) { // do not overwrite new settings
-              updatedInnerTemplateBuilder.add(key, innerTemplate.get(key));
-            }
-          }
-
-          final JsonObject updatedInnerTemplate = updatedInnerTemplateBuilder.build();
-
-          final JsonObjectBuilder updatedTemplateBuilder =
-              Json.createObjectBuilder()
-                  .add("index_patterns", indexPatterns)
-                  .add("template", updatedInnerTemplate);
-
-          for (final String key : template.keySet()) {
-            if (!"index_patterns".equals(key) && !"template".equals(key)) {
-              updatedTemplateBuilder.add(key, template.get(key));
-            }
-          }
-
-          final String updatedTemplate = updatedTemplateBuilder.build().toString();
-          retryOpenSearchClient.putIndexTemplateSettings(templateName, updatedTemplate);
+          // Apply the ISM policy to the index
+          retryOpenSearchClient.addISMPolicyToIndex(indexName, TASKLIST_DELETE_ARCHIVED_INDICES);
+          LOGGER.info("ISM policy updated to index {}", indexName);
+        } catch (final IOException e) {
+          LOGGER.error("Failed to apply ISM policy for index {}: {}", indexName, e.getMessage());
         }
       }
     }
   }
 
-  private static boolean isPolicyAlreadyApplied(
+  private void removeIlmPolicyFromExistingIndices() throws IOException {
+    final String taskListIndexWildCard = tasklistProperties.getOpenSearch().getIndexPrefix() + "-*";
+    final String archiveTemplatePatterndNameRegex =
+        "^"
+            + tasklistProperties.getOpenSearch().getIndexPrefix()
+            + "-.*-\\d+\\.\\d+\\.\\d+_\\d{4}-\\d{2}-\\d{2}$";
+
+    final Pattern indexNamePattern = Pattern.compile(archiveTemplatePatterndNameRegex);
+    final Set<String> response = retryOpenSearchClient.getIndexNames(taskListIndexWildCard);
+
+    for (final String indexName : response) {
+      if (indexNamePattern.matcher(indexName).matches()) {
+        if (isPolicyAlreadyAppliedForIndex(indexName, retryOpenSearchClient, true)) {
+          LOGGER.info("ISM policy already removed for the index {}", indexName);
+        } else {
+          retryOpenSearchClient.removeISMPolicyFromIndex(indexName);
+          LOGGER.info("ISM policy removed from index {}", indexName);
+        }
+      }
+    }
+  }
+
+  private static boolean isPolicyAlreadyAppliedForTemplate(
       final JsonObject existingSettings, final String requiredPolicyId) {
 
     final JsonObject ismSettings =
@@ -179,5 +199,28 @@ public class ILMPolicyUpdateOpenSearch implements ILMPolicyUpdate {
     }
     final String currentPolicyId = ismSettings.getString("policy_id", null);
     return Objects.equals(requiredPolicyId, currentPolicyId);
+  }
+
+  private static boolean isPolicyAlreadyAppliedForIndex(
+      final String indexName,
+      final RetryOpenSearchClient retryOpenSearchClient,
+      final boolean isRemove)
+      throws IOException {
+
+    // Use the ISM explain API to check the current policy applied to the index
+    final JsonObject explainResponse = retryOpenSearchClient.getExplainIndexResponse(indexName);
+
+    if (isRemove) {
+      return !explainResponse.containsKey("policy_id");
+    }
+
+    // Directly check for the presence of the "policy_id" key in the response
+    if (explainResponse == null || !explainResponse.containsKey("policy_id")) {
+      return false;
+    }
+
+    final String currentPolicyId = explainResponse.getString("policy_id", null);
+    return Objects.equals(
+        ILMPolicyUpdateOpenSearch.TASKLIST_DELETE_ARCHIVED_INDICES, currentPolicyId);
   }
 }

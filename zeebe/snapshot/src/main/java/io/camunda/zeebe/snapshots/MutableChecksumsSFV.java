@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots;
 
@@ -39,4 +39,12 @@ public interface MutableChecksumsSFV extends ImmutableChecksumsSFV {
    * @param lines the lines (in SFV) to build up the checksum collection
    */
   void updateFromSfvFile(final String... lines);
+
+  /**
+   * Update the checksum map with the given checksum
+   *
+   * @param filePath path to file
+   * @param checksum check of file given
+   */
+  void updateFromChecksum(final Path filePath, final long checksum);
 }

@@ -14,6 +14,12 @@ zeebe:
       memberId: testMember
       host: 1.2.3.4
       port: 12321
+      configManager:
+        gossip:
+          enableSync: false
+          syncDelay: 5000ms
+          syncRequestTimeout: 30s
+          gossipFanout: 6
 
     threads:
       managementThreads: 100

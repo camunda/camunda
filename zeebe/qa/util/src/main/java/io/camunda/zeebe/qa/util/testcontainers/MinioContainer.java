@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.qa.util.testcontainers;
 
@@ -19,7 +19,7 @@ import org.testcontainers.utility.DockerImageName;
  * Minio is a S3 compatible high performance object storage. See <a href="https://min.io/">their
  * official page</a> for more.
  *
- * <p>We use it primarily to test compatibility with our S3 backup store, as it's lightweight and
+ * <p>We use it primarily to test compatibility with our S3 backup instance, as it's lightweight and
  * popular.
  *
  * <p>When using this, keep in mind that you will need to add a network alias per bucket that you

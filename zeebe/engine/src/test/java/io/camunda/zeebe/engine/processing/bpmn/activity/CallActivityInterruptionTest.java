@@ -2,11 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity;
 
+import static io.camunda.zeebe.protocol.record.RecordType.COMMAND;
+import static io.camunda.zeebe.protocol.record.RecordType.COMMAND_REJECTION;
+import static io.camunda.zeebe.protocol.record.RecordType.EVENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -50,7 +53,6 @@ public class CallActivityInterruptionTest {
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
             .startEvent()
             .serviceTask("child-task", t -> t.zeebeJobType(jobType))
-            .endEvent()
             .done();
 
     ENGINE
@@ -93,26 +95,29 @@ public class CallActivityInterruptionTest {
     // when trigger the boundary event and complete the child instance concurrently
     ENGINE.writeRecords(
         RecordToWrite.command()
-            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, childTaskActivated.getValue())
-            .key(childTaskActivated.getKey()),
-        RecordToWrite.command()
             .timer(TimerIntent.TRIGGER, timerCreated.getValue())
-            .key(timerCreated.getKey()));
+            .key(timerCreated.getKey()),
+        RecordToWrite.command()
+            .processInstance(ProcessInstanceIntent.COMPLETE_ELEMENT, childTaskActivated.getValue())
+            .key(childTaskActivated.getKey()));
 
     // then
     assertThat(
             RecordingExporter.records()
                 .betweenProcessInstance(processInstanceKey)
                 .processInstanceRecords())
-        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .extracting(r -> tuple(r.getRecordType(), r.getValue().getBpmnElementType(), r.getIntent()))
         .containsSubsequence(
-            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.TERMINATE_ELEMENT),
-            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
-            tuple(BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
-            tuple(BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
-            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
-            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+            tuple(COMMAND, BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.TERMINATE_ELEMENT),
+            tuple(EVENT, BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(
+                COMMAND_REJECTION, BpmnElementType.PROCESS, ProcessInstanceIntent.COMPLETE_ELEMENT),
+            tuple(EVENT, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATING),
+            tuple(EVENT, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(EVENT, BpmnElementType.CALL_ACTIVITY, ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(EVENT, BpmnElementType.BOUNDARY_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(EVENT, BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(EVENT, BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   private static BpmnModelInstance parentProcess(final Consumer<CallActivityBuilder> consumer) {

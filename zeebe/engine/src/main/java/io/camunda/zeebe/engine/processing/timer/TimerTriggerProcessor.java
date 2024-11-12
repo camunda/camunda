@@ -2,11 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.timer;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -35,10 +36,13 @@ import java.time.Instant;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+@ExcludeAuthorizationCheck
 public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRecord> {
 
   private static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to trigger timer with key '%d', but no such timer was found";
+  private static final String NO_PROCESS_DEFINITION_FOUND_MESSAGE =
+      "Expected to find a process definition with key '%d', but no such definition was found";
   private static final String NO_ACTIVE_TIMER_MESSAGE =
       "Expected to trigger a timer with key '%d', but the timer is not active anymore";
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();
@@ -85,14 +89,27 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
     final var timerInstance = timerInstanceState.get(elementInstanceKey, record.getKey());
     if (timerInstance == null) {
       rejectionWriter.appendRejection(
-          record, RejectionType.NOT_FOUND, String.format(NO_TIMER_FOUND_MESSAGE, record.getKey()));
+          record, RejectionType.NOT_FOUND, NO_TIMER_FOUND_MESSAGE.formatted(record.getKey()));
+      return;
+    }
+
+    final var tenantId = timer.getTenantId();
+    // this is an additional safeguard to avoid banning unrelated instances
+    // as noticed in https://github.com/camunda/camunda/issues/20677
+    final var deployedProcess =
+        processState.getProcessByKeyAndTenant(processDefinitionKey, tenantId);
+    if (deployedProcess == null) {
+      rejectionWriter.appendRejection(
+          record,
+          RejectionType.NOT_FOUND,
+          NO_PROCESS_DEFINITION_FOUND_MESSAGE.formatted(processDefinitionKey));
       return;
     }
 
     final var catchEvent =
         processState.getFlowElement(
             processDefinitionKey,
-            timer.getTenantId(),
+            tenantId,
             timer.getTargetElementIdBuffer(),
             ExecutableCatchEvent.class);
     if (isStartEvent(elementInstanceKey)) {
@@ -104,7 +121,7 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
           processInstanceKey,
           timer.getTargetElementIdBuffer(),
           NO_VARIABLES,
-          timer.getTenantId());
+          tenantId);
     } else {
       final var elementInstance = elementInstanceState.getInstance(elementInstanceKey);
       if (!eventHandle.canTriggerElement(elementInstance, timer.getTargetElementIdBuffer())) {
@@ -123,9 +140,7 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
 
   private void rejectNoActiveTimer(final TypedRecord<TimerRecord> record) {
     rejectionWriter.appendRejection(
-        record,
-        RejectionType.INVALID_STATE,
-        String.format(NO_ACTIVE_TIMER_MESSAGE, record.getKey()));
+        record, RejectionType.INVALID_STATE, NO_ACTIVE_TIMER_MESSAGE.formatted(record.getKey()));
   }
 
   private boolean isStartEvent(final long elementInstanceKey) {
@@ -141,9 +156,8 @@ public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRe
         event.getTimerFactory().apply(expressionProcessor, record.getElementInstanceKey());
     if (timer.isLeft()) {
       final String message =
-          String.format(
-              "Expected to reschedule repeating timer for element with id '%s', but an error occurred: %s",
-              BufferUtil.bufferAsString(event.getId()), timer.getLeft().getMessage());
+          "Expected to reschedule repeating timer for element with id '%s', but an error occurred: %s"
+              .formatted(BufferUtil.bufferAsString(event.getId()), timer.getLeft().getMessage());
       throw new IllegalStateException(message);
       // todo(#4208): raise incident instead of throwing an exception
     }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.logstreams.log.LogStreamBatchReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.TestEntry;
@@ -40,7 +41,7 @@ public class LogStreamBatchReaderTest {
   public void setUp() {
     final var logStreamReader = readerRule.getLogStreamReader();
     batchReader = new LogStreamBatchReaderImpl(logStreamReader);
-    writer = logStreamRule.getLogStream().newSyncLogStreamWriter();
+    writer = logStreamRule.getLogStream().newBlockingLogStreamWriter();
   }
 
   @Test
@@ -51,8 +52,10 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldReadEventsInBatch() {
     // given
-    final long eventPosition1 = writer.tryWrite(TestEntry.ofKey(1L), 1L).get();
-    final long eventPosition2 = writer.tryWrite(TestEntry.ofKey(2L), 1L).get();
+    final long eventPosition1 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofKey(1L), 1L).get();
+    final long eventPosition2 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofKey(2L), 1L).get();
 
     // then
     assertThat(batchReader.hasNext()).isTrue();
@@ -77,8 +80,8 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldReadNextBatch() {
     // given
-    final long eventPosition1 = writer.tryWrite(TestEntry.ofKey(1L)).get();
-    final long eventPosition2 = writer.tryWrite(TestEntry.ofKey(2L)).get();
+    final long eventPosition1 = writer.tryWrite(WriteContext.internal(), TestEntry.ofKey(1L)).get();
+    final long eventPosition2 = writer.tryWrite(WriteContext.internal(), TestEntry.ofKey(2L)).get();
 
     // then
     assertThat(batchReader.hasNext()).isTrue();
@@ -105,8 +108,10 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldReadEventsWithoutSourceEventPosition() {
     // given
-    final long eventPosition1 = writer.tryWrite(TestEntry.ofDefaults()).get();
-    final long eventPosition2 = writer.tryWrite(TestEntry.ofDefaults()).get();
+    final long eventPosition1 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    final long eventPosition2 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
 
     // then
     assertThat(batchReader.hasNext()).isTrue();
@@ -126,9 +131,12 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldNotIncludeEventsWithoutSourceEventPosition() {
     // given
-    final long eventPosition1 = writer.tryWrite(TestEntry.ofDefaults()).get();
-    final long eventPosition2 = writer.tryWrite(TestEntry.ofDefaults()).get();
-    final long eventPosition3 = writer.tryWrite(TestEntry.ofDefaults()).get();
+    final long eventPosition1 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    final long eventPosition2 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    final long eventPosition3 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
 
     // then
     assertThat(batchReader.hasNext()).isTrue();
@@ -155,9 +163,12 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldMoveBatchToHead() {
     // given
-    final long eventPosition1 = writer.tryWrite(TestEntry.ofDefaults(), 1L).get();
-    final long eventPosition2 = writer.tryWrite(TestEntry.ofDefaults(), 1L).get();
-    final long eventPosition3 = writer.tryWrite(TestEntry.ofDefaults(), 2L).get();
+    final long eventPosition1 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults(), 1L).get();
+    final long eventPosition2 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults(), 1L).get();
+    final long eventPosition3 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults(), 2L).get();
 
     assertThat(batchReader.hasNext()).isTrue();
 
@@ -185,9 +196,11 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldSkipEventsInBatch() {
     // given
-    final long eventPosition1 = writer.tryWrite(TestEntry.ofDefaults(), 1L).get();
-    writer.tryWrite(TestEntry.ofDefaults(), 1L);
-    final long eventPosition3 = writer.tryWrite(TestEntry.ofDefaults(), 2L).get();
+    final long eventPosition1 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults(), 1L).get();
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults(), 1L);
+    final long eventPosition3 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults(), 2L).get();
 
     assertThat(batchReader.hasNext()).isTrue();
 
@@ -206,8 +219,9 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldSeekToHeadIfNegative() {
     // given
-    final long eventPosition1 = writer.tryWrite(TestEntry.ofDefaults()).get();
-    writer.tryWrite(TestEntry.ofDefaults());
+    final long eventPosition1 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
 
     // when
     final var found = batchReader.seekToNextBatch(-1L);
@@ -224,9 +238,11 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldSeekToNextBatch() {
     // given
-    writer.tryWrite(TestEntry.ofDefaults());
-    final long eventPosition2 = writer.tryWrite(TestEntry.ofDefaults()).get();
-    final long eventPosition3 = writer.tryWrite(TestEntry.ofDefaults()).get();
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
+    final long eventPosition2 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    final long eventPosition3 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
 
     // when
     final var found = batchReader.seekToNextBatch(eventPosition2);
@@ -243,9 +259,11 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldSeekToNextEventWithinBatch() {
     // given
-    final long eventPosition1 = writer.tryWrite(TestEntry.ofDefaults(), 1L).get();
-    writer.tryWrite(TestEntry.ofDefaults(), 1L);
-    final long eventPosition3 = writer.tryWrite(TestEntry.ofDefaults(), 2L).get();
+    final long eventPosition1 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults(), 1L).get();
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults(), 1L);
+    final long eventPosition3 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults(), 2L).get();
 
     // when
     final var found = batchReader.seekToNextBatch(eventPosition1);
@@ -262,8 +280,9 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldSeekToTailIfLastEvent() {
     // given
-    writer.tryWrite(TestEntry.ofDefaults());
-    final long eventPosition2 = writer.tryWrite(TestEntry.ofDefaults()).get();
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
+    final long eventPosition2 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
 
     // when
     final var found = batchReader.seekToNextBatch(eventPosition2);
@@ -276,7 +295,8 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldSeekToNotExistingPosition() {
     // given
-    final var eventPosition = writer.tryWrite(TestEntry.ofDefaults()).get();
+    final var eventPosition =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
 
     // when
     final var found = batchReader.seekToNextBatch(eventPosition + 1);
@@ -307,7 +327,7 @@ public class LogStreamBatchReaderTest {
   @Test
   public void shouldThrowNoSuchElementExceptionOnNextEvent() {
     // given
-    writer.tryWrite(TestEntry.ofKey(1));
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofKey(1));
 
     assertThat(batchReader.hasNext()).isTrue();
 

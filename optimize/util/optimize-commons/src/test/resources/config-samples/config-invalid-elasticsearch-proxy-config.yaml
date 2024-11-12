@@ -1,0 +1,4 @@
+es:
+  connection:
+    proxy:
+      enabled: true

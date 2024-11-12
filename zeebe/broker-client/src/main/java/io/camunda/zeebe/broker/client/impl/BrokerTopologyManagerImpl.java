@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.client.impl;
 
@@ -15,10 +15,10 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.ClusterConfigurationUpdateNotifier.ClusterConfigurationUpdateListener;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.topology.TopologyUpdateNotifier.TopologyUpdateListener;
-import io.camunda.zeebe.topology.state.ClusterTopology;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -27,11 +27,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public final class BrokerTopologyManagerImpl extends Actor
-    implements BrokerTopologyManager, ClusterMembershipEventListener, TopologyUpdateListener {
+    implements BrokerTopologyManager,
+        ClusterMembershipEventListener,
+        ClusterConfigurationUpdateListener {
 
   private static final Logger LOG = LoggerFactory.getLogger(BrokerTopologyManagerImpl.class);
   private volatile BrokerClusterStateImpl topology = new BrokerClusterStateImpl();
-  private volatile ClusterTopology clusterTopology = ClusterTopology.uninitialized();
+  private volatile ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
   private final Supplier<Set<Member>> membersSupplier;
   private final BrokerClientTopologyMetrics topologyMetrics = new BrokerClientTopologyMetrics();
 
@@ -50,8 +52,8 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public ClusterTopology getClusterTopology() {
-    return clusterTopology;
+  public ClusterConfiguration getClusterConfiguration() {
+    return clusterConfiguration;
   }
 
   @Override
@@ -163,7 +165,7 @@ public final class BrokerTopologyManagerImpl extends Actor
     // GatewayClusterTopologyService.Listener. BrokerInfo contains the static clusterSize which is
     // the initial clusterSize. However, we still have to initialize it because it should have the
     // correct value even when the dynamic ClusterTopology is disabled.
-    if (topology.getClusterSize() == BrokerClusterStateImpl.UNINITIALIZED_CLUSTER_SIZE) {
+    if (!topology.isInitialized()) {
       topology.setClusterSize(distributedBrokerInfo.getClusterSize());
       topology.setPartitionsCount(distributedBrokerInfo.getPartitionsCount());
       topology.setReplicationFactor(distributedBrokerInfo.getReplicationFactor());
@@ -206,11 +208,11 @@ public final class BrokerTopologyManagerImpl extends Actor
   }
 
   @Override
-  public void onTopologyUpdated(final ClusterTopology clusterTopology) {
+  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterTopology) {
     if (clusterTopology.isUninitialized()) {
       return;
     }
-    this.clusterTopology = clusterTopology;
+    clusterConfiguration = clusterTopology;
 
     updateTopology(
         topologyToUpdate -> {

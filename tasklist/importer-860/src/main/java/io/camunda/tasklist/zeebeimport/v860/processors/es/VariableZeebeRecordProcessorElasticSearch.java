@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.zeebeimport.v860.processors.es;
 
@@ -20,21 +11,26 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
+import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.VariableIndex;
+import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.zeebeimport.v860.record.Intent;
 import io.camunda.tasklist.zeebeimport.v860.record.value.VariableRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -43,11 +39,14 @@ public class VariableZeebeRecordProcessorElasticSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(VariableZeebeRecordProcessorElasticSearch.class);
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private VariableIndex variableIndex;
 
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processVariableRecord(final Record record, final BulkRequest bulkRequest)
       throws PersistenceException {
@@ -56,32 +55,14 @@ public class VariableZeebeRecordProcessorElasticSearch {
     // update variable
     if (record.getIntent().name() != Intent.MIGRATED.name()) {
       bulkRequest.add(persistVariable(record, recordValue));
+      bulkRequest.add(persistVariableToListView(record, recordValue)); // tasklist-list-view
     }
   }
 
   private UpdateRequest persistVariable(
       final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
-    final VariableEntity entity = new VariableEntity();
-    entity.setId(
-        VariableEntity.getIdBy(String.valueOf(recordValue.getScopeKey()), recordValue.getName()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
-    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
-    entity.setName(recordValue.getName());
-    if (recordValue.getValue().length()
-        > tasklistProperties.getImporter().getVariableSizeThreshold()) {
-      // store preview
-      entity.setValue(
-          recordValue
-              .getValue()
-              .substring(0, tasklistProperties.getImporter().getVariableSizeThreshold()));
-      entity.setIsPreview(true);
-    } else {
-      entity.setValue(recordValue.getValue());
-    }
-    entity.setFullValue(recordValue.getValue());
-    return getVariableQuery(entity);
+    final VariableEntity variableEntity = getVariableEntity(record, recordValue);
+    return getVariableQuery(variableEntity);
   }
 
   private UpdateRequest getVariableQuery(final VariableEntity entity) throws PersistenceException {
@@ -104,6 +85,101 @@ public class VariableZeebeRecordProcessorElasticSearch {
           String.format(
               "Error preparing the query to upsert variable instance [%s]  for list view",
               entity.getId()),
+          e);
+    }
+  }
+
+  private UpdateRequest persistVariableToListView(
+      final Record record, final VariableRecordValueImpl recordValue) throws PersistenceException {
+    final VariableEntity variableEntity = getVariableEntity(record, recordValue);
+    final VariableListViewEntity variableListViewEntity =
+        createVariableInputToListView(variableEntity);
+
+    if (isTaskOrSubProcessVariable(variableEntity)) {
+      variableListViewEntity.setJoin(
+          createListViewJoinRelation("taskVariable", variableListViewEntity.getScopeKey()));
+    } else if (isProcessScope(variableEntity)) {
+      variableListViewEntity.setJoin(
+          createListViewJoinRelation("processVariable", variableListViewEntity.getScopeKey()));
+    } else {
+      throw new PersistenceException(
+          String.format(
+              "Error to associate Variable with parent. Variable id: [%s]",
+              variableEntity.getId()));
+    }
+    return prepareUpdateRequest(variableListViewEntity);
+  }
+
+  private VariableListViewEntity createVariableInputToListView(final VariableEntity entity) {
+    return new VariableListViewEntity(entity);
+  }
+
+  private ListViewJoinRelation createListViewJoinRelation(
+      final String name, final String parentId) {
+    final var result = new ListViewJoinRelation();
+    result.setName(name);
+    result.setParent(Long.valueOf(parentId));
+    return result;
+  }
+
+  private boolean isProcessScope(final VariableEntity entity) {
+    return Objects.equals(entity.getProcessInstanceId(), entity.getScopeFlowNodeId());
+  }
+
+  private boolean isTaskOrSubProcessVariable(final VariableEntity entity) {
+    return !Objects.equals(entity.getProcessInstanceId(), entity.getScopeFlowNodeId());
+  }
+
+  private VariableEntity getVariableEntity(
+      final Record record, final VariableRecordValueImpl recordValue) {
+    final VariableEntity entity = new VariableEntity();
+    entity.setId(
+        VariableEntity.getIdBy(String.valueOf(recordValue.getScopeKey()), recordValue.getName()));
+    entity.setKey(record.getKey());
+    entity.setPartitionId(record.getPartitionId());
+    entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
+    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
+    entity.setName(recordValue.getName());
+    entity.setTenantId(recordValue.getTenantId());
+    if (recordValue.getValue().length()
+        > tasklistProperties.getImporter().getVariableSizeThreshold()) {
+      // store preview
+      entity.setValue(
+          recordValue
+              .getValue()
+              .substring(0, tasklistProperties.getImporter().getVariableSizeThreshold()));
+      entity.setIsPreview(true);
+    } else {
+      entity.setValue(recordValue.getValue());
+    }
+    entity.setFullValue(recordValue.getValue());
+    return entity;
+  }
+
+  private UpdateRequest prepareUpdateRequest(final VariableListViewEntity variableListViewEntity)
+      throws PersistenceException {
+    try {
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TasklistListViewTemplate.VARIABLE_VALUE, variableListViewEntity.getValue());
+      updateFields.put(
+          TasklistListViewTemplate.VARIABLE_FULL_VALUE, variableListViewEntity.getValue());
+      updateFields.put(TasklistListViewTemplate.IS_PREVIEW, variableListViewEntity.getIsPreview());
+
+      final UpdateRequest request =
+          new UpdateRequest()
+              .index(tasklistListViewTemplate.getFullQualifiedName())
+              .id(variableListViewEntity.getId())
+              .upsert(objectMapper.writeValueAsString(variableListViewEntity), XContentType.JSON)
+              .routing(variableListViewEntity.getScopeKey())
+              .doc(updateFields)
+              .retryOnConflict(UPDATE_RETRY_COUNT);
+
+      return request;
+    } catch (final IOException e) {
+      throw new PersistenceException(
+          String.format(
+              "Error preparing the query to upsert task instance [%s]",
+              variableListViewEntity.getId()),
           e);
     }
   }

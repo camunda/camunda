@@ -2,14 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -20,7 +21,9 @@ import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -43,30 +46,70 @@ final class ExporterContainer implements Controller {
   private ExportersState exportersState;
   private ExporterMetrics metrics;
   private ActorControl actor;
+  private final ExporterInitializationInfo initializationInfo;
 
-  ExporterContainer(final ExporterDescriptor descriptor, final int partitionId) {
+  ExporterContainer(
+      final ExporterDescriptor descriptor,
+      final int partitionId,
+      final ExporterInitializationInfo initializationInfo,
+      final MeterRegistry meterRegistry,
+      final InstantSource clock) {
+    this.initializationInfo = initializationInfo;
     context =
         new ExporterContext(
             Loggers.getExporterLogger(descriptor.getId()),
             descriptor.getConfiguration(),
-            partitionId);
+            partitionId,
+            meterRegistry,
+            clock);
 
     exporter = descriptor.newInstance();
   }
 
   void initContainer(
-      final ActorControl actor, final ExporterMetrics metrics, final ExportersState state) {
+      final ActorControl actor,
+      final ExporterMetrics metrics,
+      final ExportersState state,
+      final ExporterPhase phase) {
     this.actor = actor;
     this.metrics = metrics;
     exportersState = state;
+    if (phase == ExporterPhase.SOFT_PAUSED) {
+      softPauseExporter();
+    }
   }
 
-  void initPosition() {
+  private void initPosition() {
     position = exportersState.getPosition(getId());
     lastUnacknowledgedPosition = position;
     if (position == ExportersState.VALUE_NOT_FOUND) {
       exportersState.setPosition(getId(), -1L);
     }
+  }
+
+  private void initExporterState() {
+    final var initializeFrom = initializationInfo.initializeFrom();
+    if (initializeFrom != null) {
+      final var metadata = exportersState.getExporterMetadata(initializeFrom);
+      final var otherPosition = exportersState.getPosition(initializeFrom);
+      exportersState.initializeExporterState(
+          getId(), otherPosition, metadata, initializationInfo.metadataVersion());
+    } else {
+      // No need to initialize metadata, just set the version and initialize the position
+      exportersState.initializeExporterState(
+          getId(), -1L, null, initializationInfo.metadataVersion());
+    }
+  }
+
+  void initMetadata() {
+    final var curMetadata = exportersState.getMetadataVersion(getId());
+    final var metadataVersion = initializationInfo.metadataVersion();
+
+    if (metadataVersion > curMetadata) {
+      initExporterState();
+    }
+
+    initPosition();
   }
 
   void openExporter() {
@@ -209,6 +252,11 @@ final class ExporterContainer implements Controller {
           exporter::close, exporter.getClass().getClassLoader());
     } catch (final Exception e) {
       context.getLogger().error("Error on close", e);
+    }
+    try {
+      context.close();
+    } catch (final Exception e) {
+      context.getLogger().error("Error on context.close", e);
     }
   }
 }

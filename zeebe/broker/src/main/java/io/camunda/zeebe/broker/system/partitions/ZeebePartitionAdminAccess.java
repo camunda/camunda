@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions;
 
@@ -11,9 +11,13 @@ import static java.util.Objects.requireNonNull;
 
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -179,21 +183,8 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
     concurrencyControl.run(
         () -> {
           try {
-            adminControl
-                .getLogStream()
-                .newLogStreamWriter()
-                .onComplete(
-                    (writer, error) -> {
-                      if (error != null) {
-                        LOG.error(
-                            "Could not retrieve writer to write error record for process instance.",
-                            error);
-                        future.completeExceptionally(error);
-                        return;
-                      }
-
-                      writeErrorEventAndBanInstance(processInstanceKey, writer, future);
-                    });
+            final var logStreamWriter = adminControl.getLogStream().newLogStreamWriter();
+            writeErrorEventAndBanInstance(processInstanceKey, logStreamWriter, future);
           } catch (final Exception e) {
             LOG.error(
                 "Failure on writing error record to ban instance {} onto the LogStream.",
@@ -205,11 +196,56 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
     return future;
   }
 
+  @Override
+  public ActorFuture<Void> configureFlowControl(final FlowControlCfg flowControlCfg) {
+    final ActorFuture<Void> future = concurrencyControl.createFuture();
+    concurrencyControl.run(
+        () -> {
+          try {
+            final FlowControl flowControl = adminControl.getLogStream().getFlowControl();
+            if (flowControlCfg.getWrite() != null) {
+              flowControl.setWriteRateLimit(flowControlCfg.getWrite().buildLimit());
+            }
+            if (flowControlCfg.getRequest() != null) {
+              flowControl.setRequestLimit(flowControlCfg.getRequest().buildLimit());
+            }
+            future.complete(null);
+          } catch (final Exception e) {
+            LOG.error(
+                "Failure on configuring the append limit of flow control with config {}.",
+                flowControlCfg,
+                e);
+            future.completeExceptionally(e);
+          }
+        });
+    return future;
+  }
+
+  @Override
+  public ActorFuture<FlowControlLimits> getFlowControlConfiguration() {
+    final ActorFuture<FlowControlLimits> future = concurrencyControl.createFuture();
+
+    concurrencyControl.run(
+        () -> {
+          final var flowControl = adminControl.getLogStream().getFlowControl();
+          try {
+            final FlowControlLimits limits =
+                new FlowControlLimits(
+                    flowControl.getRequestLimit(), flowControl.getWriteRateLimit());
+            future.complete(limits);
+          } catch (final Exception e) {
+            LOG.error("Failure on getting the limit configuration of flow control.", e);
+            future.completeExceptionally(e);
+          }
+        });
+    return future;
+  }
+
   private void writeErrorEventAndBanInstance(
       final long processInstanceKey, final LogStreamWriter writer, final ActorFuture<Void> future) {
     tryWriteErrorEvent(writer, processInstanceKey)
         .ifRightOrLeft(
-            (position) -> {
+            position -> {
               LOG.info("Wrote error record on position {}", position);
               // we only want to make the state change after we wrote the event
               banInstanceInState(processInstanceKey);
@@ -250,6 +286,6 @@ class ZeebePartitionAdminAccess implements PartitionAdminAccess {
             .rejectionReason("");
     final var entry =
         RecordBatchEntry.createEntry(processInstanceKey, recordMetadata, -1, errorRecord);
-    return writer.tryWrite(entry);
+    return writer.tryWrite(WriteContext.internal(), entry);
   }
 }

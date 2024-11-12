@@ -2,12 +2,11 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import static io.camunda.zeebe.snapshots.impl.SnapshotChecksumTest.createChunk;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -32,29 +31,9 @@ public class SfvChecksumTest {
   }
 
   @Test
-  public void shouldUseDefaultValueZeroWhenInitialized() {
-    // given
-    // when
-    // then
-    assertThat(sfvChecksum.getCombinedValue()).isEqualTo(0);
-  }
-
-  @Test
-  public void shouldReadCombinedValueFromComment() {
-    // given
-    final String[] sfvLines = {"; a simple comment to be ignored", "; combinedValue = bbaaccdd"};
-
-    // when
-    sfvChecksum.updateFromSfvFile(sfvLines);
-
-    // then
-    assertThat(sfvChecksum.getCombinedValue()).isEqualTo(0xbbaaccddL);
-  }
-
-  @Test
   public void shouldReadAndWriteSameValues() throws IOException {
     // given
-    final String[] givenSfvLines = {"; combinedValue = 12345678", "file1   aabbccdd"};
+    final String[] givenSfvLines = {"file1   aabbccdd"};
     sfvChecksum.updateFromSfvFile(givenSfvLines);
 
     final var arrayOutputStream = new ByteArrayOutputStream();
@@ -66,13 +45,12 @@ public class SfvChecksumTest {
 
     // then
     assertThat(actualSfVlines).contains(givenSfvLines[0]);
-    assertThat(actualSfVlines).contains(givenSfvLines[1]);
   }
 
   @Test
   public void shouldThrowExceptionOnWriteWhenFlushFails() throws IOException {
     // given
-    final String[] givenSfvLines = {"; combinedValue = 12345678", "file1   aabbccdd"};
+    final String[] givenSfvLines = {"file1   aabbccdd"};
     sfvChecksum.updateFromSfvFile(givenSfvLines);
 
     // when then throw
@@ -84,7 +62,7 @@ public class SfvChecksumTest {
   @Test
   public void shouldThrowExceptionOnWriteWhenWriteFails() throws IOException {
     // given
-    final String[] givenSfvLines = {"; combinedValue = 12345678", "file1   aabbccdd"};
+    final String[] givenSfvLines = {"file1   aabbccdd"};
     sfvChecksum.updateFromSfvFile(givenSfvLines);
 
     // when then throw
@@ -123,20 +101,6 @@ public class SfvChecksumTest {
         .contains("; You might use cksfv or another tool to validate these files manually.");
     assertThat(serialized)
         .contains("; This is an automatically created file - please do NOT modify.");
-  }
-
-  @Test
-  public void shouldThrowExceptionWhenUsingPreDefinedChecksumFromSfv() throws IOException {
-    // given
-    final var folder = temporaryFolder.newFolder().toPath();
-    createChunk(folder, "file1.txt");
-
-    // when
-    sfvChecksum.updateFromSfvFile("; combinedValue = 12341234");
-
-    // then
-    assertThatThrownBy(() -> sfvChecksum.updateFromFile(folder))
-        .isInstanceOf(UnsupportedOperationException.class);
   }
 
   private static final class FailingFlushOutputStream extends OutputStream {

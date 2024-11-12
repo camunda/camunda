@@ -17,7 +17,8 @@ package io.camunda.zeebe.protocol.record.intent;
 
 public enum SignalSubscriptionIntent implements Intent {
   CREATED((short) 0),
-  DELETED((short) 1);
+  DELETED((short) 1),
+  MIGRATED((short) 2);
 
   private final short value;
 
@@ -41,6 +42,8 @@ public enum SignalSubscriptionIntent implements Intent {
         return CREATED;
       case 1:
         return DELETED;
+      case 2:
+        return MIGRATED;
       default:
         return UNKNOWN;
     }

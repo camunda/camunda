@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.clustering;
 
@@ -82,10 +82,15 @@ public final class ClusterConfigFactory {
             .setPort(network.getInternalApi().getPort());
 
     if (network.getSecurity().isEnabled()) {
+      final var security = network.getSecurity();
+
       messaging
           .setTlsEnabled(true)
-          .setCertificateChain(network.getSecurity().getCertificateChainPath())
-          .setPrivateKey(network.getSecurity().getPrivateKeyPath());
+          .configureTls(
+              security.getKeyStore().getFilePath(),
+              security.getKeyStore().getPassword(),
+              security.getPrivateKeyPath(),
+              security.getCertificateChainPath());
     }
     return messaging;
   }

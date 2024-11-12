@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
@@ -27,17 +27,16 @@ import org.junit.jupiter.api.Test;
 @AutoCloseResources
 class AssignUserTaskTest {
 
-  @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true);
-
   @AutoCloseResource ZeebeClient client;
+
+  @TestZeebe
+  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
   private long userTaskKey;
 
   @BeforeEach
   void initClientAndInstances() {
-    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
     final ZeebeResourcesHelper resourcesHelper = new ZeebeResourcesHelper(client);
     userTaskKey = resourcesHelper.createSingleUserTask();
   }
@@ -115,7 +114,7 @@ class AssignUserTaskTest {
                     .allowOverride(false)
                     .send()
                     .join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
 
@@ -123,7 +122,7 @@ class AssignUserTaskTest {
   void shouldRejectIfMissingAssignee() {
     // when / then
     assertThatThrownBy(() -> client.newUserTaskAssignCommand(userTaskKey).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
 
@@ -132,7 +131,7 @@ class AssignUserTaskTest {
     // when / then
     assertThatThrownBy(
             () -> client.newUserTaskAssignCommand(userTaskKey).allowOverride(false).send().join())
-        .hasCauseInstanceOf(ProblemException.class)
+        .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
 }

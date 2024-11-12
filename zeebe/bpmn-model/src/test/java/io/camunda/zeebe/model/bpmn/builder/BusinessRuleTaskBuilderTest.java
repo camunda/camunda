@@ -21,9 +21,12 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class BusinessRuleTaskBuilderTest {
 
@@ -104,5 +107,44 @@ public class BusinessRuleTaskBuilderTest {
         .hasSize(1)
         .extracting(ZeebeCalledDecision::getDecisionId, ZeebeCalledDecision::getResultVariable)
         .containsExactly(tuple("decision-id-1", "result"));
+  }
+
+  @ParameterizedTest
+  @EnumSource(ZeebeBindingType.class)
+  void shouldSetBindingType(final ZeebeBindingType bindingType) {
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask("task", task -> task.zeebeBindingType(bindingType))
+            .done();
+
+    // then
+    final ModelElementInstance businessRuleTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) businessRuleTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeCalledDecision.class))
+        .hasSize(1)
+        .extracting(ZeebeCalledDecision::getBindingType)
+        .containsExactly(bindingType);
+  }
+
+  @Test
+  void shouldSetVersionTag() {
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .businessRuleTask("task", task -> task.zeebeVersionTag("v1"))
+            .done();
+
+    // then
+    final ModelElementInstance businessRuleTask = instance.getModelElementById("task");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) businessRuleTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeCalledDecision.class))
+        .hasSize(1)
+        .extracting(ZeebeCalledDecision::getVersionTag)
+        .containsExactly("v1");
   }
 }

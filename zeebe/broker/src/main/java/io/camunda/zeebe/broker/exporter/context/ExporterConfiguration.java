@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.context;
 
@@ -12,8 +12,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.util.ReflectUtil;
+import java.util.List;
 import java.util.Map;
 
 public record ExporterConfiguration(String id, Map<String, Object> arguments)
@@ -24,6 +26,9 @@ public record ExporterConfiguration(String id, Map<String, Object> arguments)
   // instantiated (the last declared one), using the last matching value.
   private static final ObjectMapper MAPPER =
       JsonMapper.builder()
+          .addModule(
+              new SimpleModule()
+                  .addDeserializer(List.class, new ExporterConfigurationListDeserializer<>()))
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS)
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES)
           .enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_VALUES)

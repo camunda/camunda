@@ -2,12 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.qa.util.actuator;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import feign.Feign;
 import feign.Headers;
 import feign.RequestLine;
@@ -15,8 +17,11 @@ import feign.Retryer;
 import feign.Target.HardCodedTarget;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
+import io.camunda.zeebe.broker.system.management.PartitionStatus.ClockStatus;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.zeebe.containers.ZeebeBrokerNode;
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -72,9 +77,10 @@ public interface PartitionsActuator {
   @SuppressWarnings("JavadocLinkAsPlainText")
   static PartitionsActuator of(final String endpoint) {
     final var target = new HardCodedTarget<>(PartitionsActuator.class, endpoint);
+    final var decoder = new JacksonDecoder(List.of(new Jdk8Module(), new JavaTimeModule()));
     return Feign.builder()
         .encoder(new JacksonEncoder())
-        .decoder(new JacksonDecoder())
+        .decoder(decoder)
         .retryer(Retryer.NEVER_RETRY)
         .target(target);
   }
@@ -86,6 +92,10 @@ public interface PartitionsActuator {
   @RequestLine("POST /pauseExporting")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   Map<Integer, PartitionStatus> pauseExporting();
+
+  @RequestLine("POST /softPauseExporting")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  Map<Integer, PartitionStatus> softPauseExporting();
 
   @RequestLine("POST /resumeExporting")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
@@ -115,5 +125,9 @@ public interface PartitionsActuator {
       Long processedPositionInSnapshot,
       String streamProcessorPhase,
       Long exportedPosition,
-      String exporterPhase) {}
+      String exporterPhase,
+      ClockStatus clock) {}
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  record ClockStatus(Instant instant, String modificationType, Map<String, Object> modification) {}
 }

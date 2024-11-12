@@ -12,7 +12,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: ${{ steps.depth.outputs.depth }}
-      - uses: wagoid/commitlint-github-action@v5
+      - uses: wagoid/commitlint-github-action@v6
         with:
           commitDepth: ${{ github.event.pull_request.commits }}
-          helpURL: https://github.com/camunda/zeebe/blob/main/CONTRIBUTING.md/#commit-message-guidelines
+          helpURL: https://github.com/camunda/camunda/blob/main/CONTRIBUTING.md/#commit-message-guidelines

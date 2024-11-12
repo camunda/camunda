@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.util;
 
@@ -17,13 +17,15 @@ import io.camunda.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTes
 import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorContext;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
@@ -33,6 +35,7 @@ import io.camunda.zeebe.util.allocation.DirectBufferAllocator;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
@@ -137,13 +140,19 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public StreamProcessor startTypedStreamProcessor(
       final int partitionId,
       final TypedRecordProcessorFactory factory,
-      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean awaitOpening) {
     return streamProcessingComposite.startTypedStreamProcessor(
-        partitionId, factory, streamProcessorListenerOpt);
+        partitionId, factory, streamProcessorListenerOpt, processorConfiguration, awaitOpening);
   }
 
   public void pauseProcessing(final int partitionId) {
     streamProcessingComposite.pauseProcessing(partitionId);
+  }
+
+  public void banInstanceInNewTransaction(final int partitionId, final long processInstanceKey) {
+    streamProcessingComposite.banInstanceInNewTransaction(partitionId, processInstanceKey);
   }
 
   public void resumeProcessing(final int partitionId) {
@@ -158,7 +167,11 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return streamProcessingComposite.getStreamProcessor(partitionId);
   }
 
-  public SynchronousLogStream getLogStream(final int partitionId) {
+  public StreamClock getStreamClock(final int partitionId) {
+    return streamProcessingComposite.getStreamClock(partitionId);
+  }
+
+  public TestLogStream getLogStream(final int partitionId) {
     return streamProcessingComposite.getLogStream(partitionId);
   }
 
@@ -174,6 +187,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return streamProcessingComposite.getProcessingState();
   }
 
+  public MutableProcessingState getProcessingState(final int partitionId) {
+    return streamProcessingComposite.getProcessingState(getLogName(partitionId));
+  }
+
   public RecordStream events() {
     return new RecordStream(streams.events(getLogName(startPartitionId)));
   }
@@ -181,7 +198,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
   public void printAllRecords() {
     int partitionId = startPartitionId;
     for (int i = 0; i < partitionCount; i++) {
-      final SynchronousLogStream logStream = streams.getLogStream(getLogName(partitionId++));
+      final TestLogStream logStream = streams.getLogStream(getLogName(partitionId++));
       LogStreamPrinter.printRecords(logStream);
     }
   }
@@ -268,7 +285,7 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
 
     @Override
     protected void before() {
-      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
+      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get(), clock);
       streams.withStreamProcessorMode(streamProcessorMode);
       streams.maxCommandsInBatch(maxCommandsInBatch);
 

@@ -11,11 +11,12 @@ inputs:
     default: 'camunda/zeebe'
     required: true
   version:
-    description: 'The image version, e.g. SNAPSHOT, 8.1.0'
+    description: 'The image version, e.g. SNAPSHOT, 8.1.0. Can also accept a list of versions to create multiple tags for the same image.'
     required: false
   distball:
     description: 'The path to the Camunda platform distribution TAR ball'
-    required: true
+    required: false
+    default: 'dist/target/camunda-zeebe-*.tar.gz'
   revision:
     description: 'The revision of the source the content of this image is based on.'
     required: false
@@ -37,7 +38,7 @@ inputs:
 outputs:
   image:
     description: "Fully qualified image name available in your local Docker daemon"
-    value: ${{ steps.get-image.outputs.result }}
+    value: ${{ steps.get-image-output.outputs.result }}
   date:
     description: "The ISO 8601 date at which the image was created"
     value: ${{ steps.get-date.outputs.result }}
@@ -50,11 +51,15 @@ runs:
   steps:
     - name: Set up multi-platform support
       uses: docker/setup-qemu-action@v3
+
     # Creating a context is required when installing buildx on self-hosted runners
     - name: Create context
       shell: bash
       run: |
-        docker context create zeebe-context
+        if ! docker context ls --format '{{.Name}}' | grep -q "^zeebe-context$"; then
+          docker context create zeebe-context
+        fi
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
       with:
@@ -62,29 +67,46 @@ runs:
         driver-opts: network=host
         endpoint: zeebe-context
         install: true
+
     - name: Set semantic version from Maven project
       id: get-version
       if: ${{ inputs.version == ''}}
       shell: bash
       run: echo "result=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec)" >> $GITHUB_OUTPUT
+
     - name: Set image build label from ISO 8601 DATE
       id: get-date
       shell: bash
       run: echo "result=$(date --iso-8601=seconds)" >> $GITHUB_OUTPUT
-    - name: Set image name from params and/or project version
+
+    - name: Build image names from params and/or project version
       id: get-image
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ inputs.repository }}
+        tags: ${{ inputs.version || steps.get-version.outputs.result }}
+
+    # Pick one (the first) out of multiple tags for the image name out, all
+    # should work equally well in a local Docker daemon
+    - name: Set fully qualified image name for output
+      id: get-image-output
       shell: bash
-      run: echo "result=${{ inputs.repository }}:${{ inputs.version || steps.get-version.outputs.result }}" >> $GITHUB_OUTPUT
+      run: echo "result=$(echo '${{ steps.get-image.outputs.tags }}' | head -n 1)" >> $GITHUB_OUTPUT
+
     - name: Set DISTBALL path relative to the build context
       id: get-distball
       shell: bash
       run: echo "result=$(realpath --relative-to="${PWD}" ${{ inputs.distball }})" >> $GITHUB_OUTPUT
+
     - name: Build Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
+      env:
+        DOCKER_BUILD_SUMMARY: false
+        DOCKER_BUILD_RECORD_UPLOAD: false
       with:
         context: .
         file: ${{ inputs.dockerfile }}
-        tags: ${{ steps.get-image.outputs.result }}
+        tags: ${{ steps.get-image.outputs.tags }}
         load: ${{ inputs.push != 'true' }}
         push: ${{ inputs.push }}
         platforms: ${{ inputs.platforms }}

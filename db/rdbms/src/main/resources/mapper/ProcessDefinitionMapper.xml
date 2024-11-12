@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.ProcessDefinitionMapper">
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery">
+    SELECT COUNT(*)
+    FROM PROCESS_DEFINITION pi
+    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchResultMap">
+    SELECT PROCESS_DEFINITION_KEY,
+    PROCESS_DEFINITION_ID,
+    RESOURCE_NAME,
+    BPMN_XML,
+    NAME,
+    TENANT_ID,
+    VERSION_TAG,
+    VERSION,
+    FORM_ID
+    FROM PROCESS_DEFINITION
+    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
+        <include
+          refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.processDefinitionSortMapper"/>
+        ${item.order}
+      </foreach>
+    </if>
+    ${paging.after}
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
+      AND PROCESS_DEFINITION_KEY IN
+      <foreach collection="filter.processDefinitionKeys" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionIds != null and !filter.processDefinitionIds.isEmpty()">
+      AND PROCESS_DEFINITION_ID IN
+      <foreach collection="filter.processDefinitionIds" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.names != null and !filter.names.isEmpty()">
+      AND name IN
+      <foreach collection="filter.names" item="value" open="(" separator=", " close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.resourceNames != null and !filter.resourceNames.isEmpty()">
+      AND RESOURCE_NAME IN
+      <foreach collection="filter.resourceNames" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+    <if test="filter.versions != null and !filter.versions.isEmpty()">
+      AND VERSION IN
+      <foreach collection="filter.versions" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+    <if test="filter.versionTags != null and !filter.versionTags.isEmpty()">
+      AND VERSION_TAG IN
+      <foreach collection="filter.versionTags" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+  </sql>
+
+  <sql id="processDefinitionSortMapper">
+    <choose>
+      <when test='item.field == "key"'>
+        PROCESS_DEFINITION_KEY
+      </when>
+      <when test='item.field == "resourceName"'>
+        RESOURCE_NAME
+      </when>
+      <when test='item.field == "name"'>
+        NAME
+      </when>
+      <when test='item.field == "version"'>
+        VERSION
+      </when>
+      <when test='item.field == "versionTag"'>
+        VERSION_TAG
+      </when>
+      <when test='item.field == "bpmnProcessId"'>
+        PROCESS_DEFINITION_ID
+      </when>
+      <when test='item.field == "tenantId"'>
+        TENANT_ID
+      </when>
+    </choose>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessDefinitionEntity">
+    <constructor>
+      <idArg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="NAME" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="BPMN_XML" javaType="java.lang.String"/>
+      <arg column="RESOURCE_NAME" javaType="java.lang.String"/>
+      <arg column="VERSION" javaType="java.lang.Integer"/>
+      <arg column="VERSION_TAG" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+      <arg column="FORM_ID" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel"
+    flushCache="true">
+    INSERT INTO PROCESS_DEFINITION (PROCESS_DEFINITION_KEY, PROCESS_DEFINITION_ID, RESOURCE_NAME,
+                                    BPMN_XML, NAME, TENANT_ID, VERSION_TAG, VERSION, FORM_ID)
+    VALUES (#{processDefinitionKey}, #{processDefinitionId}, #{resourceName}, #{bpmnXml}, #{name},
+            #{tenantId}, #{versionTag}, #{version}, #{formId})
+  </insert>
+</mapper>

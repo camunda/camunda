@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.management;
 
@@ -12,13 +12,16 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.broker.system.management.PartitionStatus.ClockStatus;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.ActorFutureCollector;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.util.health.HealthReport;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +60,11 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   @Override
   public void pauseExporting() {
     actor.call(this::pauseExportingOnAllPartitions);
+  }
+
+  @Override
+  public void softPauseExporting() {
+    actor.call(this::softPauseExportingOnAllPartitions);
   }
 
   @Override
@@ -143,6 +151,11 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     return partitionStatus;
   }
 
+  private Map<Integer, HealthReport> getPartitionHealth() {
+    return partitionManager.getZeebePartitions().stream()
+        .collect(Collectors.toMap(ZeebePartition::getPartitionId, ZeebePartition::getHealthReport));
+  }
+
   private void getPartitionStatus(
       final Role role,
       final ZeebePartition partition,
@@ -160,13 +173,17 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
             .flatMap(FileBasedSnapshotId::ofFileName)
             .map(FileBasedSnapshotId::getProcessedPosition)
             .orElse(null);
+    final var clockFuture = streamProcessor.getClock();
+
+    final var partitionHealth = getPartitionHealth().get(partition.getPartitionId());
 
     actor.runOnCompletion(
         List.of(
             (ActorFuture) positionFuture,
             (ActorFuture) currentPhaseFuture,
             (ActorFuture) exporterPhaseFuture,
-            (ActorFuture) exporterPositionFuture),
+            (ActorFuture) exporterPositionFuture,
+            (ActorFuture) clockFuture),
         error -> {
           if (error != null) {
             partitionStatus.completeExceptionally(error);
@@ -176,6 +193,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
           final var processorPhase = currentPhaseFuture.join();
           final var exporterPhase = exporterPhaseFuture.join();
           final var exporterPosition = exporterPositionFuture.join();
+          final var clock = getClockStatus(clockFuture.join());
           final var status =
               new PartitionStatus(
                   role,
@@ -184,9 +202,16 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
                   processedPositionInSnapshot,
                   processorPhase,
                   exporterPhase,
-                  exporterPosition);
+                  exporterPosition,
+                  clock,
+                  HealthTree.fromHealthReport(partitionHealth));
           partitionStatus.complete(status);
         });
+  }
+
+  private ClockStatus getClockStatus(final StreamClock clock) {
+    final var modification = clock.currentModification();
+    return new ClockStatus(clock.instant(), modification.getClass().getSimpleName(), modification);
   }
 
   private Optional<String> getSnapshotId(final ZeebePartition partition) {
@@ -213,7 +238,7 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
   }
 
   private ActorFuture<List<Void>> resumeStreamProcessingOnAllPartitions() {
-    LOG.info("Pausing StreamProcessor on all partitions.");
+    LOG.info("Resume StreamProcessor on all partitions.");
     return partitionManager.getZeebePartitions().stream()
         .map(ZeebePartition::getAdminAccess)
         .map(PartitionAdminAccess::resumeProcessing)
@@ -225,6 +250,14 @@ public final class BrokerAdminServiceImpl extends Actor implements BrokerAdminSe
     return partitionManager.getZeebePartitions().stream()
         .map(ZeebePartition::getAdminAccess)
         .map(PartitionAdminAccess::takeSnapshot)
+        .collect(new ActorFutureCollector<>(actor));
+  }
+
+  private ActorFuture<List<Void>> softPauseExportingOnAllPartitions() {
+    LOG.info("Soft Pausing exporting on all partitions.");
+    return partitionManager.getZeebePartitions().stream()
+        .map(ZeebePartition::getAdminAccess)
+        .map(PartitionAdminAccess::softPauseExporting)
         .collect(new ActorFutureCollector<>(actor));
   }
 

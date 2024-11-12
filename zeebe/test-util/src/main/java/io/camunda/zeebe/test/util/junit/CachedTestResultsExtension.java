@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.test.util.junit;
 
@@ -18,6 +18,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedSet;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -56,6 +58,7 @@ public final class CachedTestResultsExtension
     implements TestWatcher, AfterAllCallback, BeforeAllCallback, InvocationInterceptor {
   public static final String CACHE_KEY = "cache";
   public static final String SHUTDOWN_HOOK_KEY = "shutdownHook";
+  public static final String PERIODIC_SAVE_KEY = "periodicSave";
   private final Path cachePath;
 
   /**
@@ -101,12 +104,26 @@ public final class CachedTestResultsExtension
             .getOrComputeIfAbsent(
                 SHUTDOWN_HOOK_KEY, key -> new Thread(cache::snapshot), Thread.class);
     Runtime.getRuntime().addShutdownHook(hook);
+
+    final var timer =
+        getStore(context)
+            .getOrComputeIfAbsent(PERIODIC_SAVE_KEY, key -> new Timer(true), Timer.class);
+    timer.scheduleAtFixedRate(
+        new TimerTask() {
+          @Override
+          public void run() {
+            cache.snapshot();
+          }
+        },
+        30_000,
+        30_000);
   }
 
   @Override
   public void afterAll(final ExtensionContext context) {
     final var shutdownHook = getStore(context).remove(SHUTDOWN_HOOK_KEY, Thread.class);
     Runtime.getRuntime().removeShutdownHook(shutdownHook);
+    getStore(context).remove(PERIODIC_SAVE_KEY, Timer.class).cancel();
     getCache(context).snapshot();
   }
 
@@ -215,7 +232,7 @@ public final class CachedTestResultsExtension
     void confirm(final String id) {
       final var invocation = staged.remove(id);
       if (invocation == null) {
-        throw new IllegalArgumentException("No staged invocation with id " + id + " found.");
+        return;
       }
       if (!cached.add(invocation)) {
         throw new IllegalStateException("Invocation " + invocation + "is already cached.");
@@ -239,7 +256,7 @@ public final class CachedTestResultsExtension
       }
     }
 
-    void snapshot() {
+    synchronized void snapshot() {
       try (final var writer = Files.newBufferedWriter(path)) {
         for (final var version : cached) {
           writer.write(version.toLine());

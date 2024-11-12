@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
@@ -53,6 +53,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import io.camunda.zeebe.test.util.TestUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -86,7 +87,8 @@ public final class EngineErrorHandlingTest {
 
   @Before
   public void setUp() {
-    streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
+    streams =
+        new TestStreams(tempFolder, closeables, actorSchedulerRule.get(), InstantSource.system());
     mockCommandResponseWriter = streams.getMockedResponseWriter();
     streams.createLogStream(STREAM_NAME);
 

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.metrics;
 
@@ -21,9 +21,10 @@ import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,17 +33,21 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class MetricsExporterTest {
+  private static final TtlKeyCache DEFAULT_KEY_CACHE =
+      new TtlKeyCache(MetricsExporter.TIME_TO_LIVE.toMillis());
 
   @Test
   void shouldObserveJobLifetime() {
     // given
-    final var metrics = new ExecutionLatencyMetrics();
-    final var exporter = new MetricsExporter(metrics);
+    final var meterRegistry = new SimpleMeterRegistry();
+    final var partitionId = 1;
+    final var metrics = new ExecutionLatencyMetrics(meterRegistry, 1);
+    final var exporter =
+        new MetricsExporter(metrics, DEFAULT_KEY_CACHE, DEFAULT_KEY_CACHE, meterRegistry);
     exporter.open(new ExporterTestController());
-    assertThat(metrics.getJobLifeTime().collect())
-        .flatMap(x -> x.samples)
-        .describedAs("Expected no metrics to be recorded at start of test")
-        .isEmpty();
+    assertThat(meterRegistry.getMeters().size())
+        .isEqualTo(0)
+        .describedAs("Expected no metrics to be measured at start");
 
     // when
     exporter.export(
@@ -51,7 +56,7 @@ class MetricsExporterTest {
             .withValueType(ValueType.JOB)
             .withIntent(JobIntent.CREATED)
             .withTimestamp(1651505728460L)
-            .withKey(Protocol.encodePartitionId(1, 1))
+            .withKey(Protocol.encodePartitionId(partitionId, 1))
             .build());
 
     // pass a job batch activated to simulate the full lifetime
@@ -72,33 +77,37 @@ class MetricsExporterTest {
             .withValueType(ValueType.JOB)
             .withIntent(JobIntent.COMPLETED)
             .withTimestamp(1651505729571L)
-            .withKey(Protocol.encodePartitionId(1, 1))
+            .withKey(Protocol.encodePartitionId(partitionId, 1))
             .build());
 
     // then
-    assertThat(metrics.getJobLifeTime().collect())
-        .flatMap(x -> x.samples)
-        .filteredOn(s -> s.name.equals("zeebe_job_life_time_count"))
-        .map(s -> s.value)
-        .describedAs("Expected exactly 1 observed job_life_time sample counted")
-        .containsExactly(1d);
-    assertThat(metrics.getJobLifeTime().collect())
-        .flatMap(x -> x.samples)
-        .filteredOn(s -> s.name.equals("zeebe_job_life_time_bucket"))
-        .filteredOn(s -> s.value == 1)
-        .map(s -> s.labelValues)
-        .describedAs("Expected exactly 1 observed job_life_time sample within bounds")
-        .contains(List.of("0", "2.5"));
+    final var jobLifeTime = meterRegistry.timer("zeebe.job.life.time");
+
+    assertThat(jobLifeTime.count())
+        .isEqualTo(1)
+        .describedAs("Expected exactly 1 observed job_life_time sample counted");
+
+    assertThat(
+            Arrays.stream(jobLifeTime.takeSnapshot().histogramCounts())
+                .anyMatch(bucket -> bucket.bucket(TimeUnit.SECONDS) == 2.5 && bucket.count() == 1))
+        .isTrue()
+        .describedAs("Expected the correct job_life_time bucket to have counted the event");
   }
 
   @Test
-  void shouldCleanupProcessInstancesWithSameStartTime() {
+  void shouldCleanupProcessInstancesWithSameStartTime() throws Exception {
     // given
     final var processCache = new TtlKeyCache();
     final var exporter =
-        new MetricsExporter(new ExecutionLatencyMetrics(), processCache, new TtlKeyCache());
+        new MetricsExporter(
+            new ExecutionLatencyMetrics(),
+            processCache,
+            new TtlKeyCache(),
+            new SimpleMeterRegistry());
     final var controller = new ExporterTestController();
     exporter.open(controller);
+    exporter.configure(new ExporterTestContext());
+
     exporter.export(
         ImmutableRecord.<ProcessInstanceRecord>builder()
             .withRecordType(RecordType.EVENT)
@@ -126,13 +135,13 @@ class MetricsExporterTest {
   }
 
   @Test
-  void shouldCleanupJobWithSameStartTime() {
+  void shouldCleanupJobWithSameStartTime() throws Exception {
     // given
     final var jobCache = new TtlKeyCache();
-    final var exporter =
-        new MetricsExporter(new ExecutionLatencyMetrics(), new TtlKeyCache(), jobCache);
+    final var exporter = new MetricsExporter();
     final var controller = new ExporterTestController();
     exporter.open(controller);
+    exporter.configure(new ExporterTestContext());
     exporter.export(
         ImmutableRecord.builder()
             .withRecordType(RecordType.EVENT)
@@ -157,6 +166,7 @@ class MetricsExporterTest {
     assertThat(jobCache.isEmpty()).isTrue();
   }
 
+  //
   @Nested
   @DisplayName("MetricsExporter should configure a Filter")
   class FilterTest {

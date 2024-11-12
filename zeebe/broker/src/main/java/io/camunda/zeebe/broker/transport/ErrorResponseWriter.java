@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.transport;
 
@@ -41,6 +41,7 @@ public final class ErrorResponseWriter implements BufferWriter {
   private static final String PROCESS_NOT_FOUND_FORMAT =
       "Expected to get process with %s, but no such process found";
   private static final String RESOURCE_EXHAUSTED = "Reached maximum capacity of requests handled";
+  private static final String PARTITION_UNAVAILABLE = "Cannot accept requests for partition %d.";
   private static final String OUT_OF_DISK_SPACE =
       "Cannot accept requests for partition %d. Broker is out of disk space";
 
@@ -86,6 +87,15 @@ public final class ErrorResponseWriter implements BufferWriter {
 
   public ErrorResponseWriter resourceExhausted(final String message) {
     return errorCode(ErrorCode.RESOURCE_EXHAUSTED).errorMessage(message);
+  }
+
+  public ErrorResponseWriter partitionUnavailable(final int partitionId) {
+    return errorCode(ErrorCode.PARTITION_UNAVAILABLE)
+        .errorMessage(String.format(PARTITION_UNAVAILABLE, partitionId));
+  }
+
+  public ErrorResponseWriter partitionUnavailable(final String message) {
+    return errorCode(ErrorCode.PARTITION_UNAVAILABLE).errorMessage(message);
   }
 
   public ErrorResponseWriter outOfDiskSpace(final int partitionId) {
@@ -134,7 +144,16 @@ public final class ErrorResponseWriter implements BufferWriter {
                           + " but the writer is closed. Most likely, this node is not the"
                           + " leader for this partition.")
                       .formatted(partitionId));
-      case FULL -> raiseInternalError("because the writer is full.", partitionId);
+      case WRITE_LIMIT_EXHAUSTED ->
+          resourceExhausted(
+              String.format(
+                  "Failed to write client request to partition '%d', because the write limit is exhausted.",
+                  partitionId));
+      case REQUEST_LIMIT_EXHAUSTED ->
+          resourceExhausted(
+              String.format(
+                  "Failed to write client request to partition '%d', because the request limit is exhausted.",
+                  partitionId));
       case INVALID_ARGUMENT -> raiseInternalError("due to invalid entry.", partitionId);
     };
   }

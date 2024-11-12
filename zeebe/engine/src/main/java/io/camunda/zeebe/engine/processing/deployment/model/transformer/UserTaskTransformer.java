@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
@@ -13,20 +13,27 @@ import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.JobWorkerProperties;
+import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
 import io.camunda.zeebe.engine.processing.deployment.model.element.UserTaskProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
+import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.protocol.Protocol;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 
 public final class UserTaskTransformer implements ModelElementTransformer<UserTask> {
@@ -58,10 +65,14 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
     transformTaskSchedule(element, userTaskProperties);
     transformTaskFormId(element, userTaskProperties);
     transformModelTaskHeaders(element, userTaskProperties);
+    transformBindingType(element, userTaskProperties);
+    transformVersionTag(element, userTaskProperties);
 
     if (isZeebeUserTask) {
       transformExternalReference(element, userTaskProperties);
+      transformTaskPriority(element, userTaskProperties);
       userTask.setUserTaskProperties(userTaskProperties);
+      transformTaskListeners(element, userTask, userTaskProperties);
     } else {
       final var jobWorkerProperties = new JobWorkerProperties();
       jobWorkerProperties.wrap(userTaskProperties);
@@ -242,5 +253,69 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         }
       }
     }
+  }
+
+  private void transformBindingType(
+      final UserTask element, final UserTaskProperties userTaskProperties) {
+    final ZeebeFormDefinition formDefinition =
+        element.getSingleExtensionElement(ZeebeFormDefinition.class);
+
+    if (formDefinition != null) {
+      userTaskProperties.setFormBindingType(formDefinition.getBindingType());
+    }
+  }
+
+  private void transformVersionTag(
+      final UserTask element, final UserTaskProperties userTaskProperties) {
+    final ZeebeFormDefinition formDefinition =
+        element.getSingleExtensionElement(ZeebeFormDefinition.class);
+
+    if (formDefinition != null) {
+      userTaskProperties.setFormVersionTag(formDefinition.getVersionTag());
+    }
+  }
+
+  private void transformTaskPriority(
+      final UserTask element, final UserTaskProperties userTaskProperties) {
+
+    final ZeebePriorityDefinition priorityDefinition =
+        element.getSingleExtensionElement(ZeebePriorityDefinition.class);
+    if (priorityDefinition != null) {
+      final var priority = StringUtils.trim(priorityDefinition.getPriority());
+      if (priority != null && !priority.isBlank()) {
+        final var priorityExpression = expressionLanguage.parseExpression(priority);
+        if (priorityExpression.isStatic()) {
+          userTaskProperties.setPriority(expressionLanguage.parseExpression(priority));
+        } else {
+          userTaskProperties.setPriority(priorityExpression);
+        }
+      }
+    }
+  }
+
+  private void transformTaskListeners(
+      final FlowNode element,
+      final ExecutableUserTask userTask,
+      final UserTaskProperties userTaskProperties) {
+    Optional.ofNullable(element.getSingleExtensionElement(ZeebeTaskListeners.class))
+        .map(
+            listeners ->
+                listeners.getTaskListeners().stream()
+                    .map(listener -> toTaskListenerModel(listener, userTaskProperties))
+                    .toList())
+        .ifPresent(userTask::setTaskListeners);
+  }
+
+  private TaskListener toTaskListenerModel(
+      ZeebeTaskListener zeebeTaskListener, final UserTaskProperties userTaskProperties) {
+    final TaskListener listener = new TaskListener();
+    listener.setEventType(zeebeTaskListener.getEventType());
+
+    final JobWorkerProperties jobProperties = new JobWorkerProperties();
+    jobProperties.wrap(userTaskProperties);
+    jobProperties.setType(expressionLanguage.parseExpression(zeebeTaskListener.getType()));
+    jobProperties.setRetries(expressionLanguage.parseExpression(zeebeTaskListener.getRetries()));
+    listener.setJobWorkerProperties(jobProperties);
+    return listener;
   }
 }

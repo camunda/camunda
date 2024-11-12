@@ -2,8 +2,8 @@ name: Zeebe Version Compatibility
 on:
   workflow_dispatch:
   schedule:
-    # Run at 10:00 on every tuesday
-    - cron: '0 10 * * 2'
+    # Run at 6:00 every day
+    - cron: '0 6 * * *'
 concurrency:
   group: zeebe-version-compatibility
   cancel-in-progress: false
@@ -12,8 +12,8 @@ permissions:
   actions: read # Required to get the previous report
 
 jobs:
-  rolling-update-tests:
-    name: Rolling Update Tests
+  released-versions:
+    name: Released Versions
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -37,12 +37,14 @@ jobs:
           path: ${{ github.workspace }}
           run-id: ${{ steps.get-last-run-id.outputs.last_run_id }}
           github-token: ${{ github.token }}
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
       - name: Test rolling update
         run: >
           ./mvnw -B --no-snapshot-updates -pl zeebe/qa/update-tests
@@ -65,10 +67,41 @@ jobs:
         with:
           name: zeebe-version-compatibility-${{ strategy.job-index }}
           path: ${{ github.workspace }}/zeebe-version-compatibility
+  current-snapshot:
+    name: Current Snapshot
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild
+      - uses: ./.github/actions/build-platform-docker
+        with:
+          version: current-test
+      - name: Test snapshot
+        run: >
+          ./mvnw -B --no-snapshot-updates -pl zeebe/qa/update-tests
+          -D it.test=io.camunda.zeebe.test.RollingUpdateTest
+          -D failsafe.rerunFailingTestsCount=3
+          -D skipChecks
+          verify
+        env:
+          ZEEBE_CI_CHECK_CURRENT_VERSION_COMPATIBILITY: true
+      - uses: ./.github/actions/collect-test-artifacts
+        if: always()
+        with:
+          name: "Snapshot version compatibility"
   update-shared-report:
     name: Update Report
     runs-on: ubuntu-latest
-    needs: rolling-update-tests
+    needs: released-versions
     if: always()
     steps:
       - uses: actions/checkout@v4
@@ -87,3 +120,36 @@ jobs:
         with:
           name: zeebe-version-compatibility
           path: ${{ github.workspace }}/zeebe-version-compatibility
+  notify:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [released-versions, current-snapshot]
+    if: failure()
+    steps:
+      - uses: actions/checkout@v4
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":warning: *Zeebe Version Compatibility checks failed:*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK

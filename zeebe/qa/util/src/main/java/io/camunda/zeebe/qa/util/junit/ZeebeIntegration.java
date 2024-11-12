@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.qa.util.junit;
 
@@ -108,5 +108,19 @@ public @interface ZeebeIntegration {
      * defaults to 1 minute per brokers in the cluster.
      */
     long topologyTimeoutMs() default 0;
+
+    /**
+     * Specifies the name of the resource initialization method to be invoked before the test
+     * execution. This method is responsible for setting up static resources, such {@link
+     * io.camunda.zeebe.qa.util.cluster.TestCluster} or {@link
+     * io.camunda.zeebe.qa.util.cluster.TestApplication} instances required by the test. If
+     * provided, the method will be invoked via reflection during the test lifecycle.
+     *
+     * <p>This is particularly useful when tests are retried (e.g., in a Maven Surefire setup),
+     * ensuring that static resources are reinitialized before each test retry.
+     *
+     * <p>Defaults to an empty string if no initialization is required.
+     */
+    String initMethod() default "";
   }
 }

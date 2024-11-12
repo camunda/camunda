@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.instance;
 
@@ -13,14 +13,14 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
+public class DbUserTaskState implements MutableUserTaskState {
 
   // key => user task record value
   // we need two separate wrapper to not interfere with get and put
@@ -38,10 +38,28 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
   private final ColumnFamily<DbForeignKey<DbLong>, UserTaskLifecycleStateValue>
       statesUserTaskColumnFamily;
 
+  // key => intermediate user task state
+  // we need two separate wrapper to not interfere with get and put
+  // see https://github.com/zeebe-io/zeebe/issues/1914
+  private final UserTaskIntermediateStateValue userTaskIntermediateStateToRead =
+      new UserTaskIntermediateStateValue();
+  private final UserTaskIntermediateStateValue userTaskIntermediateStateToWrite =
+      new UserTaskIntermediateStateValue();
+
+  private final DbLong userTaskIntermediateStateKey;
+  private final ColumnFamily<DbLong, UserTaskIntermediateStateValue>
+      userTasksIntermediateStatesColumnFamily;
+
+  private final UserTaskRecordRequestMetadata userTaskRecordRequestMetadata =
+      new UserTaskRecordRequestMetadata();
+  private final ColumnFamily<DbLong, UserTaskRecordRequestMetadata>
+      userTasksRecordRequestMetadataColumnFamily;
+
   public DbUserTaskState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     userTaskKey = new DbLong();
     fkUserTask = new DbForeignKey<>(userTaskKey, ZbColumnFamilies.USER_TASKS);
+    userTaskIntermediateStateKey = new DbLong();
 
     userTasksColumnFamily =
         zeebeDb.createColumnFamily(
@@ -50,6 +68,20 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
     statesUserTaskColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.USER_TASK_STATES, transactionContext, fkUserTask, userTaskState);
+
+    userTasksIntermediateStatesColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.USER_TASK_INTERMEDIATE_STATES,
+            transactionContext,
+            userTaskIntermediateStateKey,
+            userTaskIntermediateStateToRead);
+
+    userTasksRecordRequestMetadataColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.USER_TASK_RECORD_REQUEST_METADATA,
+            transactionContext,
+            userTaskKey,
+            userTaskRecordRequestMetadata);
   }
 
   @Override
@@ -111,6 +143,46 @@ public class DbUserTaskState implements UserTaskState, MutableUserTaskState {
       return userTask;
     }
     return null;
+  }
+
+  @Override
+  public UserTaskIntermediateStateValue getIntermediateState(final long userTaskKey) {
+    userTaskIntermediateStateKey.wrapLong(userTaskKey);
+    return userTasksIntermediateStatesColumnFamily.get(userTaskIntermediateStateKey);
+  }
+
+  @Override
+  public void storeIntermediateState(final UserTaskRecord record, final LifecycleState lifecycle) {
+    userTaskIntermediateStateKey.wrapLong(record.getUserTaskKey());
+    userTaskIntermediateStateToWrite.setRecord(record);
+    userTaskIntermediateStateToWrite.setLifecycleState(lifecycle);
+    userTasksIntermediateStatesColumnFamily.insert(
+        userTaskIntermediateStateKey, userTaskIntermediateStateToWrite);
+  }
+
+  @Override
+  public void deleteIntermediateState(final long key) {
+    userTaskIntermediateStateKey.wrapLong(key);
+    userTasksIntermediateStatesColumnFamily.deleteExisting(userTaskIntermediateStateKey);
+  }
+
+  @Override
+  public Optional<UserTaskRecordRequestMetadata> findRecordRequestMetadata(final long key) {
+    userTaskKey.wrapLong(key);
+    return Optional.ofNullable(userTasksRecordRequestMetadataColumnFamily.get(userTaskKey));
+  }
+
+  @Override
+  public void storeRecordRequestMetadata(
+      final long key, final UserTaskRecordRequestMetadata recordRequestMetadata) {
+    userTaskKey.wrapLong(key);
+    userTasksRecordRequestMetadataColumnFamily.insert(userTaskKey, recordRequestMetadata);
+  }
+
+  @Override
+  public void deleteRecordRequestMetadata(final long key) {
+    userTaskKey.wrapLong(key);
+    userTasksRecordRequestMetadataColumnFamily.deleteIfExists(userTaskKey);
   }
 
   private List<String> getAuthorizedTenantIds(final Map<String, Object> authorizations) {

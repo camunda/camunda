@@ -2,25 +2,28 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey;
 import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
-import org.agrona.collections.Object2ObjectHashMap;
 
 public class DbFormState implements MutableFormState {
 
@@ -29,22 +32,54 @@ public class DbFormState implements MutableFormState {
   private final DbString tenantIdKey;
   private final DbLong dbFormKey;
   private final DbTenantAwareKey<DbLong> tenantAwareFormKey;
+  private final DbForeignKey<DbTenantAwareKey<DbLong>> fkFormKey;
   private final PersistedForm dbPersistedForm;
   private final ColumnFamily<DbTenantAwareKey<DbLong>, PersistedForm> formsByKey;
   private final DbString dbFormId;
   private final VersionManager versionManager;
+
   private final DbLong formVersion;
   private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
   private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>> tenantAwareIdAndVersionKey;
   private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedForm>
       formByIdAndVersionColumnFamily;
-  private final Object2ObjectHashMap<TenantIdAndFormId, PersistedForm> formByTenantAndIdCache;
+
+  private final DbLong dbDeploymentKey;
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>
+      tenantAwareFormIdAndDeploymentKey;
+
+  /**
+   * <b>Note</b>: Will only be filled with entries deployed from 8.6 onwards; previously deployed
+   * forms will not have an entry in this column family.
+   */
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>,
+          DbForeignKey<DbTenantAwareKey<DbLong>>>
+      formKeyByFormIdAndDeploymentKeyColumnFamily;
+
+  private final DbString dbVersionTag;
+  private final DbTenantAwareKey<DbCompositeKey<DbString, DbString>>
+      tenantAwareFormIdAndVersionTagKey;
+
+  /**
+   * <b>Note</b>: Will only be filled with forms deployed from 8.6 onwards that have a version tag
+   * assigned (which is an optional property).
+   */
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbString>>,
+          DbForeignKey<DbTenantAwareKey<DbLong>>>
+      formKeyByFormIdAndVersionTagColumnFamily;
+
+  private final Cache<TenantIdAndFormId, PersistedForm> formsByTenantIdAndIdCache;
 
   public DbFormState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final EngineConfiguration config) {
     tenantIdKey = new DbString();
     dbFormKey = new DbLong();
     tenantAwareFormKey = new DbTenantAwareKey<>(tenantIdKey, dbFormKey, PlacementType.PREFIX);
+    fkFormKey = new DbForeignKey<>(tenantAwareFormKey, ZbColumnFamilies.FORMS);
     dbPersistedForm = new PersistedForm();
     formsByKey =
         zeebeDb.createColumnFamily(
@@ -62,11 +97,34 @@ public class DbFormState implements MutableFormState {
             tenantAwareIdAndVersionKey,
             dbPersistedForm);
 
+    dbDeploymentKey = new DbLong();
+    tenantAwareFormIdAndDeploymentKey =
+        new DbTenantAwareKey<>(
+            tenantIdKey, new DbCompositeKey<>(dbFormId, dbDeploymentKey), PlacementType.PREFIX);
+    formKeyByFormIdAndDeploymentKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.FORM_KEY_BY_FORM_ID_AND_DEPLOYMENT_KEY,
+            transactionContext,
+            tenantAwareFormIdAndDeploymentKey,
+            fkFormKey);
+
+    dbVersionTag = new DbString();
+    tenantAwareFormIdAndVersionTagKey =
+        new DbTenantAwareKey<>(
+            tenantIdKey, new DbCompositeKey<>(dbFormId, dbVersionTag), PlacementType.PREFIX);
+    formKeyByFormIdAndVersionTagColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.FORM_KEY_BY_FORM_ID_AND_VERSION_TAG,
+            transactionContext,
+            tenantAwareFormIdAndVersionTagKey,
+            fkFormKey);
+
     versionManager =
         new VersionManager(
             DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.FORM_VERSION, transactionContext);
 
-    formByTenantAndIdCache = new Object2ObjectHashMap<>();
+    formsByTenantIdAndIdCache =
+        CacheBuilder.newBuilder().maximumSize(config.getFormCacheCapacity()).build();
   }
 
   @Override
@@ -75,7 +133,7 @@ public class DbFormState implements MutableFormState {
     dbFormKey.wrapLong(record.getFormKey());
     dbPersistedForm.wrap(record);
     formsByKey.upsert(tenantAwareFormKey, dbPersistedForm);
-    formByTenantAndIdCache.put(
+    formsByTenantIdAndIdCache.put(
         new TenantIdAndFormId(record.getTenantId(), record.getFormIdBuffer()),
         dbPersistedForm.copy());
   }
@@ -90,6 +148,28 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
+  public void storeFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+    dbFormKey.wrapLong(record.getFormKey());
+    dbFormId.wrapString(record.getFormId());
+    dbDeploymentKey.wrapLong(record.getDeploymentKey());
+    formKeyByFormIdAndDeploymentKeyColumnFamily.upsert(
+        tenantAwareFormIdAndDeploymentKey, fkFormKey);
+  }
+
+  @Override
+  public void storeFormInFormKeyByFormIdAndVersionTagColumnFamily(final FormRecord record) {
+    final var versionTag = record.getVersionTag();
+    if (!versionTag.isBlank()) {
+      tenantIdKey.wrapString(record.getTenantId());
+      dbFormKey.wrapLong(record.getFormKey());
+      dbFormId.wrapString(record.getFormId());
+      dbVersionTag.wrapString(versionTag);
+      formKeyByFormIdAndVersionTagColumnFamily.upsert(tenantAwareFormIdAndVersionTagKey, fkFormKey);
+    }
+  }
+
+  @Override
   public void updateLatestVersion(final FormRecord record) {
     versionManager.addResourceVersion(
         record.getFormId(), record.getVersion(), record.getTenantId());
@@ -100,7 +180,7 @@ public class DbFormState implements MutableFormState {
     tenantIdKey.wrapString(record.getTenantId());
     dbFormKey.wrapLong(record.getFormKey());
     formsByKey.deleteExisting(tenantAwareFormKey);
-    formByTenantAndIdCache.remove(
+    formsByTenantIdAndIdCache.invalidate(
         new TenantIdAndFormId(record.getTenantId(), record.getFormIdBuffer()));
   }
 
@@ -119,27 +199,36 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
+  public void deleteFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+    dbFormId.wrapString(record.getFormId());
+    dbDeploymentKey.wrapLong(record.getDeploymentKey());
+    formKeyByFormIdAndDeploymentKeyColumnFamily.deleteIfExists(tenantAwareFormIdAndDeploymentKey);
+  }
+
+  @Override
+  public void deleteFormInFormKeyByFormIdAndVersionTagColumnFamily(final FormRecord record) {
+    tenantIdKey.wrapString(record.getTenantId());
+    dbFormId.wrapString(record.getFormId());
+    dbVersionTag.wrapString(record.getVersionTag());
+    formKeyByFormIdAndVersionTagColumnFamily.deleteIfExists(tenantAwareFormIdAndVersionTagKey);
+  }
+
+  @Override
   public Optional<PersistedForm> findLatestFormById(
       final DirectBuffer formId, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
-    final PersistedForm cachedForm =
-        formByTenantAndIdCache.get(new TenantIdAndFormId(tenantId, formId));
-    if (cachedForm != null) {
-      return Optional.of(cachedForm);
+    final Optional<PersistedForm> cachedForm = getFormFromCache(tenantId, formId);
+    if (cachedForm.isPresent()) {
+      return cachedForm;
     }
 
-    dbFormId.wrapBuffer(formId);
-    final long latestVersion = versionManager.getLatestResourceVersion(formId, tenantId);
-    formVersion.wrapLong(latestVersion);
-    final PersistedForm persistedForm =
-        formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey);
+    final PersistedForm persistedForm = getPersistedFormById(formId, tenantId);
     if (persistedForm == null) {
       return Optional.empty();
     }
-
-    final PersistedForm copiedForm = persistedForm.copy();
-    formByTenantAndIdCache.put(new TenantIdAndFormId(tenantId, formId), copiedForm);
-    return Optional.of(copiedForm);
+    formsByTenantIdAndIdCache.put(new TenantIdAndFormId(tenantId, formId), persistedForm);
+    return Optional.of(persistedForm);
   }
 
   @Override
@@ -150,14 +239,54 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
+  public Optional<PersistedForm> findFormByIdAndDeploymentKey(
+      final DirectBuffer formId, final long deploymentKey, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
+    dbFormId.wrapBuffer(formId);
+    dbDeploymentKey.wrapLong(deploymentKey);
+    return Optional.ofNullable(
+            formKeyByFormIdAndDeploymentKeyColumnFamily.get(tenantAwareFormIdAndDeploymentKey))
+        .flatMap(key -> findFormByKey(key.inner().wrappedKey().getValue(), tenantId));
+  }
+
+  @Override
+  public Optional<PersistedForm> findFormByIdAndVersionTag(
+      final DirectBuffer formId, final String versionTag, final String tenantId) {
+    tenantIdKey.wrapString(tenantId);
+    dbFormId.wrapBuffer(formId);
+    dbVersionTag.wrapString(versionTag);
+    return Optional.ofNullable(
+            formKeyByFormIdAndVersionTagColumnFamily.get(tenantAwareFormIdAndVersionTagKey))
+        .flatMap(key -> findFormByKey(key.inner().wrappedKey().getValue(), tenantId));
+  }
+
+  @Override
   public int getNextFormVersion(final String formId, final String tenantId) {
     return (int) versionManager.getHighestResourceVersion(formId, tenantId) + 1;
   }
 
   @Override
   public void clearCache() {
-    formByTenantAndIdCache.clear();
+    formsByTenantIdAndIdCache.invalidateAll();
     versionManager.clear();
+  }
+
+  private PersistedForm getPersistedFormById(final DirectBuffer formId, final String tenantId) {
+    dbFormId.wrapBuffer(formId);
+    final long latestVersion = versionManager.getLatestResourceVersion(formId, tenantId);
+    formVersion.wrapLong(latestVersion);
+    final PersistedForm persistedForm =
+        formByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey);
+    if (persistedForm == null) {
+      return null;
+    }
+    return persistedForm.copy();
+  }
+
+  private Optional<PersistedForm> getFormFromCache(
+      final String tenantId, final DirectBuffer formId) {
+    return Optional.ofNullable(
+        formsByTenantIdAndIdCache.getIfPresent(new TenantIdAndFormId(tenantId, formId)));
   }
 
   private record TenantIdAndFormId(String tenantId, DirectBuffer formId) {}

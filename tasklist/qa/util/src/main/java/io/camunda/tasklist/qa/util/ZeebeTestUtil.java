@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.qa.util;
 
@@ -22,7 +13,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.worker.JobWorker;
@@ -36,22 +27,19 @@ public abstract class ZeebeTestUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeTestUtil.class);
 
-  private static Random random = new Random();
+  private static final Random RANDOM = new Random();
 
   public static String deployProcess(
-      ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
-    final DeployProcessCommandStep1 deployProcessCommandStep1 =
-        client.newDeployCommand().addProcessModel(processModel, resourceName);
-    final DeploymentEvent deploymentEvent =
-        ((DeployProcessCommandStep1.DeployProcessCommandBuilderStep2) deployProcessCommandStep1)
-            .send()
-            .join();
+      final ZeebeClient client, final BpmnModelInstance processModel, final String resourceName) {
+    final DeployResourceCommandStep2 deployProcessCommandStep1 =
+        client.newDeployResourceCommand().addProcessModel(processModel, resourceName);
+    final DeploymentEvent deploymentEvent = deployProcessCommandStep1.send().join();
     LOGGER.debug("Deployment of resource [{}] was performed", resourceName);
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
 
   public static ZeebeFuture<ProcessInstanceEvent> startProcessInstanceAsync(
-      ZeebeClient client, String bpmnProcessId, String payload) {
+      final ZeebeClient client, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
@@ -62,7 +50,7 @@ public abstract class ZeebeTestUtil {
   }
 
   public static long startProcessInstance(
-      ZeebeClient client, String bpmnProcessId, String payload) {
+      final ZeebeClient client, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             client.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
@@ -76,7 +64,11 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void completeTask(
-      ZeebeClient client, String jobType, String workerName, String payload, int count) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final String payload,
+      final int count) {
     final int[] countCompleted = {0};
     final JobWorker jobWorker =
         client
@@ -109,16 +101,19 @@ public abstract class ZeebeTestUtil {
   }
 
   public static void failTask(
-      ZeebeClient client, String jobType, String workerName, int incidentCount) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final int incidentCount) {
     failTask(client, jobType, workerName, null, incidentCount);
   }
 
   public static void failTask(
-      ZeebeClient client,
-      String jobType,
-      String workerName,
-      String errorMessage,
-      int incidentCount) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final String errorMessage,
+      final int incidentCount) {
     final int[] countFailed = {0};
     final JobWorker jobWorker =
         client
@@ -127,7 +122,7 @@ public abstract class ZeebeTestUtil {
             .handler(
                 (jobClient, activatedJob) -> {
                   final String error =
-                      errorMessage == null ? "Error " + random.nextInt(50) : errorMessage;
+                      errorMessage == null ? "Error " + RANDOM.nextInt(50) : errorMessage;
                   if (countFailed[0] < incidentCount) {
                     client
                         .newFailCommand(activatedJob.getKey())

@@ -2,21 +2,24 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.LockSupport;
@@ -36,12 +39,18 @@ final class SequencerTest {
     // given
     final long initialPosition = 1L;
     final var logStorage = Mockito.mock(LogStorage.class);
+    final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage, initialPosition, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+            logStorage,
+            initialPosition,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
 
     // when
-    final var result = sequencer.tryWrite(TestEntry.ofDefaults());
+    final var result = sequencer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
 
     // then
     EitherAssert.assertThat(result).isRight().right().isEqualTo(initialPosition);
@@ -52,13 +61,19 @@ final class SequencerTest {
     // given
     final long initialPosition = 1L;
     final var logStorage = Mockito.mock(LogStorage.class);
+    final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
         new Sequencer(
-            logStorage, initialPosition, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+            logStorage,
+            initialPosition,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     // when
-    final var result = sequencer.tryWrite(entries);
+    final var result = sequencer.tryWrite(WriteContext.internal(), entries);
 
     // then
     EitherAssert.assertThat(result)
@@ -71,12 +86,19 @@ final class SequencerTest {
   void writesSingleEntryToLogStorage() {
     // given
     final var logStorage = Mockito.mock(LogStorage.class);
+    final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
 
     // when
-    sequencer.tryWrite(entry);
+    sequencer.tryWrite(WriteContext.internal(), entry);
 
     // then
     Mockito.verify(logStorage).append(eq(1L), eq(1L), any(BufferWriter.class), any());
@@ -86,13 +108,20 @@ final class SequencerTest {
   void writesMultipleEntriesToLogStorage() {
     // given
     final var logStorage = Mockito.mock(LogStorage.class);
+    final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
 
     // when
-    sequencer.tryWrite(entries);
+    sequencer.tryWrite(WriteContext.internal(), entries);
 
     // then
     Mockito.verify(logStorage).append(eq(1L), eq(3L), any(BufferWriter.class), any());
@@ -102,8 +131,15 @@ final class SequencerTest {
   void maintainsPositionWithSingleWriterAndSingleEntry() throws InterruptedException {
     // given
     final var logStorage = new VerifyingLogStorage();
+    final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
 
@@ -122,8 +158,15 @@ final class SequencerTest {
     // given
     final var numberOfWriters = 8;
     final var logStorage = new VerifyingLogStorage();
+    final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entry = TestEntry.ofDefaults();
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
 
@@ -147,8 +190,15 @@ final class SequencerTest {
   void maintainsPositionWithSingleWriterAndMultipleEntries() throws InterruptedException {
     // given
     final var logStorage = new VerifyingLogStorage();
+    final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
@@ -167,8 +217,15 @@ final class SequencerTest {
     // given
     final var numberOfWriters = 8;
     final var logStorage = new VerifyingLogStorage();
+    final var logStreamMetrics = new LogStreamMetrics(1);
     final var sequencer =
-        new Sequencer(logStorage, 1, 16, new SequencerMetrics(1), new AppenderMetrics(1));
+        new Sequencer(
+            logStorage,
+            1,
+            16,
+            InstantSource.system(),
+            new SequencerMetrics(1),
+            new FlowControl(logStreamMetrics));
     final var entries =
         List.of(TestEntry.ofDefaults(), TestEntry.ofDefaults(), TestEntry.ofDefaults());
     final var testFailures = new ConcurrentLinkedQueue<Throwable>();
@@ -202,7 +259,7 @@ final class SequencerTest {
               var batchesWritten = 0L;
               var lastWrittenPosition = initialPosition - 1;
               while (batchesWritten < batchesToWrite) {
-                final var result = sequencer.tryWrite(batchToWrite);
+                final var result = sequencer.tryWrite(WriteContext.internal(), batchToWrite);
                 if (result.isRight()) {
                   if (isOnlyWriter) {
                     Assertions.assertThat(result.get())
@@ -241,7 +298,7 @@ final class SequencerTest {
         Assertions.assertThat(lowestPosition).isEqualTo(position + 1);
       }
       position = highestPosition;
-      listener.onCommit(position);
+      listener.onCommit(position, highestPosition);
     }
 
     @Override

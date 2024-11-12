@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
@@ -15,13 +15,29 @@ import io.camunda.zeebe.util.Either;
 interface DeploymentResourceTransformer {
 
   /**
-   * Transform the given resource. As a result, the transformer should add the deployed resource to
-   * the deployment record and write an event for the resource (e.g. a process record).
+   * Step 1 of transforming the given resource: The transformer should add the deployed resource's
+   * metadata to the deployment record, but not write any event records yet.
    *
    * @param resource the resource to transform
    * @param deployment the deployment to add the deployed resource to
+   * @param context optional parameter to store additional information
    * @return either {@link Either.Right} if the resource is transformed successfully, or {@link
    *     Either.Left} if the transformation failed
    */
-  Either<Failure, Void> transformResource(DeploymentResource resource, DeploymentRecord deployment);
+  Either<Failure, Void> createMetadata(
+      final DeploymentResource resource,
+      final DeploymentRecord deployment,
+      final DeploymentResourceContext context);
+
+  /**
+   * Step 2 of transforming the given resource: The transformer should update the previously created
+   * metadata (if necessary) and eventually write the actual event record(s) (e.g. "process
+   * created").
+   *
+   * @param resource the resource to transform
+   * @param deployment the deployment record containing the metadata created in {@link
+   *     DeploymentResourceTransformer#createMetadata(DeploymentResource, DeploymentRecord,
+   *     DeploymentResourceContext)}
+   */
+  void writeRecords(DeploymentResource resource, DeploymentRecord deployment);
 }

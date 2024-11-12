@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.immutable;
 
@@ -34,6 +34,30 @@ public interface DecisionState {
    * @return the decision, or {@link Optional#empty()} if no decision is deployed with the given key
    */
   Optional<PersistedDecision> findDecisionByTenantAndKey(final String tenantId, long decisionKey);
+
+  /**
+   * Query decisions by the given decision id and deployment key and return the decision.
+   *
+   * @param tenantId the tenant the decision belongs to
+   * @param decisionId the id of the decision
+   * @param deploymentKey the key of the deployment the decision was deployed with
+   * @return the decision, or {@link Optional#empty()} if no decision with the given id was deployed
+   *     with the given deployment
+   */
+  Optional<PersistedDecision> findDecisionByIdAndDeploymentKey(
+      final String tenantId, DirectBuffer decisionId, long deploymentKey);
+
+  /**
+   * Query decisions by the given decision id and version tag and return the decision.
+   *
+   * @param tenantId the tenant the decision belongs to
+   * @param decisionId the id of the decision
+   * @param versionTag the version tag of the decision
+   * @return the decision, or {@link Optional#empty()} if no decision with the given id and version
+   *     tag is deployed
+   */
+  Optional<PersistedDecision> findDecisionByIdAndVersionTag(
+      final String tenantId, DirectBuffer decisionId, String versionTag);
 
   /**
    * Query decision requirements (DRGs) by the given decision requirements id and return the latest

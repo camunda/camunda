@@ -1,28 +1,22 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty.createIndexMappingProperty;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.store.elasticsearch.dao.response.TaskResponse;
 import io.camunda.tasklist.util.CollectionUtil;
 import java.io.IOException;
@@ -71,6 +65,7 @@ import org.elasticsearch.client.indexlifecycle.PutLifecyclePolicyRequest;
 import org.elasticsearch.client.indices.*;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.cluster.metadata.AliasMetadata;
+import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.elasticsearch.common.bytes.BytesArray;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.settings.Settings;
@@ -85,6 +80,7 @@ import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -102,7 +98,13 @@ public class RetryElasticsearchClient {
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryElasticsearchClient.class);
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private ElasticsearchInternalTask elasticsearchTask;
 
@@ -368,10 +370,15 @@ public class RetryElasticsearchClient {
   }
 
   public boolean createTemplate(final PutComposableIndexTemplateRequest request) {
+    return createTemplate(request, false);
+  }
+
+  public boolean createTemplate(
+      final PutComposableIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (overwrite || !templatesExist(request.name())) {
             return esClient.indices().putIndexTemplate(request, requestOptions).isAcknowledged();
           }
           return true;
@@ -757,7 +764,18 @@ public class RetryElasticsearchClient {
       if (predicate != null) {
         retryPolicy.handleResultIf(predicate);
       }
-      return Failsafe.with(retryPolicy).get(operation);
+      return Failsafe.with(retryPolicy)
+          .get(
+              () -> {
+                try {
+                  return operation.get();
+                } catch (final ElasticsearchException e) {
+                  if (e.status().equals(RestStatus.NOT_FOUND)) {
+                    return null;
+                  }
+                  throw e;
+                }
+              });
     } catch (final Exception e) {
       throw new TasklistRuntimeException(
           "Couldn't execute operation "
@@ -803,9 +821,59 @@ public class RetryElasticsearchClient {
   public GetLifecyclePolicyResponse getLifeCyclePolicy(
       final GetLifecyclePolicyRequest getLifecyclePolicyRequest) {
     return executeWithRetries(
-        String.format("Get LifeCyclePolicy %s ", getLifecyclePolicyRequest.getPolicyNames()),
+        String.format("Get LifeCyclePolicy %s", getLifecyclePolicyRequest.getPolicyNames()),
         () ->
             esClient.indexLifecycle().getLifecyclePolicy(getLifecyclePolicyRequest, requestOptions),
+        null);
+  }
+
+  public Map<String, IndexMapping> getIndexMappings(final String namePattern) {
+    return executeWithRetries(
+        "Get indices mappings for " + namePattern,
+        () -> {
+          try {
+            final Map<String, IndexMapping> mappingsMap = new HashMap<>();
+            final Map<String, MappingMetadata> mappings =
+                esClient
+                    .indices()
+                    .getMapping(
+                        new GetMappingsRequest().indices(namePattern), RequestOptions.DEFAULT)
+                    .mappings();
+            for (final Map.Entry<String, MappingMetadata> entry : mappings.entrySet()) {
+              final Map<String, Object> mappingMetadata =
+                  objectMapper.readValue(
+                      entry.getValue().source().string(),
+                      new TypeReference<HashMap<String, Object>>() {});
+              final Map<String, Object> properties =
+                  (Map<String, Object>) mappingMetadata.getOrDefault("properties", new HashMap<>());
+              final Map<String, Object> metaProperties =
+                  (Map<String, Object>) mappingMetadata.getOrDefault("_meta", new HashMap<>());
+              final String dynamic = (String) mappingMetadata.get("dynamic");
+              mappingsMap.put(
+                  entry.getKey(),
+                  new IndexMapping()
+                      .setIndexName(entry.getKey())
+                      .setDynamic(dynamic)
+                      .setProperties(
+                          properties.entrySet().stream()
+                              .map(p -> createIndexMappingProperty(p))
+                              .collect(Collectors.toSet()))
+                      .setMetaProperties(metaProperties));
+            }
+            return mappingsMap;
+          } catch (final ElasticsearchException e) {
+            if (e.status().equals(RestStatus.NOT_FOUND)) {
+              return Map.of();
+            }
+            throw e;
+          }
+        });
+  }
+
+  public void putMapping(final PutMappingRequest request) {
+    executeWithRetries(
+        String.format("Put Mapping %s ", request.indices()),
+        () -> esClient.indices().putMapping(request, RequestOptions.DEFAULT),
         null);
   }
 }

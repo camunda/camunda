@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.instance;
 
@@ -93,6 +93,23 @@ public final class NumberOfTakenSequenceFlowsStateTest {
     final var number =
         elementInstanceState.getNumberOfTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID);
     assertThat(number).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldReturnTakenSequenceFlows() {
+    // given
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, SEQUENCE_FLOW_ELEMENT_ID);
+    elementInstanceState.incrementNumberOfTakenSequenceFlows(
+        FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
+
+    // then
+    final var takenSequenceFlows =
+        elementInstanceState.getTakenSequenceFlows(FLOW_SCOPE_KEY, GATEWAY_ELEMENT_ID);
+    assertThat(takenSequenceFlows)
+        .containsExactlyInAnyOrder(SEQUENCE_FLOW_ELEMENT_ID, OTHER_SEQUENCE_FLOW_ELEMENT_ID);
   }
 
   @Test

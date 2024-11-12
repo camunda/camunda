@@ -1,0 +1,60 @@
+---
+name: Preview Env Teardown
+on:
+  pull_request:
+    types: [unlabeled, closed]
+
+jobs:
+  teardown-preview:
+    # check whether the unlabel name was deploy-preview || check whether the PR was closed / merged and whether deploy-preview was part of the array
+    if: github.event.label.name == 'deploy-preview' || (github.event.action == 'closed' && contains( github.event.pull_request.labels.*.name, 'deploy-preview') )
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      BRANCH_NAME: ${{ github.head_ref }} # head_ref = branch on PR
+
+    steps:
+    #########################################################################
+    # Sanitize the branch name to remove dependabot/,renovate/ and transform the name
+    - id: sanitize
+      uses: camunda/infra-global-github-actions/sanitize-branch-name@main
+      with:
+        branch: ${{ env.BRANCH_NAME }}
+        max_length: '15'
+
+    #########################################################################
+    # Setup: import secrets from vault
+    - name: Import secrets
+      id: secrets
+      uses: hashicorp/vault-action@d1720f055e0635fd932a1d2a48f87a666a57906c # v3.0.0
+      with:
+        url: ${{ secrets.VAULT_ADDR }}
+        method: approle
+        roleId: ${{ secrets.VAULT_ROLE_ID }}
+        secretId: ${{ secrets.VAULT_SECRET_ID }}
+        secrets: |
+          secret/data/products/camunda/ci/camunda ARGOCD_TOKEN;
+
+    #########################################################################
+    # Setup: checkout code. This is required because we are using
+    # composite actions and deployment manifests.
+    - name: Checkout
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+    #########################################################################
+    # Tear down preview environment
+    - name: Tear down Preview Environment
+      uses: camunda/infra-global-github-actions/preview-env/destroy@main
+      with:
+        revision: ${{ env.BRANCH_NAME }}
+        argocd_token: ${{ steps.secrets.outputs.ARGOCD_TOKEN }}
+        app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
+        argocd_server: argocd.int.camunda.com
+
+  clean:
+    if: always() && needs.teardown-preview.result != 'skipped'
+    uses: camunda/camunda/.github/workflows/preview-env-clean.yml@main
+    needs: [teardown-preview]
+    secrets: inherit
+    with:
+      pull-request: ${{ github.event.pull_request.number }}

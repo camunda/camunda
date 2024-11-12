@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="Decisions" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.4.2" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.1.0">
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="Decisions" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.22.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.1.0">
   <decision id="Decision_1" name="Decision 1">
-    <decisionTable id="DecisionTable_0q1ija9" hitPolicy="FIRST">
+    <decisionTable id="DecisionTable_0q1ija9" hitPolicy="COLLECT">
       <input id="Input_1" biodi:width="190">
         <inputExpression id="InputExpression_1" typeRef="string">
           <text>input</text>
@@ -24,6 +24,14 @@
           <text>"bar"</text>
         </outputEntry>
       </rule>
+      <rule id="DecisionRule_1waaksc">
+        <inputEntry id="UnaryTests_123ng7i">
+          <text>"foo"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0vtifd8">
+          <text>"baz"</text>
+        </outputEntry>
+      </rule>
     </decisionTable>
   </decision>
   <decision id="Decision_2" name="Decision 2">
@@ -39,11 +47,23 @@
           <text>"foo"</text>
         </inputValues>
       </input>
-      <output id="OutputClause_1mncnxr" name="outout" typeRef="string">
+      <output id="OutputClause_1mncnxr" name="output" typeRef="string">
         <outputValues id="UnaryTests_1pzzcto">
           <text>"bar"</text>
         </outputValues>
       </output>
+      <output id="OutputClause_0kf4cjf" label="output2" name="output2" typeRef="string" />
+      <rule id="DecisionRule_0gmxo7c">
+        <inputEntry id="UnaryTests_1xn32yh">
+          <text>"bar"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_18626pp">
+          <text>"baz"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_1hn9h4g">
+          <text>"bar"</text>
+        </outputEntry>
+      </rule>
       <rule id="DecisionRule_1t96xjw">
         <description>Version 2</description>
         <inputEntry id="UnaryTests_1cidmy0">
@@ -51,6 +71,9 @@
         </inputEntry>
         <outputEntry id="LiteralExpression_1rbbzgc">
           <text>"bar"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0n7652y">
+          <text>"baz"</text>
         </outputEntry>
       </rule>
     </decisionTable>

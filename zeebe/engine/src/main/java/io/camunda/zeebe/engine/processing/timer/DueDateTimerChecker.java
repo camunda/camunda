@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.timer;
 
@@ -13,12 +13,12 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.function.Function;
 
 public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
@@ -28,13 +28,16 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   private final DueDateChecker dueDateChecker;
 
   public DueDateTimerChecker(
-      final TimerInstanceState timerInstanceState, final FeatureFlags featureFlags) {
+      final TimerInstanceState timerInstanceState,
+      final FeatureFlags featureFlags,
+      final InstantSource clock) {
     dueDateChecker =
         new DueDateChecker(
             TIMER_RESOLUTION,
             featureFlags.enableTimerDueDateCheckerAsync(),
             new TriggerTimersSideEffect(
-                timerInstanceState, ActorClock.current(), featureFlags.yieldingDueDateChecker()));
+                timerInstanceState, clock, featureFlags.yieldingDueDateChecker()),
+            clock);
   }
 
   public void scheduleTimer(final long dueDate) {
@@ -69,23 +72,23 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   protected static final class TriggerTimersSideEffect
       implements Function<TaskResultBuilder, Long> {
 
-    private final ActorClock actorClock;
+    private final InstantSource clock;
 
     private final TimerInstanceState timerInstanceState;
     private final boolean yieldControl;
 
     public TriggerTimersSideEffect(
         final TimerInstanceState timerInstanceState,
-        final ActorClock actorClock,
+        final InstantSource clock,
         final boolean yieldControl) {
       this.timerInstanceState = timerInstanceState;
-      this.actorClock = actorClock;
+      this.clock = clock;
       this.yieldControl = yieldControl;
     }
 
     @Override
     public Long apply(final TaskResultBuilder taskResultBuilder) {
-      final var now = actorClock.getTimeMillis();
+      final var now = clock.millis();
 
       final var yieldAfter = now + Math.round(TIMER_RESOLUTION * GIVE_YIELD_FACTOR);
 
@@ -93,7 +96,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
       if (yieldControl) {
         timerVisitor =
             new YieldingDecorator(
-                actorClock, yieldAfter, new WriteTriggerTimerCommandVisitor(taskResultBuilder));
+                clock, yieldAfter, new WriteTriggerTimerCommandVisitor(taskResultBuilder));
       } else {
         timerVisitor = new WriteTriggerTimerCommandVisitor(taskResultBuilder);
       }
@@ -132,19 +135,19 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   protected static final class YieldingDecorator implements TimerVisitor {
 
     private final TimerVisitor delegate;
-    private final ActorClock actorClock;
+    private final InstantSource clock;
     private final long giveYieldAfter;
 
     public YieldingDecorator(
-        final ActorClock actorClock, final long giveYieldAfter, final TimerVisitor delegate) {
+        final InstantSource clock, final long giveYieldAfter, final TimerVisitor delegate) {
       this.delegate = delegate;
-      this.actorClock = actorClock;
+      this.clock = clock;
       this.giveYieldAfter = giveYieldAfter;
     }
 
     @Override
     public boolean visit(final TimerInstance timer) {
-      if (actorClock.getTimeMillis() >= giveYieldAfter) {
+      if (clock.millis() >= giveYieldAfter) {
         return false;
       }
       return delegate.visit(timer);

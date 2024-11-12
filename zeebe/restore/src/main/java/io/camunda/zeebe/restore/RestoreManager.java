@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.restore;
 
@@ -14,8 +14,9 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
-import io.camunda.zeebe.broker.partitioning.topology.PartitionDistributionResolver;
+import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.db.impl.rocksdb.ChecksumProviderRocksDBImpl;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -93,7 +94,11 @@ public class RestoreManager {
       LOG.warn("Restoring without validating backup");
       validator = BackupValidator.none();
     }
-    return new PartitionRestoreService(backupStore, partition)
+    return new PartitionRestoreService(
+            backupStore,
+            partition,
+            configuration.getCluster().getNodeId(),
+            new ChecksumProviderRocksDBImpl())
         .restore(backupId, validator)
         .thenAccept(backup -> logSuccessfulRestore(backup, partition.id().id(), backupId));
   }
@@ -103,10 +108,7 @@ public class RestoreManager {
     final var localMember = MemberId.from(String.valueOf(localBrokerId));
     final var clusterTopology =
         new PartitionDistribution(
-            PartitionDistributionResolver.getStaticConfiguration(
-                    configuration.getCluster(),
-                    configuration.getExperimental().getPartitioning(),
-                    localMember)
+            StaticConfigurationGenerator.getStaticConfiguration(configuration, localMember)
                 .generatePartitionDistribution());
     final var raftPartitionFactory = new RaftPartitionFactory(configuration);
 

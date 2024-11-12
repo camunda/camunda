@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
@@ -19,6 +19,7 @@ public class GatewayCfg {
   private SecurityCfg security = new SecurityCfg();
   private LongPollingCfg longPolling = new LongPollingCfg();
   private List<InterceptorCfg> interceptors = new ArrayList<>();
+  private List<FilterCfg> filters = new ArrayList<>();
   private MultiTenancyCfg multiTenancy = new MultiTenancyCfg();
 
   public void init() {
@@ -80,6 +81,14 @@ public class GatewayCfg {
 
   public void setInterceptors(final List<InterceptorCfg> interceptors) {
     this.interceptors = interceptors;
+  }
+
+  public List<FilterCfg> getFilters() {
+    return filters;
+  }
+
+  public void setFilters(final List<FilterCfg> filters) {
+    this.filters = filters;
   }
 
   public MultiTenancyCfg getMultiTenancy() {

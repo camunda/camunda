@@ -2,18 +2,19 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.client.impl;
 
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 
 final class TestTopologyManager implements BrokerTopologyManager {
   private final BrokerClusterStateImpl topology;
+  private ClusterConfiguration clusterConfiguration = ClusterConfiguration.uninitialized();
 
   TestTopologyManager() {
     this(new BrokerClusterStateImpl());
@@ -27,10 +28,16 @@ final class TestTopologyManager implements BrokerTopologyManager {
     if (leaderId != BrokerClusterState.NODE_ID_NULL) {
       topology.addBrokerIfAbsent(leaderId);
       topology.setPartitionLeader(id, leaderId, 1);
+      topology.setClusterSize(topology.getBrokers().size());
     }
 
     topology.addPartitionIfAbsent(id);
     topology.setPartitionsCount(topology.getPartitions().size());
+    return this;
+  }
+
+  TestTopologyManager withClusterConfiguration(final ClusterConfiguration clusterConfiguration) {
+    this.clusterConfiguration = clusterConfiguration;
     return this;
   }
 
@@ -40,8 +47,8 @@ final class TestTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public ClusterTopology getClusterTopology() {
-    throw new UnsupportedOperationException("not implemented");
+  public ClusterConfiguration getClusterConfiguration() {
+    return clusterConfiguration;
   }
 
   @Override
@@ -55,7 +62,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public void onTopologyUpdated(final ClusterTopology clusterTopology) {
+  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
     throw new UnsupportedOperationException();
   }
 }

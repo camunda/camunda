@@ -2,71 +2,89 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.DistributionSummary;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ElasticsearchMetrics {
-  private static final String NAMESPACE = "zeebe_elasticsearch_exporter";
-  private static final String PARTITION_LABEL = "partition";
+  private static final String NAMESPACE = "zeebe.elasticsearch.exporter";
 
-  private static final Histogram FLUSH_DURATION =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("flush_duration_seconds")
-          .help("Flush duration of bulk exporters in seconds")
-          .labelNames(PARTITION_LABEL)
-          .register();
+  private final MeterRegistry meterRegistry;
+  private final AtomicInteger bulkMemorySize = new AtomicInteger(0);
+  private final Timer flushDuration;
+  private final DistributionSummary bulkSize;
+  private final Counter failedFlush;
+  private final Timer flushLatency;
 
-  private static final Counter FAILED_FLUSH =
-      Counter.build()
-          .namespace(NAMESPACE)
-          .name("failed_flush")
-          .help("Number of failed flush operations")
-          .labelNames(PARTITION_LABEL)
-          .register();
+  public ElasticsearchMetrics(final MeterRegistry registry) {
+    meterRegistry = registry;
 
-  private static final Histogram BULK_SIZE =
-      Histogram.build()
-          .namespace(NAMESPACE)
-          .name("bulk_size")
-          .help("Exporter bulk size")
-          .buckets(10, 100, 1_000, 10_000, 100_000)
-          .labelNames(PARTITION_LABEL)
-          .register();
+    Gauge.builder(meterName("bulk.memory.size"), bulkMemorySize, AtomicInteger::get)
+        .description("Exporter bulk memory size")
+        .register(meterRegistry);
 
-  private static final Gauge BULK_MEMORY_SIZE =
-      Gauge.build()
-          .namespace(NAMESPACE)
-          .name("bulk_memory_size")
-          .help("Exporter bulk memory size")
-          .labelNames(PARTITION_LABEL)
-          .register();
+    flushDuration =
+        Timer.builder(meterName("flush.duration.seconds"))
+            .description("Flush duration of bulk exporters in seconds")
+            .publishPercentileHistogram()
+            .minimumExpectedValue(Duration.ofMillis(10))
+            .register(meterRegistry);
 
-  private final String partitionIdLabel;
+    bulkSize =
+        DistributionSummary.builder(meterName("bulk.size"))
+            .description("Exporter bulk size")
+            .serviceLevelObjectives(10, 100, 1_000, 10_000, 100_000)
+            .register(meterRegistry);
 
-  public ElasticsearchMetrics(final int partitionId) {
-    partitionIdLabel = String.valueOf(partitionId);
+    failedFlush =
+        Counter.builder(meterName("failed.flush"))
+            .description("Number of failed flush operations")
+            .register(meterRegistry);
+
+    flushLatency =
+        Timer.builder(meterName("flush.latency"))
+            .description(
+                "Time of how long a export buffer is open and collects new records before flushing, meaning latency until the next flush is done.")
+            .publishPercentileHistogram()
+            .register(meterRegistry);
   }
 
-  public Histogram.Timer measureFlushDuration() {
-    return FLUSH_DURATION.labels(partitionIdLabel).startTimer();
+  public void measureFlushDuration(final Runnable flushFunction) {
+    flushDuration.record(flushFunction);
   }
 
   public void recordBulkSize(final int bulkSize) {
-    BULK_SIZE.labels(partitionIdLabel).observe(bulkSize);
+    this.bulkSize.record(bulkSize);
   }
 
   public void recordBulkMemorySize(final int bulkMemorySize) {
-    BULK_MEMORY_SIZE.labels(partitionIdLabel).set(bulkMemorySize);
+    this.bulkMemorySize.set(bulkMemorySize);
   }
 
   public void recordFailedFlush() {
-    FAILED_FLUSH.labels(partitionIdLabel).inc();
+    failedFlush.increment();
+  }
+
+  private String meterName(final String name) {
+    return NAMESPACE + "." + name;
+  }
+
+  public Timer.Sample startFlushLatencyMeasurement() {
+    return Timer.start(meterRegistry);
+  }
+
+  public void stopFlushLatencyMeasurement(final Timer.Sample flushLatencySample) {
+    if (flushLatencySample != null) {
+      flushLatencySample.stop(flushLatency);
+    }
   }
 }

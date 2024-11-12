@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.store.opensearch;
 
@@ -33,25 +24,30 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.Buckets;
-import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation;
+import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
+import org.opensearch.client.opensearch._types.aggregations.CompositeAggregate;
+import org.opensearch.client.opensearch._types.aggregations.CompositeAggregation.Builder;
 import org.opensearch.client.opensearch._types.aggregations.CompositeAggregationSource;
-import org.opensearch.client.opensearch._types.aggregations.CompositeBucket;
+import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
+import org.opensearch.client.opensearch._types.aggregations.LongTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregate;
-import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.FieldCollapse;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -64,6 +60,8 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   private static final String TOP_HITS_AGG_NAME = "top_hit_doc";
   private static final String DEFINITION_ID_TERMS_SOURCE_NAME = "group_by_definition_id";
   private static final String TENANT_ID_TERMS_SOURCE_NAME = "group_by_tenant_id";
+  private static final String MAX_VERSION_DOCUMENTS_AGG_NAME = "max_version_docs";
+  private static final String STARTED_BY_FORM_FILTERED_DOCS = "started_by_form_docs";
 
   @Autowired private ProcessIndex processIndex;
 
@@ -71,10 +69,12 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
   @Autowired private TasklistProperties tasklistProperties;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Override
-  public ProcessEntity getProcessByProcessDefinitionKey(String processDefinitionKey) {
+  public ProcessEntity getProcessByProcessDefinitionKey(final String processDefinitionKey) {
     try {
       final FieldCollapse keyCollapse = new FieldCollapse.Builder().field(ProcessIndex.KEY).build();
       final SortOptions sortOptions =
@@ -96,19 +96,19 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
       final SearchResponse<ProcessEntity> response =
           tenantAwareClient.search(searchRequestBuilder, ProcessEntity.class);
-      if (response.hits().hits().size() > 0) {
-        return response.hits().hits().get(0).source();
+      if (!response.hits().hits().isEmpty()) {
+        return response.hits().hits().getFirst().source();
       } else {
         throw new NotFoundException(
             String.format("Process with key %s not found", processDefinitionKey));
       }
-    } catch (IOException | OpenSearchException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e);
     }
   }
 
   @Override
-  public ProcessEntity getProcessByBpmnProcessId(String bpmnProcessId) {
+  public ProcessEntity getProcessByBpmnProcessId(final String bpmnProcessId) {
     return getProcessByBpmnProcessId(bpmnProcessId, null);
   }
 
@@ -151,13 +151,13 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     final SearchResponse<ProcessEntity> response;
     try {
       response = tenantAwareClient.search(searchRequestBuilder, ProcessEntity.class);
-      if (response.hits().hits().size() > 0) {
-        return response.hits().hits().get(0).source();
+      if (!response.hits().hits().isEmpty()) {
+        return response.hits().hits().getFirst().source();
       } else {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", bpmnProcessId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -165,7 +165,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   }
 
   @Override
-  public ProcessEntity getProcess(String processId) {
+  public ProcessEntity getProcess(final String processId) {
 
     final SearchResponse<ProcessEntity> response;
     try {
@@ -177,7 +177,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
 
       final long totalHits = response.hits().total().value();
       if (totalHits == 1L) {
-        return response.hits().hits().get(0).source();
+        return response.hits().hits().getFirst().source();
       } else if (totalHits > 1) {
         throw new TasklistRuntimeException(
             String.format("Could not find unique process with id '%s'.", processId));
@@ -185,7 +185,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", processId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
@@ -195,18 +195,12 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   @Override
   public List<ProcessEntity> getProcesses(
       final List<String> processDefinitions, final String tenantId, final Boolean isStartedByForm) {
-    final FieldCollapse keyCollapse =
-        new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
-    final SortOptions sortOptions =
-        new SortOptions.Builder()
-            .field(FieldSort.of(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc)))
-            .build();
 
     final Query q;
 
     if (tasklistProperties.isSelfManaged()) {
 
-      if (processDefinitions.size() == 0) {
+      if (processDefinitions.isEmpty()) {
         return new ArrayList<>();
       }
 
@@ -221,7 +215,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                                 t.field(ProcessIndex.PROCESS_DEFINITION_ID)
                                     .value(FieldValue.of(""))))
                 .build()
-                ._toQuery();
+                .toQuery();
       } else {
         q =
             QueryBuilders.bool()
@@ -235,7 +229,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                                         v ->
                                             v.value(
                                                 processDefinitions.stream()
-                                                    .map(pd -> FieldValue.of(pd))
+                                                    .map(FieldValue::of)
                                                     .collect(Collectors.toList())))))
                 .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
                 .mustNot(
@@ -245,7 +239,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                                 t.field(ProcessIndex.PROCESS_DEFINITION_ID)
                                     .value(FieldValue.of(""))))
                 .build()
-                ._toQuery();
+                .toQuery();
       }
     } else {
       q =
@@ -257,19 +251,18 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                           t ->
                               t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
               .build()
-              ._toQuery();
+              .toQuery();
     }
 
     final Query applyTenantIdFilter = addFilterOnTenantIdIfRequired(q, tenantId);
-    final Query finalQueryWithStartedByForm =
-        addFilterIsStartedByForm(applyTenantIdFilter, isStartedByForm);
 
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQueryWithStartedByForm);
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(
+        applyTenantIdFilter, isStartedByForm);
   }
 
   @Override
   public List<ProcessEntity> getProcesses(
-      String search,
+      final String search,
       final List<String> processDefinitions,
       final String tenantId,
       final Boolean isStartedByForm) {
@@ -278,112 +271,71 @@ public class ProcessStoreOpenSearch implements ProcessStore {
       return getProcesses(processDefinitions, tenantId, isStartedByForm);
     }
 
-    final Query query;
     final String regexSearch = String.format(".*%s.*", search);
+    final BoolQuery.Builder query =
+        QueryBuilders.bool()
+            .should(s -> s.term(t -> t.field(ProcessIndex.ID).value(FieldValue.of(search))))
+            .should(
+                s ->
+                    s.regexp(
+                        regex ->
+                            regex
+                                .field(ProcessIndex.NAME)
+                                .caseInsensitive(CASE_INSENSITIVE)
+                                .value(regexSearch)))
+            .should(
+                s ->
+                    s.regexp(
+                        regex ->
+                            regex
+                                .field(ProcessIndex.PROCESS_DEFINITION_ID)
+                                .caseInsensitive(CASE_INSENSITIVE)
+                                .value(regexSearch)))
+            .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
+            .mustNot(
+                mn ->
+                    mn.term(
+                        t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
+            .minimumShouldMatch("1");
 
     if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
-      if (processDefinitions.size() == 0) {
-        return new ArrayList<ProcessEntity>();
+      if (processDefinitions.isEmpty()) {
+        return new ArrayList<>();
       }
-      if (processDefinitions.contains(IdentityProperties.ALL_RESOURCES)) {
-        query =
-            QueryBuilders.bool()
-                .should(s -> s.term(t -> t.field(ProcessIndex.ID).value(FieldValue.of(search))))
-                .should(s -> s.regexp(regex -> regex.field(ProcessIndex.NAME).value(regexSearch)))
-                .should(
-                    s ->
-                        s.regexp(
-                            regex ->
-                                regex.field(ProcessIndex.PROCESS_DEFINITION_ID).value(regexSearch)))
-                .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
-                .mustNot(
-                    mn ->
-                        mn.term(
-                            t ->
-                                t.field(ProcessIndex.PROCESS_DEFINITION_ID)
-                                    .value(FieldValue.of(""))))
-                .minimumShouldMatch("1")
-                .build()
-                ._toQuery();
-      } else {
-        query =
-            QueryBuilders.bool()
-                .should(s -> s.term(t -> t.field(ProcessIndex.ID).value(FieldValue.of(search))))
-                .should(
-                    s ->
-                        s.regexp(
-                            regex ->
-                                regex
-                                    .field(ProcessIndex.NAME)
-                                    .value(regexSearch)
-                                    .caseInsensitive(CASE_INSENSITIVE)))
-                .should(
-                    s ->
-                        s.regexp(
-                            regex ->
-                                regex
-                                    .field(ProcessIndex.PROCESS_DEFINITION_ID)
-                                    .value(regexSearch)
-                                    .caseInsensitive(CASE_INSENSITIVE)))
-                .must(
-                    m ->
-                        m.terms(
-                            terms ->
-                                terms
-                                    .field(ProcessIndex.PROCESS_DEFINITION_ID)
-                                    .terms(
-                                        v ->
-                                            v.value(
-                                                processDefinitions.stream()
-                                                    .map(pd -> FieldValue.of(pd))
-                                                    .collect(Collectors.toList())))))
-                .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
-                .mustNot(
-                    mn ->
-                        mn.term(
-                            t ->
-                                t.field(ProcessIndex.PROCESS_DEFINITION_ID)
-                                    .value(FieldValue.of(""))))
-                .minimumShouldMatch("1")
-                .build()
-                ._toQuery();
+      if (!processDefinitions.contains(IdentityProperties.ALL_RESOURCES)) {
+        query.must(
+            m ->
+                m.terms(
+                    terms ->
+                        terms
+                            .field(ProcessIndex.PROCESS_DEFINITION_ID)
+                            .terms(
+                                v ->
+                                    v.value(
+                                        processDefinitions.stream()
+                                            .map(FieldValue::of)
+                                            .collect(Collectors.toList())))));
       }
-    } else {
-      query =
-          QueryBuilders.bool()
-              .should(s -> s.term(t -> t.field(ProcessIndex.ID).value(FieldValue.of(search))))
-              .should(
-                  s ->
-                      s.regexp(
-                          regex ->
-                              regex
-                                  .field(ProcessIndex.NAME)
-                                  .value(regexSearch)
-                                  .caseInsensitive(CASE_INSENSITIVE)))
-              .should(
-                  s ->
-                      s.regexp(
-                          regex ->
-                              regex
-                                  .field(ProcessIndex.PROCESS_DEFINITION_ID)
-                                  .value(regexSearch)
-                                  .caseInsensitive(CASE_INSENSITIVE)))
-              .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
-              .mustNot(
-                  mn ->
-                      mn.term(
-                          t ->
-                              t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
-              .minimumShouldMatch("1")
-              .build()
-              ._toQuery();
     }
+    final Query applyTenantIdFilter =
+        addFilterOnTenantIdIfRequired(query.build().toQuery(), tenantId);
 
-    final Query applyTenantIdFilter = addFilterOnTenantIdIfRequired(query, tenantId);
-    final Query finalQueryWithStartedByForm =
-        addFilterIsStartedByForm(applyTenantIdFilter, isStartedByForm);
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(
+        applyTenantIdFilter, isStartedByForm);
+  }
 
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(finalQueryWithStartedByForm);
+  @Override
+  public List<ProcessEntity> getProcessesStartedByForm() {
+    final Query query =
+        QueryBuilders.bool()
+            .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
+            .mustNot(
+                mn ->
+                    mn.term(
+                        t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
+            .build()
+            .toQuery();
+    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(query, true);
   }
 
   private Query addFilterOnTenantIdIfRequired(final Query query, final String tenantId) {
@@ -397,130 +349,152 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     return query;
   }
 
-  private Query addFilterIsStartedByForm(final Query query, final Boolean isStartedByForm) {
-    // Construct queries to check if FORM_KEY or FORM_ID is not null
-    // This is in order to consider a process as started by form but not public
-    if (Boolean.TRUE.equals(isStartedByForm)) {
-      final Query existsFormKeyQuery =
-          new Query.Builder().exists(e -> e.field(ProcessIndex.FORM_KEY)).build();
-      final Query existsFormIdQuery =
-          new Query.Builder().exists(e -> e.field(ProcessIndex.FORM_ID)).build();
+  private List<ProcessEntity> getProcessEntityUniqueByProcessDefinitionIdAndTenantId(
+      final Query query, final Boolean isStartedByForm) {
 
-      final Query boolQuery =
-          new Query.Builder()
-              .bool(
-                  b ->
-                      b.should(existsFormKeyQuery)
-                          .should(existsFormIdQuery)
-                          .minimumShouldMatch("1"))
-              .build();
+    final Builder processDefinitionAndTenantBucket =
+        new Builder()
+            .sources(
+                List.of(
+                    Map.of(
+                        DEFINITION_ID_TERMS_SOURCE_NAME,
+                        new CompositeAggregationSource.Builder()
+                            .terms(t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID))
+                            .build()),
+                    Map.of(
+                        TENANT_ID_TERMS_SOURCE_NAME,
+                        new CompositeAggregationSource.Builder()
+                            .terms(t -> t.field(ProcessIndex.TENANT_ID))
+                            .build())))
+            .size(OpenSearchUtil.QUERY_MAX_SIZE);
 
-      return OpenSearchUtil.joinWithAnd(boolQuery, query);
-    }
-    if (Boolean.FALSE.equals(isStartedByForm)) {
-      final Query notExistsFormKeyQuery =
-          new Query.Builder()
-              .bool(b -> b.mustNot(mn -> mn.exists(e -> e.field(ProcessIndex.FORM_KEY))))
-              .build();
-      final Query notExistsFormIdQuery =
-          new Query.Builder()
-              .bool(b -> b.mustNot(mn -> mn.exists(e -> e.field(ProcessIndex.FORM_ID))))
-              .build();
+    final TermsAggregation maxVersionDocTerm =
+        new TermsAggregation.Builder()
+            .field(ProcessIndex.VERSION)
+            .order(Map.of("_key", SortOrder.Desc))
+            .size(1)
+            .build();
 
-      final Query boolQuery =
-          new Query.Builder()
-              .bool(b -> b.must(notExistsFormKeyQuery).must(notExistsFormIdQuery))
-              .build();
+    final Aggregation topHitsAgg =
+        AggregationBuilders.topHits()
+            .sort(
+                SortOptions.of(
+                    s -> s.field(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc))))
+            .size(1)
+            .build()
+            ._toAggregation();
 
-      return OpenSearchUtil.joinWithAnd(boolQuery, query);
-    }
-    // No filter is applied if isStartedByForm is null
-    return query;
-  }
-
-  private List<ProcessEntity> getProcessEntityUniqueByProcessDefinitionIdAndTenantId(Query query) {
     final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder()
-            .index(processIndex.getAlias())
-            .query(query)
-            .size(0) // Set size to 0 to retrieve only aggregation results
-            .aggregations(
-                BPMN_PROCESS_ID_TENANT_ID_AGG_NAME,
-                Aggregation.of(
-                    agg ->
-                        agg.composite(
-                                CompositeAggregation.of(
-                                    ca ->
-                                        ca.sources(
-                                                Map.of(
-                                                    DEFINITION_ID_TERMS_SOURCE_NAME,
-                                                    CompositeAggregationSource.of(
-                                                        cas ->
-                                                            cas.terms(
-                                                                TermsAggregation.of(
-                                                                    ta ->
-                                                                        ta.field(
-                                                                            ProcessIndex
-                                                                                .PROCESS_DEFINITION_ID))))),
-                                                Map.of(
-                                                    TENANT_ID_TERMS_SOURCE_NAME,
-                                                    CompositeAggregationSource.of(
-                                                        cas ->
-                                                            cas.terms(
-                                                                TermsAggregation.of(
-                                                                    ta ->
-                                                                        ta.field(
-                                                                            ProcessIndex
-                                                                                .TENANT_ID))))))
-                                            .size(OpenSearchUtil.QUERY_MAX_SIZE)))
-                            .aggregations(
-                                TOP_HITS_AGG_NAME,
-                                TopHitsAggregation.of(
-                                        ta ->
-                                            ta.sort(
-                                                    SortOptions.of(
-                                                        s ->
-                                                            s.field(
-                                                                f ->
-                                                                    f.field(ProcessIndex.VERSION)
-                                                                        .order(SortOrder.Desc))))
-                                                .size(1))
-                                    ._toAggregation())));
+        new SearchRequest.Builder().index(processIndex.getAlias()).query(query).size(0);
+
+    if (isStartedByForm == null) {
+
+      final var nestedAggregate =
+          new Aggregation.Builder()
+              .terms(maxVersionDocTerm)
+              .aggregations(TOP_HITS_AGG_NAME, topHitsAgg)
+              .build();
+
+      searchRequest.aggregations(
+          BPMN_PROCESS_ID_TENANT_ID_AGG_NAME,
+          Aggregation.of(
+              agg ->
+                  agg.composite(processDefinitionAndTenantBucket.build())
+                      .aggregations(MAX_VERSION_DOCUMENTS_AGG_NAME, nestedAggregate)));
+    } else {
+      final Query startedByFormFilter = startedByFormAggregateFilter(isStartedByForm);
+
+      final var filterAggregate =
+          new Aggregation.Builder()
+              .filter(startedByFormFilter)
+              .aggregations(TOP_HITS_AGG_NAME, topHitsAgg)
+              .build();
+
+      final var maxVersionAggregate =
+          new Aggregation.Builder()
+              .terms(maxVersionDocTerm)
+              .aggregations(STARTED_BY_FORM_FILTERED_DOCS, filterAggregate)
+              .build();
+
+      searchRequest.aggregations(
+          BPMN_PROCESS_ID_TENANT_ID_AGG_NAME,
+          Aggregation.of(
+              agg ->
+                  agg.composite(processDefinitionAndTenantBucket.build())
+                      .aggregations(MAX_VERSION_DOCUMENTS_AGG_NAME, maxVersionAggregate)));
+    }
+
     try {
       final SearchResponse<ProcessEntity> response =
           tenantAwareClient.search(searchRequest, ProcessEntity.class);
 
-      final Buckets<CompositeBucket> buckets =
-          response.aggregations().get(BPMN_PROCESS_ID_TENANT_ID_AGG_NAME).composite().buckets();
-      final List<ProcessEntity> results = new ArrayList<>();
-      for (final CompositeBucket bucket : buckets.array()) {
-        final TopHitsAggregate topHits = bucket.aggregations().get(TOP_HITS_AGG_NAME).topHits();
-        results.addAll(
-            OpenSearchUtil.mapSearchHits(topHits.hits().hits(), objectMapper, ProcessEntity.class));
-      }
+      final CompositeAggregate composite =
+          response.aggregations().get(BPMN_PROCESS_ID_TENANT_ID_AGG_NAME).composite();
+      final List<Hit<JsonData>> hits =
+          isStartedByForm != null
+              ? getFilteredAggregateSearchHits(composite)
+              : getAggregateSearchHits(composite);
 
-      return results;
+      return OpenSearchUtil.mapSearchHits(hits, objectMapper, ProcessEntity.class);
 
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  @Override
-  public List<ProcessEntity> getProcessesStartedByForm() {
-    final Query query =
-        QueryBuilders.bool()
-            .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
-            .mustNot(
-                mn ->
-                    mn.term(
-                        t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
-            .build()
-            ._toQuery();
-    return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(query).stream()
-        .filter(ProcessEntity::isStartedByForm)
-        .toList();
+  private List<Hit<JsonData>> getFilteredAggregateSearchHits(final CompositeAggregate composite) {
+    return composite.buckets().array().stream()
+        .flatMap(
+            bucket ->
+                ((LongTermsAggregate)
+                        bucket.aggregations().get(MAX_VERSION_DOCUMENTS_AGG_NAME)._get())
+                    .buckets().array().stream()
+                        .flatMap(
+                            versionBucket -> {
+                              final var startedByFormDocs =
+                                  ((FilterAggregate)
+                                          versionBucket
+                                              .aggregations()
+                                              .get(STARTED_BY_FORM_FILTERED_DOCS)
+                                              ._get())
+                                      .aggregations();
+                              return ((TopHitsAggregate)
+                                      startedByFormDocs.get(TOP_HITS_AGG_NAME)._get())
+                                  .hits().hits().stream();
+                            }))
+        .collect(Collectors.toList());
+  }
+
+  private List<Hit<JsonData>> getAggregateSearchHits(final CompositeAggregate composite) {
+    return composite.buckets().array().stream()
+        .flatMap(
+            bucket ->
+                ((LongTermsAggregate)
+                        bucket.aggregations().get(MAX_VERSION_DOCUMENTS_AGG_NAME)._get())
+                    .buckets().array().stream()
+                        .flatMap(
+                            versionBucket ->
+                                ((TopHitsAggregate)
+                                        versionBucket.aggregations().get(TOP_HITS_AGG_NAME)._get())
+                                    .hits().hits().stream()))
+        .collect(Collectors.toList());
+  }
+
+  private Query startedByFormAggregateFilter(final boolean isStartedByForm) {
+    final BoolQuery.Builder boolQueryBuilder = QueryBuilders.bool();
+    if (isStartedByForm) {
+      boolQueryBuilder
+          .should(QueryBuilders.exists().field(ProcessIndex.FORM_KEY).build().toQuery())
+          .should(QueryBuilders.exists().field(ProcessIndex.FORM_ID).build().toQuery())
+          .minimumShouldMatch("1");
+    } else {
+      boolQueryBuilder
+          .mustNot(QueryBuilders.exists().field(ProcessIndex.FORM_KEY).build().toQuery())
+          .mustNot(QueryBuilders.exists().field(ProcessIndex.FORM_ID).build().toQuery())
+          .minimumShouldMatch("1");
+    }
+    return boolQueryBuilder.build().toQuery();
   }
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
@@ -36,6 +36,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.ExporterDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.InterPartitionCommandServiceStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStoragePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.LogStreamPartitionTransitionStep;
+import io.camunda.zeebe.broker.system.partitions.impl.steps.MetricsStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.MigrationTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.QueryServicePartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.RockDbMetricExporterPartitionStartupStep;
@@ -43,8 +44,10 @@ import io.camunda.zeebe.broker.system.partitions.impl.steps.SnapshotDirectorPart
 import io.camunda.zeebe.broker.system.partitions.impl.steps.StreamProcessorTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.ZeebeDbPartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceTransitionStep;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.EngineProcessors;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
@@ -58,6 +61,7 @@ import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.FileUtil;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -71,6 +75,7 @@ public final class ZeebePartitionFactory {
 
   private static final List<PartitionTransitionStep> TRANSITION_STEPS =
       List.of(
+          new MetricsStep(),
           new LogStoragePartitionTransitionStep(),
           new LogStreamPartitionTransitionStep(),
           new ZeebeDbPartitionTransitionStep(),
@@ -80,6 +85,7 @@ public final class ZeebePartitionFactory {
           new BackupServiceTransitionStep(),
           new InterPartitionCommandServiceStep(),
           new StreamProcessorTransitionStep(),
+          new CommandApiServiceTransitionStep(),
           new SnapshotDirectorPartitionTransitionStep(),
           new ExporterDirectorPartitionTransitionStep(),
           new BackupApiRequestHandlerStep(),
@@ -98,6 +104,7 @@ public final class ZeebePartitionFactory {
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
+  private final MeterRegistry meterRegistry;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -112,7 +119,8 @@ public final class ZeebePartitionFactory {
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final MeterRegistry meterRegistry) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -126,15 +134,16 @@ public final class ZeebePartitionFactory {
     this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
+    this.meterRegistry = meterRegistry;
   }
 
   public ZeebePartition constructPartition(
-      final RaftPartition raftPartition, final FileBasedSnapshotStore snapshotStore) {
+      final RaftPartition raftPartition,
+      final FileBasedSnapshotStore snapshotStore,
+      final DynamicPartitionConfig initialPartitionConfig) {
     final var communicationService = clusterServices.getCommunicationService();
     final var membershipService = clusterServices.getMembershipService();
     final var typedRecordProcessorsFactory = createFactory(localBroker, featureFlags);
-
-    final var partitionId = raftPartition.id().id();
 
     final StateController stateController =
         createStateController(raftPartition, snapshotStore, snapshotStore);
@@ -142,6 +151,7 @@ public final class ZeebePartitionFactory {
     final var context =
         new PartitionStartupAndTransitionContextImpl(
             localBroker.getNodeId(),
+            localBroker.getPartitionsCount(),
             communicationService,
             raftPartition,
             partitionListeners,
@@ -150,8 +160,7 @@ public final class ZeebePartitionFactory {
                 communicationService, membershipService, raftPartition::members),
             actorSchedulingService,
             brokerCfg,
-            commandApiService::newCommandResponseWriter,
-            () -> commandApiService.getOnProcessedListener(partitionId),
+            commandApiService,
             snapshotStore,
             stateController,
             typedRecordProcessorsFactory,
@@ -159,13 +168,13 @@ public final class ZeebePartitionFactory {
             new PartitionProcessingState(raftPartition),
             diskSpaceUsageMonitor,
             gatewayBrokerTransport,
-            topologyManager);
+            topologyManager,
+            meterRegistry);
+    context.setDynamicPartitionConfig(initialPartitionConfig);
 
     final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);
 
-    final ZeebePartition zeebePartition =
-        new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
-    return zeebePartition;
+    return new ZeebePartition(context, newTransitionBehavior, STARTUP_STEPS);
   }
 
   private StateController createStateController(

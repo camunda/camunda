@@ -2,18 +2,18 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import java.time.Duration;
+import java.time.InstantSource;
 
 public final class JobBackoffChecker implements StreamProcessorLifecycleAware {
 
@@ -21,17 +21,18 @@ public final class JobBackoffChecker implements StreamProcessorLifecycleAware {
 
   private final DueDateChecker backOffDueDateChecker;
 
-  public JobBackoffChecker(final JobState jobState) {
+  public JobBackoffChecker(final InstantSource clock, final JobState jobState) {
     backOffDueDateChecker =
         new DueDateChecker(
             BACKOFF_RESOLUTION,
             false,
             taskResultBuilder ->
                 jobState.findBackedOffJobs(
-                    ActorClock.currentTimeMillis(),
+                    clock.millis(),
                     (key, record) ->
                         taskResultBuilder.appendCommandRecord(
-                            key, JobIntent.RECUR_AFTER_BACKOFF, record)));
+                            key, JobIntent.RECUR_AFTER_BACKOFF, record)),
+            clock);
   }
 
   public void scheduleBackOff(final long dueDate) {

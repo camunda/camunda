@@ -2,12 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.job;
 
 import io.camunda.zeebe.engine.metrics.JobMetrics;
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -19,9 +20,10 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.InstantSource;
 
+@ExcludeAuthorizationCheck
 public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
       "Expected to time out activated job with key '%d', but %s";
@@ -30,17 +32,20 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
   private final TypedRejectionWriter rejectionWriter;
   private final JobMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final InstantSource clock;
 
   public JobTimeOutProcessor(
       final ProcessingState state,
       final Writers writers,
       final JobMetrics jobMetrics,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final InstantSource clock) {
     jobState = state.getJobState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
+    this.clock = clock;
   }
 
   @Override
@@ -51,7 +56,7 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
 
     if (state == State.ACTIVATED && hasTimedOut(job)) {
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
-      jobMetrics.jobTimedOut(job.getType());
+      jobMetrics.jobTimedOut(job.getType(), job.getJobKind());
       jobActivationBehavior.publishWork(jobKey, job);
     } else {
       final var reason =
@@ -69,6 +74,6 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
   }
 
   private boolean hasTimedOut(final JobRecord job) {
-    return job.getDeadline() < ActorClock.currentTimeMillis();
+    return job.getDeadline() < clock.millis();
   }
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.configuration;
 
@@ -161,5 +161,38 @@ final class FeatureFlagsCfgTest {
 
     // then
     assertThat(featureFlagsCfg.isEnableStraightThroughProcessingLoopDetector()).isTrue();
+  }
+
+  @Test
+  void shouldDisablePartitionScalingByDefault() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnablePartitionScaling()).isFalse();
+  }
+
+  @Test
+  void shouldSetEnablePartitionScalingFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnablePartitionScaling()).isTrue();
+  }
+
+  @Test
+  void shouldSetEnablePartitionScalingFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.features.enablePartitionScaling", "false");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnablePartitionScaling()).isFalse();
   }
 }

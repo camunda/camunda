@@ -2,25 +2,18 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.log;
 
+import com.netflix.concurrency.limits.Limit;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.RateLimit;
 import io.camunda.zeebe.logstreams.storage.LogStorage;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.time.InstantSource;
 
 /** Builder pattern for the {@link LogStream} */
 public interface LogStreamBuilder {
-
-  /**
-   * The actor scheduler to use for the {@link LogStream} and its child actors
-   *
-   * @param actorSchedulingService the scheduler to use
-   * @return this builder
-   */
-  LogStreamBuilder withActorSchedulingService(ActorSchedulingService actorSchedulingService);
 
   /**
    * The maximum fragment size read from the shared write buffer; this should be aligned with the
@@ -56,10 +49,17 @@ public interface LogStreamBuilder {
    */
   LogStreamBuilder withLogName(String logName);
 
+  /** Clock used to assign record timestamps */
+  LogStreamBuilder withClock(InstantSource clock);
+
+  LogStreamBuilder withRequestLimit(Limit requestLimit);
+
+  LogStreamBuilder withWriteRateLimit(RateLimit writeRateLimit);
+
   /**
    * Returns a future which, when completed, contains a log stream that can be read from/written to.
    *
    * @return a future which on complete contains the log stream
    */
-  ActorFuture<LogStream> buildAsync();
+  LogStream build();
 }

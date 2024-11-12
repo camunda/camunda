@@ -22,7 +22,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-atomix-parent</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
   </parent>
 
   <artifactId>zeebe-atomix-cluster</artifactId>
@@ -144,6 +144,21 @@
     </dependency>
 
     <!-- test dependencies -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-scheduler</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-snapshots</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>net.jodah</groupId>
@@ -284,30 +299,16 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <configuration>
-          <includeProjectDependencies>false</includeProjectDependencies>
-          <includePluginDependencies>true</includePluginDependencies>
-          <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
-          <arguments>
-            <argument>${project.build.resources[0].directory}/snapshot-schema.xml</argument>
-            <argument>${project.build.resources[0].directory}/raft-entry-schema.xml</argument>
-          </arguments>
-          <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
-          <!-- system properties defined in zeebe-parent -->
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe-tool</artifactId>
-            <version>${version.sbe}</version>
-          </dependency>
-        </dependencies>
         <executions>
           <execution>
-            <goals>
-              <goal>java</goal>
-            </goals>
+            <id>generate-sbe</id>
             <phase>generate-sources</phase>
+            <configuration>
+              <arguments>
+                <argument>${project.build.resources[0].directory}/snapshot-schema.xml</argument>
+                <argument>${project.build.resources[0].directory}/raft-entry-schema.xml</argument>
+              </arguments>
+            </configuration>
           </execution>
         </executions>
       </plugin>

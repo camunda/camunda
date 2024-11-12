@@ -2,79 +2,80 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
-import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-public final class ActivateJobsTest {
+@ZeebeIntegration
+@AutoCloseResources
+class ActivateJobsTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(ActivateJobsTest::disableLongPolling);
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @AutoCloseResource ZeebeClient client;
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withGatewayConfig(c -> c.getLongPolling().setEnabled(false));
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  ZeebeResourcesHelper resourcesHelper;
 
-  private String jobType;
-
-  private static void disableLongPolling(final BrokerCfg config) {
-    config.getGateway().getLongPolling().setEnabled(false);
+  @BeforeEach
+  void initClientAndInstances() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
-  @Before
-  public void init() {
-    jobType = helper.getJobType();
-  }
-
-  @Test(timeout = 5000)
-  public void shouldRespondActivatedJobsWhenJobsAreAvailable() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldRespondActivatedJobsWhenJobsAreAvailable(
+      final boolean useRest, final TestInfo testInfo) {
     // given
-    CLIENT_RULE.createJobs(jobType, 2);
+    final String jobType = "job-" + testInfo.getDisplayName();
+    resourcesHelper.createJobs(jobType, 2);
 
     // when
     final ZeebeFuture<ActivateJobsResponse> responseFuture =
-        CLIENT_RULE
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(2)
-            .send();
+        getCommand(client, useRest).jobType(jobType).maxJobsToActivate(2).send();
 
     // then
     final ActivateJobsResponse response = responseFuture.join();
     assertThat(response.getJobs()).hasSize(2);
   }
 
-  @Test(timeout = 5000)
-  public void shouldRespondNoActivatedJobsWhenNoJobsAvailable() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRespondNoActivatedJobsWhenNoJobsAvailable(final boolean useRest) {
     // when
     final ZeebeFuture<ActivateJobsResponse> responseFuture =
-        CLIENT_RULE
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(1)
-            .send();
+        getCommand(client, useRest).jobType("notExisting").maxJobsToActivate(1).send();
 
     // then
     final ActivateJobsResponse response = responseFuture.join();
     assertThat(response.getJobs()).isEmpty();
+  }
+
+  private ActivateJobsCommandStep1 getCommand(final ZeebeClient client, final boolean useRest) {
+    final ActivateJobsCommandStep1 activateJobsCommandStep1 = client.newActivateJobsCommand();
+    return useRest ? activateJobsCommandStep1.useRest() : activateJobsCommandStep1.useGrpc();
   }
 }

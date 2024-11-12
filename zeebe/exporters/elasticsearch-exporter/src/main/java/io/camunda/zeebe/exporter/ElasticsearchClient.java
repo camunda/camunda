@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter;
 
@@ -14,6 +14,7 @@ import io.camunda.zeebe.exporter.dto.BulkIndexResponse.Error;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Actions;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Delete;
+import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.DeleteAction;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Phases;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Policy;
 import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyResponse;
@@ -25,7 +26,8 @@ import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.prometheus.client.Histogram;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer.Sample;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Optional;
@@ -43,22 +45,38 @@ class ElasticsearchClient implements AutoCloseable {
   private final RecordIndexRouter indexRouter;
   private final BulkIndexRequest bulkIndexRequest;
 
-  private ElasticsearchMetrics metrics;
+  private final ElasticsearchMetrics metrics;
 
-  ElasticsearchClient(final ElasticsearchExporterConfiguration configuration) {
-    this(configuration, new BulkIndexRequest());
+  /**
+   * Sample to measure the flush latency of the current bulk request.
+   *
+   * <p>Time of how long an export bulk request is open and collects new records before flushing,
+   * meaning latency until the next flush is done.
+   */
+  private Sample flushLatencyMeasurement;
+
+  ElasticsearchClient(
+      final ElasticsearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
+    this(
+        configuration,
+        new BulkIndexRequest(),
+        RestClientFactory.of(configuration),
+        new RecordIndexRouter(configuration.index),
+        new TemplateReader(configuration),
+        new ElasticsearchMetrics(meterRegistry));
   }
 
   ElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration,
-      final BulkIndexRequest bulkIndexRequest) {
+      final MeterRegistry meterRegistry,
+      final RestClient restClient) {
     this(
         configuration,
-        bulkIndexRequest,
-        RestClientFactory.of(configuration),
+        new BulkIndexRequest(),
+        restClient,
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration),
-        null);
+        new ElasticsearchMetrics(meterRegistry));
   }
 
   ElasticsearchClient(
@@ -81,9 +99,17 @@ class ElasticsearchClient implements AutoCloseable {
     client.close();
   }
 
-  public void index(final Record<?> record, final RecordSequence recordSequence) {
-    if (metrics == null) {
-      metrics = new ElasticsearchMetrics(record.getPartitionId());
+  /**
+   * Indexes a record to the batch of records that will be sent to Elasticsearch
+   *
+   * @param record the record that will be the source of the document
+   * @param recordSequence the sequence number of the record
+   * @return true if the record was appended to the batch, false if the record is already indexed in
+   *     the batch because only one copy of the record is allowed in the batch
+   */
+  public boolean index(final Record<?> record, final RecordSequence recordSequence) {
+    if (bulkIndexRequest.isEmpty()) {
+      flushLatencyMeasurement = metrics.startFlushLatencyMeasurement();
     }
 
     final BulkIndexAction action =
@@ -91,7 +117,7 @@ class ElasticsearchClient implements AutoCloseable {
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
             indexRouter.routingFor(record));
-    bulkIndexRequest.index(action, record, recordSequence);
+    return bulkIndexRequest.index(action, record, recordSequence);
   }
 
   /**
@@ -107,15 +133,18 @@ class ElasticsearchClient implements AutoCloseable {
     metrics.recordBulkSize(bulkIndexRequest.size());
     metrics.recordBulkMemorySize(bulkIndexRequest.memoryUsageBytes());
 
-    try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
-      exportBulk();
+    metrics.measureFlushDuration(
+        () -> {
+          try {
+            exportBulk();
+            metrics.stopFlushLatencyMeasurement(flushLatencyMeasurement);
 
-      // all records where flushed, create new bulk request, otherwise retry next time
-      bulkIndexRequest.clear();
-    } catch (final ElasticsearchExporterException e) {
-      metrics.recordFailedFlush();
-      throw e;
-    }
+            bulkIndexRequest.clear();
+          } catch (final ElasticsearchExporterException e) {
+            metrics.recordFailedFlush();
+            throw e;
+          }
+        });
   }
 
   /**
@@ -243,7 +272,7 @@ class ElasticsearchClient implements AutoCloseable {
   static PutIndexLifecycleManagementPolicyRequest buildPutIndexLifecycleManagementPolicyRequest(
       final String minimumAge) {
     return new PutIndexLifecycleManagementPolicyRequest(
-        new Policy(new Phases(new Delete(minimumAge, new Actions(new ObjectMapper())))));
+        new Policy(new Phases(new Delete(minimumAge, new Actions(new DeleteAction())))));
   }
 
   private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {

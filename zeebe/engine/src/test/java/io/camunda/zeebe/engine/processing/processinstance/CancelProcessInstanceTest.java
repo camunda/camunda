@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
@@ -498,7 +498,7 @@ public final class CancelProcessInstanceTest {
   /**
    * Regression test against activating jobs of cancelled process instances
    *
-   * <p>See: https://github.com/camunda/zeebe/issues/8588
+   * <p>See: https://github.com/camunda/camunda/issues/8588
    */
   @Test
   public void shouldCancelJobsWithIncidents() {

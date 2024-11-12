@@ -2,50 +2,65 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import org.assertj.core.api.Assertions;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+@ZeebeIntegration
+@AutoCloseResources
 public class MigrateProcessInstanceTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @AutoCloseResource ZeebeClient client;
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  ZeebeResourcesHelper resourcesHelper;
 
-  @Test
-  public void shouldMigrateProcessInstanceWithToASmallDifferenceProcessDefinition() {
+  @BeforeEach
+  public void init() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldMigrateProcessInstanceWithToASmallDifferenceProcessDefinition(
+      final boolean useRest, final TestInfo testInfo) {
     // given
-    final String processId = helper.getBpmnProcessId();
+    final String processId = "process-" + testInfo.getTestMethod().get().getName();
     final long definitionKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("A", a -> a.zeebeJobType("A"))
                 .endEvent()
                 .done());
-    final long processInstanceKey = CLIENT_RULE.createProcessInstance(definitionKey);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(definitionKey);
 
     final long serviceTaskKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -63,7 +78,7 @@ public class MigrateProcessInstanceTest {
 
     // deploy a new version of the process
     final long targetProcessDefinitionKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("B", a -> a.zeebeJobType("B"))
@@ -72,9 +87,7 @@ public class MigrateProcessInstanceTest {
 
     // when
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newMigrateProcessInstanceCommand(processInstanceKey)
+        getCommand(client, useRest, processInstanceKey)
             .migrationPlan(targetProcessDefinitionKey)
             .addMappingInstruction("A", "B")
             .send();
@@ -132,7 +145,7 @@ public class MigrateProcessInstanceTest {
                 + " Re-evaluation of the job type expression is not enabled for this migration")
         .hasType("A");
 
-    CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join();
+    client.newCompleteCommand(jobKey).send().join();
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
         .withRecordKey(serviceTaskKey)
         .await();
@@ -145,18 +158,20 @@ public class MigrateProcessInstanceTest {
         .isPresent();
   }
 
-  @Test
-  public void shouldMigrateProcessInstanceWithToALargeDifferenceProcessDefinition() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldMigrateProcessInstanceWithToALargeDifferenceProcessDefinition(
+      final boolean useRest, final TestInfo testInfo) {
     // given
-    final String processId = helper.getBpmnProcessId();
+    final String processId = "process-" + testInfo.getTestMethod().get().getName();
     final long definitionKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("A", a -> a.zeebeJobType("A"))
                 .endEvent()
                 .done());
-    final long processInstanceKey = CLIENT_RULE.createProcessInstance(definitionKey);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(definitionKey);
 
     final long serviceTaskKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -174,7 +189,7 @@ public class MigrateProcessInstanceTest {
 
     // deploy a new version of the process
     final long targetProcessDefinitionKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .userTask("U")
@@ -185,9 +200,7 @@ public class MigrateProcessInstanceTest {
 
     // when
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newMigrateProcessInstanceCommand(processInstanceKey)
+        getCommand(client, useRest, processInstanceKey)
             .migrationPlan(targetProcessDefinitionKey)
             .addMappingInstruction("A", "B")
             .send();
@@ -245,7 +258,7 @@ public class MigrateProcessInstanceTest {
                 + " Re-evaluation of the job type expression is not enabled for this migration")
         .hasType("A");
 
-    CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join();
+    client.newCompleteCommand(jobKey).send().join();
     RecordingExporter.jobRecords(JobIntent.COMPLETED).withRecordKey(jobKey).await();
 
     Assertions.assertThat(
@@ -256,18 +269,20 @@ public class MigrateProcessInstanceTest {
         .isPresent();
   }
 
-  @Test
-  public void shouldMigrateProcessInstanceToACompletelyNewProcessDefinition() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldMigrateProcessInstanceToACompletelyNewProcessDefinition(
+      final boolean useRest, final TestInfo testInfo) {
     // given
-    final String processId = helper.getBpmnProcessId();
+    final String processId = "process-" + testInfo.getTestMethod().get().getName();
     final long definitionKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
                 .serviceTask("A", a -> a.zeebeJobType("A"))
                 .endEvent()
                 .done());
-    final long processInstanceKey = CLIENT_RULE.createProcessInstance(definitionKey);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(definitionKey);
 
     final long serviceTaskKey =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
@@ -283,9 +298,9 @@ public class MigrateProcessInstanceTest {
             .getFirst()
             .getKey();
 
-    final String targetProcessId = helper.getBpmnProcessId() + "1";
+    final String targetProcessId = processId + "1";
     final long targetProcessDefinitionKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess(targetProcessId)
                 .startEvent()
                 .serviceTask("B", a -> a.zeebeJobType("B"))
@@ -294,9 +309,7 @@ public class MigrateProcessInstanceTest {
 
     // when
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newMigrateProcessInstanceCommand(processInstanceKey)
+        getCommand(client, useRest, processInstanceKey)
             .migrationPlan(targetProcessDefinitionKey)
             .addMappingInstruction("A", "B")
             .send();
@@ -354,7 +367,7 @@ public class MigrateProcessInstanceTest {
                 + " Re-evaluation of the job type expression is not enabled for this migration")
         .hasType("A");
 
-    CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join();
+    client.newCompleteCommand(jobKey).send().join();
     RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
         .withRecordKey(serviceTaskKey)
         .await();
@@ -365,5 +378,12 @@ public class MigrateProcessInstanceTest {
                 .findAny())
         .describedAs("Expect that end event is activated")
         .isPresent();
+  }
+
+  private MigrateProcessInstanceCommandStep1 getCommand(
+      final ZeebeClient client, final boolean useRest, final long processInstanceKey) {
+    final MigrateProcessInstanceCommandStep1 migrateCommand =
+        client.newMigrateProcessInstanceCommand(processInstanceKey);
+    return useRest ? migrateCommand.useRest() : migrateCommand.useGrpc();
   }
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.clustering;
 
@@ -88,7 +88,7 @@ public final class DeploymentClusteredTest {
     // wait for long before restart.
     // Add time in small increments to simulate gradual progression of the time.
     // For each increment, we expect the broker to retry sending the deployment.
-    // https://github.com/camunda/zeebe/issues/8525
+    // https://github.com/camunda/camunda/issues/8525
 
     clusteringRule.getClock().addTime(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
     clusteringRule.getClock().addTime(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
@@ -123,13 +123,7 @@ public final class DeploymentClusteredTest {
             .addProcessModel(PROCESS, "process.bpmn")
             .send()
             .join();
-    final var processDefinitionKey = deploymentEvent.getKey();
-
-    assertThat(
-            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
-                .withDistributionPartitionId(3)
-                .findFirst())
-        .isPresent();
+    final var deploymentKey = deploymentEvent.getKey();
 
     clusteringRule.stopBroker(deploymentPartitionLeader);
     adminServiceLeaderTwo.resumeStreamProcessing();
@@ -139,17 +133,18 @@ public final class DeploymentClusteredTest {
     clusteringRule.getClock().addTime(DEPLOYMENT_REDISTRIBUTION_INTERVAL);
 
     // then
-    clientRule.waitUntilDeploymentIsDone(processDefinitionKey);
+    clientRule.waitUntilDeploymentIsDone(deploymentKey);
 
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.ACKNOWLEDGED)
+                .withRecordKey(deploymentKey)
                 .withDistributionPartitionId(2)
                 .findFirst())
         .isPresent();
   }
 
   /**
-   * Regression test against https://github.com/camunda/zeebe/issues/9877
+   * Regression test against https://github.com/camunda/camunda/issues/9877
    *
    * <p>We expect that the DISTRIBUTE command is written a second time, after restart of the leader
    * of the deployment partition. Both DISTRIBUTE commands should be processed and resulting in

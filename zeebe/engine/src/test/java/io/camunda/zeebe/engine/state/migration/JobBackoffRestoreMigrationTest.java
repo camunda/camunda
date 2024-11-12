@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.migration;
 
@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,7 +66,7 @@ public class JobBackoffRestoreMigrationTest {
     jobKey.wrapLong(1);
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldRestoreIfBackoffColumnIsEmpty() {
     // given
@@ -77,14 +78,15 @@ public class JobBackoffRestoreMigrationTest {
     backoffColumnFamily.deleteExisting(backoffJobKey);
 
     // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
+    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
+    jobBackoffRestoreMigration.runMigration(context);
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldRestoreIfFailedJobsAreMoreThanBackoffJob() {
     // given
@@ -103,15 +105,16 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(1);
 
     // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
+    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
+    jobBackoffRestoreMigration.runMigration(context);
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
     assertThat(backoffColumnFamily.count()).isEqualTo(2);
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldDoNothingIfFailedJobsAreTheSameAsBackoff() {
     // given
@@ -127,8 +130,9 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(2);
 
     // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
+    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
+    jobBackoffRestoreMigration.runMigration(context);
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
@@ -152,8 +156,9 @@ public class JobBackoffRestoreMigrationTest {
     assertThat(backoffColumnFamily.count()).isEqualTo(1);
 
     // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
+    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
+    jobBackoffRestoreMigration.runMigration(context);
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
@@ -177,8 +182,9 @@ public class JobBackoffRestoreMigrationTest {
     backoffKey.wrapLong(backoffRecord.getRecurringTime());
 
     // when
-    assertThat(jobBackoffRestoreMigration.needsToRun(processingState)).isTrue();
-    jobBackoffRestoreMigration.runMigration(processingState);
+    final var context = new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState);
+    assertThat(jobBackoffRestoreMigration.needsToRun(context)).isTrue();
+    jobBackoffRestoreMigration.runMigration(context);
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.client.api;
 
@@ -16,12 +16,13 @@ import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.PartitionState;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
-import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.MemberState;
-import io.camunda.zeebe.topology.state.PartitionState;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -390,11 +391,11 @@ final class BrokerTopologyManagerTest {
     assertThat(topologyManager.getTopology().getClusterSize()).isEqualTo(3);
 
     // when
-    final ClusterTopology clusterTopologyWithTwoBrokers =
-        ClusterTopology.init()
+    final ClusterConfiguration clusterTopologyWithTwoBrokers =
+        ClusterConfiguration.init()
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
-    topologyManager.onTopologyUpdated(clusterTopologyWithTwoBrokers);
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // then
@@ -406,11 +407,11 @@ final class BrokerTopologyManagerTest {
   @Test
   void shouldNotOverwriteClusterSizeFromBrokerInfo() {
     // given
-    final ClusterTopology clusterTopologyWithTwoBrokers =
-        ClusterTopology.init()
+    final ClusterConfiguration clusterTopologyWithTwoBrokers =
+        ClusterConfiguration.init()
             .addMember(MemberId.from("1"), MemberState.initializeAsActive(Map.of()))
             .addMember(MemberId.from("2"), MemberState.initializeAsActive(Map.of()));
-    topologyManager.onTopologyUpdated(clusterTopologyWithTwoBrokers);
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // when
@@ -431,16 +432,24 @@ final class BrokerTopologyManagerTest {
 
     // when
     final var clusterTopologyWithTwoBrokers =
-        ClusterTopology.init()
+        ClusterConfiguration.init()
             .addMember(
                 MemberId.from("1"),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(2))))
+                    Map.of(
+                        1,
+                        PartitionState.active(1, DynamicPartitionConfig.init()),
+                        2,
+                        PartitionState.active(2, DynamicPartitionConfig.init()))))
             .addMember(
                 MemberId.from("2"),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(1))));
-    topologyManager.onTopologyUpdated(clusterTopologyWithTwoBrokers);
+                    Map.of(
+                        1,
+                        PartitionState.active(2, DynamicPartitionConfig.init()),
+                        2,
+                        PartitionState.active(1, DynamicPartitionConfig.init()))));
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // then
@@ -453,16 +462,24 @@ final class BrokerTopologyManagerTest {
   void shouldNotOverwritePartitionsCountFromBrokerInfo() {
     // given
     final var clusterTopologyWithTwoBrokers =
-        ClusterTopology.init()
+        ClusterConfiguration.init()
             .addMember(
                 MemberId.from("1"),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(1), 2, PartitionState.active(2))))
+                    Map.of(
+                        1,
+                        PartitionState.active(1, DynamicPartitionConfig.init()),
+                        2,
+                        PartitionState.active(2, DynamicPartitionConfig.init()))))
             .addMember(
                 MemberId.from("2"),
                 MemberState.initializeAsActive(
-                    Map.of(1, PartitionState.active(2), 2, PartitionState.active(1))));
-    topologyManager.onTopologyUpdated(clusterTopologyWithTwoBrokers);
+                    Map.of(
+                        1,
+                        PartitionState.active(2, DynamicPartitionConfig.init()),
+                        2,
+                        PartitionState.active(1, DynamicPartitionConfig.init()))));
+    topologyManager.onClusterConfigurationUpdated(clusterTopologyWithTwoBrokers);
     actorSchedulerRule.workUntilDone();
 
     // when

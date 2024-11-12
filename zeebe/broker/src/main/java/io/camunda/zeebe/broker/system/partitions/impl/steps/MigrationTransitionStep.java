@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.migration.DbMigratorImpl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
+import java.time.InstantSource;
 
 public class MigrationTransitionStep implements PartitionTransitionStep {
 
@@ -45,11 +47,14 @@ public class MigrationTransitionStep implements PartitionTransitionStep {
             new DbKeyGenerator(context.getPartitionId(), zeebeDb, zeebeDbContext),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
-            context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration());
+            context.getBrokerCfg().getExperimental().getEngine().createEngineConfiguration(),
+            InstantSource.system());
 
-    final var dbMigrator = new DbMigratorImpl(processingState);
+    final var dbMigrator =
+        new DbMigratorImpl(new ClusterContextImpl(context.getPartitionCount()), processingState);
     try {
       dbMigrator.runMigrations();
+      zeebeDbContext.getCurrentTransaction().commit();
     } catch (final Exception e) {
       return CompletableActorFuture.completedExceptionally(e);
     }

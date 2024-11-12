@@ -71,7 +71,7 @@ jobs:
           - branch: 'main'
             generation_template: 'Zeebe SNAPSHOT'
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.latest-version) }}
+            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.latest-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
             generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.second-last-version) }}
           - branch: ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}

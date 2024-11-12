@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.qa.util.cluster;
 
@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import io.camunda.zeebe.client.api.response.BrokerInfo;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.time.Duration;
@@ -21,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.slf4j.Logger;
@@ -152,7 +154,14 @@ public final class TestCluster implements CloseableSilently {
         nodes().values().stream()
             .map(node -> CompletableFuture.runAsync(node::stop))
             .toArray(CompletableFuture[]::new);
-    CompletableFuture.allOf(stopped).join();
+
+    try {
+      CompletableFuture.allOf(stopped).get(2, TimeUnit.MINUTES);
+    } catch (final Exception e) {
+      LOGGER.error("Failed to shutdown cluster", e);
+      throw new RuntimeException(e);
+    }
+
     return this;
   }
 
@@ -258,6 +267,7 @@ public final class TestCluster implements CloseableSilently {
   public ZeebeClientBuilder newClientBuilder() {
     return ZeebeClient.newClientBuilder()
         .usePlaintext()
+        .restAddress(availableGateway().restAddress())
         .grpcAddress(availableGateway().grpcAddress());
   }
 
@@ -349,6 +359,30 @@ public final class TestCluster implements CloseableSilently {
         .atMost(timeout)
         .untilAsserted(() -> assertThat(nodes).allSatisfy(node -> assertProbe(node, probe)));
     return this;
+  }
+
+  /**
+   * returns the broker which is the leader for given partitionId according to the topology response
+   *
+   * @param partitionId id of the partition
+   * @return the broker which is the leader for given partitionId
+   * @throws NoSuchElementException if no leader is found for the partition
+   */
+  public TestStandaloneBroker leaderForPartition(final int partitionId) {
+    try (final var client = newClientBuilder().build()) {
+      final var leaderOfPartition2 =
+          client.newTopologyRequest().send().join().getBrokers().stream()
+              .filter(
+                  b ->
+                      b.getPartitions().stream()
+                          .anyMatch(p -> p.getPartitionId() == partitionId && p.isLeader()))
+              .map(BrokerInfo::getNodeId)
+              .findFirst()
+              .orElseThrow(
+                  () -> new NoSuchElementException("No leader found for partition " + partitionId));
+
+      return brokers().get(MemberId.from(String.valueOf(leaderOfPartition2)));
+    }
   }
 
   @Override

@@ -2,149 +2,175 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
-import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
-import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.it.util.RecordingJobHandler;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+@ZeebeIntegration
+@AutoCloseResources
 public final class CompleteJobTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @AutoCloseResource ZeebeClient client;
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  ZeebeResourcesHelper resourcesHelper;
 
-  private String jobType;
-  private ActivatedJob jobEvent;
-  private long jobKey;
-
-  @Before
+  @BeforeEach
   public void init() {
-    jobType = helper.getJobType();
-    CLIENT_RULE.createSingleJob(jobType);
-
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
-    CLIENT_RULE.getClient().newWorker().jobType(jobType).handler(jobHandler).open();
-
-    waitUntil(() -> jobHandler.getHandledJobs().size() >= 1);
-
-    jobEvent = jobHandler.getHandledJobs().get(0);
-    jobKey = jobEvent.getKey();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
-  @Test
-  public void shouldCompleteJobWithoutVariables() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCompleteJobWithoutVariables(final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
+
     // when
-    CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join();
+    getCommand(client, useRest, jobKey).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
         jobType, (job) -> assertThat(job.getVariables()).isEmpty());
   }
 
-  @Test
-  public void shouldCompleteJobNullVariables() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCompleteJobNullVariables(final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
+
     // when
-    CLIENT_RULE.getClient().newCompleteCommand(jobKey).variables("null").send().join();
+    getCommand(client, useRest, jobKey).variables("null").send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
         jobType, (job) -> assertThat(job.getVariables()).isEmpty());
   }
 
-  @Test
-  public void shouldCompleteJobWithVariables() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCompleteJobWithVariables(final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
+
     // when
-    CLIENT_RULE.getClient().newCompleteCommand(jobKey).variables("{\"foo\":\"bar\"}").send().join();
+    getCommand(client, useRest, jobKey).variables("{\"foo\":\"bar\"}").send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
         jobType, (job) -> assertThat(job.getVariables()).containsOnly(entry("foo", "bar")));
   }
 
-  @Test
-  public void shouldRejectIfVariablesAreInvalid() {
-    // when
-    assertThatThrownBy(
-            () -> CLIENT_RULE.getClient().newCompleteCommand(jobKey).variables("[]").send().join())
-        .isInstanceOf(ClientStatusException.class)
-        .hasMessageContaining(
-            "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'");
-  }
-
-  @Test
-  public void shouldRejectIfVariableIsBigIntTooLong() {
-    // when
-    assertThatThrownBy(
-            () ->
-                CLIENT_RULE
-                    .getClient()
-                    .newCompleteCommand(jobKey)
-                    .variables("{\"mybigintistoolong\":123456789012345678901234567890}")
-                    .send()
-                    .join())
-        .isInstanceOf(ClientStatusException.class)
-        .hasMessageContaining("MessagePack cannot serialize BigInteger larger than 2^64-1");
-  }
-
-  @Test
-  public void shouldRejectIfJobIsAlreadyCompleted() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectIfVariablesAreInvalid(final boolean useRest, final TestInfo testInfo) {
     // given
-    CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join();
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
+
+    // when
+    if (useRest) {
+      assertThatThrownBy(() -> getCommand(client, useRest, jobKey).variables("[]").send().join())
+          .hasMessageContaining("Failed to deserialize json '[]' to 'Map<String, Object>'");
+    } else {
+      assertThatThrownBy(() -> getCommand(client, useRest, jobKey).variables("[]").send().join())
+          .hasMessageContaining(
+              "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'");
+    }
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectIfVariableIsBigIntTooLong(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
+
+    final var expectedMessage = "MessagePack cannot serialize BigInteger larger than 2^64-1";
+    final var variables = "{\"mybigintistoolong\":123456789012345678901234567890}";
+
+    // when
+    assertThatThrownBy(() -> getCommand(client, useRest, jobKey).variables(variables).send().join())
+        .hasMessageContaining(expectedMessage);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectIfJobIsAlreadyCompleted(final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
+
+    // given
+    getCommand(client, useRest, jobKey).send().join();
 
     // when
     final var expectedMessage =
         String.format("Expected to complete job with key '%d', but no such job was found", jobKey);
-
-    assertThatThrownBy(() -> CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join())
-        .isInstanceOf(ClientStatusException.class)
+    assertThatThrownBy(() -> getCommand(client, useRest, jobKey).send().join())
         .hasMessageContaining(expectedMessage);
   }
 
-  @Test
-  public void shouldCompleteJobWithSingleVariable() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCompleteJobWithSingleVariable(final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
     final String key = "key";
     final var value = "value";
     // when
-    CLIENT_RULE.getClient().newCompleteCommand(jobKey).variable(key, value).send().join();
+    getCommand(client, useRest, jobKey).variable(key, value).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
         jobType, (job) -> assertThat(job.getVariables()).containsOnly(entry(key, value)));
   }
 
-  @Test
-  public void shouldThrowErrorWhenTryToCompleteJobWithNullVariable() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldThrowErrorWhenTryToCompleteJobWithNullVariable(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
+
     // when
-    assertThatThrownBy(
-            () ->
-                CLIENT_RULE
-                    .getClient()
-                    .newCompleteCommand(jobKey)
-                    .variable(null, null)
-                    .send()
-                    .join())
+    assertThatThrownBy(() -> getCommand(client, useRest, jobKey).variable(null, null).send().join())
         .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  private CompleteJobCommandStep1 getCommand(
+      final ZeebeClient client, final boolean useRest, final long jobKey) {
+    final CompleteJobCommandStep1 completeJobCommandStep1 = client.newCompleteCommand(jobKey);
+    return useRest ? completeJobCommandStep1.useRest() : completeJobCommandStep1.useGrpc();
   }
 }

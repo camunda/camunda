@@ -2,10 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.impl;
+
+import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.operationReferenceNullValue;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -38,14 +40,25 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
+  private final long operationReference;
 
   BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
+    this(predicate, operationReferenceNullValue());
+  }
+
+  BufferedProcessingResultBuilder(
+      final RecordBatchSizePredicate predicate, final long operationReference) {
     mutableRecordBatch = new RecordBatch(predicate);
+    this.operationReference = operationReference;
   }
 
   @Override
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
       final long key, final RecordValue value, final RecordMetadata metadata) {
+
+    if (operationReference != operationReferenceNullValue()) {
+      metadata.operationReference(operationReference);
+    }
 
     final ValueType valueType = TypedEventRegistry.TYPE_REGISTRY.get(value.getClass());
     if (valueType == null) {
@@ -53,7 +66,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
       throw new IllegalStateException("Missing value type mapping for record: " + value.getClass());
     }
 
-    if (value instanceof UnifiedRecordValue unifiedRecordValue) {
+    if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
       final var metadataWithValueType = metadata.valueType(valueType);
       final var either =
           mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, unifiedRecordValue);
@@ -87,7 +100,8 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
             .intent(intent)
             .rejectionType(rejectionType)
             .rejectionReason(rejectionReason)
-            .valueType(valueType);
+            .valueType(valueType)
+            .operationReference(operationReference);
     final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
     return this;

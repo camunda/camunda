@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions;
 
@@ -29,6 +29,7 @@ import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -60,7 +61,8 @@ public final class AsyncSnapshottingTest {
   public void setup() throws IOException {
     final var rootDirectory = tempFolderRule.getRoot().toPath();
     final int partitionId = 1;
-    persistedSnapshotStore = new FileBasedSnapshotStore(partitionId, rootDirectory);
+    persistedSnapshotStore =
+        new FileBasedSnapshotStore(0, partitionId, rootDirectory, snapshotPath -> Map.of());
     actorSchedulerRule.submitActor(persistedSnapshotStore).join();
 
     snapshotController =

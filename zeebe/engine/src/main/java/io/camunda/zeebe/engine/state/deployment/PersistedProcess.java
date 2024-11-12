@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.deployment;
 
@@ -30,16 +30,20 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
       new EnumProperty<>("state", PersistedProcessState.class, PersistedProcessState.ACTIVE);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public PersistedProcess() {
-    super(7);
+    super(9);
     declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(resourceNameProp)
         .declareProperty(resourceProp)
         .declareProperty(stateProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
   }
 
   public void wrap(final ProcessRecord processRecord, final long processDefinitionKey) {
@@ -50,10 +54,16 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
     versionProp.setValue(processRecord.getVersion());
     keyProp.setValue(processDefinitionKey);
     tenantIdProp.setValue(processRecord.getTenantId());
+    deploymentKeyProp.setValue(processRecord.getDeploymentKey());
+    versionTagProp.setValue(processRecord.getVersionTag());
   }
 
   public int getVersion() {
     return versionProp.getValue();
+  }
+
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
   }
 
   public long getKey() {
@@ -88,6 +98,10 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
   public PersistedProcess setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
   }
 
   public enum PersistedProcessState {

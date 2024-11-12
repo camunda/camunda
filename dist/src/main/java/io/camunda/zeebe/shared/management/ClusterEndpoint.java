@@ -2,60 +2,29 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.MemberId;
-import io.atomix.cluster.messaging.MessagingException.NoSuchMemberException;
-import io.camunda.zeebe.management.cluster.BrokerState;
-import io.camunda.zeebe.management.cluster.BrokerStateCode;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.BrokerScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.CancelChangeRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterPatchRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ClusterScaleRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ForceRemoveBrokersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.JoinPartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.LeavePartitionRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequestSender;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.management.cluster.Error;
-import io.camunda.zeebe.management.cluster.GetTopologyResponse;
-import io.camunda.zeebe.management.cluster.Operation;
-import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
-import io.camunda.zeebe.management.cluster.PartitionState;
-import io.camunda.zeebe.management.cluster.PartitionStateCode;
-import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
-import io.camunda.zeebe.management.cluster.TopologyChange;
-import io.camunda.zeebe.management.cluster.TopologyChange.StatusEnum;
-import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
-import io.camunda.zeebe.topology.api.ErrorResponse;
-import io.camunda.zeebe.topology.api.TopologyChangeResponse;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.AddMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.CancelChangeRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.JoinPartitionRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.LeavePartitionRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.RemoveMembersRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequest.ScaleRequest;
-import io.camunda.zeebe.topology.api.TopologyManagementRequestSender;
-import io.camunda.zeebe.topology.state.ClusterChangePlan;
-import io.camunda.zeebe.topology.state.ClusterChangePlan.CompletedOperation;
-import io.camunda.zeebe.topology.state.ClusterChangePlan.Status;
-import io.camunda.zeebe.topology.state.ClusterTopology;
-import io.camunda.zeebe.topology.state.CompletedChange;
-import io.camunda.zeebe.topology.state.MemberState;
-import io.camunda.zeebe.topology.state.PartitionState.State;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberJoinOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberLeaveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.MemberRemoveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionForceReconfigureOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
-import io.camunda.zeebe.topology.state.TopologyChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
-import io.camunda.zeebe.util.Either;
-import java.net.ConnectException;
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.annotation.RestControllerEndpoint;
@@ -64,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -72,39 +42,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Component
 @RestControllerEndpoint(id = "cluster")
 public class ClusterEndpoint {
-  private static final OffsetDateTime MIN_PARSER_COMPLIANT_DATE =
-      OffsetDateTime.parse("0000-01-01T00:00:00Z");
-  private final TopologyManagementRequestSender requestSender;
+  private final ClusterConfigurationManagementRequestSender requestSender;
 
   @Autowired
-  public ClusterEndpoint(final TopologyManagementRequestSender requestSender) {
+  public ClusterEndpoint(final ClusterConfigurationManagementRequestSender requestSender) {
     this.requestSender = requestSender;
   }
 
   @GetMapping(produces = "application/json")
   public ResponseEntity<?> clusterTopology() {
     try {
-      return mapClusterTopologyResponse(requestSender.getTopology().join());
+      return ClusterApiUtils.mapClusterTopologyResponse(requestSender.getTopology().join());
     } catch (final Exception error) {
-      return mapError(error);
+      return ClusterApiUtils.mapError(error);
     }
-  }
-
-  private ResponseEntity<Error> mapError(final Throwable error) {
-    if (error instanceof CompletionException) {
-      return mapError(error.getCause());
-    }
-
-    final var errorResponse = new Error();
-    errorResponse.setMessage(error.getMessage());
-    final int status =
-        switch (error) {
-          case final ConnectException ignore -> 502;
-          case final NoSuchMemberException ignore -> 502;
-          case final TimeoutException ignore -> 504;
-          default -> 500;
-        };
-    return ResponseEntity.status(status).body(errorResponse);
   }
 
   private ResponseEntity<Error> invalidRequest(final String message) {
@@ -120,7 +71,7 @@ public class ClusterEndpoint {
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
       case brokers ->
-          mapOperationResponse(
+          ClusterApiUtils.mapOperationResponse(
               requestSender
                   .addMembers(
                       new AddMembersRequest(Set.of(new MemberId(String.valueOf(id))), dryRun))
@@ -140,7 +91,7 @@ public class ClusterEndpoint {
       @RequestParam(defaultValue = "false") final boolean dryRun) {
     return switch (resource) {
       case brokers ->
-          mapOperationResponse(
+          ClusterApiUtils.mapOperationResponse(
               requestSender
                   .removeMembers(new RemoveMembersRequest(Set.of(new MemberId(id)), dryRun))
                   .join());
@@ -166,14 +117,14 @@ public class ClusterEndpoint {
    */
   private ResponseEntity<?> cancelChange(final String changeId) {
     try {
-      return mapClusterTopologyResponse(
+      return ClusterApiUtils.mapClusterTopologyResponse(
           requestSender
               .cancelTopologyChange(new CancelChangeRequest(Long.parseLong(changeId)))
               .join());
     } catch (final NumberFormatException ignore) {
       return invalidRequest("Change id must be a number");
     } catch (final Exception error) {
-      return mapError(error);
+      return ClusterApiUtils.mapError(error);
     }
   }
 
@@ -201,8 +152,8 @@ public class ClusterEndpoint {
       final boolean force,
       final Optional<Integer> replicationFactor) {
     try {
-      final ScaleRequest scaleRequest =
-          new ScaleRequest(
+      final BrokerScaleRequest scaleRequest =
+          new BrokerScaleRequest(
               ids.stream().map(String::valueOf).map(MemberId::from).collect(Collectors.toSet()),
               replicationFactor,
               dryRun);
@@ -212,10 +163,120 @@ public class ClusterEndpoint {
           force
               ? requestSender.forceScaleDown(scaleRequest).join()
               : requestSender.scaleMembers(scaleRequest).join();
-      return mapOperationResponse(response);
+      return ClusterApiUtils.mapOperationResponse(response);
     } catch (final Exception error) {
-      return mapError(error);
+      return ClusterApiUtils.mapError(error);
     }
+  }
+
+  @PatchMapping(consumes = "application/json", produces = "application/json")
+  public ResponseEntity<?> updateClusterConfiguration(
+      @RequestParam(defaultValue = "false") final boolean dryRun,
+      @RequestParam(defaultValue = "false") final boolean force,
+      @RequestBody final ClusterConfigPatchRequest request) {
+    try {
+      final var brokers = request.getBrokers();
+      final var partitions = request.getPartitions();
+      if (force) {
+        return forceRemoveBrokers(dryRun, brokers, partitions);
+      }
+
+      final boolean isScale = brokers != null && brokers.getCount() != null;
+      final boolean shouldAddBrokers =
+          brokers != null && brokers.getAdd() != null && !brokers.getAdd().isEmpty();
+      final boolean shouldRemoveBrokers =
+          brokers != null && brokers.getRemove() != null && !brokers.getRemove().isEmpty();
+      if (isScale && (shouldAddBrokers || shouldRemoveBrokers)) {
+        return invalidRequest(
+            "Cannot change brokers count and add/remove brokers at the same time. Specify either the new brokers count or brokers to add and remove.");
+      }
+
+      final Optional<Integer> newPartitionCount =
+          Optional.ofNullable(partitions).map(ClusterConfigPatchRequestPartitions::getCount);
+      final Optional<Integer> newReplicationFactor =
+          Optional.ofNullable(partitions)
+              .map(ClusterConfigPatchRequestPartitions::getReplicationFactor);
+
+      if (isScale) {
+        final var scaleRequest =
+            new ClusterScaleRequest(
+                Optional.of(brokers.getCount()), newPartitionCount, newReplicationFactor, dryRun);
+        return ClusterApiUtils.mapOperationResponse(
+            requestSender.scaleCluster(scaleRequest).join());
+      } else {
+        return patchCluster(dryRun, request, brokers, newPartitionCount, newReplicationFactor);
+      }
+
+    } catch (final Exception error) {
+      return ClusterApiUtils.mapError(error);
+    }
+  }
+
+  private ResponseEntity<?> patchCluster(
+      final boolean dryRun,
+      final ClusterConfigPatchRequest request,
+      final ClusterConfigPatchRequestBrokers brokers,
+      final Optional<Integer> newPartitionCount,
+      final Optional<Integer> newReplicationFactor) {
+    final Set<MemberId> brokersToAdd =
+        brokers != null
+            ? request.getBrokers().getAdd().stream()
+                .map(String::valueOf)
+                .map(MemberId::from)
+                .collect(Collectors.toSet())
+            : Set.of();
+    final Set<MemberId> brokersToRemove =
+        brokers != null
+            ? request.getBrokers().getRemove().stream()
+                .map(String::valueOf)
+                .map(MemberId::from)
+                .collect(Collectors.toSet())
+            : Set.of();
+    final var patchRequest =
+        new ClusterPatchRequest(
+            brokersToAdd, brokersToRemove, newPartitionCount, newReplicationFactor, dryRun);
+
+    return ClusterApiUtils.mapOperationResponse(requestSender.patchCluster(patchRequest).join());
+  }
+
+  private ResponseEntity<?> forceRemoveBrokers(
+      final boolean dryRun,
+      final ClusterConfigPatchRequestBrokers brokers,
+      final ClusterConfigPatchRequestPartitions partitions) {
+
+    if (brokers == null) {
+      return invalidRequest("Must provide a set of brokers to force remove.");
+    }
+
+    if (brokers.getCount() != null) {
+      return invalidRequest("Cannot force change the broker count.");
+    }
+    if (brokers.getAdd() != null && !brokers.getAdd().isEmpty()) {
+      return invalidRequest("Cannot force add brokers");
+    }
+
+    if (partitions != null) {
+      if (partitions.getCount() != null) {
+        return invalidRequest("Cannot force change the partition count.");
+      }
+      if (partitions.getReplicationFactor() != null) {
+        return invalidRequest("Cannot force change the replication factor.");
+      }
+    }
+
+    if (brokers.getRemove() == null || brokers.getRemove().isEmpty()) {
+      return invalidRequest("Must provide a set of brokers to force remove.");
+    }
+
+    final var forceRemoveRequest =
+        new ForceRemoveBrokersRequest(
+            brokers.getRemove().stream()
+                .map(String::valueOf)
+                .map(MemberId::from)
+                .collect(Collectors.toSet()),
+            dryRun);
+    return ClusterApiUtils.mapOperationResponse(
+        requestSender.forceRemoveBrokers(forceRemoveRequest).join());
   }
 
   @PostMapping(
@@ -232,9 +293,9 @@ public class ClusterEndpoint {
     return switch (resource) {
       case brokers ->
           switch (subResource) {
-              // POST /cluster/brokers/1/partitions/2
+            // POST /cluster/brokers/1/partitions/2
             case partitions ->
-                mapOperationResponse(
+                ClusterApiUtils.mapOperationResponse(
                     requestSender
                         .joinPartition(
                             new JoinPartitionRequest(
@@ -247,9 +308,9 @@ public class ClusterEndpoint {
           };
       case partitions ->
           switch (subResource) {
-              // POST /cluster/partitions/2/brokers/1
+            // POST /cluster/partitions/2/brokers/1
             case brokers ->
-                mapOperationResponse(
+                ClusterApiUtils.mapOperationResponse(
                     requestSender
                         .joinPartition(
                             new JoinPartitionRequest(
@@ -277,7 +338,7 @@ public class ClusterEndpoint {
       case brokers ->
           switch (subResource) {
             case partitions ->
-                mapOperationResponse(
+                ClusterApiUtils.mapOperationResponse(
                     requestSender
                         .leavePartition(
                             new LeavePartitionRequest(
@@ -288,7 +349,7 @@ public class ClusterEndpoint {
       case partitions ->
           switch (subResource) {
             case brokers ->
-                mapOperationResponse(
+                ClusterApiUtils.mapOperationResponse(
                     requestSender
                         .leavePartition(
                             new LeavePartitionRequest(
@@ -298,250 +359,6 @@ public class ClusterEndpoint {
           };
       case changes -> new ResponseEntity<>(HttpStatusCode.valueOf(404));
     };
-  }
-
-  private ResponseEntity<?> mapOperationResponse(
-      final Either<ErrorResponse, TopologyChangeResponse> response) {
-    if (response.isRight()) {
-      return ResponseEntity.status(202).body(mapResponseType(response.get()));
-    } else {
-      return mapErrorResponse(response.getLeft());
-    }
-  }
-
-  private ResponseEntity<?> mapClusterTopologyResponse(
-      final Either<ErrorResponse, ClusterTopology> response) {
-    if (response.isRight()) {
-      return ResponseEntity.status(200).body(mapClusterTopology(response.get()));
-    } else {
-      return mapErrorResponse(response.getLeft());
-    }
-  }
-
-  private ResponseEntity<Error> mapErrorResponse(final ErrorResponse response) {
-    final var errorCode =
-        switch (response.code()) {
-          case INVALID_REQUEST, OPERATION_NOT_ALLOWED -> 400;
-          case CONCURRENT_MODIFICATION -> 409;
-          case INTERNAL_ERROR -> 500;
-        };
-    final var error = new Error();
-    error.setMessage(response.message());
-    return ResponseEntity.status(errorCode).body(error);
-  }
-
-  private static PlannedOperationsResponse mapResponseType(final TopologyChangeResponse response) {
-    return new PlannedOperationsResponse()
-        .changeId(response.changeId())
-        .currentTopology(mapBrokerStates(response.currentTopology()))
-        .expectedTopology(mapBrokerStates(response.expectedTopology()))
-        .plannedChanges(mapOperations(response.plannedChanges()));
-  }
-
-  private static List<Operation> mapOperations(final List<TopologyChangeOperation> operations) {
-    return operations.stream().map(ClusterEndpoint::mapOperation).toList();
-  }
-
-  private static Operation mapOperation(final TopologyChangeOperation operation) {
-    return switch (operation) {
-      case final MemberJoinOperation join ->
-          new Operation()
-              .operation(OperationEnum.BROKER_ADD)
-              .brokerId(Integer.parseInt(join.memberId().id()));
-      case final MemberLeaveOperation leave ->
-          new Operation()
-              .operation(OperationEnum.BROKER_REMOVE)
-              .brokerId(Integer.parseInt(leave.memberId().id()));
-      case final PartitionJoinOperation join ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_JOIN)
-              .brokerId(Integer.parseInt(join.memberId().id()))
-              .partitionId(join.partitionId())
-              .priority(join.priority());
-      case final PartitionLeaveOperation leave ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_LEAVE)
-              .brokerId(Integer.parseInt(leave.memberId().id()))
-              .partitionId(leave.partitionId());
-      case final PartitionReconfigurePriorityOperation reconfigure ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
-              .brokerId(Integer.parseInt(reconfigure.memberId().id()))
-              .partitionId(reconfigure.partitionId())
-              .priority(reconfigure.priority());
-      case final PartitionForceReconfigureOperation partitionForceReconfigureOperation ->
-          new Operation()
-              .operation(OperationEnum.PARTITION_FORCE_RECONFIGURE)
-              .brokerId(Integer.parseInt(partitionForceReconfigureOperation.memberId().id()))
-              .partitionId(partitionForceReconfigureOperation.partitionId())
-              .brokers(
-                  partitionForceReconfigureOperation.members().stream()
-                      .map(MemberId::id)
-                      .map(Integer::parseInt)
-                      .collect(Collectors.toList()));
-      case final TopologyChangeOperation.MemberRemoveOperation memberRemoveOperation ->
-          new Operation()
-              .operation(OperationEnum.BROKER_REMOVE)
-              .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
-              .brokers(List.of(Integer.parseInt(memberRemoveOperation.memberToRemove().id())));
-    };
-  }
-
-  private static List<BrokerState> mapBrokerStates(final Map<MemberId, MemberState> topology) {
-    return topology.entrySet().stream()
-        .map(
-            entry ->
-                new BrokerState()
-                    .id(Integer.parseInt(entry.getKey().id()))
-                    .state(mapBrokerState(entry.getValue().state()))
-                    .lastUpdatedAt(mapInstantToDateTime(entry.getValue().lastUpdated()))
-                    .version(entry.getValue().version())
-                    .partitions(mapPartitionStates(entry.getValue().partitions())))
-        .toList();
-  }
-
-  private static OffsetDateTime mapInstantToDateTime(final Instant timestamp) {
-    // Instant.MIN ("-1000000000-01-01T00:00Z") is not compliant with rfc3339 parsers
-    // as year field has is not 4 digits, so we replace here with the min possible.
-    // see: https://github.com/camunda/zeebe/issues/16256
-    return timestamp.equals(Instant.MIN)
-        ? MIN_PARSER_COMPLIANT_DATE
-        : timestamp.atOffset(ZoneOffset.UTC);
-  }
-
-  private static BrokerStateCode mapBrokerState(final MemberState.State state) {
-    return switch (state) {
-      case ACTIVE -> BrokerStateCode.ACTIVE;
-      case JOINING -> BrokerStateCode.JOINING;
-      case LEAVING -> BrokerStateCode.LEAVING;
-      case LEFT -> BrokerStateCode.LEFT;
-      case UNINITIALIZED -> BrokerStateCode.UNKNOWN;
-    };
-  }
-
-  private static List<PartitionState> mapPartitionStates(
-      final Map<Integer, io.camunda.zeebe.topology.state.PartitionState> partitions) {
-    return partitions.entrySet().stream()
-        .map(
-            entry ->
-                new PartitionState()
-                    .id(entry.getKey())
-                    .priority(entry.getValue().priority())
-                    .state(mapPartitionState(entry.getValue().state())))
-        .toList();
-  }
-
-  private static PartitionStateCode mapPartitionState(final State state) {
-    return switch (state) {
-      case JOINING -> PartitionStateCode.JOINING;
-      case ACTIVE -> PartitionStateCode.ACTIVE;
-      case LEAVING -> PartitionStateCode.LEAVING;
-      case UNKNOWN -> PartitionStateCode.UNKNOWN;
-    };
-  }
-
-  private static GetTopologyResponse mapClusterTopology(final ClusterTopology topology) {
-    final var response = new GetTopologyResponse();
-    final List<BrokerState> brokers = mapBrokerStates(topology.members());
-
-    response.version(topology.version()).brokers(brokers);
-    topology.lastChange().ifPresent(change -> response.lastChange(mapCompletedChange(change)));
-    topology.pendingChanges().ifPresent(change -> response.pendingChange(mapOngoingChange(change)));
-
-    return response;
-  }
-
-  private static io.camunda.zeebe.management.cluster.CompletedChange mapCompletedChange(
-      final CompletedChange completedChange) {
-    return new io.camunda.zeebe.management.cluster.CompletedChange()
-        .id(completedChange.id())
-        .status(mapCompletedChangeStatus(completedChange.status()))
-        .startedAt(mapInstantToDateTime(completedChange.startedAt()))
-        .completedAt(mapInstantToDateTime(completedChange.completedAt()));
-  }
-
-  private static TopologyChange mapOngoingChange(final ClusterChangePlan clusterChangePlan) {
-    return new TopologyChange()
-        .id(clusterChangePlan.id())
-        .status(mapChangeStatus(clusterChangePlan.status()))
-        .pending(mapOperations(clusterChangePlan.pendingOperations()))
-        .completed(mapCompletedOperations(clusterChangePlan.completedOperations()));
-  }
-
-  private static io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum
-      mapCompletedChangeStatus(final Status status) {
-    return switch (status) {
-      case COMPLETED -> io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum.COMPLETED;
-      case FAILED -> io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum.FAILED;
-      case CANCELLED -> io.camunda.zeebe.management.cluster.CompletedChange.StatusEnum.CANCELLED;
-      case IN_PROGRESS -> throw new IllegalStateException("Completed change cannot be in progress");
-    };
-  }
-
-  private static StatusEnum mapChangeStatus(final Status status) {
-    return switch (status) {
-      case IN_PROGRESS -> StatusEnum.IN_PROGRESS;
-      case COMPLETED -> StatusEnum.COMPLETED;
-      case FAILED -> StatusEnum.FAILED;
-      case CANCELLED -> StatusEnum.CANCELLED;
-    };
-  }
-
-  private static List<TopologyChangeCompletedInner> mapCompletedOperations(
-      final List<CompletedOperation> completedOperations) {
-    return completedOperations.stream().map(ClusterEndpoint::mapCompletedOperation).toList();
-  }
-
-  private static TopologyChangeCompletedInner mapCompletedOperation(
-      final CompletedOperation operation) {
-    final var mappedOperation =
-        switch (operation.operation()) {
-          case final MemberJoinOperation join ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_ADD)
-                  .brokerId(Integer.parseInt(join.memberId().id()));
-          case final MemberLeaveOperation leave ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
-                  .brokerId(Integer.parseInt(leave.memberId().id()));
-          case final PartitionJoinOperation join ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_JOIN)
-                  .brokerId(Integer.parseInt(join.memberId().id()))
-                  .partitionId(join.partitionId())
-                  .priority(join.priority());
-          case final PartitionLeaveOperation leave ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_LEAVE)
-                  .brokerId(Integer.parseInt(leave.memberId().id()))
-                  .partitionId(leave.partitionId());
-          case final PartitionReconfigurePriorityOperation reconfigure ->
-              new TopologyChangeCompletedInner()
-                  .operation(
-                      TopologyChangeCompletedInner.OperationEnum.PARTITION_RECONFIGURE_PRIORITY)
-                  .brokerId(Integer.parseInt(reconfigure.memberId().id()))
-                  .partitionId(reconfigure.partitionId())
-                  .priority(reconfigure.priority());
-          case final PartitionForceReconfigureOperation partitionForceReconfigureOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.PARTITION_FORCE_RECONFIGURE)
-                  .brokerId(Integer.parseInt(partitionForceReconfigureOperation.memberId().id()))
-                  .partitionId(partitionForceReconfigureOperation.partitionId())
-                  .brokers(
-                      partitionForceReconfigureOperation.members().stream()
-                          .map(MemberId::id)
-                          .map(Integer::parseInt)
-                          .collect(Collectors.toList()));
-          case final MemberRemoveOperation memberRemoveOperation ->
-              new TopologyChangeCompletedInner()
-                  .operation(TopologyChangeCompletedInner.OperationEnum.BROKER_REMOVE)
-                  .brokerId(Integer.parseInt(memberRemoveOperation.memberId().id()))
-                  .brokers(List.of(Integer.parseInt(memberRemoveOperation.memberToRemove().id())));
-        };
-
-    mappedOperation.completedAt(mapInstantToDateTime(operation.completedAt()));
-
-    return mappedOperation;
   }
 
   public record PartitionAddRequest(int priority) {}

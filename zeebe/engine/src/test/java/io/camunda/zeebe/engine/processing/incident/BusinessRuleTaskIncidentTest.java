@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.incident;
 
@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.BusinessRuleTaskBuilder;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -106,6 +107,86 @@ public class BusinessRuleTaskIncidentTest {
             """
             Expected to evaluate decision 'unknown_decision_id', \
             but no decision found for id 'unknown_decision_id'\
+            """);
+  }
+
+  @Test
+  public void shouldCreateIncidentIfDecisionNotDeployedInSameDeploymentForBindingTypeDeployment() {
+    // given
+    engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                processWithBusinessRuleTask(
+                    b ->
+                        // an incident can only occur at run time if the target decision ID is an
+                        // expression; static IDs are already checked at deploy time
+                        b.zeebeCalledDecisionIdExpression(DECISION_ID_VARIABLE)
+                            .zeebeBindingType(ZeebeBindingType.deployment)
+                            .zeebeResultVariable(RESULT_VARIABLE)))
+            .deploy();
+
+    // when
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(DECISION_ID_VARIABLE, DECISION_ID)
+            .create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.CALLED_DECISION_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to evaluate decision '%s' with binding type 'deployment', \
+            but no such decision found in the deployment with key %s which contained the current process. \
+            To resolve this incident, migrate the process instance to a process definition \
+            that is deployed together with the intended decision to evaluate.\
+            """
+                .formatted(DECISION_ID, deployment.getKey()));
+  }
+
+  @Test
+  public void shouldCreateIncidentIfDecisionWithVersionTagNotDeployedForBindingTypeVersionTag() {
+    // given
+    engine.deployment().withXmlClasspathResource(DMN_RESOURCE).deploy();
+    engine
+        .deployment()
+        .withXmlResource(
+            processWithBusinessRuleTask(
+                b ->
+                    b.zeebeCalledDecisionId(DECISION_ID)
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTag("v1.0")
+                        .zeebeResultVariable(RESULT_VARIABLE)))
+        .deploy();
+
+    // when
+    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    final var taskActivating =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(TASK_ELEMENT_ID)
+            .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+            .getFirst();
+
+    // then
+    assertIncidentCreated(processInstanceKey, taskActivating.getKey())
+        .hasErrorType(ErrorType.CALLED_DECISION_ERROR)
+        .hasErrorMessage(
+            """
+            Expected to evaluate decision with id 'jedi_or_sith' and version tag 'v1.0', but no such decision found. \
+            To resolve this incident, deploy a decision with the given id and version tag.\
             """);
   }
 

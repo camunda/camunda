@@ -1,0 +1,9 @@
+@use '@carbon/styles/scss/spacing' as *;
+
+.ControlPanel {
+  .config {
+    cursor: default;
+    display: inline-block;
+    margin-inline: $spacing-04;
+  }
+}

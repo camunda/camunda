@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.mutable;
 
@@ -20,6 +20,10 @@ public interface MutableProcessState extends ProcessState {
 
   void putProcess(long key, ProcessRecord value);
 
+  void storeProcessDefinitionKeyByProcessIdAndDeploymentKey(final ProcessRecord processRecord);
+
+  void storeProcessDefinitionKeyByProcessIdAndVersionTag(final ProcessRecord processRecord);
+
   /**
    * Updates the state of a process. This method updates both the ColumnFamily and the in memory
    * cache.
@@ -30,7 +34,7 @@ public interface MutableProcessState extends ProcessState {
   void updateProcessState(final ProcessRecord processRecord, final PersistedProcessState state);
 
   /**
-   * Deletes a process fromm the state and cache
+   * Deletes a process from the state and cache
    *
    * @param processRecord the record of the process that is deleted
    */

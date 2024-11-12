@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.webapp.es.cache;
 
@@ -42,7 +33,7 @@ import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
-import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,6 +45,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.composite.CompositeAggregation;
+import org.elasticsearch.search.aggregations.bucket.terms.ParsedTerms;
 import org.elasticsearch.search.aggregations.metrics.TopHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -74,10 +66,11 @@ class ProcessStoreElasticSearchTest {
   @Mock private ProcessIndex processIndex;
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
   @InjectMocks private ProcessStoreElasticSearch processStore;
-  @InjectMocks private IdentityAuthorizationService identityService;
+  @InjectMocks private IdentityAuthorizationServiceImpl identityService;
   @Mock private ObjectMapper objectMapper;
   @InjectMocks private SpringContextHolder springContextHolder;
   @Mock private TasklistProperties tasklistProperties;
+  @Mock private io.camunda.identity.autoconfigure.IdentityProperties identityProperties;
 
   @BeforeEach
   public void setup() {
@@ -177,7 +170,7 @@ class ProcessStoreElasticSearchTest {
     // when
     when(tasklistProperties.getIdentity()).thenReturn(mock(IdentityProperties.class));
     when(tasklistProperties.getIdentity().isResourcePermissionsEnabled()).thenReturn(true);
-    when(tasklistProperties.getIdentity().getBaseUrl()).thenReturn("baseUrl");
+    when(identityProperties.baseUrl()).thenReturn("baseUrl");
     mockAuthenticationOverIdentity(false);
     when(processIndex.getAlias()).thenReturn("index_alias");
     final SearchResponse searchResponse = mock(SearchResponse.class);
@@ -238,17 +231,15 @@ class ProcessStoreElasticSearchTest {
     assertNotNull(processesWithCondition);
   }
 
-  private void mockAuthenticationOverIdentity(Boolean isAuthorizated) {
+  private void mockAuthenticationOverIdentity(final Boolean isAuthorizated) {
     // Mock IdentityProperties
-    final IdentityProperties identityProperties = mock(IdentityProperties.class);
+    final IdentityProperties tasklistIdentityProperties = mock(IdentityProperties.class);
     springContextHolder.setApplicationContext(mock(ConfigurableApplicationContext.class));
-
-    // Define behavior of IdentityProperties methods
-    when(identityProperties.isResourcePermissionsEnabled()).thenReturn(true);
-    when(identityProperties.getBaseUrl()).thenReturn("baseUrl");
+    when(tasklistIdentityProperties.isResourcePermissionsEnabled()).thenReturn(true);
 
     // Define behavior of tasklistProperties.getIdentity()
-    when(tasklistProperties.getIdentity()).thenReturn(identityProperties);
+    when(tasklistProperties.getIdentity()).thenReturn(tasklistIdentityProperties);
+    when(identityProperties.baseUrl()).thenReturn("baseUrl");
 
     // Mock Authentication
     final Authentication auth = mock(Authentication.class);
@@ -306,10 +297,18 @@ class ProcessStoreElasticSearchTest {
     final var bucket = mock(CompositeAggregation.Bucket.class);
     when((List<CompositeAggregation.Bucket>) compositeAggregation.getBuckets())
         .thenReturn(List.of(bucket));
+    when(bucket.getAggregations()).thenReturn(aggregations);
+    final var termsBucket = mock(ParsedTerms.ParsedBucket.class);
+    final var maxVersionTerms = mock(ParsedTerms.class);
+    when((List<ParsedTerms.ParsedBucket>) maxVersionTerms.getBuckets())
+        .thenReturn(List.of(termsBucket));
+    when(aggregations.get("max_version_docs")).thenReturn(maxVersionTerms);
+    final var versionBucket = mock(ParsedTerms.ParsedBucket.class);
+    when((List<ParsedTerms.ParsedBucket>) maxVersionTerms.getBuckets())
+        .thenReturn(List.of(versionBucket));
+    when(versionBucket.getAggregations()).thenReturn(aggregations);
     final var topHits = mock(TopHits.class);
-    final var bucketAggregations = mock(Aggregations.class);
-    when(bucket.getAggregations()).thenReturn(bucketAggregations);
-    when(bucketAggregations.get("top_hit_doc")).thenReturn(topHits);
+    when(aggregations.get("top_hit_doc")).thenReturn(topHits);
     final var searchHits = mock(SearchHits.class);
     when(topHits.getHits()).thenReturn(searchHits);
     final var searchHit = mock(SearchHit.class);

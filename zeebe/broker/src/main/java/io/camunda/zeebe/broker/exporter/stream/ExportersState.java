@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
@@ -52,6 +52,20 @@ public final class ExportersState {
     exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
   }
 
+  public void initializeExporterState(
+      final String exporterId,
+      final long position,
+      final DirectBuffer metadata,
+      final long metadataVersion) {
+    this.exporterId.wrapString(exporterId);
+    final var exporterStateEntry = new ExporterStateEntry();
+    exporterStateEntry.setPosition(position).setMetadataVersion(metadataVersion);
+    if (metadata != null) {
+      exporterStateEntry.setMetadata(metadata);
+    }
+    exporterPositionColumnFamily.upsert(this.exporterId, exporterStateEntry);
+  }
+
   public long getPosition(final String exporterId) {
     return findExporterStateEntry(exporterId)
         .map(ExporterStateEntry::getPosition)
@@ -62,6 +76,12 @@ public final class ExportersState {
     return findExporterStateEntry(exporterId)
         .map(ExporterStateEntry::getMetadata)
         .orElse(METADATA_NOT_FOUND);
+  }
+
+  public long getMetadataVersion(final String exporterId) {
+    return findExporterStateEntry(exporterId)
+        .map(ExporterStateEntry::getMetadataVersion)
+        .orElse(0L);
   }
 
   private Optional<ExporterStateEntry> findExporterStateEntry(final String exporterId) {

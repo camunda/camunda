@@ -1,19 +1,27 @@
 {
   "compilerOptions": {
-    "target": "ES2018",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "alwaysStrict": true,
-    "allowJs": false,
-    "skipLibCheck": true,
     "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "module": "esnext",
-    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "target": "ES2022",
+    "allowJs": false,
     "resolveJsonModule": true,
+    "moduleDetection": "force",
     "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+
+    "strict": true,
+    "noImplicitOverride": true,
+
+    "module": "preserve",
+    "moduleResolution": "Bundler",
     "noEmit": true,
+
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "alwaysStrict": true,
+
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+
     "jsx": "react-jsx",
     "strictNullChecks": true,
     "noImplicitAny": true,

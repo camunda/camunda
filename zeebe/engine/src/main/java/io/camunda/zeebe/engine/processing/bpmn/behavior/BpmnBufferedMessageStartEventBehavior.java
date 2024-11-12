@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
@@ -17,8 +17,8 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.InstantSource;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -29,16 +29,19 @@ public final class BpmnBufferedMessageStartEventBehavior {
   private final MessageStartEventSubscriptionState messageStartEventSubscriptionState;
 
   private final EventHandle eventHandle;
+  private final InstantSource clock;
 
   public BpmnBufferedMessageStartEventBehavior(
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     messageState = processingState.getMessageState();
     processState = processingState.getProcessState();
     messageStartEventSubscriptionState = processingState.getMessageStartEventSubscriptionState();
+    this.clock = clock;
 
     eventHandle =
         new EventHandle(
@@ -83,7 +86,9 @@ public final class BpmnBufferedMessageStartEventBehavior {
                   messageCorrelation.subscriptionKey,
                   messageCorrelation.subscriptionRecord,
                   storedMessage.getMessageKey(),
-                  storedMessage.getMessage());
+                  storedMessage.getMessage().getNameBuffer(),
+                  storedMessage.getMessage().getCorrelationKeyBuffer(),
+                  storedMessage.getMessage().getVariablesBuffer());
             });
   }
 
@@ -104,7 +109,7 @@ public final class BpmnBufferedMessageStartEventBehavior {
               correlationKey,
               storedMessage -> {
                 // correlate the first message with same correlation key that was not correlated yet
-                if (storedMessage.getMessage().getDeadline() > ActorClock.currentTimeMillis()
+                if (storedMessage.getMessage().getDeadline() > clock.millis()
                     && !messageState.existMessageCorrelation(
                         storedMessage.getMessageKey(), process.getBpmnProcessId())) {
 

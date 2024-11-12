@@ -1,31 +1,23 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.qa.util;
 
 import com.github.dockerjava.api.model.Bind;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.util.RetryOperation;
-import io.camunda.tasklist.util.TasklistPropertiesUtil;
 import io.zeebe.containers.ZeebeContainer;
 import io.zeebe.containers.ZeebePort;
 import jakarta.annotation.PreDestroy;
 import jakarta.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.HttpHost;
@@ -94,6 +86,7 @@ public class TestContainerUtil {
   private static final Logger LOGGER = LoggerFactory.getLogger(TestContainerUtil.class);
   private static final String DOCKER_TASKLIST_IMAGE_NAME = "camunda/tasklist";
   private static final Integer TASKLIST_HTTP_PORT = 8080;
+  private static final Integer TASKLIST_MGMT_HTTP_PORT = 9600;
   private static final String DOCKER_ELASTICSEARCH_IMAGE_NAME =
       "docker.elastic.co/elasticsearch/elasticsearch";
   private static final String DOCKER_OPENSEARCH_IMAGE_NAME = "opensearchproject/opensearch";
@@ -113,7 +106,8 @@ public class TestContainerUtil {
 
   private Keycloak keycloakClient;
 
-  public void startIdentity(TestContext testContext, String version, boolean multiTenancyEnabled) {
+  public void startIdentity(
+      final TestContext testContext, final String version, final boolean multiTenancyEnabled) {
     startPostgres(testContext);
     startKeyCloak(testContext);
 
@@ -194,7 +188,7 @@ public class TestContainerUtil {
         testContext.getExternalIdentityPort());
   }
 
-  public void startKeyCloak(TestContext testContext) {
+  public void startKeyCloak(final TestContext testContext) {
     LOGGER.info("************ Starting Keycloak ************");
     keycloakContainer =
         new GenericContainer<>(DockerImageName.parse("bitnami/keycloak:22.0.1"))
@@ -238,7 +232,7 @@ public class TestContainerUtil {
             "admin-cli");
   }
 
-  public void startPostgres(TestContext testContext) {
+  public void startPostgres(final TestContext testContext) {
     LOGGER.info("************ Starting Postgres ************");
     postgreSQLContainer =
         new PostgreSQLContainer("postgres:15.2-alpine")
@@ -260,7 +254,7 @@ public class TestContainerUtil {
         testContext.getExternalPostgresPort());
   }
 
-  public void startOpenSearch(TestContext testContext) {
+  public void startOpenSearch(final TestContext testContext) {
     LOGGER.info("************ Starting OpenSearch ************");
     osContainer =
         (OpensearchContainer)
@@ -287,7 +281,7 @@ public class TestContainerUtil {
         testContext.getExternalOsPort());
   }
 
-  public void startElasticsearch(TestContext testContext) {
+  public void startElasticsearch(final TestContext testContext) {
     LOGGER.info("************ Starting Elasticsearch ************");
     elsContainer =
         new ElasticsearchContainer(
@@ -333,7 +327,7 @@ public class TestContainerUtil {
                       .getSecret())
           .build()
           .retry();
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
   }
@@ -342,7 +336,7 @@ public class TestContainerUtil {
       retryFor = TasklistRuntimeException.class,
       maxAttempts = 5,
       backoff = @Backoff(delay = 3000))
-  public void checkElasctisearchHealth(TestContext testContext) {
+  public void checkElasctisearchHealth(final TestContext testContext) {
     try {
       final RestHighLevelClient esClient =
           new RestHighLevelClient(
@@ -358,7 +352,7 @@ public class TestContainerUtil {
       } else {
         LOGGER.warn("ElasticSearch cluster health status is : '{}'", healthStatus);
       }
-    } catch (IOException | ElasticsearchException ex) {
+    } catch (final IOException | ElasticsearchException ex) {
       throw new TasklistRuntimeException();
     }
   }
@@ -367,7 +361,7 @@ public class TestContainerUtil {
       retryFor = TasklistRuntimeException.class,
       maxAttempts = 5,
       backoff = @Backoff(delay = 3000))
-  public void checkOpenSearchHealth(OpenSearchClient osClient) {
+  public void checkOpenSearchHealth(final OpenSearchClient osClient) {
     try {
       final HealthResponse healthResponse = osClient.cluster().health();
       final HealthStatus healthStatus = healthResponse.status();
@@ -377,16 +371,16 @@ public class TestContainerUtil {
       } else {
         LOGGER.warn("OpenSearch cluster health status is : '{}'", healthStatus);
       }
-    } catch (IOException | OpenSearchException ex) {
+    } catch (final IOException | OpenSearchException ex) {
       throw new TasklistRuntimeException();
     }
   }
 
-  public GenericContainer startTasklist(String version, TestContext testContext) {
+  public GenericContainer startTasklist(final String version, final TestContext testContext) {
     if (tasklistContainer == null) {
       LOGGER.info("************ Starting Tasklist {} ************", version);
       tasklistContainer = createTasklistContainer(version, testContext);
-      startTasklistContainer(tasklistContainer, testContext);
+      startTasklistContainer(tasklistContainer, version, testContext);
       LOGGER.info("************ Tasklist started  ************");
     } else {
       throw new IllegalStateException("Tasklist is already started. Call stopTasklist first.");
@@ -395,14 +389,17 @@ public class TestContainerUtil {
   }
 
   public GenericContainer createTasklistContainer(
-      String dockerImageName, String version, TestContext testContext) {
+      final String dockerImageName, final String version, final TestContext testContext) {
+    final int managementPort = getTasklistManagementPort(version);
+    final Integer[] exposedPorts =
+        new HashSet<>(List.of(TASKLIST_HTTP_PORT, managementPort)).toArray(Integer[]::new);
     tasklistContainer =
         new GenericContainer<>(String.format("%s:%s", dockerImageName, version))
-            .withExposedPorts(8080)
+            .withExposedPorts(exposedPorts)
             .withNetwork(testContext.getNetwork())
             .waitingFor(
                 new HttpWaitStrategy()
-                    .forPort(8080)
+                    .forPort(managementPort)
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withStartupTimeout(Duration.ofSeconds(120));
@@ -410,21 +407,31 @@ public class TestContainerUtil {
     return tasklistContainer;
   }
 
-  public GenericContainer createTasklistContainer(String version, TestContext testContext) {
+  private int getTasklistManagementPort(final String version) {
+    return version.compareTo("8.6.0") >= 0 ? TASKLIST_MGMT_HTTP_PORT : TASKLIST_HTTP_PORT;
+  }
+
+  public GenericContainer createTasklistContainer(
+      final String version, final TestContext testContext) {
     return createTasklistContainer(DOCKER_TASKLIST_IMAGE_NAME, version, testContext);
   }
 
-  public void startTasklistContainer(GenericContainer tasklistContainer, TestContext testContext) {
+  public void startTasklistContainer(
+      final GenericContainer tasklistContainer,
+      final String version,
+      final TestContext testContext) {
     tasklistContainer.start();
 
     testContext.setExternalTasklistHost(tasklistContainer.getHost());
     testContext.setExternalTasklistPort(tasklistContainer.getMappedPort(TASKLIST_HTTP_PORT));
+    testContext.setExternalTasklistMgmtPort(
+        tasklistContainer.getMappedPort(getTasklistManagementPort(version)));
   }
 
   // for newer versions
   private void applyConfiguration(
-      final GenericContainer<?> tasklistContainer, TestContext testContext) {
-    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+      final GenericContainer<?> tasklistContainer, final TestContext testContext) {
+    if (TestUtil.isOpenSearch()) {
       final String osHost = testContext.getInternalOsHost();
       final Integer osPort = testContext.getInternalOsPort();
       tasklistContainer
@@ -464,7 +471,7 @@ public class TestContainerUtil {
     }
   }
 
-  public ZeebeContainer startZeebe(final String version, TestContext testContext) {
+  public ZeebeContainer startZeebe(final String version, final TestContext testContext) {
     if (broker == null) {
       LOGGER.info("************ Starting Zeebe {} ************", version);
       broker =
@@ -498,8 +505,8 @@ public class TestContainerUtil {
     return broker;
   }
 
-  protected void addConfig(ZeebeContainer zeebeBroker, TestContext testContext) {
-    if (TasklistPropertiesUtil.isOpenSearchDatabase()) {
+  protected void addConfig(final ZeebeContainer zeebeBroker, final TestContext testContext) {
+    if (TestUtil.isOpenSearch()) {
       zeebeBroker
           .withEnv(
               "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
@@ -527,12 +534,12 @@ public class TestContainerUtil {
     }
   }
 
-  public void stopZeebeAndTasklist(TestContext testContext) {
+  public void stopZeebeAndTasklist(final TestContext testContext) {
     stopZeebe(testContext);
     stopTasklist(testContext);
   }
 
-  public void stopIdentity(TestContext testcontext) {
+  public void stopIdentity(final TestContext testcontext) {
     if (identityContainer != null) {
       identityContainer.close();
     }
@@ -544,7 +551,7 @@ public class TestContainerUtil {
     }
   }
 
-  protected void stopZeebe(TestContext testContext) {
+  protected void stopZeebe(final TestContext testContext) {
     if (broker != null) {
       broker.shutdownGracefully(Duration.ofSeconds(3));
       broker = null;
@@ -553,13 +560,14 @@ public class TestContainerUtil {
     testContext.setExternalZeebeContactPoint(null);
   }
 
-  protected void stopTasklist(TestContext testContext) {
+  protected void stopTasklist(final TestContext testContext) {
     if (tasklistContainer != null) {
       tasklistContainer.close();
       tasklistContainer = null;
     }
     testContext.setExternalTasklistHost(null);
     testContext.setExternalTasklistPort(null);
+    testContext.setExternalTasklistMgmtPort(null);
   }
 
   @PreDestroy

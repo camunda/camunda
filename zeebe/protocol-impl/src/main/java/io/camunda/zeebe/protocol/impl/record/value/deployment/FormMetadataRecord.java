@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
@@ -31,16 +31,20 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public FormMetadataRecord() {
-    super(7);
+    super(9);
     declareProperty(formIdProp)
         .declareProperty(versionProp)
         .declareProperty(formKeyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
         .declareProperty(isDuplicateProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
   }
 
   @Override
@@ -60,6 +64,16 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
 
   public FormMetadataRecord setVersion(final int formVersion) {
     versionProp.setValue(formVersion);
+    return this;
+  }
+
+  @Override
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
+  }
+
+  public FormMetadataRecord setVersionTag(final String versionTag) {
+    versionTagProp.setValue(versionTag);
     return this;
   }
 
@@ -98,8 +112,18 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
     return isDuplicateProp.getValue();
   }
 
-  public FormMetadataRecord markAsDuplicate() {
-    isDuplicateProp.setValue(true);
+  public FormMetadataRecord setDuplicate(final boolean isDuplicate) {
+    isDuplicateProp.setValue(isDuplicate);
+    return this;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public FormMetadataRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
     return this;
   }
 

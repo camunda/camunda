@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.event;
 
@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -30,6 +31,7 @@ public class IntermediateCatchEventProcessor
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public IntermediateCatchEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -38,6 +40,7 @@ public class IntermediateCatchEventProcessor
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -52,21 +55,34 @@ public class IntermediateCatchEventProcessor
   }
 
   @Override
+  public Either<Failure, ?> finalizeActivation(
+      final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+    return eventBehaviorOf(element).finalizeActivation(element, activating);
+  }
+
+  @Override
   public Either<Failure, ?> onComplete(
       final ExecutableCatchEventElement element, final BpmnElementContext completing) {
     return variableMappingBehavior
         .applyOutputMappings(completing, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(completing);
-              return stateTransitionBehavior.transitionToCompleted(element, completing);
-            })
+        .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(completing));
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableCatchEventElement element, final BpmnElementContext context) {
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 
   @Override
   public void onTerminate(
       final ExecutableCatchEventElement element, final BpmnElementContext terminating) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(terminating);
+    }
+
     eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
     incidentBehavior.resolveIncidents(terminating);
 
@@ -90,8 +106,15 @@ public class IntermediateCatchEventProcessor
 
     boolean isSuitableForEvent(final ExecutableCatchEventElement element);
 
-    Either<Failure, ?> onActivate(
-        final ExecutableCatchEventElement element, final BpmnElementContext activating);
+    default Either<Failure, ?> onActivate(
+        final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+      return SUCCESS;
+    }
+
+    default Either<Failure, ?> finalizeActivation(
+        final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+      return SUCCESS;
+    }
   }
 
   private final class DefaultIntermediateCatchEventBehavior
@@ -105,9 +128,14 @@ public class IntermediateCatchEventProcessor
     @Override
     public Either<Failure, ?> onActivate(
         final ExecutableCatchEventElement element, final BpmnElementContext activating) {
-      return variableMappingBehavior
-          .applyInputMappings(activating, element)
-          .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, activating))
+      return variableMappingBehavior.applyInputMappings(activating, element);
+    }
+
+    @Override
+    public Either<Failure, ?> finalizeActivation(
+        final ExecutableCatchEventElement element, final BpmnElementContext activating) {
+      return eventSubscriptionBehavior
+          .subscribeToEvents(element, activating)
           .thenDo(
               ok ->
                   stateTransitionBehavior.transitionToActivated(
@@ -123,7 +151,7 @@ public class IntermediateCatchEventProcessor
     }
 
     @Override
-    public Either<Failure, ?> onActivate(
+    public Either<Failure, ?> finalizeActivation(
         final ExecutableCatchEventElement element, final BpmnElementContext activating) {
       final var activated =
           stateTransitionBehavior.transitionToActivated(activating, element.getEventType());

@@ -45,6 +45,11 @@ public interface DecisionRecordValue extends RecordValue, TenantOwned {
   int getVersion();
 
   /**
+   * @return the custom version tag of the deployed decision
+   */
+  String getVersionTag();
+
+  /**
    * @return the key of the deployed decision
    */
   long getDecisionKey();
@@ -64,4 +69,9 @@ public interface DecisionRecordValue extends RecordValue, TenantOwned {
    *     otherwise {@code false}
    */
   boolean isDuplicate();
+
+  /**
+   * @return the key of the deployment this decision was deployed with
+   */
+  long getDeploymentKey();
 }

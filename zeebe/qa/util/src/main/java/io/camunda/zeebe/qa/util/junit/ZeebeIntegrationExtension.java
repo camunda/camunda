@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.qa.util.junit;
 
@@ -27,7 +27,6 @@ import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
@@ -59,7 +58,7 @@ import org.slf4j.LoggerFactory;
  * <p>See {@link TestZeebe} for annotation parameters.
  */
 final class ZeebeIntegrationExtension
-    implements BeforeAllCallback, BeforeEachCallback, BeforeTestExecutionCallback, TestWatcher {
+    implements BeforeAllCallback, BeforeEachCallback, TestWatcher {
 
   private static final Logger LOG = LoggerFactory.getLogger(ZeebeIntegrationExtension.class);
 
@@ -92,16 +91,13 @@ final class ZeebeIntegrationExtension
         lookupApplications(extensionContext, testInstance, ModifierSupport::isNotStatic);
     manageClusters(extensionContext, clusters);
     manageApplications(extensionContext, nodes);
+
+    RecordingExporter.reset();
   }
 
   @Override
   public void testFailed(final ExtensionContext context, final Throwable cause) {
     RecordLogger.logRecords();
-  }
-
-  @Override
-  public void beforeTestExecution(final ExtensionContext extensionContext) {
-    RecordingExporter.reset();
   }
 
   private Iterable<ClusterResource> lookupClusters(
@@ -115,8 +111,33 @@ final class ZeebeIntegrationExtension
                 field -> ReflectionUtils.isAssignableTo(field.getType(), TestCluster.class)),
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
+        .peek(
+            field ->
+                initResourceField(extensionContext.getRequiredTestClass(), testInstance, field))
         .map(field -> asClusterResource(testInstance, field))
         .toList();
+  }
+
+  private void initResourceField(
+      final Class<?> requiredTestClass, final Object testInstance, final Field field) {
+    final String initMethod = field.getAnnotation(TestZeebe.class).initMethod();
+    if (!initMethod.isEmpty()) {
+      ReflectionUtils.findMethod(requiredTestClass, initMethod)
+          .ifPresentOrElse(
+              method -> {
+                method.setAccessible(true);
+                try {
+                  method.invoke(testInstance);
+                } catch (final ReflectiveOperationException e) {
+                  throw new UnsupportedOperationException(e);
+                }
+              },
+              () -> {
+                throw new IllegalArgumentException(
+                    "Could not find method '%s' in class '%s'"
+                        .formatted(initMethod, requiredTestClass));
+              });
+    }
   }
 
   private Iterable<ApplicationResource> lookupApplications(
@@ -130,6 +151,9 @@ final class ZeebeIntegrationExtension
                 field -> ReflectionUtils.isAssignableTo(field.getType(), TestApplication.class)),
             HierarchyTraversalMode.TOP_DOWN)
         .stream()
+        .peek(
+            field ->
+                initResourceField(extensionContext.getRequiredTestClass(), testInstance, field))
         .map(field -> asNodeResource(testInstance, field))
         .toList();
   }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.impl.job;
 
@@ -14,13 +14,13 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public final class InFlightLongPollingActivateJobsRequestsState {
+public final class InFlightLongPollingActivateJobsRequestsState<T> {
 
   private final String jobType;
   private final LongPollingMetrics metrics;
-  private final Queue<InflightActivateJobsRequest> activeRequests = new LinkedList<>();
-  private final Queue<InflightActivateJobsRequest> pendingRequests = new LinkedList<>();
-  private final Set<InflightActivateJobsRequest> activeRequestsToBeRepeated = new HashSet<>();
+  private final Queue<InflightActivateJobsRequest<T>> activeRequests = new LinkedList<>();
+  private final Queue<InflightActivateJobsRequest<T>> pendingRequests = new LinkedList<>();
+  private final Set<InflightActivateJobsRequest<T>> activeRequestsToBeRepeated = new HashSet<>();
   private int failedAttempts;
   private long lastUpdatedTime;
 
@@ -60,14 +60,14 @@ public final class InFlightLongPollingActivateJobsRequestsState {
     return lastUpdatedTime;
   }
 
-  public void enqueueRequest(final InflightActivateJobsRequest request) {
+  public void enqueueRequest(final InflightActivateJobsRequest<T> request) {
     if (!pendingRequests.contains(request)) {
       pendingRequests.offer(request);
     }
     removeObsoleteRequestsAndUpdateMetrics();
   }
 
-  public Queue<InflightActivateJobsRequest> getPendingRequests() {
+  public Queue<InflightActivateJobsRequest<T>> getPendingRequests() {
     removeObsoleteRequestsAndUpdateMetrics();
     return pendingRequests;
   }
@@ -79,32 +79,32 @@ public final class InFlightLongPollingActivateJobsRequestsState {
     metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
   }
 
-  private boolean isObsolete(final InflightActivateJobsRequest request) {
+  private boolean isObsolete(final InflightActivateJobsRequest<T> request) {
     return request.isTimedOut()
         || request.isCanceled()
         || request.isCompleted()
         || request.isAborted();
   }
 
-  public void removeRequest(final InflightActivateJobsRequest request) {
+  public void removeRequest(final InflightActivateJobsRequest<T> request) {
     pendingRequests.remove(request);
     removeObsoleteRequestsAndUpdateMetrics();
   }
 
-  public InflightActivateJobsRequest getNextPendingRequest() {
+  public InflightActivateJobsRequest<T> getNextPendingRequest() {
     removeObsoleteRequestsAndUpdateMetrics();
-    final InflightActivateJobsRequest request = pendingRequests.poll();
+    final InflightActivateJobsRequest<T> request = pendingRequests.poll();
     metrics.setBlockedRequestsCount(jobType, pendingRequests.size());
     return request;
   }
 
-  public void addActiveRequest(final InflightActivateJobsRequest request) {
+  public void addActiveRequest(final InflightActivateJobsRequest<T> request) {
     activeRequests.offer(request);
     pendingRequests.remove(request);
     activeRequestsToBeRepeated.remove(request);
   }
 
-  public void removeActiveRequest(final InflightActivateJobsRequest request) {
+  public void removeActiveRequest(final InflightActivateJobsRequest<T> request) {
     activeRequests.remove(request);
     activeRequestsToBeRepeated.remove(request);
   }
@@ -119,7 +119,7 @@ public final class InFlightLongPollingActivateJobsRequestsState {
    * attempts were reset to 0 (because new jobs became available) whilst the request was running,
    * and if the request's long polling is enabled.
    */
-  public boolean shouldBeRepeated(final InflightActivateJobsRequest request) {
+  public boolean shouldBeRepeated(final InflightActivateJobsRequest<T> request) {
     return activeRequestsToBeRepeated.contains(request) && !request.isLongPollingDisabled();
   }
 

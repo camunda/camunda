@@ -1,0 +1,34 @@
+name: Optimize Create Release Branch
+on:
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: "Release version"
+        required: true
+      release_base_branch:
+        description: "Release base branch"
+        required: true
+
+jobs:
+  create_release_branch:
+    name: Create release branch
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: ${{ github.event.inputs.release_base_branch }}
+          fetch-depth: 0
+
+      - name: Configure GitHub user
+        run: |
+          git config --global user.email "github-actions[release]"
+          git config --global user.name "github-actions[release]@users.noreply.github.com"
+
+      - name: Create release branch
+        run: |
+          releaseBranchName="release/optimize-${{ github.event.inputs.release_version }}"
+          git checkout -b $releaseBranchName
+          git push -u origin $releaseBranchName

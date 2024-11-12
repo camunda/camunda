@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
@@ -16,9 +16,12 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
 import io.camunda.zeebe.logstreams.util.TestEntry;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.util.ByteValue;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -45,7 +48,7 @@ public final class LogStreamReaderTest {
   @Before
   public void setUp() {
     reader = readerRule.getLogStreamReader();
-    writer = logStreamRule.getLogStream().newSyncLogStreamWriter();
+    writer = logStreamRule.getLogStream().newBlockingLogStreamWriter();
   }
 
   @Test
@@ -77,7 +80,7 @@ public final class LogStreamReaderTest {
   public void shouldHaveNext() {
     // given
     final var entry = TestEntry.ofKey(5);
-    final long position = writer.tryWrite(entry).get();
+    final long position = writer.tryWrite(WriteContext.internal(), entry).get();
 
     // then
     assertThat(reader.hasNext()).isTrue();
@@ -98,7 +101,7 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldReturnPositionOfCurrentLoggedEvent() {
     // given
-    final long position = writer.tryWrite(TestEntry.ofDefaults()).get();
+    final long position = writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
     reader.seekToFirstEvent();
 
     // then
@@ -108,7 +111,7 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldReturnNoPositionIfNotActiveOrInitialized() {
     // given
-    writer.tryWrite(TestEntry.ofDefaults());
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
 
     // then
     assertThat(reader.getPosition()).isEqualTo(-1);
@@ -119,7 +122,7 @@ public final class LogStreamReaderTest {
     // given
     reader.close();
     final var entry = TestEntry.ofKey(5);
-    final long position = writer.tryWrite(entry).get();
+    final long position = writer.tryWrite(WriteContext.internal(), entry).get();
     reader = readerRule.resetReader();
 
     // then
@@ -131,9 +134,9 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldWrapAndSeekToEvent() {
     // given
-    writer.tryWrite(TestEntry.ofDefaults());
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
     final var entry = TestEntry.ofKey(5);
-    final long secondPos = writer.tryWrite(entry).get();
+    final long secondPos = writer.tryWrite(WriteContext.internal(), entry).get();
 
     // when
     reader = logStreamRule.newLogStreamReader();
@@ -170,7 +173,8 @@ public final class LogStreamReaderTest {
     final long seekedPosition = reader.seekToEnd();
 
     // when
-    final long newLastPosition = writer.tryWrite(TestEntry.ofDefaults()).get();
+    final long newLastPosition =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
 
     // then
     assertThat(lastEventPosition).isEqualTo(seekedPosition);
@@ -202,7 +206,7 @@ public final class LogStreamReaderTest {
     final var entries = IntStream.range(0, eventCount).mapToObj(TestEntry::ofKey).toList();
 
     // when
-    writer.tryWrite(entries);
+    writer.tryWrite(WriteContext.internal(), entries);
 
     // then
     assertReaderHasEntries(entries);
@@ -228,7 +232,7 @@ public final class LogStreamReaderTest {
     // given
     final int eventCount = 500;
     final var entries = IntStream.range(0, eventCount).mapToObj(TestEntry::ofKey).toList();
-    writer.tryWrite(entries);
+    writer.tryWrite(WriteContext.internal(), entries);
 
     // when
     assertReaderHasEntries(entries);
@@ -254,7 +258,8 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldSeekToFirstEvent() {
     // given
-    final long firstPosition = writer.tryWrite(TestEntry.ofDefaults()).get();
+    final long firstPosition =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
     writeEvents(2);
 
     // when
@@ -268,7 +273,8 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldSeekToFirstPositionWhenPositionBeforeFirstEvent() {
     // given
-    final long firstPosition = writer.tryWrite(TestEntry.ofDefaults()).get();
+    final long firstPosition =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
     writeEvents(2);
 
     // when
@@ -347,7 +353,8 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldSeekToFirstEventWhenNextIsNegative() {
     // given
-    final long firstEventPosition = writer.tryWrite(TestEntry.ofDefaults()).get();
+    final long firstEventPosition =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
     writeEvents(10);
     reader.seekToEnd();
 
@@ -363,8 +370,9 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldPeekFirstEvent() {
     // given
-    final var eventPosition1 = writer.tryWrite(TestEntry.ofDefaults()).get();
-    writer.tryWrite(TestEntry.ofDefaults());
+    final var eventPosition1 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults());
 
     assertThat(reader.hasNext()).isTrue();
 
@@ -378,8 +386,10 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldPeekNextEvent() {
     // given
-    final var eventPosition1 = writer.tryWrite(TestEntry.ofDefaults()).get();
-    final var eventPosition2 = writer.tryWrite(TestEntry.ofDefaults()).get();
+    final var eventPosition1 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    final var eventPosition2 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
 
     assertThat(reader.hasNext()).isTrue();
     assertThat(reader.next().getPosition()).isEqualTo(eventPosition1);
@@ -394,8 +404,10 @@ public final class LogStreamReaderTest {
   @Test
   public void shouldPeekAndReadNextEvent() {
     // given
-    final var eventPosition1 = writer.tryWrite(TestEntry.ofDefaults()).get();
-    final var eventPosition2 = writer.tryWrite(TestEntry.ofDefaults()).get();
+    final var eventPosition1 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    final var eventPosition2 =
+        writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
 
     assertThat(reader.hasNext()).isTrue();
 
@@ -421,12 +433,30 @@ public final class LogStreamReaderTest {
     assertThatThrownBy(reader::peekNext).isInstanceOf(NoSuchElementException.class);
   }
 
+  @Test
+  public void shouldNotInvalidateEventsOnClose() {
+    // given
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    writer.tryWrite(WriteContext.internal(), TestEntry.ofDefaults()).get();
+    final var event = reader.next();
+    final var nextEvent = reader.peekNext();
+
+    // when
+    reader.close();
+
+    // then
+    assertThatCode(() -> event.readValue(new UnifiedRecordValue(1))).doesNotThrowAnyException();
+    assertThatCode(() -> event.readMetadata(new RecordMetadata())).doesNotThrowAnyException();
+    assertThatCode(() -> nextEvent.readValue(new UnifiedRecordValue(1))).doesNotThrowAnyException();
+    assertThatCode(() -> nextEvent.readMetadata(new RecordMetadata())).doesNotThrowAnyException();
+  }
+
   private long writeEvents(final int eventCount) {
     final List<LogAppendEntry> entries =
         IntStream.rangeClosed(1, eventCount)
             .mapToObj(TestEntry::ofKey)
             .collect(Collectors.toList());
 
-    return writer.tryWrite(entries).get();
+    return writer.tryWrite(WriteContext.internal(), entries).get();
   }
 }

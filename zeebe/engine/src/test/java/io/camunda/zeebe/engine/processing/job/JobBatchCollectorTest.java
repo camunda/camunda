@@ -2,14 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.RecordValueWithVariablesAssert;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValueAssert;
+import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValueAssert;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -56,8 +58,10 @@ final class JobBatchCollectorTest {
 
   @BeforeEach
   void beforeEach() {
-    collector =
-        new JobBatchCollector(state.getJobState(), state.getVariableState(), lengthEvaluator);
+    final var authorizationCheckBehavior =
+        new AuthorizationCheckBehavior(
+            state.getAuthorizationState(), state.getUserState(), new EngineConfiguration());
+    collector = new JobBatchCollector(state, lengthEvaluator, authorizationCheckBehavior);
   }
 
   @Test
@@ -70,15 +74,17 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to only accept the first job
     lengthEvaluator.canWriteEventOfLength = (length) -> toggle.getAndSet(false);
-    final Either<TooLargeJob, Integer> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
     EitherAssert.assertThat(result)
         .as("should have activated only one job successfully")
         .right()
-        .isEqualTo(1);
-    JobBatchRecordValueAssert.assertThat(batchRecord).hasOnlyJobKeys(jobs.get(0).key).isTruncated();
+        .isEqualTo(Map.of(JobKind.BPMN_ELEMENT, 1));
+    JobBatchRecordValueAssert.assertThat(batchRecord)
+        .hasOnlyJobKeys(jobs.getFirst().key)
+        .isTruncated();
   }
 
   @Test
@@ -90,14 +96,14 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to accept no jobs
     lengthEvaluator.canWriteEventOfLength = (length) -> false;
-    final Either<TooLargeJob, Integer> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
     EitherAssert.assertThat(result)
         .as("should return excessively large job")
         .left()
-        .hasFieldOrPropertyWithValue("key", jobs.get(0).key);
+        .hasFieldOrPropertyWithValue("key", jobs.getFirst().key);
     JobBatchRecordValueAssert.assertThat(batchRecord).hasNoJobKeys().hasNoJobs().isTruncated();
   }
 
@@ -152,12 +158,17 @@ final class JobBatchCollectorTest {
     record.getValue().setMaxJobsToActivate(1);
 
     // when
-    final Either<TooLargeJob, Integer> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record);
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
-    EitherAssert.assertThat(result).as("should collect only the first job").right().isEqualTo(1);
-    JobBatchRecordValueAssert.assertThat(batchRecord).hasJobKeys(jobs.get(0).key).isNotTruncated();
+    EitherAssert.assertThat(result)
+        .as("should collect only the first job")
+        .right()
+        .isEqualTo(Map.of(JobKind.BPMN_ELEMENT, 1));
+    JobBatchRecordValueAssert.assertThat(batchRecord)
+        .hasJobKeys(jobs.getFirst().key)
+        .isNotTruncated();
   }
 
   @Test

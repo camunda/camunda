@@ -1,9 +1,9 @@
 # hadolint global ignore=DL3006
-ARG BASE_IMAGE="alpine:3.19.1"
-ARG BASE_DIGEST="sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b"
+ARG BASE_IMAGE="alpine:3.20.3"
+ARG BASE_DIGEST="sha256:beefdbd8a1da6d2915566fde36db9db0b524eb737fc57cd1367effd16dc0d06d"
 
 # Prepare Operate Distribution
-FROM ${BASE_IMAGE}@${BASE_DIGEST} as prepare
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS prepare
 ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 WORKDIR /tmp/operate
 
@@ -16,7 +16,7 @@ RUN sed -i '/^exec /i cat /usr/local/operate/notice.txt' bin/operate
 
 ### Base image ###
 # hadolint ignore=DL3006
-FROM ${BASE_IMAGE}@${BASE_DIGEST} as base
+FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 
 # Install Tini
 RUN apk update && apk add --no-cache tini
@@ -26,7 +26,7 @@ RUN apk update && apk add --no-cache tini
 # https://docs.docker.com/engine/reference/builder/#automatic-platform-args-in-the-global-scope
 # hadolint ignore=DL3006
 
-FROM base as app
+FROM base AS app
 # leave unset to use the default value at the top of the file
 ARG BASE_IMAGE
 ARG BASE_DIGEST
@@ -45,7 +45,7 @@ LABEL org.opencontainers.image.source="https://github.com/camunda/camunda-operat
 LABEL org.opencontainers.image.version="${VERSION}"
 LABEL org.opencontainers.image.revision="${REVISION}"
 LABEL org.opencontainers.image.vendor="Camunda Services GmbH"
-LABEL org.opencontainers.image.licenses="Proprietary"
+LABEL org.opencontainers.image.licenses="(Apache-2.0 AND LicenseRef-Camunda-License-1.0)"
 LABEL org.opencontainers.image.title="Camunda Operate"
 LABEL org.opencontainers.image.description="Tool for process observability and troubleshooting processes running in Camunda Platform 8"
 
@@ -62,12 +62,22 @@ EXPOSE 8080
 RUN apk update && apk upgrade
 RUN apk add --no-cache bash openjdk21-jre tzdata
 
-WORKDIR /usr/local/operate
+ENV OPE_HOME=/usr/local/operate
+
+WORKDIR ${OPE_HOME}
 VOLUME /tmp
+VOLUME ${OPE_HOME}/logs
 
-COPY --from=prepare /tmp/operate /usr/local/operate
+RUN addgroup --gid 1001 camunda && \
+    adduser -D -h ${OPE_HOME} -G camunda -u 1001 camunda && \
+    # These directories are to be mounted by users, eagerly creating them and setting ownership
+    # helps to avoid potential permission issues due to default volume ownership.
+    mkdir ${OPE_HOME}/logs && \
+    chown -R 1001:0 ${OPE_HOME} && \
+    chmod -R 0775 ${OPE_HOME}
 
-RUN addgroup --gid 1001 camunda && adduser -D -h /usr/local/operate -G camunda -u 1001 camunda
+COPY --from=prepare --chown=1001:0 --chmod=0775 /tmp/operate ${OPE_HOME}
+
 USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--", "/usr/local/operate/bin/operate"]

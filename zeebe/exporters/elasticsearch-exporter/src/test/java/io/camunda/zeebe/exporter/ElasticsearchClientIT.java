@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter;
 
@@ -17,6 +17,9 @@ import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapp
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
@@ -35,7 +38,7 @@ final class ElasticsearchClientIT {
   // authentication
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefaultContainer()
+      TestSearchContainers.createDefeaultElasticsearchContainer()
           .withEnv("xpack.license.self_generated.type", "trial")
           .withEnv("xpack.security.enabled", "true")
           .withEnv("xpack.security.authc.anonymous.username", "anon")
@@ -50,6 +53,7 @@ final class ElasticsearchClientIT {
   private final TemplateReader templateReader = new TemplateReader(config);
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
+  private final MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   private TestClient testClient;
   private ElasticsearchClient client;
@@ -68,7 +72,7 @@ final class ElasticsearchClientIT {
             RestClientFactory.of(config),
             indexRouter,
             templateReader,
-            new ElasticsearchMetrics(PARTITION_ID));
+            new ElasticsearchMetrics(new SimpleMeterRegistry()));
   }
 
   @AfterEach
@@ -156,7 +160,7 @@ final class ElasticsearchClientIT {
 
     // when
     // force recreating the client
-    final var authenticatedClient = new ElasticsearchClient(config, bulkRequest);
+    final var authenticatedClient = new ElasticsearchClient(config, meterRegistry);
     authenticatedClient.putComponentTemplate();
 
     // then

@@ -1,42 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1g7j7r5" targetNamespace="http://bpmn.io/schema/bpmn" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1g7j7r5" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.29.0-nightly.20241014" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
   <bpmn:collaboration id="Collaboration_12tgi69">
     <bpmn:participant id="Participant_0hpwean" name="Business Operation A" processRef="Process_0diikxu" />
     <bpmn:participant id="Participant_1n1nt10" name="Business Operation B" processRef="Process_18z2cdf" />
   </bpmn:collaboration>
   <bpmn:process id="Process_0diikxu" name="Business Operation A" isExecutable="true">
-      <bpmn:extensionElements>
-        <zeebe:userTaskForm id="UserTaskForm_3ad3t51">{
-    "components": [
-    {
-      "label": "Text area 1",
-      "type": "textarea",
-      "layout": {
-        "row": "Row_014zx4y",
-        "columns": null
-      },
-      "id": "Field_0h83f3x",
-      "key": "textarea_mebq13"
-    }
-    ],
-    "type": "default",
-    "id": "test-form-1",
-    "executionPlatform": "Camunda Cloud",
-    "executionPlatformVersion": "8.4.0",
-    "exporter": {
-      "name": "Camunda Modeler",
-      "version": "5.21.0"
-    },
-    "schemaVersion": 15
-  }</zeebe:userTaskForm>
-      </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1" name="Start process A">
       <bpmn:outgoing>Flow_0aw0znx</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:userTask id="Activity_0whadek" name="Do task A">
-          <bpmn:extensionElements>
-            <zeebe:formDefinition formKey="camunda-forms:bpmn:UserTaskForm_3ad3t51" />
-          </bpmn:extensionElements>
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formId="doTaskA" />
+        <zeebe:userTask />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_0aw0znx</bpmn:incoming>
       <bpmn:outgoing>Flow_15wdvyf</bpmn:outgoing>
     </bpmn:userTask>
@@ -47,38 +23,14 @@
     <bpmn:sequenceFlow id="Flow_15wdvyf" sourceRef="Activity_0whadek" targetRef="Event_0ovp9k6" />
   </bpmn:process>
   <bpmn:process id="Process_18z2cdf" name="Business Operation B" isExecutable="true">
-        <bpmn:extensionElements>
-          <zeebe:userTaskForm id="UserTaskForm_1unph8k">{
-      "components": [
-      {
-        "label": "Text area 2",
-        "type": "textarea",
-        "layout": {
-          "row": "Row_014zx4y",
-          "columns": null
-        },
-        "id": "Field_0h83f3x",
-        "key": "textarea_mebq13"
-      }
-      ],
-      "type": "default",
-      "id": "test-form-1",
-      "executionPlatform": "Camunda Cloud",
-      "executionPlatformVersion": "8.4.0",
-      "exporter": {
-        "name": "Camunda Modeler",
-        "version": "5.21.0"
-      },
-      "schemaVersion": 15
-    }</zeebe:userTaskForm>
-        </bpmn:extensionElements>
     <bpmn:startEvent id="Event_00cm7tu" name="Start process B">
       <bpmn:outgoing>Flow_0k2alvk</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:userTask id="Activity_0w5vpxz" name="Do task B">
-          <bpmn:extensionElements>
-            <zeebe:formDefinition formKey="camunda-forms:bpmn:UserTaskForm_1unph8k" />
-          </bpmn:extensionElements>
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formId="doTaskB" />
+        <zeebe:userTask />
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_0k2alvk</bpmn:incoming>
       <bpmn:outgoing>Flow_0leii5r</bpmn:outgoing>
     </bpmn:userTask>

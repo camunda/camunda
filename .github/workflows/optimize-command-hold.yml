@@ -1,0 +1,81 @@
+name: Optimize Command Hold
+on:
+  repository_dispatch:
+    types: [hold-command]
+jobs:
+  optimize-hold-command:
+    name: Move issue to On Hold
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Create URL to the run output
+        id: vars
+        run: |
+          {
+            echo "project_id=101"
+            echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
+          github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
+          github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Dump the client payload context
+        env:
+          PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
+        run: echo "$PAYLOAD_CONTEXT"
+
+      - name: Get issue project
+        id: issue-project
+        env:
+          ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
+          PROJECT_ID: ${{ steps.vars.outputs.project_id }}
+          PROJECT_OWNER: ${{ github.event.client_payload.github.payload.organization.login }}
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: ./.github/scripts/commands/get-issue-project-data.sh
+
+      - name: Validate inputs
+        run: |
+          # General checks
+          if [ "${{ steps.issue-project.outputs.is_in_project }}" != "true" ]; then
+            echo "Issue is not part of the '${{ steps.issue-project.outputs.project_title }}' project"
+            exit 1
+          fi
+      - name: Assign new status
+        uses: github/update-project-action@main
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: "On Hold"
+
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          reactions: "+1"
+          reactions-edit-mode: replace
+
+      - name: Update comment in case of failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: |
+            > Had issues fulfilling your command, check the [logs](${{ steps.vars.outputs.run_url }})
+          reactions: confused

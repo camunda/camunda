@@ -1,0 +1,177 @@
+---
+name: Common paths filter for camunda/camunda
+
+description: Common filters to detect and group changes against a base branch
+
+outputs:
+  actionlint:
+    description: Output whether `actionlint` should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true'
+      }}
+  java-code-changes:  # Also runs spotless for Markdown linting
+    description: Output whether jobs depending on Java code changes should be run, related checks are based on GitHub events and java files changes
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.markdown-change == 'true'
+      }}
+  identity-frontend-tests:
+    description: Output whether Identity frontend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-identity.outputs.identity-frontend-change == 'true'
+      }}
+  optimize-frontend-changes:
+    description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-optimize.outputs.optimize-frontend-change == 'true'
+      }}
+  optimize-backend-changes:
+    description: Output whether Optimize backend tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-optimize.outputs.optimize-backend-change == 'true'
+      }}
+  camunda-docker-tests:
+    description: Output whether Camunda Docker tests should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.java-code-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.dockerfile-change == 'true' ||
+        steps.filter-common.outputs.frontend-change == 'true'
+      }}
+  frontend-changes:
+    description: Output whether any frontend has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.frontend-change == 'true' ||
+        steps.filter-identity.outputs.frontend-identity == 'true'
+      }}
+  zeebe-changes:
+    description: Output whether any Zeebe code has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-zeebe.outputs.zeebe-change == 'true'
+      }}
+  protobuf-changes:
+    description: Output whether any Protobuf files have changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.protobuf-change == 'true'
+      }}
+  openapi-changes:
+    description: Output whether any C8 OpenAPI code has changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.openapi-change == 'true'
+      }}
+
+runs:
+  using: composite
+  steps:
+
+  - uses: dorny/paths-filter@v3
+    id: filter-common
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        github-actions-change:
+          - '.github/actions/**'
+          - '.github/workflows/**'
+          - '.github/actionlint*'
+
+        # We use specific src/main and src/test path to:
+        #  * react on java code (production + test) changes
+        #  * react on resource changes like bpmn, XML, etc.
+        #  * but _not_ react on frontend src folder changes
+        java-code-change:
+          - '**/src/main/**'
+          - '**/src/test/**'
+
+        maven-change:
+          - 'bom/**'
+          - 'build-tools/**'
+          - 'dist/**'
+          - 'parent/**'
+          - '**/pom.xml'
+
+        dockerfile-change:
+          - 'Dockerfile'
+          - '*.Dockerfile'
+
+        markdown-change:
+          - '**/*.md'
+
+        frontend-change:
+          - 'operate/client/**'
+          - 'tasklist/client/**'
+          - 'identity/client/**'
+          - 'optimize/client/**'
+
+        protobuf-change:
+          - '**/*.proto'
+          - 'buf.yaml'
+
+        openapi-change:
+          - '**/rest-api.yaml'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-identity
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        identity-frontend-change:
+          - 'identity/client/**'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-zeebe
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        zeebe-change:
+          - 'zeebe/**'
+          - 'clients/**'
+          - 'Dockerfile'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-optimize
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        optimize-backend-change:
+          - optimize/backend/**
+          - optimize/upgrade/**
+          - optimize/util/**
+          - optimize/plugins/**
+
+        optimize-frontend-change:
+          - optimize/client/**
+          - optimize/c4/**
+          - optimize/backend/src/main/resources/localization/**

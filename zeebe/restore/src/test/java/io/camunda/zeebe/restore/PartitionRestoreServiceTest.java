@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.restore;
 
@@ -38,6 +38,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -80,8 +81,24 @@ class PartitionRestoreServiceTest {
   void setUp() {
     backupStore = new TestRestorableBackupStore();
 
-    snapshotStore = new FileBasedSnapshotStore(partitionId, dataDirectory);
+    snapshotStore =
+        new FileBasedSnapshotStore(0, partitionId, dataDirectory, snapshotPath -> Map.of());
     actorScheduler.submitActor(snapshotStore, SchedulingHints.IO_BOUND);
+
+    final var partitionMetadata =
+        new PartitionMetadata(
+            PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
+    final var raftPartition =
+        new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile());
+    restoreService =
+        new PartitionRestoreService(backupStore, raftPartition, nodeId, snapshotPath -> Map.of());
+
+    journal =
+        SegmentedJournal.builder()
+            .withDirectory(dataDirectory.toFile())
+            .withName(raftPartition.name())
+            .withMetaStore(mock(JournalMetaStore.class))
+            .build();
 
     backupService =
         new BackupService(
@@ -91,22 +108,9 @@ class PartitionRestoreServiceTest {
             backupStore,
             snapshotStore,
             dataDirectory,
-            path -> path.toString().endsWith(".log"));
+            // RaftPartitions implements this interface, but the RaftServer is not started
+            index -> CompletableFuture.completedFuture(journal.getTailSegments(index).values()));
     actorScheduler.submitActor(backupService);
-
-    final var partitionMetadata =
-        new PartitionMetadata(
-            PartitionId.from("raft", partitionId), Set.of(), Map.of(), 1, new MemberId("1"));
-    final var raftPartition =
-        new RaftPartition(partitionMetadata, null, dataDirectoryToRestore.toFile());
-    restoreService = new PartitionRestoreService(backupStore, raftPartition);
-
-    journal =
-        SegmentedJournal.builder()
-            .withDirectory(dataDirectory.toFile())
-            .withName(raftPartition.name())
-            .withMetaStore(mock(JournalMetaStore.class))
-            .build();
   }
 
   @AfterEach

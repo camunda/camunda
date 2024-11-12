@@ -1,9 +1,0 @@
-Camunda
-Copyright 2018-2019 Camunda Services GmbH
-
-========================================================
-
-Third Party Libraries contained within this distribution
-can be reviewed in the License Book (LicenseBook.txt)
-
-========================================================

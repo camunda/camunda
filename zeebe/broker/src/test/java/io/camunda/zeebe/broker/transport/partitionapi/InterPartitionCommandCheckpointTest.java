@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.transport.partitionapi;
 
@@ -22,6 +22,7 @@ import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -60,21 +61,25 @@ final class InterPartitionCommandCheckpointTest {
   @Test
   void shouldHandleMissingCheckpoints() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(Either.right(1L));
+    when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.right(1L));
 
     // when
     sendAndReceive(ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
 
     // then
     verify(logStreamWriter, times(1))
-        .tryWrite(matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
+        .tryWrite(
+            any(WriteContext.class),
+            matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
     verifyNoMoreInteractions(logStreamWriter);
   }
 
   @Test
   void shouldCreateFirstCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(Either.right(1L));
+    when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.right(1L));
     sender.setCheckpointId(1);
 
     // when
@@ -82,16 +87,19 @@ final class InterPartitionCommandCheckpointTest {
 
     // then
     final var io = inOrder(logStreamWriter);
-    io.verify(logStreamWriter, times(1)).tryWrite(matchesCheckpoint(1));
+    io.verify(logStreamWriter, times(1)).tryWrite(any(WriteContext.class), matchesCheckpoint(1));
     io.verify(logStreamWriter, times(1))
-        .tryWrite(matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
+        .tryWrite(
+            any(WriteContext.class),
+            matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
     io.verifyNoMoreInteractions();
   }
 
   @Test
   void shouldUpdateExistingCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(Either.right(1L));
+    when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.right(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(17);
 
@@ -100,15 +108,18 @@ final class InterPartitionCommandCheckpointTest {
 
     // then
     final var io = inOrder(logStreamWriter);
-    io.verify(logStreamWriter).tryWrite(matchesCheckpoint(17));
+    io.verify(logStreamWriter).tryWrite(any(WriteContext.class), matchesCheckpoint(17));
     io.verify(logStreamWriter)
-        .tryWrite(matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
+        .tryWrite(
+            any(WriteContext.class),
+            matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
   }
 
   @Test
   void shouldNotRecreateExistingCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(Either.right(1L));
+    when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.right(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(5);
 
@@ -117,14 +128,17 @@ final class InterPartitionCommandCheckpointTest {
 
     // then
     verify(logStreamWriter)
-        .tryWrite(matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
+        .tryWrite(
+            any(WriteContext.class),
+            matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
     verifyNoMoreInteractions(logStreamWriter);
   }
 
   @Test
   void shouldNotOverwriteNewerCheckpoint() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any())).thenReturn(Either.right(1L));
+    when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.right(1L));
     receiver.setCheckpointId(6);
     sender.setCheckpointId(5);
 
@@ -133,15 +147,17 @@ final class InterPartitionCommandCheckpointTest {
 
     // then
     verify(logStreamWriter)
-        .tryWrite(matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
+        .tryWrite(
+            any(WriteContext.class),
+            matchesMetadata(ValueType.DEPLOYMENT, DeploymentIntent.CREATE));
     verifyNoMoreInteractions(logStreamWriter);
   }
 
   @Test
   void shouldNotWriteCommandIfCheckpointCreateFailed() {
     // given
-    when(logStreamWriter.tryWrite(Mockito.<LogAppendEntry>any()))
-        .thenReturn(Either.left(WriteFailure.FULL), Either.right(1L));
+    when(logStreamWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED), Either.right(1L));
     receiver.setCheckpointId(5);
     sender.setCheckpointId(17);
 
@@ -150,7 +166,9 @@ final class InterPartitionCommandCheckpointTest {
 
     // then
     verify(logStreamWriter)
-        .tryWrite(matchesMetadata(ValueType.CHECKPOINT, CheckpointIntent.CREATE));
+        .tryWrite(
+            any(WriteContext.class),
+            matchesMetadata(ValueType.CHECKPOINT, CheckpointIntent.CREATE));
     verifyNoMoreInteractions(logStreamWriter);
   }
 
@@ -182,7 +200,7 @@ final class InterPartitionCommandCheckpointTest {
     return Mockito.argThat(
         entry ->
             matchesMetadata(entry, ValueType.CHECKPOINT, CheckpointIntent.CREATE)
-                && entry.recordValue() instanceof CheckpointRecord checkpoint
+                && entry.recordValue() instanceof final CheckpointRecord checkpoint
                 && checkpoint.getCheckpointId() == checkpointId);
   }
 

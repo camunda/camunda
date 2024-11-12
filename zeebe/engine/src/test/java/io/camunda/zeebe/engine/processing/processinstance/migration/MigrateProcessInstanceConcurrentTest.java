@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.processinstance.migration;
 
@@ -36,7 +36,6 @@ import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -199,7 +198,6 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithTimerBefore() {
     // given
@@ -292,7 +290,6 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithTimerAfter() {
     // given
@@ -680,7 +677,6 @@ public class MigrateProcessInstanceConcurrentTest {
             tuple(processId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
-  @Ignore("Ignore until the migration is supported for tasks with boundary events")
   @Test
   public void shouldContinueMigratedInstanceWithNonInterruptingTimerBefore() {
     // given

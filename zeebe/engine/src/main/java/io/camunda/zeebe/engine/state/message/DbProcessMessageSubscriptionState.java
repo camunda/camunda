@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.message;
 
@@ -21,10 +21,10 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.P
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -48,11 +48,14 @@ public final class DbProcessMessageSubscriptionState
       subscriptionColumnFamily;
 
   private final TransientPendingSubscriptionState transientState;
+  private final InstantSource clock;
 
   public DbProcessMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final InstantSource clock) {
+    this.clock = clock;
     elementInstanceKey = new DbLong();
     tenantIdKey = new DbString();
     messageName = new DbString();
@@ -78,7 +81,7 @@ public final class DbProcessMessageSubscriptionState
             transientState.add(
                 new PendingSubscription(
                     record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-                ActorClock.currentTimeMillis());
+                clock.millis());
           }
         });
   }
@@ -96,7 +99,7 @@ public final class DbProcessMessageSubscriptionState
     transientState.add(
         new PendingSubscription(
             record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-        ActorClock.currentTimeMillis());
+        clock.millis());
   }
 
   @Override
@@ -105,7 +108,7 @@ public final class DbProcessMessageSubscriptionState
     transientState.update(
         new PendingSubscription(
             record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-        ActorClock.currentTimeMillis());
+        clock.millis());
   }
 
   @Override
@@ -122,7 +125,7 @@ public final class DbProcessMessageSubscriptionState
     transientState.update(
         new PendingSubscription(
             record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-        ActorClock.currentTimeMillis());
+        clock.millis());
   }
 
   @Override
@@ -135,6 +138,11 @@ public final class DbProcessMessageSubscriptionState
       remove(subscription);
     }
     return found;
+  }
+
+  @Override
+  public void update(final long key, final ProcessMessageSubscriptionRecord record) {
+    update(record, s -> s.setRecord(record));
   }
 
   @Override

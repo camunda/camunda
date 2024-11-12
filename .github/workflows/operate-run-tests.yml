@@ -10,13 +10,13 @@ on:
         type: string
 jobs:
   run-test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.8.1
+        uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -31,7 +31,15 @@ jobs:
         with:
           distribution: "adopt"
           java-version: "21"
-          cache: "maven"
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven-dist
+        with:
+          maven-version: 3.8.8
+          set-mvnw: true
+      - name: Configure Maven
+        uses: ./.github/actions/setup-maven-cache
+        with:
+          maven-cache-key-modifier: operate-tests
       - name: "Create settings.xml"
         uses: s4u/maven-settings-action@v3.0.0
         with:
@@ -44,28 +52,18 @@ jobs:
              }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build Operate
-        run: mvn -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
       - name: Run Tests
         run: ${{ inputs.command }}
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
-        if: always()
-        with:
-          comment_mode: off
-          report_individual_runs: true
-          report_suite_logs: error
-          check_name: "Operate Test Results"
-          files: |
-            operate/**/target/surefire-reports/*.xml
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
         with:
           payload: |
             {
               "workflow_name": "${{ github.workflow }}",
-              "github_run_url": "https://github.com/camunda/zeebe/actions/runs/${{ github.run_id }}",
+              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
               "branch": "${{ github.head_ref || github.ref_name }}"
             }

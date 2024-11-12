@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.bootstrap;
 
@@ -17,7 +17,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.partitioning.topology.ClusterTopologyService;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
@@ -29,8 +29,10 @@ import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.util.List;
+import org.agrona.concurrent.SnowflakeIdGenerator;
 
 /**
  * Context that is utilized during broker startup and shutdown process. It contains dependencies
@@ -105,11 +107,17 @@ public interface BrokerStartupContext {
 
   void setJobStreamService(final JobStreamService jobStreamService);
 
-  ClusterTopologyService getClusterTopology();
+  ClusterConfigurationService getClusterConfigurationService();
 
-  void setClusterTopology(ClusterTopologyService clusterTopologyService);
+  void setClusterConfigurationService(ClusterConfigurationService clusterConfigurationService);
 
   BrokerClient getBrokerClient();
 
   Duration getShutdownTimeout();
+
+  SnowflakeIdGenerator getRequestIdGenerator();
+
+  void setRequestIdGenerator(SnowflakeIdGenerator requestIdGenerator);
+
+  MeterRegistry getMeterRegistry();
 }

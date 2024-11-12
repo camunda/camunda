@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.util;
 
@@ -20,7 +20,7 @@ public final class RecordingJobHandler implements JobHandler {
 
   public RecordingJobHandler() {
     this(
-        (controller, job) -> {
+        (client, job) -> {
           // do nothing
         });
   }
@@ -43,6 +43,13 @@ public final class RecordingJobHandler implements JobHandler {
 
   public List<ActivatedJob> getHandledJobs() {
     return handledJobs;
+  }
+
+  public ActivatedJob getHandledJob(final String jobType) {
+    return handledJobs.stream()
+        .filter(j -> j.getType().equals(jobType))
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("No job found with type " + jobType));
   }
 
   public void clear() {

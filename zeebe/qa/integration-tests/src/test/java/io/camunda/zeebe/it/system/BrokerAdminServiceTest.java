@@ -2,244 +2,331 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.Broker;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
-import io.camunda.zeebe.broker.system.management.BrokerAdminService;
-import io.camunda.zeebe.it.clustering.ClusteringRule;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
+import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import io.camunda.zeebe.util.buffer.BufferWriter;
+import io.grpc.Status;
+import io.grpc.Status.Code;
+import io.grpc.StatusRuntimeException;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Optional;
+import java.util.concurrent.Future;
+import org.agrona.DirectBuffer;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.Timeout;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
+@ZeebeIntegration
+@AutoCloseResources
 public class BrokerAdminServiceTest {
-  private final Timeout testTimeout = Timeout.seconds(60);
-  private final ClusteringRule clusteringRule =
-      new ClusteringRule(1, 1, 1, cfg -> cfg.getData().setLogIndexDensity(1));
-  private final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
+  @TestZeebe
+  private final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withBrokerConfig(cfg -> cfg.getData().setLogIndexDensity(1));
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
+  @AutoCloseResource private ZeebeResourcesHelper resourcesHelper;
+  private PartitionsActuator partitions;
 
-  private BrokerAdminService leaderAdminService;
-  private Broker leader;
-
-  @Before
-  public void before() {
-    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
+  @BeforeEach
+  void beforeEach() {
+    partitions = PartitionsActuator.of(zeebe);
+    resourcesHelper = new ZeebeResourcesHelper(zeebe.newClientBuilder().build());
   }
 
   @Test
-  public void shouldTakeSnapshotWhenRequested() {
+  void shouldTakeSnapshotWhenRequested() {
     // given
-    clientRule.createSingleJob("test");
+    resourcesHelper.createSingleJob("test");
 
     // when
-    leaderAdminService.takeSnapshot();
+    partitions.takeSnapshot();
 
     // then
-    waitForSnapshotAtBroker(leaderAdminService);
+    waitForSnapshotAtBroker();
   }
 
   @Test
-  public void shouldPauseStreamProcessorWhenRequested() {
+  void shouldPauseStreamProcessorWhenRequested() {
     // given
-    clientRule.createSingleJob("test");
+    resourcesHelper.createSingleJob("test");
 
     // when
-    leaderAdminService.pauseStreamProcessing();
+    final var status = partitions.pauseProcessing();
 
     // then
-    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+    assertThat(status.get(1).streamProcessorPhase()).isEqualTo(Phase.PAUSED.toString());
   }
 
   @Test
-  public void shouldResumeStreamProcessorWhenRequested() {
-
-    // when
-    leaderAdminService.pauseStreamProcessing();
-    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
-    leaderAdminService.resumeStreamProcessing();
-
-    // then
-    assertStreamProcessorPhase(leaderAdminService, Phase.PROCESSING);
-  }
-
-  @Test
-  public void shouldPauseExporterWhenRequested() {
-    // when
-    leaderAdminService.pauseExporting();
-
-    // then
-    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
-  }
-
-  @Test
-  public void shouldResumeExportingWhenRequested() {
+  void shouldResumeStreamProcessorWhenRequested() {
     // given
-    leaderAdminService.pauseExporting();
-    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
+    partitions.pauseProcessing();
 
     // when
-    final String messageName = "test";
-    clientRule
-        .getClient()
-        .newPublishMessageCommand()
-        .messageName(messageName)
-        .correlationKey("test-key")
-        .send()
-        .join();
-    leaderAdminService.resumeExporting();
+    final var status = partitions.resumeProcessing();
 
     // then
-    assertExporterPhase(leaderAdminService, ExporterPhase.EXPORTING);
+    try (final var client = zeebe.newClientBuilder().build()) {
+      final Future<?> response =
+          client.newPublishMessageCommand().messageName("test2").correlationKey("test-key").send();
+
+      assertThat(response).isNotNull().succeedsWithin(Duration.ofSeconds(5));
+    }
+
+    assertThat(status.get(1).streamProcessorPhase()).isEqualTo(Phase.PROCESSING.toString());
+  }
+
+  @Test
+  void shouldReturnProcessingPausedInsteadOfMessageTimeout() {
+    // given
+    partitions.pauseProcessing();
+
+    // when
+    final Future<?> response;
+    try (final var client = zeebe.newClientBuilder().build()) {
+      response =
+          client.newPublishMessageCommand().messageName("test").correlationKey("test-key").send();
+
+      // then
+      assertThat(response)
+          .failsWithin(Duration.ofSeconds(5))
+          .withThrowableThat()
+          .havingCause()
+          .withMessageContaining("UNAVAILABLE: Processing paused for partition")
+          .asInstanceOf(InstanceOfAssertFactories.throwable(StatusRuntimeException.class))
+          .extracting(StatusRuntimeException::getStatus)
+          .extracting(Status::getCode)
+          .isEqualTo(Code.UNAVAILABLE);
+    }
+  }
+
+  @Test
+  void shouldPauseExporterWhenRequested() {
+    // when
+    final var status = partitions.pauseExporting();
+
+    // then
+    assertThat(status.get(1).exporterPhase()).isEqualTo(ExporterPhase.PAUSED.toString());
+  }
+
+  @Test
+  void shouldSoftPauseExporterWhenRequested() {
+    // when
+    final var status = partitions.softPauseExporting();
+
+    // then
+    assertThat(status.get(1).exporterPhase()).isEqualTo(ExporterPhase.SOFT_PAUSED.toString());
+  }
+
+  @Test
+  void shouldContinueToExportWhileSoftPaused() {
+    // given
+    partitions.softPauseExporting();
+
+    // when
+    try (final var client = zeebe.newClientBuilder().build()) {
+      client
+          .newPublishMessageCommand()
+          .messageName("test")
+          .correlationKey("test-key")
+          .send()
+          .join();
+    }
+
+    // then
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
         .until(
             () ->
                 RecordingExporter.messageRecords(MessageIntent.PUBLISHED)
-                    .withName(messageName)
+                    .withName("test")
                     .exists());
   }
 
   @Test
-  public void shouldPauseStreamProcessorAndExporterAndTakeSnapshotWhenPrepareUgrade() {
+  void shouldResumeExportingFromSoftPausedWhenRequested() {
     // given
-    clientRule.createSingleJob("test");
+    partitions.softPauseExporting();
 
     // when
-    leaderAdminService.prepareForUpgrade();
+    final var status = partitions.resumeExporting();
 
     // then
-    waitForSnapshotAtBroker(leaderAdminService);
-
-    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
-    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
-    assertProcessedPositionIsInSnapshot(leaderAdminService);
+    assertThat(status.get(1).exporterPhase()).isEqualTo(ExporterPhase.EXPORTING.toString());
   }
 
   @Test
-  public void shouldPauseStreamProcessorAfterRestart() {
+  void shouldResumeExportingWhenRequested() {
     // given
-    leaderAdminService.pauseStreamProcessing();
-    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+    partitions.pauseExporting();
 
     // when
-    clusteringRule.restartCluster();
+    try (final var client = zeebe.newClientBuilder().build()) {
+      client
+          .newPublishMessageCommand()
+          .messageName("test")
+          .correlationKey("test-key")
+          .send()
+          .join();
+    }
+    final var status = partitions.resumeExporting();
 
     // then
-    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
-    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+    assertThat(status.get(1).exporterPhase()).isEqualTo(ExporterPhase.EXPORTING.toString());
+    Awaitility.await()
+        .timeout(Duration.ofSeconds(60))
+        .until(
+            () ->
+                RecordingExporter.messageRecords(MessageIntent.PUBLISHED)
+                    .withName("test")
+                    .exists());
   }
 
   @Test
-  public void shouldResumeStreamProcessorAfterRestart() {
+  void shouldPauseStreamProcessorAndExporterAndTakeSnapshotWhenPrepareUgrade() {
     // given
-    leaderAdminService.pauseStreamProcessing();
-    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
-    leaderAdminService.resumeStreamProcessing();
-    assertStreamProcessorPhase(leaderAdminService, Phase.PROCESSING);
+    resourcesHelper.createSingleJob("test");
 
     // when
-    clusteringRule.restartCluster();
+    partitions.prepareUpgrade();
+    waitForSnapshotAtBroker();
 
     // then
-    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
-    assertStreamProcessorPhase(leaderAdminService, Phase.PROCESSING);
+    final var status = partitions.query();
+    assertThat(status.get(1).streamProcessorPhase()).isEqualTo(Phase.PAUSED.toString());
+    assertThat(status.get(1).exporterPhase()).isEqualTo(ExporterPhase.PAUSED.toString());
+    assertThat(status.get(1).processedPosition())
+        .isEqualTo(status.get(1).processedPositionInSnapshot());
   }
 
   @Test
-  public void shouldPauseExporterAfterRestart() {
+  void shouldPauseStreamProcessorAfterRestart() {
     // given
-    leaderAdminService.pauseExporting();
-    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
+    partitions.pauseProcessing();
 
     // when
-    clusteringRule.restartCluster();
+    zeebe.stop().start().awaitCompleteTopology();
 
     // then
-    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
-    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
+    assertThat(partitions.query().get(1).streamProcessorPhase()).isEqualTo(Phase.PAUSED.toString());
   }
 
   @Test
-  public void shouldResumeExporterAfterRestart() {
+  void shouldResumeStreamProcessorAfterRestart() {
     // given
-    leaderAdminService.pauseExporting();
-    assertExporterPhase(leaderAdminService, ExporterPhase.PAUSED);
-    leaderAdminService.resumeExporting();
-    assertExporterPhase(leaderAdminService, ExporterPhase.EXPORTING);
+    partitions.pauseProcessing();
+    partitions.resumeProcessing();
 
     // when
-    clusteringRule.restartCluster();
+    zeebe.stop().start().awaitCompleteTopology();
 
     // then
-    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
-    leaderAdminService = leader.getBrokerContext().getBrokerAdminService();
-    assertExporterPhase(leaderAdminService, ExporterPhase.EXPORTING);
+    assertThat(partitions.query().get(1).streamProcessorPhase())
+        .isEqualTo(Phase.PROCESSING.toString());
   }
 
-  private void assertStreamProcessorPhase(
-      final BrokerAdminService brokerAdminService, final Phase expected) {
-    Awaitility.await()
-        .untilAsserted(
-            () ->
-                brokerAdminService
-                    .getPartitionStatus()
-                    .forEach(
-                        (p, status) ->
-                            assertThat(status.streamProcessorPhase()).isEqualTo(expected)));
+  @Test
+  void shouldPauseExporterAfterRestart() {
+    // given
+    partitions.pauseExporting();
+
+    // when
+    zeebe.stop().start().awaitCompleteTopology();
+
+    // then
+    assertThat(partitions.query().get(1).exporterPhase())
+        .isEqualTo(ExporterPhase.PAUSED.toString());
   }
 
-  private void assertExporterPhase(
-      final BrokerAdminService brokerAdminService, final ExporterPhase expected) {
-    Awaitility.await()
-        .untilAsserted(
-            () ->
-                brokerAdminService
-                    .getPartitionStatus()
-                    .forEach(
-                        (p, status) -> assertThat(status.exporterPhase()).isEqualTo(expected)));
+  @Test
+  void shouldResumeExporterAfterRestart() {
+    // given
+    partitions.pauseExporting();
+    partitions.resumeExporting();
+
+    // when
+    zeebe.stop().start().awaitCompleteTopology();
+
+    // then
+    assertThat(partitions.query().get(1).exporterPhase())
+        .isEqualTo(ExporterPhase.EXPORTING.toString());
   }
 
-  private void assertProcessedPositionIsInSnapshot(final BrokerAdminService brokerAdminService) {
-    Awaitility.await()
-        .untilAsserted(
-            () ->
-                brokerAdminService
-                    .getPartitionStatus()
-                    .forEach(
-                        (p, status) ->
-                            assertThat(status.processedPosition())
-                                .isEqualTo(status.processedPositionInSnapshot())));
+  @Test
+  void shouldReturnStreamClock() {
+    // given - evil way to modify the clock until we have a client API
+    // TODO: replace this with an actual client command when we have the client API
+    final var brokerClient = zeebe.bean(BrokerClient.class);
+    final var expectedInstant = Instant.now().minusMillis(3600).truncatedTo(ChronoUnit.MILLIS);
+    final var request =
+        new TestClockRequest(new ClockRecord().pinAt(expectedInstant.toEpochMilli()));
+
+    // when
+    brokerClient.sendRequest(request, Duration.ofSeconds(30)).join();
+
+    // then
+    final var status = partitions.query();
+    final var clock = status.get(1).clock();
+    assertThat(clock.instant()).isEqualTo(expectedInstant);
+    assertThat(clock.modificationType()).isEqualTo("Pin");
+    assertThat(clock.modification()).containsEntry("at", expectedInstant.toString());
   }
 
-  private void waitForSnapshotAtBroker(final BrokerAdminService adminService) {
-    Awaitility.await()
-        .untilAsserted(
+  private void waitForSnapshotAtBroker() {
+    Awaitility.await("snapshot is taken")
+        .atMost(Duration.ofSeconds(60))
+        .until(
             () ->
-                adminService
-                    .getPartitionStatus()
-                    .values()
-                    .forEach(
-                        status -> assertThat(status.processedPositionInSnapshot()).isNotNull()));
+                Optional.ofNullable(partitions.query().get(1).snapshotId())
+                    .flatMap(FileBasedSnapshotId::ofFileName),
+            Optional::isPresent)
+        .orElseThrow();
+  }
+
+  private static final class TestClockRequest extends BrokerExecuteCommand<ClockRecord> {
+    private final ClockRecord request;
+
+    public TestClockRequest(final ClockRecord request) {
+      super(ValueType.CLOCK, ClockIntent.PIN);
+      this.request = request;
+    }
+
+    @Override
+    public BufferWriter getRequestWriter() {
+      return request;
+    }
+
+    @Override
+    protected ClockRecord toResponseDto(final DirectBuffer buffer) {
+      final var response = new ClockRecord();
+      response.wrap(buffer);
+      return response;
+    }
   }
 }

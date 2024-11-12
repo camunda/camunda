@@ -6,9 +6,21 @@ on:
     - cron: '0 2 * * 1-5'
 
 jobs:
+  dry-run-release-86:
+    name: "Release from stable/8.6"
+    uses: camunda/camunda/.github/workflows/camunda-platform-release.yml@stable/8.6
+    secrets: inherit
+    strategy:
+      fail-fast: false
+    with:
+      releaseBranch: stable/8.6
+      releaseVersion: 0.8.6
+      nextDevelopmentVersion: 0.0.0-SNAPSHOT
+      isLatest: true
+      dryRun: true
   dry-run-release-85:
     name: "Release from stable/8.5"
-    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.5
+    uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.5
     secrets: inherit
     strategy:
       fail-fast: false
@@ -20,7 +32,7 @@ jobs:
       dryRun: true
   dry-run-release-84:
     name: "Release from stable/8.4"
-    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.4
+    uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.4
     secrets: inherit
     strategy:
       fail-fast: false
@@ -32,7 +44,7 @@ jobs:
       dryRun: true
   dry-run-release-83:
     name: "Release from stable/8.3"
-    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.3
+    uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.3
     secrets: inherit
     strategy:
       fail-fast: false
@@ -42,22 +54,10 @@ jobs:
       nextDevelopmentVersion: 0.0.0-SNAPSHOT
       isLatest: true
       dryRun: true
-  dry-run-release-82:
-    name: "Release from stable/8.2"
-    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.2
-    secrets: inherit
-    strategy:
-      fail-fast: false
-    with:
-      releaseBranch: stable/8.2
-      releaseVersion: 0.8.2
-      nextDevelopmentVersion: 0.0.0-SNAPSHOT
-      isLatest: true
-      dryRun: true
   notify:
     name: Send slack notification
     runs-on: ubuntu-latest
-    needs: [ dry-run-release-82, dry-run-release-83, dry-run-release-84, dry-run-release-85 ]
+    needs: [ dry-run-release-83, dry-run-release-84, dry-run-release-85, dry-run-release-86 ]
     if: ${{ always() }}
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
@@ -65,8 +65,8 @@ jobs:
     steps:
       - id: slack-notify-failure
         name: Send failure slack notification
-        uses: slackapi/slack-github-action@v1.25.0
-        if: ${{ always() && (needs.dry-run-release-82.result != 'success' || needs.dry-run-release-83.result != 'success' || needs.dry-run-release-84.result != 'success' || needs.dry-run-release-85.result != 'success') }}
+        uses: slackapi/slack-github-action@v1.27.0
+        if: ${{ always() && (needs.dry-run-release-83.result != 'success' || needs.dry-run-release-84.result != 'success' || needs.dry-run-release-85.result != 'success' || needs.dry-run-release-86.result != 'success') }}
         with:
           # For posting a rich message using Block Kit
           payload: |
@@ -83,15 +83,15 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check the related workflow execution: https://github.com/camunda/zeebe/actions/runs/${{ github.run_id }}"
+                    "text": "Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
                   }
                 }
               ]
             }
       - id: slack-notify-success
         name: Send success slack notification
-        uses: slackapi/slack-github-action@v1.25.0
-        if: ${{ always() && needs.dry-run-release-82.result == 'success' && needs.dry-run-release-83.result == 'success' && needs.dry-run-release-84.result == 'success' && needs.dry-run-release-85.result == 'success' }}
+        uses: slackapi/slack-github-action@v1.27.0
+        if: ${{ always() && needs.dry-run-release-83.result == 'success' && needs.dry-run-release-84.result == 'success' && needs.dry-run-release-85.result == 'success' && needs.dry-run-release-86.result == 'success' }}
         with:
           # For posting a rich message using Block Kit
           payload: |

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
@@ -11,80 +11,59 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+@ZeebeIntegration
+@AutoCloseResources
 public final class CreateProcessInstanceTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @AutoCloseResource ZeebeClient client;
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
-
+  ZeebeResourcesHelper resourcesHelper;
   private String processId;
   private String processId2;
   private long firstProcessDefinitionKey;
   private long secondProcessDefinitionKey;
 
-  @Before
-  public void deployProcess() {
-    processId = helper.getBpmnProcessId();
-
-    firstProcessDefinitionKey =
-        CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(processId).startEvent("v1").done());
-    secondProcessDefinitionKey =
-        CLIENT_RULE.deployProcess(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent("v2")
-                .parallelGateway()
-                .endEvent("end1")
-                .moveToLastGateway()
-                .endEvent("end2")
-                .done());
-
-    processId2 = "%s-2".formatted(helper.getBpmnProcessId());
-    CLIENT_RULE.deployProcess(
-        Bpmn.createExecutableProcess(processId2)
-            .eventSubProcess(
-                "event-sub",
-                e ->
-                    e.startEvent("msg-start-event")
-                        .message(msg -> msg.name("msg").zeebeCorrelationKey("=missing_var")))
-            .startEvent("v3")
-            .endEvent("end")
-            .done());
+  @BeforeEach
+  public void init() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
-  @Test
-  public void shouldCreateBpmnProcessById() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateBpmnProcessById(final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
+
     // when
     final ProcessInstanceEvent processInstance =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .send()
-            .join();
+        getCommand(client, useRest).bpmnProcessId(processId).latestVersion().send().join();
 
     // then
     assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
@@ -92,17 +71,16 @@ public final class CreateProcessInstanceTest {
     assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(secondProcessDefinitionKey);
   }
 
-  @Test
-  public void shouldCreateBpmnProcessByIdAndVersion() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateBpmnProcessByIdAndVersion(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
+
     // when
     final ProcessInstanceEvent processInstance =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .version(1)
-            .send()
-            .join();
+        getCommand(client, useRest).bpmnProcessId(processId).version(1).send().join();
 
     // then instance is created of first process version
     assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
@@ -110,16 +88,15 @@ public final class CreateProcessInstanceTest {
     assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(firstProcessDefinitionKey);
   }
 
-  @Test
-  public void shouldCreateBpmnProcessByKey() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateBpmnProcessByKey(final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
+
     // when
     final ProcessInstanceEvent processInstance =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .processDefinitionKey(firstProcessDefinitionKey)
-            .send()
-            .join();
+        getCommand(client, useRest).processDefinitionKey(firstProcessDefinitionKey).send().join();
 
     // then
     assertThat(processInstance.getBpmnProcessId()).isEqualTo(processId);
@@ -127,16 +104,16 @@ public final class CreateProcessInstanceTest {
     assertThat(processInstance.getProcessDefinitionKey()).isEqualTo(firstProcessDefinitionKey);
   }
 
-  @Test
-  public void shouldCreateWithVariables() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateWithVariables(final boolean useRest, final TestInfo testInfo) {
     // given
+    deployProcesses(testInfo, useRest);
     final Map<String, Object> variables = Map.of("foo", 123);
 
     // when
     final ProcessInstanceEvent event =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
+        getCommand(client, useRest)
             .bpmnProcessId(processId)
             .latestVersion()
             .variables(variables)
@@ -153,17 +130,15 @@ public final class CreateProcessInstanceTest {
     assertThat(createdEvent.getValue().getVariables()).containsExactlyEntriesOf(variables);
   }
 
-  @Test
-  public void shouldCreateWithoutVariables() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateWithoutVariables(final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
+
     // when
     final ProcessInstanceEvent event =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .send()
-            .join();
+        getCommand(client, useRest).bpmnProcessId(processId).latestVersion().send().join();
 
     // then
     final var createdEvent =
@@ -175,13 +150,15 @@ public final class CreateProcessInstanceTest {
     assertThat(createdEvent.getValue().getVariables()).isEmpty();
   }
 
-  @Test
-  public void shouldCreateWithNullVariables() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateWithNullVariables(final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
+
     // when
     final ProcessInstanceEvent event =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
+        getCommand(client, useRest)
             .bpmnProcessId(processId)
             .latestVersion()
             .variables("null")
@@ -198,17 +175,17 @@ public final class CreateProcessInstanceTest {
     assertThat(createdEvent.getValue().getVariables()).isEmpty();
   }
 
-  @Test
-  public void shouldCreateWithSingleVariable() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateWithSingleVariable(final boolean useRest, final TestInfo testInfo) {
     // given
+    deployProcesses(testInfo, useRest);
     final String key = "key";
     final String value = "value";
 
     // when
     final ProcessInstanceEvent event =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
+        getCommand(client, useRest)
             .bpmnProcessId(processId)
             .latestVersion()
             .variable(key, value)
@@ -225,14 +202,17 @@ public final class CreateProcessInstanceTest {
     assertThat(createdEvent.getValue().getVariables()).containsExactlyEntriesOf(Map.of(key, value));
   }
 
-  @Test
-  public void shouldThrowErrorWhenTryToCreateInstanceWithNullVariable() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldThrowErrorWhenTryToCreateInstanceWithNullVariable(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
+
     // when
     assertThatThrownBy(
             () ->
-                CLIENT_RULE
-                    .getClient()
-                    .newCreateInstanceCommand()
+                getCommand(client, useRest)
                     .bpmnProcessId(processId)
                     .latestVersion()
                     .variable(null, null)
@@ -241,59 +221,69 @@ public final class CreateProcessInstanceTest {
         .isInstanceOf(IllegalArgumentException.class);
   }
 
-  @Test
-  public void shouldRejectCompleteJobIfVariablesAreInvalid() {
-    // when
-    final var command =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .variables("[]")
-            .send();
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectCompleteJobIfVariablesAreInvalid(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
 
-    assertThatThrownBy(command::join)
-        .isInstanceOf(ClientException.class)
-        .hasMessageContaining(
-            "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'");
+    // when
+    if (useRest) {
+      assertThatThrownBy(
+              () ->
+                  getCommand(client, useRest)
+                      .bpmnProcessId(processId)
+                      .latestVersion()
+                      .variables("[]")
+                      .send()
+                      .join())
+          .hasMessageContaining("Failed to deserialize json '[]' to 'Map<String, Object>'");
+    } else {
+      assertThatThrownBy(
+              () ->
+                  getCommand(client, useRest)
+                      .bpmnProcessId(processId)
+                      .latestVersion()
+                      .variables("[]")
+                      .send()
+                      .join())
+          .hasMessageContaining(
+              "Property 'variables' is invalid: Expected document to be a root level object, but was 'ARRAY'");
+    }
   }
 
-  @Test
-  public void shouldRejectCreateBpmnProcessByNonExistingId() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectCreateBpmnProcessByNonExistingId(final boolean useRest) {
     // when
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId("non-existing")
-            .latestVersion()
-            .send();
+        getCommand(client, useRest).bpmnProcessId("non-existing").latestVersion().send();
 
     assertThatThrownBy(command::join)
-        .isInstanceOf(ClientException.class)
         .hasMessageContaining(
             "Expected to find process definition with process ID 'non-existing', but none found");
   }
 
-  @Test
-  public void shouldRejectCreateBpmnProcessByNonExistingKey() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectCreateBpmnProcessByNonExistingKey(final boolean useRest) {
     // when
-    final var command =
-        CLIENT_RULE.getClient().newCreateInstanceCommand().processDefinitionKey(123L).send();
+    final var command = getCommand(client, useRest).processDefinitionKey(123L).send();
 
     assertThatThrownBy(command::join)
-        .isInstanceOf(ClientException.class)
         .hasMessageContaining("Expected to find process definition with key '123', but none found");
   }
 
-  @Test
-  public void shouldCreateWithStartInstructions() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateWithStartInstructions(final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
+
     // when
     final var instance =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
+        getCommand(client, useRest)
             .processDefinitionKey(secondProcessDefinitionKey)
             .startBeforeElement("end1")
             .startBeforeElement("end2")
@@ -321,13 +311,16 @@ public final class CreateProcessInstanceTest {
         .doesNotContain(tuple(BpmnElementType.START_EVENT, "v2"));
   }
 
-  @Test
-  public void shouldRejectCreateWithStartInstructions() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true})
+  public void shouldRejectCreateWithStartInstructions(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    deployProcesses(testInfo, useRest);
+
     // when
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
+        getCommand(client, useRest)
             .bpmnProcessId(processId2)
             .latestVersion()
             // without variables
@@ -335,14 +328,43 @@ public final class CreateProcessInstanceTest {
             .send();
 
     assertThatThrownBy(command::join)
-        .isInstanceOf(ClientException.class)
-        .hasMessageContaining(
-            """
-            Expected to subscribe to catch event(s) of \
-            'process-shouldRejectCreateWithStartInstructions-2' but \
-            Failed to extract the correlation key for 'missing_var': \
-            The value must be either a string or a number, but was 'NULL'. \
-            The evaluation reported the following warnings:
-            [NO_VARIABLE_FOUND] No variable found with name 'missing_var'""");
+        .hasMessageContaining("[NO_VARIABLE_FOUND] No variable found with name 'missing_var'");
+  }
+
+  private CreateProcessInstanceCommandStep1 getCommand(
+      final ZeebeClient client, final boolean useRest) {
+    final CreateProcessInstanceCommandStep1 createInstanceCommand =
+        client.newCreateInstanceCommand();
+    return useRest ? createInstanceCommand.useRest() : createInstanceCommand.useGrpc();
+  }
+
+  private void deployProcesses(final TestInfo testInfo, final boolean useRest) {
+    processId = "process-" + testInfo.getTestMethod().get().getName();
+    processId2 = processId + "-2";
+    firstProcessDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess(processId).startEvent("v1").done(), useRest);
+    secondProcessDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent("v2")
+                .parallelGateway()
+                .endEvent("end1")
+                .moveToLastGateway()
+                .endEvent("end2")
+                .done(),
+            useRest);
+
+    resourcesHelper.deployProcess(
+        Bpmn.createExecutableProcess(processId2)
+            .eventSubProcess(
+                "event-sub",
+                e ->
+                    e.startEvent("msg-start-event")
+                        .message(msg -> msg.name("msg").zeebeCorrelationKey("=missing_var")))
+            .startEvent("v3")
+            .endEvent("end")
+            .done(),
+        useRest);
   }
 }

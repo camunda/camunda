@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
@@ -19,13 +19,13 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
-import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -44,15 +44,14 @@ class LogStreamPartitionTransitionStepTest {
 
   @BeforeEach
   void setup() {
+    transitionContext.setBrokerCfg(new BrokerCfg());
     transitionContext.setComponentHealthMonitor(mock(HealthMonitor.class));
     transitionContext.setLogStorage(mock(AtomixLogStorage.class));
 
     when(raftPartition.getServer()).thenReturn(raftServer);
     transitionContext.setRaftPartition(raftPartition);
 
-    doReturn(TestActorFuture.completedFuture(logStream)).when(logStreamBuilder).buildAsync();
-    when(logStream.closeAsync()).thenReturn(TestActorFuture.completedFuture(null));
-    when(logStreamFromPrevRole.closeAsync()).thenReturn(TestActorFuture.completedFuture(null));
+    doReturn(logStream).when(logStreamBuilder).build();
 
     step = new LogStreamPartitionTransitionStep(() -> logStreamBuilder);
   }
@@ -68,7 +67,7 @@ class LogStreamPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getLogStream()).isNull();
-    verify(logStreamFromPrevRole).closeAsync();
+    verify(logStreamFromPrevRole).close();
   }
 
   @ParameterizedTest
@@ -83,7 +82,7 @@ class LogStreamPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getLogStream()).isNotNull().isNotEqualTo(existingLogStream);
-    verify(logStreamBuilder).buildAsync();
+    verify(logStreamBuilder).build();
   }
 
   @ParameterizedTest
@@ -98,7 +97,7 @@ class LogStreamPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getLogStream()).isEqualTo(existingLogStream);
-    verify(logStreamBuilder, never()).buildAsync();
+    verify(logStreamBuilder, never()).build();
   }
 
   @ParameterizedTest
@@ -114,8 +113,8 @@ class LogStreamPartitionTransitionStepTest {
 
     // then
     assertThat(transitionContext.getStreamProcessor()).isNull();
-    verify(logStreamFromPrevRole).closeAsync();
-    verify(logStreamBuilder, never()).buildAsync();
+    verify(logStreamFromPrevRole).close();
+    verify(logStreamBuilder, never()).build();
   }
 
   private void initializeContext(final Role currentRole) {

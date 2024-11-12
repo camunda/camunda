@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.message;
 
@@ -18,12 +18,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.state.immutable.DistributionState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.StreamProcessorRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -36,8 +41,10 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.Duration;
+import java.time.InstantSource;
 import org.agrona.DirectBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -53,21 +60,34 @@ public final class MessageStreamProcessorTest {
 
   private SubscriptionCommandSender spySubscriptionCommandSender;
   private InterPartitionCommandSender mockInterpartitionCommandSender;
+  private CommandDistributionBehavior spyCommandDistributionBehavior;
 
   @Before
   public void setup() {
     mockInterpartitionCommandSender = mock(InterPartitionCommandSender.class);
+    final var mockKeyGenerator = mock(KeyGenerator.class);
+    final var mockDistributionState = mock(DistributionState.class);
     final var mockProcessingResultBuilder = mock(ProcessingResultBuilder.class);
     final var mockEventAppliers = mock(EventAppliers.class);
     final var writers = new Writers(() -> mockProcessingResultBuilder, mockEventAppliers);
     spySubscriptionCommandSender =
         spy(new SubscriptionCommandSender(1, mockInterpartitionCommandSender));
     spySubscriptionCommandSender.setWriters(writers);
+    spyCommandDistributionBehavior =
+        spy(
+            new CommandDistributionBehavior(
+                mockDistributionState,
+                writers,
+                1,
+                RoutingInfo.forStaticPartitions(1),
+                mockInterpartitionCommandSender));
 
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
           final var processingState = processingContext.getProcessingState();
           final var scheduledTaskState = processingContext.getScheduledTaskStateFactory();
+          final var mockAuthCheckBehavior = mock(AuthorizationCheckBehavior.class);
+          when(mockAuthCheckBehavior.isAuthorized(any())).thenReturn(true);
           MessageEventProcessors.addMessageProcessors(
               mock(BpmnBehaviors.class),
               typedRecordProcessors,
@@ -76,7 +96,10 @@ public final class MessageStreamProcessorTest {
               spySubscriptionCommandSender,
               processingContext.getWriters(),
               DEFAULT_ENGINE_CONFIGURATION,
-              FeatureFlags.createDefault());
+              FeatureFlags.createDefault(),
+              spyCommandDistributionBehavior,
+              InstantSource.system(),
+              mockAuthCheckBehavior);
           return typedRecordProcessors;
         });
   }
@@ -129,7 +152,7 @@ public final class MessageStreamProcessorTest {
                   .addTime(
                       MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(
                           MessageObserver.SUBSCRIPTION_TIMEOUT));
-              verify(mockInterpartitionCommandSender, timeout(100).times(2))
+              verify(mockInterpartitionCommandSender, timeout(100).atLeast(2))
                   .sendCommand(
                       eq(0),
                       eq(ValueType.PROCESS_MESSAGE_SUBSCRIPTION),

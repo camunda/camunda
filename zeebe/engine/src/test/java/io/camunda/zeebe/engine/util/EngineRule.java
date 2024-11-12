@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.util;
 
@@ -19,15 +19,23 @@ import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.engine.state.ProcessingDbState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.TestInterPartitionCommandSender.CommandInterceptor;
+import io.camunda.zeebe.engine.util.client.AuthorizationClient;
+import io.camunda.zeebe.engine.util.client.ClockClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
+import io.camunda.zeebe.engine.util.client.GroupClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.JobClient;
+import io.camunda.zeebe.engine.util.client.MappingClient;
+import io.camunda.zeebe.engine.util.client.MessageCorrelationClient;
 import io.camunda.zeebe.engine.util.client.ProcessInstanceClient;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.engine.util.client.ResourceDeletionClient;
+import io.camunda.zeebe.engine.util.client.RoleClient;
 import io.camunda.zeebe.engine.util.client.SignalClient;
+import io.camunda.zeebe.engine.util.client.TenantClient;
+import io.camunda.zeebe.engine.util.client.UserClient;
 import io.camunda.zeebe.engine.util.client.UserTaskClient;
 import io.camunda.zeebe.engine.util.client.VariableClient;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
@@ -42,6 +50,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
@@ -121,11 +130,15 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
-    startProcessors();
+    start();
   }
 
   public void start() {
-    startProcessors();
+    start(StreamProcessorMode.PROCESSING, true);
+  }
+
+  public void start(final StreamProcessorMode mode, final boolean awaitOpening) {
+    startProcessors(mode, awaitOpening);
   }
 
   public void stop() {
@@ -157,7 +170,7 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
-  private void startProcessors() {
+  private void startProcessors(final StreamProcessorMode mode, final boolean awaitOpening) {
     interPartitionCommandSenders = new ArrayList<>();
 
     forEachPartition(
@@ -191,9 +204,15 @@ public final class EngineRule extends ExternalResource {
                       lastProcessedPosition = skippedRecord.getPosition();
                       onSkippedCallback.accept(skippedRecord);
                     }
-                  }));
+                  }),
+              cfg -> cfg.streamProcessorMode(mode),
+              awaitOpening);
         });
     interPartitionCommandSenders.forEach(s -> s.initializeWriters(partitionCount));
+  }
+
+  public void snapshot() {
+    environmentRule.snapshot();
   }
 
   public void forEachPartition(final Consumer<Integer> partitionIdConsumer) {
@@ -233,7 +252,7 @@ public final class EngineRule extends ExternalResource {
     // we need to reset the record exporter
     RecordingExporter.reset();
 
-    startProcessors();
+    startProcessors(StreamProcessorMode.PROCESSING, true);
     TestUtil.waitUntil(
         () -> RecordingExporter.getRecords().size() >= lastSize,
         "Failed to reprocess all events, only re-exported %d but expected %d",
@@ -255,8 +274,20 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getProcessingState();
   }
 
+  public ProcessingState getProcessingState(final int partitionId) {
+    return environmentRule.getProcessingState(partitionId);
+  }
+
   public StreamProcessor getStreamProcessor(final int partitionId) {
     return environmentRule.getStreamProcessor(partitionId);
+  }
+
+  public StreamClock getStreamClock() {
+    return getStreamClock(PARTITION_ID);
+  }
+
+  public StreamClock getStreamClock(final int partitionId) {
+    return environmentRule.getStreamClock(partitionId);
   }
 
   public long getLastProcessedPosition() {
@@ -277,6 +308,10 @@ public final class EngineRule extends ExternalResource {
 
   public PublishMessageClient message() {
     return new PublishMessageClient(environmentRule, partitionCount);
+  }
+
+  public MessageCorrelationClient messageCorrelation() {
+    return new MessageCorrelationClient(environmentRule, partitionCount);
   }
 
   public VariableClient variables() {
@@ -305,6 +340,30 @@ public final class EngineRule extends ExternalResource {
 
   public UserTaskClient userTask() {
     return new UserTaskClient(environmentRule);
+  }
+
+  public UserClient user() {
+    return new UserClient(environmentRule);
+  }
+
+  public AuthorizationClient authorization() {
+    return new AuthorizationClient(environmentRule);
+  }
+
+  public RoleClient role() {
+    return new RoleClient(environmentRule);
+  }
+
+  public TenantClient tenant() {
+    return new TenantClient(environmentRule);
+  }
+
+  public MappingClient mapping() {
+    return new MappingClient(environmentRule);
+  }
+
+  public GroupClient group() {
+    return new GroupClient(environmentRule);
   }
 
   public Record<JobRecordValue> createJob(final String type, final String processId) {
@@ -356,6 +415,10 @@ public final class EngineRule extends ExternalResource {
 
   public void pauseProcessing(final int partitionId) {
     environmentRule.pauseProcessing(partitionId);
+  }
+
+  public void banInstanceInNewTransaction(final int partitionId, final long processInstanceKey) {
+    environmentRule.banInstanceInNewTransaction(partitionId, processInstanceKey);
   }
 
   public void resumeProcessing(final int partitionId) {
@@ -418,6 +481,10 @@ public final class EngineRule extends ExternalResource {
           "Cannot intercept inter-partition commands before the engine is started");
     }
     interPartitionCommandSenders.forEach(sender -> sender.intercept(interceptor));
+  }
+
+  public ClockClient clock() {
+    return new ClockClient(environmentRule);
   }
 
   private static final class VersatileBlob implements DbKey, DbValue {

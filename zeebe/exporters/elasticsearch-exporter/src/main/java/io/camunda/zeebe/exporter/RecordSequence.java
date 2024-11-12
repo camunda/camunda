@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter;
 
@@ -16,7 +16,7 @@ package io.camunda.zeebe.exporter;
  *
  * @param partitionId the partition id of the record
  * @param counter the counter based on the record's value type
- * @see <a href="https://github.com/camunda/zeebe/issues/10568">Related issue</a>
+ * @see <a href="https://github.com/camunda/camunda/issues/10568">Related issue</a>
  */
 public record RecordSequence(int partitionId, long counter) {
 

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.common;
 
@@ -300,6 +300,35 @@ public final class ExpressionProcessor {
     return evaluateExpressionAsEither(expression, scopeKey)
         .flatMap(result -> typeCheckCorrelationKey(scopeKey, expectedTypes, result, expression))
         .map(this::toStringFromStringOrNumber);
+  }
+
+  /**
+   * Evaluates the given expression and returns the result as int. If the evaluation fails or the
+   * result is not a number then a failure is returned.
+   *
+   * @param expression the expression to evaluate
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
+   * @return either the evaluation result as int, or a failure
+   */
+  public Either<Failure, Integer> evaluateIntegerExpression(
+      final Expression expression, final long scopeKey) {
+    return evaluateExpressionAsEither(expression, scopeKey)
+        .flatMap(result -> typeCheck(result, ResultType.NUMBER, scopeKey))
+        .flatMap(
+            result -> {
+              if (result.getNumber().doubleValue() % 1 == 0) {
+                return Either.right(result.getNumber().intValue());
+              } else {
+                return Either.left(
+                    createFailureMessage(
+                        result,
+                        String.format(
+                            "Expected result of the expression '%s' to be an integer, but was a decimal.",
+                            expression.getExpression()),
+                        scopeKey));
+              }
+            });
   }
 
   private Either<Failure, EvaluationResult> typeCheckCorrelationKey(

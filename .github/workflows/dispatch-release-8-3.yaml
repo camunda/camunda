@@ -10,13 +10,40 @@ on:
 jobs:
   run-release:
     name: "Release ${{ github.event.client_payload.releaseVersion }}"
-    uses: camunda/zeebe/.github/workflows/zeebe-release.yml@stable/8.3
+    uses: camunda/camunda/.github/workflows/zeebe-release.yml@stable/8.3
     secrets: inherit
     with:
       releaseVersion: ${{ github.event.client_payload.releaseVersion }}
       nextDevelopmentVersion: ${{ github.event.client_payload.nextDevelopmentVersion }}
       isLatest: ${{ github.event.client_payload.isLatest }}
       dryRun: ${{ github.event.client_payload.dryRun }}
+  notify-on-success:
+    name: Send slack notification on success
+    runs-on: ubuntu-latest
+    needs: [ run-release ]
+    if: ${{ success() }}
+    steps:
+      - id: slack-notify
+        name: Send slack notification
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": ":success: Release job for ${{ github.event.client_payload.releaseVersion }} succeeded! :success:\n",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":success: Release job for ${{ github.event.client_payload.releaseVersion }} succeeded! :success:\n"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
   notify-if-failed:
     name: Send slack notification on failure
     runs-on: ubuntu-latest
@@ -27,7 +54,7 @@ jobs:
     steps:
       - id: slack-notify
         name: Send slack notification
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.27.0
         with:
           # For posting a rich message using Block Kit
           payload: |
@@ -45,7 +72,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "Please check the related workflow execution: https://github.com/camunda/zeebe/actions/runs/${{ github.run_id }}"
+                    "text": "Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
                   }
                 }
               ]

@@ -1,45 +1,61 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatPrefixAndComponent;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TestUtil;
+import io.camunda.tasklist.schema.IndexMapping;
+import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.util.TestUtil;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Conditional;
 
+@Conditional(ElasticSearchCondition.class)
 public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
 
+  private static final String ORIGINAL_SCHEMA_PATH =
+      "/tasklist-test-elasticsearch-schema-manager.json";
+  private static final String INDEX_NAME = "test";
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;
+  @Autowired private List<TemplateDescriptor> templateDescriptors;
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @Autowired private NoSqlHelper noSqlHelper;
   @Autowired private SchemaManager schemaManager;
+
+  private final String originalSchemaContent = readSchemaContent();
+
+  private final IndexDescriptor testIndex = createIndexDescriptor();
+
+  public ElasticSearchSchemaManagementIT() throws Exception {}
 
   @BeforeAll
   public static void beforeClass() {
@@ -54,7 +70,7 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
     tasklistProperties.getElasticsearch().setNumberOfReplicas(initialNumberOfReplicas);
     schemaManager.createSchema();
 
-    for (IndexDescriptor indexDescriptor : indexDescriptors) {
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertThat(
               noSqlHelper.indexHasAlias(
                   indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias()))
@@ -74,7 +90,7 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
 
     schemaManager.createSchema();
 
-    for (IndexDescriptor indexDescriptor : indexDescriptors) {
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertThat(
               noSqlHelper.indexHasAlias(
                   indexDescriptor.getFullQualifiedName(), indexDescriptor.getAlias()))
@@ -87,5 +103,124 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
                   .get(RetryElasticsearchClient.NUMBERS_OF_REPLICA))
           .isEqualTo(String.valueOf(modifiedNumberOfReplicas));
     }
+  }
+
+  @Test
+  public void shouldGetIndexMappings() throws IOException {
+    schemaManager.createSchema();
+
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
+      final Map<String, IndexMapping> indexMappings =
+          schemaManager.getIndexMappings(indexDescriptor.getAlias());
+      assertThat(indexMappings).isNotEmpty();
+    }
+  }
+
+  @Test
+  public void shouldGetExpectedIndexFields() throws IOException {
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
+      final IndexMapping indexMapping = schemaManager.getExpectedIndexFields(indexDescriptor);
+      assertThat(indexMapping).isNotNull();
+      assertThat(indexMapping.getIndexName()).isEqualTo(indexDescriptor.getIndexName());
+      assertThat(indexMapping.getProperties()).isNotEmpty();
+    }
+  }
+
+  @Test
+  public void shouldAddFieldToIndex() throws Exception {
+    replaceIndexDescriptorsInValidator(Collections.singleton(testIndex));
+    schemaManager.createIndex(testIndex);
+
+    // Update file with new field
+    final var originalSchemaContent = readSchemaContent();
+
+    updateSchemaContent(
+        originalSchemaContent.replace(
+            "\"properties\": {", "\"properties\": {\n    \"prop2\": { \"type\": \"keyword\" },"));
+
+    final Map<IndexDescriptor, Set<IndexMappingProperty>> indexDiff =
+        indexSchemaValidator.validateIndexMappings();
+
+    // when
+    schemaManager.updateSchema(indexDiff);
+
+    // then
+    final String indexName = testIndex.getFullQualifiedName();
+    final Map<String, IndexMapping> indexMappings = schemaManager.getIndexMappings(indexName);
+
+    restoreOriginalSchemaContent();
+
+    final IndexMapping expectedIndexMapping =
+        new IndexMapping()
+            .setIndexName(indexName)
+            .setDynamic("strict")
+            .setMetaProperties(Collections.emptyMap())
+            .setProperties(
+                Set.of(
+                    new IndexMappingProperty()
+                        .setName("prop2")
+                        .setTypeDefinition(Map.of("type", "keyword")),
+                    new IndexMappingProperty()
+                        .setName("prop1")
+                        .setTypeDefinition(Map.of("type", "keyword")),
+                    new IndexMappingProperty()
+                        .setName("prop0")
+                        .setTypeDefinition(Map.of("type", "keyword"))));
+
+    assertThat(indexMappings).contains(entry(indexName, expectedIndexMapping));
+  }
+
+  private IndexDescriptor createIndexDescriptor() {
+    return new IndexDescriptor() {
+      @Override
+      public String getIndexName() {
+        return INDEX_NAME;
+      }
+
+      @Override
+      public String getFullQualifiedName() {
+        return getFullIndexName();
+      }
+
+      @Override
+      public String getSchemaClasspathFilename() {
+        return ORIGINAL_SCHEMA_PATH;
+      }
+
+      @Override
+      public String getAllVersionsIndexNameRegexPattern() {
+        return getFullIndexName() + "*";
+      }
+    };
+  }
+
+  private String getFullIndexName() {
+    return formatPrefixAndComponent(schemaManager.getIndexPrefix()) + "-" + INDEX_NAME;
+  }
+
+  private void updateSchemaContent(final String content) throws Exception {
+    Files.write(
+        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
+        content.getBytes(),
+        StandardOpenOption.TRUNCATE_EXISTING);
+  }
+
+  private String readSchemaContent() throws Exception {
+    return new String(
+        Files.readAllBytes(Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI())));
+  }
+
+  private void restoreOriginalSchemaContent() throws Exception {
+    Files.write(
+        Paths.get(getClass().getResource(ORIGINAL_SCHEMA_PATH).toURI()),
+        originalSchemaContent.getBytes(),
+        StandardOpenOption.TRUNCATE_EXISTING);
+  }
+
+  private void replaceIndexDescriptorsInValidator(final Set<IndexDescriptor> newIndexDescriptors)
+      throws NoSuchFieldException, IllegalAccessException {
+    final Field field = indexSchemaValidator.getClass().getDeclaredField("indexDescriptors");
+    field.setAccessible(true);
+    field.set(indexSchemaValidator, newIndexDescriptors);
   }
 }

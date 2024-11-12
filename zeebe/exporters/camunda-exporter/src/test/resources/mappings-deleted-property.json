@@ -1,0 +1,10 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "world": {
+        "type": "keyword"
+      }
+    }
+  }
+}

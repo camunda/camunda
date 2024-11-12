@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.scheduler;
 
@@ -91,17 +91,37 @@ public class ActorControl implements ConcurrencyControl {
    */
   public ScheduledTimer runAtFixedRate(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runAtFixedRate(...)");
-    return scheduleTimer(delay, true, runnable);
+    return scheduleTimerSubscription(
+        runnable,
+        job -> new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, true));
   }
 
-  private TimerSubscription scheduleTimer(
-      final Duration delay, final boolean isRecurring, final Runnable runnable) {
+  /**
+   * Schedule a timer task at (or after) a timestamp.
+   *
+   * <p>The runnable is executed while the actor is in the following actor lifecycle phases: {@link
+   * * ActorLifecyclePhase#STARTED}
+   *
+   * <p>This provides no guarantees that the timer task is run at the timestamp. It's likely that
+   * the timer task is run shortly after the timestamp. We guarantee that the runnable won't run
+   * before the timestamp.
+   *
+   * @param timestamp A unix epoch timestamp in milliseconds
+   * @param runnable The runnable to run at (or after) the timestamp
+   * @return A handle to the scheduled timer task
+   */
+  public ScheduledTimer runAt(final long timestamp, final Runnable runnable) {
+    ensureCalledFromWithinActor("runAt(...)");
+    return scheduleTimerSubscription(runnable, job -> new StampedTimerSubscription(job, timestamp));
+  }
+
+  private TimerSubscription scheduleTimerSubscription(
+      final Runnable runnable, final Function<ActorJob, TimerSubscription> subscriptionFactory) {
     final ActorJob job = new ActorJob();
     job.setRunnable(runnable);
     job.onJobAddedToTask(task);
 
-    final TimerSubscription timerSubscription =
-        new TimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, isRecurring);
+    final TimerSubscription timerSubscription = subscriptionFactory.apply(job);
     job.setSubscription(timerSubscription);
 
     timerSubscription.submit();
@@ -133,6 +153,32 @@ public class ActorControl implements ConcurrencyControl {
           future,
           callback,
           (job) -> new ActorFutureSubscription(future, job, lifecyclePhase.getValue()));
+    }
+  }
+
+  /**
+   * Invoke the callback when the given futures are completed (successfully or exceptionally). This
+   * call does not block the actor.
+   *
+   * <p>The callback is executed while the actor is in the following actor lifecycle phases: {@link
+   * ActorLifecyclePhase#STARTED}
+   *
+   * @param futures the futures to wait on
+   * @param callback The throwable is <code>null</code> when all futures are completed successfully.
+   *     Otherwise, it holds the exception of the last completed future.
+   */
+  @Override
+  public <T> void runOnCompletion(
+      final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback) {
+    if (!futures.isEmpty()) {
+      final BiConsumer<T, Throwable> futureConsumer =
+          new AllCompletedFutureConsumer<>(futures.size(), callback);
+
+      for (final ActorFuture<T> future : futures) {
+        runOnCompletion(future, futureConsumer);
+      }
+    } else {
+      callback.accept(null);
     }
   }
 
@@ -185,7 +231,9 @@ public class ActorControl implements ConcurrencyControl {
   @Override
   public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
     ensureCalledFromWithinActor("runDelayed(...)");
-    return scheduleTimer(delay, false, runnable);
+    return scheduleTimerSubscription(
+        runnable,
+        job -> new DelayedTimerSubscription(job, delay.toMillis(), TimeUnit.MILLISECONDS, false));
   }
 
   /**
@@ -260,31 +308,6 @@ public class ActorControl implements ConcurrencyControl {
     continuationJob.setSubscription(subscription);
 
     future.block(task);
-  }
-
-  /**
-   * Invoke the callback when the given futures are completed (successfully or exceptionally). This
-   * call does not block the actor.
-   *
-   * <p>The callback is executed while the actor is in the following actor lifecycle phases: {@link
-   * ActorLifecyclePhase#STARTED}
-   *
-   * @param futures the futures to wait on
-   * @param callback The throwable is <code>null</code> when all futures are completed successfully.
-   *     Otherwise, it holds the exception of the last completed future.
-   */
-  public <T> void runOnCompletion(
-      final Collection<ActorFuture<T>> futures, final Consumer<Throwable> callback) {
-    if (!futures.isEmpty()) {
-      final BiConsumer<T, Throwable> futureConsumer =
-          new AllCompletedFutureConsumer<>(futures.size(), callback);
-
-      for (final ActorFuture<T> future : futures) {
-        runOnCompletion(future, futureConsumer);
-      }
-    } else {
-      callback.accept(null);
-    }
   }
 
   /** can be called by the actor to yield the thread */

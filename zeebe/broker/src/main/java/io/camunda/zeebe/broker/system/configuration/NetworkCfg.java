@@ -2,27 +2,30 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.configuration;
 
+import io.atomix.utils.net.Address;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
-import java.util.Optional;
 import org.springframework.util.unit.DataSize;
 
 public final class NetworkCfg implements ConfigurationEntry {
 
-  public static final String DEFAULT_HOST = "0.0.0.0";
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final DataSize DEFAULT_MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4);
+  private static final String DEFAULT_HOST = "0.0.0.0";
+  private static final String DEFAULT_ADVERTISED_HOST =
+      Address.defaultAdvertisedHost().getHostAddress();
 
-  private String host = DEFAULT_HOST;
+  // leave host and advertised host to null, so we can distinguish if they are set explicitly or not
+  private String host = null;
+  private String advertisedHost = null;
   private int portOffset = 0;
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
-  private String advertisedHost;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -40,7 +43,7 @@ public final class NetworkCfg implements ConfigurationEntry {
   }
 
   public String getHost() {
-    return host;
+    return host == null ? DEFAULT_HOST : host;
   }
 
   public void setHost(final String host) {
@@ -48,7 +51,15 @@ public final class NetworkCfg implements ConfigurationEntry {
   }
 
   public String getAdvertisedHost() {
-    return Optional.ofNullable(advertisedHost).orElse(getHost());
+    if (advertisedHost != null) {
+      return advertisedHost;
+    }
+
+    if (host != null) {
+      return host;
+    }
+
+    return DEFAULT_ADVERTISED_HOST;
   }
 
   public void setAdvertisedHost(final String advertisedHost) {

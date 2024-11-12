@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.test.util.bpmn.random.blocks;
 
@@ -114,7 +114,7 @@ public final class ProcessBuilder {
                 // which will not trigger the event sub process then. We use here a static value to
                 // trigger the event sub process.
                 //
-                // See https://github.com/camunda/zeebe/issues/4099
+                // See https://github.com/camunda/camunda/issues/4099
                 b.name(eventSubProcessMessageName)
                     .zeebeCorrelationKeyExpression(
                         '\"' + EVENT_SUBPROCESS_CORRELATION_KEY_VALUE + '\"'))

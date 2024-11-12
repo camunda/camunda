@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.data.generation;
 
@@ -65,8 +56,8 @@ public class DataGenerator {
   @Qualifier("dataGeneratorThreadPoolExecutor")
   private ThreadPoolTaskExecutor dataGeneratorTaskExecutor;
 
-  private Set<String> bpmnProcessIds = new HashSet<>();
-  private Random random = new Random();
+  private final Set<String> bpmnProcessIds = new HashSet<>();
+  private final Random random = new Random();
 
   public void createData() {
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
@@ -88,13 +79,13 @@ public class DataGenerator {
             + " s");
   }
 
-  private void createIncidents(String jobType) {
+  private void createIncidents(final String jobType) {
     final int incidentCount = dataGeneratorProperties.getIncidentCount();
     ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", incidentCount);
     LOGGER.info("{} incidents created", dataGeneratorProperties.getIncidentCount());
   }
 
-  private void completeAllTasks(String jobType) {
+  private void completeAllTasks(final String jobType) {
     completeTasks(
         jobType,
         dataGeneratorProperties.getProcessInstanceCount()
@@ -105,7 +96,7 @@ public class DataGenerator {
             + dataGeneratorProperties.getCallActivityProcessInstanceCount());
   }
 
-  private void completeTasks(String jobType, int count) {
+  private void completeTasks(final String jobType, final int count) {
     ZeebeTestUtil.completeTask(
         zeebeClient, jobType, "data-generator", "{\"varOut\": \"value2\"}", count);
   }
@@ -121,13 +112,13 @@ public class DataGenerator {
     stopWaitingForResponses(responseChecker);
   }
 
-  private ResponseChecker startWaitingForResponses(BlockingQueue<Future> requestFutures) {
+  private ResponseChecker startWaitingForResponses(final BlockingQueue<Future> requestFutures) {
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
     return responseChecker;
   }
 
-  private void stopWaitingForResponses(ResponseChecker responseChecker) {
+  private void stopWaitingForResponses(final ResponseChecker responseChecker) {
     // wait till all instances started
     final int allProcessInstancesCount =
         dataGeneratorProperties.getProcessInstanceCount()
@@ -140,7 +131,7 @@ public class DataGenerator {
   }
 
   private List<InstancesStarter> sendStartProcessInstanceCommands(
-      BlockingQueue<Future> requestFutures) {
+      final BlockingQueue<Future> requestFutures) {
     // separately start one instance with multi-instance subprocess
     startBigProcessInstance();
 
@@ -196,11 +187,11 @@ public class DataGenerator {
     LOGGER.info("{} processes deployed", dataGeneratorProperties.getProcessCount() + 3);
   }
 
-  private String getBpmnProcessId(int i) {
+  private String getBpmnProcessId(final int i) {
     return "process" + i;
   }
 
-  private BpmnModelInstance createModel(String bpmnProcessId) {
+  private BpmnModelInstance createModel(final String bpmnProcessId) {
     return Bpmn.createExecutableProcess(bpmnProcessId)
         .startEvent("start")
         .subProcess()
@@ -247,7 +238,7 @@ public class DataGenerator {
 
     private int responseCount = 0;
 
-    public ResponseChecker(BlockingQueue<Future> futures) {
+    public ResponseChecker(final BlockingQueue<Future> futures) {
       this.futures = futures;
     }
 
@@ -256,10 +247,10 @@ public class DataGenerator {
       while (!shuttingDown) {
         try {
           futures.take().get();
-        } catch (ExecutionException e) {
+        } catch (final ExecutionException e) {
           LOGGER.warn("Request failed", e);
           // we still count this as a response
-        } catch (InterruptedException ex) {
+        } catch (final InterruptedException ex) {
           Thread.currentThread().interrupt();
         }
         responseCount++;
@@ -285,13 +276,13 @@ public class DataGenerator {
 
     private boolean shuttingDown = false;
 
-    private AtomicInteger countSimpleProcess;
-    private AtomicInteger countCallActivityProcess;
+    private final AtomicInteger countSimpleProcess;
+    private final AtomicInteger countCallActivityProcess;
 
     public InstancesStarter(
-        BlockingQueue<Future> futures,
-        AtomicInteger countSimpleProcess,
-        AtomicInteger countCallActivityProcess) {
+        final BlockingQueue<Future> futures,
+        final AtomicInteger countSimpleProcess,
+        final AtomicInteger countCallActivityProcess) {
       this.futures = futures;
       this.countSimpleProcess = countSimpleProcess;
       this.countCallActivityProcess = countCallActivityProcess;
@@ -316,7 +307,7 @@ public class DataGenerator {
           }
           futures.put(
               ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, getRandomBpmnProcessId(), vars));
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
           Thread.currentThread().interrupt();
         }
         localCount++;
@@ -332,7 +323,7 @@ public class DataGenerator {
           final String vars = "{\"var1\": \"value1\"}";
           futures.put(
               ZeebeTestUtil.startProcessInstanceAsync(zeebeClient, PARENT_PROCESS_ID, vars));
-        } catch (InterruptedException e) {
+        } catch (final InterruptedException e) {
           Thread.currentThread().interrupt();
         }
         localCount++;

@@ -237,4 +237,18 @@ public class PassiveRoleTest {
     // then
     assertThat(response.succeeded()).isTrue();
   }
+
+  @Test
+  public void shouldCompleteFutureWithErrorIfAppendFails() {
+    // given
+    final var entries = List.of(new PersistedRaftRecord(1, 1, 1, 1, new byte[1]));
+    final var request = new AppendRequest(2, "a", 0, 0, entries, 1);
+    when(log.append(any(PersistedRaftRecord.class))).thenThrow(new IllegalStateException("error"));
+
+    // when
+    final var result =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).toCompletableFuture().join();
+    // then
+    assertThat(result.succeeded()).isFalse();
+  }
 }

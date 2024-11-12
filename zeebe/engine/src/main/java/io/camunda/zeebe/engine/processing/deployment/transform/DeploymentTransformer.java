@@ -2,17 +2,19 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.Map.entry;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.model.validation.BpmnDeploymentBindingValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -23,6 +25,8 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -48,7 +52,9 @@ public final class DeploymentTransformer {
       final ProcessingState processingState,
       final ExpressionProcessor expressionProcessor,
       final KeyGenerator keyGenerator,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final EngineConfiguration config,
+      final InstantSource clock) {
 
     try {
       // We get an alert by LGTM, since MD5 is a weak cryptographic hash function,
@@ -68,7 +74,9 @@ public final class DeploymentTransformer {
             this::getChecksum,
             processingState.getProcessState(),
             expressionProcessor,
-            featureFlags.enableStraightThroughProcessingLoopDetector());
+            featureFlags.enableStraightThroughProcessingLoopDetector(),
+            config,
+            clock);
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
             keyGenerator, stateWriter, this::getChecksum, processingState.getDecisionState());
@@ -85,8 +93,8 @@ public final class DeploymentTransformer {
             entry(".form", formResourceTransformer));
   }
 
-  private DirectBuffer getChecksum(final DeploymentResource resource) {
-    return wrapArray(digestGenerator.digest(resource.getResource()));
+  public DirectBuffer getChecksum(final byte[] resource) {
+    return wrapArray(digestGenerator.digest(resource));
   }
 
   public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
@@ -101,9 +109,44 @@ public final class DeploymentTransformer {
       return Either.left(new Failure(rejectionReason));
     }
 
+    // step 1: only validate the resources and add their metadata to the deployment record (no event
+    // records are being written yet)
+    final var bpmnResources = new ArrayList<BpmnResource>();
     while (resourceIterator.hasNext()) {
       final DeploymentResource deploymentResource = resourceIterator.next();
-      success &= transformResource(deploymentEvent, errors, deploymentResource);
+      if (isBpmnResource(deploymentResource)) {
+        final var context = new BpmnElementsWithDeploymentBinding();
+        bpmnResources.add(new BpmnResource(deploymentResource, context));
+        success &= createMetadata(deploymentResource, deploymentEvent, context, errors);
+      } else {
+        success &=
+            createMetadata(
+                deploymentResource, deploymentEvent, new DeploymentResourceContext() {}, errors);
+      }
+    }
+
+    // intermediate step (for BPMN resources only): validate process elements that use deployment
+    // binding (all linked resources must be part of the current deployment)
+    if (success && !bpmnResources.isEmpty()) {
+      final var validator = new BpmnDeploymentBindingValidator(deploymentEvent);
+      for (final var bpmnResource : bpmnResources) {
+        final var validationError = validator.validate(bpmnResource.elements);
+        if (validationError != null) {
+          success = false;
+          errors
+              .append("\n'")
+              .append(bpmnResource.resource.getResourceName())
+              .append("':\n")
+              .append(validationError);
+        }
+      }
+    }
+
+    // step 2: update metadata (optionally) and write actual event records
+    if (success) {
+      for (final DeploymentResource deploymentResource : deploymentEvent.resources()) {
+        success &= writeRecords(deploymentResource, deploymentEvent, errors);
+      }
     }
 
     if (!success) {
@@ -118,16 +161,21 @@ public final class DeploymentTransformer {
     return Either.right(null);
   }
 
-  private boolean transformResource(
-      final DeploymentRecord deploymentEvent,
-      final StringBuilder errors,
-      final DeploymentResource deploymentResource) {
-    final String resourceName = deploymentResource.getResourceName();
+  private boolean isBpmnResource(final DeploymentResource resource) {
+    return resource.getResourceName().endsWith(".bpmn")
+        || resource.getResourceName().endsWith(".xml");
+  }
 
+  private boolean createMetadata(
+      final DeploymentResource deploymentResource,
+      final DeploymentRecord deploymentEvent,
+      final DeploymentResourceContext context,
+      final StringBuilder errors) {
+    final var resourceName = deploymentResource.getResourceName();
     final var transformer = getResourceTransformer(resourceName);
 
     try {
-      final var result = transformer.transformResource(deploymentResource, deploymentEvent);
+      final var result = transformer.createMetadata(deploymentResource, deploymentEvent, context);
 
       if (result.isRight()) {
         return true;
@@ -138,8 +186,22 @@ public final class DeploymentTransformer {
       }
 
     } catch (final RuntimeException e) {
-      LOG.error("Unexpected error while processing resource '{}'", resourceName, e);
-      errors.append("\n'").append(resourceName).append("': ").append(e.getMessage());
+      handleUnexpectedError(resourceName, e, errors);
+    }
+    return false;
+  }
+
+  private boolean writeRecords(
+      final DeploymentResource deploymentResource,
+      final DeploymentRecord deploymentEvent,
+      final StringBuilder errors) {
+    final var resourceName = deploymentResource.getResourceName();
+    final var transformer = getResourceTransformer(resourceName);
+    try {
+      transformer.writeRecords(deploymentResource, deploymentEvent);
+      return true;
+    } catch (final RuntimeException e) {
+      handleUnexpectedError(resourceName, e, errors);
     }
     return false;
   }
@@ -160,15 +222,29 @@ public final class DeploymentTransformer {
         .orElse(UNKNOWN_RESOURCE);
   }
 
+  private static void handleUnexpectedError(
+      final String resourceName, final RuntimeException exception, final StringBuilder errors) {
+    LOG.error("Unexpected error while processing resource '{}'", resourceName, exception);
+    errors.append("\n'").append(resourceName).append("': ").append(exception.getMessage());
+  }
+
   private static final class UnknownResourceTransformer implements DeploymentResourceTransformer {
 
     @Override
-    public Either<Failure, Void> transformResource(
-        final DeploymentResource resource, final DeploymentRecord deployment) {
-
+    public Either<Failure, Void> createMetadata(
+        final DeploymentResource resource,
+        final DeploymentRecord deployment,
+        final DeploymentResourceContext context) {
       final var failureMessage =
           String.format("%n'%s': unknown resource type", resource.getResourceName());
       return Either.left(new Failure(failureMessage));
     }
+
+    @Override
+    public void writeRecords(
+        final DeploymentResource resource, final DeploymentRecord deployment) {}
   }
+
+  private record BpmnResource(
+      DeploymentResource resource, BpmnElementsWithDeploymentBinding elements) {}
 }

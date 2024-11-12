@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
 import org.agrona.DirectBuffer;
@@ -30,20 +31,17 @@ import org.agrona.DirectBuffer;
 public final class FormResourceTransformer implements DeploymentResourceTransformer {
 
   private static final int INITIAL_VERSION = 1;
-
-  private static final Either<Failure, Object> NO_DUPLICATES = Either.right(null);
-
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
-  private final Function<DeploymentResource, DirectBuffer> checksumGenerator;
+  private final Function<byte[], DirectBuffer> checksumGenerator;
   private final FormState formState;
 
   public FormResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
-      final Function<DeploymentResource, DirectBuffer> checksumGenerator,
+      final Function<byte[], DirectBuffer> checksumGenerator,
       final FormState formState) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
@@ -52,33 +50,57 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   }
 
   @Override
-  public Either<Failure, Void> transformResource(
-      final DeploymentResource resource, final DeploymentRecord deployment) {
-
-    return parseFormId(resource)
+  public Either<Failure, Void> createMetadata(
+      final DeploymentResource resource,
+      final DeploymentRecord deployment,
+      final DeploymentResourceContext context) {
+    return parseForm(resource)
         .flatMap(
-            formId ->
-                checkForDuplicateFormId(formId, resource, deployment)
+            form ->
+                checkForDuplicateFormId(form.id, resource, deployment)
                     .map(
                         noDuplicates -> {
                           final FormMetadataRecord formRecord = deployment.formMetadata().add();
-                          appendMetadataToFormRecord(
-                              formRecord, formId, resource, deployment.getTenantId());
-                          writeFormRecord(formRecord, resource);
-
+                          appendMetadataToFormRecord(formRecord, form, resource, deployment);
                           return null;
                         }));
   }
 
-  private Either<Failure, String> parseFormId(final DeploymentResource resource) {
-    try {
-      final String formId = JSON_MAPPER.readValue(resource.getResource(), FormIdPOJO.class).getId();
+  @Override
+  public void writeRecords(final DeploymentResource resource, final DeploymentRecord deployment) {
+    if (deployment.hasDuplicatesOnly()) {
+      return;
+    }
+    final var checksum = checksumGenerator.apply(resource.getResource());
+    deployment.formMetadata().stream()
+        .filter(metadata -> checksum.equals(metadata.getChecksumBuffer()))
+        .findFirst()
+        .ifPresent(
+            metadata -> {
+              var key = metadata.getFormKey();
+              if (metadata.isDuplicate()) {
+                // create new version as the deployment contains at least one other non-duplicate
+                // resource and all resources in a deployment should be versioned together
+                key = keyGenerator.nextKey();
+                metadata
+                    .setFormKey(key)
+                    .setVersion(
+                        formState.getNextFormVersion(metadata.getFormId(), metadata.getTenantId()))
+                    .setDuplicate(false)
+                    .setDeploymentKey(deployment.getDeploymentKey());
+              }
+              writeFormRecord(metadata, resource);
+            });
+  }
 
-      return validateFormId(formId);
+  private Either<Failure, Form> parseForm(final DeploymentResource resource) {
+    try {
+      final var form = JSON_MAPPER.readValue(resource.getResource(), Form.class);
+      return validateForm(form);
     } catch (final JsonProcessingException e) {
       final var failureMessage =
           String.format(
-              "Failed to parse formId from form JSON. '%s': %s",
+              "Failed to parse form JSON. '%s': %s",
               resource.getResourceName(), e.getCause().getMessage());
       return Either.left(new Failure(failureMessage));
     } catch (final IOException e) {
@@ -107,16 +129,18 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
 
   private void appendMetadataToFormRecord(
       final FormMetadataRecord formRecord,
-      final String formId,
+      final Form form,
       final DeploymentResource resource,
-      final String tenantId) {
+      final DeploymentRecord deployment) {
     final LongSupplier newFormKey = keyGenerator::nextKey;
-    final DirectBuffer checksum = checksumGenerator.apply(resource);
+    final DirectBuffer checksum = checksumGenerator.apply(resource.getResource());
+    final String tenantId = deployment.getTenantId();
 
-    formRecord.setFormId(formId);
+    formRecord.setFormId(form.id);
     formRecord.setChecksum(checksum);
     formRecord.setResourceName(resource.getResourceName());
     formRecord.setTenantId(tenantId);
+    Optional.ofNullable(form.versionTag).ifPresent(formRecord::setVersionTag);
 
     formState
         .findLatestFormById(wrapString(formRecord.getFormId()), tenantId)
@@ -131,49 +155,40 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
                 formRecord
                     .setFormKey(latestForm.getFormKey())
                     .setVersion(latestVersion)
-                    .markAsDuplicate();
+                    .setDeploymentKey(latestForm.getDeploymentKey())
+                    .setDuplicate(true);
               } else {
                 formRecord
                     .setFormKey(newFormKey.getAsLong())
-                    .setVersion(formState.getNextFormVersion(formId, tenantId));
+                    .setVersion(formState.getNextFormVersion(form.id, tenantId))
+                    .setDeploymentKey(deployment.getDeploymentKey());
               }
             },
-            () -> formRecord.setFormKey(newFormKey.getAsLong()).setVersion(INITIAL_VERSION));
+            () ->
+                formRecord
+                    .setFormKey(newFormKey.getAsLong())
+                    .setVersion(INITIAL_VERSION)
+                    .setDeploymentKey(deployment.getDeploymentKey()));
   }
 
   private void writeFormRecord(
       final FormMetadataRecord formRecord, final DeploymentResource resource) {
-    if (!formRecord.isDuplicate()) {
-      stateWriter.appendFollowUpEvent(
-          formRecord.getFormKey(),
-          FormIntent.CREATED,
-          new FormRecord().wrap(formRecord, resource.getResource()));
-    }
+    stateWriter.appendFollowUpEvent(
+        formRecord.getFormKey(),
+        FormIntent.CREATED,
+        new FormRecord().wrap(formRecord, resource.getResource()));
   }
 
-  private Either<Failure, String> validateFormId(final String formId) {
-    if (formId == null) {
+  private Either<Failure, Form> validateForm(final Form form) {
+    if (form.id == null) {
       return Either.left(new Failure("Expected the form id to be present, but none given"));
     }
-    if (formId.isBlank()) {
+    if (form.id.isBlank()) {
       return Either.left(new Failure("Expected the form id to be filled, but it is blank"));
     }
-
-    return Either.right(formId);
+    return Either.right(form);
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
-  private static class FormIdPOJO {
-    private String id;
-
-    public FormIdPOJO() {}
-
-    public String getId() {
-      return id;
-    }
-
-    public void setId(final String id) {
-      this.id = id;
-    }
-  }
+  private record Form(String id, String versionTag) {}
 }

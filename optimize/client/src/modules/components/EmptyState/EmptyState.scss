@@ -1,0 +1,37 @@
+@use '@carbon/styles/scss/spacing';
+
+.EmptyState {
+  padding: 2.5rem;
+  display: flex;
+  background-color: var(--cds-layer);
+  align-items: flex-start;
+
+  > svg {
+    margin-right: spacing.$spacing-06;
+    width: 5rem;
+    height: 5rem;
+    color: #ff8201;
+  }
+
+  .content {
+    margin-block: 0.5rem;
+
+    .title {
+      font-weight: 500;
+      font-size: 1.125rem;
+      color: var(--cds-text-primary);
+    }
+
+    .description {
+      font-weight: 400;
+      font-size: 0.875rem;
+      color: var(--cds-text-primary);
+      line-height: 1.25rem;
+      letter-spacing: 0.01rem;
+    }
+
+    .actions {
+      display: flex;
+    }
+  }
+}

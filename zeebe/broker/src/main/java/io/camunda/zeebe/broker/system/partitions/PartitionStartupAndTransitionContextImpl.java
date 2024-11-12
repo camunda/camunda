@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions;
 
@@ -28,9 +28,11 @@ import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.PartitionProcessingState;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -40,16 +42,16 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
-import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -63,14 +65,14 @@ public class PartitionStartupAndTransitionContextImpl
   private final int nodeId;
   private final List<PartitionListener> partitionListeners;
   private final List<PartitionRaftListener> partitionRaftListeners;
+  private final int partitionCount;
   private final ClusterCommunicationService clusterCommunicationService;
   private final PartitionMessagingService messagingService;
   private final ActorSchedulingService actorSchedulingService;
   private final BrokerCfg brokerCfg;
   private final RaftPartition raftPartition;
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
-  private final Supplier<CommandResponseWriter> commandResponseWriterSupplier;
-  private final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier;
+  private final CommandApiService commandApiService;
   private final PersistedSnapshotStore persistedSnapshotStore;
   private final Integer partitionId;
   private final int maxFragmentSize;
@@ -78,6 +80,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final PartitionProcessingState partitionProcessingState;
   private final DiskSpaceUsageMonitor diskSpaceUsageMonitor;
   private final StateController stateController;
+  private DynamicPartitionConfig dynamicPartitionConfig;
   private StreamProcessor streamProcessor;
   private LogStream logStream;
   private AsyncSnapshotDirector snapshotDirector;
@@ -101,9 +104,13 @@ public class PartitionStartupAndTransitionContextImpl
   private BackupStore backupStore;
   private AdminApiRequestHandler adminApiService;
   private PartitionAdminAccess adminAccess;
+  private final MeterRegistry brokerMeterRegistry;
+  private MeterRegistry partitionMeterRegistry;
+  private ControllableStreamClock clock;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
+      final int partitionCount,
       final ClusterCommunicationService clusterCommunicationService,
       final RaftPartition raftPartition,
       final List<PartitionListener> partitionListeners,
@@ -111,8 +118,7 @@ public class PartitionStartupAndTransitionContextImpl
       final PartitionMessagingService partitionCommunicationService,
       final ActorSchedulingService actorSchedulingService,
       final BrokerCfg brokerCfg,
-      final Supplier<CommandResponseWriter> commandResponseWriterSupplier,
-      final Supplier<Consumer<TypedRecord<?>>> onProcessedListenerSupplier,
+      final CommandApiService commandApiService,
       final PersistedSnapshotStore persistedSnapshotStore,
       final StateController stateController,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory,
@@ -120,16 +126,17 @@ public class PartitionStartupAndTransitionContextImpl
       final PartitionProcessingState partitionProcessingState,
       final DiskSpaceUsageMonitor diskSpaceUsageMonitor,
       final AtomixServerTransport gatewayBrokerTransport,
-      final TopologyManager topologyManager) {
+      final TopologyManager topologyManager,
+      final MeterRegistry brokerMeterRegistry) {
     this.nodeId = nodeId;
+    this.partitionCount = partitionCount;
     this.clusterCommunicationService = clusterCommunicationService;
     this.raftPartition = raftPartition;
     messagingService = partitionCommunicationService;
     this.brokerCfg = brokerCfg;
     this.stateController = stateController;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
-    this.onProcessedListenerSupplier = onProcessedListenerSupplier;
-    this.commandResponseWriterSupplier = commandResponseWriterSupplier;
+    this.commandApiService = commandApiService;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
     this.partitionRaftListeners = Collections.unmodifiableList(partitionRaftListeners);
@@ -141,6 +148,8 @@ public class PartitionStartupAndTransitionContextImpl
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
     this.gatewayBrokerTransport = gatewayBrokerTransport;
     this.topologyManager = topologyManager;
+    this.brokerMeterRegistry = new CompositeMeterRegistry().add(brokerMeterRegistry);
+    this.brokerMeterRegistry.config().commonTags(Tags.of("partition", String.valueOf(partitionId)));
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -262,11 +271,6 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public boolean shouldExport() {
-    return !partitionProcessingState.isExportingPaused();
-  }
-
-  @Override
   public ExporterPhase getExporterPhase() {
     return partitionProcessingState.getExporterPhase();
   }
@@ -357,6 +361,21 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
+  public MeterRegistry getBrokerMeterRegistry() {
+    return brokerMeterRegistry;
+  }
+
+  @Override
+  public MeterRegistry getPartitionMeterRegistry() {
+    return partitionMeterRegistry;
+  }
+
+  @Override
+  public void setPartitionMeterRegistry(final MeterRegistry partitionMeterRegistry) {
+    this.partitionMeterRegistry = partitionMeterRegistry;
+  }
+
+  @Override
   public boolean shouldProcess() {
     return partitionProcessingState.shouldProcess();
   }
@@ -389,6 +408,31 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public void setAdminAccess(final PartitionAdminAccess adminAccess) {
     this.adminAccess = adminAccess;
+  }
+
+  @Override
+  public DynamicPartitionConfig getDynamicPartitionConfig() {
+    return dynamicPartitionConfig;
+  }
+
+  @Override
+  public void setDynamicPartitionConfig(final DynamicPartitionConfig partitionConfig) {
+    dynamicPartitionConfig = partitionConfig;
+  }
+
+  @Override
+  public ControllableStreamClock getStreamClock() {
+    return clock;
+  }
+
+  @Override
+  public void setStreamClock(final ControllableStreamClock clock) {
+    this.clock = clock;
+  }
+
+  @Override
+  public int getPartitionCount() {
+    return partitionCount;
   }
 
   @Override
@@ -487,13 +531,8 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   @Override
-  public CommandResponseWriter getCommandResponseWriter() {
-    return commandResponseWriterSupplier.get();
-  }
-
-  @Override
-  public Consumer<TypedRecord<?>> getOnProcessedListener() {
-    return onProcessedListenerSupplier.get();
+  public CommandApiService getCommandApiService() {
+    return commandApiService;
   }
 
   @Override

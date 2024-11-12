@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.impl;
 
@@ -20,9 +20,8 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.scheduler.Actor;
-import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
@@ -32,18 +31,24 @@ import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.TestScheduledCommandCache.TestCommandCache;
+import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordBatch;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -54,16 +59,21 @@ class ProcessingScheduleServiceTest {
 
   private final TestCommandCache commandCache = new TestCommandCache();
   private LifecycleSupplier lifecycleSupplier;
-  private WriterAsyncSupplier writerAsyncSupplier;
+  private final TestWriter testWriter = new TestWriter();
   private TestScheduleServiceActorDecorator scheduleService;
 
   @BeforeEach
   void before() {
     lifecycleSupplier = new LifecycleSupplier();
-    writerAsyncSupplier = new WriterAsyncSupplier();
     final var processingScheduleService =
         new ProcessingScheduleServiceImpl(
-            lifecycleSupplier, lifecycleSupplier, writerAsyncSupplier, commandCache);
+            lifecycleSupplier,
+            lifecycleSupplier,
+            () -> testWriter,
+            commandCache,
+            actorScheduler.getClock(),
+            Duration.ofSeconds(1),
+            ScheduledTaskMetrics.noop());
 
     scheduleService = new TestScheduleServiceActorDecorator(processingScheduleService);
     actorScheduler.submitActor(scheduleService);
@@ -155,8 +165,11 @@ class ProcessingScheduleServiceTest {
         new ProcessingScheduleServiceImpl(
             lifecycleSupplier,
             lifecycleSupplier,
-            writerAsyncSupplier,
-            new NoopScheduledCommandCache());
+            () -> testWriter,
+            new NoopScheduledCommandCache(),
+            InstantSource.system(),
+            Duration.ofSeconds(1),
+            ScheduledTaskMetrics.noop());
     final var mockedTask = spy(new DummyTask());
 
     // when
@@ -170,15 +183,18 @@ class ProcessingScheduleServiceTest {
   @Test
   void shouldFailActorIfWriterCantBeRetrieved() {
     // given
-    writerAsyncSupplier.writerFutureRef.set(
-        CompletableActorFuture.completedExceptionally(new RuntimeException("expected")));
     final var notOpenScheduleService =
         new TestScheduleServiceActorDecorator(
             new ProcessingScheduleServiceImpl(
                 lifecycleSupplier,
                 lifecycleSupplier,
-                writerAsyncSupplier,
-                new NoopScheduledCommandCache()));
+                () -> {
+                  throw new RuntimeException("expected");
+                },
+                new NoopScheduledCommandCache(),
+                InstantSource.system(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.noop()));
 
     // when
     final var actorFuture = actorScheduler.submitActor(notOpenScheduleService);
@@ -203,13 +219,13 @@ class ProcessingScheduleServiceTest {
 
     // then
 
-    assertThat(writerAsyncSupplier.writer.entries)
+    assertThat(testWriter.entries)
         .describedAs("Record is written to the log stream")
         .map(LogAppendEntry::key)
         .containsExactly(1L);
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/10240")
+  @RegressionTest("https://github.com/camunda/camunda/issues/10240")
   void shouldPreserveOrderingOfWritesEvenWithRetries() {
     // given - in order to make sure we would interleave tasks without the fix for #10240, we need
     // to make sure we retry at least twice, such that the second task can be executed in between
@@ -218,7 +234,7 @@ class ProcessingScheduleServiceTest {
     // non-deterministic
     // order
     final var counter = new AtomicInteger(0);
-    writerAsyncSupplier.writer.acceptWrites.set(
+    testWriter.acceptWrites.set(
         () -> {
           final var invocationCount = counter.incrementAndGet();
           // wait a sufficiently high enough invocation count to ensure the second timer is
@@ -253,7 +269,7 @@ class ProcessingScheduleServiceTest {
     actorScheduler.workUntilDone();
 
     // then
-    assertThat(writerAsyncSupplier.writer.entries)
+    assertThat(testWriter.entries)
         .describedAs("Both timers have executed")
         .hasSize(2)
         .map(LogAppendEntry::key)
@@ -313,9 +329,7 @@ class ProcessingScheduleServiceTest {
     assertThat(commandCache.stagedCache().contains(ACTIVATE_ELEMENT, 1)).isTrue();
     assertThat(commandCache.stagedCache().persisted()).isTrue();
     assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isTrue();
-    assertThat(writerAsyncSupplier.writer.entries)
-        .extracting(LogAppendEntry::key)
-        .containsExactly(1L);
+    assertThat(testWriter.entries).extracting(LogAppendEntry::key).containsExactly(1L);
   }
 
   @Test
@@ -333,13 +347,13 @@ class ProcessingScheduleServiceTest {
     actorScheduler.workUntilDone();
 
     // then
-    assertThat(writerAsyncSupplier.writer.entries).isEmpty();
+    assertThat(testWriter.entries).isEmpty();
   }
 
   @Test
   void shouldNotCacheWrittenCommandsIfWriteFails() {
     // given
-    writerAsyncSupplier.writer.acceptWrites.set(
+    testWriter.acceptWrites.set(
         () -> {
           throw new RuntimeException("failure");
         });
@@ -376,6 +390,88 @@ class ProcessingScheduleServiceTest {
 
     // then
     verify(mockedTask, never()).execute(any());
+  }
+
+  @Test
+  void shouldInitializeMetrics() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var scheduleService =
+        new TestScheduleServiceActorDecorator(
+            new ProcessingScheduleServiceImpl(
+                lifecycleSupplier,
+                lifecycleSupplier,
+                () -> testWriter,
+                commandCache,
+                actorScheduler.getClock(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.of(registry)));
+
+    // when
+    actorScheduler.submitActor(scheduleService);
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(registry.getMeters()).isNotEmpty();
+    assertThat(registry.get("zeebe.processing.scheduling.tasks").gauge().value()).isEqualTo(0);
+    assertThat(registry.get("zeebe.processing.scheduling.delay").timer().count()).isEqualTo(0);
+    assertThat(registry.get("zeebe.processing.scheduling.duration").timer().count()).isEqualTo(0);
+  }
+
+  @Test
+  void shouldUpdateMetricsOnScheduling() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var scheduleService =
+        new TestScheduleServiceActorDecorator(
+            new ProcessingScheduleServiceImpl(
+                lifecycleSupplier,
+                lifecycleSupplier,
+                () -> testWriter,
+                commandCache,
+                actorScheduler.getClock(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.of(registry)));
+    actorScheduler.submitActor(scheduleService);
+    actorScheduler.workUntilDone();
+
+    // when -- scheduling a task
+    scheduleService.runDelayed(Duration.ofMinutes(1), new DummyTask());
+    actorScheduler.workUntilDone();
+
+    // then -- count is increased
+    assertThat(registry.get("zeebe.processing.scheduling.tasks").gauge().value()).isEqualTo(1);
+  }
+
+  @Test
+  void shouldUpdateMetricsOnExecution() {
+    // given
+    final var registry = new SimpleMeterRegistry();
+    final var scheduleService =
+        new TestScheduleServiceActorDecorator(
+            new ProcessingScheduleServiceImpl(
+                lifecycleSupplier,
+                lifecycleSupplier,
+                () -> testWriter,
+                commandCache,
+                actorScheduler.getClock(),
+                Duration.ofSeconds(1),
+                ScheduledTaskMetrics.of(registry)));
+    actorScheduler.submitActor(scheduleService);
+    actorScheduler.workUntilDone();
+
+    // when -- scheduling and executing a task
+    scheduleService.runDelayed(Duration.ofMinutes(1), new DummyTask());
+    actorScheduler.workUntilDone();
+    actorScheduler.updateClock(Duration.ofMinutes(2));
+    actorScheduler.workUntilDone();
+
+    // then
+    assertThat(registry.get("zeebe.processing.scheduling.tasks").gauge().value()).isEqualTo(0);
+    assertThat(registry.get("zeebe.processing.scheduling.delay").timer().count()).isEqualTo(1);
+    assertThat(registry.get("zeebe.processing.scheduling.delay").timer().max(TimeUnit.MINUTES))
+        .isCloseTo(1, Percentage.withPercentage(20));
+    assertThat(registry.get("zeebe.processing.scheduling.duration").timer().count()).isEqualTo(1);
   }
 
   /**
@@ -441,19 +537,40 @@ class ProcessingScheduleServiceTest {
     }
 
     @Override
-    public void runAtFixedRate(final Duration delay, final Task task) {
-      actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
+    public ScheduledTask runAt(final long timestamp, final Task task) {
+      final var futureScheduledTask =
+          actor.call(() -> processingScheduleService.runAt(timestamp, task));
+      return () ->
+          actor.run(
+              () ->
+                  actor.runOnCompletion(
+                      futureScheduledTask,
+                      (scheduledTask, throwable) -> {
+                        if (scheduledTask != null) {
+                          scheduledTask.cancel();
+                        }
+                      }));
     }
-  }
-
-  private static final class WriterAsyncSupplier implements Supplier<ActorFuture<LogStreamWriter>> {
-    private final TestWriter writer = new TestWriter();
-    AtomicReference<ActorFuture<LogStreamWriter>> writerFutureRef =
-        new AtomicReference<>(CompletableActorFuture.completed(writer));
 
     @Override
-    public ActorFuture<LogStreamWriter> get() {
-      return writerFutureRef.get();
+    public ScheduledTask runAt(final long timestamp, final Runnable task) {
+      final var futureScheduledTask =
+          actor.call(() -> processingScheduleService.runAt(timestamp, task));
+      return () ->
+          actor.run(
+              () ->
+                  actor.runOnCompletion(
+                      futureScheduledTask,
+                      (scheduledTask, throwable) -> {
+                        if (scheduledTask != null) {
+                          scheduledTask.cancel();
+                        }
+                      }));
+    }
+
+    @Override
+    public void runAtFixedRate(final Duration delay, final Task task) {
+      actor.submit(() -> processingScheduleService.runAtFixedRate(delay, task));
     }
   }
 
@@ -491,13 +608,158 @@ class ProcessingScheduleServiceTest {
 
     @Override
     public Either<WriteFailure, Long> tryWrite(
-        final List<LogAppendEntry> appendEntries, final long sourcePosition) {
+        final WriteContext context,
+        final List<LogAppendEntry> appendEntries,
+        final long sourcePosition) {
       if (!acceptWrites.get().getAsBoolean()) {
-        return Either.left(WriteFailure.FULL);
+        return Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED);
       }
 
       entries.addAll(appendEntries);
       return Either.right((long) entries.size());
+    }
+  }
+
+  @Nested
+  class RunAtTests {
+
+    @BeforeEach
+    void before() {
+      actorScheduler.setClockTime(100);
+    }
+
+    @Test
+    void shouldNotExecuteScheduledTaskBeforeTimestamp() {
+      // given
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(90, mockedTask);
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask).execute(any());
+    }
+
+    @Test
+    void shouldExecuteScheduledTaskAtTimestamp() {
+      // given
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(100, mockedTask);
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask).execute(any());
+    }
+
+    @Test
+    void shouldExecuteScheduledTaskInOrderOfTimestamp() {
+      // given
+      final var mockedTask = spy(new DummyTask());
+      final var mockedTask2 = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(100, mockedTask);
+      scheduleService.runAt(90, mockedTask2);
+      actorScheduler.workUntilDone();
+
+      // then
+      final var inOrder = inOrder(mockedTask2, mockedTask);
+      inOrder.verify(mockedTask2).execute(any());
+      inOrder.verify(mockedTask).execute(any());
+      inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void shouldNotExecuteScheduledTaskIfNotInProcessingPhase() {
+      // given
+      lifecycleSupplier.currentPhase = Phase.INITIAL;
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(100, mockedTask);
+      // The task will be resubmitted infinitely. So workUntilDone will never return.
+      actorScheduler.resume();
+
+      // then
+      verify(mockedTask, never()).execute(any());
+    }
+
+    @Test
+    void shouldNotExecuteScheduledTaskIfAborted() {
+      // given
+      lifecycleSupplier.isAborted = true;
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(100, mockedTask);
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, never()).execute(any());
+    }
+
+    @Test
+    void shouldExecuteScheduledTaskInProcessing() {
+      // given
+      lifecycleSupplier.currentPhase = Phase.PAUSED;
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      scheduleService.runAt(100, mockedTask);
+      // The task will be resubmitted infinitely. So workUntilDone will never return.
+      actorScheduler.resume();
+      verify(mockedTask, never()).execute(any());
+      lifecycleSupplier.currentPhase = Phase.PROCESSING;
+
+      // then
+      verify(mockedTask, timeout(2_000)).execute(any());
+    }
+
+    @Test
+    void shouldNotExecuteTasksWhenScheduledOnClosedActor() {
+      // given
+      lifecycleSupplier.currentPhase = Phase.PAUSED;
+      final var notOpenScheduleService =
+          new ProcessingScheduleServiceImpl(
+              lifecycleSupplier,
+              lifecycleSupplier,
+              () -> testWriter,
+              new NoopScheduledCommandCache(),
+              InstantSource.system(),
+              Duration.ofSeconds(1),
+              ScheduledTaskMetrics.noop());
+      final var mockedTask = spy(new DummyTask());
+
+      // when
+      notOpenScheduleService.runAt(100, mockedTask);
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(mockedTask, never()).execute(any());
+    }
+
+    @Test
+    void shouldWriteRecordAfterTaskWasExecuted() {
+      // given
+
+      // when
+      scheduleService.runAt(
+          100,
+          (builder) -> {
+            builder.appendCommandRecord(1, ACTIVATE_ELEMENT, Records.processInstance(1));
+            return builder.build();
+          });
+      actorScheduler.workUntilDone();
+
+      // then
+
+      assertThat(testWriter.entries)
+          .describedAs("Record is written to the log stream")
+          .map(LogAppendEntry::key)
+          .containsExactly(1L);
     }
   }
 }

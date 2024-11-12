@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.client.api;
 
@@ -38,6 +38,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -337,6 +338,66 @@ public final class BrokerClientTest {
     // then
     Awaitility.await("until notification received")
         .untilAtomic(messageRef, Matchers.equalTo("bar"));
+  }
+
+  @Test
+  public void shouldThrowCorrectErrorForInactivePartitionAndNoLeaderRequest() {
+    // given
+    final var partitionId = 1;
+    final var request = new TestCommand(1, topologyManager -> partitionId);
+
+    // when
+    broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
+    topologyManager.event(new ClusterMembershipEvent(Type.METADATA_CHANGED, broker.member()));
+    Awaitility.await("Partition is inactive.")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getInactiveNodesForPartition(1))
+                    .isNotEmpty());
+
+    // then
+    assertThatCode(() -> client.sendRequest(request).join())
+        .isInstanceOf(CompletionException.class)
+        .hasMessageContaining("The partition " + partitionId + " is currently INACTIVE");
+  }
+
+  @Test
+  public void shouldSendRequestToLeaderIfSomePartitionReplicasInactive() {
+    // given
+    final var partitionId = 1;
+    final var leaderBrokerId = 2;
+    final var request = new TestCommand(1, topologyManager -> partitionId);
+
+    // when
+    broker.updateInfo(info -> info.setInactiveForPartition(partitionId));
+    topologyManager.event(new ClusterMembershipEvent(Type.METADATA_CHANGED, broker.member()));
+
+    Awaitility.await("Partition " + partitionId + " is inactive.")
+        .untilAsserted(
+            () ->
+                assertThat(topologyManager.getTopology().getInactiveNodesForPartition(1))
+                    .isNotEmpty());
+
+    final BrokerResponse<?> response;
+    try (final var otherBroker =
+        new StubBroker(leaderBrokerId)
+            .start()
+            .updateInfo(info -> info.setLeaderForPartition(partitionId, 1))) {
+      registerSuccessResponse(otherBroker);
+
+      topologyManager.event(
+          new ClusterMembershipEvent(Type.METADATA_CHANGED, otherBroker.member()));
+      Awaitility.await("Broker " + leaderBrokerId + " is leader.")
+          .untilAsserted(
+              () ->
+                  assertThat(topologyManager.getTopology().getLeaderForPartition(1))
+                      .isEqualTo(leaderBrokerId));
+
+      response = client.sendRequest(request).join();
+    }
+
+    // then
+    assertThat(response.isResponse()).isTrue();
   }
 
   private void registerSuccessResponse(final StubBroker broker) {

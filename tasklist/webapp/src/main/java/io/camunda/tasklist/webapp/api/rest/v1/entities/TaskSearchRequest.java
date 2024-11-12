@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
@@ -21,6 +12,7 @@ import static io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO.DEFAULT_PAG
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.DateFilter;
+import io.camunda.tasklist.queries.RangeValueFilter;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -145,11 +137,14 @@ public class TaskSearchRequest {
 
   private TaskImplementation implementation;
 
+  @Schema(description = "The conditions applied on priority field.")
+  private RangeValueFilter priority;
+
   public TaskState getState() {
     return state;
   }
 
-  public TaskSearchRequest setState(TaskState state) {
+  public TaskSearchRequest setState(final TaskState state) {
     this.state = state;
     return this;
   }
@@ -158,7 +153,7 @@ public class TaskSearchRequest {
     return assigned;
   }
 
-  public TaskSearchRequest setAssigned(Boolean assigned) {
+  public TaskSearchRequest setAssigned(final Boolean assigned) {
     this.assigned = assigned;
     return this;
   }
@@ -167,7 +162,7 @@ public class TaskSearchRequest {
     return assignee;
   }
 
-  public TaskSearchRequest setAssignee(String assignee) {
+  public TaskSearchRequest setAssignee(final String assignee) {
     this.assignee = assignee;
     return this;
   }
@@ -176,7 +171,7 @@ public class TaskSearchRequest {
     return taskDefinitionId;
   }
 
-  public TaskSearchRequest setTaskDefinitionId(String taskDefinitionId) {
+  public TaskSearchRequest setTaskDefinitionId(final String taskDefinitionId) {
     this.taskDefinitionId = taskDefinitionId;
     return this;
   }
@@ -185,7 +180,7 @@ public class TaskSearchRequest {
     return candidateGroup;
   }
 
-  public TaskSearchRequest setCandidateGroup(String candidateGroup) {
+  public TaskSearchRequest setCandidateGroup(final String candidateGroup) {
     this.candidateGroup = candidateGroup;
     return this;
   }
@@ -194,7 +189,7 @@ public class TaskSearchRequest {
     return candidateUser;
   }
 
-  public TaskSearchRequest setCandidateUser(String candidateUser) {
+  public TaskSearchRequest setCandidateUser(final String candidateUser) {
     this.candidateUser = candidateUser;
     return this;
   }
@@ -203,7 +198,7 @@ public class TaskSearchRequest {
     return processDefinitionKey;
   }
 
-  public TaskSearchRequest setProcessDefinitionKey(String processDefinitionKey) {
+  public TaskSearchRequest setProcessDefinitionKey(final String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
   }
@@ -212,7 +207,7 @@ public class TaskSearchRequest {
     return processInstanceKey;
   }
 
-  public TaskSearchRequest setProcessInstanceKey(String processInstanceKey) {
+  public TaskSearchRequest setProcessInstanceKey(final String processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
     return this;
   }
@@ -221,7 +216,7 @@ public class TaskSearchRequest {
     return pageSize;
   }
 
-  public TaskSearchRequest setPageSize(int pageSize) {
+  public TaskSearchRequest setPageSize(final int pageSize) {
     this.pageSize = pageSize;
     return this;
   }
@@ -230,7 +225,7 @@ public class TaskSearchRequest {
     return followUpDate;
   }
 
-  public TaskSearchRequest setFollowUpDate(DateFilter followUpDate) {
+  public TaskSearchRequest setFollowUpDate(final DateFilter followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -239,7 +234,7 @@ public class TaskSearchRequest {
     return dueDate;
   }
 
-  public TaskSearchRequest setDueDate(DateFilter dueDate) {
+  public TaskSearchRequest setDueDate(final DateFilter dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -248,7 +243,7 @@ public class TaskSearchRequest {
     return sort;
   }
 
-  public TaskSearchRequest setSort(TaskOrderBy[] sort) {
+  public TaskSearchRequest setSort(final TaskOrderBy[] sort) {
     this.sort = sort;
     return this;
   }
@@ -257,7 +252,7 @@ public class TaskSearchRequest {
     return taskVariables;
   }
 
-  public TaskSearchRequest setTaskVariables(TaskByVariables[] taskVariables) {
+  public TaskSearchRequest setTaskVariables(final TaskByVariables[] taskVariables) {
     this.taskVariables = taskVariables;
     return this;
   }
@@ -266,7 +261,7 @@ public class TaskSearchRequest {
     return tenantIds;
   }
 
-  public TaskSearchRequest setTenantIds(String[] tenantIds) {
+  public TaskSearchRequest setTenantIds(final String[] tenantIds) {
     this.tenantIds = tenantIds;
     return this;
   }
@@ -275,7 +270,7 @@ public class TaskSearchRequest {
     return searchAfter;
   }
 
-  public TaskSearchRequest setSearchAfter(String[] searchAfter) {
+  public TaskSearchRequest setSearchAfter(final String[] searchAfter) {
     this.searchAfter = searchAfter;
     return this;
   }
@@ -284,7 +279,7 @@ public class TaskSearchRequest {
     return searchAfterOrEqual;
   }
 
-  public TaskSearchRequest setSearchAfterOrEqual(String[] searchAfterOrEqual) {
+  public TaskSearchRequest setSearchAfterOrEqual(final String[] searchAfterOrEqual) {
     this.searchAfterOrEqual = searchAfterOrEqual;
     return this;
   }
@@ -293,7 +288,7 @@ public class TaskSearchRequest {
     return searchBefore;
   }
 
-  public TaskSearchRequest setSearchBefore(String[] searchBefore) {
+  public TaskSearchRequest setSearchBefore(final String[] searchBefore) {
     this.searchBefore = searchBefore;
     return this;
   }
@@ -302,7 +297,7 @@ public class TaskSearchRequest {
     return searchBeforeOrEqual;
   }
 
-  public TaskSearchRequest setSearchBeforeOrEqual(String[] searchBeforeOrEqual) {
+  public TaskSearchRequest setSearchBeforeOrEqual(final String[] searchBeforeOrEqual) {
     this.searchBeforeOrEqual = searchBeforeOrEqual;
     return this;
   }
@@ -311,7 +306,7 @@ public class TaskSearchRequest {
     return includeVariables;
   }
 
-  public TaskSearchRequest setIncludeVariables(IncludeVariable[] includeVariables) {
+  public TaskSearchRequest setIncludeVariables(final IncludeVariable[] includeVariables) {
     this.includeVariables = includeVariables;
     return this;
   }
@@ -320,7 +315,7 @@ public class TaskSearchRequest {
     return implementation;
   }
 
-  public TaskSearchRequest setImplementation(TaskImplementation implementation) {
+  public TaskSearchRequest setImplementation(final TaskImplementation implementation) {
     this.implementation = implementation;
     return this;
   }
@@ -329,7 +324,7 @@ public class TaskSearchRequest {
     return assignees;
   }
 
-  public TaskSearchRequest setAssignees(String[] assignees) {
+  public TaskSearchRequest setAssignees(final String[] assignees) {
     this.assignees = assignees;
     return this;
   }
@@ -338,7 +333,7 @@ public class TaskSearchRequest {
     return candidateGroups;
   }
 
-  public TaskSearchRequest setCandidateGroups(String[] candidateGroups) {
+  public TaskSearchRequest setCandidateGroups(final String[] candidateGroups) {
     this.candidateGroups = candidateGroups;
     return this;
   }
@@ -347,13 +342,53 @@ public class TaskSearchRequest {
     return candidateUsers;
   }
 
-  public TaskSearchRequest setCandidateUsers(String[] candidateUsers) {
+  public TaskSearchRequest setCandidateUsers(final String[] candidateUsers) {
     this.candidateUsers = candidateUsers;
     return this;
   }
 
+  public RangeValueFilter getPriority() {
+    return priority;
+  }
+
+  public TaskSearchRequest setPriority(final RangeValueFilter priority) {
+    this.priority = priority;
+    return this;
+  }
+
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    int result =
+        Objects.hash(
+            state,
+            assigned,
+            assignee,
+            taskDefinitionId,
+            candidateGroup,
+            candidateUser,
+            processDefinitionKey,
+            processInstanceKey,
+            pageSize,
+            followUpDate,
+            dueDate,
+            implementation,
+            priority);
+    result = 31 * result + Arrays.hashCode(assignees);
+    result = 31 * result + Arrays.hashCode(candidateGroups);
+    result = 31 * result + Arrays.hashCode(candidateUsers);
+    result = 31 * result + Arrays.hashCode(taskVariables);
+    result = 31 * result + Arrays.hashCode(tenantIds);
+    result = 31 * result + Arrays.hashCode(sort);
+    result = 31 * result + Arrays.hashCode(searchAfter);
+    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
+    result = 31 * result + Arrays.hashCode(searchBefore);
+    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
+    result = 31 * result + Arrays.hashCode(includeVariables);
+    return result;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -376,6 +411,7 @@ public class TaskSearchRequest {
         && Objects.equals(processInstanceKey, that.processInstanceKey)
         && Objects.equals(followUpDate, that.followUpDate)
         && Objects.equals(dueDate, that.dueDate)
+        && Objects.equals(priority, that.priority)
         && Arrays.equals(taskVariables, that.taskVariables)
         && Arrays.equals(tenantIds, that.tenantIds)
         && Arrays.equals(sort, that.sort)
@@ -384,36 +420,6 @@ public class TaskSearchRequest {
         && Arrays.equals(searchBefore, that.searchBefore)
         && Arrays.equals(searchBeforeOrEqual, that.searchBeforeOrEqual)
         && Arrays.equals(includeVariables, that.includeVariables);
-  }
-
-  @Override
-  public int hashCode() {
-    int result =
-        Objects.hash(
-            state,
-            assigned,
-            assignee,
-            taskDefinitionId,
-            candidateGroup,
-            candidateUser,
-            processDefinitionKey,
-            processInstanceKey,
-            pageSize,
-            followUpDate,
-            dueDate,
-            implementation);
-    result = 31 * result + Arrays.hashCode(assignees);
-    result = 31 * result + Arrays.hashCode(candidateGroups);
-    result = 31 * result + Arrays.hashCode(candidateUsers);
-    result = 31 * result + Arrays.hashCode(taskVariables);
-    result = 31 * result + Arrays.hashCode(tenantIds);
-    result = 31 * result + Arrays.hashCode(sort);
-    result = 31 * result + Arrays.hashCode(searchAfter);
-    result = 31 * result + Arrays.hashCode(searchAfterOrEqual);
-    result = 31 * result + Arrays.hashCode(searchBefore);
-    result = 31 * result + Arrays.hashCode(searchBeforeOrEqual);
-    result = 31 * result + Arrays.hashCode(includeVariables);
-    return result;
   }
 
   @Override
@@ -471,6 +477,8 @@ public class TaskSearchRequest {
         + Arrays.toString(includeVariables)
         + ", implementation="
         + implementation
+        + ", priority="
+        + priority
         + '}';
   }
 }

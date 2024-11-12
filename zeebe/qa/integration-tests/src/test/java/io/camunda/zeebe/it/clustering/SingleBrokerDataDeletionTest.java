@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.clustering;
 
@@ -65,7 +65,7 @@ public class SingleBrokerDataDeletionTest {
     // given - an exporter which does not update its own position and filters everything but
     // deployment commands
     final LogStream logStream = clusteringRule.getLogStream(1);
-    final LogStreamReader reader = logStream.newLogStreamReader().join();
+    final LogStreamReader reader = logStream.newLogStreamReader();
     ControllableExporter.updatePosition(false);
     ControllableExporter.RECORD_TYPE_FILTER.set(t -> t == RecordType.COMMAND);
     ControllableExporter.VALUE_TYPE_FILTER.set(t -> t == ValueType.DEPLOYMENT);
@@ -100,7 +100,7 @@ public class SingleBrokerDataDeletionTest {
     // given - an exporter which does not update its own position and only accepts deployment
     // commands
     final LogStream logStream = clusteringRule.getLogStream(PARTITION_ID);
-    final LogStreamReader reader = logStream.newLogStreamReader().join();
+    final LogStreamReader reader = logStream.newLogStreamReader();
     ControllableExporter.updatePosition(false);
     ControllableExporter.RECORD_TYPE_FILTER.set(t -> t == RecordType.COMMAND);
     ControllableExporter.VALUE_TYPE_FILTER.set(t -> t == ValueType.DEPLOYMENT);
@@ -137,7 +137,7 @@ public class SingleBrokerDataDeletionTest {
   public void shouldNotCompactNotExportedEvents() {
     // given
     final LogStream logStream = clusteringRule.getLogStream(1);
-    final LogStreamReader reader = logStream.newLogStreamReader().join();
+    final LogStreamReader reader = logStream.newLogStreamReader();
     final Broker broker = clusteringRule.getBroker(0);
     ControllableExporter.updatePosition(true);
 
@@ -172,7 +172,7 @@ public class SingleBrokerDataDeletionTest {
   public void shouldCompactWhenExporterHasBeenRemoved() {
     // given - an exporter which updates its position and accepts all records
     final int nodeId = 0;
-    LogStreamReader reader = clusteringRule.getLogStream(1).newLogStreamReader().join();
+    LogStreamReader reader = clusteringRule.getLogStream(1).newLogStreamReader();
     final Broker broker = clusteringRule.getBroker(nodeId);
     ControllableExporter.updatePosition(true);
 
@@ -198,7 +198,7 @@ public class SingleBrokerDataDeletionTest {
     publishEnoughMessagesForCompaction();
 
     // then - force compaction, and expect the deployment command to have been removed
-    reader = clusteringRule.getLogStream(1).newLogStreamReader().join();
+    reader = clusteringRule.getLogStream(1).newLogStreamReader();
     final long newFirstPositionPreCompaction = reader.getPosition();
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
     clusteringRule.waitForNewSnapshotAtBroker(clusteringRule.getBroker(0), firstSnapshot);

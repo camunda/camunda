@@ -1,0 +1,14 @@
+---
+apiVersion: v2
+name: preview-environments
+appVersion: dev
+description: A Helm chart to deploy a C8 Self-Managed Camunda preview environment to the Camunda-CI cluster managed by the Infrastructure team.
+icon: https://console.cloud.camunda.io/favicon.ico
+type: application
+# Chart version; expected to follow Semantic Versioning (https://semver.org/)
+version: 0.1.0
+
+dependencies:
+- name: camunda-platform
+  repository: oci://ghcr.io/camunda/helm
+  version: 0.0.0-snapshot-8.6

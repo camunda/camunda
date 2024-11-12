@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -34,6 +35,7 @@ public final class SubProcessProcessor
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnJobBehavior jobBehavior;
 
   public SubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -44,6 +46,7 @@ public final class SubProcessProcessor
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -55,18 +58,20 @@ public final class SubProcessProcessor
   public Either<Failure, ?> onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
 
-    return variableMappingBehavior
-        .applyInputMappings(activating, element)
-        .thenDo(
-            ok -> {
-              final var activated =
-                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
-              final ExecutableStartEvent startEvent = element.getNoneStartEvent();
-              if (startEvent == null) {
-                throw new BpmnProcessingException(activated, NO_NONE_START_EVENT_ERROR_MSG);
-              }
-              stateTransitionBehavior.activateChildInstance(activated, startEvent);
-            });
+    return variableMappingBehavior.applyInputMappings(activating, element);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeActivation(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    final var activated =
+        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+    final ExecutableStartEvent startEvent = element.getNoneStartEvent();
+    if (startEvent == null) {
+      throw new BpmnProcessingException(activated, NO_NONE_START_EVENT_ERROR_MSG);
+    }
+    stateTransitionBehavior.activateChildInstance(activated, startEvent);
+    return SUCCESS;
   }
 
   @Override
@@ -74,12 +79,15 @@ public final class SubProcessProcessor
       final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
     return variableMappingBehavior
         .applyOutputMappings(completing, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(completing);
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, completing);
-              return stateTransitionBehavior.transitionToCompleted(element, completing);
-            })
+        .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(completing));
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
@@ -90,6 +98,9 @@ public final class SubProcessProcessor
   @Override
   public void onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(terminating);
+    }
 
     eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
     incidentBehavior.resolveIncidents(terminating);

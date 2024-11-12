@@ -94,6 +94,19 @@
                 },
                 "jobKind": {
                   "type": "keyword"
+                },
+                "jobListenerEventType": {
+                  "type": "keyword"
+                },
+                "changedAttributes": {
+                  "type": "text"
+                },
+                "result": {
+                  "properties": {
+                    "denied": {
+                      "type": "boolean"
+                    }
+                  }
                 }
               }
             },

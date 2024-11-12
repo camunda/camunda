@@ -1,46 +1,81 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.rest;
 
 import static io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper.createFrom;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.OperateProfileService;
-import io.camunda.operate.util.OperateAbstractIT;
-import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.webapp.reader.BatchOperationReader;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.operate.util.j5templates.MockMvcManager;
+import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.rest.BatchOperationRestService;
+import io.camunda.operate.webapp.rest.dto.UserDto;
+import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
-import org.junit.Test;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import io.camunda.operate.webapp.security.UserService;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
+import java.util.List;
+import org.apache.http.HttpStatus;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
-@SpringBootTest(
-    classes = {
-      TestApplicationWithNoBeans.class,
-      BatchOperationRestService.class,
-      OperateProfileService.class
-    })
-public class BatchOperationRestServiceIT extends OperateAbstractIT {
+public class BatchOperationRestServiceIT extends OperateSearchAbstractIT {
+  public static final String[] TEST_BATCH_OP_IDS = {"1", "2", "3"};
 
-  @MockBean private BatchOperationReader batchOperationReader;
+  @Autowired MockMvcManager mockMvcManager;
+  @Autowired BatchOperationTemplate batchOperationTemplate;
+  @Autowired OperationTemplate operationTemplate;
+  @Autowired private UserService userService;
+  private String operationIndexName;
+  private String batchOperationIndexName;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
-  private ObjectMapper objectMapper = new ObjectMapper();
+  @Override
+  protected void runAdditionalBeforeAllSetup() throws Exception {
+    operationIndexName = operationTemplate.getFullQualifiedName();
+    batchOperationIndexName = batchOperationTemplate.getFullQualifiedName();
+    createData();
+    searchContainerManager.refreshIndices("*operate*");
+  }
+
+  @Test
+  public void testBatchOperationsCount() throws Exception {
+    Mockito.when(userService.getCurrentUser()).thenReturn(new UserDto().setUserId(DEFAULT_USER));
+    final List<BatchOperationDto> actual =
+        postBatchOperationsRequest(new BatchOperationRequestDto().setPageSize(10));
+
+    assertThat(actual.size()).isEqualTo(3);
+    // check everything is in the right order (ordered by end date, ascending)
+    final BatchOperationDto actual1 = actual.get(0);
+    final BatchOperationDto actual2 = actual.get(1);
+    final BatchOperationDto actual3 = actual.get(2);
+    assertThat(actual1.getId()).isEqualTo(TEST_BATCH_OP_IDS[2]);
+    assertThat(actual2.getId()).isEqualTo(TEST_BATCH_OP_IDS[0]);
+    assertThat(actual3.getId()).isEqualTo(TEST_BATCH_OP_IDS[1]);
+    // check operation count values are correct
+    assertThat(actual1.getCompletedOperationsCount()).isEqualTo(0);
+    assertThat(actual1.getFailedOperationsCount()).isEqualTo(0);
+    assertThat(actual2.getCompletedOperationsCount()).isEqualTo(3);
+    assertThat(actual2.getFailedOperationsCount()).isEqualTo(2);
+    assertThat(actual3.getCompletedOperationsCount()).isEqualTo(2);
+    assertThat(actual3.getFailedOperationsCount()).isEqualTo(0);
+  }
 
   @Test
   public void testGetBatchOperationWithNoPageSize() throws Exception {
@@ -85,7 +120,108 @@ public class BatchOperationRestServiceIT extends OperateAbstractIT {
     assertErrorMessageContains(mvcResult, "searchBefore must be an array of two values.");
   }
 
-  protected MvcResult postRequestThatShouldFail(Object query) throws Exception {
-    return postRequestThatShouldFail(BatchOperationRestService.BATCH_OPERATIONS_URL, query);
+  protected MvcResult postRequestThatShouldFail(final Object query) throws Exception {
+    return mockMvcManager.postRequest(
+        BatchOperationRestService.BATCH_OPERATIONS_URL, query, HttpStatus.SC_BAD_REQUEST);
+  }
+
+  private List<BatchOperationDto> postBatchOperationsRequest(final BatchOperationRequestDto query)
+      throws Exception {
+    final MvcResult mvcResult =
+        mockMvcManager.postRequest(
+            BatchOperationRestService.BATCH_OPERATIONS_URL, query, HttpStatus.SC_OK);
+    final String response = mvcResult.getResponse().getContentAsString();
+    final BatchOperationDto[] dtos = objectMapper.readValue(response, BatchOperationDto[].class);
+    return Arrays.stream(dtos).toList();
+  }
+
+  private void createData() throws Exception {
+    objectMapper.registerModule(new JavaTimeModule());
+    final BatchOperationEntity bo1 =
+        new BatchOperationEntity()
+            .setId(TEST_BATCH_OP_IDS[0])
+            .setType(OperationType.CANCEL_PROCESS_INSTANCE)
+            .setUsername(DEFAULT_USER)
+            .setInstancesCount(1)
+            .setOperationsTotalCount(5)
+            .setOperationsFinishedCount(3)
+            .setStartDate(OffsetDateTime.now().minus(10, ChronoUnit.SECONDS))
+            .setEndDate(OffsetDateTime.now().minus(1, ChronoUnit.SECONDS));
+    final BatchOperationEntity bo2 =
+        new BatchOperationEntity()
+            .setId(TEST_BATCH_OP_IDS[1])
+            .setType(OperationType.MODIFY_PROCESS_INSTANCE)
+            .setUsername(DEFAULT_USER)
+            .setInstancesCount(1)
+            .setOperationsTotalCount(2)
+            .setOperationsFinishedCount(2)
+            .setStartDate(OffsetDateTime.now().minus(5, ChronoUnit.SECONDS))
+            .setEndDate(OffsetDateTime.now().minus(3, ChronoUnit.SECONDS));
+    final BatchOperationEntity bo3 =
+        new BatchOperationEntity()
+            .setId(TEST_BATCH_OP_IDS[2])
+            .setType(OperationType.CANCEL_PROCESS_INSTANCE)
+            .setUsername(DEFAULT_USER)
+            .setInstancesCount(1)
+            .setOperationsTotalCount(0)
+            .setOperationsFinishedCount(0)
+            .setStartDate(OffsetDateTime.now().minus(6, ChronoUnit.SECONDS));
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        batchOperationIndexName, bo1.getId(), bo1);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        batchOperationIndexName, bo2.getId(), bo2);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        batchOperationIndexName, bo3.getId(), bo3);
+
+    final OperationEntity bo1op1 =
+        new OperationEntity()
+            .setBatchOperationId(TEST_BATCH_OP_IDS[0])
+            .setState(OperationState.COMPLETED);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        operationIndexName, bo1op1.getId(), bo1op1);
+    final OperationEntity bo1op2 =
+        new OperationEntity()
+            .setBatchOperationId(TEST_BATCH_OP_IDS[0])
+            .setState(OperationState.COMPLETED);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        operationIndexName, bo1op2.getId(), bo1op2);
+    final OperationEntity bo1op3 =
+        new OperationEntity()
+            .setBatchOperationId(TEST_BATCH_OP_IDS[0])
+            .setState(OperationState.COMPLETED);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        operationIndexName, bo1op3.getId(), bo1op3);
+    final OperationEntity bo1op4 =
+        new OperationEntity()
+            .setBatchOperationId(TEST_BATCH_OP_IDS[0])
+            .setState(OperationState.FAILED);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        operationIndexName, bo1op4.getId(), bo1op4);
+    final OperationEntity bo1op5 =
+        new OperationEntity()
+            .setBatchOperationId(TEST_BATCH_OP_IDS[0])
+            .setState(OperationState.FAILED);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        operationIndexName, bo1op5.getId(), bo1op5);
+    final OperationEntity bo2op1 =
+        new OperationEntity()
+            .setBatchOperationId(TEST_BATCH_OP_IDS[1])
+            .setState(OperationState.COMPLETED);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        operationIndexName, bo2op1.getId(), bo2op1);
+    final OperationEntity bo2op2 =
+        new OperationEntity()
+            .setBatchOperationId(TEST_BATCH_OP_IDS[1])
+            .setState(OperationState.COMPLETED);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        operationIndexName, bo2op2.getId(), bo2op2);
+    // batch operation 3 has no completed operations (to check for possible NPE issues on the
+    // aggregations)
+    final OperationEntity bo3op1 =
+        new OperationEntity()
+            .setBatchOperationId(TEST_BATCH_OP_IDS[2])
+            .setState(OperationState.SENT);
+    testSearchRepository.createOrUpdateDocumentFromObject(
+        operationIndexName, bo3op1.getId(), bo3op1);
   }
 }

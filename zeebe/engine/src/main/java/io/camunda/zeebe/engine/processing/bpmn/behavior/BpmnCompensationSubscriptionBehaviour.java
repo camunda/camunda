@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
@@ -114,7 +114,7 @@ public class BpmnCompensationSubscriptionBehaviour {
             subscription -> subscription.getRecord().getCompensableActivityScopeKey() == scopeKey);
   }
 
-  private Optional<String> getCompensationHandlerId(final ExecutableActivity element) {
+  public Optional<String> getCompensationHandlerId(final ExecutableActivity element) {
     return element.getBoundaryEvents().stream()
         .map(ExecutableBoundaryEvent::getCompensation)
         .filter(Objects::nonNull)
@@ -418,6 +418,18 @@ public class BpmnCompensationSubscriptionBehaviour {
               commandWriter.appendFollowUpCommand(
                   elementInstanceKey, ProcessInstanceIntent.COMPLETE_ELEMENT, elementRecord);
             });
+  }
+
+  public void deleteSubscriptionsOfProcessInstanceFilter(
+      final BpmnElementContext context,
+      final Predicate<CompensationSubscription> compensationSubscriptionFilter) {
+    // delete all compensation subscriptions of the process instance matching the filter
+    compensationSubscriptionState
+        .findSubscriptionsByProcessInstanceKey(
+            context.getTenantId(), context.getProcessInstanceKey())
+        .stream()
+        .filter(compensationSubscriptionFilter)
+        .forEach(this::appendCompensationSubscriptionDeleteEvent);
   }
 
   public void deleteSubscriptionsOfProcessInstance(final BpmnElementContext context) {

@@ -2,11 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import java.io.IOException;
@@ -17,7 +18,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.stream.Stream;
+import java.util.Map;
 
 final class SnapshotChecksum {
 
@@ -27,11 +28,6 @@ final class SnapshotChecksum {
 
   public static ImmutableChecksumsSFV read(final Path checksumPath) throws IOException {
     try (final RandomAccessFile checksumFile = new RandomAccessFile(checksumPath.toFile(), "r")) {
-      if (checksumFile.length() == 8) {
-        // compatibility mode
-        final long combinedChecksum = checksumFile.readLong();
-        return new SfvChecksumImpl(combinedChecksum);
-      }
       final SfvChecksumImpl sfvChecksum = new SfvChecksumImpl();
       String line;
       while ((line = checksumFile.readLine()) != null) {
@@ -42,15 +38,29 @@ final class SnapshotChecksum {
   }
 
   public static MutableChecksumsSFV calculate(final Path snapshotDirectory) throws IOException {
+    return createChecksumForSnapshot(snapshotDirectory, snapshotPath -> Map.of());
+  }
+
+  public static MutableChecksumsSFV calculateWithProvidedChecksums(
+      final Path snapshotDirectory, final CRC32CChecksumProvider provider) throws IOException {
+    return createChecksumForSnapshot(snapshotDirectory, provider);
+  }
+
+  private static MutableChecksumsSFV createChecksumForSnapshot(
+      final Path snapshotDirectory, final CRC32CChecksumProvider provider) throws IOException {
+
     try (final var fileStream =
         Files.list(snapshotDirectory).filter(SnapshotChecksum::isNotMetadataFile).sorted()) {
-      final var sfvChecksum = createCombinedChecksum(fileStream);
+      final SfvChecksumImpl sfvChecksum = new SfvChecksumImpl();
+      final Map<String, Long> fullFileChecksums = provider.getSnapshotChecksums(snapshotDirectory);
+      fileStream.forEachOrdered(path -> updateChecksum(sfvChecksum, fullFileChecksums, path));
 
       // While persisting transient snapshot, the checksum of metadata file is added at the end.
       // Hence when we recalculate the checksum, we must follow the same order. Otherwise base on
       // the file name, the sorted file list will have a differnt order and thus result in a
       // different checksum.
-      final var metadataFile = snapshotDirectory.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME);
+      final var metadataFile =
+          snapshotDirectory.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
       if (metadataFile.toFile().exists()) {
         sfvChecksum.updateFromFile(metadataFile);
       }
@@ -59,7 +69,7 @@ final class SnapshotChecksum {
   }
 
   private static boolean isNotMetadataFile(final Path file) {
-    return !file.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME);
+    return !file.getFileName().toString().equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
   }
 
   public static void persist(final Path checksumPath, final ImmutableChecksumsSFV checksum)
@@ -77,21 +87,19 @@ final class SnapshotChecksum {
     }
   }
 
-  /**
-   * computes a checksum for the files, in the order they're presented
-   *
-   * @return the SfvChecksum object
-   */
-  private static SfvChecksumImpl createCombinedChecksum(final Stream<Path> files) {
-    final SfvChecksumImpl checksum = new SfvChecksumImpl();
-    files.forEachOrdered(
-        path -> {
-          try {
-            checksum.updateFromFile(path);
-          } catch (final IOException e) {
-            throw new UncheckedIOException(e);
-          }
-        });
-    return checksum;
+  private static void updateChecksum(
+      final MutableChecksumsSFV checksum,
+      final Map<String, Long> fullFileChecksums,
+      final Path file) {
+    final String fileName = file.getFileName().toString();
+    if (fullFileChecksums.containsKey(fileName)) {
+      checksum.updateFromChecksum(file, fullFileChecksums.get(fileName));
+    } else {
+      try {
+        checksum.updateFromFile(file);
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
   }
 }

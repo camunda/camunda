@@ -33,7 +33,8 @@ class NettyMessagingServiceCompressionTest {
   @EnumSource(CompressionAlgorithm.class)
   void shouldSendAndReceiveMessagesWhenCompressionEnabled(final CompressionAlgorithm algorithm) {
     // given
-    final var senderAddress = Address.from(SocketUtil.getNextAddress().getPort());
+    var nextAddress = SocketUtil.getNextAddress();
+    final var senderAddress = Address.from(nextAddress.getHostName(), nextAddress.getPort());
     final var config =
         new MessagingConfig()
             .setShutdownQuietPeriod(Duration.ofMillis(50))
@@ -43,7 +44,8 @@ class NettyMessagingServiceCompressionTest {
         (ManagedMessagingService)
             new NettyMessagingService("test", senderAddress, config).start().join();
 
-    final var receiverAddress = Address.from(SocketUtil.getNextAddress().getPort());
+    nextAddress = SocketUtil.getNextAddress();
+    final var receiverAddress = Address.from(nextAddress.getHostName(), nextAddress.getPort());
     final var receiverNetty =
         (ManagedMessagingService)
             new NettyMessagingService("test", receiverAddress, config).start().join();

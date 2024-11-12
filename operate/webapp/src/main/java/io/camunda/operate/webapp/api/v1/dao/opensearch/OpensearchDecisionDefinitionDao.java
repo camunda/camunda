@@ -1,24 +1,13 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.DecisionDefinitionDao;
 import io.camunda.operate.webapp.api.v1.dao.DecisionRequirementsDao;
@@ -29,6 +18,8 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,12 +45,12 @@ public class OpensearchDecisionDefinitionDao
   private final DecisionRequirementsDao decisionRequirementsDao;
 
   public OpensearchDecisionDefinitionDao(
-      OpensearchQueryDSLWrapper queryDSLWrapper,
-      OpensearchRequestDSLWrapper requestDSLWrapper,
-      RichOpenSearchClient richOpenSearchClient,
-      DecisionIndex decisionIndex,
-      DecisionRequirementsIndex decisionRequirementsIndex,
-      DecisionRequirementsDao decisionRequirementsDao) {
+      final OpensearchQueryDSLWrapper queryDSLWrapper,
+      final OpensearchRequestDSLWrapper requestDSLWrapper,
+      final RichOpenSearchClient richOpenSearchClient,
+      final DecisionIndex decisionIndex,
+      final DecisionRequirementsIndex decisionRequirementsIndex,
+      final DecisionRequirementsDao decisionRequirementsDao) {
     super(queryDSLWrapper, requestDSLWrapper, richOpenSearchClient);
     this.decisionIndex = decisionIndex;
     this.decisionRequirementsIndex = decisionRequirementsIndex;
@@ -67,7 +58,7 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  public DecisionDefinition byKey(Long key) {
+  public DecisionDefinition byKey(final Long key) {
     final var decisionDefinition = super.byKey(key);
     final DecisionRequirements decisionRequirements =
         decisionRequirementsDao.byKey(decisionDefinition.getDecisionRequirementsKey());
@@ -82,22 +73,22 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  protected String getByKeyServerReadErrorMessage(Long key) {
+  protected String getByKeyServerReadErrorMessage(final Long key) {
     return String.format("Error in reading decision definition for key %s", key);
   }
 
   @Override
-  protected String getByKeyNoResultsErrorMessage(Long key) {
+  protected String getByKeyNoResultsErrorMessage(final Long key) {
     return String.format("No decision definition found for key %s", key);
   }
 
   @Override
-  protected String getByKeyTooManyResultsErrorMessage(Long key) {
+  protected String getByKeyTooManyResultsErrorMessage(final Long key) {
     return String.format("Found more than one decision definition for key %s", key);
   }
 
   @Override
-  public Results<DecisionDefinition> search(Query<DecisionDefinition> query) {
+  public Results<DecisionDefinition> search(final Query<DecisionDefinition> query) {
     final var results = super.search(query);
     final var decisionDefinitions = results.getItems();
     populateDecisionRequirementsNameAndVersion(decisionDefinitions);
@@ -120,7 +111,8 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  protected void buildFiltering(Query<DecisionDefinition> query, SearchRequest.Builder request) {
+  protected void buildFiltering(
+      final Query<DecisionDefinition> query, final SearchRequest.Builder request) {
     final DecisionDefinition filter = query.getFilter();
 
     if (filter != null) {
@@ -151,7 +143,7 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  protected DecisionDefinition convertInternalToApiResult(DecisionDefinition internalResult) {
+  protected DecisionDefinition convertInternalToApiResult(final DecisionDefinition internalResult) {
     return internalResult;
   }
 
@@ -160,7 +152,7 @@ public class OpensearchDecisionDefinitionDao
    * decisionRequirementsVersion fields to the decision definitions
    */
   private void populateDecisionRequirementsNameAndVersion(
-      List<DecisionDefinition> decisionDefinitions) {
+      final List<DecisionDefinition> decisionDefinitions) {
     final Set<Long> decisionRequirementsKeys =
         decisionDefinitions.stream()
             .map(DecisionDefinition::getDecisionRequirementsKey)
@@ -185,7 +177,7 @@ public class OpensearchDecisionDefinitionDao
   }
 
   private org.opensearch.client.opensearch._types.query_dsl.Query buildFilteringBy(
-      String decisionRequirementsName, Integer decisionRequirementsVersion) {
+      final String decisionRequirementsName, final Integer decisionRequirementsVersion) {
     try {
       final List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms =
           new LinkedList<>();
@@ -213,7 +205,7 @@ public class OpensearchDecisionDefinitionDao
         return queryDSLWrapper.matchNone();
       }
       return queryDSLWrapper.longTerms(DecisionDefinition.DECISION_REQUIREMENTS_KEY, nonNullKeys);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ServerException("Error in reading decision requirements by name and version", e);
     }
   }

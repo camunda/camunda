@@ -75,7 +75,7 @@ env:
 jobs:
   release:
     name: "'${{ inputs.branch }}' branch"
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       #########################################################################
       # Setup: checkout branch
@@ -94,7 +94,7 @@ jobs:
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@v2.8.1
+        uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -102,38 +102,29 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
             secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
             secret/data/products/operate/release_process GITHUB_TOKEN;
 
       # Setup: configure Java, Maven, settings.xml
-      - name: Setup Java ${{ env.JAVA_VERSION }}
-        uses: actions/setup-java@v4
-        with:
-          distribution: "adopt"
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: "maven"
-
       - name: Setup Maven
-        uses: stCarolas/setup-maven@v4.5
+        uses: ./.github/actions/setup-build
         with:
+          java-distribution: adopt
+          java-version: ${{ env.JAVA_VERSION }}
+          maven-cache-key-modifier: operate
           maven-version: 3.9.6
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      # Setup: Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: Create Maven settings.xml
-        uses: s4u/maven-settings-action@v3.0.0
+      #########################################################################
+      # Build frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
         with:
-          githubServer: false
-          servers: |
-            [{
-              "id": "camunda-nexus",
-              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
-              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
-            }]
-          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+          directory: ./operate/client
 
       #########################################################################
       # Release: run Maven release
@@ -141,7 +132,7 @@ jobs:
         env:
           NEXT_DEVELOPMENT_VERSION: ${{ inputs.nextDevelopmentVersion }}
         run: |
-          mvn -f operate release:prepare -P -docker \
+          ./mvnw -f operate release:prepare -P -docker,skipFrontendBuild \
           -DpushChanges=false \
           -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
           -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
@@ -160,7 +151,7 @@ jobs:
 
       - name: Perform Maven release
         run: |
-          mvn -f operate release:perform -P -docker \
+          ./mvnw -f operate release:perform -P -docker \
           -DlocalCheckout=true \
           -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
           -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn \
@@ -170,7 +161,7 @@ jobs:
         if: ${{ env.CREATE_A_RELEASE == 'true' }}
         env:
           GITHUB_TOKEN: ${{ steps.secrets.outputs.GITHUB_TOKEN }}
-        uses: octokit/request-action@v2.3.0
+        uses: octokit/request-action@v2.3.1
         with:
           route: POST /repos/camunda/zeebe/releases
           draft: true
@@ -291,14 +282,14 @@ jobs:
       # Notify: send Slack notification of release failure
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.OPERATE_CI_ALERT_WEBHOOK_URL }}
         with:
           payload: |
             {
               "workflow_name": "${{ github.workflow }}",
-              "github_run_url": "https://github.com/camunda/zeebe/actions/runs/${{ github.run_id }}",
+              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
               "dry_run": "${{ inputs.dryRun }}",
               "release_version": "${{ inputs.releaseVersion }}",
               "branch": "${{ inputs.branch }}"

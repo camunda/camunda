@@ -1,8 +1,9 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a proprietary license.
- * See the License.txt file for more information. You may not use this file
- * except in compliance with the proprietary license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
 import {devices, PlaywrightTestConfig} from '@playwright/test';
@@ -22,6 +23,10 @@ const getPort = () => {
   }
 
   return 8081;
+};
+
+const getBasePath = () => {
+  return IS_CI && !IS_E2E ? '' : '/operate/';
 };
 
 /**
@@ -57,9 +62,10 @@ const config: PlaywrightTestConfig = {
   outputDir: 'test-results/',
   use: {
     actionTimeout: 0,
-    baseURL: `http://localhost:${getPort()}`,
+    baseURL: `http://localhost:${getPort()}${getBasePath()}`,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
   },
 };
 

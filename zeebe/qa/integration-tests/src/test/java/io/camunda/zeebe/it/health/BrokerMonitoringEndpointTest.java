@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.health;
 
@@ -28,9 +28,13 @@ public final class BrokerMonitoringEndpointTest {
 
   static RequestSpecification brokerServerSpec;
 
-  @TestZeebe
-  private static final TestStandaloneBroker BROKER =
-      new TestStandaloneBroker().withProperty("management.server.base-path", "/foo");
+  @TestZeebe(initMethod = "initTestStandaloneBroker")
+  private static TestStandaloneBroker broker;
+
+  @SuppressWarnings("unused")
+  static void initTestStandaloneBroker() {
+    broker = new TestStandaloneBroker().withProperty("management.server.base-path", "/foo");
+  }
 
   @BeforeAll
   static void setUpClass() {
@@ -38,7 +42,7 @@ public final class BrokerMonitoringEndpointTest {
         new RequestSpecBuilder()
             .setContentType(ContentType.TEXT)
             // set URL explicitly since we want to ensure the mapping is correct
-            .setBaseUri("http://localhost:" + BROKER.mappedPort(TestZeebePort.MONITORING) + "/foo")
+            .setBaseUri("http://localhost:" + broker.mappedPort(TestZeebePort.MONITORING) + "/foo")
             .addFilter(new ResponseLoggingFilter())
             .addFilter(new RequestLoggingFilter())
             .build();

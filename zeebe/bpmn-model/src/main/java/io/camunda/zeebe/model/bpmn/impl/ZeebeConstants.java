@@ -59,6 +59,11 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_RESULT_VARIABLE = "resultVariable";
 
+  public static final String ATTRIBUTE_BINDING_TYPE = "bindingType";
+  public static final String ATTRIBUTE_VERSION_TAG = "versionTag";
+
+  public static final String ATTRIBUTE_PRIORITY = "priority";
+
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
@@ -92,10 +97,16 @@ public class ZeebeConstants {
 
   public static final String ELEMENT_EXECUTION_LISTENERS = "executionListeners";
   public static final String ELEMENT_EXECUTION_LISTENER = "executionListener";
+  public static final String ELEMENT_TASK_LISTENERS = "taskListeners";
+  public static final String ELEMENT_TASK_LISTENER = "taskListener";
+
+  public static final String ELEMENT_VERSION_TAG = "versionTag";
 
   /** Form key format used for camunda-forms format */
   public static final String USER_TASK_FORM_KEY_CAMUNDA_FORMS_FORMAT = "camunda-forms";
 
   /** Form key location used for forms embedded in the same BPMN file, i.e. zeebeUserTaskForm */
   public static final String USER_TASK_FORM_KEY_BPMN_LOCATION = "bpmn";
+
+  public static final String ELEMENT_PRIORITY_DEFINITION = "priorityDefinition";
 }

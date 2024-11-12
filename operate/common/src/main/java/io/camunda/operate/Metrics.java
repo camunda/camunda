@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate;
 
@@ -51,16 +42,25 @@ public class Metrics {
       OPERATE_NAMESPACE + "archiver.reindex.query";
   public static final String TIMER_NAME_ARCHIVER_DELETE_QUERY =
       OPERATE_NAMESPACE + "archiver.delete.query";
+  public static final String TIMER_NAME_IMPORT_FNI_TREE_PATH_CACHE_ACCESS =
+      OPERATE_NAMESPACE + "import.fni.tree.path.cache.access";
   // Counters:
   public static final String COUNTER_NAME_EVENTS_PROCESSED = "events.processed";
   public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI =
       "events.processed.finished.process.instances";
   public static final String COUNTER_NAME_COMMANDS = "commands";
   public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
+  public static final String COUNTER_NAME_IMPORT_FNI_TREE_PATH_CACHE_RESULT =
+      "import.fni.tree.path.cache.result";
+
   // Gauges:
-  public static final String GAUGE_IMPORT_QUEUE_SIZE = "import.queue.size";
+  public static final String GAUGE_IMPORT_QUEUE_SIZE = OPERATE_NAMESPACE + "import.queue.size";
   public static final String GAUGE_BPMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.bpmn.count";
   public static final String GAUGE_DMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.dmn.count";
+
+  public static final String GAUGE_NAME_IMPORT_FNI_TREE_PATH_CACHE_SIZE =
+      OPERATE_NAMESPACE + "import.fni.tree.path.cache.size";
+
   // Tags
   // -----
   //  Keys:
@@ -88,26 +88,33 @@ public class Metrics {
    * @param count - Number to count
    * @param tags - key value pairs of tags as Strings - The size of tags varargs must be even.
    */
-  public void recordCounts(String name, long count, String... tags) {
+  public void recordCounts(final String name, final long count, final String... tags) {
     registry.counter(OPERATE_NAMESPACE + name, tags).increment(count);
   }
 
   public <T> void registerGauge(
-      String name, T stateObject, ToDoubleFunction<T> valueFunction, String... tags) {
-    Gauge.builder(OPERATE_NAMESPACE + name, stateObject, valueFunction)
-        .tags(tags)
-        .register(registry);
+      final String name,
+      final T stateObject,
+      final ToDoubleFunction<T> valueFunction,
+      final String... tags) {
+    Gauge.builder(name, stateObject, valueFunction).tags(tags).register(registry);
   }
 
-  public void registerGaugeSupplier(String name, Supplier<Number> gaugeSupplier, String... tags) {
+  public void registerGaugeSupplier(
+      final String name, final Supplier<Number> gaugeSupplier, final String... tags) {
     Gauge.builder(name, gaugeSupplier).tags(tags).register(registry);
   }
 
-  public <E> void registerGaugeQueueSize(String name, Queue<E> queue, String... tags) {
+  public <E> void registerGaugeQueueSize(
+      final String name, final Queue<E> queue, final String... tags) {
     registerGauge(name, queue, q -> q.size(), tags);
   }
 
-  public Timer getTimer(String name, String... tags) {
+  public Timer getTimer(final String name, final String... tags) {
     return registry.timer(name, tags);
+  }
+
+  public Timer getHistogram(final String name, final String... tags) {
+    return Timer.builder(name).publishPercentileHistogram().tags(tags).register(registry);
   }
 }

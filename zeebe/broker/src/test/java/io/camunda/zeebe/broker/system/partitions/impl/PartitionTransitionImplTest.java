@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
@@ -22,7 +22,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransition.CancelledPartitionTransition;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
@@ -33,7 +32,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,8 +114,7 @@ class PartitionTransitionImplTest {
   @Test
   void shouldAbortOngoingTransitionWhenNewTransitionIsRequested() {
     // given
-    final var step1CountdownLatch = new CountDownLatch(1);
-    final var step1 = new WaitingTransitionStep(TEST_CONCURRENCY_CONTROL, step1CountdownLatch);
+    final var step1 = new WaitingTransitionStep(TEST_CONCURRENCY_CONTROL);
     final var spyStep1 = spy(step1);
 
     when(mockStep2.transitionTo(any(), anyLong(), any()))
@@ -136,7 +133,7 @@ class PartitionTransitionImplTest {
     final var firstTransitionFuture = sut.transitionTo(DEFAULT_TERM, DEFAULT_ROLE);
     final var secondTransitionFuture = sut.transitionTo(secondTerm, secondRole);
 
-    step1CountdownLatch.countDown();
+    spyStep1.unblock();
     await().until(firstTransitionFuture::isDone);
     await().until(secondTransitionFuture::isDone);
 
@@ -169,7 +166,7 @@ class PartitionTransitionImplTest {
   }
 
   @Test
-  // regression test for https://github.com/camunda/zeebe/issues/7873
+  // regression test for https://github.com/camunda/camunda/issues/7873
   void shouldNotStartMultipleTransitions() {
     // given
     final var firstStepFirstTransitionFuture = TEST_CONCURRENCY_CONTROL.<Void>createFuture();
@@ -209,7 +206,7 @@ class PartitionTransitionImplTest {
     inOrder.verify(mockStep1).onNewRaftRole(mockContext, Role.FOLLOWER);
 
     // prepare for transition - close resources
-    inOrder.verify(mockStep1).prepareTransition(mockContext, 2L, RaftServer.Role.LEADER);
+    inOrder.verify(mockStep1).prepareTransition(mockContext, 2L, Role.LEADER);
 
     // skip transition
     inOrder.verify(mockStep1, never()).transitionTo(mockContext, 2, Role.LEADER);
@@ -222,7 +219,7 @@ class PartitionTransitionImplTest {
   }
 
   @Test
-  // regression test for https://github.com/camunda/zeebe/issues/7873
+  // regression test for https://github.com/camunda/camunda/issues/7873
   void shouldExecuteTransitionsInOrder() {
     // given
     final var firstStepFirstTransitionFuture = TEST_CONCURRENCY_CONTROL.<Void>createFuture();
@@ -424,13 +421,11 @@ class PartitionTransitionImplTest {
   private final class WaitingTransitionStep implements PartitionTransitionStep {
 
     private final ConcurrencyControl concurrencyControl;
-    private final CountDownLatch transitionCountDownLatch;
+    private ActorFuture<Void> transitionFuture;
+    private int invocationCount = 0;
 
-    private WaitingTransitionStep(
-        final ConcurrencyControl concurrencyControl,
-        final CountDownLatch transitionCountDownLatch) {
+    private WaitingTransitionStep(final ConcurrencyControl concurrencyControl) {
       this.concurrencyControl = concurrencyControl;
-      this.transitionCountDownLatch = transitionCountDownLatch;
     }
 
     @Override
@@ -444,25 +439,22 @@ class PartitionTransitionImplTest {
     @Override
     public ActorFuture<Void> transitionTo(
         final PartitionTransitionContext context, final long term, final Role targetRole) {
-      final ActorFuture<Void> transitionFuture = concurrencyControl.createFuture();
-      final var transitionThread =
-          new Thread(
-              () -> {
-                try {
-                  transitionCountDownLatch.await();
-                } catch (final InterruptedException e) {
-                  LOGGER.error(e.getMessage(), e);
-                } finally {
-                  transitionFuture.complete(null);
-                }
-              });
-      transitionThread.start();
-      return transitionFuture;
+      invocationCount++;
+      if (invocationCount == 1) {
+        // only block first invocation
+        transitionFuture = concurrencyControl.createFuture();
+        return transitionFuture;
+      }
+      return concurrencyControl.createCompletedFuture();
     }
 
     @Override
     public String getName() {
       return "WaitingTransitionStep";
+    }
+
+    public void unblock() {
+      transitionFuture.complete(null);
     }
   }
 }

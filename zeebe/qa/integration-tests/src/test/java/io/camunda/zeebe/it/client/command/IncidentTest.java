@@ -2,70 +2,56 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.client.api.command.ClientException;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+@ZeebeIntegration
+@AutoCloseResources
 public final class IncidentTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @AutoCloseResource ZeebeClient client;
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  ZeebeResourcesHelper resourcesHelper;
 
-  private long processDefinitionKey;
-  private String jobType;
-
-  @Before
-  public void setUp() {
-
-    jobType = helper.getJobType();
-
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .exclusiveGateway()
-            .sequenceFlowId("to-a")
-            .conditionExpression("x > 10")
-            .endEvent("a")
-            .moveToLastExclusiveGateway()
-            .sequenceFlowId("to-b")
-            .defaultFlow()
-            .endEvent("b")
-            .done();
-
-    processDefinitionKey = CLIENT_RULE.deployProcess(process);
+  @BeforeEach
+  public void init() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
-  @Test
-  public void shouldRejectResolveOnNonExistingIncident() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectResolveOnNonExistingIncident(final boolean useRest) {
     // given
-    final int partition = CLIENT_RULE.getPartitions().get(0);
+    final int partition = resourcesHelper.getPartitions().getFirst();
     final long nonExistingKey = Protocol.encodePartitionId(partition, 123);
 
     // when
@@ -74,51 +60,39 @@ public final class IncidentTest {
             "Expected to resolve incident with key '%d', but no such incident was found",
             nonExistingKey);
 
-    Assertions.assertThatThrownBy(
-            () -> CLIENT_RULE.getClient().newResolveIncidentCommand(nonExistingKey).send().join())
-        .isInstanceOf(ClientException.class)
+    Assertions.assertThatThrownBy(() -> getCommand(client, useRest, nonExistingKey).send().join())
         .hasMessageContaining(expectedMessage);
   }
 
-  @Test
-  public void shouldResolveIncident() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldResolveIncident(final boolean useRest) {
     // given
-    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
-
+    final long processInstanceKey = createProcessInstance();
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(CREATED).getFirst();
 
     // when
-    CLIENT_RULE
-        .getClient()
-        .newSetVariablesCommand(processInstanceKey)
-        .variables(Map.of("x", 21))
-        .send()
-        .join();
+    client.newSetVariablesCommand(processInstanceKey).variables(Map.of("x", 21)).send().join();
 
-    CLIENT_RULE.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
+    getCommand(client, useRest, incident.getKey()).send().join();
 
     // then
     ZeebeAssertHelper.assertIncidentResolved();
   }
 
-  @Test
-  public void shouldRejectDuplicateResolving() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectDuplicateResolving(final boolean useRest) {
     // given
-    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
-
+    final long processInstanceKey = createProcessInstance();
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords(CREATED).getFirst();
 
     // when
-    CLIENT_RULE
-        .getClient()
-        .newSetVariablesCommand(processInstanceKey)
-        .variables(Map.of("x", 21))
-        .send()
-        .join();
+    client.newSetVariablesCommand(processInstanceKey).variables(Map.of("x", 21)).send().join();
 
-    CLIENT_RULE.getClient().newResolveIncidentCommand(incident.getKey()).send().join();
+    getCommand(client, useRest, incident.getKey()).send().join();
 
     // then
     ZeebeAssertHelper.assertIncidentResolved();
@@ -129,9 +103,31 @@ public final class IncidentTest {
             incident.getKey());
 
     Assertions.assertThatThrownBy(
-            () ->
-                CLIENT_RULE.getClient().newResolveIncidentCommand(incident.getKey()).send().join())
-        .isInstanceOf(ClientException.class)
+            () -> getCommand(client, useRest, incident.getKey()).send().join())
         .hasMessageContaining(expectedMessage);
+  }
+
+  private ResolveIncidentCommandStep1 getCommand(
+      final ZeebeClient client, final boolean useRest, final long incidentKey) {
+    final ResolveIncidentCommandStep1 incidentCommandStep1 =
+        client.newResolveIncidentCommand(incidentKey);
+    return useRest ? incidentCommandStep1.useRest() : incidentCommandStep1.useGrpc();
+  }
+
+  private long createProcessInstance() {
+    final long processDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .exclusiveGateway()
+                .sequenceFlowId("to-a")
+                .conditionExpression("x > 10")
+                .endEvent("a")
+                .moveToLastExclusiveGateway()
+                .sequenceFlowId("to-b")
+                .defaultFlow()
+                .endEvent("b")
+                .done());
+    return resourcesHelper.createProcessInstance(processDefinitionKey);
   }
 }

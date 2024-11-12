@@ -8,11 +8,16 @@ jobs:
   slack-notify:
     name: Send slack notification if issue is labeled as critical
     runs-on: ubuntu-latest
-    if: ${{ github.event.label.name == 'severity/critical' }}
+    if: >
+      github.event.label.name == 'severity/critical' &&
+      (
+        contains(github.event.issue.labels.*.name, 'component/zeebe') ||
+        !contains(join(github.event.issue.labels.*.name, ', '), 'component/')
+      )
     steps:
       - id: slack-notify
         name: Send slack notification
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.27.0
         with:
           # For posting a rich message using Block Kit
           payload: |

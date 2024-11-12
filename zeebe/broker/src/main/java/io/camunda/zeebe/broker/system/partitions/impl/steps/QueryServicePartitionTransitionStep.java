@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.engine.state.query.StateQueryService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.time.InstantSource;
 import org.agrona.CloseHelper;
 
 public final class QueryServicePartitionTransitionStep implements PartitionTransitionStep {
@@ -44,7 +45,7 @@ public final class QueryServicePartitionTransitionStep implements PartitionTrans
     if (targetRole != Role.INACTIVE
         && (currentRole == Role.LEADER || context.getQueryService() == null)) {
       try {
-        final var service = new StateQueryService(context.getZeebeDb());
+        final var service = new StateQueryService(context.getZeebeDb(), InstantSource.system());
         context.setQueryService(service);
         return CompletableActorFuture.completed(null);
       } catch (final Exception e) {

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.qa.util.cluster;
 
@@ -11,12 +11,14 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import com.google.common.collect.ObjectArrays;
 import io.atomix.cluster.MemberId;
+import io.camunda.application.Profile;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
-import io.camunda.zeebe.shared.Profile;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.SequencedCollection;
 import java.util.function.Predicate;
@@ -226,6 +228,11 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    */
   T withProperty(final String key, final Object value);
 
+  default T withAdditionalProperties(final Map<String, Object> properties) {
+    properties.forEach(this::withProperty);
+    return self();
+  }
+
   /**
    * Configures additional active Spring profiles.
    *
@@ -233,6 +240,16 @@ public interface TestApplication<T extends TestApplication<T>> extends AutoClose
    * @return itself for chaining
    */
   T withAdditionalProfile(final String profile);
+
+  /**
+   * Configures additional active Spring profiles.
+   *
+   * @return itself for chaining
+   */
+  default T withAdditionalProfiles(final Collection<Profile> profiles) {
+    profiles.forEach(this::withAdditionalProfile);
+    return self();
+  }
 
   /**
    * @see #withAdditionalProfile(String)

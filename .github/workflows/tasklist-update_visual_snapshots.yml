@@ -4,23 +4,30 @@ on:
   pull_request:
     types: [labeled, synchronize]
 
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Exception for main branch: complete builds for every commit needed for confidenence
+concurrency:
+  cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
+
 jobs:
   update-snapshots:
     if: github.event.pull_request.state != 'closed' && (github.event.label.name == 'update-snapshots' || contains( github.event.pull_request.labels.*.name, 'update-snapshots'))
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.43.1
+      image: mcr.microsoft.com/playwright:v1.47.2
       options: --user 1001:1000
 
     steps:
       - name: Check out repository code
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
-      - name: Setup yarn cache
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
           node-version: "20"
-          cache: "yarn"
-          cache-dependency-path: tasklist/client/yarn.lock
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: tasklist/client
       - name: Install node dependencies
         working-directory: ./tasklist/client
         run: yarn
@@ -36,5 +43,5 @@ jobs:
       - name: Commit screenshots
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "chore: updated snapshots"
+          commit_message: "test: updated tasklist snapshots"
           file_pattern: "tasklist/client/**/*.png"

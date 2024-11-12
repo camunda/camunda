@@ -2,38 +2,28 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
 import io.camunda.zeebe.broker.Loggers;
-import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
-import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.broker.transport.queryapi.QueryApiRequestHandler;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
-import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
-import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerTransport;
-import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
 public final class CommandApiServiceImpl extends Actor
-    implements PartitionListener, DiskSpaceUsageListener, CommandApiService {
+    implements DiskSpaceUsageListener, CommandApiService {
 
-  private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
   private final CommandApiRequestHandler commandHandler;
   private final QueryApiRequestHandler queryHandler;
@@ -42,12 +32,9 @@ public final class CommandApiServiceImpl extends Actor
 
   public CommandApiServiceImpl(
       final ServerTransport serverTransport,
-      final BrokerInfo localBroker,
-      final PartitionAwareRequestLimiter limiter,
       final ActorSchedulingService scheduler,
       final QueryApiCfg queryApiCfg) {
     this.serverTransport = serverTransport;
-    this.limiter = limiter;
     this.scheduler = scheduler;
     commandHandler = new CommandApiRequestHandler();
     queryHandler = new QueryApiRequestHandler(queryApiCfg);
@@ -67,7 +54,7 @@ public final class CommandApiServiceImpl extends Actor
   @Override
   protected void onActorClosing() {
     for (final Integer leadPartition : leadPartitions) {
-      removeLeaderHandlers(leadPartition);
+      unregisterHandlers(leadPartition);
     }
     leadPartitions.clear();
     actor.runOnCompletion(
@@ -87,85 +74,51 @@ public final class CommandApiServiceImpl extends Actor
   }
 
   @Override
-  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
-    return removeLeaderHandlersAsync(partitionId);
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingLeader(
-      final int partitionId,
-      final long term,
-      final LogStream logStream,
-      final QueryService queryService) {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-    actor.call(
-        () -> {
-          leadPartitions.add(partitionId);
-          limiter.addPartition(partitionId);
-
-          queryHandler.addPartition(partitionId, queryService);
-          serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
-
-          logStream
-              .newLogStreamWriter()
-              .onComplete(
-                  (recordWriter, error) -> {
-                    if (error == null) {
-                      final var requestLimiter = limiter.getLimiter(partitionId);
-                      commandHandler.addPartition(partitionId, recordWriter, requestLimiter);
-                      serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
-                      future.complete(null);
-                    } else {
-                      Loggers.SYSTEM_LOGGER.error(
-                          "Error on retrieving write buffer from log stream {}",
-                          partitionId,
-                          error);
-                      future.completeExceptionally(error);
-                    }
-                  });
-        });
-    return future;
-  }
-
-  @Override
-  public ActorFuture<Void> onBecomingInactive(final int partitionId, final long term) {
-    return removeLeaderHandlersAsync(partitionId);
-  }
-
-  private ActorFuture<Void> removeLeaderHandlersAsync(final int partitionId) {
-    return actor.call(() -> removeLeaderHandlers(partitionId));
-  }
-
-  private void removeLeaderHandlers(final int partitionId) {
-    commandHandler.removePartition(partitionId);
-    queryHandler.removePartition(partitionId);
-    cleanLeadingPartition(partitionId);
-  }
-
-  private void cleanLeadingPartition(final int partitionId) {
-    leadPartitions.remove(partitionId);
-    removeForPartitionId(partitionId);
-  }
-
-  private void removeForPartitionId(final int partitionId) {
-    limiter.removePartition(partitionId);
-    serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
-    serverTransport.unsubscribe(partitionId, RequestType.QUERY);
-  }
-
-  @Override
   public CommandResponseWriter newCommandResponseWriter() {
     return new CommandResponseWriterImpl(serverTransport);
   }
 
   @Override
-  public Consumer<TypedRecord<?>> getOnProcessedListener(final int partitionId) {
-    final RequestLimiter<Intent> partitionLimiter = limiter.getLimiter(partitionId);
-    return typedRecord -> {
-      if (typedRecord.getRecordType() == RecordType.COMMAND && typedRecord.hasRequestMetadata()) {
-        partitionLimiter.onResponse(typedRecord.getRequestStreamId(), typedRecord.getRequestId());
-      }
-    };
+  public void onRecovered(final int partitionId) {
+    commandHandler.onRecovered(partitionId);
+  }
+
+  @Override
+  public void onPaused(final int partitionId) {
+    commandHandler.onPaused(partitionId);
+  }
+
+  @Override
+  public void onResumed(final int partitionId) {
+    commandHandler.onResumed(partitionId);
+  }
+
+  @Override
+  public ActorFuture<Void> registerHandlers(
+      final int partitionId, final LogStream logStream, final QueryService queryService) {
+    return actor.call(
+        () -> {
+          // create the writer immediately so if the logStream is closed, this will throw an
+          // exception immediately
+          final var logStreamWriter = logStream.newLogStreamWriter();
+          leadPartitions.add(partitionId);
+          queryHandler.addPartition(partitionId, queryService);
+          serverTransport.subscribe(partitionId, RequestType.QUERY, queryHandler);
+          commandHandler.addPartition(partitionId, logStreamWriter);
+          serverTransport.subscribe(partitionId, RequestType.COMMAND, commandHandler);
+        });
+  }
+
+  @Override
+  public ActorFuture<Void> unregisterHandlers(final int partitionId) {
+    return actor.call(
+        () -> {
+          commandHandler.removePartition(partitionId);
+          queryHandler.removePartition(partitionId);
+          leadPartitions.remove(partitionId);
+          serverTransport.unsubscribe(partitionId, RequestType.COMMAND);
+          serverTransport.unsubscribe(partitionId, RequestType.QUERY);
+        });
   }
 
   @Override

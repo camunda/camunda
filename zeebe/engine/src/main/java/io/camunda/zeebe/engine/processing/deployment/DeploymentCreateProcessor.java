@@ -2,29 +2,34 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapArray;
 import static java.util.function.Predicate.not;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
-import io.camunda.zeebe.engine.processing.common.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor.EvaluationException;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.transform.DeploymentTransformer;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
@@ -46,12 +51,15 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -74,6 +82,7 @@ public final class DeploymentCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public DeploymentCreateProcessor(
       final ProcessingState processingState,
@@ -81,7 +90,10 @@ public final class DeploymentCreateProcessor
       final Writers writers,
       final KeyGenerator keyGenerator,
       final FeatureFlags featureFlags,
-      final CommandDistributionBehavior distributionBehavior) {
+      final CommandDistributionBehavior distributionBehavior,
+      final EngineConfiguration config,
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
     formState = processingState.getFormState();
@@ -93,15 +105,34 @@ public final class DeploymentCreateProcessor
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
     this.distributionBehavior = distributionBehavior;
+    this.authCheckBehavior = authCheckBehavior;
     deploymentTransformer =
         new DeploymentTransformer(
-            stateWriter, processingState, expressionProcessor, keyGenerator, featureFlags);
+            stateWriter,
+            processingState,
+            expressionProcessor,
+            keyGenerator,
+            featureFlags,
+            config,
+            clock);
     startEventSubscriptionManager =
         new StartEventSubscriptionManager(processingState, keyGenerator, stateWriter);
   }
 
   @Override
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
+    final var authorizationRequest =
+        new AuthorizationRequest(
+            command, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
+    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+      final var errorMessage =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+      return;
+    }
+
     transformAndDistributeDeployment(command);
     // manage the top-level start event subscriptions except for timers
     startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue());
@@ -147,6 +178,9 @@ public final class DeploymentCreateProcessor
 
   private void transformAndDistributeDeployment(final TypedRecord<DeploymentRecord> command) {
     final DeploymentRecord deploymentEvent = command.getValue();
+    final long key = keyGenerator.nextKey();
+    deploymentEvent.setDeploymentKey(key);
+
     // Note: transforming a resource will also write the CREATE events for said resource
     final Either<Failure, Void> result = deploymentTransformer.transform(deploymentEvent);
 
@@ -161,13 +195,12 @@ public final class DeploymentCreateProcessor
       throw new TimerCreationFailedException(reason);
     }
 
-    final long key = keyGenerator.nextKey();
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
     responseWriter.writeEventOnCommand(
         key, DeploymentIntent.CREATED, recordWithoutResource, command);
     stateWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, recordWithoutResource);
 
-    distributionBehavior.distributeCommand(key, command);
+    distributionBehavior.withKey(key).inQueue(DistributionQueue.DEPLOYMENT).distribute(command);
   }
 
   private void processDistributedRecord(final TypedRecord<DeploymentRecord> command) {
@@ -178,7 +211,7 @@ public final class DeploymentCreateProcessor
     final var recordWithoutResource = createDeploymentWithoutResources(deploymentEvent);
     stateWriter.appendFollowUpEvent(
         command.getKey(), DeploymentIntent.CREATED, recordWithoutResource);
-    distributionBehavior.acknowledgeCommand(command.getKey(), command);
+    distributionBehavior.acknowledgeCommand(command);
   }
 
   private void createBpmnResources(final DeploymentRecord deploymentEvent) {
@@ -187,7 +220,9 @@ public final class DeploymentCreateProcessor
         .forEach(
             metadata -> {
               for (final DeploymentResource resource : deploymentEvent.getResources()) {
-                if (resource.getResourceName().equals(metadata.getResourceName())) {
+                final var resourceChecksum =
+                    deploymentTransformer.getChecksum(resource.getResource());
+                if (resourceChecksum.equals(metadata.getChecksumBuffer())) {
                   stateWriter.appendFollowUpEvent(
                       metadata.getKey(),
                       ProcessIntent.CREATED,

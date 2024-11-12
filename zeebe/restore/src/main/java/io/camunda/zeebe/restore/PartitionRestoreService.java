@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.restore;
 
@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
+import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
@@ -26,6 +27,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -40,12 +42,20 @@ public class PartitionRestoreService {
 
   final Path rootDirectory;
   private final RaftPartition partition;
+  private final int brokerId;
+  private final CRC32CChecksumProvider checksumProvider;
 
-  public PartitionRestoreService(final BackupStore backupStore, final RaftPartition partition) {
+  public PartitionRestoreService(
+      final BackupStore backupStore,
+      final RaftPartition partition,
+      final int brokerId,
+      final CRC32CChecksumProvider checksumProvider) {
     this.backupStore = backupStore;
     partitionId = partition.id().id();
     rootDirectory = partition.dataDirectory().toPath();
     this.partition = partition;
+    this.brokerId = brokerId;
+    this.checksumProvider = Objects.requireNonNull(checksumProvider);
   }
 
   /**
@@ -176,7 +186,8 @@ public class PartitionRestoreService {
 
     @SuppressWarnings("resource")
     final RestorableSnapshotStore snapshotStore =
-        new FileBasedSnapshotStore(partition.id().id(), partition.dataDirectory().toPath());
+        new FileBasedSnapshotStore(
+            brokerId, partition.id().id(), partition.dataDirectory().toPath(), checksumProvider);
 
     try {
       snapshotStore.restore(

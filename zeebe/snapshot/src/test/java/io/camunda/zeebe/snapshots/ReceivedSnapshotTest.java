@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots;
 
@@ -16,7 +16,6 @@ import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
-import io.camunda.zeebe.snapshots.impl.InvalidSnapshotChecksum;
 import io.camunda.zeebe.snapshots.impl.SnapshotWriteException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -52,10 +51,12 @@ public class ReceivedSnapshotTest {
     final var senderDirectory = temporaryFolder.newFolder("sender").toPath();
     final var receiverDirectory = temporaryFolder.newFolder("receiver").toPath();
 
-    senderSnapshotStore = new FileBasedSnapshotStore(partitionId, senderDirectory);
+    senderSnapshotStore =
+        new FileBasedSnapshotStore(0, partitionId, senderDirectory, snapshotPath -> Map.of());
     scheduler.get().submitActor((Actor) senderSnapshotStore).join();
 
-    receiverSnapshotStore = new FileBasedSnapshotStore(partitionId, receiverDirectory);
+    receiverSnapshotStore =
+        new FileBasedSnapshotStore(0, partitionId, receiverDirectory, snapshotPath -> Map.of());
 
     scheduler.get().submitActor((Actor) receiverSnapshotStore).join();
   }
@@ -107,9 +108,9 @@ public class ReceivedSnapshotTest {
     assertThat(receiverSnapshotStore.getLatestSnapshot())
         .as("the received snapshot was committed and is the latest snapshot")
         .hasValue(receivedSnapshot);
-    assertThat(receivedSnapshot.getChecksum())
+    assertThat(receivedSnapshot.getChecksums().sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received snapshot has the same checksum as the sent snapshot")
-        .isEqualTo(persistedSnapshot.getChecksum());
+        .isTrue();
     assertThat(receivedSnapshot.getId())
         .as("the received snapshot has the same ID as the sent snapshot")
         .isEqualTo(persistedSnapshot.getId());
@@ -144,9 +145,9 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot)
         .as("the previous snapshot should still be the latest snapshot")
         .isEqualTo(receiverSnapshotStore.getLatestSnapshot().orElseThrow());
-    assertThat(receivedSnapshot.getChecksum())
+    assertThat(receivedSnapshot.getChecksums().sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received snapshot still has the same checksum")
-        .isEqualTo(persistedSnapshot.getChecksum());
+        .isTrue();
   }
 
   @Test
@@ -189,7 +190,7 @@ public class ReceivedSnapshotTest {
         .withThrowableOfType(ExecutionException.class)
         .withCauseInstanceOf(SnapshotAlreadyExistsException.class)
         .withMessageContaining(
-            "Expected to receive snapshot with id 1-0-1-0, but was already persisted");
+            "Expected to receive snapshot with id 1-0-1-0-0, but was already persisted");
   }
 
   @Test
@@ -255,9 +256,12 @@ public class ReceivedSnapshotTest {
     assertThat(secondReceivedSnapshot.getPath())
         .as("the second received snapshot was not removed as it's not considered older")
         .exists();
-    assertThat(receivedPersistedSnapshot.getChecksum())
+    assertThat(
+            receivedPersistedSnapshot
+                .getChecksums()
+                .sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received, persisted snapshot have the same checksum as the persisted one")
-        .isEqualTo(persistedSnapshot.getChecksum());
+        .isTrue();
   }
 
   @Test
@@ -278,32 +282,9 @@ public class ReceivedSnapshotTest {
     assertThat(receivedSnapshot.getPath())
         .as("the received snapshot was removed on persist of the other snapshot")
         .doesNotExist();
-    assertThat(receivedPersisted.getChecksum())
+    assertThat(receivedPersisted.getChecksums().sameChecksums(persistedSnapshot.getChecksums()))
         .as("the received, persisted snapshot have the same checksum as the persisted one")
-        .isEqualTo(persistedSnapshot.getChecksum());
-  }
-
-  @Test
-  public void shouldCompleteExceptionallyOnConsumingChunkWithInvalidSnapshotChecksum() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      receivedSnapshot.apply(snapshotChunkReader.next()).join();
-
-      final var originalChunk = snapshotChunkReader.next();
-      final SnapshotChunk corruptedChunk =
-          SnapshotChunkWrapper.withSnapshotChecksum(originalChunk, 0xCAFEL);
-
-      // then
-      assertThatThrownBy(() -> receivedSnapshot.apply(corruptedChunk).join())
-          .as("the snapshot chunk should not be applied as it had a different snapshot checksum")
-          .hasCauseInstanceOf(SnapshotWriteException.class);
-    }
+        .isTrue();
   }
 
   @Test
@@ -324,30 +305,6 @@ public class ReceivedSnapshotTest {
           .as("the chunk should not be applied as its content checksum is not 0xCAFEL")
           .hasCauseInstanceOf(SnapshotWriteException.class);
     }
-  }
-
-  @Test
-  public void shouldNotPersistWhenSnapshotChecksumIsWrong() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot();
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      while (snapshotChunkReader.hasNext()) {
-        final var originalChunk = snapshotChunkReader.next();
-        final var corruptedChunk =
-            SnapshotChunkWrapper.withSnapshotChecksum(originalChunk, 0xDEADBEEFL);
-        receivedSnapshot.apply(corruptedChunk).join();
-      }
-    }
-
-    // then
-    assertThatThrownBy(() -> receivedSnapshot.persist().join())
-        .as(
-            "the snapshot should not be persisted since the computed checksum is not the reported one")
-        .hasCauseInstanceOf(InvalidSnapshotChecksum.class);
   }
 
   @Test

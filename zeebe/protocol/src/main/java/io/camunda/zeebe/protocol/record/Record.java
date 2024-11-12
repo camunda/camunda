@@ -95,6 +95,8 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    * <ul>
    *   <li>Key: <code>authorized_tenants</code>; Value: a List of Strings defining the user's
    *       authorized tenants.
+   *   <li>Key: <code>authorized_user_key</code>; Value: the Long representation of the
+   *       authenticated user's key
    * </ul>
    *
    * @return a Map of authorization data for this record or an empty Map if not set.
@@ -128,6 +130,14 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    * @return record value
    */
   T getValue();
+
+  /**
+   * The operationReference is an id passed from clients to correlate operations with resulted
+   * records
+   *
+   * @return the reference for the operation that produced this record
+   */
+  long getOperationReference();
 
   /**
    * Creates a deep copy of the current record. Can be used to collect records.

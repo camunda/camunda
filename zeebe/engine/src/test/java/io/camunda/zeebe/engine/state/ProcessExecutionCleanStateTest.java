@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state;
 
@@ -44,6 +44,7 @@ public final class ProcessExecutionCleanStateTest {
           ZbColumnFamilies.PROCESS_CACHE,
           ZbColumnFamilies.PROCESS_CACHE_BY_ID_AND_VERSION,
           ZbColumnFamilies.PROCESS_CACHE_DIGEST_BY_ID,
+          ZbColumnFamilies.PROCESS_DEFINITION_KEY_BY_PROCESS_ID_AND_DEPLOYMENT_KEY,
           ZbColumnFamilies.MESSAGE_STATS,
           ZbColumnFamilies.MIGRATIONS_STATE);
 

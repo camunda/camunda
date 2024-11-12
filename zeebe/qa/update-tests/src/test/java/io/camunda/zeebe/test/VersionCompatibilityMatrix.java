@@ -2,14 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.test;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.StreamUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.github.resilience4j.core.IntervalFunction;
@@ -19,8 +20,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.SequencedCollection;
+import java.util.function.BinaryOperator;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.provider.Arguments;
 
@@ -36,16 +41,21 @@ final class VersionCompatibilityMatrix {
    *
    * <ul>
    *   <li>Locally: {@link #fromPreviousMinorToCurrent()} for fast feedback.
-   *   <li>CI: {@link #fromPreviousPatchesToCurrent()} for extended coverage without taking too much
-   *       time.
-   *   <li>Periodic tests: {@link #full()} for full coverage of all allowed upgrade paths.
+   *   <li>CI: {@link #fromFirstAndLastPatchToCurrent()} for extended coverage without taking too
+   *       much time.
+   *   <li>Periodic tests for current versions: {@link #fromPreviousPatchesToCurrent()} to ensure
+   *       that the current version is compatible with all released patches.
+   *   <li>Periodic tests for released versions: {@link #full()} for full coverage of all allowed
+   *       upgrade paths.
    * </ul>
    */
   private static Stream<Arguments> auto() {
     if (System.getenv("ZEEBE_CI_CHECK_VERSION_COMPATIBILITY") != null) {
       return full();
-    } else if (System.getenv("CI") != null) {
+    } else if (System.getenv("ZEEBE_CI_CHECK_CURRENT_VERSION_COMPATIBILITY") != null) {
       return fromPreviousPatchesToCurrent();
+    } else if (System.getenv("CI") != null) {
+      return fromFirstAndLastPatchToCurrent();
     } else {
       return fromPreviousMinorToCurrent();
     }
@@ -63,8 +73,28 @@ final class VersionCompatibilityMatrix {
         .map(version -> Arguments.of(version.toString(), "CURRENT"));
   }
 
+  private static Stream<Arguments> fromFirstAndLastPatchToCurrent() {
+    final var current = VersionUtil.getSemanticVersion().orElseThrow();
+
+    final var minAndMaxPatch =
+        discoverVersions()
+            .filter(version -> version.compareTo(current) < 0)
+            .filter(version -> current.minor() - version.minor() == 1)
+            .collect(StreamUtil.minMax(Comparator.comparing(SemanticVersion::patch)));
+    return Stream.of(
+        Arguments.of(minAndMaxPatch.min().toString(), "CURRENT"),
+        Arguments.of(minAndMaxPatch.max().toString(), "CURRENT"));
+  }
+
   private static Stream<Arguments> full() {
     final var versions = discoverVersions().sorted().toList();
+    final var latestVersionPerMinor =
+        versions.stream()
+            .collect(
+                Collectors.toMap(
+                    SemanticVersion::minor,
+                    Function.identity(),
+                    BinaryOperator.maxBy(Comparator.comparing(SemanticVersion::patch))));
     final var combinations =
         versions.stream()
             .filter(version -> version.minor() > 0)
@@ -73,6 +103,17 @@ final class VersionCompatibilityMatrix {
                     versions.stream()
                         .filter(version2 -> version1.compareTo(version2) < 0)
                         .filter(version2 -> version2.minor() - version1.minor() <= 1)
+                        .filter(
+                            version2 -> {
+                              if (version1.minor() <= 4 && version2.minor() > version1.minor()) {
+                                // When updating from 8.4 (or earlier) to the next minor, only test
+                                // the latest patch.
+                                // Only 8.5 and onwards allow updating to a not-latest patch.
+                                return latestVersionPerMinor.get(version2.minor()).equals(version2);
+                              } else {
+                                return true;
+                              }
+                            })
                         .map(version2 -> Arguments.of(version1.toString(), version2.toString())))
             .toList();
 
@@ -117,7 +158,7 @@ final class VersionCompatibilityMatrix {
       }
     }
     final var endpoint =
-        URI.create("https://api.github.com/repos/camunda/zeebe/git/matching-refs/tags/8.");
+        URI.create("https://api.github.com/repos/camunda/camunda/git/matching-refs/tags/8.");
     try (final var httpClient = HttpClient.newHttpClient()) {
       final var retry =
           Retry.of(

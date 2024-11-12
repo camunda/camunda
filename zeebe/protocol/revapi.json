@@ -68,6 +68,12 @@
           "justification": "Ignore changes to the project version, as it changes on every release",
           "code": "java.field.constantValueChanged",
           "fieldName": "SEMANTIC_VERSION"
+        },
+        {
+          "justification": "Property with `ExecutionListenerEventType` type was not exported before and was only used internally. To simplify the codebase and reduce redundancy, we have consolidated the event types into a single enum, `JobListenerEventType`, which will be used for both Execution Listeners and User Task Listeners. This change does not impact any public interfaces",
+          "code": "java.class.removed",
+          "old": "enum io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType",
+          "elementKind": "enum"
         }
       ]
     }

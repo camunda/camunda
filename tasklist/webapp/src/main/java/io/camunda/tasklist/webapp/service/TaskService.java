@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.webapp.service;
 
@@ -47,6 +38,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpServerErrorException;
 
@@ -56,21 +48,31 @@ public class TaskService {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskService.class);
 
   @Autowired private UserReader userReader;
-  @Autowired private ZeebeClient zeebeClient;
+
+  @Autowired
+  @Qualifier("tasklistZeebeClient")
+  private ZeebeClient zeebeClient;
+
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
-  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
+
   @Autowired private Metrics metrics;
   @Autowired private TaskMetricsStore taskMetricsStore;
   @Autowired private AssigneeMigrator assigneeMigrator;
   @Autowired private TaskValidator taskValidator;
 
-  public List<TaskDTO> getTasks(TaskQueryDTO query) {
+  public List<TaskDTO> getTasks(final TaskQueryDTO query) {
     return getTasks(query, emptySet(), false);
   }
 
   public List<TaskDTO> getTasks(
-      TaskQueryDTO query, Set<String> includeVariableNames, boolean fetchFullValuesFromDB) {
+      final TaskQueryDTO query,
+      final Set<String> includeVariableNames,
+      final boolean fetchFullValuesFromDB) {
     if (countNonNullObjects(
             query.getSearchAfter(), query.getSearchAfterOrEqual(),
             query.getSearchBefore(), query.getSearchBeforeOrEqual())
@@ -80,7 +82,7 @@ public class TaskService {
     }
 
     if (query.getPageSize() <= 0) {
-      throw new InvalidRequestException("Page size cannot should be a positive number");
+      throw new InvalidRequestException("Page size should be a positive number");
     }
 
     if (query.getImplementation() != null
@@ -123,11 +125,12 @@ public class TaskService {
         .toList();
   }
 
-  public TaskDTO getTask(String taskId) {
+  public TaskDTO getTask(final String taskId) {
     return TaskDTO.createFrom(taskStore.getTask(taskId), objectMapper);
   }
 
-  public TaskDTO assignTask(String taskId, String assignee, Boolean allowOverrideAssignment) {
+  public TaskDTO assignTask(
+      final String taskId, final String assignee, Boolean allowOverrideAssignment) {
     if (allowOverrideAssignment == null) {
       allowOverrideAssignment = true;
     }
@@ -157,7 +160,7 @@ public class TaskService {
                 .assignee(taskAssignee)
                 .send()
                 .join();
-      } catch (ClientException exception) {
+      } catch (final ClientException exception) {
         throw new TasklistRuntimeException(exception.getMessage());
       }
     }
@@ -167,7 +170,7 @@ public class TaskService {
     return TaskDTO.createFrom(claimedTask, objectMapper);
   }
 
-  private String determineTaskAssignee(String assignee) {
+  private String determineTaskAssignee(final String assignee) {
     final UserDTO currentUser = getCurrentUser();
     return StringUtils.isEmpty(assignee) && !currentUser.isApiUser()
         ? currentUser.getUserId()
@@ -175,11 +178,12 @@ public class TaskService {
   }
 
   public TaskDTO completeTask(
-      String taskId, List<VariableInputDTO> variables, boolean withDraftVariableValues) {
+      final String taskId,
+      final List<VariableInputDTO> variables,
+      final boolean withDraftVariableValues) {
     final Map<String, Object> variablesMap = new HashMap<>();
     requireNonNullElse(variables, Collections.<VariableInputDTO>emptyList())
-        .forEach(
-            variable -> variablesMap.put(variable.getName(), this.extractTypedValue(variable)));
+        .forEach(variable -> variablesMap.put(variable.getName(), extractTypedValue(variable)));
 
     try {
       LOGGER.info("Starting completion of task with ID: {}", taskId);
@@ -201,7 +205,7 @@ public class TaskService {
               .send()
               .join();
         }
-      } catch (ClientException exception) {
+      } catch (final ClientException exception) {
         throw new TasklistRuntimeException(exception.getMessage());
       }
 
@@ -213,7 +217,12 @@ public class TaskService {
         deleteDraftTaskVariablesSafely(taskId);
         updateCompletedMetric(completedTaskEntity);
         LOGGER.info("Task with ID {} completed successfully.", taskId);
-      } catch (Exception e) {
+        if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
+          // Remove variables for Job workers
+          // Remove this line after version 8.8
+          variableService.removeVariableByFlowNodeInstanceId(task.getFlowNodeInstanceId());
+        }
+      } catch (final Exception e) {
         LOGGER.error(
             "Task with key {} was COMPLETED but error happened after completion: {}.",
             taskId,
@@ -221,18 +230,18 @@ public class TaskService {
       }
 
       return TaskDTO.createFrom(completedTaskEntity, objectMapper);
-    } catch (HttpServerErrorException e) { // Track only internal server errors
+    } catch (final HttpServerErrorException e) { // Track only internal server errors
       LOGGER.error("Error completing task with ID: {}. Details: {}", taskId, e.getMessage(), e);
       throw new TasklistRuntimeException("Error completing task with ID: " + taskId, e);
     }
   }
 
-  void deleteDraftTaskVariablesSafely(String taskId) {
+  void deleteDraftTaskVariablesSafely(final String taskId) {
     try {
       LOGGER.info(
           "Start deletion of draft task variables associated with task with id='{}'", taskId);
       variableService.deleteDraftTaskVariables(taskId);
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       final String errorMessage =
           String.format(
               "Error during deletion of draft task variables associated with task with id='%s'",
@@ -241,7 +250,7 @@ public class TaskService {
     }
   }
 
-  private Object extractTypedValue(VariableInputDTO variable) {
+  private Object extractTypedValue(final VariableInputDTO variable) {
     if (variable.getValue().equals("null")) {
       return objectMapper
           .nullNode(); // JSON Object null must be instanced like "null", also should not send to
@@ -250,19 +259,19 @@ public class TaskService {
 
     try {
       return objectMapper.readValue(variable.getValue(), Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
-  public TaskDTO unassignTask(String taskId) {
+  public TaskDTO unassignTask(final String taskId) {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     taskValidator.validateCanUnassign(taskBefore);
     final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
     if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
       try {
         zeebeClient.newUserTaskUnassignCommand(taskBefore.getKey()).send().join();
-      } catch (ClientException exception) {
+      } catch (final ClientException exception) {
         taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
         throw new TasklistRuntimeException(exception.getMessage());
       }
@@ -284,7 +293,7 @@ public class TaskService {
       metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
       assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
       taskMetricsStore.registerTaskCompleteEvent(task);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Error updating completed task metric for task with ID: {}", task.getId(), e);
       throw new TasklistRuntimeException(
           "Error updating completed task metric for task with ID: " + task.getId(), e);

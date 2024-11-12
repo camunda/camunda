@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.atomix.raft;
 
@@ -15,7 +15,7 @@ import java.util.stream.Stream;
 import org.junit.Rule;
 import org.junit.Test;
 
-// Regression test https://github.com/camunda/zeebe/issues/14509
+// Regression test https://github.com/camunda/camunda/issues/14509
 public class RaftResetTermAfterRestoreTest {
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(1);
 

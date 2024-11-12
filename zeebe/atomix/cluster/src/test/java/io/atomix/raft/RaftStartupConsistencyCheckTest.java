@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.atomix.raft;
 
@@ -28,7 +28,7 @@ public class RaftStartupConsistencyCheckTest {
 
   @Rule public RaftRule raftRule = RaftRule.withBootstrappedNodes(3);
 
-  @Test // Regression test for https://github.com/camunda/zeebe/issues/10451
+  @Test // Regression test for https://github.com/camunda/camunda/issues/10451
   public void shouldNotFailRestartIfFollowerCrashedBeforeCommittingSnapshot() throws Exception {
     // given
     final var followerToRestart = raftRule.getFollower().orElseThrow();
@@ -82,7 +82,7 @@ public class RaftStartupConsistencyCheckTest {
                     .isEqualTo(snapshotIndex));
   }
 
-  @Test // regression test for https://github.com/camunda/zeebe/issues/14367
+  @Test // regression test for https://github.com/camunda/camunda/issues/14367
   public void shouldHandleRetriedRequestsAfterSnapshotPersist() throws Exception {
     // given -- force a follower to receive a snapshot on restart
     final var snapshotPersistCalled = new AtomicBoolean();

@@ -2,13 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.utils.net.Address;
+import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import io.camunda.zeebe.util.Environment;
 import java.io.File;
@@ -41,7 +43,11 @@ public final class GatewayCfgTest {
         .setClusterName("testCluster")
         .setMemberId("testMember")
         .setHost("1.2.3.4")
-        .setPort(12321);
+        .setPort(12321)
+        .setConfigManager(
+            new ConfigManagerCfg(
+                new ClusterConfigurationGossiperConfig(
+                    Duration.ofSeconds(5), Duration.ofSeconds(30), 6)));
     CUSTOM_CFG
         .getSecurity()
         .setEnabled(true)
@@ -58,6 +64,14 @@ public final class GatewayCfgTest {
     CUSTOM_CFG.getInterceptors().get(1).setId("example2");
     CUSTOM_CFG.getInterceptors().get(1).setClassName("io.camunda.zeebe.example.Interceptor2");
     CUSTOM_CFG.getInterceptors().get(1).setJarPath("./interceptor2.jar");
+    CUSTOM_CFG.getFilters().add(new FilterCfg());
+    CUSTOM_CFG.getFilters().get(0).setId("filterExample");
+    CUSTOM_CFG.getFilters().get(0).setClassName("io.camunda.zeebe.example.Filter");
+    CUSTOM_CFG.getFilters().get(0).setJarPath("./filter.jar");
+    CUSTOM_CFG.getFilters().add(new FilterCfg());
+    CUSTOM_CFG.getFilters().get(1).setId("filterExample2");
+    CUSTOM_CFG.getFilters().get(1).setClassName("io.camunda.zeebe.example.Filter2");
+    CUSTOM_CFG.getFilters().get(1).setJarPath("./filter2.jar");
   }
 
   private final Map<String, String> environment = new HashMap<>();
@@ -110,6 +124,18 @@ public final class GatewayCfgTest {
   }
 
   @Test
+  public void shouldSetCustomConfigManagerCfg() {
+    // when
+    final GatewayCfg gatewayCfg = readConfig(CUSTOM_CFG_FILENAME);
+
+    // then
+    final var gossiperConfig = gatewayCfg.getCluster().getConfigManager().gossip();
+    assertThat(gossiperConfig.syncDelay()).isEqualTo(Duration.ofSeconds(5));
+    assertThat(gossiperConfig.syncRequestTimeout()).isEqualTo(Duration.ofSeconds(30));
+    assertThat(gossiperConfig.gossipFanout()).isEqualTo(6);
+  }
+
+  @Test
   public void shouldUseEnvironmentVariables() {
     // given
     setEnv("zeebe.gateway.network.host", "zeebe");
@@ -122,6 +148,10 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.cluster.memberId", "envMember");
     setEnv("zeebe.gateway.cluster.host", "envHost");
     setEnv("zeebe.gateway.cluster.port", "12345");
+    setEnv("zeebe.gateway.cluster.configManager.gossip.enableSync", "false");
+    setEnv("zeebe.gateway.cluster.configManager.gossip.syncDelay", "5s");
+    setEnv("zeebe.gateway.cluster.configManager.gossip.syncRequestTimeout", "5s");
+    setEnv("zeebe.gateway.cluster.configManager.gossip.gossipFanout", "4");
     setEnv("zeebe.gateway.security.enabled", String.valueOf(false));
     setEnv(
         "zeebe.gateway.security.privateKeyPath",
@@ -141,6 +171,9 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.interceptors.0.id", "overwritten");
     setEnv("zeebe.gateway.interceptors.0.className", "Overwritten");
     setEnv("zeebe.gateway.interceptors.0.jarPath", "./overwritten.jar");
+    setEnv("zeebe.gateway.filters.0.id", "overwrittenFilter");
+    setEnv("zeebe.gateway.filters.0.className", "OverwrittenFilter");
+    setEnv("zeebe.gateway.filters.0.jarPath", "./overwrittenFilter.jar");
 
     final GatewayCfg expected = new GatewayCfg();
     expected
@@ -156,6 +189,12 @@ public final class GatewayCfgTest {
         .setMemberId("envMember")
         .setHost("envHost")
         .setPort(12345);
+    expected
+        .getCluster()
+        .setConfigManager(
+            new ConfigManagerCfg(
+                new ClusterConfigurationGossiperConfig(
+                    Duration.ofSeconds(5), Duration.ofSeconds(5), 4)));
     expected.getThreads().setManagementThreads(32);
     expected
         .getSecurity()
@@ -173,6 +212,11 @@ public final class GatewayCfgTest {
     expected.getInterceptors().get(0).setId("overwritten");
     expected.getInterceptors().get(0).setClassName("Overwritten");
     expected.getInterceptors().get(0).setJarPath("./overwritten.jar");
+
+    expected.getFilters().add(new FilterCfg());
+    expected.getFilters().get(0).setId("overwrittenFilter");
+    expected.getFilters().get(0).setClassName("OverwrittenFilter");
+    expected.getFilters().get(0).setJarPath("./overwrittenFilter.jar");
 
     // when
     final GatewayCfg gatewayCfg = readCustomConfig();
@@ -235,6 +279,22 @@ public final class GatewayCfgTest {
     final var expectedHost = "zeebe";
     final var expectedPort = "5432";
     setEnv("zeebe.gateway.cluster.host", expectedHost);
+    setEnv("zeebe.gateway.cluster.port", expectedPort);
+
+    // when
+    final GatewayCfg actual = readEmptyConfig();
+
+    // then
+    assertThat(actual.getCluster().getAdvertisedHost()).isEqualTo(expectedHost);
+    assertThat(actual.getCluster().getAdvertisedPort()).isEqualTo(Integer.parseInt(expectedPort));
+  }
+
+  @Test
+  public void shouldUseFirstNonLoopBackAdvertisedAddressIfNothingSet() {
+    // given
+    final var expectedHost = Address.defaultAdvertisedHost().getHostAddress();
+    final var expectedPort = "5432";
+    setEnv("zeebe.gateway.cluster.host", null);
     setEnv("zeebe.gateway.cluster.port", expectedPort);
 
     // when

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.deployment;
 
@@ -34,15 +34,20 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
+
   public PersistedDecision() {
-    super(7);
+    super(9);
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(versionProp)
         .declareProperty(decisionKeyProp)
         .declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
   }
 
   public void wrap(final DecisionRecord record) {
@@ -53,6 +58,8 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
     decisionRequirementsIdProp.setValue(record.getDecisionRequirementsIdBuffer());
     decisionRequirementsKeyProp.setValue(record.getDecisionRequirementsKey());
     tenantIdProp.setValue(record.getTenantId());
+    deploymentKeyProp.setValue(record.getDeploymentKey());
+    versionTagProp.setValue(record.getVersionTag());
   }
 
   public PersistedDecision copy() {
@@ -64,6 +71,8 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
     copy.decisionRequirementsIdProp.setValue(BufferUtil.cloneBuffer(getDecisionRequirementsId()));
     copy.decisionRequirementsKeyProp.setValue(getDecisionRequirementsKey());
     copy.tenantIdProp.setValue(getTenantId());
+    copy.deploymentKeyProp.setValue(getDeploymentKey());
+    copy.versionTagProp.setValue(getVersionTag());
     return copy;
   }
 
@@ -97,5 +106,13 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
 
   public void setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+  }
+
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
   }
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.msgpack;
 
@@ -13,6 +13,7 @@ import static org.mockito.Mockito.spy;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -23,10 +24,10 @@ import org.mockito.Mockito;
 public class UnpackedObjectTest {
 
   @Nested
-  public class GreyBox {
+  class GreyBox {
 
     @Test
-    public void shouldResetObjectBeforeReadingValue() {
+    void shouldResetObjectBeforeReadingValue() {
       // given
       final var property = new StringProperty("property", "default");
       final var unpackedObject = new UnpackedObject(1);
@@ -50,7 +51,7 @@ public class UnpackedObjectTest {
   }
 
   @Nested
-  public class SchemaEvolution {
+  class SchemaEvolution {
     private final StringProperty sharedProperty = new StringProperty("shared", "default");
 
     private final UnpackedObject oldSchemaObject = new UnpackedObject(2);
@@ -60,6 +61,9 @@ public class UnpackedObjectTest {
     private final BooleanProperty addedProperty = new BooleanProperty("addedProperty", false);
 
     private final MutableDirectBuffer bufferSerializedWithOldSchema =
+        new UnsafeBuffer(ByteBuffer.allocate(100));
+
+    private final MutableDirectBuffer bufferSerializedWithNewSchema =
         new UnsafeBuffer(ByteBuffer.allocate(100));
 
     {
@@ -73,7 +77,7 @@ public class UnpackedObjectTest {
     }
 
     @Test
-    public void newPropertiesShouldHaveDefaultValueAfterReadingOldSerialization() {
+    void newPropertiesShouldHaveDefaultValueAfterReadingOldSerialization() {
       // given
 
       // set the new property to a value that is different from the default value
@@ -89,8 +93,25 @@ public class UnpackedObjectTest {
     }
 
     @Test
-    /* Motivated by https://github.com/camunda/zeebe/pull/7143 */
-    public void shouldNotAccumulateSizeWithUndeclaredProperties() {
+    void oldVersionCanReadDataSerializedInNewSchemaAndProvideDefaultValues() {
+      // given
+      sharedProperty.setValue("updated");
+      addedProperty.setValue(true);
+      newSchemaObject.write(bufferSerializedWithNewSchema, 0);
+
+      // when
+      oldSchemaObject.wrap(bufferSerializedWithNewSchema);
+
+      // then
+      assertThat(removedProperty.getValue())
+          .describedAs("value of removed property after reading")
+          .isEqualTo(42);
+      assertThat(BufferUtil.bufferAsString(sharedProperty.getValue())).isEqualTo("updated");
+    }
+
+    @Test
+    /* Motivated by https://github.com/camunda/camunda/pull/7143 */
+    void shouldNotAccumulateSizeWithUndeclaredProperties() {
 
       // given
       newSchemaObject.wrap(bufferSerializedWithOldSchema);

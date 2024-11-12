@@ -2,12 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -17,11 +18,11 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
-import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
@@ -29,13 +30,14 @@ import io.camunda.zeebe.scheduler.retry.BackOffRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.EndlessRetryStrategy;
 import io.camunda.zeebe.scheduler.retry.RetryStrategy;
 import io.camunda.zeebe.stream.api.EventFilter;
-import io.camunda.zeebe.stream.impl.records.RecordValues;
-import io.camunda.zeebe.stream.impl.records.TypedRecordImpl;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
+import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -58,7 +60,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
-  private final List<ExporterContainer> containers;
+
+  // Use concrete type because it must be modifiable
+  private final ArrayList<ExporterContainer> containers;
   private final LogStream logStream;
   private final RecordExporter recordExporter;
   private final ZeebeDb zeebeDb;
@@ -72,7 +76,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private ExportersState state;
 
   @SuppressWarnings("java:S3077") // allow volatile here, health is immutable
-  private volatile HealthReport healthReport = HealthReport.healthy(this);
+  private volatile HealthReport healthReport;
 
   private boolean inExportingPhase;
   private ExporterPhase exporterPhase;
@@ -81,22 +85,36 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
   private ExporterStateDistributionService exporterDistributionService;
+  private ScheduledTimer exporterDistributionTimer;
   private final int partitionId;
   private final EventFilter positionsToSkipFilter;
+  private final MeterRegistry meterRegistry;
+  // When idle, exporter director is not exporting any records because no exporters are configured.
+  // The actor is still running, but it is not actively doing any work.
+  private boolean idle;
+  private final InstantSource clock;
 
   public ExporterDirector(
       final ExporterDirectorContext context, final ExporterPhase exporterPhase) {
     name = context.getName();
-
     logStream = Objects.requireNonNull(context.getLogStream());
     partitionId = logStream.getPartitionId();
+    meterRegistry = context.getMeterRegistry();
+    clock = context.getClock();
     containers =
-        context.getDescriptors().stream()
-            .map(descriptor -> new ExporterContainer(descriptor, partitionId))
-            .collect(Collectors.toList());
+        context.getDescriptors().entrySet().stream()
+            .map(
+                descriptorEntry ->
+                    new ExporterContainer(
+                        descriptorEntry.getKey(),
+                        partitionId,
+                        descriptorEntry.getValue(),
+                        meterRegistry,
+                        clock))
+            .collect(Collectors.toCollection(ArrayList::new));
     metrics = new ExporterMetrics(partitionId);
     metrics.initializeExporterState(exporterPhase);
-    recordExporter = new RecordExporter(metrics, containers, partitionId);
+    recordExporter = new RecordExporter(metrics, containers, partitionId, clock);
     exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     recordWrapStrategy = new EndlessRetryStrategy(actor);
     zeebeDb = context.getZeebeDb();
@@ -106,6 +124,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
+
+    // needs name to be initialized
+    healthReport = HealthReport.healthy(this);
   }
 
   public ActorFuture<Void> startAsync(final ActorSchedulingService actorSchedulingService) {
@@ -186,6 +207,133 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
         });
   }
 
+  /**
+   * Disables an already configured exporter. No records will be exported to this exporter anymore.
+   * We will not wait for acknowledgments for this exporter, allowing the log to be compacted.
+   *
+   * @param exporterId id of the exporter to disabled
+   * @return future which will be completed after the exporter is disabled.
+   */
+  public ActorFuture<Void> disableExporter(final String exporterId) {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    return actor.call(() -> removeExporter(exporterId));
+  }
+
+  private void removeExporter(final String exporterId) {
+    containers.stream()
+        .filter(c -> c.getId().equals(exporterId))
+        .findFirst()
+        .ifPresentOrElse(
+            container -> removeExporter(exporterId, container),
+            () -> LOG.debug("Exporter '{}' is not found. It may be already removed.", exporterId));
+  }
+
+  private void removeExporter(final String exporterId, final ExporterContainer container) {
+    container.close();
+    containers.remove(container);
+    state.removeExporterState(exporterId);
+    // After removing this exporter, the exporter index has changed. Reset it so that we don't
+    // miss to export the record to any of the exporters whose index has changed.
+    recordExporter.resetExporterIndex();
+    LOG.debug("Exporter '{}' is removed.", exporterId);
+
+    if (containers.isEmpty()) {
+      becomeIdle();
+    }
+  }
+
+  /**
+   * Enables an exporter with the given id and descriptor. The exporter will start exporting records
+   * after this operation completes.
+   *
+   * <p>It is expected that the exporter to initialize from the metadata is of same type as the
+   * exporter to enable. The caller of this method must verify that.
+   *
+   * @param exporterId id of the exporter to enable
+   * @param initializationInfo the info required to initialize the exporter state
+   * @param descriptor the descriptor of the exporter to enable
+   * @return future which will be completed after the exporter is enabled.
+   */
+  public ActorFuture<Void> enableExporter(
+      final String exporterId,
+      final ExporterInitializationInfo initializationInfo,
+      final ExporterDescriptor descriptor) {
+    if (actor.isClosed()) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    return actor.call(() -> addExporter(exporterId, initializationInfo, descriptor));
+  }
+
+  /**
+   * Enables an exporter with the given id and descriptor. The exporter will start exporting records
+   * after this operation completes. This operation will be retried until successful or the exporter
+   * director closes.
+   *
+   * <p>It is expected that the exporter to initialize from the metadata is of same type as the
+   * exporter to enable. The caller of this method must verify that.
+   *
+   * @param exporterId id of the exporter to enable
+   * @param initializationInfo the info required to initialize the exporter state
+   * @param descriptor the descriptor of the exporter to enable
+   * @return future which will be completed after the exporter is enabled.
+   */
+  public ActorFuture<Boolean> enableExporterWithRetry(
+      final String exporterId,
+      final ExporterInitializationInfo initializationInfo,
+      final ExporterDescriptor descriptor) {
+    return new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
+        .runWithRetry(
+            () -> {
+              try {
+                addExporter(exporterId, initializationInfo, descriptor);
+                return true;
+              } catch (final Exception e) {
+                LOG.error("Failed to add exporter '{}'. Retrying...", exporterId, e);
+                return false;
+              }
+            },
+            this::isClosed);
+  }
+
+  private void addExporter(
+      final String exporterId,
+      final ExporterInitializationInfo initializationInfo,
+      final ExporterDescriptor descriptor) {
+
+    final var exporterEnabled =
+        containers.stream().map(ExporterContainer::getId).anyMatch(exporterId::equals);
+
+    if (exporterEnabled) {
+      LOG.debug("Exporter '{}' is already enabled. Skipping the enabling operation.", exporterId);
+      return;
+    }
+
+    final ExporterContainer container =
+        new ExporterContainer(descriptor, partitionId, initializationInfo, meterRegistry, clock);
+    container.initContainer(actor, metrics, state, exporterPhase);
+    try {
+      container.configureExporter();
+    } catch (final Exception e) {
+      LOG.error("Failed to configure exporter '{}'", exporterId, e);
+      LangUtil.rethrowUnchecked(e);
+    }
+    // initializes metadata and position in the runtime state
+    container.initMetadata();
+    if (exporterMode == ExporterMode.ACTIVE) {
+      container.openExporter();
+    }
+    containers.add(container);
+    LOG.debug("Exporter '{}' is enabled.", exporterId);
+
+    if (idle) {
+      becomeLive();
+    }
+  }
+
   public ActorFuture<ExporterPhase> getPhase() {
     if (actor.isClosed()) {
       return CompletableActorFuture.completed(ExporterPhase.CLOSED);
@@ -208,23 +356,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   @Override
   protected void onActorStarting() {
     if (exporterMode == ExporterMode.ACTIVE) {
-      final ActorFuture<LogStreamReader> newReaderFuture = logStream.newLogStreamReader();
-      actor.runOnCompletionBlockingCurrentPhase(
-          newReaderFuture,
-          (reader, errorOnReceivingReader) -> {
-            if (errorOnReceivingReader == null) {
-              logStreamReader = reader;
-            } else {
-              // TODO https://github.com/zeebe-io/zeebe/issues/3499
-              // ideally we could fail the actor start future such that we are able to propagate the
-              // error
-              LOG.error(
-                  "Unexpected error on retrieving reader from log {}",
-                  logStream.getLogName(),
-                  errorOnReceivingReader);
-              actor.close();
-            }
-          });
+      logStreamReader = logStream.newLogStreamReader();
     }
   }
 
@@ -293,13 +425,13 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     actor.fail(failure);
 
     if (failure instanceof UnrecoverableException) {
-      healthReport = HealthReport.dead(this).withIssue(failure);
+      healthReport = HealthReport.dead(this).withIssue(failure, clock.instant());
 
       for (final var listener : listeners) {
         listener.onUnrecoverableFailure(healthReport);
       }
     } else {
-      healthReport = HealthReport.unhealthy(this).withIssue(failure);
+      healthReport = HealthReport.unhealthy(this).withIssue(failure, clock.instant());
       for (final var listener : listeners) {
         listener.onFailure(healthReport);
       }
@@ -317,7 +449,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private void initContainers() throws Exception {
     for (final ExporterContainer container : containers) {
-      container.initContainer(actor, metrics, state);
+      container.initContainer(actor, metrics, state, exporterPhase);
       container.configureExporter();
     }
 
@@ -361,44 +493,103 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     actor.close();
   }
 
-  private void startActiveExportingMode() {
-    logStream.registerRecordAvailableListener(this);
-
-    // start reading
-    for (final ExporterContainer container : containers) {
-      container.initPosition();
-      container.openExporter();
+  private void becomeIdle() {
+    idle = true;
+    LOG.debug("No exporters are configured. Going idle.");
+    logStream.removeRecordAvailableListener(this);
+    exporterDistributionService.close();
+    if (exporterDistributionTimer != null) {
+      // closing the service do not stop the repeated timer task scheduled in this actor
+      exporterDistributionTimer.cancel();
+      exporterDistributionTimer = null;
     }
+    if (logStreamReader != null) {
+      // We have to close it, otherwise it will prevent journal segment deletion
+      logStreamReader.close();
+      logStreamReader = null;
+    }
+  }
 
-    if (state.hasExporters()) {
-      final long snapshotPosition = state.getLowestPosition();
-      final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
-      if (failedToRecoverReader) {
-        throw new IllegalStateException(
-            String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, snapshotPosition, getName()));
-      }
-      if (!exporterPhase.equals(ExporterPhase.PAUSED)) {
-        actor.submit(this::readNextEvent);
-      }
-
-      actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
-
+  private void becomeLive() {
+    LOG.debug("New exporters are configured. Restart exporting.");
+    if (exporterMode == ExporterMode.ACTIVE) {
+      restartActiveExportingMode();
     } else {
-      actor.close();
+      restartPassiveExportingMode();
     }
+    idle = false;
+  }
+
+  private void startActiveExportingMode() {
+    final var containerOpenFutures = new ArrayList<ActorFuture<Boolean>>();
+    for (final ExporterContainer container : containers) {
+      container.initMetadata();
+      final var openFuture =
+          new BackOffRetryStrategy(actor, Duration.ofSeconds(10))
+              .runWithRetry(
+                  () -> {
+                    try {
+                      container.openExporter();
+                      return true;
+                    } catch (final Exception e) {
+                      LOG.error("Failed to open exporter '{}'. Retrying...", container.getId(), e);
+                      return false;
+                    }
+                  },
+                  this::isClosed);
+
+      containerOpenFutures.add(openFuture);
+    }
+
+    // Don't need to handle error as any are caught within the runWithRetry try catch
+    actor.runOnCompletion(
+        containerOpenFutures,
+        (error) -> {
+          if (state.hasExporters()) {
+            final long snapshotPosition = state.getLowestPosition();
+            // start reading and exporting
+            startActiveExportingFrom(snapshotPosition);
+          } else {
+            becomeIdle();
+          }
+        });
+  }
+
+  private void restartActiveExportingMode() {
+    logStreamReader = logStream.newLogStreamReader();
+    startActiveExportingFrom(-1);
+  }
+
+  private void startActiveExportingFrom(final long snapshotPosition) {
+    final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
+    if (failedToRecoverReader) {
+      throw new IllegalStateException(
+          String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, -1, getName()));
+    }
+    logStream.registerRecordAvailableListener(this);
+    if (!exporterPhase.equals(ExporterPhase.PAUSED)) {
+      actor.submit(this::readNextEvent);
+    }
+
+    exporterDistributionTimer =
+        actor.runAtFixedRate(distributionInterval, this::distributeExporterState);
   }
 
   private void startPassiveExportingMode() {
     // Only initialize the positions, do not open and start exporting
     for (final ExporterContainer container : containers) {
-      container.initPosition();
+      container.initMetadata();
     }
 
     if (state.hasExporters()) {
       exporterDistributionService.subscribeForExporterState(actor::run);
     } else {
-      actor.close();
+      becomeIdle();
     }
+  }
+
+  private void restartPassiveExportingMode() {
+    exporterDistributionService.subscribeForExporterState(actor::run);
   }
 
   private void distributeExporterState() {
@@ -440,6 +631,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private boolean shouldExport() {
     return isOpened.get()
+        && !idle
         && logStreamReader.hasNext()
         && !inExportingPhase
         && !exporterPhase.equals(ExporterPhase.PAUSED);
@@ -469,6 +661,9 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
                   LOG.error(ERROR_MESSAGE_EXPORTING_ABORTED, event, throwable);
                   onFailure();
                 } else {
+                  logStream
+                      .getFlowControl()
+                      .onExported(recordExporter.getTypedEvent().getPosition());
                   metrics.eventExported(recordExporter.getTypedEvent().getValueType());
                   inExportingPhase = false;
                   actor.submit(this::readNextEvent);
@@ -523,66 +718,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     return actor.call(() -> state.getLowestPosition());
   }
 
-  private static class RecordExporter {
-
-    private final RecordValues recordValues = new RecordValues();
-    private final RecordMetadata rawMetadata = new RecordMetadata();
-    private final List<ExporterContainer> containers;
-    private final TypedRecordImpl typedEvent;
-    private final ExporterMetrics exporterMetrics;
-
-    private boolean shouldExport;
-    private int exporterIndex;
-
-    RecordExporter(
-        final ExporterMetrics exporterMetrics,
-        final List<ExporterContainer> containers,
-        final int partitionId) {
-      this.containers = containers;
-      typedEvent = new TypedRecordImpl(partitionId);
-      this.exporterMetrics = exporterMetrics;
-    }
-
-    void wrap(final LoggedEvent rawEvent) {
-      rawEvent.readMetadata(rawMetadata);
-
-      final UnifiedRecordValue recordValue =
-          recordValues.readRecordValue(rawEvent, rawMetadata.getValueType());
-
-      shouldExport = recordValue != null;
-      if (shouldExport) {
-        typedEvent.wrap(rawEvent, rawMetadata, recordValue);
-        exporterIndex = 0;
-      }
-    }
-
-    public boolean export() {
-      if (!shouldExport) {
-        return true;
-      }
-
-      final int exportersCount = containers.size();
-
-      // current error handling strategy is simply to repeat forever until the record can be
-      // successfully exported.
-      while (exporterIndex < exportersCount) {
-        final ExporterContainer container = containers.get(exporterIndex);
-
-        if (container.exportRecord(rawMetadata, typedEvent)) {
-          exporterIndex++;
-          exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
-        } else {
-          return false;
-        }
-      }
-
-      return true;
-    }
-
-    TypedRecordImpl getTypedEvent() {
-      return typedEvent;
-    }
-  }
+  /**
+   * @param metadataVersion the version of the metadata to initialize the exporter with
+   * @param initializeFrom the id of the exporter to initialize the metadata of the exporter from
+   */
+  public record ExporterInitializationInfo(long metadataVersion, String initializeFrom) {}
 
   private static class ExporterEventFilter implements EventFilter {
 

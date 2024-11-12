@@ -1,45 +1,67 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.zeebeimport;
 
+import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.store.TaskStore;
+import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import java.io.IOException;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
+import java.util.Map;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TaskStore taskStore;
 
+  @Autowired private ObjectMapper objectMapper;
+
+  @Autowired private WebApplicationContext context;
+
+  private MockMvcHelper mockMvcHelper;
+
+  @BeforeEach
+  public void setUp() {
+    mockMvcHelper =
+        new MockMvcHelper(MockMvcBuilders.webAppContextSetup(context).build(), objectMapper);
+  }
+
   @Test
-  public void shouldImportZeebeUserTask() throws IOException {
+  public void shouldImportZeebeUserTask() {
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
 
     final String taskId =
         tester
-            .createAndDeploySimpleProcessWithZeebeUserTask(bpmnProcessId, flowNodeBpmnId)
+            .createAndDeploySimpleProcess(
+                bpmnProcessId, flowNodeBpmnId, AbstractUserTaskBuilder::zeebeUserTask)
             .waitUntil()
             .processIsDeployed()
             .startProcessInstance(bpmnProcessId)
@@ -57,5 +79,105 @@ public class ZeebeUserTaskImportIT extends TasklistZeebeIntegrationTest {
     assertEquals(flowNodeBpmnId, taskEntity.getFlowNodeBpmnId());
     assertEquals(tester.getProcessDefinitionKey(), taskEntity.getProcessDefinitionId());
     assertEquals(tester.getProcessInstanceId(), taskEntity.getProcessInstanceId());
+    assertEquals(taskEntity.getPriority(), Integer.valueOf(TaskStore.DEFAULT_PRIORITY));
+  }
+
+  @Test
+  public void shouldImportZeebeUserTaskWithNullVariableValue() {
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId1 = "taskA";
+    final String flowNodeBpmnId2 = "taskB";
+
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent("start")
+            .userTask(flowNodeBpmnId1)
+            .zeebeUserTask()
+            .userTask(flowNodeBpmnId2)
+            .zeebeUserTask()
+            .endEvent()
+            .done();
+
+    final String taskId2 =
+        tester
+            .createAndDeployProcess(process)
+            .waitUntil()
+            .processIsDeployed()
+            .startProcessInstance(bpmnProcessId)
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId1)
+            .completeZeebeUserTask(flowNodeBpmnId1, Map.of("varA", objectMapper.nullNode()))
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId2)
+            .getTaskId();
+
+    assertNotNull(taskId2);
+
+    final var result =
+        mockMvcHelper.doRequest(
+            post(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search"), taskId2));
+
+    // then
+    assertThat(result)
+        .hasOkHttpStatus()
+        .hasApplicationJsonContentType()
+        .extractingListContent(objectMapper, VariableSearchResponse.class)
+        .extracting("name", "previewValue", "value")
+        .containsExactly(tuple("varA", "null", "null"));
+  }
+
+  @Test
+  public void shouldImportZeebeUserTaskWithCustomHeaders() {
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA";
+    final String taskId =
+        tester
+            .createAndDeploySimpleProcess(
+                bpmnProcessId,
+                flowNodeBpmnId,
+                AbstractUserTaskBuilder::zeebeUserTask,
+                t -> t.zeebeTaskHeader("testKey", "testValue"))
+            .processIsDeployed()
+            .then()
+            .startProcessInstance(bpmnProcessId)
+            .then()
+            .taskIsCreated(flowNodeBpmnId)
+            .getTaskId();
+    // then
+    assertNotNull(taskId);
+    final TaskEntity taskEntity = taskStore.getTask(taskId);
+    assertEquals(TaskImplementation.ZEEBE_USER_TASK, taskEntity.getImplementation());
+    assertTrue(taskEntity.getCustomHeaders().containsKey("testKey"));
+    assertEquals("testValue", taskEntity.getCustomHeaders().get("testKey"));
+  }
+
+  private static Stream<Arguments> priorityOptions() {
+    return Stream.of(Arguments.of(null, 50), Arguments.of("13", 13), Arguments.of("", 50));
+  }
+
+  @ParameterizedTest
+  @MethodSource("priorityOptions")
+  public void shouldImportZeebeUserTaskWithPriority(
+      final String definedPriority, final int taskEntityPriority) {
+    final String bpmnProcessId = "testProcess";
+    final String flowNodeBpmnId = "taskA";
+    final String taskId =
+        tester
+            .createAndDeploySimpleProcess(
+                bpmnProcessId,
+                flowNodeBpmnId,
+                AbstractUserTaskBuilder::zeebeUserTask,
+                t -> t.zeebeTaskPriority(definedPriority))
+            .processIsDeployed()
+            .then()
+            .startProcessInstance(bpmnProcessId)
+            .then()
+            .taskIsCreated(flowNodeBpmnId)
+            .getTaskId();
+    // then
+    assertNotNull(taskId);
+    final TaskEntity taskEntity = taskStore.getTask(taskId);
+    assertEquals(TaskImplementation.ZEEBE_USER_TASK, taskEntity.getImplementation());
+    assertEquals(taskEntity.getPriority(), taskEntityPriority);
   }
 }

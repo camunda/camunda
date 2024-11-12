@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
@@ -294,7 +294,7 @@ public final class CreateProcessInstanceTest {
     Assertions.assertThat(process.getValue()).hasBpmnProcessId(processId).hasTenantId(tenantId);
   }
 
-  // Regression test for https://github.com/camunda/zeebe/issues/10536
+  // Regression test for https://github.com/camunda/camunda/issues/10536
   @Test
   public void shouldActivateNoneStartEventWhenEventTriggerIsAvailableInState() {
     // given

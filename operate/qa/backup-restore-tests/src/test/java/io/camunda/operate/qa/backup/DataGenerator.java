@@ -1,36 +1,27 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.qa.backup;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.ZeebeTestUtil;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.util.rest.StatefulRestTemplate;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -77,7 +68,7 @@ public class DataGenerator {
    */
   private ZeebeClient zeebeClient;
 
-  private Random random = new Random();
+  private final Random random = new Random();
 
   private List<Long> processInstanceKeys = new ArrayList<>();
 
@@ -87,17 +78,17 @@ public class DataGenerator {
 
   @Autowired private OperateAPICaller operateAPICaller;
 
-  private void init(BackupRestoreTestContext testContext) {
-    this.zeebeClient =
+  private void init(final BackupRestoreTestContext testContext) {
+    zeebeClient =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
             .usePlaintext()
             .build();
-    this.esClient = testContext.getEsClient();
-    this.operateRestClient = testContext.getOperateRestClient();
+    esClient = testContext.getEsClient();
+    operateRestClient = testContext.getOperateRestClient();
   }
 
-  public void createData(BackupRestoreTestContext testContext) {
+  public void createData(final BackupRestoreTestContext testContext) {
     init(testContext);
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
     LOGGER.info("Starting generating data for process {}", PROCESS_BPMN_PROCESS_ID);
@@ -129,7 +120,7 @@ public class DataGenerator {
 
     try {
       esClient.indices().refresh(new RefreshRequest("operate-*"), RequestOptions.DEFAULT);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error("Error in refreshing indices", e);
     }
     LOGGER.info(
@@ -147,7 +138,7 @@ public class DataGenerator {
     if (esClient != null) {
       try {
         esClient.close();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new OperateRuntimeException(e);
       }
     }
@@ -193,13 +184,13 @@ public class DataGenerator {
               new SearchRequest("operate-*_" + ARCHIVER_DATE_TIME_FORMATTER.format(Instant.now())),
               RequestOptions.DEFAULT);
       return search.getHits().getTotalHits().value > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(
           "Exception occurred while checking archived indices: " + e.getMessage(), e);
     }
   }
 
-  private void createOperation(OperationType operationType, int maxAttempts) {
+  private void createOperation(final OperationType operationType, final int maxAttempts) {
     LOGGER.debug("Try to create Operation {} ( {} attempts)", operationType.name(), maxAttempts);
     boolean operationStarted = false;
     int attempts = 0;
@@ -216,17 +207,18 @@ public class DataGenerator {
     }
   }
 
-  private void createIncidents(String jobType, int numberOfIncidents) {
+  private void createIncidents(final String jobType, final int numberOfIncidents) {
     ZeebeTestUtil.failTask(zeebeClient, jobType, "worker", numberOfIncidents);
     LOGGER.info("{} incidents in {} created", numberOfIncidents, jobType);
   }
 
-  private void completeTasks(String jobType, int count) {
+  private void completeTasks(final String jobType, final int count) {
     ZeebeTestUtil.completeTask(zeebeClient, jobType, "worker", "{\"varOut\": \"value2\"}", count);
     LOGGER.info("{} tasks {} completed", count, jobType);
   }
 
-  private List<Long> startProcessInstances(String bpmnProcessId, int numberOfProcessInstances) {
+  private List<Long> startProcessInstances(
+      final String bpmnProcessId, final int numberOfProcessInstances) {
     final List<Long> processInstanceKeys = new ArrayList<>();
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final long processInstanceKey =
@@ -238,14 +230,14 @@ public class DataGenerator {
     return processInstanceKeys;
   }
 
-  private void deployProcess(String bpmnProcessId) {
+  private void deployProcess(final String bpmnProcessId) {
     final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(
             zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 
-  private BpmnModelInstance createModel(String bpmnProcessId) {
+  private BpmnModelInstance createModel(final String bpmnProcessId) {
     return Bpmn.createExecutableProcess(bpmnProcessId)
         .startEvent("start")
         .serviceTask("task1")
@@ -264,21 +256,21 @@ public class DataGenerator {
         .done();
   }
 
-  private Long chooseKey(List<Long> keys) {
+  private Long chooseKey(final List<Long> keys) {
     return keys.get(random.nextInt(keys.size()));
   }
 
-  private long countEntitiesFor(SearchRequest searchRequest) {
+  private long countEntitiesFor(final SearchRequest searchRequest) {
     try {
       searchRequest.source().size(1000);
       final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return searchResponse.getHits().getTotalHits().value;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
   }
 
-  private String getAliasFor(String index) {
+  private String getAliasFor(final String index) {
     return String.format("operate-%s-*_alias", index);
   }
 
@@ -293,14 +285,14 @@ public class DataGenerator {
                 try {
                   assertDataOneAttempt();
                   return true;
-                } catch (AssertionError er) {
+                } catch (final AssertionError er) {
                   return false;
                 }
               })
           .build()
           .retry();
 
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new OperateRuntimeException(ex);
     }
   }
@@ -394,7 +386,7 @@ public class DataGenerator {
                             + NEW_PROCESS_INSTANCES_COUNT
                             - CANCELLED_PROCESS_INSTANCES);
                 return true;
-              } catch (AssertionError er) {
+              } catch (final AssertionError er) {
                 return false;
               }
             })

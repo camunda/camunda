@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.util;
 
@@ -14,7 +14,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
+import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -22,11 +23,14 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
+import io.camunda.zeebe.stream.impl.StreamProcessorBuilder;
 import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.function.Consumer;
 
 public class StreamProcessingComposite implements CommandWriter {
 
@@ -49,7 +53,7 @@ public class StreamProcessingComposite implements CommandWriter {
     actorScheduler.submitActor(writeActor).join();
   }
 
-  public SynchronousLogStream getLogStream(final int partitionId) {
+  public TestLogStream getLogStream(final int partitionId) {
     return streams.getLogStream(getLogName(partitionId));
   }
 
@@ -80,13 +84,16 @@ public class StreamProcessingComposite implements CommandWriter {
   public StreamProcessor startTypedStreamProcessor(
       final TypedRecordProcessorFactory factory,
       final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
-    return startTypedStreamProcessor(partitionId, factory, streamProcessorListenerOpt);
+    return startTypedStreamProcessor(
+        partitionId, factory, streamProcessorListenerOpt, cfg -> {}, true);
   }
 
   public StreamProcessor startTypedStreamProcessor(
       final int partitionId,
       final TypedRecordProcessorFactory factory,
-      final Optional<StreamProcessorListener> streamProcessorListenerOpt) {
+      final Optional<StreamProcessorListener> streamProcessorListenerOpt,
+      final Consumer<StreamProcessorBuilder> processorConfiguration,
+      final boolean awaitOpening) {
     final var result =
         streams.startStreamProcessor(
             getLogName(partitionId),
@@ -96,13 +103,19 @@ public class StreamProcessingComposite implements CommandWriter {
 
               return factory.createProcessors(processingContext);
             }),
-            streamProcessorListenerOpt);
+            streamProcessorListenerOpt,
+            processorConfiguration,
+            awaitOpening);
 
     return result;
   }
 
   public void pauseProcessing(final int partitionId) {
     streams.pauseProcessing(getLogName(partitionId));
+  }
+
+  public void banInstanceInNewTransaction(final int partitionId, final long processInstanceKey) {
+    streams.banInstanceInNewTransaction(getLogName(partitionId), partitionId, processInstanceKey);
   }
 
   public void resumeProcessing(final int partitionId) {
@@ -125,8 +138,16 @@ public class StreamProcessingComposite implements CommandWriter {
     return streams.getStreamProcessor(getLogName(partitionId));
   }
 
+  public StreamClock getStreamClock(final int partitionId) {
+    return streams.getStreamClock(getLogName(partitionId));
+  }
+
   public MutableProcessingState getProcessingState() {
     return processingState;
+  }
+
+  public MutableProcessingState getProcessingState(final String streamName) {
+    return streams.getProcessingState(streamName);
   }
 
   public RecordStream events() {
@@ -135,7 +156,9 @@ public class StreamProcessingComposite implements CommandWriter {
 
   public long writeBatch(final RecordToWrite... recordsToWrite) {
     final var writer = streams.newLogStreamWriter(getLogName(partitionId));
-    return writeActor.submit(() -> writer.tryWrite(Arrays.asList(recordsToWrite)).get()).join();
+    return writeActor
+        .submit(() -> writer.tryWrite(WriteContext.internal(), Arrays.asList(recordsToWrite)).get())
+        .join();
   }
 
   @Override

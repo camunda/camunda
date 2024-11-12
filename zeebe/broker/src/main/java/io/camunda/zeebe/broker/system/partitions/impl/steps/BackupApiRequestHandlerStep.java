@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
@@ -48,16 +48,8 @@ public final class BackupApiRequestHandlerStep implements PartitionTransitionSte
 
   private ActorFuture<Void> installRequestHandler(final PartitionTransitionContext context) {
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
-    final var writerFuture = context.getLogStream().newLogStreamWriter();
-    writerFuture.onComplete(
-        (logStreamRecordWriter, error) -> {
-          if (error == null) {
-            createBackupApiRequestHandler(context, installed, logStreamRecordWriter);
-          } else {
-            installed.completeExceptionally(error);
-          }
-        });
-
+    final var logStreamRecordWriter = context.getLogStream().newLogStreamWriter();
+    createBackupApiRequestHandler(context, installed, logStreamRecordWriter);
     return installed;
   }
 

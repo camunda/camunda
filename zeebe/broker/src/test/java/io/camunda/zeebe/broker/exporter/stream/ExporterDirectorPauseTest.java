@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import java.util.List;
 import java.util.Map;
-import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -160,14 +159,6 @@ public final class ExporterDirectorPauseTest {
   public void canPauseAndResumeWithoutAnyExporter() {
     // given
     activeExporter.startExporterDirector(List.of());
-
-    // when -- exporter is closed
-    // Wait for exporter to properly close before submitting pause/resume jobs.
-    // Needed to prevent flaky test https://github.com/camunda/zeebe/issues/10439
-    Awaitility.await()
-        .alias("Exporter is closed")
-        .ignoreExceptions() // joining can still throw if actor is closed after `getPhase` is called
-        .until(() -> activeExporter.getDirector().getPhase().join() == ExporterPhase.CLOSED);
 
     // then
     assertThatCode(() -> activeExporter.getDirector().pauseExporting().join())

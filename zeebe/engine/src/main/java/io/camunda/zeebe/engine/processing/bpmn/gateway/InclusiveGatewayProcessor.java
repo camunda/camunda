@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.gateway;
 
@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -32,12 +33,14 @@ public final class InclusiveGatewayProcessor
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final ExpressionProcessor expressionBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public InclusiveGatewayProcessor(
       final BpmnBehaviors behaviors, final BpmnStateTransitionBehavior stateTransitionBehavior) {
+    this.stateTransitionBehavior = stateTransitionBehavior;
     expressionBehavior = behaviors.expressionBehavior();
     incidentBehavior = behaviors.incidentBehavior();
-    this.stateTransitionBehavior = stateTransitionBehavior;
+    jobBehavior = behaviors.jobBehavior();
   }
 
   @Override
@@ -46,7 +49,7 @@ public final class InclusiveGatewayProcessor
   }
 
   @Override
-  public Either<Failure, ?> onActivate(
+  public Either<Failure, ?> finalizeActivation(
       final ExecutableInclusiveGateway element, final BpmnElementContext activating) {
     // find outgoing sequence flow with fulfilled condition or the default (or none if implicit end)
     return findSequenceFlowsToTake(element, activating)
@@ -68,7 +71,7 @@ public final class InclusiveGatewayProcessor
   }
 
   @Override
-  public Either<Failure, ?> onComplete(
+  public Either<Failure, ?> finalizeCompletion(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
     throw new UnsupportedOperationException(
         String.format(
@@ -79,6 +82,10 @@ public final class InclusiveGatewayProcessor
   @Override
   public void onTerminate(
       final ExecutableInclusiveGateway element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
+
     incidentBehavior.resolveIncidents(context);
     final var terminated =
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
@@ -94,9 +101,10 @@ public final class InclusiveGatewayProcessor
     }
 
     final var outgoingSequenceFlows = element.getOutgoing();
-    if (outgoingSequenceFlows.size() == 1 && outgoingSequenceFlows.get(0).getCondition() == null) {
+    if (outgoingSequenceFlows.size() == 1
+        && outgoingSequenceFlows.getFirst().getCondition() == null) {
       // only one flow without a condition, can just be taken
-      executableSequenceFlows.add(outgoingSequenceFlows.get(0));
+      executableSequenceFlows.add(outgoingSequenceFlows.getFirst());
       return Either.right(executableSequenceFlows);
     }
 

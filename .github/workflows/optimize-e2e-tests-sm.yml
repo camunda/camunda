@@ -1,0 +1,130 @@
+name: Optimize e2e tests sm
+
+on:
+  pull_request:
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
+  push:
+    branches:
+      - "main"
+      - "stable/**"
+      - "release/**"
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
+  workflow_dispatch:
+
+# Will limit the workflow to 1 concurrent run per ref (branch / PR)
+# If a new commits occurs, the current run will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read # for git clone
+  id-token: write # for authenticating with GCP
+
+jobs:
+  e2e-tests-sm:
+    name: E2E tests sm
+    runs-on: gcp-core-4-default
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: "Parse pom.xml for versions"
+        id: "pom_info"
+        uses: YunaBraska/java-info-action@main
+        with:
+          work-dir: ./optimize
+
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          harbor: true
+          maven-cache-key-modifier: optimize-tests
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Install firefox deps
+        run: |
+          sudo apt-get update && sudo apt-get install
+          sudo apt-get install -y xvfb bzip2 packagekit-gtk3-module libasound2
+
+      - name: Install firefox
+        uses: browser-actions/setup-firefox@v1
+
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+
+      - name: Start frontend
+        working-directory: ./optimize/client
+        run: yarn start &
+
+      - name: Start zeebe, operate, keycloak, identity and Elasticsearch
+        uses: ./.github/actions/compose
+        with:
+          compose_file: optimize/client/docker-compose.yml
+          project_name: e2e
+          additional_flags: "--profile self-managed"
+
+      - name: Build backend
+        run: ./mvnw clean install -T1C -DskipTests -Dskip.docker -pl optimize/backend -am -P skipFrontendBuild
+
+      - name: Create backend logs file
+        run: mkdir -p ./optimize/client/build && touch ./optimize/client/build/backendLogs.log
+
+      - name: Start back-end
+        working-directory: ./optimize/client
+        run: |
+          yarn run start-backend ci &> ./build/backendLogs.log &
+
+      - name: Wait for import to complete
+        run: |
+          while : ; do
+            count=$(curl -s -X GET "http://localhost:9200/optimize-process-definition/_count" | jq '.count')
+            if [[ $count -eq 49 ]]; then
+              echo "Import Completed"
+              break
+            fi
+            echo "Index has $count entities. Waiting for 49..."
+            sleep 10
+          done
+
+      - name: Wait for front-end to start
+        run: ./.github/optimize/scripts/wait-for.sh http://localhost:3000/ready
+
+      - name: Run tests
+        working-directory: ./optimize/client
+        run: yarn run e2e:ci:sm:headless
+
+      - name: Upload logs
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        if: always()
+        with:
+          name: logs
+          path: ./optimize/client/build/*.log
+
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: e2e-docker-logs

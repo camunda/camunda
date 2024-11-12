@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
@@ -74,6 +65,30 @@ public class ProcessInternalController extends ApiErrorController {
   @Autowired private TenantService tenantService;
 
   @Operation(
+      summary = "Returns the process by ProcessDefinitionKey",
+      description = "Returns the process by ProcessDefinitionKey",
+      responses = {
+        @ApiResponse(
+            description = "On success returned",
+            responseCode = "200",
+            useReturnTypeSchema = true),
+        @ApiResponse(
+            description = "Forbidden - User without privileges to read process",
+            responseCode = "403"),
+        @ApiResponse(description = "Process Not Found", responseCode = "404")
+      })
+  @GetMapping("{processDefinitionKey}")
+  public ResponseEntity<ProcessResponse> getProcess(
+      @PathVariable final String processDefinitionKey) {
+    final ProcessEntity processEntity =
+        processService.getProcessByProcessDefinitionKeyAndAccessRestriction(processDefinitionKey);
+    final ProcessResponse processResponse =
+        new ProcessResponse()
+            .fromProcessEntity(processEntity, getStartEventFormIdByBpmnProcess(processEntity));
+    return ResponseEntity.ok(processResponse);
+  }
+
+  @Operation(
       summary = "Returns the list of processes by search query",
       description = "Get the processes by `search` query.",
       responses = {
@@ -88,7 +103,7 @@ public class ProcessInternalController extends ApiErrorController {
               description =
                   "Used to search processes by processId, process name, and process definition id fields.")
           @RequestParam(defaultValue = StringUtils.EMPTY)
-          String query,
+          final String query,
       @Parameter(
               description =
                   "Identifies the tenant.<br>"
@@ -96,7 +111,7 @@ public class ProcessInternalController extends ApiErrorController {
                       + "If `tenantId` is provided, only processes for that tenant will be returned, or an empty list if the user does not have access to the provided tenant.<br>"
                       + "If multi-tenancy is disabled, this parameter will be ignored.")
           @RequestParam(required = false)
-          String tenantId,
+          final String tenantId,
       @Parameter(
               description =
                   "If this parameter is set (Default value `null`): <br>"
@@ -104,7 +119,7 @@ public class ProcessInternalController extends ApiErrorController {
                       + "`false`: It will return all the processes that are not started by a form <br>"
                       + "`null`: The filter is not applied")
           @RequestParam(required = false)
-          Boolean isStartedByForm) {
+          final Boolean isStartedByForm) {
 
     final var processes =
         processStore
@@ -114,19 +129,22 @@ public class ProcessInternalController extends ApiErrorController {
                 tenantId,
                 isStartedByForm)
             .stream()
-            .map(pe -> ProcessResponse.fromProcessEntity(pe, getStartEventFormIdByBpmnProcess(pe)))
+            .map(
+                pe ->
+                    ProcessResponse.fromProcessEntityWithoutBpmnXml(
+                        pe, getStartEventFormIdByBpmnProcess(pe)))
             .collect(Collectors.toList());
     return ResponseEntity.ok(processes);
   }
 
   /** Retrieving the start event form id when exists. */
-  private String getStartEventFormIdByBpmnProcess(ProcessEntity process) {
+  private String getStartEventFormIdByBpmnProcess(final ProcessEntity process) {
     if (process.getIsFormEmbedded() != null && !process.getIsFormEmbedded()) {
       if (process.getFormId() != null) {
         try {
           final var form = formStore.getForm(process.getFormId(), process.getId(), null);
           return form.getBpmnId();
-        } catch (NotFoundException e) {
+        } catch (final NotFoundException e) {
           // Form not found, but maintain the Form ID in order to threat not found in front-end
           return process.getFormId();
         }
@@ -169,13 +187,13 @@ public class ProcessInternalController extends ApiErrorController {
   @PreAuthorize("hasPermission('write')")
   @PatchMapping("{bpmnProcessId}/start")
   public ResponseEntity<ProcessInstanceDTO> startProcessInstance(
-      @PathVariable String bpmnProcessId,
+      @PathVariable final String bpmnProcessId,
       @Parameter(
               description =
                   "Required for multi-tenancy setups to ensure the process starts for the intended tenant. In environments without multi-tenancy, this parameter is not considered.")
           @RequestParam(required = false)
-          String tenantId,
-      @RequestBody(required = false) StartProcessRequest startProcessRequest) {
+          final String tenantId,
+      @RequestBody(required = false) final StartProcessRequest startProcessRequest) {
     final var variables =
         requireNonNullElse(startProcessRequest, new StartProcessRequest()).getVariables();
     final var processInstance =
@@ -210,7 +228,7 @@ public class ProcessInternalController extends ApiErrorController {
       })
   @PreAuthorize("hasPermission('write')")
   @DeleteMapping("{processInstanceId}")
-  public ResponseEntity<?> deleteProcessInstance(@PathVariable String processInstanceId) {
+  public ResponseEntity<?> deleteProcessInstance(@PathVariable final String processInstanceId) {
 
     return switch (processInstanceStore.deleteProcessInstance(processInstanceId)) {
       case DELETED -> ResponseEntity.noContent().build();
@@ -280,7 +298,7 @@ public class ProcessInternalController extends ApiErrorController {
       })
   @GetMapping("{bpmnProcessId}/publicEndpoint")
   public ResponseEntity<ProcessPublicEndpointsResponse> getPublicEndpoint(
-      @PathVariable String bpmnProcessId,
+      @PathVariable final String bpmnProcessId,
       @Parameter(
               description =
                   "If using multi-tenancy, this parameter ensures the system fetches the public endpoint for the correct tenant. In environments without multi-tenancy, this parameter is not considered.")

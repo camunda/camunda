@@ -1,0 +1,62 @@
+---
+self-hosted-runner:
+  # Labels of available self-hosted runners (array of string)
+  labels:
+  # by Infra team
+  - aws-arm-core-2-release
+  - aws-arm-core-4-release
+  - aws-arm-core-8-release
+  - aws-arm-core-16-release
+  - aws-arm-core-32-release
+  - aws-arm-core-2-longrunning
+  - aws-arm-core-4-longrunning
+  - aws-arm-core-8-longrunning
+  - aws-arm-core-16-longrunning
+  - aws-arm-core-32-longrunning
+  - aws-arm-core-2-default
+  - aws-arm-core-4-default
+  - aws-arm-core-8-default
+  - aws-arm-core-16-default
+  - aws-arm-core-32-default
+  - aws-core-2-release
+  - aws-core-4-release
+  - aws-core-8-release
+  - aws-core-16-release
+  - aws-core-32-release
+  - aws-core-2-longrunning
+  - aws-core-4-longrunning
+  - aws-core-8-longrunning
+  - aws-core-16-longrunning
+  - aws-core-32-longrunning
+  - aws-core-2-default
+  - aws-core-4-default
+  - aws-core-8-default
+  - aws-core-16-default
+  - aws-core-32-default
+  - gcp-core-2-release
+  - gcp-core-4-release
+  - gcp-core-8-release
+  - gcp-core-16-release
+  - gcp-core-32-release
+  - gcp-core-2-longrunning
+  - gcp-core-4-longrunning
+  - gcp-core-8-longrunning
+  - gcp-core-16-longrunning
+  - gcp-core-32-longrunning
+  - gcp-core-2-default
+  - gcp-core-4-default
+  - gcp-core-8-default
+  - gcp-core-16-default
+  - gcp-core-32-default
+  - gcp-perf-core-2-default
+  - gcp-perf-core-4-default
+  - gcp-perf-core-8-default
+  - gcp-perf-core-16-default
+  - gcp-perf-core-2-release
+  - gcp-perf-core-4-release
+  - gcp-perf-core-8-release
+  - gcp-perf-core-16-release
+  - gcp-perf-core-2-longrunning
+  - gcp-perf-core-4-longrunning
+  - gcp-perf-core-8-longrunning
+  - gcp-perf-core-16-longrunning

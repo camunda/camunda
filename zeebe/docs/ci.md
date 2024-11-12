@@ -7,7 +7,7 @@ This is a small guide for things useful around our continuous integration setup.
 ### Maven repository cache
 
 Within
-our [Github action to setup zeebe](/Users/megglos/git/zeebe/.github/actions/setup-zeebe/action.yml)
+our [Github action to setup build](/Users/megglos/git/zeebe/.github/actions/setup-build/action.yml)
 we make use of [action/cache](https://github.com/actions/cache) to store the content of
 the maven repository and share it across jobs and even branches. Primarily to speedup builds and
 reduce the
@@ -35,7 +35,7 @@ and delete them via:
 gh actions-cache delete Linux-maven-default-dddf7912807d96783a168b6dda5c5b639c6eb183bfedaab524c6e34f695afba4
 ```
 
-To determine the key of the cache used you can take a look into the log of the setup-zeebe job.
+To determine the key of the cache used you can take a look into the log of the setup-build job.
 
 ```
 ...
@@ -106,7 +106,7 @@ services:
 With the registry set up, the next step is to push the Docker image we're building to it.
 
 ```yaml
-- uses: ./.github/actions/build-zeebe-docker
+- uses: ./.github/actions/build-platform-docker
   with:
     repository: localhost:5000/camunda/zeebe
     version: current-test
@@ -152,10 +152,10 @@ are real bugs or if they are simply flaky tests.
 In case the CI reports a flaky test, you can perform the following steps to determine your next
 action.
 
-- Check for [existing Zeebe issues with the `kind/flake` label](https://github.com/camunda/zeebe/issues?q=is%3Aopen+is%3Aissue+label%3Akind%2Fflake) that report the same flaky test.
+- Check for [existing Zeebe issues with the `kind/flake` label](https://github.com/camunda/camunda/issues?q=is%3Aopen+is%3Aissue+label%3Akind%2Fflake) that report the same flaky test.
 - If such an issue exists, comment in the issue about the re-occurrence. Provide a link to the CI build where the flaky test was reported.
 - If the flaky test hasn't been reported in a Zeebe issue, try to determine if the flakiness was introduced through your code changes.
-  - If the flaky test is unrelated to your code changes, [create a new "Unstable test" issue](https://github.com/camunda/zeebe/issues/new?assignees=&labels=kind%2Fflake&template=unstable_test.md&title=). Fill out the provided issue template with as much information about the flaky test.
+  - If the flaky test is unrelated to your code changes, [create a new "Unstable test" issue](https://github.com/camunda/camunda/issues/new?assignees=&labels=kind%2Fflake&template=unstable_test.md&title=). Fill out the provided issue template with as much information about the flaky test.
   - If the flaky test is related to your code changes, you should fix the flakiness before merging your code changes. You can follow the sections below on what to do in order to reproduce and root cause the problem.
 
 #### Reproduce locally
@@ -186,7 +186,7 @@ git push --set-upstream origin 12983-flaky-test-issue-repro
 ```
 
 This will also allow you to
-run [the CI workflow](https://github.com/camunda/zeebe/actions/workflows/zeebe-ci.yml) for that specific
+run [the CI workflow](https://github.com/camunda/camunda/actions/workflows/zeebe-ci.yml) for that specific
 branch as many times as you want. If you don't know how to do this, you can read up on
 it [here](https://docs.github.com/en/actions/managing-workflow-runs/manually-running-a-workflow).
 
@@ -203,7 +203,7 @@ shorter, and minimize resource usage during investigation.
 
 First, identify the job where the failing test is running. If that job is `Integration tests`, then
 you should skip all other jobs in
-the [zeebe-ci.yml workflow](https://github.com/camunda/zeebe/blob/main/.github/workflows/zeebe-ci.yml). You can
+the [zeebe-ci.yml workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-ci.yml). You can
 do this easily by adding a `if: false` to every job definition except the one you want to run,
 e.g. `integration-tests`.
 
@@ -215,7 +215,7 @@ up on narrowing.
 
 Assuming you can still narrow the scope of the workflow, the next step is to have the job execute
 only a single test. In
-the [zeebe-ci.yml workflow](https://github.com/camunda/zeebe/blob/main/.github/workflows/zeebe-ci.yml), under
+the [zeebe-ci.yml workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-ci.yml), under
 the job you wish to execute (e.g. `integration-tests`), look for the step which is actually
 executing the test, i.e. the one running `mvn verify`, or `mvn test`, etc. If the test is a unit
 test (and as such run by surefire), then you can add `-Dtest=MyTestClass` (

@@ -2,23 +2,27 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.shared.security;
 
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
-import io.camunda.zeebe.shared.management.ConditionalOnManagementContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration;
-import org.springframework.boot.actuate.autoconfigure.web.ManagementContextType;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.NoneNestedConditions;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -40,7 +44,28 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 public final class SecurityConfiguration {
 
   @Bean
+  @Order(Ordered.HIGHEST_PRECEDENCE)
+  public SecurityFilterChain managementSecurity(final HttpSecurity http) throws Exception {
+    http.securityMatchers(
+        (matchers) -> {
+          matchers
+              // all actuator endpoints
+              .requestMatchers(EndpointRequest.toAnyEndpoint())
+              // endpoints defined in BrokerHealthRoutes
+              .requestMatchers("/ready", "/health", "/startup")
+              // allows forwarding the failure when request failed
+              // for example when an endpoint could not be found
+              .requestMatchers("/error");
+        });
+
+    return configureSecurity(http)
+        .authorizeHttpRequests(spec -> spec.anyRequest().permitAll())
+        .build();
+  }
+
+  @Bean
   @ConditionalOnRestGatewayEnabled
+  @Conditional(GatewaySecurityAuthenticationEnabledCondition.class)
   public SecurityFilterChain restGatewaySecurity(
       final HttpSecurity http,
       final IdentityAuthenticationManager authManager,
@@ -72,7 +97,7 @@ public final class SecurityConfiguration {
     }
   }
 
-  private static HttpSecurity configureSecurity(final HttpSecurity http) throws Exception {
+  private HttpSecurity configureSecurity(final HttpSecurity http) throws Exception {
     return http.csrf(CsrfConfigurer::disable)
         .cors(CorsConfigurer::disable)
         .logout(LogoutConfigurer::disable)
@@ -81,17 +106,27 @@ public final class SecurityConfiguration {
         .anonymous(AnonymousConfigurer::disable);
   }
 
-  @Profile("identity-auth")
-  @ConditionalOnManagementContext
-  @EnableWebSecurity
-  @EnableMethodSecurity
-  @ManagementContextConfiguration(value = ManagementContextType.ANY, proxyBeanMethods = false)
-  public static final class ManagementSecurityConfiguration {
-    @Bean
-    public SecurityFilterChain managementSecurity(final HttpSecurity http) throws Exception {
-      return configureSecurity(http)
-          .authorizeHttpRequests(spec -> spec.anyRequest().permitAll())
-          .build();
+  /**
+   * Condition to check if the gateway is configured to use authentication, i.e. is not explicitly
+   * set to {@code NONE}. It helps deal with the fact that the gateway can be embedded in the broker
+   * or run standalone.
+   */
+  static class GatewaySecurityAuthenticationEnabledCondition extends NoneNestedConditions {
+
+    public GatewaySecurityAuthenticationEnabledCondition() {
+      super(ConfigurationPhase.REGISTER_BEAN);
     }
+
+    @ConditionalOnProperty(
+        prefix = "zeebe.gateway",
+        value = "security.authentication.mode",
+        havingValue = "none")
+    static class StandaloneGatewayCondition {}
+
+    @ConditionalOnProperty(
+        prefix = "zeebe.broker.gateway",
+        value = "security.authentication.mode",
+        havingValue = "none")
+    static class EmbeddedGatewayCondition {}
   }
 }

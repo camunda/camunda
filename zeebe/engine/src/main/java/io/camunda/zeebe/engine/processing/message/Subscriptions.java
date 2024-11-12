@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.message;
 
@@ -13,7 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubs
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.util.collection.Reusable;
 import io.camunda.zeebe.util.collection.ReusableObjectList;
-import java.util.function.Consumer;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -48,17 +48,47 @@ public final class Subscriptions {
     final var newSubscription = subscriptions.add();
     newSubscription.setBpmnProcessId(cloneBuffer(subscription.getBpmnProcessIdBuffer()));
     newSubscription.isStartEventSubscription = true;
+    newSubscription.processInstanceKey = subscription.getProcessInstanceKey();
   }
 
-  public void visitBpmnProcessIds(final Consumer<DirectBuffer> bpmnProcessIdConsumer) {
+  private void add(final Subscription subscription) {
+    final var newSubscription = subscriptions.add();
+    newSubscription.setBpmnProcessId(subscription.getBpmnProcessId());
+    newSubscription.processInstanceKey = subscription.processInstanceKey;
+    newSubscription.elementInstanceKey = subscription.elementInstanceKey;
+    newSubscription.isStartEventSubscription = subscription.isStartEventSubscription;
+  }
+
+  public void addAll(final Subscriptions subscriptions) {
+    subscriptions.visitSubscriptions(
+        (subscription) -> {
+          add(subscription);
+          return true;
+        },
+        true);
+  }
+
+  public boolean isEmpty() {
+    return subscriptions.size() <= 0;
+  }
+
+  public Optional<Subscription> getFirstMessageStartEventSubscription() {
     for (final Subscription subscription : subscriptions) {
-      bpmnProcessIdConsumer.accept(subscription.getBpmnProcessId());
+      if (subscription.isStartEventSubscription) {
+        return Optional.of(subscription);
+      }
     }
+    return Optional.empty();
   }
 
   public boolean visitSubscriptions(final SubscriptionVisitor subscriptionConsumer) {
+    return visitSubscriptions(subscriptionConsumer, false);
+  }
+
+  public boolean visitSubscriptions(
+      final SubscriptionVisitor subscriptionConsumer, final boolean visitStartEvents) {
     for (final Subscription subscription : subscriptions) {
-      if (!subscription.isStartEventSubscription) {
+      if (visitStartEvents || !subscription.isStartEventSubscription) {
 
         final var applied = subscriptionConsumer.apply(subscription);
         if (!applied) {
@@ -110,6 +140,10 @@ public final class Subscriptions {
 
     public long getElementInstanceKey() {
       return elementInstanceKey;
+    }
+
+    public boolean isStartEventSubscription() {
+      return isStartEventSubscription;
     }
   }
 }

@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.util;
 
@@ -27,8 +18,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.cache.ProcessCache;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperationType;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
@@ -41,6 +30,9 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.zeebe.PartitionHolder;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.micrometer.core.instrument.Meter;
@@ -79,9 +71,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Autowired public BeanFactory beanFactory;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
 
-  @MockBean
-  protected ZeebeClient
-      mockedZeebeClient; // we don't want to create ZeebeClient, we will rather use the one from
+  // we don't want to create ZeebeClient, we will rather use the one from
+  @MockBean protected ZeebeClient mockedZeebeClient;
 
   protected ZeebeClient zeebeClient;
   @Autowired protected PartitionHolder partitionHolder;
@@ -199,7 +190,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected OperateTester tester;
   private ZeebeContainer zeebeContainer;
   @Autowired private TestSearchRepository testSearchRepository;
-  private HttpClient httpClient = HttpClient.newHttpClient();
+  private final HttpClient httpClient = HttpClient.newHttpClient();
   private String workerName;
   @Autowired private MeterRegistry meterRegistry;
 
@@ -207,6 +198,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     zeebeRule = new OperateZeebeRule();
   }
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -223,7 +215,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
     importPositionHolder.clearCache();
     importPositionHolder.scheduleImportPositionUpdateTask();
-    partitionHolder.setZeebeClient(getClient());
+    final var partitionSupplier = new StandalonePartitionSupplier(getClient());
+    partitionHolder.setPartitionSupplier(partitionSupplier);
   }
 
   @After
@@ -242,7 +235,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   public Long failTaskWithNoRetriesLeft(
-      String taskName, long processInstanceKey, int numberOfFailure, String errorMessage) {
+      final String taskName,
+      final long processInstanceKey,
+      final int numberOfFailure,
+      final String errorMessage) {
     final Long jobKey =
         ZeebeTestUtil.failTask(
             getClient(), taskName, getWorkerName(), numberOfFailure, errorMessage);
@@ -251,7 +247,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   public Long failTaskWithNoRetriesLeft(
-      String taskName, long processInstanceKey, String errorMessage) {
+      final String taskName, final long processInstanceKey, final String errorMessage) {
     final Long jobKey =
         ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3, errorMessage);
     searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
@@ -259,7 +255,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   public Long failTaskWithRetriesLeft(
-      String taskName, long processInstanceKey, String errorMessage) {
+      final String taskName, final long processInstanceKey, final String errorMessage) {
     final Long jobKey =
         ZeebeTestUtil.failTaskWithRetriesLeft(
             getClient(), taskName, getWorkerName(), 1, errorMessage);
@@ -267,43 +263,48 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     return jobKey;
   }
 
-  protected Long deployProcessWithTenant(String tenantId, String... classpathResources) {
+  protected Long deployProcessWithTenant(
+      final String tenantId, final String... classpathResources) {
     final Long processDefinitionKey =
         ZeebeTestUtil.deployProcess(getClient(), tenantId, classpathResources);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     return processDefinitionKey;
   }
 
-  protected Long deployProcess(String... classpathResources) {
+  protected Long deployProcess(final String... classpathResources) {
     final Long processDefinitionKey =
         ZeebeTestUtil.deployProcess(getClient(), null, classpathResources);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
     return processDefinitionKey;
   }
 
-  protected Long deployProcess(BpmnModelInstance process, String resourceName) {
+  protected Long deployProcess(final BpmnModelInstance process, final String resourceName) {
     final Long processId = ZeebeTestUtil.deployProcess(getClient(), null, process, resourceName);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId);
     return processId;
   }
 
-  protected void cancelProcessInstance(long processInstanceKey) {
+  protected void cancelProcessInstance(final long processInstanceKey) {
     cancelProcessInstance(processInstanceKey, true);
   }
 
-  protected void cancelProcessInstance(long processInstanceKey, boolean waitForData) {
+  protected void cancelProcessInstance(final long processInstanceKey, final boolean waitForData) {
     ZeebeTestUtil.cancelProcessInstance(getClient(), processInstanceKey);
     if (waitForData) {
       searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
     }
   }
 
-  protected void completeTask(long processInstanceKey, String activityId, String payload) {
+  protected void completeTask(
+      final long processInstanceKey, final String activityId, final String payload) {
     completeTask(processInstanceKey, activityId, payload, true);
   }
 
   protected void completeTask(
-      long processInstanceKey, String activityId, String payload, boolean waitForData) {
+      final long processInstanceKey,
+      final String activityId,
+      final String payload,
+      final boolean waitForData) {
     ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
     if (waitForData) {
       searchTestRule.processAllRecordsAndWait(
@@ -312,7 +313,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   protected void postUpdateVariableOperation(
-      Long processInstanceKey, String newVarName, String newVarValue) throws Exception {
+      final Long processInstanceKey, final String newVarName, final String newVarValue)
+      throws Exception {
     final CreateOperationRequestDto op =
         new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(newVarName);
@@ -322,7 +324,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   protected String postAddVariableOperation(
-      Long processInstanceKey, String newVarName, String newVarValue) throws Exception {
+      final Long processInstanceKey, final String newVarName, final String newVarValue)
+      throws Exception {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
@@ -335,7 +338,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   protected void postUpdateVariableOperation(
-      Long processInstanceKey, Long scopeKey, String newVarName, String newVarValue)
+      final Long processInstanceKey,
+      final Long scopeKey,
+      final String newVarName,
+      final String newVarValue)
       throws Exception {
     final CreateOperationRequestDto op =
         new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
@@ -346,7 +352,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   protected String postAddVariableOperation(
-      Long processInstanceKey, Long scopeKey, String newVarName, String newVarValue)
+      final Long processInstanceKey,
+      final Long scopeKey,
+      final String newVarName,
+      final String newVarValue)
       throws Exception {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
@@ -366,18 +375,21 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
       for (final Future f : futures) {
         f.get();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       fail(e.getMessage(), e);
     }
   }
 
   protected MvcResult postOperationWithOKResponse(
-      Long processInstanceKey, CreateOperationRequestDto operationRequest) throws Exception {
+      final Long processInstanceKey, final CreateOperationRequestDto operationRequest)
+      throws Exception {
     return postOperation(processInstanceKey, operationRequest, HttpStatus.SC_OK);
   }
 
   protected MvcResult postOperation(
-      Long processInstanceKey, CreateOperationRequestDto operationRequest, int expectedStatus)
+      final Long processInstanceKey,
+      final CreateOperationRequestDto operationRequest,
+      final int expectedStatus)
       throws Exception {
     final MockHttpServletRequestBuilder postOperationRequest =
         post(String.format(POST_OPERATION_URL, processInstanceKey))
@@ -391,17 +403,19 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   protected MvcResult postBatchOperationWithOKResponse(
-      ListViewQueryDto query, OperationType operationType) throws Exception {
+      final ListViewQueryDto query, final OperationType operationType) throws Exception {
     return postBatchOperationWithOKResponse(query, operationType, null);
   }
 
   protected MvcResult postBatchOperationWithOKResponse(
-      ListViewQueryDto query, OperationType operationType, String name) throws Exception {
+      final ListViewQueryDto query, final OperationType operationType, final String name)
+      throws Exception {
     return postBatchOperation(query, operationType, name, HttpStatus.SC_OK);
   }
 
   protected MvcResult postBatchOperation(
-      CreateBatchOperationRequestDto batchOperationDto, int expectedStatus) throws Exception {
+      final CreateBatchOperationRequestDto batchOperationDto, final int expectedStatus)
+      throws Exception {
     final MockHttpServletRequestBuilder postOperationRequest =
         post(POST_BATCH_OPERATION_URL)
             .content(mockMvcTestRule.json(batchOperationDto))
@@ -414,7 +428,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   protected MvcResult postBatchOperation(
-      ListViewQueryDto query, OperationType operationType, String name, int expectedStatus)
+      final ListViewQueryDto query,
+      final OperationType operationType,
+      final String name,
+      final int expectedStatus)
       throws Exception {
     final CreateBatchOperationRequestDto batchOperationDto =
         createBatchOperationDto(operationType, name, query);
@@ -422,7 +439,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   protected CreateBatchOperationRequestDto createBatchOperationDto(
-      OperationType operationType, String name, ListViewQueryDto query) {
+      final OperationType operationType, final String name, final ListViewQueryDto query) {
     final CreateBatchOperationRequestDto batchOperationDto = new CreateBatchOperationRequestDto();
     batchOperationDto.setQuery(query);
     batchOperationDto.setOperationType(operationType);
@@ -432,7 +449,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     return batchOperationDto;
   }
 
-  protected BatchOperationEntity deleteProcessWithOkResponse(String processId) throws Exception {
+  protected BatchOperationEntity deleteProcessWithOkResponse(final String processId)
+      throws Exception {
     final String requestUrl = ProcessRestService.PROCESS_URL + "/" + processId;
     final MockHttpServletRequestBuilder request =
         delete(requestUrl).accept(mockMvcTestRule.getContentType());
@@ -447,7 +465,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     return batchOperation;
   }
 
-  protected BatchOperationEntity deleteDecisionWithOkResponse(String decisionDefinitionId)
+  protected BatchOperationEntity deleteDecisionWithOkResponse(final String decisionDefinitionId)
       throws Exception {
     final String requestUrl = DecisionRestService.DECISION_URL + "/" + decisionDefinitionId;
     final MockHttpServletRequestBuilder request =
@@ -464,7 +482,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   }
 
   protected void clearMetrics() {
-    for (Meter meter : meterRegistry.getMeters()) {
+    for (final Meter meter : meterRegistry.getMeters()) {
       meterRegistry.remove(meter);
     }
   }
@@ -473,24 +491,24 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     return pinZeebeTime(Instant.now());
   }
 
-  protected Instant pinZeebeTime(Instant pinAt) {
+  protected Instant pinZeebeTime(final Instant pinAt) {
     final var pinRequest = new ZeebeClockActuatorPinRequest(pinAt.toEpochMilli());
     try {
       final var body =
           HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(pinRequest));
       return zeebeRequest("POST", "actuator/clock/pin", body);
-    } catch (IOException | InterruptedException e) {
+    } catch (final IOException | InterruptedException e) {
       throw new IllegalStateException("Could not pin zeebe clock", e);
     }
   }
 
-  protected Instant offsetZeebeTime(Duration offsetBy) {
+  protected Instant offsetZeebeTime(final Duration offsetBy) {
     final var offsetRequest = new ZeebeClockActuatorOffsetRequest(offsetBy.toMillis());
     try {
       final var body =
           HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(offsetRequest));
       return zeebeRequest("POST", "actuator/clock/pin", body);
-    } catch (IOException | InterruptedException e) {
+    } catch (final IOException | InterruptedException e) {
       throw new IllegalStateException("Could not offset zeebe clock", e);
     }
   }
@@ -498,13 +516,13 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected Instant resetZeebeTime() {
     try {
       return zeebeRequest("DELETE", "actuator/clock", HttpRequest.BodyPublishers.noBody());
-    } catch (IOException | InterruptedException e) {
+    } catch (final IOException | InterruptedException e) {
       throw new IllegalStateException("Could not reset zeebe clock", e);
     }
   }
 
   private Instant zeebeRequest(
-      String method, String endpoint, HttpRequest.BodyPublisher bodyPublisher)
+      final String method, final String endpoint, final HttpRequest.BodyPublisher bodyPublisher)
       throws IOException, InterruptedException {
     final var fullEndpoint =
         URI.create(
@@ -524,7 +542,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     return Instant.ofEpochMilli(result.epochMilli);
   }
 
-  protected List<Long> deployProcesses(String... processResources) {
+  protected List<Long> deployProcesses(final String... processResources) {
     return Stream.of(processResources)
         .sequential()
         .map(
@@ -538,7 +556,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
         .collect(Collectors.toList());
   }
 
-  protected List<Long> startProcesses(String... bpmnProcessIds) {
+  protected List<Long> startProcesses(final String... bpmnProcessIds) {
     return Stream.of(bpmnProcessIds)
         .sequential()
         .map(
@@ -552,10 +570,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
         .collect(Collectors.toList());
   }
 
-  protected <R> List<R> searchAllDocuments(String index, Class<R> clazz) {
+  protected <R> List<R> searchAllDocuments(final String index, final Class<R> clazz) {
     try {
       return testSearchRepository.searchAll(index, clazz);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new OperateRuntimeException("Search failed for index " + index, ex);
     }
   }
@@ -563,7 +581,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   private static final class ZeebeClockActuatorPinRequest {
     @JsonProperty long epochMilli;
 
-    ZeebeClockActuatorPinRequest(long epochMilli) {
+    ZeebeClockActuatorPinRequest(final long epochMilli) {
       this.epochMilli = epochMilli;
     }
   }
@@ -571,8 +589,8 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   private static final class ZeebeClockActuatorOffsetRequest {
     @JsonProperty long epochMilli;
 
-    public ZeebeClockActuatorOffsetRequest(long offsetMilli) {
-      this.epochMilli = offsetMilli;
+    public ZeebeClockActuatorOffsetRequest(final long offsetMilli) {
+      epochMilli = offsetMilli;
     }
   }
 

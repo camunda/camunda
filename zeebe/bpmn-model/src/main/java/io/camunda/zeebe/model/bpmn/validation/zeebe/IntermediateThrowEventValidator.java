@@ -44,7 +44,7 @@ public class IntermediateThrowEventValidator
       final CompensateEventDefinition definition = compensateEventDefinitionOpt.get();
       final String waitForCompletion =
           definition.getAttributeValue(BPMN_ATTRIBUTE_WAIT_FOR_COMPLETION);
-      if (waitForCompletion != null && !Boolean.valueOf(waitForCompletion)) {
+      if (waitForCompletion != null && !Boolean.parseBoolean(waitForCompletion)) {
         validationResultCollector.addError(
             0,
             "A compensation intermediate throwing event waitForCompletion attribute must be true or not present");

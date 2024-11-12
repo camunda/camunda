@@ -67,10 +67,10 @@ public class NettyUnicastServiceTest extends ConcurrentTestCase {
     address2 = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
 
     final String clusterId = "testClusterId";
-    service1 = new NettyUnicastService(clusterId, address1, new MessagingConfig());
+    service1 = new NettyUnicastService(clusterId, address1, new MessagingConfig(), "Unicast-1");
     service1.start().join();
 
-    service2 = new NettyUnicastService(clusterId, address2, new MessagingConfig());
+    service2 = new NettyUnicastService(clusterId, address2, new MessagingConfig(), "Unicast-2");
     service2.start().join();
   }
 

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.deployment;
 
@@ -32,6 +32,10 @@ public final class DeployedProcess {
     return persistedProcess.getVersion();
   }
 
+  public String getVersionTag() {
+    return persistedProcess.getVersionTag();
+  }
+
   public long getKey() {
     return persistedProcess.getKey();
   }
@@ -50,6 +54,10 @@ public final class DeployedProcess {
 
   public String getTenantId() {
     return persistedProcess.getTenantId();
+  }
+
+  public long getDeploymentKey() {
+    return persistedProcess.getDeploymentKey();
   }
 
   @Override

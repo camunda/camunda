@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.transport.backupapi;
 
@@ -22,6 +22,7 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.BackupListResponse;
 import io.camunda.zeebe.protocol.impl.encoding.BackupRequest;
 import io.camunda.zeebe.protocol.impl.encoding.BackupStatusResponse;
@@ -114,7 +115,7 @@ final class BackupApiRequestHandlerTest {
     handleRequest(request);
 
     // then
-    verify(logStreamWriter, times(1)).tryWrite(any(LogAppendEntry.class));
+    verify(logStreamWriter, times(1)).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
   }
 
   @Test
@@ -139,7 +140,7 @@ final class BackupApiRequestHandlerTest {
         .extracting(Either::getLeft)
         .extracting(ErrorResponse::getErrorCode)
         .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
-    verify(logStreamWriter, never()).tryWrite(any(LogAppendEntry.class));
+    verify(logStreamWriter, never()).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
   }
 
   @Test
@@ -309,7 +310,7 @@ final class BackupApiRequestHandlerTest {
     assertThat(listResponse.getBackups()).containsExactly(expected);
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/12597")
+  @RegressionTest("https://github.com/camunda/camunda/issues/12597")
   void shouldListManyBackups() {
     // given
     final var request = new BackupRequest().setType(BackupRequestType.LIST).setPartitionId(1);

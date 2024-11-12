@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter.opensearch;
 
@@ -20,6 +20,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyReq
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Action;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.DeleteAction;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition.Conditions;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyResponse;
@@ -27,7 +28,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.prometheus.client.Histogram;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,22 +50,30 @@ public class OpensearchClient implements AutoCloseable {
   private final RecordIndexRouter indexRouter;
   private final BulkIndexRequest bulkIndexRequest;
 
-  private OpensearchMetrics metrics;
+  private final OpensearchMetrics metrics;
 
-  OpensearchClient(final OpensearchExporterConfiguration configuration) {
-    this(configuration, new BulkIndexRequest());
+  OpensearchClient(
+      final OpensearchExporterConfiguration configuration, final MeterRegistry meterRegistry) {
+    this(
+        configuration,
+        new BulkIndexRequest(),
+        RestClientFactory.of(configuration),
+        new RecordIndexRouter(configuration.index),
+        new TemplateReader(configuration.index),
+        new OpensearchMetrics(meterRegistry));
   }
 
   OpensearchClient(
       final OpensearchExporterConfiguration configuration,
-      final BulkIndexRequest bulkIndexRequest) {
+      final MeterRegistry meterRegistry,
+      final RestClient restClient) {
     this(
         configuration,
-        bulkIndexRequest,
-        RestClientFactory.of(configuration),
+        new BulkIndexRequest(),
+        restClient,
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration.index),
-        null);
+        new OpensearchMetrics(meterRegistry));
   }
 
   OpensearchClient(
@@ -87,17 +96,21 @@ public class OpensearchClient implements AutoCloseable {
     client.close();
   }
 
-  public void index(final Record<?> record, final RecordSequence recordSequence) {
-    if (metrics == null) {
-      metrics = new OpensearchMetrics(record.getPartitionId());
-    }
-
+  /**
+   * Indexes a record to the batch of records that will be sent to Elasticsearch
+   *
+   * @param record the record that will be the source of the document
+   * @param recordSequence the sequence number of the record
+   * @return true if the record was appended to the batch, false if the record is already indexed in
+   *     the batch because only one copy of the record is allowed in the batch
+   */
+  public boolean index(final Record<?> record, final RecordSequence recordSequence) {
     final BulkIndexAction action =
         new BulkIndexAction(
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
             indexRouter.routingFor(record));
-    bulkIndexRequest.index(action, record, recordSequence);
+    return bulkIndexRequest.index(action, record, recordSequence);
   }
 
   /**
@@ -113,7 +126,7 @@ public class OpensearchClient implements AutoCloseable {
     metrics.recordBulkSize(bulkIndexRequest.size());
     metrics.recordBulkMemorySize(bulkIndexRequest.memoryUsageBytes());
 
-    try (final Histogram.Timer ignored = metrics.measureFlushDuration()) {
+    try (final var ignored = metrics.measureFlushDuration()) {
       exportBulk();
 
       // all records where flushed, create new bulk request, otherwise retry next time
@@ -219,7 +232,7 @@ public class OpensearchClient implements AutoCloseable {
   Optional<GetIndexStateManagementPolicyResponse> getIndexStateManagementPolicy() {
     try {
       final var request =
-          new Request("GET", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+          new Request("GET", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
       return Optional.of(sendRequest(request, GetIndexStateManagementPolicyResponse.class));
     } catch (final IOException e) {
       return Optional.empty();
@@ -240,7 +253,7 @@ public class OpensearchClient implements AutoCloseable {
     try {
       final var request =
           new Request(
-              "DELETE", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+              "DELETE", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
 
       final var response = sendRequest(request, DeleteStateManagementPolicyResponse.class);
       return response.result().equals(DeleteStateManagementPolicyResponse.DELETED);
@@ -252,7 +265,7 @@ public class OpensearchClient implements AutoCloseable {
   private boolean putIndexStateManagementPolicy(final Map<String, String> queryParameters) {
     try {
       final var request =
-          new Request("PUT", "_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+          new Request("PUT", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
 
       queryParameters.forEach(request::addParameter);
 
@@ -269,7 +282,7 @@ public class OpensearchClient implements AutoCloseable {
   public boolean bulkAddISMPolicyToAllZeebeIndices() {
     try {
       final var request =
-          new Request("POST", "_plugins/_ism/add/" + configuration.index.prefix + "*");
+          new Request("POST", "/_plugins/_ism/add/" + configuration.index.prefix + "*");
       final var requestEntity = new AddPolicyRequest(configuration.retention.getPolicyName());
       request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
       final var response = sendRequest(request, IndexPolicyResponse.class);
@@ -282,7 +295,7 @@ public class OpensearchClient implements AutoCloseable {
   public boolean bulkRemoveISMPolicyToAllZeebeIndices() {
     try {
       final var request =
-          new Request("POST", "_plugins/_ism/remove/" + configuration.index.prefix + "*");
+          new Request("POST", "/_plugins/_ism/remove/" + configuration.index.prefix + "*");
       final var response = sendRequest(request, IndexPolicyResponse.class);
       return !response.failures();
     } catch (final IOException e) {
@@ -300,7 +313,7 @@ public class OpensearchClient implements AutoCloseable {
                     ISM_DELETE_STATE, new Conditions(configuration.retention.getMinimumAge()))));
     final var deleteState =
         new State(
-            ISM_DELETE_STATE, List.of(new Action(new ObjectMapper())), Collections.emptyList());
+            ISM_DELETE_STATE, List.of(new Action(new DeleteAction())), Collections.emptyList());
     final var policy =
         new Policy(
             configuration.retention.getPolicyDescription(),

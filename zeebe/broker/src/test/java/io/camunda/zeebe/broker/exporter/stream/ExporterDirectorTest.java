@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
@@ -12,8 +12,11 @@ import static io.camunda.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -48,6 +51,7 @@ import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.InOrder;
 import org.mockito.verification.VerificationWithTimeout;
 
 public final class ExporterDirectorTest {
@@ -178,6 +182,61 @@ public final class ExporterDirectorTest {
         .untilAsserted(() -> assertThat(tailingExporter.getExportedRecords()).hasSize(2));
     assertThat(state.getPosition(EXPORTER_ID_1)).isEqualTo(skippedRecordPosition);
     assertThat(state.getPosition(EXPORTER_ID_2)).isEqualTo(-1L);
+  }
+
+  @Test
+  public void shouldRetryOpenCallIfFails() throws Exception {
+    // given, when
+    final var exporter = startExporterWithFaultyOpenCall();
+
+    // then
+    Awaitility.await("exporter open has been retried")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> verify(exporter, times(2)).open(any()));
+
+    rule.closeExporterDirector();
+  }
+
+  @Test
+  public void shouldExportAfterOpenRetried() throws Exception {
+    // given
+    final var exporter = startExporterWithFaultyOpenCall();
+
+    Awaitility.await("exporter open has been retried")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(() -> verify(exporter, times(2)).open(any()));
+
+    // when
+    final var eventPosition1 = writeEvent();
+    final var eventPosition2 = writeEvent();
+
+    // then
+    Awaitility.await("Exporter has exported all records")
+        .untilAsserted(
+            () ->
+                assertThat(exporter.getExportedRecords())
+                    .extracting(Record::getPosition)
+                    .containsExactly(eventPosition1, eventPosition2));
+
+    rule.closeExporterDirector();
+  }
+
+  @Test
+  public void shouldNotStartExportingUntilExportersFinishOpening() throws Exception {
+    writeEvent();
+
+    final var exporter = startExporterWithFaultyOpenCall();
+
+    Awaitility.await("Record has been exported")
+        .until(() -> !exporter.getExportedRecords().isEmpty());
+
+    final InOrder inOrder = inOrder(exporter);
+
+    inOrder.verify(exporter).open(any());
+    inOrder.verify(exporter).open(any());
+    inOrder.verify(exporter, timeout(5000)).export(any());
+
+    rule.closeExporterDirector();
   }
 
   @Test
@@ -664,6 +723,30 @@ public final class ExporterDirectorTest {
     assertThat(exporters.get(1).getExportedRecords()).isEmpty();
   }
 
+  @Test
+  public void shouldStartContainersSoftPaused() {
+    // All containers of an exporter should be initialized as soft paused if this is also
+    // the exporter director phase on initialization. This is to prevent that the
+    // that exporter containers can start to update the exported position before the exporter
+    // director is ready. When soft paused new events are exported the position should not update.
+
+    // when
+    rule.startExporterDirector(exporterDescriptors, ExporterPhase.SOFT_PAUSED);
+
+    writeEvent();
+    writeEvent();
+
+    exporters.get(0).shouldAutoUpdatePosition(true);
+    exporters.get(1).shouldAutoUpdatePosition(true);
+
+    waitUntil(() -> exporters.get(0).getExportedRecords().size() == 2);
+    waitUntil(() -> exporters.get(1).getExportedRecords().size() == 2);
+
+    // then the position will not be updated.
+    assertThat(rule.getExportersState().getPosition(EXPORTER_ID_1)).isEqualTo(-1);
+    assertThat(rule.getExportersState().getPosition(EXPORTER_ID_2)).isEqualTo(-1);
+  }
+
   private long writeEvent() {
     final DeploymentRecord event = new DeploymentRecord();
     return rule.writeEvent(DeploymentIntent.CREATED, event);
@@ -684,5 +767,21 @@ public final class ExporterDirectorTest {
                 return valueTypes.contains(valueType);
               }
             });
+  }
+
+  private ControlledTestExporter startExporterWithFaultyOpenCall() {
+    final ControlledTestExporter exporter = spy(new ControlledTestExporter());
+
+    doThrow(new RuntimeException("open failed")).doCallRealMethod().when(exporter).open(any());
+
+    final ExporterDescriptor descriptor =
+        spy(
+            new ExporterDescriptor(
+                "exporter-failing", exporter.getClass(), Collections.singletonMap("x", 1)));
+    doAnswer(c -> exporter).when(descriptor).newInstance();
+
+    startExporterDirector(List.of(descriptor));
+
+    return exporter;
   }
 }

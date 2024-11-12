@@ -17,6 +17,7 @@ package io.atomix.raft.snapshot;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.SnapshotMetadata;
 import io.camunda.zeebe.snapshots.SnapshotReservation;
+import io.camunda.zeebe.snapshots.impl.SfvChecksumImpl;
 import io.camunda.zeebe.util.StringUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteBuffer;
@@ -47,7 +49,7 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
   private final Checksum checksumCalculator = new CRC32C();
   private final Set<SnapshotReservation> reservations = new CopyOnWriteArraySet<>();
 
-  private long checksum;
+  private ImmutableChecksumsSFV checksum;
 
   InMemorySnapshot(final TestSnapshotStore testSnapshotStore, final String snapshotId) {
     this.testSnapshotStore = testSnapshotStore;
@@ -57,16 +59,24 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
     term = Long.parseLong(parts[1]);
   }
 
-  InMemorySnapshot(final TestSnapshotStore testSnapshotStore, final long index, final long term) {
+  InMemorySnapshot(
+      final TestSnapshotStore testSnapshotStore,
+      final long index,
+      final long term,
+      final int nodeId) {
     this.testSnapshotStore = testSnapshotStore;
     this.index = index;
     this.term = term;
-    id = String.format("%d-%d", index, term);
+    id = String.format("%d-%d-%d", index, term, nodeId);
   }
 
   public static InMemorySnapshot newPersistedSnapshot(
-      final long index, final long term, final int size, final TestSnapshotStore snapshotStore) {
-    final var snapshot = new InMemorySnapshot(snapshotStore, index, term);
+      final int nodeId,
+      final long index,
+      final long term,
+      final int size,
+      final TestSnapshotStore snapshotStore) {
+    final var snapshot = new InMemorySnapshot(snapshotStore, index, term, nodeId);
     for (int i = 0; i < size; i++) {
       snapshot.writeChunks("chunk-" + i, ("test-" + i).getBytes());
     }
@@ -119,6 +129,9 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
       }
 
       @Override
+      public void setMaximumChunkSize(final int maximumChunkSize) {}
+
+      @Override
       public void close() {
         iterator = null;
       }
@@ -159,7 +172,7 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
   }
 
   @Override
-  public long getChecksum() {
+  public ImmutableChecksumsSFV getChecksums() {
     return checksum;
   }
 
@@ -183,7 +196,8 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
     return CompletableActorFuture.completed(reservation);
   }
 
-  boolean isReserved() {
+  @Override
+  public boolean isReserved() {
     return !reservations.isEmpty();
   }
 
@@ -206,7 +220,7 @@ public final class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapsh
   @Override
   public ActorFuture<PersistedSnapshot> persist() {
     testSnapshotStore.newSnapshot(this);
-    checksum = checksumCalculator.getValue();
+    checksum = new SfvChecksumImpl();
     return CompletableActorFuture.completed(this);
   }
 

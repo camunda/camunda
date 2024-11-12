@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-parent</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>operate-webapp</artifactId>
@@ -23,8 +23,7 @@
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-data-generator</artifactId>
-      <scope>runtime</scope>
+      <artifactId>webapps-schema</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -45,7 +44,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>operate-mvc-auth-commons</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
+    </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
@@ -107,6 +109,10 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -195,6 +201,11 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-expression</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.thymeleaf</groupId>
       <artifactId>thymeleaf</artifactId>
     </dependency>
@@ -259,7 +270,7 @@
     <!-- Micrometer Prometheus -->
     <dependency>
       <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-registry-prometheus</artifactId>
+      <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
     </dependency>
     <dependency>
       <groupId>io.micrometer</groupId>
@@ -352,6 +363,18 @@
     </dependency>
 
     <dependency>
+      <groupId>com.nimbusds</groupId>
+      <artifactId>nimbus-jose-jwt</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.github.spotbugs</groupId>
+      <artifactId>spotbugs-annotations</artifactId>
+      <scope>provided</scope>
+      <!-- only used at compile time -->
+    </dependency>
+
+    <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter-engine</artifactId>
       <scope>test</scope>
@@ -397,7 +420,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:operate-data-generator</dependency>
             <dependency>io.camunda:operate-importer</dependency>
             <dependency>io.camunda:operate-archiver</dependency>
             <dependency>io.camunda:operate-webjar</dependency>
@@ -413,7 +435,7 @@
             <dependency>org.springframework.session:spring-session-data-redis</dependency>
             <dependency>org.thymeleaf:thymeleaf</dependency>
             <dependency>jakarta.json:jakarta.json-api</dependency>
-            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
+            <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
             <!-- This dependency is indirectly used by the awssk auth plugin. It requires these
      classes on the classpath in order to resolve the AWS credentials -->
             <dependency>software.amazon.awssdk:sts</dependency>
@@ -421,27 +443,9 @@
           <ignoredUnusedDeclaredDependencies>
             <dep>jakarta.servlet:jakarta.servlet-api</dep>
             <dep>jakarta.annotation:jakarta.annotation-api</dep>
-            <dep>com.nimbusds:nimbus-jose-jwt</dep>
+            <dep>com.github.spotbugs:spotbugs-annotations</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>repackage</id>
-            <goals>
-              <goal>repackage</goal>
-            </goals>
-            <configuration>
-              <classifier>exec</classifier>
-              <layout>ZIP</layout>
-              <mainClass>io.camunda.operate.Application</mainClass>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
 
       <plugin>

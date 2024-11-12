@@ -2,14 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.scheduled;
 
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker.NextExecution.None;
 import io.camunda.zeebe.engine.processing.scheduled.DueDateChecker.NextExecution.Scheduled;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
@@ -17,7 +16,7 @@ import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import io.camunda.zeebe.util.AtomicUtil;
-import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -50,6 +49,8 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
    */
   private final AtomicReference<NextExecution> nextExecution = new AtomicReference<>(new None());
 
+  private final InstantSource clock;
+
   /**
    * @param timerResolution The resolution in ms for the timer
    * @param scheduleAsync Whether to schedule the execution happens asynchronously or not
@@ -58,10 +59,12 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   public DueDateChecker(
       final long timerResolution,
       final boolean scheduleAsync,
-      final Function<TaskResultBuilder, Long> visitor) {
+      final Function<TaskResultBuilder, Long> visitor,
+      final InstantSource clock) {
     this.timerResolution = timerResolution;
     this.scheduleAsync = scheduleAsync;
     this.visitor = visitor;
+    this.clock = clock;
   }
 
   TaskResult execute(final TaskResultBuilder taskResultBuilder) {
@@ -112,12 +115,11 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
         AtomicUtil.replace(
             nextExecution,
             currentlyPlanned -> {
-              final var now = ActorClock.currentTimeMillis();
+              final var now = clock.millis();
               final long scheduleFor = now + Math.max(dueDate - now, timerResolution);
               if (!(currentlyPlanned instanceof final Scheduled currentlyScheduled)
                   || (currentlyScheduled.scheduledFor() - scheduleFor > timerResolution)) {
-                final var delay = Duration.ofMillis(scheduleFor - now);
-                final var task = scheduleService.runDelayed(delay, this::execute);
+                final var task = scheduleService.runAt(scheduleFor, this::execute);
                 return Optional.of(new Scheduled(scheduleFor, task));
               }
               return Optional.empty();
@@ -133,9 +135,9 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     final var scheduleService = processingContext.getScheduleService();
     if (scheduleAsync) {
-      this.scheduleService = scheduleService::runDelayedAsync;
+      this.scheduleService = scheduleService::runAtAsync;
     } else {
-      this.scheduleService = scheduleService::runDelayed;
+      this.scheduleService = scheduleService::runAt;
     }
 
     shouldRescheduleChecker = true;
@@ -171,12 +173,10 @@ public final class DueDateChecker implements StreamProcessorLifecycleAware {
   interface ScheduleDelayed {
     /**
      * Implemented by either {@link
-     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayed(Duration, Task)}
-     * or {@link
-     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runDelayedAsync(Duration,
-     * Task)}
+     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runAt(long, Task)} or {@link
+     * io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService#runAtAsync(long, Task)}
      */
-    ScheduledTask runDelayed(final Duration delay, final Task task);
+    ScheduledTask runAt(long timestamp, final Task task);
   }
 
   interface NextExecution {

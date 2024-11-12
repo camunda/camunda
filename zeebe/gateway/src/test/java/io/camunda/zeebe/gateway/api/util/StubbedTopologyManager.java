@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.api.util;
 
@@ -13,18 +13,21 @@ import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClusterStateImpl;
-import io.camunda.zeebe.topology.state.ClusterTopology;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 
 public final class StubbedTopologyManager implements BrokerTopologyManager {
 
   private final BrokerClusterStateImpl clusterState;
+  private final ClusterConfiguration clusterConfiguration;
 
   StubbedTopologyManager() {
     this(8);
   }
 
   StubbedTopologyManager(final int partitionsCount) {
+    clusterConfiguration = ClusterConfiguration.uninitialized();
     clusterState = new BrokerClusterStateImpl();
+    clusterState.setClusterSize(1);
     clusterState.addBrokerIfAbsent(0);
     clusterState.setBrokerAddressIfPresent(0, "localhost:26501");
     for (int partitionOffset = 0; partitionOffset < partitionsCount; partitionOffset++) {
@@ -40,8 +43,8 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public ClusterTopology getClusterTopology() {
-    throw new UnsupportedOperationException("Not yet implemented");
+  public ClusterConfiguration getClusterConfiguration() {
+    return clusterConfiguration;
   }
 
   @Override
@@ -55,7 +58,7 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   }
 
   @Override
-  public void onTopologyUpdated(final ClusterTopology clusterTopology) {
-    throw new UnsupportedOperationException("Not yet implemented; implement if need be");
+  public void onClusterConfigurationUpdated(final ClusterConfiguration clusterConfiguration) {
+    throw new UnsupportedOperationException("Not yet implemented");
   }
 }

@@ -22,6 +22,7 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
@@ -163,6 +164,25 @@ public class RandomizedRaftTest {
       throws Exception {
 
     livenessTest(raftOperations, raftMembers, seed);
+  }
+
+  @Property(tries = 10, shrinking = ShrinkingMode.OFF, edgeCases = EdgeCasesMode.NONE)
+  void livenessTestWithSnapshotAndSingleRestart(
+      @ForAll("raftOperationsWithSnapshot") final List<RaftOperation> raftOperations,
+      @ForAll("raftMembers") final List<MemberId> raftMembers,
+      @ForAll("seeds") final long seed)
+      throws Exception {
+
+    // After all operations, restart all members once
+    final var modifiedOperations = new ArrayList<>(raftOperations);
+    for (final var member : this.raftMembers) {
+      modifiedOperations.add(RaftOperation.of("Restart member", ControllableRaftContexts::restart));
+    }
+
+    final var modifiedMemberList = new ArrayList<>(raftMembers);
+    modifiedMemberList.addAll(this.raftMembers);
+
+    livenessTest(modifiedOperations, modifiedMemberList, seed);
   }
 
   private void consistencyTest(

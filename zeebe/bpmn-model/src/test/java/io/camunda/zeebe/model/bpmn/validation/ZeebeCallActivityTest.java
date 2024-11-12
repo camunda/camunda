@@ -19,6 +19,8 @@ import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.ex
 import static java.util.Collections.singletonList;
 
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import org.junit.runners.Parameterized.Parameters;
 
@@ -40,6 +42,99 @@ public class ZeebeCallActivityTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(
             expect(ZeebeCalledElement.class, "Attribute 'processId' must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId("x")
+                        .getElement()
+                        .getSingleExtensionElement(ZeebeCalledElement.class)
+                        .setAttributeValue(ZeebeConstants.ATTRIBUTE_BINDING_TYPE, "foo"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeCalledElement.class,
+                "Attribute 'bindingType' must be one of: deployment, latest, versionTag"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "call", c -> c.zeebeProcessId("x").zeebeBindingType(ZeebeBindingType.versionTag))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeCalledElement.class,
+                "Attribute 'versionTag' must be present and not empty if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId("x")
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTag(""))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeCalledElement.class,
+                "Attribute 'versionTag' must be present and not empty if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId("x")
+                        .zeebeBindingType(ZeebeBindingType.versionTag)
+                        .zeebeVersionTag(" "))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeCalledElement.class,
+                "Attribute 'versionTag' must be present and not empty if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId("x")
+                        .zeebeBindingType(ZeebeBindingType.deployment)
+                        .zeebeVersionTag("v1.0"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeCalledElement.class,
+                "Attribute 'versionTag' may only be used if 'bindingType' is 'versionTag'"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .callActivity(
+                "call",
+                c ->
+                    c.zeebeProcessId("x")
+                        .zeebeBindingType(ZeebeBindingType.latest)
+                        .zeebeVersionTag("v1.0"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                ZeebeCalledElement.class,
+                "Attribute 'versionTag' may only be used if 'bindingType' is 'versionTag'"))
       },
       {
         Bpmn.createExecutableProcess("process")

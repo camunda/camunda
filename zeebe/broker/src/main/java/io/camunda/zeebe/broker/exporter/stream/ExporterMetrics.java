@@ -2,14 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
+import io.prometheus.client.Histogram;
 
 public final class ExporterMetrics {
 
@@ -18,6 +19,23 @@ public final class ExporterMetrics {
   private static final String LABEL_NAME_ACTION = "action";
   private static final String LABEL_NAME_VALUE_TYPE = "valueType";
   private static final String NAMESPACE_ZEEBE = "zeebe";
+
+  private static final Histogram EXPORTING_LATENCY =
+      Histogram.build()
+          .namespace(NAMESPACE_ZEEBE)
+          .name("exporting_latency")
+          .help("Time between a record is written until it is picked up for exporting (in seconds)")
+          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_VALUE_TYPE)
+          .register();
+
+  private static final Histogram EXPORTER_EXPORTING_DURATION =
+      Histogram.build()
+          .namespace(NAMESPACE_ZEEBE)
+          .name("exporter_exporting_duration")
+          .help("The time an exporter needs to export certain record (duration in seconds)")
+          .labelNames(LABEL_NAME_PARTITION, LABEL_NAME_EXPORTER, LABEL_NAME_VALUE_TYPE)
+          .register();
+
   private static final Counter EXPORTER_EVENTS =
       Counter.build()
           .namespace(NAMESPACE_ZEEBE)
@@ -89,6 +107,20 @@ public final class ExporterMetrics {
 
   public void setLastExportedPosition(final String exporter, final long position) {
     LAST_EXPORTED_POSITION.labels(exporter, partitionIdLabel).set(position);
+  }
+
+  public void exportingLatency(
+      final ValueType valueType, final long written, final long exporting) {
+    EXPORTING_LATENCY
+        .labels(partitionIdLabel, valueType.name())
+        .observe((exporting - written) / 1000f);
+  }
+
+  public Histogram.Timer startExporterExportingTimer(
+      final ValueType valueType, final String exporter) {
+    return EXPORTER_EXPORTING_DURATION
+        .labels(partitionIdLabel, exporter, valueType.name())
+        .startTimer();
   }
 
   public void initializeExporterState(final ExporterPhase state) {

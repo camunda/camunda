@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.util;
 
@@ -28,6 +28,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.time.InstantSource;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -166,7 +167,8 @@ public class ProcessingStateExtension implements BeforeEachCallback {
                 keyGenerator,
                 new TransientPendingSubscriptionState(),
                 new TransientPendingSubscriptionState(),
-                new EngineConfiguration());
+                new EngineConfiguration(),
+                InstantSource.system());
       } catch (final Exception e) {
         ExceptionUtils.throwAsUncheckedException(e);
       }

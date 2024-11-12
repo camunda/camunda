@@ -40,12 +40,13 @@ env:
 jobs:
   integration-tests:
     name: Test
-    runs-on: ${{ 'gcp-core-16-default' }}
+    runs-on: gcp-perf-core-16-default
     if: ${{ !startsWith(inputs.branch, 'fe-') && !startsWith(inputs.branch, 'renovate/') }}
     strategy:
       fail-fast: false
       matrix:
         database: [ elasticsearch, opensearch ]
+
         include:
           - database: elasticsearch
             testProfile: docker-es
@@ -54,49 +55,29 @@ jobs:
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
-        uses: actions/checkout@43045ae669be728bd34ed56fcd1a230c0dc4d8e2
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: refs/heads/${{ inputs.branch }}
           fetch-depth: 0 # fetches all history for all branches and tags
 
-      # Setup: import secrets from vault
-      - name: Import Secrets
-        id: secrets  # important to refer to it in later steps
-        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false  # we rely on step outputs, no need for environment variables
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-
       # Setup: configure Java, Maven, settings.xml
-      - uses: ./.github/actions/build-tasklist-setup
+      - uses: ./.github/actions/setup-build
         name: Build setup
         with:
-          nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
-          nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
+          java-distribution: adopt
+          maven-cache-key-modifier: tasklist-tests
+          maven-version: 3.8.6
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - name: Build backend
-        run: mvn -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
 
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
-          mvn -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
-
-      # Reports: publish test metrics results
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
-        if: ${{ (success() || failure()) }}
-        with:
-          check_name: "Tasklist Test Results"
-          files: |
-            tasklist/**/target/surefire-reports/*.xml
-            tasklist/**/target/failsafe-reports/TEST-*.xml
+          ./mvnw -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize
@@ -104,6 +85,16 @@ jobs:
         with:
           branch: ${{ inputs.branch }}
           max_length: '50'
+
+      - name: Upload failed test results
+        uses: ./.github/actions/collect-test-artifacts
+        if: failure()
+        with:
+          name: tasklist-test-results-${{ matrix.database }}
+          path: |
+            **/failsafe-reports/
+            **/surefire-reports/
+          retention-days: 1
 
       # Upload JaCoCo report
       - name: Upload JaCoCo report
@@ -113,3 +104,14 @@ jobs:
           name: jacoco-report-${{ steps.sanitize.outputs.branch_name }}-${{ matrix.database }}
           path: ${{ github.workspace }}/test-coverage/target/site/jacoco-aggregate/
           retention-days: 2
+
+      # Send metrics about CI health
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

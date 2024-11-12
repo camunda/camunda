@@ -1,0 +1,46 @@
+name: Execute Optimize health and deploy image
+description: |
+  This is an action which executes a smoketest against an Optimize docker image and if successful it deploys this image to a registry.
+inputs:
+  version:
+    required: true
+    description: The version of the current Optimize docker image.
+  date:
+    required: true
+    description: The date of the current docker image.
+  revision:
+    required: true
+    description: The revision of the current docker image
+runs:
+  using: composite
+  steps:
+    # This is partly done already by the healthcheck in the compose file
+    - name: Check that Optimize is running and available
+      run: |
+        echo "Smoke testing if Optimize is ready"
+        curl -q -f -I http://localhost:8090/api/readyz | grep -q "200 OK"
+        echo "Smoke testing if Optimize Frontend resources are accessible"
+        curl -v http://localhost:8090/ 2>&1 | grep -q http://localhost:18080/auth
+      shell: bash
+
+    # If we made it to here, all checks were successful. So let's build it to push. This is not as
+    # inefficient as it looks, since docker retrieves the previously generated images from the build cache
+    - name: Deploy to Docker Hub / Harbor
+      if: env.IS_DRY_RUN != 'true'
+      env:
+        VERSION: ${{ inputs.version }}
+        DATE: ${{ inputs.date }}
+        REVISION: ${{ inputs.revision }}
+      run: |
+        # shellcheck disable=SC2086
+        docker buildx build \
+          ${tag_arguments} \
+          --build-arg VERSION="${VERSION}" \
+          --build-arg DATE="${DATE}" \
+          --build-arg REVISION="${REVISION}" \
+          --platform linux/amd64,linux/arm64 \
+          --file optimize.Dockerfile \
+          --provenance false \
+          --push \
+          .
+      shell: bash

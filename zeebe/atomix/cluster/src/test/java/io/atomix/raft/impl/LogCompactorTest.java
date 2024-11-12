@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.atomix.raft.impl;
 
@@ -96,8 +96,8 @@ final class LogCompactorTest {
   void shouldCompactBasedOnOldestSnapshot() {
     // given
     final var store = new TestSnapshotStore(new AtomicReference<>());
-    InMemorySnapshot.newPersistedSnapshot(10L, 1, 30, store).reserve();
-    InMemorySnapshot.newPersistedSnapshot(30L, 1, 30, store);
+    InMemorySnapshot.newPersistedSnapshot(0, 10L, 1, 30, store).reserve();
+    InMemorySnapshot.newPersistedSnapshot(0, 30L, 1, 30, store);
 
     // when
     compactor.compactFromSnapshots(store);

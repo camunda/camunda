@@ -22,12 +22,17 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
 import java.util.Collection;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class UserTaskBuilderTest {
 
@@ -257,5 +262,85 @@ class UserTaskBuilderTest {
         .hasSize(1)
         .extracting(ZeebeTaskSchedule::getDueDate, ZeebeTaskSchedule::getFollowUpDate)
         .containsExactly(tuple(dueDate, followUpDate));
+  }
+
+  @ParameterizedTest
+  @EnumSource(ZeebeBindingType.class)
+  void shouldSetFormBindingType(final ZeebeBindingType bindingType) {
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1")
+            .zeebeFormBindingType(bindingType)
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeFormDefinition.class))
+        .hasSize(1)
+        .extracting(ZeebeFormDefinition::getBindingType)
+        .containsExactly(bindingType);
+  }
+
+  @Test
+  void shouldSetFormVersionTag() {
+    // when
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask")
+            .zeebeFormVersionTag("v1")
+            .endEvent()
+            .done();
+
+    // then
+    final ModelElementInstance userTask = instance.getModelElementById("userTask");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebeFormDefinition.class))
+        .hasSize(1)
+        .extracting(ZeebeFormDefinition::getVersionTag)
+        .containsExactly("v1");
+  }
+
+  @Test
+  void shouldSetPriorityOnZeebeUserTask() {
+    final String priority = "20";
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1", task -> task.zeebeUserTask().zeebeTaskPriority(priority))
+            .endEvent()
+            .done();
+
+    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebePriorityDefinition.class))
+        .hasSize(1)
+        .extracting(ZeebePriorityDefinition::getPriority)
+        .containsExactly(priority);
+  }
+
+  @Test
+  void shouldSetDefaultPriorityOnZeebeUserTask() {
+    final BpmnModelInstance instance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("userTask1", AbstractUserTaskBuilder::zeebeUserTask)
+            .endEvent()
+            .done();
+
+    final ModelElementInstance userTask = instance.getModelElementById("userTask1");
+    final ExtensionElements extensionElements =
+        (ExtensionElements) userTask.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements.getChildElementsByType(ZeebePriorityDefinition.class))
+        .hasSize(1)
+        .extracting(ZeebePriorityDefinition::getPriority)
+        .containsExactly(ZeebePriorityDefinition.DEFAULT_LITERAL_PRIORITY);
   }
 }

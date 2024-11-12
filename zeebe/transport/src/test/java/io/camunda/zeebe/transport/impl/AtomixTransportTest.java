@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.transport.impl;
 
@@ -41,6 +41,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.SnowflakeIdGenerator;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -80,6 +81,7 @@ public class AtomixTransportTest {
 
   @Parameters(name = "{0}")
   public static Collection<Object[]> data() {
+    final SnowflakeIdGenerator requestIdGenerator = new SnowflakeIdGenerator(0);
     return Arrays.asList(
         new Object[][] {
           {
@@ -92,7 +94,8 @@ public class AtomixTransportTest {
             (Function<AtomixCluster, ServerTransport>)
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
-                  return transportFactory.createServerTransport(0, messagingService);
+                  return transportFactory.createServerTransport(
+                      messagingService, requestIdGenerator);
                 }
           },
           {
@@ -115,7 +118,8 @@ public class AtomixTransportTest {
                     nettyMessagingService.start().join();
                   }
 
-                  return transportFactory.createServerTransport(0, nettyMessagingService);
+                  return transportFactory.createServerTransport(
+                      nettyMessagingService, requestIdGenerator);
                 }
           }
         });
@@ -426,7 +430,7 @@ public class AtomixTransportTest {
     private ServerResponseImpl serverResponse;
 
     DirectlyResponder() {
-      this.requestConsumer = (bytes -> {});
+      requestConsumer = (bytes -> {});
     }
 
     DirectlyResponder(final Consumer<byte[]> requestConsumer) {

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
@@ -125,7 +125,7 @@ class PartitionProcessingStateTest {
     // Before the functionality to soft pause the exporter, the previous implementation did not
     // have the exporter state saved onto to the file. It determined the exporter state based on
     // the existence of the file (if it exists, then the exporter is paused).
-    // see the changes in: https://github.com/camunda/zeebe/pull/16869
+    // see the changes in: https://github.com/camunda/camunda/pull/16869
 
     // Create an empty file for pauseState
     final File persistedExporterPauseState =

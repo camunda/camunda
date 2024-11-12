@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
@@ -25,11 +16,19 @@ import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.IdentityProperties;
+import io.camunda.tasklist.queries.RangeValueFilter;
+import io.camunda.tasklist.queries.RangeValueFilter.RangeValueFilterBuilder;
+import io.camunda.tasklist.queries.Sort;
 import io.camunda.tasklist.queries.TaskByVariables;
+import io.camunda.tasklist.queries.TaskOrderBy;
+import io.camunda.tasklist.queries.TaskSortFields;
+import io.camunda.tasklist.store.ListViewStore;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistTester;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
@@ -40,17 +39,27 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
@@ -59,6 +68,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   @InjectMocks private IdentityProperties identityProperties;
 
   @MockBean private IdentityAuthorizationService identityAuthorizationService;
+
+  @Autowired private ListViewStore listViewStore;
 
   @Autowired private WebApplicationContext context;
 
@@ -102,11 +113,10 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final int numberOfInstances,
       final String candidateGroup) {
     return tester
-        .createAndDeploySimpleProcessWithCandidateGroup(
-            bpmnProcessId, flowNodeBpmnId, candidateGroup)
-        .then()
+        .createAndDeploySimpleProcess(
+            bpmnProcessId, flowNodeBpmnId, b -> b.zeebeCandidateGroups(candidateGroup))
         .processIsDeployed()
-        .and()
+        .then()
         .startProcessInstances(bpmnProcessId, numberOfInstances)
         .then()
         .taskIsCreated(flowNodeBpmnId);
@@ -118,7 +128,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final int numberOfInstances,
       final String candidateUser) {
     return tester
-        .createAndDeploySimpleProcessWithCandidateUser(bpmnProcessId, flowNodeBpmnId, candidateUser)
+        .createAndDeploySimpleProcess(
+            bpmnProcessId, flowNodeBpmnId, t -> t.zeebeCandidateUsers(candidateUser))
         .then()
         .processIsDeployed()
         .and()
@@ -133,11 +144,24 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final int numberOfInstances,
       final String assignee) {
     return tester
-        .createAndDeploySimpleProcessWithAssignee(bpmnProcessId, flowNodeBpmnId, assignee)
+        .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId, t -> t.zeebeAssignee(assignee))
         .then()
         .processIsDeployed()
         .and()
         .startProcessInstances(bpmnProcessId, numberOfInstances)
+        .then()
+        .taskIsCreated(flowNodeBpmnId);
+  }
+
+  private TasklistTester createZeebeUserTaskWithPriority(
+      final String bpmnProcessId, final String flowNodeBpmnId, final String priority) {
+    return tester
+        .createAndDeploySimpleProcess(
+            bpmnProcessId, flowNodeBpmnId, t -> t.zeebeUserTask().zeebeTaskPriority(priority))
+        .then()
+        .processIsDeployed()
+        .and()
+        .startProcessInstance(bpmnProcessId)
         .then()
         .taskIsCreated(flowNodeBpmnId);
   }
@@ -247,10 +271,32 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String bpmnProcessId = "testProcess";
       final String flowNodeBpmnId = "taskA_".concat(UUID.randomUUID().toString());
       final int numberOfInstances = 3;
+      tester
+          .createAndDeploySimpleProcess(
+              bpmnProcessId, flowNodeBpmnId, b -> b.zeebeCandidateUsers("demo"))
+          .processIsDeployed()
+          .then()
+          .startProcessInstances(bpmnProcessId, numberOfInstances)
+          .then()
+          .taskIsCreated(flowNodeBpmnId);
 
-      createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "demo");
-      createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "admin");
-      createTaskWithCandidateUser(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "john");
+      tester
+          .createAndDeploySimpleProcess(
+              bpmnProcessId, flowNodeBpmnId, b -> b.zeebeCandidateUsers("admin"))
+          .processIsDeployed()
+          .then()
+          .startProcessInstances(bpmnProcessId, numberOfInstances)
+          .then()
+          .taskIsCreated(flowNodeBpmnId);
+
+      tester
+          .createAndDeploySimpleProcess(
+              bpmnProcessId, flowNodeBpmnId, b -> b.zeebeCandidateUsers("john"))
+          .processIsDeployed()
+          .then()
+          .startProcessInstances(bpmnProcessId, numberOfInstances)
+          .then()
+          .taskIsCreated(flowNodeBpmnId);
       // when(identityAuthorizationService.getUserGroups()).thenReturn(List.of("Admins", "Users",
       // "Sales"));
 
@@ -506,6 +552,13 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       assertThat(result)
           .hasOkHttpStatus()
           .hasApplicationJsonContentType()
+          .satisfies(
+              payload ->
+                  assertThat(
+                          (List<?>)
+                              JsonPath.parse(payload.getContentAsString(StandardCharsets.UTF_8))
+                                  .read("$.*.variables.*.draft"))
+                      .isEmpty())
           .extractingListContent(objectMapper, TaskSearchResponse.class)
           .hasSize(2)
           .flatExtracting("variables")
@@ -775,6 +828,138 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .hasInstanceId()
           .hasMessage("task with id %s was not found", randomTaskId);
     }
+
+    @Nested
+    class PrioritySearchTests {
+
+      final String bpmnProcessId = "testProcess";
+      final String flowNodeBpmnId = "taskA_".concat(UUID.randomUUID().toString());
+      final TaskOrderBy orderBy =
+          new TaskOrderBy().setField(TaskSortFields.priority).setOrder(Sort.ASC);
+
+      @BeforeEach
+      public void setUp() {
+        createZeebeUserTaskWithPriority(bpmnProcessId, flowNodeBpmnId, "30");
+        createZeebeUserTaskWithPriority(bpmnProcessId, flowNodeBpmnId, "45");
+        createZeebeUserTaskWithPriority(bpmnProcessId, flowNodeBpmnId, "90");
+      }
+
+      private static Stream<Arguments> priorityRangeValues() {
+        return Stream.of(
+            Arguments.of(new RangeValueFilterBuilder().eq(30).build(), 1, new int[] {30}),
+            Arguments.of(new RangeValueFilterBuilder().eq(9).build(), 0, new int[] {}),
+            Arguments.of(
+                new RangeValueFilterBuilder().gte(30).lte(90).build(), 3, new int[] {30, 45, 90}),
+            Arguments.of(new RangeValueFilterBuilder().gt("30").build(), 2, new int[] {45, 90}),
+            Arguments.of(new RangeValueFilterBuilder().gte("45").build(), 2, new int[] {45, 90}),
+            Arguments.of(new RangeValueFilterBuilder().lte("45").build(), 2, new int[] {30, 45}),
+            Arguments.of(new RangeValueFilterBuilder().lt("90").build(), 2, new int[] {30, 45}));
+      }
+
+      @ParameterizedTest
+      @MethodSource("priorityRangeValues")
+      public void searchZeebeUserTaskWithPriorityRange(
+          final RangeValueFilter filter, final int resultsExpected, final int[] priorities)
+          throws JsonProcessingException {
+        // given
+
+        final var searchQuery =
+            new TaskQueryDTO().setPriority(filter).setSort(new TaskOrderBy[] {orderBy});
+
+        // when
+        final var result =
+            mockMvcHelper.doRequest(
+                post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(searchQuery)));
+
+        // then
+        final AtomicInteger i = new AtomicInteger();
+        assertThat(result)
+            .hasOkHttpStatus()
+            .hasApplicationJsonContentType()
+            .extractingListContent(objectMapper, TaskSearchResponse.class)
+            .hasSize(resultsExpected)
+            .allSatisfy(
+                task -> {
+                  assertThat(task.getName()).isEqualTo(flowNodeBpmnId);
+                  assertThat(task.getProcessName()).isEqualTo(bpmnProcessId);
+                  assertThat(task.getTaskState()).isEqualTo(TaskState.CREATED);
+                  assertThat(task.getAssignee()).isNull();
+                  assertThat(task.getImplementation())
+                      .isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
+                  assertThat(task.getPriority()).isEqualTo(priorities[i.getAndIncrement()]);
+                });
+      }
+
+      @Test
+      public void searchUserTasksWithPriorityShouldExcludeJobWorkers()
+          throws JsonProcessingException {
+        // given
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .processIsDeployed()
+            .then()
+            .startProcessInstance(bpmnProcessId)
+            .then()
+            .taskIsCreated(flowNodeBpmnId);
+
+        final var searchQuery =
+            new TaskQueryDTO()
+                .setPriority(new RangeValueFilterBuilder().gt(46).build())
+                .setSort(new TaskOrderBy[] {orderBy});
+
+        // when
+        final var result =
+            mockMvcHelper.doRequest(
+                post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(searchQuery)));
+
+        // then
+        assertThat(result)
+            .hasOkHttpStatus()
+            .hasApplicationJsonContentType()
+            .extractingListContent(objectMapper, TaskSearchResponse.class)
+            .hasSize(1)
+            .extracting(TaskSearchResponse::getImplementation, TaskSearchResponse::getPriority)
+            .containsExactly(tuple(TaskImplementation.ZEEBE_USER_TASK, 90));
+      }
+
+      @Test
+      public void searchUserTasksShouldIncludePriority() throws JsonProcessingException {
+        // given
+        tester
+            .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
+            .processIsDeployed()
+            .then()
+            .startProcessInstance(bpmnProcessId)
+            .then()
+            .taskIsCreated(flowNodeBpmnId);
+
+        final var searchQuery = new TaskQueryDTO().setSort(new TaskOrderBy[] {orderBy});
+
+        // when
+        final var result =
+            mockMvcHelper.doRequest(
+                post(TasklistURIs.TASKS_URL_V1.concat("/search"))
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(searchQuery)));
+
+        // then
+        assertThat(result)
+            .hasOkHttpStatus()
+            .hasApplicationJsonContentType()
+            .extractingListContent(objectMapper, TaskSearchResponse.class)
+            .hasSize(4)
+            .extracting(TaskSearchResponse::getImplementation, TaskSearchResponse::getPriority)
+            .containsExactlyInAnyOrder(
+                tuple(TaskImplementation.ZEEBE_USER_TASK, 90),
+                tuple(TaskImplementation.ZEEBE_USER_TASK, 45),
+                tuple(TaskImplementation.ZEEBE_USER_TASK, 30),
+                tuple(TaskImplementation.JOB_WORKER, 50));
+      }
+    }
   }
 
   @Nested
@@ -786,7 +971,15 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String bpmnProcessId = "testProcess";
       final String flowNodeBpmnId = "taskA";
       final String taskId =
-          tester.createZeebeUserTask(bpmnProcessId, flowNodeBpmnId, numberOfTasks).getTaskId();
+          tester
+              .createAndDeploySimpleProcess(
+                  bpmnProcessId, flowNodeBpmnId, AbstractUserTaskBuilder::zeebeUserTask)
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(bpmnProcessId)
+              .then()
+              .taskIsCreated(flowNodeBpmnId)
+              .getTaskId();
       final var result =
           mockMvcHelper.doRequest(
               patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/assign"), taskId));
@@ -1125,6 +1318,13 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               tuple("var_2", "222222", "222222", false),
               tuple("var_a", "225", "225", false),
               tuple("var_b", "779", "779", false));
+
+      // Assure Variables from Job Worker are not persisted on task-list-view
+      assertThat(listViewStore.getVariablesByVariableName("var_0").isEmpty());
+      assertThat(listViewStore.getVariablesByVariableName("var_1").isEmpty());
+      assertThat(listViewStore.getVariablesByVariableName("var_2").isEmpty());
+      assertThat(listViewStore.getVariablesByVariableName("var_a").isEmpty());
+      assertThat(listViewStore.getVariablesByVariableName("var_b").isEmpty());
     }
 
     @Test
@@ -1133,8 +1333,19 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       final String bpmnProcessId = "simpleTestProcess";
       final String flowNodeBpmnId = "taskE_".concat(UUID.randomUUID().toString());
 
-      final var taskId =
-          tester.createZeebeUserTask(bpmnProcessId, flowNodeBpmnId, "demo", 1).getTaskId();
+      final String taskId =
+          tester
+              .createAndDeploySimpleProcess(
+                  bpmnProcessId,
+                  flowNodeBpmnId,
+                  AbstractUserTaskBuilder::zeebeUserTask,
+                  task -> task.zeebeAssignee("demo"))
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(bpmnProcessId)
+              .then()
+              .taskIsCreated(flowNodeBpmnId)
+              .getTaskId();
 
       final var saveVariablesRequest =
           new SaveVariablesRequest()
@@ -1189,6 +1400,19 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               tuple("var_2", "222222", "222222", false),
               tuple("var_a", "225", "225", false),
               tuple("var_b", "779", "779", false));
+
+      Awaitility.await("tasklist-list-view has imported the data")
+          .timeout(Duration.ofSeconds(20))
+          .untilAsserted(
+              () -> assertThat(listViewStore.getVariablesByVariableName("var_1")).isNotEmpty());
+
+      // Assert the Task Variables were persisted in the tasklist-list-view
+      assertThat(listViewStore.getVariablesByVariableName("var_a").get(0).equals("225"));
+      assertThat(listViewStore.getVariablesByVariableName("var_1").get(0).equals("11111111111"));
+
+      // Assure the Draft Variable were not persisted to list-view
+      assertThat(listViewStore.getVariablesByVariableName("var_2").isEmpty());
+      assertThat(listViewStore.getVariablesByVariableName("var_b").isEmpty());
     }
 
     @Test

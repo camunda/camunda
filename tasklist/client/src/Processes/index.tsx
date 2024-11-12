@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE ("USE"), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * "Licensee" means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
 import {
@@ -34,6 +25,7 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import {useEffect, useRef, useState} from 'react';
+import {useTranslation} from 'react-i18next';
 import {C3EmptyState} from '@camunda/camunda-composite-components';
 import EmptyMessageImage from './empty-message-image.svg';
 import {observer} from 'mobx-react-lite';
@@ -62,7 +54,7 @@ type UseProcessesFilterParams = Omit<
 
 type FilterOption = {
   id: string;
-  text: string;
+  textKey: string;
   searchParamValue: 'yes' | 'no' | undefined;
   params: UseProcessesFilterParams;
 };
@@ -70,7 +62,7 @@ type FilterOption = {
 const START_FORM_FILTER_OPTIONS: FilterOption[] = [
   {
     id: 'ignore',
-    text: 'All Processes',
+    textKey: 'processFiltersAllProcesses',
     searchParamValue: undefined,
     params: {
       isStartedByForm: undefined,
@@ -78,7 +70,7 @@ const START_FORM_FILTER_OPTIONS: FilterOption[] = [
   },
   {
     id: 'yes',
-    text: 'Requires form input to start',
+    textKey: 'processesFormFilterRequiresForm',
     searchParamValue: 'yes',
     params: {
       isStartedByForm: true,
@@ -86,7 +78,7 @@ const START_FORM_FILTER_OPTIONS: FilterOption[] = [
   },
   {
     id: 'no',
-    text: 'Does not require form input to start',
+    textKey: 'processesFormFilterRequiresNoForm',
     searchParamValue: 'no',
     params: {
       isStartedByForm: false,
@@ -99,6 +91,8 @@ const FilterDropdown: React.FC<{
   selected?: FilterOption;
   onChange?: (option: FilterOption) => void;
 }> = ({items, selected, onChange}) => {
+  const {t} = useTranslation();
+
   return (
     <Dropdown
       id="process-filters"
@@ -106,10 +100,10 @@ const FilterDropdown: React.FC<{
       className={styles.dropdown}
       hideLabel
       selectedItem={selected}
-      titleText="Filter processes"
-      label="Filter processes"
+      titleText={t('processesFilterDropdownLabel')}
+      label={t('processesFilterDropdownLabel')}
       items={items}
-      itemToString={(item) => (item ? item.text : '')}
+      itemToString={(item) => (item ? t(item.textKey) : '')}
       onChange={(data) => {
         if (data.selectedItem && onChange) {
           onChange(data.selectedItem);
@@ -120,6 +114,7 @@ const FilterDropdown: React.FC<{
 };
 
 const Processes: React.FC = observer(() => {
+  const {t} = useTranslation();
   const {instance} = newProcessInstance;
   const {hasPermission} = usePermissions(['write']);
   const {data: currentUser} = useCurrentUser();
@@ -145,7 +140,7 @@ const Processes: React.FC = observer(() => {
     setSearchParams(current);
   };
   const selectedTenantId = hasMultipleTenants
-    ? searchParams.get('tenantId') ?? defaultTenant?.id
+    ? (searchParams.get('tenantId') ?? defaultTenant?.id)
     : defaultTenant?.id;
   const startFormFilterSearchParam =
     searchParams.get('hasStartForm') ?? undefined;
@@ -185,11 +180,11 @@ const Processes: React.FC = observer(() => {
       notificationsStore.displayNotification({
         isDismissable: false,
         kind: 'error',
-        title: 'Processes could not be fetched',
+        title: t('processesFetchFailed'),
       });
       logger.error(error);
     }
-  }, [error]);
+  }, [error, t]);
 
   useEffect(() => {
     if (match === null || isLoading) {
@@ -208,15 +203,15 @@ const Processes: React.FC = observer(() => {
         kind: 'error',
         title:
           bpmnProcessId === null
-            ? 'Process does not exist or has no start form'
-            : `Process ${bpmnProcessId} does not exist or has no start form`,
+            ? t('processesStartFormNotFound')
+            : t('processesProcessNoFormOrNotExistError', {bpmnProcessId}),
       });
       navigate({
         ...location,
         pathname: `/${pages.processes()}`,
       });
     }
-  }, [match, data, isLoading, navigate, location]);
+  }, [match, data, isLoading, navigate, location, t]);
 
   useEffect(() => {
     if (searchParams.get('tenantId') === null && initialTenantId !== null) {
@@ -238,9 +233,9 @@ const Processes: React.FC = observer(() => {
 
   const processSearchProps: React.ComponentProps<typeof Search> = {
     size: 'md',
-    placeholder: 'Search processes',
-    labelText: 'Search processes',
-    closeButtonLabelText: 'Clear search processes',
+    placeholder: t('processesFilterFieldLabel'),
+    labelText: t('processesFilterFieldLabel'),
+    closeButtonLabelText: t('processesClearFilterFieldButtonLabel'),
     value: searchValue,
     onChange: (event) => {
       setSearchValue(event.target.value);
@@ -251,21 +246,15 @@ const Processes: React.FC = observer(() => {
     },
     disabled: isLoading,
   } as const;
-
-  const Filter = () => {
-    return (
-      <FilterDropdown
-        items={START_FORM_FILTER_OPTIONS}
-        selected={startFormFilter}
-        onChange={(value) =>
-          updateSearchParams(searchParams, {
-            name: 'hasStartForm',
-            value: value.searchParamValue ?? '',
-          })
-        }
-      />
-    );
-  };
+  const filterDropdownProps: React.ComponentProps<typeof FilterDropdown> = {
+    items: START_FORM_FILTER_OPTIONS,
+    selected: startFormFilter,
+    onChange: (value) =>
+      debouncedNavigate(searchParams, {
+        name: 'hasStartForm',
+        value: value.searchParamValue ?? '',
+      }),
+  } as const;
 
   return (
     <main className={cn('cds--content', styles.splitPane)}>
@@ -277,10 +266,8 @@ const Processes: React.FC = observer(() => {
               <Grid narrow>
                 <Column sm={4} md={8} lg={16}>
                   <Stack gap={4}>
-                    <h1>Processes</h1>
-                    <p>
-                      Browse and run processes published by your organization.
-                    </p>
+                    <h1>{t('headerNavItemProcesses')}</h1>
+                    <p>{t('processesSubtitle')}</p>
                   </Stack>
                 </Column>
               </Grid>
@@ -300,7 +287,7 @@ const Processes: React.FC = observer(() => {
                     md={4}
                     lg={3}
                   >
-                    <Filter />
+                    <FilterDropdown {...filterDropdownProps} />
                   </Column>
                   <Column
                     className={styles.searchFieldWrapper}
@@ -343,7 +330,7 @@ const Processes: React.FC = observer(() => {
                     md={3}
                     lg={5}
                   >
-                    <Filter />
+                    <FilterDropdown {...filterDropdownProps} />
                   </Column>
                 </Grid>
               )}
@@ -362,13 +349,12 @@ const Processes: React.FC = observer(() => {
                     }
                     heading={
                       isFiltered
-                        ? 'We could not find any process with that name'
-                        : 'No published processes yet'
+                        ? t('processesProcessNotFoundError')
+                        : t('processesProcessNotPublishedError')
                     }
                     description={
                       <span data-testid="empty-message">
-                        Contact your process administrator to publish processes
-                        or learn how to publish processes{' '}
+                        {t('processesErrorBody')}
                         <Link
                           href="https://docs.camunda.io/docs/components/modeler/web-modeler/run-or-publish-your-process/#publishing-a-process"
                           target="_blank"
@@ -380,7 +366,7 @@ const Processes: React.FC = observer(() => {
                             });
                           }}
                         >
-                          here
+                          {t('processesErrorBodyLinkLabel')}
                         </Link>
                       </span>
                     }

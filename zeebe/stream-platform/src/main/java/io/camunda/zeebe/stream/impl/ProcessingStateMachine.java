@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.impl;
 
@@ -14,6 +14,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -21,7 +22,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.scheduler.ActorControl;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.retry.AbortableRetryStrategy;
@@ -33,6 +33,7 @@ import io.camunda.zeebe.stream.api.ProcessingResponse;
 import io.camunda.zeebe.stream.api.ProcessingResult;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache;
@@ -163,6 +164,7 @@ public final class ProcessingStateMachine {
   private final ProcessingMetrics processingMetrics;
   private final ScheduledCommandCache scheduledCommandCache;
   private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
+  private final ControllableStreamClock clock;
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -200,6 +202,7 @@ public final class ProcessingStateMachine {
                 recordMetadata -> recordMetadata.getRecordType() == RecordType.COMMAND)
             .and(record -> !record.shouldSkipProcessing())
             .and(context.processingFilter());
+    clock = context.getClock();
   }
 
   private void skipRecord() {
@@ -270,8 +273,7 @@ public final class ProcessingStateMachine {
       // Here we need to get the current time, since we want to calculate
       // how long it took between writing to the dispatcher and processing.
       // In all other cases we should prefer to use the Prometheus Timer API.
-      final var processingStartTime = ActorClock.currentTimeMillis();
-      metrics.processingLatency(loggedEvent.getTimestamp(), processingStartTime);
+      metrics.processingLatency(loggedEvent.getTimestamp(), clock.millis());
       processingTimer =
           metrics.startProcessingDurationTimer(metadata.getValueType(), metadata.getIntent());
 
@@ -341,8 +343,11 @@ public final class ProcessingStateMachine {
    * commands are created.
    */
   private void batchProcessing(final TypedRecord<?> initialCommand) {
-    final ProcessingResultBuilder processingResultBuilder =
-        new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
+    // propagate the operation reference from the initial command to the processingResultBuilder to
+    // be appended to the followup events
+    final var processingResultBuilder =
+        new BufferedProcessingResultBuilder(
+            logStreamWriter::canWriteEvents, initialCommand.getOperationReference());
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -525,7 +530,8 @@ public final class ProcessingStateMachine {
   private void tryRejectingIfUserCommand(final String errorMessage) {
     final var rejectionReason = errorMessage != null ? errorMessage : "";
     final ProcessingResultBuilder processingResultBuilder =
-        new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
+        new BufferedProcessingResultBuilder(
+            logStreamWriter::canWriteEvents, typedCommand.getOperationReference());
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
@@ -537,7 +543,8 @@ public final class ProcessingStateMachine {
             .intent(ErrorIntent.CREATED)
             .recordVersion(RecordMetadata.DEFAULT_RECORD_VERSION)
             .rejectionType(RejectionType.NULL_VAL)
-            .rejectionReason("");
+            .rejectionReason("")
+            .operationReference(typedCommand.getOperationReference());
     processingResultBuilder.appendRecord(currentRecord.getKey(), errorRecord, recordMetadata);
     processingResultBuilder.withResponse(
         RecordType.COMMAND_REJECTION,
@@ -564,7 +571,8 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction.run(
         () -> {
           final ProcessingResultBuilder processingResultBuilder =
-              new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
+              new BufferedProcessingResultBuilder(
+                  logStreamWriter::canWriteEvents, typedCommand.getOperationReference());
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);
@@ -595,7 +603,8 @@ public final class ProcessingStateMachine {
           writeRetryStrategy.runWithRetry(
               () -> {
                 final var writeResult =
-                    logStreamWriter.tryWrite(pendingWrites, sourceRecordPosition);
+                    logStreamWriter.tryWrite(
+                        WriteContext.processingResult(), pendingWrites, sourceRecordPosition);
                 if (writeResult.isRight()) {
                   writtenPosition = writeResult.get();
                   return true;

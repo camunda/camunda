@@ -21,12 +21,12 @@ jobs:
     steps:
       # Setup: checkout
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       # Setup: import secrets from vault
       - name: Import Secrets
         id: secrets # important to refer to it in later steps
-        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
+        uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -44,12 +44,17 @@ jobs:
         with:
           distribution: "adopt"
           java-version: ${{ env.JAVA_VERSION }}
-          cache: "maven"
 
       - name: Setup Maven
-        uses: stCarolas/setup-maven@v4.5
+        uses: ./.github/actions/setup-maven-dist
         with:
           maven-version: 3.8.6
+          set-mvnw: true
+
+      - name: Configure Maven
+        uses: ./.github/actions/setup-maven-cache
+        with:
+          maven-cache-key-modifier: tasklist-tests
 
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: Create Maven settings.xml
@@ -67,35 +72,23 @@ jobs:
       # Build: maven artifacts
       - name: Build backend
         run: |
-          mvn -pl tasklist -B -DskipTests -DskipChecks -P skipFrontendBuild clean install
+          ./mvnw clean install -B -T1C -DskipChecks -P skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       # Tests: run backup and restore tests
       - name: Run backup and restore tests
         run: |
-          mvn -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P -docker,-skipTests verify
-
-      # Reports: publish test results
-      - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v2.16.1
-        if: always()
-        with:
-          check_name: "Tasklist BackupRestore test results with '${{ inputs.database }}'"
-          comment_mode: off
-          report_individual_runs: true
-          report_suite_logs: error
-          files: |
-            tasklist/**/target/surefire-reports/*.xml
+          ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ inputs.database }} -P -skipTests verify
 
       # Notify: send Slack notification on tests failure
       - name: Send Slack notification on failure
         if: failure()
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.27.0
         env:
           SLACK_WEBHOOK_URL: ${{ steps.secrets.outputs.TASKLIST_CI_ALERT_WEBHOOK_URL }}
         with:
           payload: |
             {
               "workflow_name": "Backup and restore tests",
-              "github_run_url": "https://github.com/camunda/tasklist/actions/runs/${{ github.run_id }}",
+              "github_run_url": "https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}",
               "branch": "${{ github.head_ref || github.ref_name }}"
             }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter;
 
@@ -49,6 +49,19 @@ final class TestClient implements CloseableSilently {
     this.indexRouter = indexRouter;
 
     restClient = RestClientFactory.of(config);
+
+    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
+    esClient = new ElasticsearchClient(transport);
+  }
+
+  TestClient(
+      final ElasticsearchExporterConfiguration config,
+      final RecordIndexRouter indexRouter,
+      final RestClient restClient) {
+    this.config = config;
+    this.indexRouter = indexRouter;
+
+    this.restClient = restClient;
 
     final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
     esClient = new ElasticsearchClient(transport);

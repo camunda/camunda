@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.qa.backup.generator;
 
@@ -66,7 +57,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
 
   private List<Long> processInstanceKeys = new ArrayList<>();
 
-  private void init(BackupRestoreTestContext testContext) {
+  private void init(final BackupRestoreTestContext testContext) {
     zeebeClient =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(testContext.getExternalZeebeContactPoint())
@@ -79,7 +70,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   protected abstract void initClient(BackupRestoreTestContext testContext);
 
   @Override
-  public void createData(BackupRestoreTestContext testContext) throws Exception {
+  public void createData(final BackupRestoreTestContext testContext) throws Exception {
     init(testContext);
     try {
       final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
@@ -98,6 +89,64 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
       LOGGER.info(
           "Data generation completed in: {} s",
           ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()));
+    } finally {
+      closeClients();
+    }
+  }
+
+  @Override
+  public void assertData() throws IOException {
+    try {
+      final GraphQLResponse response = tasklistAPICaller.getAllTasks();
+      assertTrue(response.isOk());
+      assertEquals(String.valueOf(PROCESS_INSTANCE_COUNT), response.get("$.data.tasks.length()"));
+      assertEquals("task1", response.get("$.data.tasks[0].name"));
+      assertEquals("CREATED", response.get("$.data.tasks[0].taskState"));
+      assertThat(countEntitiesFor(DraftTaskVariableTemplate.INDEX_NAME))
+          .isEqualTo(ALL_DRAFT_TASK_VARIABLES_COUNT);
+    } catch (final AssertionError er) {
+      LOGGER.warn("Error when asserting data: " + er.getMessage());
+      throw er;
+    }
+  }
+
+  @Override
+  public void assertDataAfterChange() throws IOException {
+    try {
+      List<TaskDTO> tasks = tasklistAPICaller.getTasks("task1");
+      assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
+      assertThat(tasks)
+          .filteredOn(t -> t.getTaskState().equals(TaskState.COMPLETED))
+          .hasSize(COMPLETED_TASKS_COUNT);
+      assertThat(tasks)
+          .filteredOn(t -> t.getTaskState().equals(TaskState.CREATED))
+          .hasSize(PROCESS_INSTANCE_COUNT - COMPLETED_TASKS_COUNT);
+
+      tasks = tasklistAPICaller.getTasks("task2");
+      assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
+      assertThat(tasks).extracting("taskState").containsOnly(TaskState.CREATED);
+
+      // after task completion all draft variables associated with a task will be deleted
+      assertThat(countEntitiesFor(DraftTaskVariableTemplate.INDEX_NAME))
+          .isEqualTo(DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION);
+    } catch (final AssertionError er) {
+      LOGGER.warn("Error when asserting data: " + er.getMessage());
+      throw er;
+    }
+  }
+
+  @Override
+  public void changeData(final BackupRestoreTestContext testContext) throws IOException {
+    init(testContext);
+    try {
+      // complete tasks (they are already claimed)
+      completeTasks("task1", COMPLETED_TASKS_COUNT);
+
+      // start other process instance
+      deployProcess(createModel2(PROCESS_BPMN_PROCESS_ID_2), PROCESS_BPMN_PROCESS_ID_2);
+
+      processInstanceKeys =
+          startProcessInstances(PROCESS_BPMN_PROCESS_ID_2, PROCESS_INSTANCE_COUNT);
     } finally {
       closeClients();
     }
@@ -154,7 +203,8 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
     }
   }
 
-  private List<Long> startProcessInstances(String bpmnProcessId, int numberOfProcessInstances) {
+  private List<Long> startProcessInstances(
+      final String bpmnProcessId, final int numberOfProcessInstances) {
     for (int i = 0; i < numberOfProcessInstances; i++) {
       final long processInstanceKey =
           ZeebeTestUtil.startProcessInstance(zeebeClient, bpmnProcessId, "{\"var1\": \"value1\"}");
@@ -165,13 +215,14 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
     return processInstanceKeys;
   }
 
-  private void deployProcess(BpmnModelInstance bpmnModelInstance, String bpmnProcessId) {
+  private void deployProcess(
+      final BpmnModelInstance bpmnModelInstance, final String bpmnProcessId) {
     final String processDefinitionKey =
         ZeebeTestUtil.deployProcess(zeebeClient, bpmnModelInstance, bpmnProcessId + ".bpmn");
     LOGGER.info("Deployed process {} with key {}", bpmnProcessId, processDefinitionKey);
   }
 
-  private BpmnModelInstance createModel1(String bpmnProcessId) {
+  private BpmnModelInstance createModel1(final String bpmnProcessId) {
     return Bpmn.createExecutableProcess(bpmnProcessId)
         .startEvent("start")
         .userTask("task1")
@@ -183,7 +234,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
         .done();
   }
 
-  private BpmnModelInstance createModel2(String bpmnProcessId) {
+  private BpmnModelInstance createModel2(final String bpmnProcessId) {
     return Bpmn.createExecutableProcess(bpmnProcessId)
         .startEvent("start")
         .userTask("task2")
@@ -191,79 +242,22 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
         .done();
   }
 
-  private long countEntitiesFor(String indexName) throws IOException {
+  private long countEntitiesFor(final String indexName) throws IOException {
     return countEntitiesForAlias(getAliasFor(indexName));
   }
 
   protected abstract long countEntitiesForAlias(String alias) throws IOException;
 
-  private String getAliasFor(String index) {
+  private String getAliasFor(final String index) {
     return String.format("tasklist-%s-*_alias", index);
   }
 
-  protected String getMainIndexNameFor(String index) {
+  protected String getMainIndexNameFor(final String index) {
     return String.format("tasklist-%s-*_", index);
   }
 
-  @Override
-  public void assertData() throws IOException {
-    try {
-      final GraphQLResponse response = tasklistAPICaller.getAllTasks();
-      assertTrue(response.isOk());
-      assertEquals(String.valueOf(PROCESS_INSTANCE_COUNT), response.get("$.data.tasks.length()"));
-      assertEquals("task1", response.get("$.data.tasks[0].name"));
-      assertEquals("CREATED", response.get("$.data.tasks[0].taskState"));
-      assertThat(countEntitiesFor(DraftTaskVariableTemplate.INDEX_NAME))
-          .isEqualTo(ALL_DRAFT_TASK_VARIABLES_COUNT);
-    } catch (AssertionError er) {
-      LOGGER.warn("Error when asserting data: " + er.getMessage());
-      throw er;
-    }
-  }
-
-  @Override
-  public void assertDataAfterChange() throws IOException {
-    try {
-      List<TaskDTO> tasks = tasklistAPICaller.getTasks("task1");
-      assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
-      assertThat(tasks)
-          .filteredOn(t -> t.getTaskState().equals(TaskState.COMPLETED))
-          .hasSize(COMPLETED_TASKS_COUNT);
-      assertThat(tasks)
-          .filteredOn(t -> t.getTaskState().equals(TaskState.CREATED))
-          .hasSize(PROCESS_INSTANCE_COUNT - COMPLETED_TASKS_COUNT);
-
-      tasks = tasklistAPICaller.getTasks("task2");
-      assertThat(tasks).hasSize(PROCESS_INSTANCE_COUNT);
-      assertThat(tasks).extracting("taskState").containsOnly(TaskState.CREATED);
-
-      // after task completion all draft variables associated with a task will be deleted
-      assertThat(countEntitiesFor(DraftTaskVariableTemplate.INDEX_NAME))
-          .isEqualTo(DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION);
-    } catch (AssertionError er) {
-      LOGGER.warn("Error when asserting data: " + er.getMessage());
-      throw er;
-    }
-  }
-
-  @Override
-  public void changeData(BackupRestoreTestContext testContext) throws IOException {
-    init(testContext);
-    try {
-      // complete tasks (they are already claimed)
-      completeTasks("task1", COMPLETED_TASKS_COUNT);
-
-      // start other process instance
-      deployProcess(createModel2(PROCESS_BPMN_PROCESS_ID_2), PROCESS_BPMN_PROCESS_ID_2);
-
-      processInstanceKeys =
-          startProcessInstances(PROCESS_BPMN_PROCESS_ID_2, PROCESS_INSTANCE_COUNT);
-    } finally {
-      closeClients();
-    }
-  }
-
-  private void completeTasks(String taskBpmnId, int completedTasksCount) throws IOException {
+  private void completeTasks(final String taskBpmnId, final int completedTasksCount)
+      throws IOException {
     final List<TaskDTO> tasks = tasklistAPICaller.getTasks(taskBpmnId);
     for (int i = 0; i < completedTasksCount; i++) {
       tasklistAPICaller.completeTask(tasks.get(i).getId(), "{name: \"varOut\", value: \"123\"}");

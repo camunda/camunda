@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.impl;
 
@@ -11,31 +11,26 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import io.camunda.zeebe.stream.api.state.MutableLastProcessedPositionState;
 import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
+import java.util.Objects;
 import java.util.function.BooleanSupplier;
 
 public final class StreamProcessorContext implements ReadonlyStreamProcessorContext {
 
   public static final int DEFAULT_MAX_COMMANDS_IN_BATCH = 100;
-  private static final StreamProcessorListener NOOP_LISTENER =
-      new StreamProcessorListener() {
-        @Override
-        public void onProcessed(final TypedRecord<?> processedCommand) {}
-
-        @Override
-        public void onSkipped(final LoggedEvent skippedRecord) {}
-      };
+  private static final StreamProcessorListener NOOP_LISTENER = processedCommand -> {};
   private ActorControl actor;
   private LogStream logStream;
   private LogStreamReader logStreamReader;
@@ -59,6 +54,9 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   private int maxCommandsInBatch = DEFAULT_MAX_COMMANDS_IN_BATCH;
   private boolean enableAsyncScheduledTasks = true;
   private EventFilter processingFilter = e -> true;
+  private ControllableStreamClock clock;
+  private MeterRegistry meterRegistry;
+  private Duration scheduledTaskCheckInterval = Duration.ofSeconds(1);
 
   public StreamProcessorContext actor(final ActorControl actor) {
     this.actor = actor;
@@ -83,6 +81,16 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
   @Override
   public boolean enableAsyncScheduledTasks() {
     return enableAsyncScheduledTasks;
+  }
+
+  @Override
+  public ControllableStreamClock getClock() {
+    return clock;
+  }
+
+  public StreamProcessorContext clock(final ControllableStreamClock clock) {
+    this.clock = Objects.requireNonNull(clock);
+    return this;
   }
 
   public LogStream getLogStream() {
@@ -226,6 +234,25 @@ public final class StreamProcessorContext implements ReadonlyStreamProcessorCont
 
   public StreamProcessorContext processingFilter(final EventFilter processingFilter) {
     this.processingFilter = processingFilter;
+    return this;
+  }
+
+  public StreamProcessorContext meterRegistry(final MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+    return this;
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
+  public Duration getScheduledTaskCheckInterval() {
+    return scheduledTaskCheckInterval;
+  }
+
+  public StreamProcessorContext setScheduledTaskCheckInterval(
+      final Duration scheduledTaskCheckInterval) {
+    this.scheduledTaskCheckInterval = scheduledTaskCheckInterval;
     return this;
   }
 }

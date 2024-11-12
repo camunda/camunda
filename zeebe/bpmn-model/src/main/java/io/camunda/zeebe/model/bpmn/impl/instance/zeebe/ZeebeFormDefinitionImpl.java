@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.impl.instance.zeebe;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.impl.instance.BpmnModelElementInstanceImpl;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import org.camunda.bpm.model.xml.ModelBuilder;
 import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
@@ -30,6 +31,8 @@ public class ZeebeFormDefinitionImpl extends BpmnModelElementInstanceImpl
   protected static Attribute<String> formKeyAttribute;
   protected static Attribute<String> formIdAttribute;
   protected static Attribute<String> externalReferenceAttribute;
+  private static Attribute<ZeebeBindingType> bindingTypeAttribute;
+  private static Attribute<String> versionTagAttribute;
 
   public ZeebeFormDefinitionImpl(final ModelTypeInstanceContext instanceContext) {
     super(instanceContext);
@@ -65,6 +68,26 @@ public class ZeebeFormDefinitionImpl extends BpmnModelElementInstanceImpl
     externalReferenceAttribute.setValue(this, externalReference);
   }
 
+  @Override
+  public ZeebeBindingType getBindingType() {
+    return bindingTypeAttribute.getValue(this);
+  }
+
+  @Override
+  public void setBindingType(final ZeebeBindingType bindingType) {
+    bindingTypeAttribute.setValue(this, bindingType);
+  }
+
+  @Override
+  public String getVersionTag() {
+    return versionTagAttribute.getValue(this);
+  }
+
+  @Override
+  public void setVersionTag(final String versionTag) {
+    versionTagAttribute.setValue(this, versionTag);
+  }
+
   public static void registerType(final ModelBuilder modelBuilder) {
     final ModelElementTypeBuilder typeBuilder =
         modelBuilder
@@ -87,6 +110,19 @@ public class ZeebeFormDefinitionImpl extends BpmnModelElementInstanceImpl
     externalReferenceAttribute =
         typeBuilder
             .stringAttribute(ZeebeConstants.ATTRIBUTE_EXTERNAL_REFERENCE)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .build();
+
+    bindingTypeAttribute =
+        typeBuilder
+            .enumAttribute(ZeebeConstants.ATTRIBUTE_BINDING_TYPE, ZeebeBindingType.class)
+            .namespace(BpmnModelConstants.ZEEBE_NS)
+            .defaultValue(ZeebeBindingType.latest)
+            .build();
+
+    versionTagAttribute =
+        typeBuilder
+            .stringAttribute(ZeebeConstants.ATTRIBUTE_VERSION_TAG)
             .namespace(BpmnModelConstants.ZEEBE_NS)
             .build();
 

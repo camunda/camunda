@@ -3,16 +3,16 @@
 # on `jq` as an external dependency.
 #
 # Example usage:
-#   $ ./verify.sh camunda/operate:8.2.0
+#   $ ./verify.sh camunda/zeebe:8.1.0
+#   $ ./verify.sh camunda/zeebe:8.1.0 arm64
 #
 # Globals:
-#   VERSION - required; the semantic version, e.g. 3.9.0 or 3.9.0-alpha1
+#   VERSION - required; the semantic version, e.g. 8.1.0 or 1.2.0-alpha1
 #   REVISION - required; the sha1 of the commit used to build the artifact
 #   DATE - required; the ISO 8601 date at which the image was built
-#   ARCHITECTURE - required; the architecture (e.g. amd64, arm64) for which the image was built
-#   BASE_IMAGE - required; Docker base image name (e.g. docker.io/library/alpine:3)
 # Arguments:
-#   1 - Docker image names to be checked (no limit on number of images, each is checked separately)
+#   1 - Docker image name
+#   2 - (optional) image architecture/platform e.g. amd64 (default) or arm64
 # Outputs:
 #   STDERR Error message if any of the properties are invalid
 # Returns:
@@ -24,10 +24,12 @@ set -o pipefail
 VERSION="${VERSION:-}"
 REVISION="${REVISION:-}"
 DATE="${DATE:-}"
+DOCKERFILENAME="${DOCKERFILENAME:-}"
+GOLDENFILE="${GOLDENFILE:-}"
 
 # Make sure environment variables are set
 if [ -z "${VERSION}" ]; then
-  echo >&2 "No VERSION was given; make sure to pass a semantic version, e.g. VERSION=3.9.0"
+  echo >&2 "No VERSION was given; make sure to pass a semantic version, e.g. VERSION=8.1.0"
   exit 1
 fi
 
@@ -41,28 +43,18 @@ if [ -z "${DATE}" ]; then
   exit 1
 fi
 
-if [ -z "${ARCHITECTURE}" ]; then
-  echo >&2 "No ARCHITECTURE was given; make sure to pass a valid platform, it must be one of arm64 or amd64"
+if [ -z "${DOCKERFILENAME}" ]; then
+  echo >&2 "No DOCKERFILENAME was given; make sure to pass an name for the corresponding Dockerfile, like 'Dockerfile' or 'operate.Dockerfile'"
   exit 1
 fi
 
-if [ -z "${BASE_IMAGE}" ]; then
-  echo >&2 "No BASE_IMAGE was given; make sure to pass a valid base image name, e.g. docker.io/library/alpine:3"
+if [ -z "${GOLDENFILE}" ]; then
+  echo >&2 "No GOLDENFILE was given; make sure to pass an name for the corresponding golden file, like 'zeebe-docker-labels.golden.json'."
   exit 1
-fi
-
-DIGEST_REGEX="BASE_DIGEST=\"(sha256\:[a-f0-9\:]+)\""
-DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../operate.Dockerfile")
-echo $DOCKERFILE
-if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
-    DIGEST="${BASH_REMATCH[1]}"
-    echo "Digest found: $DIGEST"
-else
-    echo >&2 "Docker image digest can not be found in the Dockerfile"
-    exit 1
 fi
 
 imageName="${1}"
+arch="${2:-amd64}"
 
 # Check that the image exists
 if ! imageInfo="$(docker inspect "${imageName}")"; then
@@ -70,11 +62,42 @@ if ! imageInfo="$(docker inspect "${imageName}")"; then
   exit 1
 fi
 
-actualArchitecture=$(echo "${imageInfo}" | jq '.[0].Architecture') 
-if [ "$actualArchitecture" != "\"$ARCHITECTURE\"" ]; then 
-  echo >&2 "The local Docker image ${imageName} has the wrong architecture ${actualArchitecture}, expected \"$arch\"." 
-  exit 1 
-fi 
+actualArchitecture=$(echo "${imageInfo}" | jq '.[0].Architecture')
+if [ "$actualArchitecture" != "\"$arch\"" ]; then
+  echo >&2 "The local Docker image ${imageName} has the wrong architecture ${actualArchitecture}, expected \"$arch\"."
+  exit 1
+fi
+
+imageManifestMediaType="$(docker buildx imagetools inspect "${imageName}" --raw | jq -r '.mediaType')"
+# newer manifest types application/vnd.oci.image.index.v1+json (used when provenance is enabled when building
+# a docker image) are not always compatible with older customer Docker registries:
+imageManifestMediaTypeExpected="application/vnd.docker.distribution.manifest.list.v2+json"
+
+if [ "$imageManifestMediaType" != "$imageManifestMediaTypeExpected" ]; then
+  echo >&2 "The local Docker image ${imageName} has the wrong manifest media type ${imageManifestMediaType}, expected ${imageManifestMediaTypeExpected}."
+  echo "Full manifest:"
+  docker buildx imagetools inspect "${imageName}"
+  exit 1
+fi
+
+DIGEST_REGEX="BASE_DIGEST=\"(sha256\:[a-f0-9\:]+)\""
+DOCKERFILE=$(<"${BASH_SOURCE%/*}/../../../$DOCKERFILENAME")
+if [[ $DOCKERFILE =~ $DIGEST_REGEX ]]; then
+    DIGEST="${BASH_REMATCH[1]}"
+    echo "Digest found: $DIGEST"
+else
+    echo >&2 "Docker image digest can not be found in the Dockerfile (with name $DOCKERFILENAME)"
+    exit 1
+fi
+
+BASE_IMAGE_REGEX='ARG BASE_IMAGE="([^"]+)"'
+if [[ $DOCKERFILE =~ $BASE_IMAGE_REGEX ]]; then
+    BASE_IMAGE="${BASH_REMATCH[1]}"
+    echo "Base image found: $BASE_IMAGE"
+else
+    echo >&2 "Base image cannot be found in the Dockerfile (with name $DOCKERFILENAME)"
+    exit 1
+fi
 
 # Extract the actual labels from the info - make sure to sort keys so we always have the same
 # ordering for maps to compare things properly
@@ -88,21 +111,20 @@ if [[ -z "${actualLabels}" || "${actualLabels}" == "null" || "${actualLabels}" =
 fi
 
 # Generate the expected labels files with the dynamic properties substituted
-labelsGoldenFile="${BASH_SOURCE%/*}/docker-labels.golden.json"
+labelsGoldenFile="${BASH_SOURCE%/*}/$GOLDENFILE"
 expectedLabels=$(
   jq --sort-keys -n \
     --arg VERSION "${VERSION}" \
     --arg REVISION "${REVISION}" \
     --arg DATE "${DATE}" \
-    --arg BASE_IMAGE "${BASE_IMAGE}" \
-    --arg BASEDIGEST "${DIGEST}" \
+    --arg DIGEST "${DIGEST}" \
+    --arg BASE_IMAGE "docker.io/library/${BASE_IMAGE}" \
     "$(cat "${labelsGoldenFile}")"
 )
 
 # Compare and output
-echo "Comparing image label values for ${imageName}..."
+echo "Comparing image label values..."
 if ! diff <(echo "${expectedLabels}") <(echo "${actualLabels}"); then
   echo >&2 "Expected label values (marked by '<') do not match actual label values (marked by '>'); if you think this is wrong, update the golden file at ${labelsGoldenFile}"
   exit 1
 fi
-echo "Check successful for ${imageName}"

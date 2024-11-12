@@ -1,24 +1,16 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningQuery;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.operate.webapp.rest.BatchOperationRestService.BATCH_OPERATIONS_URL;
 import static io.camunda.operate.webapp.rest.OperationRestService.OPERATION_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,16 +21,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
@@ -51,8 +33,21 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
+import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import io.camunda.operate.webapp.rest.dto.operation.OperationTypeDto;
 import io.camunda.operate.webapp.zeebe.operation.*;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.net.HttpURLConnection;
@@ -72,6 +67,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
+  private static final String QUERY_BATCH_OPERATIONS = BATCH_OPERATIONS_URL;
 
   @Autowired private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
@@ -101,6 +97,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
   private Long initialBatchOperationMaxSize;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -113,8 +110,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     mockMvc = mockMvcTestRule.getMockMvc();
     initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
     tester.deployProcess("demoProcess_v_2.bpmn");
+    tester.deployProcess("execution-listener.bpmn");
   }
 
+  @Override
   @After
   public void after() {
     operateProperties.setBatchOperationMaxSize(initialBatchOperationMaxSize);
@@ -138,23 +137,26 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
             allRunningQuery, OperationType.CANCEL_PROCESS_INSTANCE, batchOperationName);
 
     // then
-    // TODO replace this with REST API call - OPE-790
-    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    final BatchOperationDto[] batchOperations =
+        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(1);
 
-    final BatchOperationEntity batchOperationEntity = batchOperations.get(0);
-    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE);
-    assertThat(batchOperationEntity.getName()).isEqualTo(batchOperationName);
-    assertThat(batchOperationEntity.getInstancesCount()).isEqualTo(10);
-    assertThat(batchOperationEntity.getOperationsTotalCount()).isEqualTo(10);
-    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
-    assertThat(batchOperationEntity.getUsername()).isEqualTo(DEFAULT_USER);
-    assertThat(batchOperationEntity.getStartDate()).isNotNull();
-    assertThat(batchOperationEntity.getEndDate()).isNull();
+    final BatchOperationDto batchOperationDto = batchOperations[0];
+    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.CANCEL_PROCESS_INSTANCE);
+    assertThat(batchOperationDto.getName()).isEqualTo(batchOperationName);
+    assertThat(batchOperationDto.getInstancesCount()).isEqualTo(10);
+    assertThat(batchOperationDto.getOperationsTotalCount()).isEqualTo(10);
+    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(0);
+    assertThat(batchOperationDto.getStartDate()).isNotNull();
+    assertThat(batchOperationDto.getEndDate()).isNull();
 
-    final BatchOperationEntity batchOperationResponse =
+    final BatchOperationDto batchOperationResponse =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(batchOperationResponse).isEqualTo(batchOperationEntity);
+    assertThat(batchOperationResponse)
+        .usingRecursiveComparison()
+        // ignore because the Dto is created from an Entity (which doesn't have SortValues)
+        .ignoringFields("sortValues")
+        .isEqualTo(batchOperationDto);
 
     final ListViewResponseDto response = getProcessInstances(allRunningQuery);
     assertThat(response.getProcessInstances()).hasSize(instanceCount);
@@ -181,24 +183,26 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
             new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));
 
     // then
-
-    // TODO replace this with REST API call - OPE-790
-    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    final BatchOperationDto[] batchOperations =
+        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(1);
 
-    final BatchOperationEntity batchOperationEntity = batchOperations.get(0);
-    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE);
-    assertThat(batchOperationEntity.getName()).isNull();
-    assertThat(batchOperationEntity.getInstancesCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.getOperationsTotalCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
-    assertThat(batchOperationEntity.getUsername()).isEqualTo(DEFAULT_USER);
-    assertThat(batchOperationEntity.getStartDate()).isNotNull();
-    assertThat(batchOperationEntity.getEndDate()).isNull();
+    final BatchOperationDto batchOperationDto = batchOperations[0];
+    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.CANCEL_PROCESS_INSTANCE);
+    assertThat(batchOperationDto.getName()).isNull();
+    assertThat(batchOperationDto.getInstancesCount()).isEqualTo(1);
+    assertThat(batchOperationDto.getOperationsTotalCount()).isEqualTo(1);
+    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(0);
+    assertThat(batchOperationDto.getStartDate()).isNotNull();
+    assertThat(batchOperationDto.getEndDate()).isNull();
 
-    final BatchOperationEntity batchOperationResponse =
+    final BatchOperationDto batchOperationResponse =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(batchOperationResponse).isEqualTo(batchOperationEntity);
+    assertThat(batchOperationResponse)
+        .usingRecursiveComparison()
+        // ignore because the Dto is created from an Entity (which doesn't have SortValues)
+        .ignoringFields("sortValues")
+        .isEqualTo(batchOperationDto);
 
     final ListViewProcessInstanceDto processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
@@ -225,23 +229,26 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
             processInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
 
     // then
-    // TODO replace this with REST API call - OPE-790
-    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    final BatchOperationDto[] batchOperations =
+        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(1);
 
-    final BatchOperationEntity batchOperationEntity = batchOperations.get(0);
-    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
-    assertThat(batchOperationEntity.getName()).isNull();
-    assertThat(batchOperationEntity.getInstancesCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.getOperationsTotalCount()).isEqualTo(2);
-    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(0);
-    assertThat(batchOperationEntity.getUsername()).isEqualTo(DEFAULT_USER);
-    assertThat(batchOperationEntity.getStartDate()).isNotNull();
-    assertThat(batchOperationEntity.getEndDate()).isNull();
+    final BatchOperationDto batchOperationDto = batchOperations[0];
+    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.RESOLVE_INCIDENT);
+    assertThat(batchOperationDto.getName()).isNull();
+    assertThat(batchOperationDto.getInstancesCount()).isEqualTo(1);
+    assertThat(batchOperationDto.getOperationsTotalCount()).isEqualTo(2);
+    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(0);
+    assertThat(batchOperationDto.getStartDate()).isNotNull();
+    assertThat(batchOperationDto.getEndDate()).isNull();
 
-    final BatchOperationEntity batchOperationResponse =
+    final BatchOperationDto batchOperationResponse =
         mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(batchOperationResponse).isEqualTo(batchOperationEntity);
+    assertThat(batchOperationResponse)
+        .usingRecursiveComparison()
+        // ignore because the Dto is created from an Entity (which doesn't have SortValues)
+        .ignoringFields("sortValues")
+        .isEqualTo(batchOperationDto);
 
     final List<OperationEntity> operations =
         operationReader.getOperationsByProcessInstanceKey(processInstanceKey);
@@ -362,6 +369,38 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  public void testResolveIncidentForExecutionListener() throws Exception {
+
+    // given
+    final Long processInstanceKey =
+        tester
+            .startProcessInstance("execution-listener-process")
+            .waitUntil()
+            .flowNodeIsActive("script-task")
+            .getProcessInstanceKey();
+    failTaskWithNoRetriesLeft("listener1", processInstanceKey, "Some error");
+
+    // we call RESOLVE_INCIDENT operation on instance
+    postOperationWithOKResponse(
+        processInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
+
+    // when
+    // we execute the operation
+    executeOneBatch();
+
+    // then
+    // process all Zeebe records
+    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+
+    final List<IncidentDto> incidents =
+        incidentReader
+            .getIncidentsByProcessInstanceId(String.valueOf(processInstanceKey))
+            .getIncidents();
+    // the incident has been resolved
+    assertThat(incidents).isEmpty();
+  }
+
+  @Test
   public void testUpdateVariableOnProcessInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -411,14 +450,14 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertVariable(variables, varName, newVarValue, false);
 
     // check batch operation progress
-    // TODO replace this with REST API call - OPE-790
-    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    final BatchOperationDto[] batchOperations =
+        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(1);
 
-    final BatchOperationEntity batchOperationEntity = batchOperations.get(0);
-    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
-    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.getEndDate()).isNotNull();
+    final BatchOperationDto batchOperationDto = batchOperations[0];
+    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.UPDATE_VARIABLE);
+    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationDto.getEndDate()).isNotNull();
   }
 
   private List<VariableDto> getVariables(final Long processInstanceKey, final Long scopeKey) {
@@ -549,7 +588,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertVariable(
-      List<VariableDto> variables, String name, String value, Boolean hasActiveOperation) {
+      final List<VariableDto> variables,
+      final String name,
+      final String value,
+      final Boolean hasActiveOperation) {
     final List<VariableDto> collect =
         variables.stream().filter(v -> v.getName().equals(name)).collect(Collectors.toList());
     assertThat(collect).hasSize(1);
@@ -606,7 +648,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(variables.get(0).getValue()).isEqualTo(varValue);
   }
 
-  protected Long getFlowNodeInstanceId(Long processInstanceKey, String activityId) {
+  protected Long getFlowNodeInstanceId(final Long processInstanceKey, final String activityId) {
     final List<FlowNodeInstanceEntity> allActivityInstances =
         tester.getAllFlowNodeInstances(processInstanceKey);
     final Optional<FlowNodeInstanceEntity> first =
@@ -662,25 +704,25 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
         .isEqualTo(ProcessInstanceStateDto.CANCELED);
 
     // check batch operation progress
-    // TODO replace this with REST API call - OPE-790
-    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    final BatchOperationDto[] batchOperations =
+        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(1);
 
-    final BatchOperationEntity batchOperationEntity = batchOperations.get(0);
-    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.CANCEL_PROCESS_INSTANCE);
-    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.getEndDate()).isNotNull();
+    final BatchOperationDto batchOperationDto = batchOperations[0];
+    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.CANCEL_PROCESS_INSTANCE);
+    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationDto.getEndDate()).isNotNull();
 
     // check batch operation id stored in process instance
     final List<ProcessInstanceForListViewEntity> processInstanceEntities =
         getProcessInstanceEntities(processInstanceQuery);
     assertThat(processInstanceEntities).hasSize(1);
     assertThat(processInstanceEntities.get(0).getBatchOperationIds())
-        .containsExactly(batchOperationEntity.getId());
+        .containsExactly(batchOperationDto.getId());
   }
 
   private List<ProcessInstanceForListViewEntity> getProcessInstanceEntities(
-      ListViewQueryDto processInstanceQuery) {
+      final ListViewQueryDto processInstanceQuery) {
     final ListViewRequestDto request = new ListViewRequestDto(processInstanceQuery);
     return listViewReader.queryListView(request, new ListViewResponseDto());
   }
@@ -721,17 +763,17 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(incidents).hasSize(0);
 
     // check batch operation progress
-    // TODO replace this with REST API call - OPE-790
-    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    final BatchOperationDto[] batchOperations =
+        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(2);
-    BatchOperationEntity batchOperationEntity = batchOperations.get(0);
-    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
-    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.getEndDate()).isNotNull();
-    batchOperationEntity = batchOperations.get(1);
-    assertThat(batchOperationEntity.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
-    assertThat(batchOperationEntity.getOperationsFinishedCount()).isEqualTo(1);
-    assertThat(batchOperationEntity.getEndDate()).isNotNull();
+    BatchOperationDto batchOperationDto = batchOperations[0];
+    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.RESOLVE_INCIDENT);
+    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationDto.getEndDate()).isNotNull();
+    batchOperationDto = batchOperations[1];
+    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.RESOLVE_INCIDENT);
+    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(1);
+    assertThat(batchOperationDto.getEndDate()).isNotNull();
   }
 
   @Test
@@ -1163,7 +1205,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     return procDefinitionKey;
   }
 
-  protected Long startProcessWithDecision(String payload) {
+  protected Long startProcessWithDecision(final String payload) {
     final Long procInstanceKey =
         tester
             .startProcessInstance("invoice_decision", payload)
@@ -1189,7 +1231,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     return processInstanceKey;
   }
 
-  private ListViewResponseDto getProcessInstances(ListViewQueryDto query) throws Exception {
+  private ListViewResponseDto getProcessInstances(final ListViewQueryDto query) throws Exception {
     final ListViewRequestDto request = new ListViewRequestDto(query);
     request.setPageSize(100);
     final MockHttpServletRequestBuilder getProcessInstancesRequest =
@@ -1209,5 +1251,12 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
   private String query() {
     return QUERY_INSTANCES_URL;
+  }
+
+  private BatchOperationDto[] postBatchOperationsRequestViaRest(
+      final BatchOperationRequestDto query) throws Exception {
+    final MvcResult mvcResult = postRequest(QUERY_BATCH_OPERATIONS, query);
+    return objectMapper.readValue(
+        mvcResult.getResponse().getContentAsString(), BatchOperationDto[].class);
   }
 }

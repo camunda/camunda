@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.migration.to_8_3;
 
@@ -18,12 +18,14 @@ import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.migration.MigrationTaskContextImpl;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -130,7 +132,7 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
           createElementInstance(processInstanceKey, processDefinitionKey, BpmnElementType.PROCESS));
 
       // when
-      sut.runMigration(processingState);
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       elementInstanceKey.wrapLong(processInstanceKey);
@@ -156,7 +158,7 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
               elementInstanceKey, processDefinitionKey, BpmnElementType.START_EVENT));
 
       // when
-      sut.runMigration(processingState);
+      sut.runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       this.elementInstanceKey.wrapLong(elementInstanceKey);
@@ -172,7 +174,8 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
       // given
 
       // when
-      final var actual = sut.needsToRun(processingState);
+      final var actual =
+          sut.needsToRun(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertThat(actual).isTrue();
@@ -195,7 +198,8 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
           createElementInstance(processInstanceKey, processDefinitionKey, BpmnElementType.PROCESS));
 
       // when
-      final var actual = sut.needsToRun(processingState);
+      final var actual =
+          sut.needsToRun(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertThat(actual).isFalse();
@@ -220,7 +224,8 @@ class ProcessInstanceByProcessDefinitionMigrationTest {
           102L, createElementInstance(102L, processDefinitionKey, BpmnElementType.PROCESS));
 
       // when
-      final var actual = sut.needsToRun(processingState);
+      final var actual =
+          sut.needsToRun(new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
       // then
       assertThat(actual).isTrue();

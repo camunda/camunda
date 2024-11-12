@@ -2,27 +2,21 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.snapshots.SnapshotChunk;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.NavigableSet;
-import java.util.NoSuchElementException;
 import java.util.TreeSet;
-import org.agrona.AsciiSequenceView;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Implements a chunk reader where each chunk is a single file in a root directory. Chunks are then
@@ -30,27 +24,29 @@ import org.agrona.concurrent.UnsafeBuffer;
  * the directory once this is created.
  */
 public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
-  static final Charset ID_CHARSET = StandardCharsets.US_ASCII;
-
   private final Path directory;
   private final NavigableSet<CharSequence> chunks;
-  private final CharSequenceView chunkIdView;
 
+  private long offset;
   private NavigableSet<CharSequence> chunksView;
   private final int totalCount;
-  private final long snapshotChecksum;
   private final String snapshotID;
+  private long maximumChunkSize;
 
-  FileBasedSnapshotChunkReader(final Path directory, final long checksum) throws IOException {
+  public FileBasedSnapshotChunkReader(final Path directory) throws IOException {
+    this(directory, Long.MAX_VALUE);
+  }
+
+  FileBasedSnapshotChunkReader(final Path directory, final long maximumChunkSize)
+      throws IOException {
     this.directory = directory;
     chunks = collectChunks(directory);
     totalCount = chunks.size();
     chunksView = new TreeSet<>(chunks);
-    chunkIdView = new CharSequenceView();
-
-    snapshotChecksum = checksum;
 
     snapshotID = directory.getFileName().toString();
+
+    this.maximumChunkSize = maximumChunkSize;
   }
 
   private NavigableSet<CharSequence> collectChunks(final Path directory) throws IOException {
@@ -72,8 +68,11 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       return;
     }
 
-    final var path = decodeChunkId(id);
-    chunksView = new TreeSet<>(chunks.tailSet(path, true));
+    final var chunkId = new SnapshotChunkId(id);
+
+    offset = chunkId.offset();
+
+    chunksView = new TreeSet<>(chunks.tailSet(chunkId.fileName(), true));
   }
 
   @Override
@@ -82,7 +81,12 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
       return null;
     }
 
-    return encodeChunkId(chunksView.first());
+    return new SnapshotChunkId(chunksView.first().toString(), offset).id();
+  }
+
+  @Override
+  public void setMaximumChunkSize(final int maximumChunkSize) {
+    this.maximumChunkSize = maximumChunkSize;
   }
 
   @Override
@@ -98,36 +102,27 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
 
   @Override
   public SnapshotChunk next() {
-    final var chunkName = chunksView.pollFirst();
-    if (chunkName == null) {
-      throw new NoSuchElementException();
-    }
+    final var fileName = chunksView.first().toString();
+    final var filePath = directory.resolve(fileName).toString();
 
-    final var path = directory.resolve(chunkName.toString());
+    try (final var file = new RandomAccessFile(filePath, "r")) {
+      final var fileLength = file.length();
+      final var bytesToRead = Math.min(maximumChunkSize, fileLength - offset);
+      final byte[] buffer = new byte[(int) bytesToRead];
+      file.seek(offset);
+      file.readFully(buffer);
 
-    try {
-      return SnapshotChunkUtil.createSnapshotChunkFromFile(
-          path, snapshotID, totalCount, snapshotChecksum);
+      final var fileBlockPosition = offset;
+      offset += bytesToRead;
+      if (offset == fileLength) {
+        offset = 0;
+        chunksView.pollFirst();
+      }
+
+      return SnapshotChunkUtil.createSnapshotChunkFromFileChunk(
+          snapshotID, totalCount, fileName, buffer, fileBlockPosition, fileLength);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
-    }
-  }
-
-  private ByteBuffer encodeChunkId(final CharSequence path) {
-    return ByteBuffer.wrap(path.toString().getBytes(ID_CHARSET)).order(Protocol.ENDIANNESS);
-  }
-
-  private CharSequence decodeChunkId(final ByteBuffer id) {
-    return chunkIdView.wrap(id);
-  }
-
-  private static final class CharSequenceView {
-    private final DirectBuffer wrapper = new UnsafeBuffer();
-    private final AsciiSequenceView view = new AsciiSequenceView();
-
-    private CharSequence wrap(final ByteBuffer buffer) {
-      wrapper.wrap(buffer);
-      return view.wrap(wrapper, 0, wrapper.capacity());
     }
   }
 }

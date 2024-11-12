@@ -1,39 +1,30 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_XML;
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
-import static io.camunda.operate.schema.templates.ListViewTemplate.BPMN_PROCESS_ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.ID;
-import static io.camunda.operate.schema.templates.ListViewTemplate.INCIDENT;
-import static io.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_KEY;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_NAME;
-import static io.camunda.operate.schema.templates.ListViewTemplate.STATE;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.scrollWith;
+import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.BPMN_XML;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TREE_PATH;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.INCIDENT;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_NAME;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.STATE;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -45,21 +36,21 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.schema.templates.ProcessInstanceDependant;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.TreePath;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -98,6 +89,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -130,13 +122,13 @@ public class ElasticsearchProcessStore implements ProcessStore {
   private final OperateProperties operateProperties;
 
   public ElasticsearchProcessStore(
-      ProcessIndex processIndex,
-      ListViewTemplate listViewTemplate,
-      List<ProcessInstanceDependant> processInstanceDependantTemplates,
-      ObjectMapper objectMapper,
-      OperateProperties operateProperties,
-      RestHighLevelClient esClient,
-      TenantAwareElasticsearchClient tenantAwareClient) {
+      final ProcessIndex processIndex,
+      final ListViewTemplate listViewTemplate,
+      final List<ProcessInstanceDependant> processInstanceDependantTemplates,
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
+      final OperateProperties operateProperties,
+      final RestHighLevelClient esClient,
+      final TenantAwareElasticsearchClient tenantAwareClient) {
     this.processIndex = processIndex;
     this.listViewTemplate = listViewTemplate;
     this.processInstanceDependantTemplates = processInstanceDependantTemplates;
@@ -147,7 +139,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public Optional<Long> getDistinctCountFor(String fieldName) {
+  public Optional<Long> getDistinctCountFor(final String fieldName) {
     final String indexAlias = processIndex.getAlias();
     LOGGER.debug("Called distinct count for field {} in index alias {}.", fieldName, indexAlias);
     final SearchRequest searchRequest =
@@ -165,7 +157,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final Cardinality distinctFieldCounts =
           searchResponse.getAggregations().get(DISTINCT_FIELD_COUNTS);
       return Optional.of(distinctFieldCounts.getValue());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error(
           String.format(
               "Error in distinct count for field %s in index alias %s.", fieldName, indexAlias),
@@ -175,19 +167,19 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public void refreshIndices(String... indices) {
+  public void refreshIndices(final String... indices) {
     if (indices == null || indices.length == 0) {
       throw new OperateRuntimeException("Refresh indices needs at least one index to refresh.");
     }
     try {
       esClient.indices().refresh(new RefreshRequest(indices), RequestOptions.DEFAULT);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new OperateRuntimeException("Failed to refresh indices " + Arrays.asList(indices), ex);
     }
   }
 
   @Override
-  public ProcessEntity getProcessByKey(Long processDefinitionKey) {
+  public ProcessEntity getProcessByKey(final Long processDefinitionKey) {
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias())
             .source(
@@ -205,7 +197,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with key '%s'.", processDefinitionKey));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -214,7 +206,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public String getDiagramByKey(Long processDefinitionKey) {
+  public String getDiagramByKey(final Long processDefinitionKey) {
     final IdsQueryBuilder q = idsQuery().addIds(processDefinitionKey.toString());
 
     final SearchRequest searchRequest =
@@ -234,7 +226,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
         throw new NotFoundException(
             String.format("Could not find process with id '%s'.", processDefinitionKey));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining the process diagram: %s", e.getMessage());
@@ -245,7 +237,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
-      String tenantId, @Nullable Set<String> allowedBPMNProcessIds) {
+      final String tenantId, @Nullable final Set<String> allowedBPMNProcessIds) {
     final String tenantsGroupsAggName = "group_by_tenantId";
     final String groupsAggName = "group_by_bpmnProcessId";
     final String processesAggName = "processes";
@@ -265,6 +257,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                                   ProcessIndex.ID,
                                   ProcessIndex.NAME,
                                   ProcessIndex.VERSION,
+                                  ProcessIndex.VERSION_TAG,
                                   ProcessIndex.BPMN_PROCESS_ID,
                                   ProcessIndex.TENANT_ID
                                 },
@@ -297,7 +290,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
                           final TopHits processes = tenantB.getAggregations().get(processesAggName);
                           final SearchHit[] hits = processes.getHits().getHits();
-                          for (SearchHit searchHit : hits) {
+                          for (final SearchHit searchHit : hits) {
                             final ProcessEntity processEntity =
                                 fromSearchHit(searchHit.getSourceAsString());
                             result.get(groupKey).add(processEntity);
@@ -306,7 +299,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
               });
 
       return result;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining grouped processes: %s", e.getMessage());
@@ -317,7 +310,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(
-      @Nullable Set<String> allowedBPMNIds, int maxSize, String... fields) {
+      @Nullable final Set<String> allowedBPMNIds, final int maxSize, final String... fields) {
     final Map<Long, ProcessEntity> map = new HashMap<>();
 
     final SearchSourceBuilder sourceBuilder =
@@ -341,7 +334,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                 map.put(entity.getKey(), entity);
               });
       return map;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining processes: %s", e.getMessage());
       LOGGER.error(message, e);
@@ -350,7 +343,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys) {
+  public long deleteProcessDefinitionsByKeys(final Long... processDefinitionKeys) {
     if (processDefinitionKeys == null || processDefinitionKeys.length == 0) {
       return 0;
     }
@@ -360,13 +353,14 @@ public class ElasticsearchProcessStore implements ProcessStore {
     try {
       final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
       return response.getDeleted();
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new OperateRuntimeException("Failed to delete process definitions by keys", ex);
     }
   }
 
   @Override
-  public ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(Long processInstanceKey) {
+  public ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(
+      final Long processInstanceKey) {
     try {
       final QueryBuilder query =
           joinWithAnd(
@@ -394,13 +388,13 @@ public class ElasticsearchProcessStore implements ProcessStore {
         throw new NotFoundException(
             (String.format("Could not find process instance with id '%s'.", processInstanceKey)));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OperateRuntimeException(e);
     }
   }
 
   @Override
-  public Map<String, Long> getCoreStatistics(@Nullable Set<String> allowedBPMNIds) {
+  public Map<String, Long> getCoreStatistics(@Nullable final Set<String> allowedBPMNIds) {
     final SearchSourceBuilder sourceBuilder =
         new SearchSourceBuilder()
             .size(0)
@@ -423,7 +417,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final long incidentCount =
           ((SingleBucketAggregation) aggregations.get("incidents")).getDocCount();
       return Map.of("running", runningCount, "incidents", incidentCount);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining process instance core statistics: %s",
@@ -434,7 +428,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public String getProcessInstanceTreePathById(String processInstanceId) {
+  public String getProcessInstanceTreePathById(final String processInstanceId) {
     final QueryBuilder query =
         joinWithAnd(
             termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
@@ -450,7 +444,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
         throw new NotFoundException(
             String.format("Process instance not found: %s", processInstanceId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining tree path for process instance: %s",
@@ -461,7 +455,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public List<Map<String, String>> createCallHierarchyFor(
-      List<String> processInstanceIds, String currentProcessInstanceId) {
+      final List<String> processInstanceIds, final String currentProcessInstanceId) {
     final List<Map<String, String>> callHierarchy = new ArrayList<>();
 
     final List<String> processInstanceIdsWithoutCurrentProcess =
@@ -504,7 +498,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                 });
             return null;
           });
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining process instance call hierarchy: %s",
@@ -515,7 +509,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public long deleteDocument(String indexName, String idField, String id) throws IOException {
+  public long deleteDocument(final String indexName, final String idField, final String id)
+      throws IOException {
     final DeleteByQueryRequest query =
         new DeleteByQueryRequest(indexName).setQuery(QueryBuilders.termsQuery(idField, id));
     final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
@@ -524,7 +519,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public void deleteProcessInstanceFromTreePath(String processInstanceKey) {
+  public void deleteProcessInstanceFromTreePath(final String processInstanceKey) {
     final BulkRequest bulkRequest = new BulkRequest();
     // select process instance - get tree path
     final String treePath = getProcessInstanceTreePathById(processInstanceKey);
@@ -576,7 +571,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
           esClient,
           bulkRequest,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException(
           String.format(
               "Exception occurred when deleting process instance %s from tree path: %s",
@@ -586,10 +581,10 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(
-      long processDefinitionKey,
-      Set<ProcessInstanceState> states,
-      int size,
-      String[] includeFields) {
+      final long processDefinitionKey,
+      final Set<ProcessInstanceState> states,
+      final int size,
+      final String[] includeFields) {
 
     if (states == null || states.isEmpty()) {
       throw new OperateRuntimeException("Parameter 'states' is needed to search by states.");
@@ -609,7 +604,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
       return ElasticsearchUtil.mapSearchHits(
           response.getHits().getHits(), objectMapper, ProcessInstanceForListViewEntity.class);
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new OperateRuntimeException(
           String.format(
               "Failed to search process instances by processDefinitionKey [%s] and states [%s]",
@@ -620,7 +615,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
 
   @Override
   public List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(
-      Set<Long> parentProcessInstanceKeys, int size, String[] includeFields) {
+      final Set<Long> parentProcessInstanceKeys, final int size, final String[] includeFields) {
 
     if (parentProcessInstanceKeys == null || parentProcessInstanceKeys.isEmpty()) {
       throw new OperateRuntimeException(
@@ -641,14 +636,14 @@ public class ElasticsearchProcessStore implements ProcessStore {
           () ->
               ElasticsearchUtil.scroll(
                   searchRequest, ProcessInstanceForListViewEntity.class, objectMapper, esClient));
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new OperateRuntimeException(
           "Failed to search process instances by parentProcessInstanceKeys", ex);
     }
   }
 
   @Override
-  public long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys) {
+  public long deleteProcessInstancesAndDependants(final Set<Long> processInstanceKeys) {
     if (processInstanceKeys == null || processInstanceKeys.isEmpty()) {
       return 0;
     }
@@ -659,8 +654,8 @@ public class ElasticsearchProcessStore implements ProcessStore {
             .filter(template -> !(template instanceof OperationTemplate))
             .toList();
     try {
-      for (ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
-        final String indexName = ((TemplateDescriptor) template).getAlias();
+      for (final ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
+        final String indexName = ((IndexTemplateDescriptor) template).getAlias();
         final DeleteByQueryRequest query =
             new DeleteByQueryRequest(indexName)
                 .setQuery(
@@ -677,7 +672,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
                       ListViewTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys));
       final BulkByScrollResponse response = esClient.deleteByQuery(query, RequestOptions.DEFAULT);
       count += response.getDeleted();
-    } catch (IOException ex) {
+    } catch (final IOException ex) {
       throw new OperateRuntimeException(
           "Failed to delete process instances and dependants by keys", ex);
     }
@@ -685,7 +680,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     return count;
   }
 
-  private QueryBuilder buildQuery(String tenantId, Set<String> allowedBPMNProcessIds) {
+  private QueryBuilder buildQuery(final String tenantId, final Set<String> allowedBPMNProcessIds) {
     final TermsQueryBuilder bpmnProcessIdQ =
         allowedBPMNProcessIds != null ? termsQuery(BPMN_PROCESS_ID, allowedBPMNProcessIds) : null;
     final TermQueryBuilder tenantIdQ =
@@ -697,7 +692,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
     return q;
   }
 
-  private ProcessEntity fromSearchHit(String processString) {
+  private ProcessEntity fromSearchHit(final String processString) {
     return ElasticsearchUtil.fromSearchHit(processString, objectMapper, ProcessEntity.class);
   }
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.clustering;
 
@@ -40,7 +40,7 @@ public class ReaderCloseTest {
   public RuleChain ruleChain =
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
-  // Regression test for https://github.com/camunda/zeebe/issues/7767
+  // Regression test for https://github.com/camunda/camunda/issues/7767
   @Test
   public void shouldDeleteCompactedSegmentsFiles() {
     // given
@@ -55,7 +55,7 @@ public class ReaderCloseTest {
     }
   }
 
-  // Regression test for https://github.com/camunda/zeebe/issues/7767
+  // Regression test for https://github.com/camunda/camunda/issues/7767
   @Test
   public void shouldDeleteCompactedSegmentsFilesAfterLeaderChange() {
     // given
@@ -69,7 +69,7 @@ public class ReaderCloseTest {
             .getCluster()
             .getNodeId();
     clusteringRule.forceNewLeaderForPartition(followerId, 1);
-    // because of https://github.com/camunda/zeebe/issues/8329
+    // because of https://github.com/camunda/camunda/issues/8329
     // we need to add another record so we can do a snapshot
     clientRule
         .getClient()

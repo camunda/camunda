@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions;
 
@@ -26,9 +26,11 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
@@ -37,15 +39,13 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
-import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import io.camunda.zeebe.util.health.HealthMonitor;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
-import java.util.function.Consumer;
 
 public class TestPartitionTransitionContext implements PartitionTransitionContext {
 
@@ -73,6 +73,8 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupManager backupManager;
   private CheckpointRecordsProcessor checkpointRecordsProcessor;
   private BackupStore backupStore;
+  private DynamicPartitionConfig partitionConfig;
+  private ControllableStreamClock clock;
 
   @Override
   public int getPartitionId() {
@@ -158,6 +160,31 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setAdminAccess(final PartitionAdminAccess adminAccess) {}
 
   @Override
+  public DynamicPartitionConfig getDynamicPartitionConfig() {
+    return partitionConfig;
+  }
+
+  @Override
+  public void setDynamicPartitionConfig(final DynamicPartitionConfig partitionConfig) {
+    this.partitionConfig = partitionConfig;
+  }
+
+  @Override
+  public ControllableStreamClock getStreamClock() {
+    return clock;
+  }
+
+  @Override
+  public void setStreamClock(final ControllableStreamClock clock) {
+    this.clock = clock;
+  }
+
+  @Override
+  public int getPartitionCount() {
+    return 1;
+  }
+
+  @Override
   public void setExporterDirector(final ExporterDirector exporterDirector) {
     this.exporterDirector = exporterDirector;
   }
@@ -191,18 +218,13 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   public void setPartitionCommandSender(final InterPartitionCommandSenderService sender) {}
 
   @Override
-  public boolean shouldExport() {
-    return true;
-  }
-
-  @Override
   public ExporterPhase getExporterPhase() {
     return ExporterPhase.EXPORTING;
   }
 
   @Override
   public Collection<ExporterDescriptor> getExportedDescriptors() {
-    return Set.of();
+    return exporterRepository.getExporters().values();
   }
 
   @Override
@@ -285,6 +307,19 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
     this.backupStore = backupStore;
   }
 
+  @Override
+  public MeterRegistry getBrokerMeterRegistry() {
+    return null;
+  }
+
+  @Override
+  public MeterRegistry getPartitionMeterRegistry() {
+    return null;
+  }
+
+  @Override
+  public void setPartitionMeterRegistry(final MeterRegistry partitionMeterRegistry) {}
+
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
     this.gatewayBrokerTransport = gatewayBrokerTransport;
   }
@@ -336,12 +371,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
-  public CommandResponseWriter getCommandResponseWriter() {
-    return null;
-  }
-
-  @Override
-  public Consumer<TypedRecord<?>> getOnProcessedListener() {
+  public CommandApiService getCommandApiService() {
     return null;
   }
 

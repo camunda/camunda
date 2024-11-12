@@ -42,6 +42,12 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "deploymentKey": {
+              "type": "long"
+            },
+            "versionTag": {
+              "type": "keyword"
             }
           }
         }

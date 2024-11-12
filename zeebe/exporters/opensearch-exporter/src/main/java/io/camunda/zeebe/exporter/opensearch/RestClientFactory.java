@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter.opensearch;
 
@@ -41,8 +41,9 @@ final class RestClientFactory {
    * comma separated list of "host:port" formatted strings. Authentication is supported only as
    * basic auth; if there is no authentication present, then nothing is configured for it.
    */
-  static RestClient of(final OpensearchExporterConfiguration config) {
-    return of(config, false);
+  static RestClient of(
+      final OpensearchExporterConfiguration config, final HttpRequestInterceptor... interceptors) {
+    return of(config, false, interceptors);
   }
 
   /**
@@ -56,12 +57,16 @@ final class RestClientFactory {
    * @return the created {@link RestClient}
    */
   static RestClient of(
-      final OpensearchExporterConfiguration config, final boolean allowAllSelfSignedCertificates) {
-    return INSTANCE.createRestClient(config, allowAllSelfSignedCertificates);
+      final OpensearchExporterConfiguration config,
+      final boolean allowAllSelfSignedCertificates,
+      final HttpRequestInterceptor... interceptors) {
+    return INSTANCE.createRestClient(config, allowAllSelfSignedCertificates, interceptors);
   }
 
   private RestClient createRestClient(
-      final OpensearchExporterConfiguration config, final boolean allowAllSelfSignedCertificates) {
+      final OpensearchExporterConfiguration config,
+      final boolean allowAllSelfSignedCertificates,
+      final HttpRequestInterceptor... interceptors) {
     final HttpHost[] httpHosts = parseUrl(config);
     final RestClientBuilder builder =
         RestClient.builder(httpHosts)
@@ -70,7 +75,7 @@ final class RestClientFactory {
                     b.setConnectTimeout(config.requestTimeoutMs)
                         .setSocketTimeout(config.requestTimeoutMs))
             .setHttpClientConfigCallback(
-                b -> configureHttpClient(config, b, allowAllSelfSignedCertificates));
+                b -> configureHttpClient(config, b, allowAllSelfSignedCertificates, interceptors));
 
     return builder.build();
   }
@@ -78,7 +83,8 @@ final class RestClientFactory {
   private HttpAsyncClientBuilder configureHttpClient(
       final OpensearchExporterConfiguration config,
       final HttpAsyncClientBuilder builder,
-      final boolean allowAllSelfSignedCertificates) {
+      final boolean allowAllSelfSignedCertificates,
+      final HttpRequestInterceptor... interceptors) {
     // use single thread for rest client
     builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
 
@@ -94,6 +100,11 @@ final class RestClientFactory {
       log.info("AWS Signing is enabled.");
     } else {
       log.info("AWS Signing is disabled.");
+    }
+
+    log.trace("Attempt to load interceptor plugins");
+    for (final var interceptor : interceptors) {
+      builder.addInterceptorLast(interceptor);
     }
 
     if (allowAllSelfSignedCertificates) {

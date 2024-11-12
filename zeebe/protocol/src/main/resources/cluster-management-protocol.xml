@@ -12,6 +12,9 @@
       <validValue name="PAUSE_EXPORTING">1</validValue>
       <validValue name="RESUME_EXPORTING">2</validValue>
       <validValue name="BAN_INSTANCE">3</validValue>
+      <validValue name="SOFT_PAUSE_EXPORTING">4</validValue>
+      <validValue name="SET_FLOW_CONTROL">5</validValue>
+      <validValue name="GET_FLOW_CONTROL">6</validValue>
     </enum>
 
     <enum name="BackupRequestType" encodingType="uint8">
@@ -43,9 +46,11 @@
     <field name="type" id="2" type="AdminRequestType"/>
     <field name="brokerId" id="3" type="uint16" presence="optional"/>
     <field name="key" id="4" type="uint64" presence="optional"/>
+    <data name="payload" id="5" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="AdminResponse" id="2">
+    <data name="payload" id="1" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="BackupRequest" id="3">

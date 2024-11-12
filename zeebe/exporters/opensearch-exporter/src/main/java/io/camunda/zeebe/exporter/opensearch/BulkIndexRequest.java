@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter.opensearch;
 
@@ -47,12 +47,14 @@ final class BulkIndexRequest implements ContentProducer {
    * @param action the bulk action to take
    * @param record the record that will be the source of the document
    * @param recordSequence the sequence number of the record
+   * @return true if the record was appended to the batch, false if the record is already indexed in
+   *     the batch because only one copy of the record is allowed in the batch
    */
-  void index(
+  boolean index(
       final BulkIndexAction action, final Record<?> record, final RecordSequence recordSequence) {
     // exit early in case we're retrying the last indexed record again
     if (lastIndexedMetadata != null && lastIndexedMetadata.equals(action)) {
-      return;
+      return false;
     }
 
     final byte[] source;
@@ -68,6 +70,7 @@ final class BulkIndexRequest implements ContentProducer {
     memoryUsageBytes += command.source().length;
     lastIndexedMetadata = action;
     operations.add(command);
+    return true;
   }
 
   private static byte[] serializeRecord(final Record<?> record, final RecordSequence recordSequence)
@@ -77,7 +80,7 @@ final class BulkIndexRequest implements ContentProducer {
         // Enhance the serialized record by its sequence number. The sequence number is not a part
         // of the record itself but a special property for Opensearch. It can be used to limit
         // the number of records when reading from the index, for example, by using a range query.
-        // Read https://github.com/camunda/zeebe/issues/10568 for details.
+        // Read https://github.com/camunda/camunda/issues/10568 for details.
         .withAttribute(RECORD_SEQUENCE_PROPERTY, recordSequence.sequence())
         .writeValueAsBytes(record);
   }

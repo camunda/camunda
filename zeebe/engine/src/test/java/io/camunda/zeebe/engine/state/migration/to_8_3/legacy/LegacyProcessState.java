@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.migration.to_8_3.legacy;
 
@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.stream.impl.state.NextValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -53,7 +54,7 @@ import org.agrona.io.DirectBufferInputStream;
 public final class LegacyProcessState {
   private static final int DEFAULT_VERSION_VALUE = 0;
 
-  private final BpmnTransformer transformer = BpmnFactory.createTransformer();
+  private final BpmnTransformer transformer;
   private final ProcessRecord processRecordForDeployments = new ProcessRecord();
 
   private final Map<DirectBuffer, Long2ObjectHashMap<DeployedProcess>>
@@ -79,7 +80,10 @@ public final class LegacyProcessState {
   private final LegacyProcessVersionManager versionManager;
 
   public LegacyProcessState(
-      final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final InstantSource clock) {
+    transformer = BpmnFactory.createTransformer(clock);
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     processColumnFamily =

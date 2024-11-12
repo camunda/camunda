@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
@@ -47,6 +47,8 @@ public final class MsgPackConverter {
   private static final TypeReference<HashMap<String, Object>> OBJECT_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
   private static final TypeReference<HashMap<String, String>> STRING_MAP_TYPE_REFERENCE =
+      new TypeReference<>() {};
+  private static final TypeReference<HashMap<String, Number>> NUMBER_MAP_TYPE_REFERENCE =
       new TypeReference<>() {};
 
   /*
@@ -164,6 +166,10 @@ public final class MsgPackConverter {
 
   public static Map<String, String> convertToStringMap(final DirectBuffer buffer) {
     return convertToMap(STRING_MAP_TYPE_REFERENCE, buffer);
+  }
+
+  public static Map<String, Number> convertToNumberMap(final DirectBuffer buffer) {
+    return convertToMap(NUMBER_MAP_TYPE_REFERENCE, buffer);
   }
 
   private static <T extends Object> Map<String, T> convertToMap(

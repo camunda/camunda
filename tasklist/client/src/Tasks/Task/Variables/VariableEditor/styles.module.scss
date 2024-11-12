@@ -1,0 +1,51 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+.list {
+  height: min-content;
+}
+
+.listCell {
+  vertical-align: middle;
+}
+
+.cellName {
+  width: 200px;
+}
+
+.valueCell {
+  overflow-y: hidden;
+  word-break: break-all;
+  height: min(100px, min-content);
+}
+
+.controlsCell {
+  width: 80px;
+}
+
+.iconButtons {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-end;
+  padding-right: var(--cds-spacing-03);
+
+  &.extraPadding {
+    padding-right: calc(var(--cds-spacing-03) + 32px);
+  }
+}
+
+.scrollableOuter {
+  height: min-content;
+  overflow-y: auto;
+}
+
+.scrollableInner {
+  max-height: 100px;
+  height: min(min-content, 100%);
+  overflow-y: auto;
+}

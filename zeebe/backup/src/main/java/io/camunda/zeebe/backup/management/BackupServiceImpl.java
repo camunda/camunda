@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.backup.management;
 
@@ -92,32 +92,21 @@ final class BackupServiceImpl {
         backupSaved.completeExceptionally(
             new BackupAlreadyExistsException(inProgressBackup.id(), existingBackupStatus));
       }
-      default -> {
-        final ActorFuture<Void> snapshotFound = concurrencyControl.createFuture();
-        final ActorFuture<Void> snapshotReserved = concurrencyControl.createFuture();
-        final ActorFuture<Void> snapshotFilesCollected = concurrencyControl.createFuture();
-        final ActorFuture<Void> segmentFilesCollected = inProgressBackup.findSegmentFiles();
-
-        segmentFilesCollected.onComplete(
-            proceed(
-                snapshotFound::completeExceptionally,
-                () -> inProgressBackup.findValidSnapshot().onComplete(snapshotFound)));
-
-        snapshotFound.onComplete(
-            proceed(
-                snapshotReserved::completeExceptionally,
-                () -> inProgressBackup.reserveSnapshot().onComplete(snapshotReserved)));
-
-        snapshotReserved.onComplete(
-            proceed(
-                snapshotFilesCollected::completeExceptionally,
-                () -> inProgressBackup.findSnapshotFiles().onComplete(snapshotFilesCollected)));
-
-        snapshotFilesCollected.onComplete(
-            proceed(
-                error -> failBackup(inProgressBackup, backupSaved, error),
-                () -> saveBackup(inProgressBackup, backupSaved)));
-      }
+      case DOES_NOT_EXIST ->
+          inProgressBackup
+              .findValidSnapshot()
+              .andThen(inProgressBackup::findSegmentFiles, concurrencyControl)
+              .andThen(ok -> inProgressBackup.reserveSnapshot(), concurrencyControl)
+              .andThen(ok -> inProgressBackup.findSnapshotFiles(), concurrencyControl)
+              .onComplete(
+                  (result, error) -> {
+                    if (error != null) {
+                      failBackup(inProgressBackup, backupSaved, error);
+                    } else {
+                      saveBackup(inProgressBackup, backupSaved);
+                    }
+                  });
+      default -> LOG.warn("Invalid case on BackupStatus {}", existingBackupStatus);
     }
   }
 

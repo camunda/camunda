@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.message;
 
@@ -20,6 +20,8 @@ import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -87,6 +89,18 @@ public final class MessageCorrelationTest {
           .endEvent("msg2End")
           .moveToActivity("task")
           .endEvent("taskEnd")
+          .done();
+
+  private static final BpmnModelInstance MSG_START_AND_INTERMEDIATE_CATCH_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("msgStart")
+          .message("message")
+          .endEvent()
+          .moveToProcess(PROCESS_ID)
+          .startEvent()
+          .intermediateCatchEvent("msgCatch")
+          .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+          .endEvent()
           .done();
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
@@ -993,6 +1007,49 @@ public final class MessageCorrelationTest {
     // then
     final var variable = RecordingExporter.variableRecords().withName("x").getFirst();
     Assertions.assertThat(variable.getValue()).hasValue("3");
+  }
+
+  @Test
+  public void shouldNotCorrelateToMessageStartAndIntermediateCatchWithSameProcessId() {
+    // given
+    engine.deployment().withXmlResource(MSG_START_AND_INTERMEDIATE_CATCH_PROCESS).deploy();
+    final var messageName = "message";
+    final var correlationKey = "correlationKey";
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withVariable("key", correlationKey)
+        .create();
+
+    RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATED)
+        .withMessageName(messageName)
+        .withCorrelationKey(correlationKey)
+        .await();
+
+    // when
+    engine
+        .message()
+        .withName(messageName)
+        .withCorrelationKey(correlationKey)
+        .withTimeToLive(0)
+        .publish();
+
+    // then
+    assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CORRELATED)
+                .withMessageName(messageName)
+                .withCorrelationKey(correlationKey)
+                .limit(1)
+                .exists())
+        .isTrue();
+    assertThat(
+            RecordingExporter.records()
+                .limit(record -> record.getIntent() == MessageIntent.EXPIRED)
+                .messageStartEventSubscriptionRecords()
+                .withMessageName(messageName)
+                .withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+                .exists())
+        .isFalse();
   }
 
   private List<Record<ProcessMessageSubscriptionRecordValue>> awaitMessagesCorrelated(

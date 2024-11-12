@@ -27,7 +27,10 @@ public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
   REJECTED((short) 5),
 
   DELETE((short) 6),
-  DELETED((short) 7);
+  DELETED((short) 7),
+
+  MIGRATE((short) 9),
+  MIGRATED((short) 10);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -54,6 +57,7 @@ public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
       case CORRELATED:
       case REJECTED:
       case DELETED:
+      case MIGRATED:
         return true;
       default:
         return false;
@@ -80,6 +84,10 @@ public enum MessageSubscriptionIntent implements ProcessInstanceRelatedIntent {
         return DELETED;
       case 8:
         return CORRELATING;
+      case 9:
+        return MIGRATE;
+      case 10:
+        return MIGRATED;
       default:
         return Intent.UNKNOWN;
     }

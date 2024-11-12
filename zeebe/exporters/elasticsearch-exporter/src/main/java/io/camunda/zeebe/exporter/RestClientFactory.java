@@ -2,12 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter;
 
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -18,6 +19,7 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 
 final class RestClientFactory {
+
   private static final RestClientFactory INSTANCE = new RestClientFactory();
 
   private RestClientFactory() {}
@@ -27,11 +29,15 @@ final class RestClientFactory {
    * comma separated list of "host:port" formatted strings. Authentication is supported only as
    * basic auth; if there is no authentication present, then nothing is configured for it.
    */
-  static RestClient of(final ElasticsearchExporterConfiguration config) {
-    return INSTANCE.createRestClient(config);
+  static RestClient of(
+      final ElasticsearchExporterConfiguration config,
+      final HttpRequestInterceptor... interceptors) {
+    return INSTANCE.createRestClient(config, interceptors);
   }
 
-  private RestClient createRestClient(final ElasticsearchExporterConfiguration config) {
+  private RestClient createRestClient(
+      final ElasticsearchExporterConfiguration config,
+      final HttpRequestInterceptor... interceptors) {
     final HttpHost[] httpHosts = parseUrl(config);
     final RestClientBuilder builder =
         RestClient.builder(httpHosts)
@@ -39,18 +45,24 @@ final class RestClientFactory {
                 b ->
                     b.setConnectTimeout(config.requestTimeoutMs)
                         .setSocketTimeout(config.requestTimeoutMs))
-            .setHttpClientConfigCallback(b -> configureHttpClient(config, b));
+            .setHttpClientConfigCallback(b -> configureHttpClient(config, b, interceptors));
 
     return builder.build();
   }
 
   private HttpAsyncClientBuilder configureHttpClient(
-      final ElasticsearchExporterConfiguration config, final HttpAsyncClientBuilder builder) {
+      final ElasticsearchExporterConfiguration config,
+      final HttpAsyncClientBuilder builder,
+      final HttpRequestInterceptor... interceptors) {
     // use single thread for rest client
     builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
 
     if (config.hasAuthenticationPresent()) {
       setupBasicAuthentication(config, builder);
+    }
+
+    for (final var interceptor : interceptors) {
+      builder.addInterceptorLast(interceptor);
     }
 
     return builder;

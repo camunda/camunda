@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.message;
 
@@ -22,19 +22,34 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public class MessageMultiTenancyTest {
 
   @ClassRule
   public static final EngineRule ENGINE = EngineRule.singlePartition().maxCommandsInBatch(1);
 
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
+  private final MessageSender messageSender;
+
+  public MessageMultiTenancyTest(final MessageSender messageSender) {
+    this.messageSender = messageSender;
+  }
+
+  @Parameters(name = "{0}")
+  public static List<MessageSender> data() {
+    return Arrays.asList(new MessagePublishSender(), new MessageCorrelateSender());
+  }
 
   @Test
   public void shouldStartAndCompleteProcessWithMessageStartEvent() {
@@ -54,7 +69,7 @@ public class MessageMultiTenancyTest {
         .deploy();
 
     // when
-    ENGINE.message().withTenantId(tenantId).withName(messageName).withCorrelationKey("").publish();
+    messageSender.sendExpectCorrelation(messageName, "", tenantId);
 
     // then
     assertMessagePublishedForTenantId(messageName, tenantId);
@@ -98,12 +113,7 @@ public class MessageMultiTenancyTest {
         .await();
 
     // when
-    ENGINE
-        .message()
-        .withTenantId(tenantId)
-        .withName(messageName)
-        .withCorrelationKey(correlationKey)
-        .publish();
+    messageSender.sendExpectCorrelation(messageName, correlationKey, tenantId);
 
     // then
     assertMessagePublishedForTenantId(messageName, tenantId);
@@ -134,12 +144,7 @@ public class MessageMultiTenancyTest {
         .deploy();
 
     // when
-    ENGINE
-        .message()
-        .withTenantId(otherTenant)
-        .withName(messageName)
-        .withCorrelationKey("")
-        .publish();
+    messageSender.sendExpectRejection(messageName, "", otherTenant);
 
     // then
     assertMessageStartEventSubscriptionCreatedForTenant(processId, messageName, tenantId);
@@ -178,12 +183,7 @@ public class MessageMultiTenancyTest {
             .create();
 
     // when
-    ENGINE
-        .message()
-        .withTenantId(otherTenant)
-        .withName(messageName)
-        .withCorrelationKey(correlationKey)
-        .publish();
+    messageSender.sendExpectRejection(messageName, correlationKey, otherTenant);
 
     // then
     assertProcessMessageSubscriptionCreatedForTenantId(tenantId, messageName, processInstanceKey);
@@ -200,6 +200,11 @@ public class MessageMultiTenancyTest {
 
   @Test
   public void shouldCorrelateBufferedMessageToCorrectTenant() {
+    if (messageSender instanceof MessageCorrelateSender) {
+      // The message correlate command does not support message buffering.
+      return;
+    }
+
     // given a buffered message
     final var tenantId = "tenant" + UUID.randomUUID();
     final var otherTenant = "otherTenant" + UUID.randomUUID();
@@ -230,13 +235,7 @@ public class MessageMultiTenancyTest {
                 .done())
         .withTenantId(otherTenant)
         .deploy();
-    ENGINE
-        .message()
-        .withTenantId(tenantId)
-        .withName(messageName)
-        .withCorrelationKey(correlationKey)
-        .withTimeToLive(Duration.ofMinutes(5))
-        .publish();
+    messageSender.sendExpectCorrelation(messageName, correlationKey, tenantId);
 
     // when creating a process instance for each tenant
     final long processInstanceKeyOtherTenant =
@@ -445,5 +444,89 @@ public class MessageMultiTenancyTest {
         .expectRejection()
         .evaluate()
         .getPosition();
+  }
+
+  static final class MessagePublishSender extends MessageSender {
+    @Override
+    public void sendExpectCorrelation(
+        final String messageName, final String correlationKey, final String tenantId) {
+      ENGINE
+          .message()
+          .withTenantId(tenantId)
+          .withName(messageName)
+          .withCorrelationKey(correlationKey)
+          .publish();
+    }
+
+    @Override
+    void sendExpectNoCorrelation(
+        final String messageName, final String correlationKey, final String tenantId) {
+      // Send the exact same command as for a correlation expectation. The test message client
+      // considers it a success once the message is published. This happens regardless of
+      // correlation.
+      sendExpectCorrelation(messageName, correlationKey, tenantId);
+    }
+
+    @Override
+    void sendExpectRejection(
+        final String messageName, final String correlationKey, final String tenantId) {
+      // Send the exact same command as for a correlation expectation. The test message client
+      // considers it a success once the message is published. This happens regardless of
+      // correlation.
+      sendExpectCorrelation(messageName, correlationKey, tenantId);
+    }
+  }
+
+  static final class MessageCorrelateSender extends MessageSender {
+    @Override
+    public void sendExpectCorrelation(
+        final String messageName, final String correlationKey, final String tenantId) {
+      ENGINE
+          .messageCorrelation()
+          .withTenantId(tenantId)
+          .withName(messageName)
+          .withCorrelationKey(correlationKey)
+          .correlate();
+    }
+
+    @Override
+    void sendExpectNoCorrelation(
+        final String messageName, final String correlationKey, final String tenantId) {
+      ENGINE
+          .messageCorrelation()
+          .withTenantId(tenantId)
+          .withName(messageName)
+          .withCorrelationKey(correlationKey)
+          .expectNotCorrelated()
+          .correlate();
+    }
+
+    @Override
+    void sendExpectRejection(
+        final String messageName, final String correlationKey, final String tenantId) {
+      ENGINE
+          .messageCorrelation()
+          .withTenantId(tenantId)
+          .withName(messageName)
+          .withCorrelationKey(correlationKey)
+          .expectRejection()
+          .correlate();
+    }
+  }
+
+  abstract static class MessageSender {
+    abstract void sendExpectCorrelation(
+        String messageName, final String correlationKey, String tenantId);
+
+    abstract void sendExpectNoCorrelation(
+        String messageName, final String correlationKey, String tenantId);
+
+    abstract void sendExpectRejection(
+        final String messageName, final String correlationKey, final String tenantId);
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName();
+    }
   }
 }

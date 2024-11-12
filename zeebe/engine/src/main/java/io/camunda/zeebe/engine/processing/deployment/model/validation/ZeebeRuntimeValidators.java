@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
@@ -21,10 +21,12 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
+import io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -175,6 +177,20 @@ public final class ZeebeRuntimeValidators {
             .hasValidExpression(Signal::getName, ExpressionVerification::isOptional)
             .build(expressionLanguage),
         // Checks signal name expressions of start event signals
-        new ProcessSignalStartEventSignalNameValidator(expressionLanguage));
+        new ProcessSignalStartEventSignalNameValidator(expressionLanguage),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebePriorityDefinition.class)
+            .hasValidExpression(
+                ZeebePriorityDefinition::getPriority,
+                expression ->
+                    expression
+                        .isMandatory()
+                        .satisfiesIfStatic(
+                            staticExpression ->
+                                ZeebeExpressionValidator.isValidInt(
+                                    staticExpression, expressionProcessor),
+                            "be a valid Number between 0 and 100"))
+            .build(expressionLanguage),
+        new ZeebePriorityDefinitionValidator());
   }
 }

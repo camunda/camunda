@@ -2,15 +2,18 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.IncidentState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
@@ -24,12 +27,16 @@ public final class BpmnIncidentBehavior {
   private final IncidentState incidentState;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+  private final ElementInstanceState elementInstanceState;
+  private final ProcessState processState;
 
   public BpmnIncidentBehavior(
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter) {
     incidentState = processingState.getIncidentState();
+    elementInstanceState = processingState.getElementInstanceState();
+    processState = processingState.getProcessState();
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
   }
@@ -54,6 +61,13 @@ public final class BpmnIncidentBehavior {
             ? failure.getVariableScopeKey()
             : context.getElementInstanceKey();
 
+    final var treePathProperties =
+        new ElementTreePathBuilder()
+            .withElementInstanceState(elementInstanceState)
+            .withProcessState(processState)
+            .withElementInstanceKey(context.getElementInstanceKey())
+            .build();
+
     incidentRecord.reset();
     incidentRecord
         .setProcessInstanceKey(context.getProcessInstanceKey())
@@ -64,7 +78,10 @@ public final class BpmnIncidentBehavior {
         .setVariableScopeKey(variableScopeKey)
         .setErrorType(failure.getErrorType())
         .setErrorMessage(failure.getMessage())
-        .setTenantId(context.getTenantId());
+        .setTenantId(context.getTenantId())
+        .setElementInstancePath(treePathProperties.elementInstancePath())
+        .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
+        .setCallingElementPath(treePathProperties.callingElementPath());
 
     final var key = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(key, IncidentIntent.CREATED, incidentRecord);

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
@@ -26,14 +26,15 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.traversal.ModelWalker;
 import io.camunda.zeebe.model.bpmn.validation.ValidationVisitor;
 import io.camunda.zeebe.protocol.Protocol;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import java.io.InputStream;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -454,7 +455,59 @@ public final class ZeebeRuntimeValidationTest {
                                 ExpressionTransformer.asFeelExpressionString(INVALID_EXPRESSION))))
             .done(),
         List.of(expect(MultiInstanceLoopCharacteristics.class, INVALID_EXPRESSION_MESSAGE))
-      }
+      },
+      {
+        /* invalid priority expression */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeTaskPriorityExpression(INVALID_EXPRESSION))
+            .done(),
+        List.of(expect(ZeebePriorityDefinition.class, INVALID_EXPRESSION_MESSAGE))
+      },
+      {
+        /*invalid priority static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeTaskPriority("abc"))
+            .done(),
+        List.of(
+            expect(
+                ZeebePriorityDefinition.class,
+                "Expected static value to be a valid Number between 0 and 100, but found 'abc'"))
+      },
+      {
+        /*whitespace priority static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeTaskPriority(" "))
+            .done(),
+        List.of(
+            expect(
+                ZeebePriorityDefinition.class,
+                "Expected static value to be a valid Number between 0 and 100, but found ' '"))
+      },
+      {
+        /*out of range priority static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeTaskPriority("120"))
+            .done(),
+        List.of(
+            expect(
+                ZeebePriorityDefinition.class,
+                "Priority must be a number between 0 and 100, but was '120'"))
+      },
+      {
+        /*decimal priority static value */
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask("task", b -> b.zeebeTaskPriority("33.3"))
+            .done(),
+        List.of(
+            expect(
+                ZeebePriorityDefinition.class,
+                "Expected static value to be a valid Number between 0 and 100, but found '33.3'"))
+      },
     };
   }
 
@@ -462,7 +515,7 @@ public final class ZeebeRuntimeValidationTest {
     final ModelWalker walker = new ModelWalker(model);
     final ExpressionLanguage expressionLanguage =
         ExpressionLanguageFactory.createExpressionLanguage(
-            new ZeebeFeelEngineClock(ActorClock.current()));
+            new ZeebeFeelEngineClock(InstantSource.system()));
     final EvaluationContextLookup emptyLookup = scopeKey -> name -> null;
     final var expressionProcessor = new ExpressionProcessor(expressionLanguage, emptyLookup);
     final ValidationVisitor visitor =

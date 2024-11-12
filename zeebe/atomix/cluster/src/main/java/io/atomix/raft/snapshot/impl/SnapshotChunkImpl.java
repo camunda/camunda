@@ -34,7 +34,8 @@ public final class SnapshotChunkImpl
   private int totalCount;
   private String chunkName;
   private long checksum;
-  private long snapshotChecksum;
+  private long fileBlockPosition;
+  private long totalFileSize;
 
   public SnapshotChunkImpl() {}
 
@@ -43,8 +44,9 @@ public final class SnapshotChunkImpl
     totalCount = chunk.getTotalCount();
     chunkName = chunk.getChunkName();
     checksum = chunk.getChecksum();
-    snapshotChecksum = chunk.getSnapshotChecksum();
     content.wrap(chunk.getContent());
+    fileBlockPosition = chunk.getFileBlockPosition();
+    totalFileSize = chunk.getTotalFileSize();
   }
 
   @Override
@@ -63,7 +65,8 @@ public final class SnapshotChunkImpl
 
     totalCount = SnapshotChunkDecoder.totalCountNullValue();
     checksum = SnapshotChunkDecoder.checksumNullValue();
-    snapshotChecksum = SnapshotChunkDecoder.snapshotChecksumNullValue();
+    fileBlockPosition = SnapshotChunkDecoder.fileBlockPositionNullValue();
+    totalFileSize = SnapshotChunkDecoder.totalFileSizeNullValue();
 
     snapshotId = "";
     chunkName = "";
@@ -85,12 +88,16 @@ public final class SnapshotChunkImpl
   public void write(final MutableDirectBuffer buffer, final int offset) {
     super.write(buffer, offset);
 
+    // The snapshot checksum is 0 for backwards compatibility reasons, when sending chunk data to
+    // brokers on older versions which checks on the snapshot checksum.
     encoder
         .totalCount(totalCount)
+        .fileBlockPosition(fileBlockPosition)
+        .totalFileSize(totalFileSize)
         .snapshotId(snapshotId)
         .chunkName(chunkName)
         .checksum(checksum)
-        .snapshotChecksum(snapshotChecksum)
+        .snapshotChecksum(0)
         .putContent(content, 0, content.capacity());
   }
 
@@ -99,10 +106,11 @@ public final class SnapshotChunkImpl
     super.wrap(buffer, offset, length);
 
     totalCount = decoder.totalCount();
+    fileBlockPosition = decoder.fileBlockPosition();
+    totalFileSize = decoder.totalFileSize();
     snapshotId = decoder.snapshotId();
     chunkName = decoder.chunkName();
     checksum = decoder.checksum();
-    snapshotChecksum = decoder.snapshotChecksum();
 
     if (decoder.contentLength() > 0) {
       decoder.wrapContent(content);
@@ -135,8 +143,23 @@ public final class SnapshotChunkImpl
   }
 
   @Override
-  public long getSnapshotChecksum() {
-    return snapshotChecksum;
+  public long getFileBlockPosition() {
+    // backwards compatability
+    if (fileBlockPosition == SnapshotChunkDecoder.fileBlockPositionNullValue()) {
+      return 0;
+    }
+
+    return fileBlockPosition;
+  }
+
+  @Override
+  public long getTotalFileSize() {
+    // backwards comptability
+    if (totalFileSize == SnapshotChunkDecoder.totalFileSizeNullValue()) {
+      return getContent().length;
+    }
+
+    return totalFileSize;
   }
 
   @Override
@@ -151,8 +174,10 @@ public final class SnapshotChunkImpl
         + '\''
         + ", checksum="
         + checksum
-        + ", snapshotChecksum="
-        + snapshotChecksum
+        + ", fileBlockPosition="
+        + fileBlockPosition
+        + ", totalFileSize="
+        + totalFileSize
         + "} "
         + super.toString();
   }

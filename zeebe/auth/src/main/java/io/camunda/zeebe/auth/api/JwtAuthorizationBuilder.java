@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.auth.api;
 
@@ -19,6 +19,7 @@ public interface JwtAuthorizationBuilder<T extends JwtAuthorizationBuilder<T, A,
   public static String DEFAULT_ISSUER = "zeebe-gateway";
   public static String DEFAULT_AUDIENCE = "zeebe-broker";
   public static String DEFAULT_SUBJECT = "zeebe-client";
+  public static final String USER_TOKEN_CLAIM_PREFIX = "user_token_";
 
   /**
    * Sets the token subject.

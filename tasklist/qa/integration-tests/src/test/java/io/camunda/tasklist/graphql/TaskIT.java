@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.graphql;
 
@@ -40,11 +31,11 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
-import io.camunda.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -76,8 +67,6 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   @Qualifier(TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCanceledCheck;
 
-  @Autowired private TaskMutationResolver taskMutationResolver;
-
   @Autowired private WebApplicationContext context;
 
   @Autowired private ObjectMapper objectMapper;
@@ -104,7 +93,8 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     }
   }
 
-  private BpmnModelInstance getModelForDueAndFollowUpDates(Date dueDate, Date followUpDate) {
+  private BpmnModelInstance getModelForDueAndFollowUpDates(
+      final Date dueDate, final Date followUpDate) {
     final String dueDateString = SIMPLE_DATE_FORMAT.format(dueDate);
     final String followUpDateString = SIMPLE_DATE_FORMAT.format(followUpDate);
 
@@ -122,7 +112,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     return model;
   }
 
-  private void assertSorting(GraphQLResponse response) {
+  private void assertSorting(final GraphQLResponse response) {
     final List<TaskDTO> tasks = Arrays.asList(response.get("$.data.tasks", TaskDTO[].class));
     final Comparator<TaskDTO> comparator = comparing(TaskDTO::getCreationTime).reversed();
     assertThat(tasks).isSortedAccordingTo(comparator);
@@ -140,10 +130,10 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   private void assertTasksPage(
       final GraphQLResponse response,
-      int pageSize,
-      List<String> searchAfter,
-      List<String> searchBefore,
-      boolean hasFirst) {
+      final int pageSize,
+      final List<String> searchAfter,
+      final List<String> searchBefore,
+      final boolean hasFirst) {
     assertTrue(response.isOk());
     assertEquals(String.valueOf(pageSize), response.get("$.data.tasks.length()"));
     for (int i = 0; i < pageSize; i++) {
@@ -169,6 +159,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertSorting(response);
   }
 
+  @Override
   @BeforeEach
   public void before() {
     super.before();
@@ -215,7 +206,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
                     + "\"}) {processDefinitionId}}");
 
         assertEquals(3, tasksByProcessDefinition.size());
-        for (TaskDTO taskDto : tasksByProcessDefinition) {
+        for (final TaskDTO taskDto : tasksByProcessDefinition) {
           assertEquals(taskDto.getProcessDefinitionId(), responseProcessDefinitionId);
         }
 
@@ -227,7 +218,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
         assertEquals(1, tasksByProcessInstance.size());
 
-        for (TaskDTO taskDto : tasksByProcessInstance) {
+        for (final TaskDTO taskDto : tasksByProcessInstance) {
           assertEquals(taskDto.getProcessInstanceId(), responseProcessInstanceId);
         }
       }
@@ -548,7 +539,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     @Nested
     class RetrieveByNameAndVariables {
       private List<TaskDTO> startProcessWithCandidateUserAndSearchBy(
-          String candidateUsersInput, String candidateUserQuery) {
+          final String candidateUsersInput, final String candidateUserQuery) {
 
         final BpmnModelInstance model =
             Bpmn.createExecutableProcess(BPMN_PROCESS_ID)
@@ -618,7 +609,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
         final String candidateUsers = candidateUser1 + ", " + candidateUser2;
 
         final List<TaskDTO> tasks =
-            this.startProcessWithCandidateUserAndSearchBy(candidateUsers, candidateUser2);
+            startProcessWithCandidateUserAndSearchBy(candidateUsers, candidateUser2);
         assertEquals(1, tasks.size());
         assertTrue(Arrays.asList(tasks.get(0).getCandidateUsers()).contains(candidateUser2));
       }
@@ -1149,8 +1140,16 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     @Test
     public void shouldAssignUserTask() {
       final String user = "demo";
-
-      final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
+      final String taskId =
+          tester
+              .createAndDeploySimpleProcess(
+                  BPMN_PROCESS_ID, ELEMENT_ID, AbstractUserTaskBuilder::zeebeUserTask)
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(BPMN_PROCESS_ID)
+              .then()
+              .taskIsCreated(ELEMENT_ID)
+              .getTaskId();
 
       zeebeClient.newUserTaskAssignCommand(Long.valueOf(taskId)).assignee(user).send().join();
 
@@ -1175,7 +1174,16 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
     @Test
     public void shouldUpdateUserTask() {
-      final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
+      final String taskId =
+          tester
+              .createAndDeploySimpleProcess(
+                  BPMN_PROCESS_ID, ELEMENT_ID, AbstractUserTaskBuilder::zeebeUserTask)
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(BPMN_PROCESS_ID)
+              .then()
+              .taskIsCreated(ELEMENT_ID)
+              .getTaskId();
       final List<String> candidateGroups = new ArrayList<>();
       candidateGroups.add("candidateGroupA");
       candidateGroups.add("candidateGroupB");
@@ -1221,7 +1229,16 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
     @Test
     public void shouldCompleteUserTaskWithVariables() {
-      final String taskId = tester.createZeebeUserTask(BPMN_PROCESS_ID, ELEMENT_ID, 1).getTaskId();
+      final String taskId =
+          tester
+              .createAndDeploySimpleProcess(
+                  BPMN_PROCESS_ID, ELEMENT_ID, AbstractUserTaskBuilder::zeebeUserTask)
+              .processIsDeployed()
+              .then()
+              .startProcessInstance(BPMN_PROCESS_ID)
+              .then()
+              .taskIsCreated(ELEMENT_ID)
+              .getTaskId();
       final Map<String, Object> variables = new HashMap<>();
       variables.put("varA", "value Var A");
       variables.put("varB", 123);
@@ -1245,7 +1262,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
           .extractingListContent(objectMapper, VariableSearchResponse.class)
           .extracting("name", "value")
           .containsExactlyInAnyOrder(
-              tuple("varA", "value Var A"), tuple("varB", "123"), tuple("varC", "123"));
+              tuple("varA", "\"value Var A\""), tuple("varB", "123"), tuple("varC", "123"));
     }
   }
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.bootstrap;
 
@@ -23,7 +23,7 @@ import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.partitioning.topology.ClusterTopologyService;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
@@ -97,10 +97,11 @@ class PartitionManagerStepTest {
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
       testBrokerStartupContext.setJobStreamService(mock(JobStreamService.class));
-      final ClusterTopologyService mockClusterTopology = mock(ClusterTopologyService.class);
+      final ClusterConfigurationService mockClusterTopology =
+          mock(ClusterConfigurationService.class);
       when(mockClusterTopology.getPartitionDistribution())
           .thenReturn(PartitionDistribution.NO_PARTITIONS);
-      testBrokerStartupContext.setClusterTopology(mockClusterTopology);
+      testBrokerStartupContext.setClusterConfigurationService(mockClusterTopology);
 
       final var memberConfig = new MemberConfig();
       final var member = new Member(memberConfig);
@@ -192,8 +193,9 @@ class PartitionManagerStepTest {
               TEST_SHUTDOWN_TIMEOUT);
 
       testBrokerStartupContext.setPartitionManager(mockPartitionManager);
-      final ClusterTopologyService mockClusterTopology = mock(ClusterTopologyService.class);
-      testBrokerStartupContext.setClusterTopology(mockClusterTopology);
+      final ClusterConfigurationService mockClusterTopology =
+          mock(ClusterConfigurationService.class);
+      testBrokerStartupContext.setClusterConfigurationService(mockClusterTopology);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
     }
 

@@ -2,17 +2,23 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.scheduler.testing;
 
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.LockUtil;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Test implementation of {@code ConcurrencyControl}. The main goal is to use this in tests without
@@ -36,7 +42,8 @@ import java.util.function.BiConsumer;
  */
 public class TestConcurrencyControl implements ConcurrencyControl {
 
-  private final Object lock = new Object();
+  // use concrete type to allow us to query if we're holding the lock below
+  private final ReentrantLock lock = new ReentrantLock();
 
   @Override
   public <T> void runOnCompletion(
@@ -45,27 +52,55 @@ public class TestConcurrencyControl implements ConcurrencyControl {
   }
 
   @Override
-  public void run(final Runnable action) {
-    synchronized (lock) {
-      action.run();
+  public <T> void runOnCompletion(
+      final Collection<ActorFuture<T>> actorFutures, final Consumer<Throwable> callback) {
+    if (actorFutures.isEmpty()) {
+      callback.accept(null);
+      return;
     }
+
+    final var error = new AtomicReference<Throwable>();
+    final var futuresCompleted = new AtomicInteger(actorFutures.size());
+    final var finalFuture = new TestActorFuture<>();
+    for (final ActorFuture<T> f : actorFutures) {
+      f.onComplete(
+          (r, e) -> {
+            if (e != null) {
+              error.set(e);
+            }
+            if (futuresCompleted.decrementAndGet() == 0) {
+              if (error.get() != null) {
+                finalFuture.completeExceptionally(error.get());
+              } else {
+                finalFuture.complete(null);
+              }
+            }
+          });
+    }
+    finalFuture.onComplete((ignore, throwable) -> callback.accept(throwable));
+  }
+
+  @Override
+  public void run(final Runnable action) {
+    LockUtil.withLock(lock, action);
   }
 
   @Override
   public <T> ActorFuture<T> call(final Callable<T> callable) {
     final T call;
     try {
-      call = callable.call();
+      call = LockUtil.withLock(lock, callable);
     } catch (final Exception e) {
       return TestActorFuture.failedFuture(e);
     }
+
     return TestActorFuture.completedFuture(call);
   }
 
   @Override
   public ScheduledTimer schedule(final Duration delay, final Runnable runnable) {
     // Schedule immediately
-    runnable.run();
+    LockUtil.withLock(lock, runnable);
     return () -> {};
   }
 

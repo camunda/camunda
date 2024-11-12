@@ -2,12 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -27,6 +28,16 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
   @Override
   public void writeRejectionOnCommand(
       final TypedRecord<?> command, final RejectionType type, final String reason) {
+    writeRejection(command, type, reason, command.getRequestId(), command.getRequestStreamId());
+  }
+
+  @Override
+  public void writeRejection(
+      final TypedRecord<?> command,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId) {
     resultBuilder()
         .withResponse(
             RecordType.COMMAND_REJECTION,
@@ -36,8 +47,31 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
             command.getValueType(),
             type,
             reason,
-            command.getRequestId(),
-            command.getRequestStreamId());
+            requestId,
+            requestStreamId);
+  }
+
+  @Override
+  public void writeRejection(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final ValueType valueType,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId) {
+    resultBuilder()
+        .withResponse(
+            RecordType.COMMAND_REJECTION,
+            key,
+            intent,
+            value,
+            valueType,
+            type,
+            reason,
+            requestId,
+            requestStreamId);
   }
 
   @Override

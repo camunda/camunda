@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.util;
 
@@ -22,37 +13,37 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.OperateEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
-import io.camunda.operate.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.operate.entities.dmn.definition.DecisionRequirementsEntity;
-import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.schema.indices.DecisionIndex;
-import io.camunda.operate.schema.indices.DecisionRequirementsIndex;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
-import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.ZeebePostImporter;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
+import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
+import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
@@ -106,7 +97,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired protected ZeebePostImporter zeebePostImporter;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
-  Map<Class<? extends OperateEntity>, String> entityToESAliasMap;
+  Map<Class<? extends ExporterEntity>, String> entityToESAliasMap;
   @Autowired private ListViewTemplate listViewTemplate;
   @Autowired private VariableTemplate variableTemplate;
   @Autowired private ProcessIndex processIndex;
@@ -117,19 +108,22 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
   @Autowired private SchemaManager schemaManager;
+  @Autowired private IndexPrefixHolder indexPrefixHolder;
+
   @Autowired private ObjectMapper objectMapper;
+
   @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
 
   @Override
-  public void failed(Throwable e, Description description) {
-    this.failed = true;
+  public void failed(final Throwable e, final Description description) {
+    failed = true;
   }
 
   @Override
-  public void starting(Description description) {
+  public void starting(final Description description) {
     if (indexPrefix == null) {
-      indexPrefix = TestUtil.createRandomString(10) + "-operate";
+      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
     }
     operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     if (operateProperties.getElasticsearch().isCreateSchema()) {
@@ -141,7 +135,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   }
 
   @Override
-  public void finished(Description description) {
+  public void finished(final Description description) {
     TestUtil.removeIlmPolicy(esClient);
     if (!failed) {
       final String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
@@ -154,6 +148,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     assertMaxOpenScrollContexts(15);
   }
 
+  @Override
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
     assertThat(getOpenScrollcontextSize())
         .describedAs("There are too many open scroll contexts left.")
@@ -172,7 +167,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       final RefreshRequest refreshRequest =
           new RefreshRequest(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
       zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.error("Could not refresh Zeebe Elasticsearch indices", t);
     }
   }
@@ -183,13 +178,16 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       final RefreshRequest refreshRequest =
           new RefreshRequest(operateProperties.getElasticsearch().getIndexPrefix() + "*");
       esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (Exception t) {
+    } catch (final Exception t) {
       LOGGER.error("Could not refresh Operate Elasticsearch indices", t);
     }
   }
 
+  @Override
   public void processAllRecordsAndWait(
-      Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
+      final Integer maxWaitingRounds,
+      final Predicate<Object[]> predicate,
+      final Object... arguments) {
     processRecordsAndWaitFor(
         recordsReaderHolder.getAllRecordsReaders(),
         maxWaitingRounds,
@@ -199,21 +197,27 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
         arguments);
   }
 
-  public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
+  @Override
+  public void processAllRecordsAndWait(
+      final Predicate<Object[]> predicate, final Object... arguments) {
     processAllRecordsAndWait(50, predicate, arguments);
   }
 
+  @Override
   public void processAllRecordsAndWait(
-      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+      final Predicate<Object[]> predicate,
+      final Supplier<Object> supplier,
+      final Object... arguments) {
     processRecordsAndWaitFor(
         recordsReaderHolder.getAllRecordsReaders(), 50, true, predicate, supplier, arguments);
   }
 
+  @Override
   public void processAllRecordsAndWait(
-      boolean runPostImport,
-      Predicate<Object[]> predicate,
-      Supplier<Object> supplier,
-      Object... arguments) {
+      final boolean runPostImport,
+      final Predicate<Object[]> predicate,
+      final Supplier<Object> supplier,
+      final Object... arguments) {
     processRecordsAndWaitFor(
         recordsReaderHolder.getAllRecordsReaders(),
         50,
@@ -223,28 +227,33 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
         arguments);
   }
 
+  @Override
   public void processRecordsWithTypeAndWait(
-      ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
+      final ImportValueType importValueType,
+      final Predicate<Object[]> predicate,
+      final Object... arguments) {
     processRecordsAndWaitFor(
         getRecordsReaders(importValueType), 50, true, predicate, null, arguments);
   }
 
+  @Override
   public void processRecordsWithTypeAndWait(
-      ImportValueType importValueType,
-      boolean runPostImport,
-      Predicate<Object[]> predicate,
-      Object... arguments) {
+      final ImportValueType importValueType,
+      final boolean runPostImport,
+      final Predicate<Object[]> predicate,
+      final Object... arguments) {
     processRecordsAndWaitFor(
         getRecordsReaders(importValueType), 50, runPostImport, predicate, null, arguments);
   }
 
+  @Override
   public void processRecordsAndWaitFor(
-      Collection<RecordsReader> readers,
-      Integer maxWaitingRounds,
-      boolean runPostImport,
-      Predicate<Object[]> predicate,
-      Supplier<Object> supplier,
-      Object... arguments) {
+      final Collection<RecordsReader> readers,
+      final Integer maxWaitingRounds,
+      final boolean runPostImport,
+      final Predicate<Object[]> predicate,
+      final Supplier<Object> supplier,
+      final Object... arguments) {
     int waitingRound = 0;
     final int maxRounds = maxWaitingRounds;
     boolean found = predicate.test(arguments);
@@ -262,7 +271,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
           runPostImportActions();
         }
 
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.error(e.getMessage(), e);
       }
       int waitForImports = 0;
@@ -278,7 +287,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
             runPostImportActions();
           }
 
-        } catch (Exception e) {
+        } catch (final Exception e) {
           waitingRound = 0;
           testImportListener.resetCounters();
           LOGGER.error(e.getMessage(), e);
@@ -305,6 +314,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     }
   }
 
+  @Override
   public void runPostImportActions() {
     if (zeebePostImporter.getPostImportActions().size() == 0) {
       zeebePostImporter.initPostImporters();
@@ -312,21 +322,22 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     for (final PostImportAction action : zeebePostImporter.getPostImportActions()) {
       try {
         action.performOneRound();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new RuntimeException(e);
       }
     }
   }
 
+  @Override
   public boolean areIndicesCreatedAfterChecks(
-      String indexPrefix, int minCountOfIndices, int maxChecks) {
+      final String indexPrefix, final int minCountOfIndices, final int maxChecks) {
     boolean areCreated = false;
     int checks = 0;
     while (!areCreated && checks <= maxChecks) {
       checks++;
       try {
         areCreated = areIndicesAreCreated(indexPrefix, minCountOfIndices);
-      } catch (Exception t) {
+      } catch (final Exception t) {
         LOGGER.error(
             "Elasticsearch indices (min {}) are not created yet. Waiting {}/{}",
             minCountOfIndices,
@@ -339,27 +350,30 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     return areCreated;
   }
 
-  public List<RecordsReader> getRecordsReaders(ImportValueType importValueType) {
+  @Override
+  public List<RecordsReader> getRecordsReaders(final ImportValueType importValueType) {
     return recordsReaderHolder.getAllRecordsReaders().stream()
         .filter(rr -> rr.getImportValueType().equals(importValueType))
         .collect(Collectors.toList());
   }
 
-  public void persistNew(OperateEntity... entitiesToPersist) {
+  @Override
+  public void persistNew(final ExporterEntity... entitiesToPersist) {
     try {
       persistOperateEntitiesNew(Arrays.asList(entitiesToPersist));
-    } catch (PersistenceException e) {
+    } catch (final PersistenceException e) {
       LOGGER.error("Unable to persist entities: " + e.getMessage(), e);
       throw new RuntimeException(e);
     }
     refreshSearchIndices();
   }
 
-  public void persistOperateEntitiesNew(List<? extends OperateEntity> operateEntities)
+  @Override
+  public void persistOperateEntitiesNew(final List<? extends ExporterEntity> operateEntities)
       throws PersistenceException {
     try {
       final BulkRequest bulkRequest = new BulkRequest();
-      for (final OperateEntity entity : operateEntities) {
+      for (final ExporterEntity entity : operateEntities) {
         final String alias = getEntityToAliasMap().get(entity.getClass());
         if (alias == null) {
           throw new RuntimeException("Index not configured for " + entity.getClass().getName());
@@ -383,12 +397,13 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
           bulkRequest,
           true,
           operateProperties.getElasticsearch().getBulkRequestMaxSizeInBytes());
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       throw new PersistenceException(ex);
     }
   }
 
-  public Map<Class<? extends OperateEntity>, String> getEntityToAliasMap() {
+  @Override
+  public Map<Class<? extends ExporterEntity>, String> getEntityToAliasMap() {
     if (entityToESAliasMap == null) {
       entityToESAliasMap = new HashMap<>();
       entityToESAliasMap.put(ProcessEntity.class, processIndex.getFullQualifiedName());
@@ -412,21 +427,23 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     return entityToESAliasMap;
   }
 
+  @Override
   public int getOpenScrollcontextSize() {
     return getIntValueForJSON(PATH_SEARCH_STATISTICS, OPEN_SCROLL_CONTEXT_FIELD, 0);
   }
 
-  public void setIndexPrefix(String indexPrefix) {
+  @Override
+  public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
   }
 
   @Override
-  public boolean indexExists(String index) throws IOException {
+  public boolean indexExists(final String index) throws IOException {
     final var request = new GetIndexRequest(index);
     return esClient.indices().exists(request, RequestOptions.DEFAULT);
   }
 
-  private boolean areIndicesAreCreated(String indexPrefix, int minCountOfIndices)
+  private boolean areIndicesAreCreated(final String indexPrefix, final int minCountOfIndices)
       throws IOException {
     final GetIndexResponse response =
         esClient
@@ -457,7 +474,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       final Response response =
           esClient.getLowLevelClient().performRequest(new Request("GET", path));
       return Optional.of(objectMapper.readTree(response.getEntity().getContent()));
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Couldn't retrieve json object from elasticsearch. Return Optional.Empty.", e);
       return Optional.empty();
     }

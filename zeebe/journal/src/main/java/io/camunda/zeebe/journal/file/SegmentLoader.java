@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.journal.file;
 
@@ -51,6 +51,7 @@ final class SegmentLoader {
       final JournalIndex journalIndex) {
     final MappedByteBuffer mappedSegment;
 
+    final var descriptorSerializer = SegmentDescriptorSerializer.currentSerializer();
     try {
       mappedSegment = mapNewSegment(segmentFile, descriptor);
     } catch (final IOException e) {
@@ -59,7 +60,7 @@ final class SegmentLoader {
     }
 
     try {
-      descriptor.copyTo(mappedSegment);
+      descriptorSerializer.writeTo(descriptor, mappedSegment);
       mappedSegment.force();
     } catch (final InternalError e) {
       throw new JournalException(
@@ -80,7 +81,13 @@ final class SegmentLoader {
           e);
     }
 
-    return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenAsqn, journalIndex);
+    return loadSegment(
+        segmentFile,
+        mappedSegment,
+        descriptor,
+        descriptorSerializer,
+        lastWrittenAsqn,
+        journalIndex);
   }
 
   UninitializedSegment createUninitializedSegment(
@@ -114,12 +121,14 @@ final class SegmentLoader {
 
   Segment loadExistingSegment(
       final Path segmentFile, final long lastWrittenAsqn, final JournalIndex journalIndex) {
+    final var descriptorSerializer = SegmentDescriptorSerializer.currentSerializer();
     try (final var channel =
         FileChannel.open(segmentFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
       MappedByteBuffer mappedSegment;
       final var initialMappedLength = Files.size(segmentFile);
       mappedSegment = mapSegment(channel, initialMappedLength);
-      final var descriptor = readDescriptor(mappedSegment, segmentFile.getFileName().toString());
+      final var descriptor =
+          readDescriptor(descriptorSerializer, mappedSegment, segmentFile.getFileName().toString());
 
       if (descriptor.maxSegmentSize() > initialMappedLength) {
         // remap with actual size
@@ -127,7 +136,13 @@ final class SegmentLoader {
         mappedSegment = mapSegment(channel, descriptor.maxSegmentSize());
       }
 
-      return loadSegment(segmentFile, mappedSegment, descriptor, lastWrittenAsqn, journalIndex);
+      return loadSegment(
+          segmentFile,
+          mappedSegment,
+          descriptor,
+          descriptorSerializer,
+          lastWrittenAsqn,
+          journalIndex);
     } catch (final IOException e) {
       throw new JournalException(
           String.format("Failed to load existing segment %s", segmentFile), e);
@@ -139,10 +154,18 @@ final class SegmentLoader {
       final Path file,
       final MappedByteBuffer buffer,
       final SegmentDescriptor descriptor,
+      final SegmentDescriptorSerializer descriptorSerializer,
       final long lastWrittenAsqn,
       final JournalIndex journalIndex) {
     final SegmentFile segmentFile = new SegmentFile(file.toFile());
-    return new Segment(segmentFile, descriptor, buffer, lastWrittenAsqn, journalIndex, metrics);
+    return new Segment(
+        segmentFile,
+        descriptor,
+        descriptorSerializer,
+        buffer,
+        lastWrittenAsqn,
+        journalIndex,
+        metrics);
   }
 
   private MappedByteBuffer mapSegment(final FileChannel channel, final long segmentSize)
@@ -153,9 +176,12 @@ final class SegmentLoader {
     return mappedSegment;
   }
 
-  private SegmentDescriptor readDescriptor(final ByteBuffer buffer, final String fileName) {
+  private SegmentDescriptor readDescriptor(
+      final SegmentDescriptorSerializer descriptorSerializer,
+      final ByteBuffer buffer,
+      final String fileName) {
     try {
-      return new SegmentDescriptorReader().readFrom(buffer);
+      return descriptorSerializer.readFrom(buffer);
     } catch (final IndexOutOfBoundsException e) {
       throw new JournalException(
           String.format(

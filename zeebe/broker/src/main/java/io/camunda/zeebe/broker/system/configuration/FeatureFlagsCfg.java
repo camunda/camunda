@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.configuration;
 
@@ -37,8 +37,7 @@ public final class FeatureFlagsCfg {
       DEFAULT_SETTINGS.enableTimerDueDateCheckerAsync();
   private boolean enableStraightThroughProcessingLoopDetector =
       DEFAULT_SETTINGS.enableStraightThroughProcessingLoopDetector();
-
-  private boolean enableDynamicClusterTopology = DEFAULT_SETTINGS.enableDynamicClusterTopology();
+  private boolean enablePartitionScaling = DEFAULT_SETTINGS.enablePartitionScaling();
 
   public boolean isEnableYieldingDueDateChecker() {
     return enableYieldingDueDateChecker;
@@ -81,12 +80,12 @@ public final class FeatureFlagsCfg {
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 
-  public boolean isEnableDynamicClusterTopology() {
-    return enableDynamicClusterTopology;
+  public boolean isEnablePartitionScaling() {
+    return enablePartitionScaling;
   }
 
-  public void setEnableDynamicClusterTopology(final boolean enableDynamicClusterTopology) {
-    this.enableDynamicClusterTopology = enableDynamicClusterTopology;
+  public void setEnablePartitionScaling(final boolean enablePartitionScaling) {
+    this.enablePartitionScaling = enablePartitionScaling;
   }
 
   public FeatureFlags toFeatureFlags() {
@@ -96,7 +95,7 @@ public final class FeatureFlagsCfg {
         enableMessageTtlCheckerAsync,
         enableTimerDueDateCheckerAsync,
         enableStraightThroughProcessingLoopDetector,
-        enableDynamicClusterTopology
+        enablePartitionScaling
         /*, enableFoo*/ );
   }
 

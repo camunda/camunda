@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
@@ -34,13 +34,15 @@
     <module>gateway-protocol</module>
     <module>gateway-protocol-impl</module>
     <module>gateway</module>
+    <module>gateway-grpc</module>
     <module>gateway-rest</module>
-    <module>clients/java</module>
     <module>exporter-api</module>
     <module>exporter-test</module>
     <module>protocol-asserts</module>
+    <module>exporters/camunda-exporter</module>
     <module>exporters/elasticsearch-exporter</module>
     <module>exporters/opensearch-exporter</module>
+    <module>exporters/rdbms-exporter</module>
     <module>protocol-impl</module>
     <module>protocol-jackson</module>
     <module>zb-db</module>
@@ -58,18 +60,22 @@
     <module>backup-stores/azure</module>
     <module>backup-stores/common</module>
     <module>restore</module>
-    <module>topology</module>
+    <module>dynamic-config</module>
   </modules>
 
   <profiles>
-    <!-- 
+    <!--
       The QA module is enabled by default, but having it in a profile allows us to exclude it easily.
-      That is useful for example for creating releases.
+      That is useful for example for creating releases. This profile is active if the skipQaBuild
+      property is not present, or is present and set to a value other than 'true'.
       -->
     <profile>
-      <id>integration-tests</id>
+      <id>integration-tests-build</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>skipQaBuild</name>
+          <value>!true</value>
+        </property>
       </activation>
       <modules>
         <module>qa</module>

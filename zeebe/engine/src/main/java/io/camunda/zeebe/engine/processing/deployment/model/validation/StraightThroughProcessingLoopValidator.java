@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
@@ -42,14 +42,19 @@ public final class StraightThroughProcessingLoopValidator {
           BpmnElementType.END_EVENT,
           BpmnElementType.SUB_PROCESS,
           BpmnElementType.MULTI_INSTANCE_BODY,
-          BpmnElementType.CALL_ACTIVITY);
+          BpmnElementType.CALL_ACTIVITY,
+          BpmnElementType.INTERMEDIATE_THROW_EVENT);
 
   /**
    * Loops must contain any of the rejected element types for it to be considered a loop. This makes
    * sure we don't reject deployments containing a loop of just gateways.
    */
   private static final EnumSet<BpmnElementType> REJECTED_ELEMENT_TYPES =
-      EnumSet.of(BpmnElementType.MANUAL_TASK, BpmnElementType.TASK, BpmnElementType.CALL_ACTIVITY);
+      EnumSet.of(
+          BpmnElementType.MANUAL_TASK,
+          BpmnElementType.TASK,
+          BpmnElementType.CALL_ACTIVITY,
+          BpmnElementType.INTERMEDIATE_THROW_EVENT);
 
   /**
    * Validates a list of processes for straight-through processing loops. These are loops of

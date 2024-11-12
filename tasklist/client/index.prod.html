@@ -7,7 +7,40 @@
     <script type="text/javascript" src="./client-config.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#000000" />
-    <meta name="description" content="Tasklist" />
+    <title th:text="${title} ?: 'Tasklist'">Tasklist</title>
+    <meta name="og:image:alt" content="Open a form powered by Camunda." />
+
+    <!-- Primary Meta Tags -->
+
+    <meta
+      name="description"
+      th:content="${title==null} ?'Efficiently orchestrate human work': 'Open to see the details'"
+    />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" th:if="${ogUrl!=null}" th:content="${ogUrl}" />
+    <meta property="og:title" th:content="${title} ?: 'Tasklist'" />
+    <meta
+      property="og:description"
+      th:content="${title==null} ?'Efficiently orchestrate human work': 'Open to see the details'"
+    />
+    <meta name="og:image" th:if="${ogImage!=null}" th:content="${ogImage}" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" th:if="${ogUrl!=null}" th:content="${ogUrl}" />
+    <meta property="twitter:title" th:content="${title} ?: 'Tasklist'" />
+    <meta
+      property="twitter:description"
+      th:content="${title==null} ?'Efficiently orchestrate human work': 'Open to see the details'"
+    />
+    <meta
+      property="twitter:image"
+      th:if="${ogImage!=null}"
+      th:content="${ogImage}"
+    />
+
     <style>
       .osano-cm-widget {
         display: none;
@@ -57,7 +90,7 @@
         background-color: #e6e6e6;
       }
     </style>
-    <title>Tasklist</title>
+    <link rel="stylesheet" href="./custom.css" />
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>

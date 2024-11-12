@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system;
 
@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.system.configuration.DataCfg;
 import io.camunda.zeebe.broker.system.configuration.DiskCfg.FreeSpaceCfg;
 import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
+import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.SecurityCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
@@ -29,11 +30,17 @@ import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.util.TlsConfigUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import org.slf4j.Logger;
 
@@ -54,6 +61,7 @@ public final class SystemContext {
   private final ActorScheduler scheduler;
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
+  private final MeterRegistry meterRegistry;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -61,22 +69,32 @@ public final class SystemContext {
       final IdentityConfiguration identityConfiguration,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final MeterRegistry meterRegistry) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
     this.scheduler = scheduler;
     this.cluster = cluster;
     this.brokerClient = brokerClient;
+    this.meterRegistry = meterRegistry;
     initSystemContext();
   }
 
+  @VisibleForTesting
   public SystemContext(
       final BrokerCfg brokerCfg,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient) {
-    this(DEFAULT_SHUTDOWN_TIMEOUT, brokerCfg, null, scheduler, cluster, brokerClient);
+    this(
+        DEFAULT_SHUTDOWN_TIMEOUT,
+        brokerCfg,
+        null,
+        scheduler,
+        cluster,
+        brokerClient,
+        new SimpleMeterRegistry());
   }
 
   private void initSystemContext() {
@@ -93,11 +111,59 @@ public final class SystemContext {
 
     validateDataConfig(brokerCfg.getData());
 
+    validClusterConfigs(cluster);
     validateExperimentalConfigs(cluster, brokerCfg.getExperimental());
+
+    validateExporters(brokerCfg.getExporters());
 
     final var security = brokerCfg.getNetwork().getSecurity();
     if (security.isEnabled()) {
       validateNetworkSecurityConfig(security);
+    }
+  }
+
+  private void validClusterConfigs(final ClusterCfg cluster) {
+    final var gossiper = cluster.getConfigManager().gossip();
+
+    final var errors = new ArrayList<String>(0);
+
+    if (!gossiper.syncDelay().isPositive()) {
+      errors.add(
+          String.format(
+              "syncDelay must be positive: configured value = %d ms",
+              gossiper.syncDelay().toMillis()));
+    }
+    if (!gossiper.syncRequestTimeout().isPositive()) {
+      errors.add(
+          String.format(
+              "syncRequestTimeout must be positive: configured value = %d ms",
+              gossiper.syncRequestTimeout().toMillis()));
+    }
+    if (gossiper.gossipFanout() < 2) {
+      errors.add(
+          String.format(
+              "gossipFanout must be greater than 1: configured value = %d",
+              gossiper.gossipFanout()));
+    }
+
+    if (!errors.isEmpty()) {
+      throw new InvalidConfigurationException(
+          "Invalid ConfigManager configuration: " + String.join(", ", errors), null);
+    }
+  }
+
+  private void validateExporters(final Map<String, ExporterCfg> exporters) {
+    final Set<Entry<String, ExporterCfg>> entries = exporters.entrySet();
+    final var badExportersNames =
+        entries.stream()
+            .filter(entry -> entry.getValue().getClassName() == null)
+            .map(Entry::getKey)
+            .toList();
+
+    if (!badExportersNames.isEmpty()) {
+      throw new IllegalArgumentException(
+          "Expected to find a 'className' configured for the exporter. Couldn't find a valid one for the following exporters "
+              + badExportersNames);
     }
   }
 
@@ -230,35 +296,10 @@ public final class SystemContext {
   }
 
   private void validateNetworkSecurityConfig(final SecurityCfg security) {
-    final var certificateChainPath = security.getCertificateChainPath();
-    final var privateKeyPath = security.getPrivateKeyPath();
-
-    if (certificateChainPath == null) {
-      throw new IllegalArgumentException(
-          "Expected to have a valid certificate chain path for network security, but none "
-              + "configured");
-    }
-
-    if (privateKeyPath == null) {
-      throw new IllegalArgumentException(
-          "Expected to have a valid private key path for network security, but none configured");
-    }
-
-    if (!certificateChainPath.canRead()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected the configured network security certificate chain path '%s' to point to a"
-                  + " readable file, but it does not",
-              certificateChainPath));
-    }
-
-    if (!privateKeyPath.canRead()) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Expected the configured network security private key path '%s' to point to a "
-                  + "readable file, but it does not",
-              privateKeyPath));
-    }
+    TlsConfigUtil.validateTlsConfig(
+        security.getCertificateChainPath(),
+        security.getPrivateKeyPath(),
+        security.getKeyStore().getFilePath());
   }
 
   public ActorScheduler getScheduler() {
@@ -287,5 +328,9 @@ public final class SystemContext {
 
   public Duration getShutdownTimeout() {
     return shutdownTimeout;
+  }
+
+  public MeterRegistry getMeterRegistry() {
+    return meterRegistry;
   }
 }

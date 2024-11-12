@@ -9,8 +9,9 @@ jobs:
     name: Create backport PRs
     runs-on: ubuntu-latest
     # Only run when pull request is merged
-    # or when a comment containing `/backport` is created by someone other than the backport-action
-    # bot user (user id: 97796249)
+    # or when a comment starting with `/backport` is created by someone other than the
+    # https://github.com/backport-action bot user (user id: 97796249). Note that if you use your
+    # own PAT as `github_token`, that you should replace this id with yours.
     if: >
       (
         github.event_name == 'pull_request' &&
@@ -19,7 +20,7 @@ jobs:
         github.event_name == 'issue_comment' &&
         github.event.issue.pull_request &&
         github.event.comment.user.id != 97796249 &&
-        contains(github.event.comment.body, '/backport')
+        startsWith(github.event.comment.body, '/backport')
       )
     steps:
       - uses: actions/checkout@v4
@@ -27,13 +28,11 @@ jobs:
           # Token for git actions, e.g. git push
           token: ${{ secrets.BACKPORT_ACTION_PAT }}
       - name: Create backport PRs
-        uses: korthout/backport-action@v2
+        uses: korthout/backport-action@v3
         with:
-          # Optional
           # Token to authenticate requests to GitHub
           github_token: ${{ secrets.BACKPORT_ACTION_PAT }}
 
-          # Optional
           # Template used as description in the pull requests created by this action.
           # Placeholders can be used to define variable values.
           # These are indicated by a dollar sign and curly braces (`${placeholder}`).
@@ -44,3 +43,8 @@ jobs:
 
             relates to ${issue_refs}
             original author: @${pull_author}
+
+          experimental: >
+            {
+              "conflict_resolution": "draft_commit_conflicts"
+            }

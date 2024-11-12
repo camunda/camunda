@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment;
 
@@ -189,6 +189,37 @@ public final class CreateDeploymentMultiplePartitionsTest {
             .deployment()
             .withXmlResource("process.bpmn", PROCESS)
             .withXmlResource("process2.bpmn", PROCESS_2)
+            .deploy();
+
+    // then
+    assertThat(deployment.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(deployment.getIntent()).isEqualTo(DeploymentIntent.CREATED);
+
+    final var deployments =
+        RecordingExporter.deploymentRecords()
+            .withIntent(DeploymentIntent.CREATED)
+            .withRecordKey(deployment.getKey())
+            .limit(PARTITION_COUNT)
+            .asList();
+
+    assertThat(deployments)
+        .hasSize(PARTITION_COUNT)
+        .extracting(Record::getValue)
+        .flatExtracting(DeploymentRecordValue::getProcessesMetadata)
+        .extracting(ProcessMetadataValue::getBpmnProcessId)
+        .containsOnly("process", "process2");
+  }
+
+  @Test
+  public void shouldCreateDeploymentResourceWithMultipleProcessWithSameResourceName() {
+    // given
+
+    // when
+    final Record<DeploymentRecordValue> deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("process.bpmn", PROCESS)
+            .withXmlResource("process.bpmn", PROCESS_2)
             .deploy();
 
     // then
@@ -417,6 +448,43 @@ public final class CreateDeploymentMultiplePartitionsTest {
   }
 
   @Test
+  public void shouldWriteProcessCreatedEventsOnAllPartitions() {
+    // given
+    final var processId = Strings.newRandomValidBpmnId();
+
+    // when
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                "process.bpmn",
+                Bpmn.createExecutableProcess(processId)
+                    .versionTag("v1.0")
+                    .startEvent()
+                    .endEvent()
+                    .done())
+            .deploy();
+
+    // then
+    ENGINE.forEachPartition(
+        partitionId -> {
+          final var record =
+              RecordingExporter.processRecords()
+                  .withPartitionId(partitionId)
+                  .withIntents(ProcessIntent.CREATED)
+                  .withBpmnProcessId(processId)
+                  .getFirst();
+          assertThat(record).isNotNull();
+          assertThat(record.getRecordVersion()).isEqualTo(2);
+          assertThat(record.getValue().getResourceName()).isEqualTo("process.bpmn");
+          assertThat(record.getValue().getVersion()).isEqualTo(1);
+          assertThat(record.getValue().getVersionTag()).isEqualTo("v1.0");
+          assertThat(record.getValue().getDeploymentKey()).isEqualTo(deployment.getKey());
+          assertThat(record.getKey()).isEqualTo(record.getValue().getProcessDefinitionKey());
+        });
+  }
+
+  @Test
   public void shouldWriteProcessCreatedEventsWithSameKeys() {
     // given
     final var processId = Strings.newRandomValidBpmnId();
@@ -468,6 +536,32 @@ public final class CreateDeploymentMultiplePartitionsTest {
                 .distinct())
         .describedAs("All created events get the same key")
         .hasSize(1);
+  }
+
+  @Test
+  public void shouldWriteDecisionCreatedEventsWithDeploymentKeyOnAllPartitions() {
+    // given
+    final var decisionId = "jedi_or_sith";
+
+    // when
+    final var deployment =
+        ENGINE.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+
+    // then
+    ENGINE.forEachPartition(
+        partitionId -> {
+          final var record =
+              RecordingExporter.decisionRecords()
+                  .withPartitionId(partitionId)
+                  .withIntents(DecisionIntent.CREATED)
+                  .withDecisionId(decisionId)
+                  .getFirst();
+          assertThat(record)
+              .isNotNull()
+              .extracting(Record::getValue)
+              .extracting(DecisionRecordValue::getDeploymentKey)
+              .isEqualTo(deployment.getKey());
+        });
   }
 
   @Test

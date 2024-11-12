@@ -1,25 +1,18 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.property;
 
 import static io.camunda.tasklist.util.ConversionUtils.stringIsEmpty;
 
+import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 import java.util.function.Function;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -50,13 +43,17 @@ public class ElasticsearchProperties {
   private String username;
   private String password;
 
+  private boolean healthCheckEnabled = true;
+
   @NestedConfigurationProperty private SslProperties ssl;
+
+  private List<PluginConfiguration> interceptorPlugins;
 
   public String getClusterName() {
     return clusterName;
   }
 
-  public void setClusterName(String clusterName) {
+  public void setClusterName(final String clusterName) {
     this.clusterName = clusterName;
   }
 
@@ -66,7 +63,7 @@ public class ElasticsearchProperties {
   }
 
   @Deprecated
-  public void setHost(String host) {
+  public void setHost(final String host) {
     this.host = host;
   }
 
@@ -76,15 +73,15 @@ public class ElasticsearchProperties {
   }
 
   @Deprecated
-  public void setPort(int port) {
+  public void setPort(final int port) {
     this.port = port;
   }
 
-  private <T> T getFromURIorDefault(Function<URI, T> valueFromURI, T defaultValue) {
+  private <T> T getFromURIorDefault(final Function<URI, T> valueFromURI, final T defaultValue) {
     if (!stringIsEmpty(url)) {
       try {
         return valueFromURI.apply(new URI(url));
-      } catch (URISyntaxException e) {
+      } catch (final URISyntaxException e) {
         return defaultValue;
       }
     }
@@ -95,7 +92,7 @@ public class ElasticsearchProperties {
     return dateFormat;
   }
 
-  public void setDateFormat(String dateFormat) {
+  public void setDateFormat(final String dateFormat) {
     this.dateFormat = dateFormat;
   }
 
@@ -103,7 +100,7 @@ public class ElasticsearchProperties {
     return elsDateFormat;
   }
 
-  public void setElsDateFormat(String elsDateFormat) {
+  public void setElsDateFormat(final String elsDateFormat) {
     this.elsDateFormat = elsDateFormat;
   }
 
@@ -111,7 +108,7 @@ public class ElasticsearchProperties {
     return batchSize;
   }
 
-  public void setBatchSize(int batchSize) {
+  public void setBatchSize(final int batchSize) {
     this.batchSize = batchSize;
   }
 
@@ -119,7 +116,7 @@ public class ElasticsearchProperties {
     return createSchema;
   }
 
-  public void setCreateSchema(boolean createSchema) {
+  public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
   }
 
@@ -127,7 +124,7 @@ public class ElasticsearchProperties {
     return password;
   }
 
-  public void setPassword(String password) {
+  public void setPassword(final String password) {
     this.password = password;
   }
 
@@ -135,7 +132,7 @@ public class ElasticsearchProperties {
     return username;
   }
 
-  public void setUsername(String username) {
+  public void setUsername(final String username) {
     this.username = username;
   }
 
@@ -146,7 +143,7 @@ public class ElasticsearchProperties {
     return url;
   }
 
-  public void setUrl(String url) {
+  public void setUrl(final String url) {
     this.url = url;
   }
 
@@ -154,7 +151,7 @@ public class ElasticsearchProperties {
     return socketTimeout;
   }
 
-  public void setSocketTimeout(Integer socketTimeout) {
+  public void setSocketTimeout(final Integer socketTimeout) {
     this.socketTimeout = socketTimeout;
   }
 
@@ -162,15 +159,31 @@ public class ElasticsearchProperties {
     return connectTimeout;
   }
 
-  public void setConnectTimeout(Integer connectTimeout) {
+  public void setConnectTimeout(final Integer connectTimeout) {
     this.connectTimeout = connectTimeout;
+  }
+
+  public boolean isHealthCheckEnabled() {
+    return healthCheckEnabled;
+  }
+
+  public void setHealthCheckEnabled(final boolean healthCheckEnabled) {
+    this.healthCheckEnabled = healthCheckEnabled;
   }
 
   public SslProperties getSsl() {
     return ssl;
   }
 
-  public void setSsl(SslProperties ssl) {
+  public void setSsl(final SslProperties ssl) {
     this.ssl = ssl;
+  }
+
+  public List<PluginConfiguration> getInterceptorPlugins() {
+    return interceptorPlugins;
+  }
+
+  public void setInterceptorPlugins(final List<PluginConfiguration> interceptorPlugins) {
+    this.interceptorPlugins = interceptorPlugins;
   }
 }

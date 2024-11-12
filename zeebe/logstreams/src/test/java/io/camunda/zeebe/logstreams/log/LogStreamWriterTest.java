@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.log;
 
@@ -15,11 +15,12 @@ import io.camunda.zeebe.logstreams.impl.log.LoggedEventImpl;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.logstreams.util.LogStreamReaderRule;
 import io.camunda.zeebe.logstreams.util.LogStreamRule;
-import io.camunda.zeebe.logstreams.util.SynchronousLogStream;
 import io.camunda.zeebe.logstreams.util.TestEntry;
+import io.camunda.zeebe.logstreams.util.TestLogStream;
 import io.camunda.zeebe.test.util.asserts.EitherAssert;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -40,7 +41,7 @@ public final class LogStreamWriterTest {
 
   @Before
   public void setUp() {
-    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    final TestLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamWriter();
   }
 
@@ -52,7 +53,7 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldFailToWriteBatchWithoutEvents() {
     // when
-    final var result = writer.tryWrite(List.of());
+    final var result = writer.tryWrite(WriteContext.internal(), List.of());
 
     // then
     EitherAssert.assertThat(result).isLeft().left().isEqualTo(WriteFailure.INVALID_ARGUMENT);
@@ -73,7 +74,10 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldReturnPositionOfLastEvent() {
     // when
-    final long position = writer.tryWrite(List.of(TestEntry.ofKey(1), TestEntry.ofKey(2))).get();
+    final long position =
+        writer
+            .tryWrite(WriteContext.internal(), List.of(TestEntry.ofKey(1), TestEntry.ofKey(2)))
+            .get();
 
     // then
     assertThat(position).isGreaterThan(0);
@@ -131,7 +135,7 @@ public final class LogStreamWriterTest {
     final long firstPosition = tryWrite(TestEntry.ofKey(123L));
 
     // when
-    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    final TestLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamWriter();
     final long secondPosition = tryWrite(TestEntry.ofKey(124L));
 
@@ -150,7 +154,7 @@ public final class LogStreamWriterTest {
     // when
     writer = null;
 
-    final SynchronousLogStream logStream = logStreamRule.getLogStream();
+    final TestLogStream logStream = logStreamRule.getLogStream();
     writer = logStream.newLogStreamWriter();
     final long secondPosition = tryWrite(TestEntry.ofKey(124L));
 
@@ -201,7 +205,8 @@ public final class LogStreamWriterTest {
   @Test
   public void shouldFailToWriteEventWithoutValue() {
     // when
-    final var res = writer.tryWrite(TestEntry.builder().withRecordValue(null).build());
+    final var res =
+        writer.tryWrite(WriteContext.internal(), TestEntry.builder().withRecordValue(null).build());
 
     // then
     EitherAssert.assertThat(res).isLeft();
@@ -217,6 +222,19 @@ public final class LogStreamWriterTest {
         .isNotNull();
 
     return event;
+  }
+
+  @Test
+  public void shouldWriteEventWithTimestampFromClock() {
+    // given
+    logStreamRule.getClock().delegate = () -> Instant.ofEpochMilli(123456789L);
+    final long position = tryWrite(TestEntry.ofDefaults());
+
+    // when
+    final LoggedEvent event = getWrittenEvent(position);
+
+    // then
+    assertThat(event.getTimestamp()).isEqualTo(123456789L);
   }
 
   private List<LoggedEvent> getWrittenEvents(final long position) {
@@ -251,14 +269,15 @@ public final class LogStreamWriterTest {
   private long tryWrite(final LogAppendEntry entry) {
     return Awaitility.await("until dispatcher accepts entry")
         .pollInSameThread()
-        .until(() -> writer.tryWrite(entry), Either::isRight)
+        .until(() -> writer.tryWrite(WriteContext.internal(), entry), Either::isRight)
         .get();
   }
 
   private long tryWrite(final LogAppendEntry entry, final long sourcePosition) {
     return Awaitility.await("until dispatcher accepts entry")
         .pollInSameThread()
-        .until(() -> writer.tryWrite(entry, sourcePosition), Either::isRight)
+        .until(
+            () -> writer.tryWrite(WriteContext.internal(), entry, sourcePosition), Either::isRight)
         .get();
   }
 }

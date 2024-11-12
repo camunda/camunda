@@ -1,33 +1,33 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.webapp.security.oauth;
 
 import static io.camunda.tasklist.webapp.security.oauth.IdentityOAuth2WebConfigurer.SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
+import com.nimbusds.jose.JOSEObjectType;
+import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import java.util.function.BiConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.core.env.Environment;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class IdentityOAuth2WebConfigurerTest {
@@ -35,6 +35,8 @@ class IdentityOAuth2WebConfigurerTest {
   @Mock private Environment environment;
 
   @Mock private IdentityConfiguration identityConfiguration;
+
+  @Mock private IdentityJwt2AuthenticationTokenConverter jwtConverter;
 
   @InjectMocks private IdentityOAuth2WebConfigurer webConfigurer;
 
@@ -59,7 +61,47 @@ class IdentityOAuth2WebConfigurerTest {
     webConfigurer.configure(httpSecurity);
 
     // then
-    verify(httpSecurity, times(1)).oauth2ResourceServer(any());
+    // then
+    final var oauth2ResourceServerCustomizer =
+        captureFrom(
+            httpSecurity,
+            Customizer.class,
+            (o, t) -> {
+              try {
+                o.oauth2ResourceServer(t);
+              } catch (final Exception e) {
+                fail(e);
+              }
+            });
+    final var serverConfigurer = mock(OAuth2ResourceServerConfigurer.class);
+    when(serverConfigurer.authenticationEntryPoint(any())).thenReturn(serverConfigurer);
+    oauth2ResourceServerCustomizer.customize(serverConfigurer);
+    final var jwtCustomizer =
+        captureFrom(serverConfigurer, Customizer.class, OAuth2ResourceServerConfigurer::jwt);
+    final OAuth2ResourceServerConfigurer<HttpSecurity>.JwtConfigurer jwtConfigurer =
+        mock(OAuth2ResourceServerConfigurer.JwtConfigurer.class);
+    when(jwtConfigurer.jwtAuthenticationConverter(jwtConverter)).thenReturn(jwtConfigurer);
+    jwtCustomizer.customize(jwtConfigurer);
+
+    final JwtDecoder jwtDecoder =
+        captureFrom(
+            jwtConfigurer, JwtDecoder.class, OAuth2ResourceServerConfigurer.JwtConfigurer::decoder);
+    assertThat(jwtDecoder).isInstanceOf(NimbusJwtDecoder.class);
+
+    final NimbusJwtDecoder nimbusJwtDecoder = (NimbusJwtDecoder) jwtDecoder;
+
+    // Use reflection to verify JWSTypeVerifier configuration
+    final var processor = ReflectionTestUtils.getField(nimbusJwtDecoder, "jwtProcessor");
+    final var jwsTypeVerifier = ReflectionTestUtils.invokeMethod(processor, "getJWSTypeVerifier");
+
+    assertThat(jwsTypeVerifier).isNotNull();
+    assertThat(jwsTypeVerifier).isInstanceOf(DefaultJOSEObjectTypeVerifier.class);
+
+    final var joseVerifier = (DefaultJOSEObjectTypeVerifier<?>) jwsTypeVerifier;
+
+    // Ensure that both jwt and at+jwt types are being verified
+    assertThat(joseVerifier.getAllowedTypes())
+        .containsExactlyInAnyOrder(new JOSEObjectType("jwt"), new JOSEObjectType("at+jwt"));
   }
 
   @Test
@@ -101,5 +143,12 @@ class IdentityOAuth2WebConfigurerTest {
         (String) (ReflectionTestUtils.invokeGetterMethod(webConfigurer, "getJwkSetUriProperty"));
 
     assertThat(result).isEqualTo("http://localhost:1111");
+  }
+
+  private <O, T> T captureFrom(
+      final O from, final Class<T> tClass, final BiConsumer<O, T> consumer) {
+    final var argumentCaptor = ArgumentCaptor.forClass(tClass);
+    consumer.accept(verify(from, times(1)), argumentCaptor.capture());
+    return argumentCaptor.getValue();
   }
 }

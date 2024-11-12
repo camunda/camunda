@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>operate-qa</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
   </parent>
   <artifactId>operate-qa-util</artifactId>
 
@@ -18,6 +18,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
     </dependency>
 
     <dependency>
@@ -125,6 +130,11 @@
       <groupId>com.github.docker-java</groupId>
       <artifactId>docker-java-api</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -135,6 +145,7 @@
         <configuration>
           <ignoredUsedUndeclaredDependencies>
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
+            <dependency>io.camunda:zeebe-client-java</dependency>
           </ignoredUsedUndeclaredDependencies>
         </configuration>
       </plugin>

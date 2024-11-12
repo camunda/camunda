@@ -2,14 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.camunda.zeebe.broker.exporter.metrics.MetricsExporter;
-import io.camunda.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.camunda.zeebe.broker.system.configuration.backpressure.LimitCfg;
 import io.camunda.zeebe.util.Environment;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,7 +25,8 @@ public class BrokerCfg {
   private Map<String, ExporterCfg> exporters = new HashMap<>();
   private ExportingCfg exporting = new ExportingCfg();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
-  private BackpressureCfg backpressure = new BackpressureCfg();
+  private FlowControlCfg flowControl = new FlowControlCfg();
+  private LimitCfg backpressure = new LimitCfg();
   private ProcessingCfg processingCfg = new ProcessingCfg();
 
   private ExperimentalCfg experimental = new ExperimentalCfg();
@@ -49,6 +50,7 @@ public class BrokerCfg {
     data.init(this, brokerBase);
     exporters.values().forEach(e -> e.init(this, brokerBase));
     gateway.init(this, brokerBase);
+    flowControl.init(this, brokerBase);
     backpressure.init(this, brokerBase);
     processingCfg.init(this, brokerBase);
     experimental.init(this, brokerBase);
@@ -117,11 +119,19 @@ public class BrokerCfg {
     return this;
   }
 
-  public BackpressureCfg getBackpressure() {
+  public FlowControlCfg getFlowControl() {
+    return flowControl;
+  }
+
+  public void setFlowControl(final FlowControlCfg flowControl) {
+    this.flowControl = flowControl;
+  }
+
+  public LimitCfg getBackpressure() {
     return backpressure;
   }
 
-  public BrokerCfg setBackpressure(final BackpressureCfg backpressure) {
+  public BrokerCfg setBackpressure(final LimitCfg backpressure) {
     this.backpressure = backpressure;
     return this;
   }
@@ -167,6 +177,8 @@ public class BrokerCfg {
         + exporting
         + ", gateway="
         + gateway
+        + ", flowControl="
+        + flowControl
         + ", backpressure="
         + backpressure
         + ", processingCfg="

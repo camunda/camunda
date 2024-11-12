@@ -1,37 +1,22 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllFinishedRequest;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
-import static io.camunda.operate.schema.templates.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.IncidentTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.ProcessInstanceDependant;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
@@ -43,6 +28,12 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -90,10 +81,11 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
-  private Random random = new Random();
+  private final Random random = new Random();
 
   private DateTimeFormatter dateTimeFormatter;
 
+  @Override
   @Before
   public void before() {
     super.before();
@@ -159,7 +151,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     };
   }
 
-  protected void createOperations(List<Long> ids1) {
+  protected void createOperations(final List<Long> ids1) {
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();
     query.setIds(CollectionUtil.toSafeListOfStrings(ids1));
     final CreateBatchOperationRequestDto batchOperationRequest =
@@ -168,7 +160,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
   }
 
-  private void deployProcessWithOneActivity(String processId, String activityId) {
+  private void deployProcessWithOneActivity(final String processId, final String activityId) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -179,7 +171,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     deployProcess(process, processId + ".bpmn");
   }
 
-  private void assertInstancesInCorrectIndex(int instancesCount, Instant endDate)
+  private void assertInstancesInCorrectIndex(final int instancesCount, final Instant endDate)
       throws IOException {
     final List<Long> ids = assertProcessInstanceIndex(instancesCount, endDate);
     for (final ProcessInstanceDependant template : processInstanceDependantTemplates) {
@@ -194,7 +186,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     }
   }
 
-  private List<Long> assertProcessInstanceIndex(int instancesCount, Instant endDate)
+  private List<Long> assertProcessInstanceIndex(final int instancesCount, final Instant endDate)
       throws IOException {
     final String destinationIndexName =
         archiver.getDestinationIndexName(
@@ -226,11 +218,11 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
   }
 
   private void assertDependentIndex(
-      String mainIndexName,
-      String idFieldName,
-      List<Long> ids,
-      Instant endDate,
-      boolean ignoreAbsentIndex)
+      final String mainIndexName,
+      final String idFieldName,
+      final List<Long> ids,
+      final Instant endDate,
+      final boolean ignoreAbsentIndex)
       throws IOException {
     final String destinationIndexName;
     try {
@@ -243,7 +235,7 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
       final List<Long> idsFromEls =
           testSearchRepository.searchIds(destinationIndexName, idFieldName, ids, 100);
       assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
-    } catch (ElasticsearchStatusException ex) {
+    } catch (final ElasticsearchStatusException ex) {
       if (!ex.getMessage().contains("index_not_found_exception") || !ignoreAbsentIndex) {
         throw ex;
       }
@@ -251,12 +243,13 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     }
   }
 
-  private void finishInstances(int count, Instant currentTime, String taskId) {
+  private void finishInstances(final int count, final Instant currentTime, final String taskId) {
     pinZeebeTime(currentTime);
     ZeebeTestUtil.completeTask(getClient(), taskId, getWorkerName(), null, count);
   }
 
-  private List<Long> startInstances(String processId, int count, Instant currentTime) {
+  private List<Long> startInstances(
+      final String processId, final int count, final Instant currentTime) {
     assertThat(count).isGreaterThan(0);
     pinZeebeTime(currentTime);
     final List<Long> ids = new ArrayList<>();

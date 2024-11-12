@@ -1,30 +1,12 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.webapp.opensearch.reader;
 
-import static io.camunda.operate.entities.OperationState.LOCKED;
-import static io.camunda.operate.entities.OperationState.SCHEDULED;
-import static io.camunda.operate.schema.templates.OperationTemplate.BATCH_OPERATION_ID;
-import static io.camunda.operate.schema.templates.OperationTemplate.ID;
-import static io.camunda.operate.schema.templates.OperationTemplate.INCIDENT_KEY;
-import static io.camunda.operate.schema.templates.OperationTemplate.PROCESS_INSTANCE_KEY;
-import static io.camunda.operate.schema.templates.OperationTemplate.SCOPE_KEY;
-import static io.camunda.operate.schema.templates.OperationTemplate.TYPE;
-import static io.camunda.operate.schema.templates.OperationTemplate.VARIABLE_NAME;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.constantScore;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.longTerms;
@@ -35,26 +17,37 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate.BATCH_OPERATION_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate.ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate.INCIDENT_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate.SCOPE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate.TYPE;
+import static io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate.VARIABLE_NAME;
+import static io.camunda.webapps.schema.entities.operation.OperationState.LOCKED;
+import static io.camunda.webapps.schema.entities.operation.OperationState.SCHEDULED;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationType;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
-import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.store.opensearch.dsl.AggregationDSL;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,7 +62,6 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   private static final String SCHEDULED_OPERATION = SCHEDULED.toString();
   private static final String LOCKED_OPERATION = LOCKED.toString();
-  @Autowired RichOpenSearchClient richOpenSearchClient;
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private DateTimeFormatter dateTimeFormatter;
@@ -86,7 +78,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
    * @return
    */
   @Override
-  public List<OperationEntity> acquireOperations(int batchSize) {
+  public List<OperationEntity> acquireOperations(final int batchSize) {
     final Query query =
         constantScore(
             or(
@@ -109,7 +101,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   @Override
   public Map<Long, List<OperationEntity>> getOperationsPerProcessInstanceKey(
-      List<Long> processInstanceKeys) {
+      final List<Long> processInstanceKeys) {
     final Map<Long, List<OperationEntity>> result = new HashMap<>();
 
     final Query query =
@@ -132,7 +124,8 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   }
 
   @Override
-  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(String processInstanceId) {
+  public Map<Long, List<OperationEntity>> getOperationsPerIncidentKey(
+      final String processInstanceId) {
     final Map<Long, List<OperationEntity>> result = new HashMap<>();
     final Query query =
         constantScore(and(term(PROCESS_INSTANCE_KEY, processInstanceId), usernameQuery()));
@@ -154,7 +147,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   @Override
   public Map<String, List<OperationEntity>> getUpdateOperationsPerVariableName(
-      Long processInstanceKey, Long scopeKey) {
+      final Long processInstanceKey, final Long scopeKey) {
     final Map<String, List<OperationEntity>> result = new HashMap<>();
     final Query query =
         constantScore(
@@ -179,7 +172,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   }
 
   @Override
-  public List<OperationEntity> getOperationsByProcessInstanceKey(Long processInstanceKey) {
+  public List<OperationEntity> getOperationsByProcessInstanceKey(final Long processInstanceKey) {
     final Query query =
         constantScore(
             and(
@@ -194,7 +187,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   // this query will be extended
   @Override
-  public List<BatchOperationEntity> getBatchOperations(int pageSize) {
+  public List<BatchOperationEntity> getBatchOperations(final int pageSize) {
     final Query query =
         constantScore(
             term(BatchOperationTemplate.USERNAME, userService.getCurrentUser().getUsername()));
@@ -208,7 +201,7 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
   }
 
   @Override
-  public List<OperationDto> getOperationsByBatchOperationId(String batchOperationId) {
+  public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL)
             .query(term(BATCH_OPERATION_ID, batchOperationId));
@@ -220,7 +213,10 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
 
   @Override
   public List<OperationDto> getOperations(
-      OperationType operationType, String processInstanceId, String scopeId, String variableName) {
+      final OperationType operationType,
+      final String processInstanceId,
+      final String scopeId,
+      final String variableName) {
     final var searchRequestBuilder =
         searchRequestBuilder(operationTemplate, ALL)
             .query(
@@ -233,5 +229,23 @@ public class OpensearchOperationReader extends OpensearchAbstractReader implemen
     final List<OperationEntity> operationEntities =
         richOpenSearchClient.doc().scrollValues(searchRequestBuilder, OperationEntity.class);
     return DtoCreator.create(operationEntities, OperationDto.class);
+  }
+
+  public Builder getSearchRequestByIdWithMetadata(final String batchOperationId) {
+    final Query failedOperationQuery = term(OperationTemplate.STATE, OperationState.FAILED.name());
+    final Query completedOperationQuery =
+        term(OperationTemplate.STATE, OperationState.COMPLETED.name());
+    final var searchRequestBuilder =
+        searchRequestBuilder(operationTemplate, ALL)
+            .query(term(BATCH_OPERATION_ID, batchOperationId))
+            .aggregations(
+                OperationTemplate.METADATA_AGGREGATION,
+                AggregationDSL.filtersAggregation(
+                        Map.of(
+                            BatchOperationTemplate.FAILED_OPERATIONS_COUNT, failedOperationQuery,
+                            BatchOperationTemplate.COMPLETED_OPERATIONS_COUNT,
+                                completedOperationQuery))
+                    ._toAggregation());
+    return searchRequestBuilder;
   }
 }

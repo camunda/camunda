@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.incident;
 
@@ -120,7 +120,6 @@ public final class ErrorEventIncidentTest {
         .hasBpmnProcessId(jobEvent.getValue().getBpmnProcessId())
         .hasProcessDefinitionKey(jobEvent.getValue().getProcessDefinitionKey())
         .hasProcessInstanceKey(jobEvent.getValue().getProcessInstanceKey())
-        .hasElementId(jobEvent.getValue().getElementId())
         .hasElementInstanceKey(jobEvent.getValue().getElementInstanceKey())
         .hasVariableScopeKey(jobEvent.getValue().getElementInstanceKey())
         .hasJobKey(jobEvent.getKey());
@@ -202,10 +201,11 @@ public final class ErrorEventIncidentTest {
         .withErrorCode(ERROR_CODE)
         .throwError();
 
+    final String elementIdThrowingIncident = "task-in-subprocess";
     final var jobKey =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task-in-subprocess")
+            .withElementId(elementIdThrowingIncident)
             .getFirst()
             .getKey();
 
@@ -223,7 +223,7 @@ public final class ErrorEventIncidentTest {
             String.format(
                 "Expected to throw an error event with the code '%s', but it was not caught. No error events are available in the scope.",
                 ERROR_CODE))
-        .hasElementId("NO_CATCH_EVENT_FOUND");
+        .hasElementId(elementIdThrowingIncident);
   }
 
   @Test

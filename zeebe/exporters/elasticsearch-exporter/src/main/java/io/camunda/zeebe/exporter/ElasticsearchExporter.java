@@ -2,13 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -17,6 +18,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.ZoneOffset;
@@ -46,11 +48,13 @@ public class ElasticsearchExporter implements Exporter {
 
   private final ElasticsearchExporterMetadata exporterMetadata =
       new ElasticsearchExporterMetadata();
+  private final PluginRepository pluginRepository = new PluginRepository();
 
   private Controller controller;
   private ElasticsearchExporterConfiguration configuration;
   private ElasticsearchClient client;
   private ElasticsearchRecordCounters recordCounters;
+  private MeterRegistry registry;
 
   private long lastPosition = -1;
   private boolean indexTemplatesCreated;
@@ -63,9 +67,11 @@ public class ElasticsearchExporter implements Exporter {
     log.debug("Exporter configured with {}", configuration);
 
     validate(configuration);
+    pluginRepository.load(configuration.getInterceptorPlugins());
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
     indexTemplatesCreated = false;
+    registry = context.getMeterRegistry();
   }
 
   @Override
@@ -87,18 +93,24 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void close() {
+    if (client != null) {
+      try {
+        flush();
+        updateLastExportedPosition();
+      } catch (final Exception e) {
+        log.warn("Failed to flush records before closing exporter.", e);
+      }
 
-    try {
-      flush();
-      updateLastExportedPosition();
-    } catch (final Exception e) {
-      log.warn("Failed to flush records before closing exporter.", e);
+      try {
+        client.close();
+      } catch (final Exception e) {
+        log.warn("Failed to close elasticsearch client", e);
+      }
     }
-
     try {
-      client.close();
+      pluginRepository.close();
     } catch (final Exception e) {
-      log.warn("Failed to close elasticsearch client", e);
+      log.warn("Failed to close plugin repository", e);
     }
 
     log.info("Exporter closed");
@@ -113,20 +125,15 @@ public class ElasticsearchExporter implements Exporter {
     }
 
     final var recordSequence = recordCounters.getNextRecordSequence(record);
-    client.index(record, recordSequence);
+    final var isRecordIndexedToBatch = client.index(record, recordSequence);
+    if (isRecordIndexedToBatch) {
+      recordCounters.updateRecordCounters(record, recordSequence);
+    }
     lastPosition = record.getPosition();
 
     if (client.shouldFlush()) {
       flush();
-      // Update the record counters only after the flush was successful. If the synchronous flush
-      // fails then the exporter will be invoked with the same record again.
-      recordCounters.updateRecordCounters(record, recordSequence);
       updateLastExportedPosition();
-    } else {
-      // If the exporter doesn't flush synchronously then it can update the record counters
-      // immediately. If the asynchronous flush fails then it will retry only the flush operation
-      // with the records in the pending bulk request.
-      recordCounters.updateRecordCounters(record, recordSequence);
     }
   }
 
@@ -180,7 +187,10 @@ public class ElasticsearchExporter implements Exporter {
 
   // TODO: remove this and instead allow client to be inject-able for testing
   protected ElasticsearchClient createClient() {
-    return new ElasticsearchClient(configuration);
+    return new ElasticsearchClient(
+        configuration,
+        registry,
+        RestClientFactory.of(configuration, pluginRepository.asRequestInterceptor()));
   }
 
   private void flushAndReschedule() {
@@ -332,6 +342,16 @@ public class ElasticsearchExporter implements Exporter {
       }
       if (index.compensationSubscription) {
         createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION);
+      }
+      if (index.messageCorrelation) {
+        createValueIndexTemplate(ValueType.MESSAGE_CORRELATION);
+      }
+      if (index.user) {
+        createValueIndexTemplate(ValueType.USER);
+      }
+
+      if (index.authorization) {
+        createValueIndexTemplate(ValueType.AUTHORIZATION);
       }
     }
 

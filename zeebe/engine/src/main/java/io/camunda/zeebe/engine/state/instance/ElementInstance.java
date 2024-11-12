@@ -2,20 +2,25 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import java.util.Iterator;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public final class ElementInstance extends UnpackedObject implements DbValue {
@@ -39,12 +44,16 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
       new ObjectProperty<>("elementRecord", new IndexedRecord());
   private final IntegerProperty activeSequenceFlowsProp =
       new IntegerProperty("activeSequenceFlows", 0);
+  private final ArrayProperty<StringValue> activeSequenceFlowIdsProp =
+      new ArrayProperty<>("activeSequenceFlowIds", StringValue::new);
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1L);
   private final IntegerProperty executionListenerIndexProp =
       new IntegerProperty("executionListenerIndex", 0);
+  private final ObjectProperty<TaskListenerIndicesRecord> taskListenerIndicesRecordProp =
+      new ObjectProperty<>("taskListenerIndicesRecord", new TaskListenerIndicesRecord());
 
   public ElementInstance() {
-    super(13);
+    super(15);
     declareProperty(parentKeyProp)
         .declareProperty(childCountProp)
         .declareProperty(childActivatedCountProp)
@@ -56,8 +65,10 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
         .declareProperty(calledChildInstanceKeyProp)
         .declareProperty(recordProp)
         .declareProperty(activeSequenceFlowsProp)
+        .declareProperty(activeSequenceFlowIdsProp)
         .declareProperty(userTaskKeyProp)
-        .declareProperty(executionListenerIndexProp);
+        .declareProperty(executionListenerIndexProp)
+        .declareProperty(taskListenerIndicesRecordProp);
   }
 
   public ElementInstance(
@@ -210,7 +221,7 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
     if (getActiveSequenceFlows() > 0) {
       activeSequenceFlowsProp.decrement();
       // This should never happen, but we should fix this in a better way
-      // https://github.com/camunda/zeebe/issues/9528
+      // https://github.com/camunda/camunda/issues/9528
       //    if (decrement < 0) {
       //      throw new IllegalStateException(
       //          "Not expected to have an active sequence flow count lower then zero!");
@@ -220,6 +231,20 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
 
   public void incrementActiveSequenceFlows() {
     activeSequenceFlowsProp.increment();
+  }
+
+  public void addActiveSequenceFlowId(final DirectBuffer sequenceFlowId) {
+    activeSequenceFlowIdsProp.add().wrap(sequenceFlowId);
+  }
+
+  public void removeActiveSequenceFlowId(final DirectBuffer sequenceFlowId) {
+    final Iterator<StringValue> iterator = activeSequenceFlowIdsProp.iterator();
+    while (iterator.hasNext()) {
+      if (iterator.next().getValue().equals(sequenceFlowId)) {
+        iterator.remove();
+        return;
+      }
+    }
   }
 
   public void resetActiveSequenceFlows() {
@@ -243,6 +268,37 @@ public final class ElementInstance extends UnpackedObject implements DbValue {
   }
 
   public void resetExecutionListenerIndex() {
-    executionListenerIndexProp.setValue(0);
+    executionListenerIndexProp.reset();
+  }
+
+  public Integer getTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+    return taskListenerIndicesRecordProp.getValue().getTaskListenerIndex(eventType);
+  }
+
+  public void incrementTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+    taskListenerIndicesRecordProp.getValue().incrementTaskListenerIndex(eventType);
+  }
+
+  public void resetTaskListenerIndex(ZeebeTaskListenerEventType eventType) {
+    taskListenerIndicesRecordProp.getValue().resetTaskListenerIndex(eventType);
+  }
+
+  public void resetTaskListenerIndices() {
+    taskListenerIndicesRecordProp.getValue().reset();
+  }
+
+  /**
+   * Returns a list of currently active sequence flow ids. If the same sequence flow is active
+   * multiple times, it will appear in the list multiple times. I.e. this can be used to track
+   * virtual sequence flow instances. Virtual, because there are no sequence flow instances in
+   * Zeebe.
+   *
+   * <p>Warning, this method should not be used for process instances created before 8.6. It may
+   * provide incorrect information for such process instances.
+   *
+   * @since 8.6
+   */
+  public List<DirectBuffer> getActiveSequenceFlowIds() {
+    return activeSequenceFlowIdsProp.stream().map(StringValue::getValue).toList();
   }
 }

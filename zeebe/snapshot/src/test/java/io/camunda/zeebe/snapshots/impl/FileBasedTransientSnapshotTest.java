@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots.impl;
 
@@ -295,9 +295,9 @@ public class FileBasedTransientSnapshotTest {
 
     // then
     assertThat(secondSnapshot).as("did persist the same snapshot twice").isEqualTo(firstSnapshot);
-    assertThat(secondSnapshot.getChecksum())
+    assertThat(secondSnapshot.getChecksums().sameChecksums(firstSnapshot.getChecksums()))
         .as("the content of the snapshot remains unchanged")
-        .isEqualTo(firstSnapshot.getChecksum());
+        .isTrue();
     assertThat(snapshotsDir)
         .asInstanceOf(DirectoryAssert.factory())
         .as("snapshots directory only contains snapshot %s", firstSnapshot.getId())
@@ -321,7 +321,7 @@ public class FileBasedTransientSnapshotTest {
             SnapshotMetadata::exportedPosition,
             SnapshotMetadata::lastFollowupEventPosition,
             SnapshotMetadata::version)
-        .containsExactly(3L, 4L, 100L, FileBasedSnapshotStore.VERSION);
+        .containsExactly(3L, 4L, 100L, FileBasedSnapshotStoreImpl.VERSION);
   }
 
   @Test
@@ -339,7 +339,9 @@ public class FileBasedTransientSnapshotTest {
         .describedAs("Metadata file is persisted in snapshot path")
         .isDirectoryContaining(
             path ->
-                path.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
+                path.getFileName()
+                    .toString()
+                    .equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
   }
 
   private boolean writeSnapshot(final Path path) {
@@ -358,7 +360,7 @@ public class FileBasedTransientSnapshotTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) throws IOException {
-    final var store = new FileBasedSnapshotStore(1, root);
+    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
     scheduler.submitActor(store);
     return store;
   }

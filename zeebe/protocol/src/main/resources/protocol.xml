@@ -18,6 +18,7 @@
       <validValue name="INVALID_DEPLOYMENT_PARTITION">6</validValue>
       <validValue name="PROCESS_NOT_FOUND">7</validValue>
       <validValue name="RESOURCE_EXHAUSTED">8</validValue>
+      <validValue name="PARTITION_UNAVAILABLE">9</validValue>
     </enum>
 
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">
@@ -54,8 +55,17 @@
       <validValue name="USER_TASK">37</validValue>
       <validValue name="PROCESS_INSTANCE_MIGRATION">38</validValue>
       <validValue name="COMPENSATION_SUBSCRIPTION">39</validValue>
+      <validValue name="MESSAGE_CORRELATION">40</validValue>
+      <validValue name="USER">41</validValue>
+      <validValue name="CLOCK">42</validValue>
+      <validValue name="AUTHORIZATION">43</validValue>
+      <validValue name="ROLE">44</validValue>
+      <validValue name="TENANT">45</validValue>
+      <validValue name="GROUP">46</validValue>
+      <validValue name="MAPPING">47</validValue>
 
       <!-- Management records / record not related to process automation -->
+      <validValue name="SCALE">253</validValue>
       <validValue name="CHECKPOINT">254</validValue>
     </enum>
 
@@ -72,6 +82,7 @@
       <validValue name="INVALID_STATE">3</validValue>
       <validValue name="PROCESSING_ERROR">4</validValue>
       <validValue name="EXCEEDED_BATCH_RECORD_SIZE">5</validValue>
+      <validValue name="UNAUTHORIZED">6</validValue>
     </enum>
 
     <enum name="PartitionRole" encodingType="uint8">
@@ -106,6 +117,8 @@
     <field name="key" id="4" type="uint64"/>
     <field name="valueType" id="5" type="ValueType"/>
     <field name="intent" id="6" type="uint8"/>
+    <!-- populated when the client passes an operation reference to the gateway-->
+    <field name="operationReference" id="9" type="uint64" presence="optional" sinceVersion="5"/>
     <data name="value" id="7" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->
     <data name="authorization" id="8" type="varDataEncoding" sinceVersion="4"/>
@@ -149,6 +162,8 @@
     <field name="recordVersion" id="10" type="uint16" sinceVersion="3" presence="optional"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->
     <field name="rejectionType" id="7" type="RejectionType"/>
+    <!-- populated when the client passes an operation reference to the gateway-->
+    <field name="operationReference" id="12" type="uint64" presence="optional" sinceVersion="5"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
     <!-- populated when RecordType is COMMAND -->

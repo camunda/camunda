@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.webapp.security;
 
@@ -25,27 +16,46 @@ import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.WebSecurityProperties;
 import jakarta.json.Json;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 public abstract class BaseWebConfigurer {
 
-  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+  protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  @Autowired protected OperateProperties operateProperties;
+  protected OperateProperties operateProperties;
+  OperateProfileService errorMessageService;
+  final CookieCsrfTokenRepository cookieCsrfTokenRepository = new CookieCsrfTokenRepository();
+  private final WebSecurityProperties webSecurityProperties;
 
-  @Autowired OperateProfileService errorMessageService;
+  public BaseWebConfigurer(
+      final OperateProperties operateProperties, final OperateProfileService errorMessageService) {
+    this.operateProperties = operateProperties;
+    this.errorMessageService = errorMessageService;
+    webSecurityProperties = operateProperties.getWebSecurity();
+  }
 
   public static void sendJSONErrorMessage(final HttpServletResponse response, final String message)
       throws IOException {
@@ -63,7 +73,35 @@ public abstract class BaseWebConfigurer {
   }
 
   @Bean
-  public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+  @Order(Ordered.HIGHEST_PRECEDENCE)
+  public SecurityFilterChain actuatorFilterChain(final HttpSecurity http) throws Exception {
+    http.securityMatchers(
+        (matchers) -> {
+          matchers
+              // all actuator endpoints
+              .requestMatchers(EndpointRequest.toAnyEndpoint())
+              // allows forwarding the failure when request failed
+              // for example when an endpoint could not be found
+              .requestMatchers("/error");
+        });
+
+    return configureActuatorSecurity(http)
+        .authorizeHttpRequests(spec -> spec.anyRequest().permitAll())
+        .build();
+  }
+
+  private HttpSecurity configureActuatorSecurity(final HttpSecurity http) throws Exception {
+    return http.csrf(CsrfConfigurer::disable)
+        .cors(CorsConfigurer::disable)
+        .logout(LogoutConfigurer::disable)
+        .formLogin(FormLoginConfigurer::disable)
+        .httpBasic(HttpBasicConfigurer::disable)
+        .anonymous(AnonymousConfigurer::disable);
+  }
+
+  @Bean
+  public SecurityFilterChain filterChain(final HttpSecurity http) throws Exception {
+
     final var authenticationManagerBuilder =
         http.getSharedObject(AuthenticationManagerBuilder.class);
 
@@ -75,14 +113,37 @@ public abstract class BaseWebConfigurer {
     return http.build();
   }
 
-  protected void applySecurityHeadersSettings(HttpSecurity http) throws Exception {
+  protected void applySecurityHeadersSettings(final HttpSecurity http) throws Exception {
     final WebSecurityProperties webSecurityConfig = operateProperties.getWebSecurity();
-    http.headers()
-        .contentSecurityPolicy(webSecurityConfig.getContentSecurityPolicy())
-        .and()
-        .httpStrictTransportSecurity()
-        .maxAgeInSeconds(webSecurityConfig.getHttpStrictTransportSecurityMaxAgeInSeconds())
-        .includeSubDomains(webSecurityConfig.getHttpStrictTransportSecurityIncludeSubDomains());
+
+    final String policyDirectives = getContentSecurityPolicy();
+
+    http.headers(
+        headers -> {
+          headers
+              .contentSecurityPolicy(
+                  cps -> {
+                    cps.policyDirectives(policyDirectives);
+                  })
+              .httpStrictTransportSecurity(
+                  sts -> {
+                    sts.maxAgeInSeconds(
+                            webSecurityConfig.getHttpStrictTransportSecurityMaxAgeInSeconds())
+                        .includeSubDomains(
+                            webSecurityConfig.getHttpStrictTransportSecurityIncludeSubDomains());
+                  });
+        });
+  }
+
+  protected String getContentSecurityPolicy() {
+    if (operateProperties.getCloud().getClusterId() == null) {
+      return (webSecurityProperties.getContentSecurityPolicy() == null)
+          ? webSecurityProperties.DEFAULT_SM_SECURITY_POLICY
+          : webSecurityProperties.getContentSecurityPolicy();
+    }
+    return (webSecurityProperties.getContentSecurityPolicy() == null)
+        ? webSecurityProperties.DEFAULT_SAAS_SECURITY_POLICY
+        : webSecurityProperties.getContentSecurityPolicy();
   }
 
   protected void applySecurityFilterSettings(final HttpSecurity http) throws Exception {
@@ -90,8 +151,13 @@ public abstract class BaseWebConfigurer {
   }
 
   private void defaultFilterSettings(final HttpSecurity http) throws Exception {
-    http.csrf((csrf) -> csrf.disable())
-        .authorizeRequests(
+    if (operateProperties.isCsrfPreventionEnabled()) {
+      logger.info("CSRF Protection is enabled");
+      configureCSRF(http);
+    } else {
+      http.csrf((csrf) -> csrf.disable());
+    }
+    http.authorizeRequests(
             (authorize) -> {
               authorize
                   .requestMatchers(AUTH_WHITELIST)
@@ -113,7 +179,7 @@ public abstract class BaseWebConfigurer {
                   .logoutUrl(LOGOUT_RESOURCE)
                   .logoutSuccessHandler(this::logoutSuccessHandler)
                   .permitAll()
-                  .deleteCookies(COOKIE_JSESSIONID)
+                  .deleteCookies(COOKIE_JSESSIONID, X_CSRF_TOKEN)
                   .clearAuthentication(true)
                   .invalidateHttpSession(true);
             })
@@ -131,16 +197,22 @@ public abstract class BaseWebConfigurer {
   protected abstract void applyOAuth2Settings(final HttpSecurity http) throws Exception;
 
   protected void logoutSuccessHandler(
-      HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
     response.setStatus(NO_CONTENT.value());
   }
 
   protected void failureHandler(
-      HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException ex)
       throws IOException {
     final String requestedUrl =
         request.getRequestURI().substring(request.getContextPath().length());
-    if (requestedUrl.contains("/api/") || requestedUrl.contains("/v1/")) {
+    if (requestedUrl.contains("/api/")
+        || requestedUrl.contains("/v1/")
+        || requestedUrl.contains("/v2/")) {
       sendError(request, response, ex);
     } else {
       storeRequestedUrlAndRedirectToLogin(request, response, requestedUrl);
@@ -159,12 +231,62 @@ public abstract class BaseWebConfigurer {
   }
 
   private void successHandler(
-      HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-    response.setStatus(NO_CONTENT.value());
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
+    addCSRFTokenWhenAvailable(request, response).setStatus(NO_CONTENT.value());
+  }
+
+  protected void configureCSRF(final HttpSecurity http) throws Exception {
+    cookieCsrfTokenRepository.setHeaderName(X_CSRF_TOKEN);
+    cookieCsrfTokenRepository.setCookieHttpOnly(true);
+    cookieCsrfTokenRepository.setCookieName(X_CSRF_TOKEN);
+    http.csrf(
+            (csrf) ->
+                csrf.csrfTokenRepository(cookieCsrfTokenRepository)
+                    .requireCsrfProtectionMatcher(new CsrfRequireMatcher())
+                    .ignoringRequestMatchers(EndpointRequest.to(LoggersEndpoint.class)))
+        .addFilterAfter(getCSRFHeaderFilter(), CsrfFilter.class);
+  }
+
+  protected OncePerRequestFilter getCSRFHeaderFilter() {
+    return new OncePerRequestFilter() {
+      @Override
+      protected void doFilterInternal(
+          final HttpServletRequest request,
+          final HttpServletResponse response,
+          final FilterChain filterChain)
+          throws ServletException, IOException {
+        filterChain.doFilter(request, addCSRFTokenWhenAvailable(request, response));
+      }
+    };
+  }
+
+  protected HttpServletResponse addCSRFTokenWhenAvailable(
+      final HttpServletRequest request, final HttpServletResponse response) {
+    if (shouldAddCSRF(request)) {
+      final CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+      if (token != null) {
+        response.setHeader(X_CSRF_TOKEN, token.getToken());
+      }
+    }
+    return response;
+  }
+
+  boolean shouldAddCSRF(final HttpServletRequest request) {
+    final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    final String path = request.getRequestURI();
+    final String method = request.getMethod();
+    return auth != null
+        && auth.isAuthenticated()
+        && (path == null || !path.contains("logout"))
+        && ("GET".equalsIgnoreCase(method) || (path != null && path.contains("login")));
   }
 
   protected void sendError(
-      HttpServletRequest request, HttpServletResponse response, AuthenticationException ex)
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final AuthenticationException ex)
       throws IOException {
     request.getSession().invalidate();
     sendJSONErrorMessage(response, errorMessageService.getMessageByProfileFor(ex));

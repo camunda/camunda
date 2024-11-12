@@ -2,12 +2,16 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -19,7 +23,10 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.Optional;
 
 public final class ProcessInstanceCancelProcessor
     implements TypedRecordProcessor<ProcessInstanceRecord> {
@@ -38,13 +45,17 @@ public final class ProcessInstanceCancelProcessor
   private final TypedResponseWriter responseWriter;
   private final TypedCommandWriter commandWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public ProcessInstanceCancelProcessor(
-      final ProcessingState processingState, final Writers writers) {
+      final ProcessingState processingState,
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     elementInstanceState = processingState.getElementInstanceState();
     responseWriter = writers.response();
     commandWriter = writers.command();
     rejectionWriter = writers.rejection();
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
@@ -80,6 +91,19 @@ public final class ProcessInstanceCancelProcessor
       return false;
     }
 
+    final var request =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+            .addResourceId(elementInstance.getValue().getBpmnProcessId());
+    if (!authCheckBehavior.isAuthorized(request)) {
+      final var errorMessage =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              request.getPermissionType(), request.getResourceType());
+      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+      return false;
+    }
+
     if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
         .isAuthorized(elementInstance.getValue().getTenantId())) {
       rejectionWriter.appendRejection(
@@ -112,17 +136,24 @@ public final class ProcessInstanceCancelProcessor
     return true;
   }
 
-  private long getRootProcessInstanceKey(final long instanceKey) {
+  private long getRootProcessInstanceKey(long instanceKey) {
+    var parentInstanceKey = getParentInstanceKey(instanceKey);
+    while (parentInstanceKey.isPresent()) {
+      instanceKey = parentInstanceKey.get();
+      parentInstanceKey = getParentInstanceKey(instanceKey);
+    }
 
+    return instanceKey;
+  }
+
+  private Optional<Long> getParentInstanceKey(final long instanceKey) {
     final var instance = elementInstanceState.getInstance(instanceKey);
     if (instance != null) {
-
       final var parentProcessInstanceKey = instance.getValue().getParentProcessInstanceKey();
       if (parentProcessInstanceKey > 0) {
-
-        return getRootProcessInstanceKey(parentProcessInstanceKey);
+        return Optional.of(parentProcessInstanceKey);
       }
     }
-    return instanceKey;
+    return Optional.empty();
   }
 }

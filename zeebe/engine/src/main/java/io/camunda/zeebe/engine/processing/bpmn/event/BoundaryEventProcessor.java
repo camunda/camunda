@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.event;
 
@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -23,6 +24,7 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public BoundaryEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -30,6 +32,7 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
     this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -50,15 +53,23 @@ public final class BoundaryEventProcessor implements BpmnElementProcessor<Execut
   @Override
   public Either<Failure, ?> onComplete(
       final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+    return variableMappingBehavior.applyOutputMappings(context, element);
+  }
 
-    return variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 
   @Override
   public void onTerminate(final ExecutableBoundaryEvent element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
 
     incidentBehavior.resolveIncidents(context);
 

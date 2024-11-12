@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterLoadException;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
@@ -19,9 +20,11 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.jar.ExternalJarClassLoader;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.InstantSource;
 import net.bytebuddy.ByteBuddy;
 import net.bytebuddy.dynamic.DynamicType.Unloaded;
 import org.agrona.CloseHelper;
@@ -129,7 +132,13 @@ final class ExternalExporterContainerTest {
     final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
     final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
     final var expectedClassLoader = descriptor.newInstance().getClass().getClassLoader();
-    final var container = new ExporterContainer(descriptor, 0);
+    final var container =
+        new ExporterContainer(
+            descriptor,
+            0,
+            new ExporterInitializationInfo(0, null),
+            new SimpleMeterRegistry(),
+            InstantSource.system());
 
     // when
     container.close();
@@ -141,8 +150,50 @@ final class ExternalExporterContainerTest {
         .isInstanceOf(ExternalJarClassLoader.class);
   }
 
+  @Test
+  void shouldRegisterNewMeterInRegistry(final @TempDir File jarDirectory) throws Exception {
+    // given
+    final var exporterClass = createUnloadedExporter(ExporterWithMetrics.class);
+    final var jarFile = exporterClass.toJar(new File(jarDirectory, "exporter.jar"));
+    final var descriptor = runtime.loadExternalExporter(jarFile, EXPORTER_CLASS_NAME);
+
+    final var registry = new SimpleMeterRegistry();
+
+    final var container =
+        new ExporterContainer(
+            descriptor,
+            0,
+            new ExporterInitializationInfo(0, null),
+            registry,
+            InstantSource.system());
+
+    // when
+    container.configureExporter();
+
+    // then
+    assertThat(registry.getMeters().stream())
+        .filteredOn(meter -> meter.getId().getName().contains("new.counter"))
+        .hasSize(1);
+  }
+
   private Unloaded<TclExporter> createUnloadedExporter() {
-    return new ByteBuddy().subclass(TclExporter.class).name(EXPORTER_CLASS_NAME).make();
+    return createUnloadedExporter(TclExporter.class);
+  }
+
+  private <T extends Exporter> Unloaded<T> createUnloadedExporter(final Class<T> exporterClass) {
+    return new ByteBuddy().subclass(exporterClass).name(EXPORTER_CLASS_NAME).make();
+  }
+
+  public abstract static class ExporterWithMetrics implements Exporter {
+
+    @Override
+    public void configure(final Context context) throws Exception {
+      Exporter.super.configure(context);
+      context.getMeterRegistry().counter("new.counter");
+    }
+
+    @Override
+    public void export(final Record<?> record) {}
   }
 
   // the class must be visible to the generated exporter for ByteBuddy to delegate method invocation

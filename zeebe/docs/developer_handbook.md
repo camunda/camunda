@@ -100,15 +100,15 @@ These configurations options need to be added to the official documentation.
 
 ### Extend Zeebe Process Test
 
-The [Zeebe Process Test (ZPT)](https://github.com/camunda/zeebe-process-test/) library allows you to unit test your Camunda Platform 8 BPMN processes.
-The [RecordStreamLogger](https://github.com/camunda/zeebe-process-test/blob/main/filters/src/main/java/io/camunda/zeebe/process/test/filters/logger/RecordStreamLogger.java) class
+The [Zeebe Process Test (ZPT)](https://github.com/camunda/camunda-process-test/) library allows you to unit test your Camunda Platform 8 BPMN processes.
+The [RecordStreamLogger](https://github.com/camunda/camunda-process-test/blob/main/filters/src/main/java/io/camunda/zeebe/process/test/filters/logger/RecordStreamLogger.java) class
 defines how the supported `ValueType`s' records are logged in tests.
 
 In the previous steps, we've added a new value type. This type needs to be added here to the `valueTypeLoggers`.
 
 ### Add ValueType to supported types
 
-The engine defines a [range of supported value types](https://github.com/camunda/zeebe/blob/main/engine/src/main/java/io/camunda/zeebe/engine/Engine.java#L48-L49) it processes,
+The engine defines a [range of supported value types](https://github.com/camunda/camunda/blob/main/engine/src/main/java/io/camunda/zeebe/engine/Engine.java#L48-L49) it processes,
 in command processing and in replay mode.
 In the previous steps, we've added a new value type. This type needs to be added here to ensure that commands of this type will be processed and events will be replayed.
 Otherwise, brokers will not process related commands and will miss the entity updates that happened in events for the new value type, which leads to data loss.
@@ -195,3 +195,6 @@ docker run --platform=linux/arm64 camunda/zeebe:SNAPSHOT
 
 or using the equivalent [platform property of docker-compose](https://docs.docker.com/compose/compose-file/#platform).
 
+## How to create a new REST endpoint
+
+Follow the [REST endpoint guide](../../docs/rest-controller.md). It will walk you through the required steps to consider.

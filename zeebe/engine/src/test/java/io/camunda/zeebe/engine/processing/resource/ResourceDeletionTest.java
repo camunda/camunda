@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.resource;
 
@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
@@ -44,11 +44,11 @@ import org.junit.Test;
 
 public class ResourceDeletionTest {
 
-  private static final String DRG_SINGLE_DECISION = "/dmn/decision-table.dmn";
+  private static final String DRG_SINGLE_DECISION = "/dmn/decision-table-with-version-tag-v1.dmn";
   private static final String DRG_SINGLE_DECISION_V2 = "/dmn/decision-table_v2.dmn";
   private static final String DRG_MULTIPLE_DECISIONS = "/dmn/drg-force-user.dmn";
   private static final String RESULT_VARIABLE = "result";
-  private static final String FORM = "/form/test-form-1.form";
+  private static final String FORM = "/form/test-form-1-with-version-tag-v1.form";
 
   @Rule public final EngineRule engine = EngineRule.singlePartition();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -251,12 +251,13 @@ public class ResourceDeletionTest {
             .get(0)
             .getProcessDefinitionKey();
     final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var partitionId = Protocol.decodePartitionId(processInstanceKey);
 
     // Note! We don't register the banned instance using an event. You won't see the Error Event in
     // the log!
-    final var bannedInstanceState =
-        (MutableBannedInstanceState) engine.getProcessingState().getBannedInstanceState();
-    bannedInstanceState.banProcessInstance(processInstanceKey);
+    // We need to run banning in a new transaction to avoid corruption of the engine's transaction
+    // when modifying the state from the test thread concurrently to processing.
+    engine.banInstanceInNewTransaction(partitionId, processInstanceKey);
 
     // when
     engine.resourceDeletion().withResourceKey(processDefinitionKey).delete();
@@ -695,7 +696,12 @@ public class ResourceDeletionTest {
   private long deployProcess(final String processId) {
     return engine
         .deployment()
-        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .versionTag("v1.0")
+                .startEvent()
+                .endEvent()
+                .done())
         .deploy()
         .getValue()
         .getProcessesMetadata()
@@ -830,18 +836,22 @@ public class ResourceDeletionTest {
             DecisionRecordValue::getDecisionId,
             DecisionRecordValue::getDecisionName,
             DecisionRecordValue::getVersion,
+            DecisionRecordValue::getVersionTag,
             DecisionRecordValue::getDecisionKey,
             DecisionRecordValue::getDecisionRequirementsId,
             DecisionRecordValue::getDecisionRequirementsKey,
-            DecisionRecordValue::isDuplicate)
+            DecisionRecordValue::isDuplicate,
+            DecisionRecordValue::getDeploymentKey)
         .containsOnly(
             decisionCreatedRecord.getDecisionId(),
             decisionCreatedRecord.getDecisionName(),
             decisionCreatedRecord.getVersion(),
+            decisionCreatedRecord.getVersionTag(),
             decisionCreatedRecord.getDecisionKey(),
             decisionCreatedRecord.getDecisionRequirementsId(),
             decisionCreatedRecord.getDecisionRequirementsKey(),
-            decisionCreatedRecord.isDuplicate());
+            decisionCreatedRecord.isDuplicate(),
+            decisionCreatedRecord.getDeploymentKey());
   }
 
   private void verifyProcessIdWithVersionIsDeleted(final String processId, final int version) {
@@ -866,13 +876,17 @@ public class ResourceDeletionTest {
             ProcessMetadataValue::getBpmnProcessId,
             ProcessMetadataValue::getResourceName,
             ProcessMetadataValue::getVersion,
-            ProcessMetadataValue::getProcessDefinitionKey)
+            ProcessMetadataValue::getVersionTag,
+            ProcessMetadataValue::getProcessDefinitionKey,
+            ProcessMetadataValue::getDeploymentKey)
         .containsOnly(
             tuple(
                 processCreatedRecord.getBpmnProcessId(),
                 processCreatedRecord.getResourceName(),
                 processCreatedRecord.getVersion(),
-                processCreatedRecord.getProcessDefinitionKey()));
+                processCreatedRecord.getVersionTag(),
+                processCreatedRecord.getProcessDefinitionKey(),
+                processCreatedRecord.getDeploymentKey()));
   }
 
   private void verifyInstanceOfProcessWithIdAndVersionIsCompleted(
@@ -1049,13 +1063,17 @@ public class ResourceDeletionTest {
             Form::getFormId,
             Form::getFormKey,
             Form::getVersion,
+            Form::getVersionTag,
             Form::getResourceName,
-            Form::getTenantId)
+            Form::getTenantId,
+            Form::getDeploymentKey)
         .containsOnly(
             formCreatedRecord.getFormId(),
             formCreatedRecord.getFormKey(),
             formCreatedRecord.getVersion(),
+            formCreatedRecord.getVersionTag(),
             formCreatedRecord.getResourceName(),
-            formCreatedRecord.getTenantId());
+            formCreatedRecord.getTenantId(),
+            formCreatedRecord.getDeploymentKey());
   }
 }

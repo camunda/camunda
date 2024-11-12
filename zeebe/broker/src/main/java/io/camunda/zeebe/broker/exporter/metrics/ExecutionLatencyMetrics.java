@@ -2,91 +2,101 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.metrics;
 
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 public class ExecutionLatencyMetrics {
 
-  private static final Histogram PROCESS_INSTANCE_EXECUTION =
-      Histogram.build()
-          .namespace("zeebe")
-          .name("process_instance_execution_time")
-          .help("The execution time of processing a complete process instance")
-          .labelNames("partition")
-          .buckets(0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0, 15.0, 30.0, 45.0, 60.0)
-          .register();
-  private static final Histogram JOB_LIFE_TIME =
-      Histogram.build()
-          .namespace("zeebe")
-          .name("job_life_time")
-          .help("The life time of an job")
-          .labelNames("partition")
-          .buckets(0.10f, 0.2, 0.4, 0.8, 1.6, 3.2, 6.4, 12.8, 25.6, 51.2)
-          .buckets(0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0, 15.0, 30.0, 45.0)
-          .register();
-  private static final Histogram JOB_ACTIVATION_TIME =
-      Histogram.build()
-          .namespace("zeebe")
-          .name("job_activation_time")
-          .help("The time until an job was activated")
-          .labelNames("partition")
-          .buckets(0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1.0, 2.5, 5.0, 10.0, 15.0, 30.0)
-          .register();
-  private static final Gauge CURRENT_CACHED_INSTANCE =
-      Gauge.build()
-          .namespace("zeebe")
-          .name("execution_latency_current_cached_instances")
-          .help(
-              "The current cached instances for counting their execution latency. If only short-lived instances are handled this can be seen or observed as the current active instance count.")
-          .labelNames("partition", "type")
-          .register();
+  private static final Duration[] JOB_LIFE_TIME_BUCKETS =
+      Stream.of(25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000, 45000)
+          .map(Duration::ofMillis)
+          .toArray(Duration[]::new);
+
+  private static final Duration[] JOB_ACTIVATION_TIME_BUCKETS =
+      Stream.of(10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000)
+          .map(Duration::ofMillis)
+          .toArray(Duration[]::new);
+
+  private static final Duration[] PROCESS_INSTANCE_EXECUTION_BUCKETS =
+      Stream.of(50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 10000, 15000, 30000, 45000, 60000)
+          .map(Duration::ofMillis)
+          .toArray(Duration[]::new);
+
+  private final MeterRegistry meterRegistry;
+  private final Map<Integer, AtomicInteger> currentCachedInstanceJobsCount =
+      new ConcurrentHashMap<>();
+  private final Map<Integer, AtomicInteger> currentCacheInstanceProcessInstances =
+      new ConcurrentHashMap<>();
+  private final int partitionId;
+
+  public ExecutionLatencyMetrics() {
+    this(new SimpleMeterRegistry(), 1);
+  }
+
+  public ExecutionLatencyMetrics(final MeterRegistry meterRegistry, final int partitionId) {
+    this.meterRegistry = meterRegistry;
+    this.partitionId = partitionId;
+  }
 
   public void observeProcessInstanceExecutionTime(
-      final int partitionId, final long creationTimeMs, final long completionTimeMs) {
-    PROCESS_INSTANCE_EXECUTION
-        .labels(Integer.toString(partitionId))
-        .observe(latencyInSeconds(creationTimeMs, completionTimeMs));
+      final long creationTimeMs, final long completionTimeMs) {
+    Timer.builder("zeebe.process.instance.execution.time")
+        .description("The execution time of processing a complete process instance")
+        .sla(PROCESS_INSTANCE_EXECUTION_BUCKETS)
+        .register(meterRegistry)
+        .record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
 
-  public void observeJobLifeTime(
-      final int partitionId, final long creationTimeMs, final long completionTimeMs) {
-    JOB_LIFE_TIME
-        .labels(Integer.toString(partitionId))
-        .observe(latencyInSeconds(creationTimeMs, completionTimeMs));
+  public void observeJobLifeTime(final long creationTimeMs, final long completionTimeMs) {
+    Timer.builder("zeebe.job.life.time")
+        .description("The life time of an job")
+        .sla(JOB_LIFE_TIME_BUCKETS)
+        .register(meterRegistry)
+        .record(completionTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
 
-  public void observeJobActivationTime(
-      final int partitionId, final long creationTimeMs, final long activationTimeMs) {
-    JOB_ACTIVATION_TIME
-        .labels(Integer.toString(partitionId))
-        .observe(latencyInSeconds(creationTimeMs, activationTimeMs));
+  public void observeJobActivationTime(final long creationTimeMs, final long activationTimeMs) {
+    Timer.builder("zeebe.job.activation.time")
+        .description("The time until an job was activated")
+        .sla(JOB_ACTIVATION_TIME_BUCKETS)
+        .register(meterRegistry)
+        .record(activationTimeMs - creationTimeMs, TimeUnit.MILLISECONDS);
   }
 
-  public void setCurrentJobsCount(final int partitionId, final int count) {
-    CURRENT_CACHED_INSTANCE.labels(Integer.toString(partitionId), "jobs").set(count);
+  public void setCurrentJobsCount(final int count) {
+    setCurrentCachedInstanceGauge(count, "jobs");
   }
 
-  public void setCurrentProcessInstanceCount(final int partitionId, final int count) {
-    CURRENT_CACHED_INSTANCE.labels(Integer.toString(partitionId), "processInstances").set(count);
+  public void setCurrentProcessInstanceCount(final int count) {
+    setCurrentCachedInstanceGauge(count, "processInstances");
   }
 
-  public Histogram getJobLifeTime() {
-    return JOB_LIFE_TIME;
-  }
+  private void setCurrentCachedInstanceGauge(final int count, final String type) {
+    final var collection =
+        "jobs".equals(type) ? currentCachedInstanceJobsCount : currentCacheInstanceProcessInstances;
 
-  /**
-   * Takes start and end time in milliseconds and calculates the difference (latency) in seconds.
-   *
-   * @param startTimeMs the start time in milliseconds
-   * @param endTimeMs the end time in milliseconds
-   * @return the latency in seconds
-   */
-  private static double latencyInSeconds(final long startTimeMs, final long endTimeMs) {
-    return ((endTimeMs - startTimeMs) / 1000f);
+    collection.putIfAbsent(partitionId, new AtomicInteger());
+    collection.get(partitionId).set(count);
+
+    Gauge.builder(
+            "zeebe.execution.latency.current.cached.instances",
+            () -> collection.get(partitionId).get())
+        .description(
+            "The current cached instances for counting their execution latency. If only short-lived instances are handled this can be seen or observed as the current active instance count.")
+        .tags("type", type)
+        .register(meterRegistry);
   }
 }

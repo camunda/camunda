@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.transport.stream.impl;
 
@@ -350,14 +350,14 @@ final class ClientStreamRequestManager<M extends BufferWriter> {
     //   - RemoteHandlerError
     //   - ErrorResponse.code in [ MALFORMED, INVALID ]
     switch (failure) {
-        // all returned errors are currently unnecessary to retry
+      // all returned errors are currently unnecessary to retry
       case final UnrecoverableException e -> handleUnrecoverableExceptionOnRemove(registration, e);
-        // no point retrying if the remote handler failed to handle our request
+      // no point retrying if the remote handler failed to handle our request
       case final RemoteHandlerFailure e -> handleUnrecoverableExceptionOnRemove(registration, e);
-        // should not happen, since it means the member was removed from the topology, but keep as a
-        // failsafe
+      // should not happen, since it means the member was removed from the topology, but keep as a
+      // failsafe
       case final NoSuchMemberException e -> handleUnrecoverableExceptionOnRemove(registration, e);
-        // essentially happens due to malformed request, no point retrying
+      // essentially happens due to malformed request, no point retrying
       case final ProtocolException e -> handleUnrecoverableExceptionOnRemove(registration, e);
       default -> {
         LOGGER.debug(

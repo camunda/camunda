@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.impl;
 
@@ -50,6 +50,8 @@ import io.camunda.zeebe.stream.util.RecordToWrite;
 import io.camunda.zeebe.stream.util.Records;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.camunda.zeebe.util.exception.RecoverableException;
+import java.io.Closeable;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -221,7 +223,7 @@ public final class StreamProcessorTest {
         .untilAsserted(() -> assertThat(streamPlatform.getStreamProcessor().isFailed()).isTrue());
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/13101")
+  @RegressionTest("https://github.com/camunda/camunda/issues/13101")
   public void shouldUpdateLastProcessPositionEvenWhenProcessingFails() {
     // given
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -241,7 +243,7 @@ public final class StreamProcessorTest {
         .until(() -> streamPlatform.getLastSuccessfulProcessedRecordPosition(), pos -> pos >= 1);
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/pull/13427#issuecomment-1630700316")
+  @RegressionTest("https://github.com/camunda/camunda/pull/13427#issuecomment-1630700316")
   public void shouldUpdateLastProcessPositionEvenWhenProcessingSkippedCommand() {
     // given
     final var defaultRecordProcessor = streamPlatform.getDefaultMockedRecordProcessor();
@@ -386,8 +388,10 @@ public final class StreamProcessorTest {
     streamPlatform.startStreamProcessor();
 
     // when
+    final long operationReference = 1234L;
     streamPlatform.writeBatch(
-        RecordToWrite.command().processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
+        RecordToWrite.command(operationReference)
+            .processInstance(ACTIVATE_ELEMENT, Records.processInstance(1)));
 
     // then
     verify(defaultRecordProcessor, TIMEOUT.times(2)).process(any(), any());
@@ -404,13 +408,29 @@ public final class StreamProcessorTest {
     final var logStreamReader = streamPlatform.getLogStream().newLogStreamReader();
     logStreamReader.seekToFirstEvent();
     final var firstRecord = logStreamReader.next();
-    assertThat(firstRecord.getSourceEventPosition()).isEqualTo(-1);
+    assertThat(firstRecord.getSourceEventPosition())
+        .as("First record should not point to any source events")
+        .isEqualTo(-1);
     final var firstRecordPosition = firstRecord.getPosition();
+
+    final var firstRecordMetadata = new RecordMetadata();
+    firstRecord.readMetadata(firstRecordMetadata);
+    assertThat(firstRecordMetadata.getOperationReference())
+        .as("Record metadata should contain the operation reference")
+        .isEqualTo(operationReference);
 
     await("should write follow up events")
         .untilAsserted(() -> assertThat(logStreamReader.hasNext()).isTrue());
     while (logStreamReader.hasNext()) {
-      assertThat(logStreamReader.next().getSourceEventPosition()).isEqualTo(firstRecordPosition);
+      final LoggedEvent followup = logStreamReader.next();
+      assertThat(followup.getSourceEventPosition())
+          .as("Followup records should point to source event")
+          .isEqualTo(firstRecordPosition);
+      final var followupMetadata = new RecordMetadata();
+      followup.readMetadata(followupMetadata);
+      assertThat(followupMetadata.getOperationReference())
+          .as("Followup records should contain the same operation reference of the initial command")
+          .isEqualTo(operationReference);
     }
   }
 
@@ -537,7 +557,7 @@ public final class StreamProcessorTest {
     }
   }
 
-  @Disabled("Should be enabled when https://github.com/camunda/zeebe/issues/11849 is fixed")
+  @Disabled("Should be enabled when https://github.com/camunda/camunda/issues/11849 is fixed")
   @Test
   public void shouldRunAsyncSchedulingEvenIfProcessingIsBlocked() throws InterruptedException {
     // given
@@ -1396,6 +1416,46 @@ public final class StreamProcessorTest {
     verify(testProcessor, timeout(5000)).process(any(), any());
     Awaitility.await("until command is removed from cache after processing")
         .untilAsserted(() -> assertThat(commandCache.contains(ACTIVATE_ELEMENT, 1)).isFalse());
+  }
+
+  @Test
+  void shouldCloseWhileScheduledTaskIsLoopingOnWrite() throws InterruptedException, IOException {
+    // given -- a scheduled task that wants to write a record
+    final var recovery = new CountDownLatch(1);
+    final var writing = new CountDownLatch(1);
+    final var lifecycleAware = streamPlatform.getMockProcessorLifecycleAware();
+    doAnswer(
+            (invocationOnMock -> {
+              final var context = (ReadonlyStreamProcessorContext) invocationOnMock.getArgument(0);
+              recovery.countDown();
+              context
+                  .getScheduleService()
+                  .runDelayed(
+                      Duration.ZERO,
+                      (taskResultBuilder) -> {
+                        try {
+                          writing.await();
+                        } catch (final InterruptedException e) {
+                          throw new RuntimeException(e);
+                        }
+                        taskResultBuilder.appendCommandRecord(
+                            1, ACTIVATE_ELEMENT, Records.processInstance(1));
+                        return taskResultBuilder.build();
+                      });
+              return invocationOnMock.callRealMethod();
+            }))
+        .when(lifecycleAware)
+        .onRecovered(any());
+
+    streamPlatform.startStreamProcessor();
+    recovery.await(); // make sure that the stream processor started and the task is scheduled.
+
+    // when -- closing the writer so that scheduled task can't write
+    ((Closeable) streamPlatform.getLogStream().newLogStreamWriter()).close();
+    writing.countDown(); // only now allow the scheduled task to write something
+
+    // then -- closing the stream processor is not blocked by the scheduled task retrying the write
+    streamPlatform.getStreamProcessor().closeAsync().join(TIMEOUT_MILLIS, TimeUnit.MILLISECONDS);
   }
 
   @Test

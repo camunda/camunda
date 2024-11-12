@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.webapp.security.sso;
 
@@ -41,6 +32,7 @@ import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.operate.webapp.controllers.OperateIndexController;
 import io.camunda.operate.webapp.rest.AuthenticationRestService;
 import io.camunda.operate.webapp.security.AuthenticationTestable;
 import io.camunda.operate.webapp.security.OperateURIs;
@@ -52,13 +44,14 @@ import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo.SalesPlan;
 import io.camunda.operate.webapp.security.sso.model.ClusterMetadata;
+import io.camunda.webapps.WebappsModuleConfiguration;
+import jakarta.json.Json;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
-import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -97,10 +90,13 @@ import org.springframework.web.client.RestTemplate;
       RolePermissionService.class,
       OperateURIs.class,
       OperateProperties.class,
-      OperateProfileService.class
+      OperateProfileService.class,
+      OperateIndexController.class,
+      WebappsModuleConfiguration.class,
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationIT.CONTEXT_PATH,
+      "spring.web.resources.add-mappings=true",
       "camunda.operate.auth0.clientId=1",
       "camunda.operate.auth0.clientSecret=2",
       "camunda.operate.cloud.organizationId=3",
@@ -109,10 +105,10 @@ import org.springframework.web.client.RestTemplate;
       "camunda.operate.auth0.claimName=claimName",
       "camunda.operate.cloud.permissionaudience=audience",
       "camunda.operate.cloud.permissionurl=https://permissionurl",
-      "camunda.operate.cloud.consoleUrl=https://consoleUrl"
+      "camunda.operate.cloud.consoleUrl=https://consoleUrl",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles(SSO_AUTH_PROFILE)
+@ActiveProfiles({SSO_AUTH_PROFILE, "test"})
 public class AuthenticationIT implements AuthenticationTestable {
 
   public static final SalesPlan OPERATE_TEST_SALESPLAN = new SalesPlan("test");
@@ -128,7 +124,9 @@ public class AuthenticationIT implements AuthenticationTestable {
   @MockBean private AuthenticationController authenticationController;
   @SpyBean private Auth0Service auth0Service;
   @Autowired private BeanFactory beanFactory;
+
   @Autowired private ObjectMapper objectMapper;
+
   @Autowired private ApplicationContext applicationContext;
 
   @MockBean
@@ -137,7 +135,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @MockBean private IndicesCheck probes;
 
-  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
+  private static Tokens tokensWithOrgAsMapFrom(final String claim, final String organization) {
     final String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
     final Map<String, Object> orgMap = Map.of("id", organization);
@@ -160,16 +158,16 @@ public class AuthenticationIT implements AuthenticationTestable {
         5L);
   }
 
-  private static String toEncodedToken(Map map) {
+  private static String toEncodedToken(final Map map) {
     return toBase64(toJSON(map));
   }
 
-  private static String toBase64(String input) {
+  private static String toBase64(final String input) {
     return new String(Base64.getEncoder().encode(input.getBytes()));
   }
 
-  private static String toJSON(Map map) {
-    return new JSONObject(map).toString();
+  private static String toJSON(final Map map) {
+    return Json.createObjectBuilder(map).build().toString();
   }
 
   @Before
@@ -480,7 +478,7 @@ public class AuthenticationIT implements AuthenticationTestable {
         .isEqualTo("http://connectors-url");
   }
 
-  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
+  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
     final HttpHeaders headers = new HttpHeaders();
     headers.add("Cookie", response.getHeaders().get("Set-Cookie").get(0));
     return new HttpEntity<>(new HashMap<>(), headers);
@@ -492,16 +490,17 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThat(response.getBody()).contains("No permission for Operate");
   }
 
-  protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+  protected void assertThatRequestIsRedirectedTo(
+      final ResponseEntity<?> response, final String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
+  private ResponseEntity<String> get(final String path, final HttpEntity<?> requestEntity) {
     return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
   }
 
-  private String urlFor(String path) {
+  private String urlFor(final String path) {
     return String.format("http://localhost:%d%s%s", randomServerPort, CONTEXT_PATH, path);
   }
 

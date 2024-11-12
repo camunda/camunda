@@ -2,36 +2,36 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
+import io.camunda.application.Profile;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
-import io.camunda.zeebe.shared.Profile;
 import java.util.function.Consumer;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 
 /** Represents an instance of the {@link RestoreApp} Spring application. */
 public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
-  private final BrokerProperties config;
+  private final BrokerBasedProperties config;
   private Long backupId;
 
   public TestRestoreApp() {
-    this(new BrokerProperties());
+    this(new BrokerBasedProperties());
   }
 
-  public TestRestoreApp(final BrokerProperties config) {
+  public TestRestoreApp(final BrokerBasedProperties config) {
     super(RestoreApp.class);
     this.config = config;
 
     //noinspection resource
-    withBean("config", config, BrokerProperties.class).withAdditionalProfile(Profile.RESTORE);
+    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.RESTORE);
   }
 
   @Override

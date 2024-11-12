@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.journal.file;
 
@@ -30,6 +30,8 @@ final class SegmentedJournalWriterTest {
 
   private SegmentsManager segments;
   private SegmentedJournalWriter writer;
+  private final SegmentDescriptorSerializer descriptorSerializer =
+      new SegmentDescriptorSerializerSbe();
 
   private void fillWithOnes(final FileChannel channel, final long size) {
     // Fill with ones to verify in tests that the append invalidates next entry by overwriting with
@@ -107,15 +109,17 @@ final class SegmentedJournalWriterTest {
     }
     final var lastIndexInFirstSegment = segments.getLastSegment().index() - 1;
 
-    final SegmentDescriptor descriptorToCorrupt = segments.getFirstSegment().descriptor();
-    final Segment firstSegment = segments.getFirstSegment();
-    descriptorToCorrupt.setLastPosition(firstSegment.descriptor().lastPosition() + 1);
+    final var descriptor = segments.getFirstSegment().descriptor();
+    final var firstSegment = segments.getFirstSegment();
+    final var corruptedDescriptor =
+        descriptor.withUpdatedIndices(
+            descriptor.lastIndex(), firstSegment.descriptor().lastPosition() + 1);
     final var segmentFile = firstSegment.file().file().toPath();
     try (final FileChannel channel =
         FileChannel.open(segmentFile, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
       final MappedByteBuffer buffer =
-          channel.map(MapMode.READ_WRITE, 0, descriptorToCorrupt.length());
-      descriptorToCorrupt.updateIfCurrentVersion(buffer);
+          channel.map(MapMode.READ_WRITE, 0, descriptorSerializer.encodingLength());
+      descriptorSerializer.writeTo(corruptedDescriptor, buffer);
     }
 
     // when

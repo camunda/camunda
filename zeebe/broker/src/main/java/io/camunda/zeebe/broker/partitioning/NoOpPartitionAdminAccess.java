@@ -2,12 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.partitioning;
 
 import io.camunda.zeebe.broker.Loggers;
+import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.Optional;
@@ -60,6 +62,18 @@ public final class NoOpPartitionAdminAccess implements PartitionAdminAccess {
 
   @Override
   public ActorFuture<Void> banInstance(final long processInstanceKey) {
+    logCall();
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<Void> configureFlowControl(final FlowControlCfg flowControlCfg) {
+    logCall();
+    return CompletableActorFuture.completed(null);
+  }
+
+  @Override
+  public ActorFuture<FlowControlLimits> getFlowControlConfiguration() {
     logCall();
     return CompletableActorFuture.completed(null);
   }

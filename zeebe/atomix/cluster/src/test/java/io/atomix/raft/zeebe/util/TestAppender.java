@@ -46,7 +46,7 @@ public class TestAppender implements AppendListener {
   }
 
   @Override
-  public void onCommit(final long index) {
+  public void onCommit(final long index, final long highestPosition) {
     committed.offer(index);
   }
 

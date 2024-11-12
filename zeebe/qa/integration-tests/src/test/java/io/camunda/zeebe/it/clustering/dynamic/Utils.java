@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.clustering.dynamic;
 
@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.Protocol;
@@ -98,13 +99,19 @@ final class Utils {
             .serviceTask("task", t -> t.zeebeJobType(jobType))
             .endEvent()
             .done();
-    zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
+    final var deploymentKey =
+        zeebeClient
+            .newDeployResourceCommand()
+            .addProcessModel(process, "process.bpmn")
+            .send()
+            .join()
+            .getKey();
+    new ZeebeResourcesHelper(zeebeClient).waitUntilDeploymentIsDone(deploymentKey);
 
     final List<Long> createdProcessInstances = new ArrayList<>();
     Awaitility.await("Process instances are created in all partitions")
         // Might throw exception when a partition has not yet received deployment distribution
         .ignoreExceptions()
-        // If deployment is not distributed, it will be retried after 10 seconds
         .timeout(Duration.ofSeconds(20))
         .until(
             () -> {

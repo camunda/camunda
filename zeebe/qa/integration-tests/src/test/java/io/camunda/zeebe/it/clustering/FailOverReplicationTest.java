@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.clustering;
 
@@ -184,7 +184,7 @@ public class FailOverReplicationTest {
   }
 
   @Test
-  // regression test https://github.com/camunda/zeebe/issues/8129
+  // regression test https://github.com/camunda/camunda/issues/8129
   public void shouldNotProduceDuplicatedKeys() {
     // given
     // we produce some records on the old leader
@@ -282,8 +282,9 @@ public class FailOverReplicationTest {
     final var data = brokerCfg.getData();
     data.setSnapshotPeriod(SNAPSHOT_PERIOD);
 
-    data.setLogSegmentSize(DataSize.ofKilobytes(8));
+    final var maxSize = DataSize.ofKilobytes(16);
+    data.setLogSegmentSize(maxSize);
     data.setLogIndexDensity(1);
-    brokerCfg.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(8));
+    brokerCfg.getNetwork().setMaxMessageSize(maxSize);
   }
 }

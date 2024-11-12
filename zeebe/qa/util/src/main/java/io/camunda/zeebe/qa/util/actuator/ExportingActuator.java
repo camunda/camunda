@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.qa.util.actuator;
 
@@ -43,6 +43,13 @@ public interface ExportingActuator {
   @RequestLine("POST /pause")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   void pause();
+
+  /**
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("POST /pause?soft=true")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  void softPause();
 
   /**
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)

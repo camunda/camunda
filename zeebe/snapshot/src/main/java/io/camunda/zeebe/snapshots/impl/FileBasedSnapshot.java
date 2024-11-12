@@ -2,14 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.ImmutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotChunkReader;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
@@ -33,27 +34,27 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   private final Path directory;
   private final Path checksumFile;
-  private final long checksum;
+  private final ImmutableChecksumsSFV checksums;
   private final FileBasedSnapshotId snapshotId;
   private final SnapshotMetadata metadata;
   private final Consumer<FileBasedSnapshot> onSnapshotDeleted;
 
   private final Set<FileBasedSnapshotReservation> reservations = new HashSet<>();
-  private final ActorControl actor;
+  private final ConcurrencyControl actor;
 
   private boolean deleted = false;
 
   FileBasedSnapshot(
       final Path directory,
       final Path checksumFile,
-      final long checksum,
+      final ImmutableChecksumsSFV checksums,
       final FileBasedSnapshotId snapshotId,
       final SnapshotMetadata metadata,
       final Consumer<FileBasedSnapshot> onSnapshotDeleted,
-      final ActorControl actor) {
+      final ConcurrencyControl actor) {
     this.directory = directory;
     this.checksumFile = checksumFile;
-    this.checksum = checksum;
+    this.checksums = checksums;
     this.snapshotId = snapshotId;
     this.metadata = metadata;
     this.onSnapshotDeleted = onSnapshotDeleted;
@@ -86,7 +87,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   @Override
   public SnapshotChunkReader newChunkReader() {
     try {
-      return new FileBasedSnapshotChunkReader(directory, checksum);
+      return new FileBasedSnapshotChunkReader(directory);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -113,8 +114,8 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
-  public long getChecksum() {
-    return checksum;
+  public ImmutableChecksumsSFV getChecksums() {
+    return checksums;
   }
 
   @Override
@@ -142,6 +143,11 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
     return snapshotLocked;
   }
 
+  @Override
+  public boolean isReserved() {
+    return !reservations.isEmpty();
+  }
+
   void delete() {
     // the checksum, as a mark file, should be deleted first
     try {
@@ -164,7 +170,6 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   public int hashCode() {
     int result = getDirectory().hashCode();
     result = 31 * result + checksumFile.hashCode();
-    result = 31 * result + (int) (getChecksum() ^ (getChecksum() >>> 32));
     result = 31 * result + getSnapshotId().hashCode();
     return result;
   }
@@ -180,7 +185,7 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
     final FileBasedSnapshot that = (FileBasedSnapshot) o;
 
-    if (getChecksum() != that.getChecksum()) {
+    if (!getChecksums().sameChecksums(that.getChecksums())) {
       return false;
     }
     if (!getDirectory().equals(that.getDirectory())) {
@@ -199,17 +204,11 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
         + directory
         + ", checksumFile="
         + checksumFile
-        + ", checksum="
-        + checksum
         + ", snapshotId="
         + snapshotId
         + ", metadata="
         + metadata
         + '}';
-  }
-
-  boolean isReserved() {
-    return !reservations.isEmpty();
   }
 
   ActorFuture<Void> removeReservation(final FileBasedSnapshotReservation reservation) {

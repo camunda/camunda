@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.transport;
 
@@ -26,6 +26,7 @@ import io.camunda.zeebe.transport.stream.impl.RemoteStreamerImpl;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.IdGenerator;
 
 public final class TransportFactory {
 
@@ -36,8 +37,10 @@ public final class TransportFactory {
   }
 
   public ServerTransport createServerTransport(
-      final int nodeId, final MessagingService messagingService) {
-    final var atomixServerTransport = new AtomixServerTransport(messagingService, nodeId);
+      final MessagingService messagingService, final IdGenerator requestIdGenerator) {
+
+    final var atomixServerTransport =
+        new AtomixServerTransport(messagingService, requestIdGenerator);
     actorSchedulingService.submitActor(atomixServerTransport);
     return atomixServerTransport;
   }

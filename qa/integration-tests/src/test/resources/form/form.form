@@ -1,0 +1,23 @@
+{
+  "components": [
+    {
+      "label": "Text area",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_0tlacye",
+        "columns": null
+      },
+      "id": "Field_10pjond",
+      "key": "textarea_gxw67"
+    }
+  ],
+  "type": "default",
+  "id": "test",
+  "executionPlatform": "Camunda Cloud",
+  "executionPlatformVersion": "8.5.0",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.23.0"
+  },
+  "schemaVersion": 16
+}

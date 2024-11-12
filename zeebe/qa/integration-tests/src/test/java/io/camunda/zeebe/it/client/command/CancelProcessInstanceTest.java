@@ -2,84 +2,102 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ClientStatusException;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.grpc.Status.Code;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+@ZeebeIntegration
+@AutoCloseResources
 public final class CancelProcessInstanceTest {
 
   private static final String PROCESS_ID = "process";
+  @AutoCloseResource ZeebeClient client;
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @TestZeebe
+  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
-
-  @Rule public BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
-
+  ZeebeResourcesHelper resourcesHelper;
   private long processDefinitionKey;
 
-  @Before
+  @BeforeEach
   public void init() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
     processDefinitionKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess(PROCESS_ID)
                 .startEvent()
                 .serviceTask("task", t -> t.zeebeJobType("test"))
                 .done());
   }
 
-  @Test
-  public void shouldCancelProcessInstance() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCancelProcessInstance(final boolean useRest) {
     // given
-    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
 
     // when
-    CLIENT_RULE.getClient().newCancelInstanceCommand(processInstanceKey).send().join();
+    getCommand(client, useRest, processInstanceKey).send().join();
 
     // then
     ZeebeAssertHelper.assertProcessInstanceCanceled(PROCESS_ID);
   }
 
-  @Test
-  public void shouldRejectIfProcessInstanceIsEnded() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectIfProcessInstanceIsEnded(final boolean useRest) {
     // given
-    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
 
-    CLIENT_RULE.getClient().newCancelInstanceCommand(processInstanceKey).send().join();
+    getCommand(client, useRest, processInstanceKey).send().join();
 
     // when
-    final var command = CLIENT_RULE.getClient().newCancelInstanceCommand(processInstanceKey).send();
+    final var command = getCommand(client, useRest, processInstanceKey).send();
 
     // then
-    assertThatThrownBy(() -> command.join())
-        .isInstanceOf(ClientStatusException.class)
-        .extracting("status.code")
-        .isEqualTo(Code.NOT_FOUND);
+    if (useRest) {
+      assertThatThrownBy(command::join)
+          .isInstanceOf(ProblemException.class)
+          .hasMessageContaining(
+              String.format(
+                  "Expected to cancel a process instance with key '%s', but no such process was found",
+                  processInstanceKey));
+    } else {
+      assertThatThrownBy(command::join)
+          .isInstanceOf(ClientStatusException.class)
+          .extracting("status.code")
+          .isEqualTo(Code.NOT_FOUND);
+    }
   }
 
-  @Test
-  public void shouldRejectIfNotProcessInstanceKey() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectIfNotProcessInstanceKey(final boolean useRest) {
     // given
-    final long processInstanceKey = CLIENT_RULE.createProcessInstance(processDefinitionKey);
+    final long processInstanceKey = resourcesHelper.createProcessInstance(processDefinitionKey);
 
     final long elementInstanceKey =
         RecordingExporter.jobRecords()
@@ -89,12 +107,28 @@ public final class CancelProcessInstanceTest {
             .getElementInstanceKey();
 
     // when
-    final var command = CLIENT_RULE.getClient().newCancelInstanceCommand(elementInstanceKey).send();
+    final var command = getCommand(client, useRest, elementInstanceKey).send();
 
     // then
-    assertThatThrownBy(() -> command.join())
-        .isInstanceOf(ClientStatusException.class)
-        .extracting("status.code")
-        .isEqualTo(Code.NOT_FOUND);
+    if (useRest) {
+      assertThatThrownBy(command::join)
+          .isInstanceOf(ProblemException.class)
+          .hasMessageContaining(
+              String.format(
+                  "Expected to cancel a process instance with key '%s', but no such process was found",
+                  elementInstanceKey));
+    } else {
+      assertThatThrownBy(command::join)
+          .isInstanceOf(ClientStatusException.class)
+          .extracting("status.code")
+          .isEqualTo(Code.NOT_FOUND);
+    }
+  }
+
+  private CancelProcessInstanceCommandStep1 getCommand(
+      final ZeebeClient client, final boolean useRest, final long processIntanceKey) {
+    final CancelProcessInstanceCommandStep1 cancelCommand =
+        client.newCancelInstanceCommand(processIntanceKey);
+    return useRest ? cancelCommand.useRest() : cancelCommand.useGrpc();
   }
 }

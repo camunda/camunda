@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.impl;
 
@@ -11,12 +11,14 @@ import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.stream.api.state.KeyGeneratorControls;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public final class RecordProcessorContextImpl implements RecordProcessorContext {
 
@@ -27,6 +29,7 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   private final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
   private final InterPartitionCommandSender partitionCommandSender;
   private final KeyGenerator keyGenerator;
+  private final ControllableStreamClock clock;
 
   public RecordProcessorContextImpl(
       final int partitionId,
@@ -34,13 +37,15 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
       final ZeebeDb zeebeDb,
       final TransactionContext transactionContext,
       final InterPartitionCommandSender partitionCommandSender,
-      final KeyGeneratorControls keyGeneratorControls) {
+      final KeyGeneratorControls keyGeneratorControls,
+      final ControllableStreamClock clock) {
     this.partitionId = partitionId;
     this.scheduleService = scheduleService;
     this.zeebeDb = zeebeDb;
     this.transactionContext = transactionContext;
     this.partitionCommandSender = partitionCommandSender;
     keyGenerator = keyGeneratorControls;
+    this.clock = Objects.requireNonNull(clock);
   }
 
   @Override
@@ -81,5 +86,10 @@ public final class RecordProcessorContextImpl implements RecordProcessorContext 
   @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
+  }
+
+  @Override
+  public ControllableStreamClock getClock() {
+    return clock;
   }
 }

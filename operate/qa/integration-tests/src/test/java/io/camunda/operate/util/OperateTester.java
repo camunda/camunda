@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.util;
 
@@ -33,9 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.ArchiveBatch;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
-import io.camunda.operate.entities.*;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
@@ -57,6 +46,12 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.security.oauth2.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.entities.operate.EventType;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -219,17 +214,19 @@ public class OperateTester {
   private List<String> processDefinitions;
 
   public OperateTester(
-      ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, SearchTestRule searchTestRule) {
+      final ZeebeClient zeebeClient,
+      final MockMvcTestRule mockMvcTestRule,
+      final SearchTestRule searchTestRule) {
     this.zeebeClient = zeebeClient;
     this.mockMvcTestRule = mockMvcTestRule;
     this.searchTestRule = searchTestRule;
   }
 
   public OperateTester(
-      ZeebeClient zeebeClient,
-      MockMvcTestRule mockMvcTestRule,
-      SearchTestRule searchTestRule,
-      JwtDecoder jwtDecoder) {
+      final ZeebeClient zeebeClient,
+      final MockMvcTestRule mockMvcTestRule,
+      final SearchTestRule searchTestRule,
+      final JwtDecoder jwtDecoder) {
     this(zeebeClient, mockMvcTestRule, searchTestRule);
     this.jwtDecoder = jwtDecoder;
   }
@@ -250,7 +247,8 @@ public class OperateTester {
     return operationReader.getOperationsByBatchOperationId(operation.getId());
   }
 
-  public OperateTester createAndDeploySimpleProcess(String processId, String activityId) {
+  public OperateTester createAndDeploySimpleProcess(
+      final String processId, final String activityId) {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
@@ -263,20 +261,21 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester deployProcess(String... classpathResources) {
+  public OperateTester deployProcess(final String... classpathResources) {
     Validate.notNull(zeebeClient, "ZeebeClient should be set.");
     LOGGER.debug("Deploy process(es) {}", List.of(classpathResources));
     processDefinitionKey = ZeebeTestUtil.deployProcess(zeebeClient, null, classpathResources);
     return this;
   }
 
-  public OperateTester deployDecision(String... classpathResources) {
+  public OperateTester deployDecision(final String... classpathResources) {
     Validate.notNull(zeebeClient, "ZeebeClient should be set.");
     ZeebeTestUtil.deployDecision(zeebeClient, null, classpathResources);
     return this;
   }
 
-  public OperateTester deployProcess(BpmnModelInstance processModel, String resourceName) {
+  public OperateTester deployProcess(
+      final BpmnModelInstance processModel, final String resourceName) {
     processDefinitionKey =
         ZeebeTestUtil.deployProcess(zeebeClient, null, processModel, resourceName);
     return this;
@@ -288,37 +287,40 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester decisionsAreDeployed(int count) {
+  public OperateTester decisionsAreDeployed(final int count) {
     searchTestRule.processAllRecordsAndWait(decisionsAreDeployedCheck, count);
     return this;
   }
 
-  public OperateTester decisionInstancesAreCreated(int count) {
+  public OperateTester decisionInstancesAreCreated(final int count) {
     searchTestRule.processAllRecordsAndWait(decisionInstancesAreCreated, count);
     return this;
   }
 
-  public OperateTester userTasksAreCreated(int count) {
+  public OperateTester userTasksAreCreated(final int count) {
     searchTestRule.processAllRecordsAndWait(userTasksAreCreated, count);
     return this;
   }
 
-  public OperateTester startProcessInstance(String bpmnProcessId) {
+  public OperateTester startProcessInstance(final String bpmnProcessId) {
     LOGGER.debug("Start process instance '{}'", bpmnProcessId);
     return startProcessInstance(bpmnProcessId, null);
   }
 
-  public OperateTester startProcessInstance(String bpmnProcessId, String payload) {
+  public OperateTester startProcessInstance(final String bpmnProcessId, final String payload) {
     return startProcessInstance(bpmnProcessId, null, payload);
   }
 
   public OperateTester startProcessInstance(
-      String bpmnProcessId, Integer processVersion, String payload) {
+      final String bpmnProcessId, final Integer processVersion, final String payload) {
     return startProcessInstance(bpmnProcessId, processVersion, payload, null);
   }
 
   public OperateTester startProcessInstance(
-      String bpmnProcessId, Integer processVersion, String payload, String tenantId) {
+      final String bpmnProcessId,
+      final Integer processVersion,
+      final String payload,
+      final String tenantId) {
     LOGGER.debug(
         "Start process instance '{}' version '{}' with payload '{}' and tenant '{}'",
         bpmnProcessId,
@@ -332,12 +334,12 @@ public class OperateTester {
   }
 
   public OperateTester startProcessInstanceWithVariables(
-      String bpmnProcessId, Map<String, String> nameValuePairs) {
+      final String bpmnProcessId, final Map<String, String> nameValuePairs) {
     try {
       processInstanceKey =
           ZeebeTestUtil.startProcessInstance(
               zeebeClient, bpmnProcessId, objectMapper.writeValueAsString(nameValuePairs));
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new OperateRuntimeException(e);
     }
     return this;
@@ -371,14 +373,15 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester failTask(String taskName, String errorMessage) {
+  public OperateTester failTask(final String taskName, final String errorMessage) {
     jobKey =
         ZeebeTestUtil.failTask(
             zeebeClient, taskName, UUID.randomUUID().toString(), 3, errorMessage);
     return this;
   }
 
-  public OperateTester throwError(String taskName, String errorCode, String errorMessage) {
+  public OperateTester throwError(
+      final String taskName, final String errorCode, final String errorMessage) {
     ZeebeTestUtil.throwErrorInTask(
         zeebeClient, taskName, UUID.randomUUID().toString(), 1, errorCode, errorMessage);
     return this;
@@ -399,7 +402,7 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester resolveIncident(long jobKey, long incidentKey) {
+  public OperateTester resolveIncident(final long jobKey, final long incidentKey) {
     zeebeClient.newUpdateRetriesCommand(jobKey).retries(3).send().join();
     zeebeClient.newResolveIncidentCommand(incidentKey).send().join();
     return this;
@@ -410,56 +413,57 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester incidentsInAnyInstanceAreActive(long count) {
+  public OperateTester incidentsInAnyInstanceAreActive(final long count) {
     searchTestRule.processAllRecordsAndWait(incidentsInAnyInstanceAreActiveCheck, count);
     return this;
   }
 
-  public OperateTester flowNodeIsActive(String activityId) {
+  public OperateTester flowNodeIsActive(final String activityId) {
     searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, activityId);
     LOGGER.debug("FlowNode {} is active.", activityId);
     return this;
   }
 
-  public OperateTester eventIsImported(String jobType) {
+  public OperateTester eventIsImported(final String jobType) {
     searchTestRule.processAllRecordsAndWait(eventIsImportedCheck, processInstanceKey, jobType);
     return this;
   }
 
-  public OperateTester eventIsImportedForFlowNode(String flowNodeId, EventType eventType) {
+  public OperateTester eventIsImportedForFlowNode(
+      final String flowNodeId, final EventType eventType) {
     searchTestRule.processAllRecordsAndWait(
         eventIsImportedForFlowNodeCheck, processInstanceKey, flowNodeId, eventType);
     return this;
   }
 
-  public OperateTester flowNodesAreActive(String activityId, int count) {
+  public OperateTester flowNodesAreActive(final String activityId, final int count) {
     searchTestRule.processAllRecordsAndWait(
         flowNodesAreActiveCheck, processInstanceKey, activityId, count);
     LOGGER.debug("{} FlowNodes {} are active.", count, activityId);
     return this;
   }
 
-  public OperateTester flowNodesExist(String activityId, int count) {
+  public OperateTester flowNodesExist(final String activityId, final int count) {
     searchTestRule.processAllRecordsAndWait(
         flowNodesExistCheck, processInstanceKey, activityId, count);
     LOGGER.debug("{} FlowNodes {} exist.", count, activityId);
     return this;
   }
 
-  public OperateTester flowNodesInAnyInstanceAreActive(String activityId, int count) {
+  public OperateTester flowNodesInAnyInstanceAreActive(final String activityId, final int count) {
     searchTestRule.processAllRecordsAndWait(
         flowNodesInAnyInstanceAreActiveCheck, activityId, count);
     return this;
   }
 
-  public OperateTester flowNodeIsCompleted(String activityId) {
+  public OperateTester flowNodeIsCompleted(final String activityId) {
     searchTestRule.processAllRecordsAndWait(
         flowNodeIsCompletedCheck, processInstanceKey, activityId);
     LOGGER.debug("FlowNode {} is completed.", activityId);
     return this;
   }
 
-  public OperateTester flowNodesAreCompleted(String activityId, int count) {
+  public OperateTester flowNodesAreCompleted(final String activityId, final int count) {
     searchTestRule.processAllRecordsAndWait(
         flowNodesAreCompletedCheck, processInstanceKey, activityId, count);
     LOGGER.debug("{} FlowNodes {} is completed.", count, activityId);
@@ -478,7 +482,7 @@ public class OperateTester {
     return flowNodeInstanceReader.getFlowNodeStates("" + processInstanceKey);
   }
 
-  public FlowNodeStateDto getFlowNodeStateFor(String flowNodeId) {
+  public FlowNodeStateDto getFlowNodeStateFor(final String flowNodeId) {
     return getFlowNodeStates().get(flowNodeId);
   }
 
@@ -504,20 +508,21 @@ public class OperateTester {
     return flowNodesAreTerminated(activityId, count);
   }
 
-  public OperateTester activateJob(String type) {
+  public OperateTester activateJob(final String type) {
     zeebeClient.newActivateJobsCommand().jobType(type).maxJobsToActivate(1).send();
     return this;
   }
 
-  public OperateTester completeTask(String activityId, String jobKey) {
+  public OperateTester completeTask(final String activityId, final String jobKey) {
     return completeTask(activityId, jobKey, null);
   }
 
-  public OperateTester completeTask(String jobKey) {
+  public OperateTester completeTask(final String jobKey) {
     return completeTask(jobKey, jobKey, null);
   }
 
-  public OperateTester completeTask(String activityId, String jobKey, String payload) {
+  public OperateTester completeTask(
+      final String activityId, final String jobKey, final String payload) {
     ZeebeTestUtil.completeTask(zeebeClient, jobKey, TestUtil.createRandomString(10), payload);
     return flowNodeIsCompleted(activityId);
   }
@@ -530,7 +535,8 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester updateVariableOperation(String varName, String varValue) throws Exception {
+  public OperateTester updateVariableOperation(final String varName, final String varValue)
+      throws Exception {
     final CreateOperationRequestDto op =
         new CreateOperationRequestDto(OperationType.UPDATE_VARIABLE);
     op.setVariableName(varName);
@@ -542,7 +548,7 @@ public class OperateTester {
   }
 
   public OperateTester modifyProcessInstanceOperation(
-      List<ModifyProcessInstanceRequestDto.Modification> modifications) throws Exception {
+      final List<ModifyProcessInstanceRequestDto.Modification> modifications) throws Exception {
     final ModifyProcessInstanceRequestDto op =
         new ModifyProcessInstanceRequestDto()
             .setProcessInstanceKey(processInstanceKey + "")
@@ -553,7 +559,8 @@ public class OperateTester {
     return this;
   }
 
-  private MvcResult postOperation(CreateOperationRequestDto operationRequest) throws Exception {
+  private MvcResult postOperation(final CreateOperationRequestDto operationRequest)
+      throws Exception {
     final MockHttpServletRequestBuilder postOperationRequest =
         post(format("/api/process-instances/%s/operation", processInstanceKey))
             .content(mockMvcTestRule.json(operationRequest))
@@ -569,7 +576,7 @@ public class OperateTester {
     return mvcResult;
   }
 
-  private MvcResult postOperation(ModifyProcessInstanceRequestDto operationRequest)
+  private MvcResult postOperation(final ModifyProcessInstanceRequestDto operationRequest)
       throws Exception {
     final MockHttpServletRequestBuilder ope =
         post(format(PROCESS_INSTANCE_URL + "/%s/modify", processInstanceKey))
@@ -606,7 +613,8 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester activateFlowNode(String flowNodeId, final Long ancestorElementInstanceKey) {
+  public OperateTester activateFlowNode(
+      final String flowNodeId, final Long ancestorElementInstanceKey) {
     zeebeClient
         .newModifyProcessInstanceCommand(processInstanceKey)
         .activateElement(flowNodeId, ancestorElementInstanceKey)
@@ -629,7 +637,7 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester cancelFlowNodeInstance(Long flowNodeInstanceId) {
+  public OperateTester cancelFlowNodeInstance(final Long flowNodeInstanceId) {
     zeebeClient
         .newModifyProcessInstanceCommand(processInstanceKey)
         .terminateElement(flowNodeInstanceId)
@@ -652,7 +660,7 @@ public class OperateTester {
     return this;
   }
 
-  private MvcResult postOperation(CreateBatchOperationRequestDto operationRequest)
+  private MvcResult postOperation(final CreateBatchOperationRequestDto operationRequest)
       throws Exception {
     final MockHttpServletRequestBuilder postOperationRequest =
         post(format("/api/process-instances/%s/operation", processInstanceKey))
@@ -702,7 +710,7 @@ public class OperateTester {
       final io.camunda.operate.archiver.ProcessInstancesArchiverJob archiverJob =
           beanFactory.getBean(ProcessInstancesArchiverJob.class);
       archiverJob.archiveBatch(finishedAtDateIds).join();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return this;
     }
     return this;
@@ -719,7 +727,7 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester variableExists(String name) {
+  public OperateTester variableExists(final String name) {
     searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, name);
     return this;
   }
@@ -743,16 +751,17 @@ public class OperateTester {
     return this;
   }
 
-  public OperateTester conditionIsMet(Predicate<Object[]> elsCheck, Object... arguments) {
+  public OperateTester conditionIsMet(
+      final Predicate<Object[]> elsCheck, final Object... arguments) {
     searchTestRule.processAllRecordsAndWait(elsCheck, arguments);
     return this;
   }
 
-  public String getVariable(String name) {
+  public String getVariable(final String name) {
     return getVariable(name, processInstanceKey);
   }
 
-  public String getVariable(String name, Long scopeKey) {
+  public String getVariable(final String name, final Long scopeKey) {
     final List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
     final List<VariableDto> variablesWithGivenName =
         filter(variables, variable -> variable.getName().equals(name));
@@ -772,7 +781,7 @@ public class OperateTester {
     return getVariables(processInstanceKey, scopeKey);
   }
 
-  public boolean hasVariable(String name, String value) {
+  public boolean hasVariable(final String name, final String value) {
     final String variableValue = getVariable(name);
     return value == null ? (variableValue == null) : value.contains(variableValue);
   }
@@ -781,7 +790,7 @@ public class OperateTester {
     return getIncidentsFor(processInstanceKey);
   }
 
-  public List<IncidentDto> getIncidentsFor(Long processInstanceKey) {
+  public List<IncidentDto> getIncidentsFor(final Long processInstanceKey) {
     return incidentReader
         .getIncidentsByProcessInstanceId(String.valueOf(processInstanceKey))
         .getIncidents();
@@ -791,7 +800,7 @@ public class OperateTester {
     return getAllFlowNodeInstances(processInstanceKey);
   }
 
-  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(Long processInstanceKey) {
+  public List<FlowNodeInstanceEntity> getAllFlowNodeInstances(final Long processInstanceKey) {
     return flowNodeInstanceReader.getAllFlowNodeInstances(processInstanceKey);
   }
 
@@ -802,19 +811,19 @@ public class OperateTester {
         .orElseThrow();
   }
 
-  public boolean hasIncidentWithErrorMessage(String errorMessage) {
+  public boolean hasIncidentWithErrorMessage(final String errorMessage) {
     return !filter(getIncidents(), incident -> incident.getErrorMessage().equals(errorMessage))
         .isEmpty();
   }
 
-  public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(String processInstanceId)
-      throws Exception {
+  public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
+      final String processInstanceId) throws Exception {
     return getFlowNodeInstanceOneListFromRest(
         new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId));
   }
 
   public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
-      FlowNodeInstanceQueryDto query) throws Exception {
+      final FlowNodeInstanceQueryDto query) throws Exception {
     final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
     final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
     final Map<String, FlowNodeInstanceResponseDto> response =
@@ -824,10 +833,10 @@ public class OperateTester {
   }
 
   public FlowNodeMetadataDto getFlowNodeMetadataFromRest(
-      String processInstanceId,
-      String flowNodeId,
-      FlowNodeType flowNodeType,
-      String flowNodeInstanceId)
+      final String processInstanceId,
+      final String flowNodeId,
+      final FlowNodeType flowNodeType,
+      final String flowNodeInstanceId)
       throws Exception {
     final FlowNodeMetadataRequestDto request =
         new FlowNodeMetadataRequestDto()
@@ -840,7 +849,8 @@ public class OperateTester {
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
   }
 
-  public ListViewProcessInstanceDto getSingleProcessInstanceByBpmnProcessId(String processId) {
+  public ListViewProcessInstanceDto getSingleProcessInstanceByBpmnProcessId(
+      final String processId) {
     final ListViewRequestDto request =
         createGetAllProcessInstancesRequest(q -> q.setProcessIds(Arrays.asList(processId)));
     request.setPageSize(100);
@@ -850,7 +860,7 @@ public class OperateTester {
     return listViewResponse.getProcessInstances().get(0);
   }
 
-  public List<ListViewProcessInstanceDto> getProcessInstanceByIds(List<Long> ids) {
+  public List<ListViewProcessInstanceDto> getProcessInstanceByIds(final List<Long> ids) {
     final ListViewRequestDto request =
         new ListViewRequestDto(createGetProcessInstancesByIdsQuery(ids));
     request.setPageSize(100);
@@ -909,7 +919,7 @@ public class OperateTester {
     return this;
   }
 
-  private MvcResult postRequest(String requestUrl, Object query) throws Exception {
+  private MvcResult postRequest(final String requestUrl, final Object query) throws Exception {
     final MockHttpServletRequestBuilder request =
         post(requestUrl)
             .content(mockMvcTestRule.json(query))
@@ -923,7 +933,7 @@ public class OperateTester {
         .andReturn();
   }
 
-  public String getItemsPayloadFor(int size) {
+  public String getItemsPayloadFor(final int size) {
     return "{\"items\": ["
         + IntStream.range(0, size).boxed().map(Object::toString).collect(Collectors.joining(","))
         + "]}";
@@ -936,7 +946,7 @@ public class OperateTester {
         List.of(FlowNodeState.ACTIVE, FlowNodeState.COMPLETED, FlowNodeState.TERMINATED));
   }
 
-  public void waitIndexDeletion(String index, int maxWaitMillis) throws IOException {
+  public void waitIndexDeletion(final String index, final int maxWaitMillis) throws IOException {
     final var start = System.currentTimeMillis();
     var deleted = false;
 
@@ -951,7 +961,7 @@ public class OperateTester {
               index, (System.currentTimeMillis() - start) / 1000, deleted));
       try {
         Thread.sleep(10000);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new RuntimeException(e);
       }
     }
@@ -959,11 +969,11 @@ public class OperateTester {
     assertTrue(format("Index %s was not deleted after %s ms!", index, maxWaitMillis), deleted);
   }
 
-  public OperateTester withAuthenticationToken(String token) {
+  public OperateTester withAuthenticationToken(final String token) {
     final Jwt jwt;
     try {
       jwt = jwtDecoder.decode(token);
-    } catch (JwtException e) {
+    } catch (final JwtException e) {
       throw new RuntimeException(e);
     }
     SecurityContextHolder.getContext().setAuthentication(jwtAuthenticationConverter.convert(jwt));

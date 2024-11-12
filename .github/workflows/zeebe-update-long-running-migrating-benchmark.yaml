@@ -1,8 +1,8 @@
 name: Zeebe Long Running Migrating Benchmark
 on:
   workflow_dispatch:
-  release:
-    types: [published]
+  schedule:
+    - cron: "0 0 * * 1" # every Monday at 00:00
 
 jobs:
   fetch-release:
@@ -14,7 +14,7 @@ jobs:
       - name: Fetch latest release
         id: fetch_release
         run: |
-          echo "release-tag=$(curl -s https://api.github.com/repos/camunda/zeebe/releases/latest | jq -r '.tag_name')" >> $GITHUB_OUTPUT
+          echo "release-tag=$(curl -s https://api.github.com/repos/camunda/camunda/releases/latest | jq -r '.tag_name')" >> $GITHUB_OUTPUT
 
   update-long-running-migrating-benchmark:
     name: Update Long Running Migrating Benchmark with mixed load

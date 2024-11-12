@@ -11,8 +11,8 @@ jobs:
   create-benchmark:
     name: Benchmark
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark')
-      || (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
     uses: ./.github/workflows/zeebe-benchmark.yml
     secrets: inherit
     with:
@@ -21,11 +21,12 @@ jobs:
       cluster-region: europe-west1-b
       ref: ${{ github.event.pull_request.head.ref }}
       publish: "comment"
+
   delete-benchmark:
     name: Benchmark Cleanup
     if: >
-      (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark')
-      || (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+      (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark') ||
+      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -35,10 +36,12 @@ jobs:
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.1.0
+      - uses: google-github-actions/get-gke-credentials@v2.2.1
         with:
           cluster_name: zeebe-cluster
           location: europe-west1-b
       - name: Delete benchmarks
+        env:
+          PR_HEAD_REF: ${{github.event.pull_request.head.ref}}
         run: |
-          kubectl delete ns ${{github.event.pull_request.head.ref}}-benchmark
+          kubectl delete ns "$PR_HEAD_REF"-benchmark

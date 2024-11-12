@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.gateway;
 
@@ -204,6 +204,62 @@ public class GatewayHealthProbeIntegrationTest {
             .then()
             .body("components.clusterHealth.status", equalTo("DOWN"));
       }
+    }
+  }
+
+  @Nested
+  final class WithAuthenticationIdentityTest {
+    @TestZeebe(awaitReady = false, awaitCompleteTopology = false) // since there's no broker
+    private final TestStandaloneGateway gateway =
+        new TestStandaloneGateway().withAdditionalProfile("identity-auth");
+
+    @Test
+    void shouldReportReadinessUpWithoutAuthentication() {
+      // given
+      final var gatewayServerSpec =
+          new RequestSpecBuilder()
+              .setContentType(ContentType.JSON)
+              .setBaseUri(gateway.actuatorUri())
+              .addFilter(new ResponseLoggingFilter())
+              .addFilter(new RequestLoggingFilter())
+              .build();
+
+      // when - then
+      // most of the readiness probes use a delayed health indicator which is scheduled at a fixed
+      // rate of 5 seconds, so it may take up to that and a bit more in the worst case once the
+      // gateway finds the broker
+      try {
+        Awaitility.await("wait until status turns UP")
+            .atMost(Duration.ofSeconds(10))
+            .pollInterval(Duration.ofMillis(100))
+            .untilAsserted(
+                () ->
+                    given()
+                        .spec(gatewayServerSpec)
+                        .when()
+                        .get(PATH_READINESS_PROBE)
+                        .then()
+                        .statusCode(200));
+      } catch (final ConditionTimeoutException e) {
+        // it can happen that a single request takes too long and causes awaitility to timeout,
+        // in which case we want to try a second time to run the request without timeout
+        given().spec(gatewayServerSpec).when().get(PATH_READINESS_PROBE).then().statusCode(200);
+      }
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenCallingNoneExistingEndpoint() {
+      // given
+      final var gatewayServerSpec =
+          new RequestSpecBuilder()
+              .setContentType(ContentType.JSON)
+              .setBaseUri(gateway.monitoringUri())
+              .addFilter(new ResponseLoggingFilter())
+              .addFilter(new RequestLoggingFilter())
+              .build();
+
+      // when - then
+      given().spec(gatewayServerSpec).when().get(PATH_TO_HEALTH_PROBE).then().statusCode(404);
     }
   }
 }

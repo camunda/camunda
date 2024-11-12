@@ -17,15 +17,28 @@ package io.camunda.zeebe.exporter.api.context;
 
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.micrometer.core.instrument.MeterRegistry;
+import java.time.InstantSource;
 import org.slf4j.Logger;
 
 /** Encapsulates context associated with the exporter on open. */
 public interface Context {
 
+  MeterRegistry getMeterRegistry();
+
   /**
    * @return pre-configured logger for this exporter
    */
   Logger getLogger();
+
+  /**
+   * A clock that provides the current time. Use this instead of system time to ensure that time is
+   * controllable. Especially relevant when comparing the "current" time against record timestamps.
+   *
+   * <p>This clock is not used by the {@link Controller} to trigger scheduled tasks, these still
+   * rely on uncontrollable system time.
+   */
+  InstantSource clock();
 
   /**
    * @return configuration for this exporter

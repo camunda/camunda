@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.transport.stream.impl;
 
@@ -139,9 +139,9 @@ public final class RemoteStreamTransport<M> extends Actor {
 
     final var cause = error.getCause();
     switch (cause) {
-        // it's possible that the member that was just added has since been removed in between
-        // retries;
-        // if this is the case, it'll be re-added eventually
+      // it's possible that the member that was just added has since been removed in between
+      // retries;
+      // if this is the case, it'll be re-added eventually
       case final NoSuchMemberException e -> {
         LOG.trace(
             """
@@ -151,9 +151,9 @@ public final class RemoteStreamTransport<M> extends Actor {
             e);
         completed.complete(null);
       }
-        // this error means the remote member is not handling requests of this type; either it's not
-        // a gateway, or it's still starting up or shutting down. in either case, restarting streams
-        // makes no sense
+      // this error means the remote member is not handling requests of this type; either it's not
+      // a gateway, or it's still starting up or shutting down. in either case, restarting streams
+      // makes no sense
       case final NoRemoteHandler e -> {
         LOG.trace(
             """
@@ -163,7 +163,7 @@ public final class RemoteStreamTransport<M> extends Actor {
             e);
         completed.complete(null);
       }
-        // no point retrying if the remote handler failed to handle our request
+      // no point retrying if the remote handler failed to handle our request
       case final RemoteHandlerFailure e -> {
         LOG.warn(
             """

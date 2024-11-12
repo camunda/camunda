@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.atomix.raft;
 
@@ -69,6 +69,10 @@ final class ReconfigurationTest {
     return Awaitility.await("Leader is known")
         .until(() -> getLeader(servers), Optional::isPresent)
         .get();
+  }
+
+  private static void awaitNoLeader(final RaftServer... servers) {
+    Awaitility.await("There is no leader").until(() -> getLeader(servers), Optional::isEmpty);
   }
 
   private static Optional<LeaderRole> getLeader(final RaftServer... servers) {
@@ -183,7 +187,7 @@ final class ReconfigurationTest {
     }
 
     @Override
-    public void onCommit(final long index) {
+    public void onCommit(final long index, final long highestPosition) {
       commit.complete(index);
     }
 
@@ -734,14 +738,14 @@ final class ReconfigurationTest {
       m4.shutdown().join();
 
       // when
+      awaitNoLeader(m1);
       // no leader when m2 restarts. So its state is outdated
       final var m2Restarted = createServer(tmp, createMembershipService(id2, id1, id3, id4));
       m2Restarted.bootstrap(id1, id2, id3, id4);
       m2Restarted.forceConfigure(newMembers()).join();
 
       // then
-      awaitLeader(m1, m2);
-      assertThat(m1.getContext().isLeader()).isTrue();
+      awaitLeader(m1, m2Restarted);
     }
 
     @Test

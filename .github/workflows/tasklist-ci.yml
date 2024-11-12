@@ -6,35 +6,58 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - 'main'
-      - 'stable/**'
+      - "main"
+      - "stable/**"
     paths:
-      - '.github/actions/**'
-      - '.github/workflows/tasklist-*'
-      - 'bom/*'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'tasklist/**'
-      - 'tasklist-distro/**'
-      - 'tasklist.Dockerfile'
+      - ".github/actions/**"
+      - ".github/workflows/tasklist-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "tasklist/**"
+      - "tasklist.Dockerfile"
   pull_request:
     paths:
-      - '.github/actions/**'
-      - '.github/workflows/tasklist-*'
-      - 'bom/*'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'tasklist/**'
-      - 'tasklist-distro/**'
-      - 'tasklist.Dockerfile'
+      - ".github/actions/**"
+      - ".github/workflows/tasklist-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "tasklist/**"
+      - "tasklist.Dockerfile"
 
-# This will limit the workflow to 1 concurrent run per ref (branch / PR).
-# If a new commits occurs, the current run will be canceled to save costs.
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Exception for main branch: complete builds for every commit needed for confidenence
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
+  check_changes:
+    name: Check for changes in the client folder
+    runs-on: ubuntu-latest
+    outputs:
+      has_changed_frontend: ${{ steps.filter.outputs.src_changed }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
+      - id: filter
+        run: |
+          echo "src_changed=false" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            # For pull requests, compare the PR base and head commits
+            git fetch origin ${{ github.base_ref }}
+
+            if git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -q 'tasklist/client/'; then
+              echo 'src_changed=true' >> $GITHUB_OUTPUT
+            fi
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            # For pushes, compare the current commit with the previous one
+            if git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -q 'tasklist/client/'; then
+              echo 'src_changed=true' >> $GITHUB_OUTPUT
+            fi
+          fi
   run-build:
     name: run-build
     uses: ./.github/workflows/tasklist-ci-build-reusable.yml
@@ -49,12 +72,8 @@ jobs:
     with:
       branch: ${{ github.head_ref || github.ref_name }}
 
-  test-summary:
-    # Used by the merge queue as a dummy instead of the Zeebe CI in case only Operate files got changed:
-    # https://github.com/orgs/community/discussions/26251
-    # This name is hard-coded in the branch rules; remember to update that if this name changes
-    name: Test summary
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - run: exit 0
+  run-fe-ci:
+    name: run-frontend-tests
+    needs: check_changes
+    if: ${{ needs.check_changes.outputs.has_changed_frontend == 'true' }}
+    uses: ./.github/workflows/tasklist-ci-fe-reusable.yml

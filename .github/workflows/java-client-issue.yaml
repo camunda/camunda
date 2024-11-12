@@ -12,7 +12,7 @@ jobs:
     steps:
       - id: slack-notify
         name: Send slack notification to DevEx
-        uses: slackapi/slack-github-action@v1.25.0
+        uses: slackapi/slack-github-action@v1.27.0
         with:
           # For posting a rich message using Block Kit
           payload: |

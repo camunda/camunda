@@ -7,6 +7,10 @@ zeebe:
           ttlCheckerInterval: 15s
         caches:
           drgCacheCapacity: 2000
+          formCacheCapacity: 2000
+          processCacheCapacity: 2000
         jobs:
           timeoutCheckerPollingInterval: 15s
           timeoutCheckerBatchLimit: 1000
+        validators:
+          resultsOutputMaxSize: 2000

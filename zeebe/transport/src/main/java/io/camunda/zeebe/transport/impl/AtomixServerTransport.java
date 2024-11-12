@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.transport.impl;
 
@@ -19,8 +19,6 @@ import java.util.concurrent.CompletableFuture;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.IdGenerator;
-import org.agrona.concurrent.SnowflakeIdGenerator;
-import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -28,8 +26,6 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private static final String API_TOPIC_FORMAT = "%s-api-%d";
-  // Unix epoch time for January 1, 2023 1:00:00 AM GMT+01:00
-  private static final long TIMESTAMP_OFFSET_2023 = 1672531200000L;
   private static final String ERROR_MSG_MISSING_PARTITON_MAP =
       "Node already unsubscribed from partition %d, this can only happen when atomix does not cleanly remove its handlers.";
 
@@ -37,18 +33,13 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
       partitionsRequestMap;
   private final MessagingService messagingService;
 
-  private final IdGenerator idGenerator;
+  private final IdGenerator requestIdGenerator;
 
-  public AtomixServerTransport(final MessagingService messagingService, final int nodeId) {
+  public AtomixServerTransport(
+      final MessagingService messagingService, final IdGenerator requestIdGenerator) {
     this.messagingService = messagingService;
+    this.requestIdGenerator = requestIdGenerator;
     partitionsRequestMap = new Int2ObjectHashMap<>();
-    this.idGenerator =
-        new SnowflakeIdGenerator(
-            SnowflakeIdGenerator.NODE_ID_BITS_DEFAULT,
-            SnowflakeIdGenerator.SEQUENCE_BITS_DEFAULT,
-            nodeId,
-            TIMESTAMP_OFFSET_2023,
-            SystemEpochClock.INSTANCE);
   }
 
   @Override
@@ -114,7 +105,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     final var completableFuture = new CompletableFuture<byte[]>();
     actor.call(
         () -> {
-          final long requestId = idGenerator.nextId();
+          final long requestId = requestIdGenerator.nextId();
           final var requestMap = partitionsRequestMap.get(partitionId);
           if (requestMap == null) {
             final var errorMsg = String.format(ERROR_MSG_MISSING_PARTITON_MAP, partitionId);

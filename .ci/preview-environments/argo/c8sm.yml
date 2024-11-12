@@ -1,0 +1,28 @@
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  labels:
+    product-context: "c8sm"
+spec:
+  destination:
+    name: camunda-ci
+  ignoreDifferences:
+  - jsonPointers:
+    - /data/tls.crt
+    - /data/tls.key
+    - /metadata/annotations/replicator.v1.mittwald.de~1replicated-from-version
+    kind: Secret
+    name: camunda-tls
+  project: camunda-previews
+  source:
+    helm:
+      parameters: []
+    path: .ci/preview-environments/charts/c8sm
+    repoURL: https://github.com/camunda/camunda.git
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true

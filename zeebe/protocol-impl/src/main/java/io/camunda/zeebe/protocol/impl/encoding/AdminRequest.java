@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
@@ -22,12 +22,12 @@ public class AdminRequest implements BufferReader, BufferWriter {
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   private final AdminRequestEncoder bodyEncoder = new AdminRequestEncoder();
   private final AdminRequestDecoder bodyDecoder = new AdminRequestDecoder();
-
   private int brokerId = AdminRequestEncoder.brokerIdNullValue();
   private int partitionId = AdminRequestEncoder.partitionIdNullValue();
   private AdminRequestType type = AdminRequestType.NULL_VAL;
-
   private long key = AdminRequestEncoder.keyNullValue();
+  private byte[] payload = null;
+  private boolean hasPayload = false;
 
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
@@ -35,11 +35,15 @@ public class AdminRequest implements BufferReader, BufferWriter {
     brokerId = bodyDecoder.brokerId();
     partitionId = bodyDecoder.partitionId();
     type = bodyDecoder.type();
+    bodyDecoder.getPayload(payload, 0, length - bodyDecoder.limit());
   }
 
   @Override
   public int getLength() {
-    return headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
+    return headerEncoder.encodedLength()
+        + bodyEncoder.sbeBlockLength()
+        + AdminRequestEncoder.payloadHeaderLength()
+        + (hasPayload ? payload.length : 0);
   }
 
   @Override
@@ -50,6 +54,10 @@ public class AdminRequest implements BufferReader, BufferWriter {
         .partitionId(partitionId)
         .type(type)
         .key(key);
+
+    if (hasPayload) {
+      bodyEncoder.putPayload(payload, 0, payload.length);
+    }
   }
 
   public int getBrokerId() {
@@ -72,6 +80,10 @@ public class AdminRequest implements BufferReader, BufferWriter {
     return type;
   }
 
+  public void setType(final AdminRequestType type) {
+    this.type = type;
+  }
+
   public long getKey() {
     return key;
   }
@@ -80,7 +92,8 @@ public class AdminRequest implements BufferReader, BufferWriter {
     this.key = key;
   }
 
-  public void setType(final AdminRequestType type) {
-    this.type = type;
+  public void setPayload(final byte[] payload) {
+    this.payload = payload;
+    hasPayload = true;
   }
 }

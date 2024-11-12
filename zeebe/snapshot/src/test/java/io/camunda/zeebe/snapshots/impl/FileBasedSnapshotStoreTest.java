@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots.impl;
 
@@ -13,14 +13,19 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
+import io.camunda.zeebe.snapshots.TestChecksumProvider;
 import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.test.util.asserts.DirectoryAssert;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.zip.CRC32C;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,6 +36,8 @@ public class FileBasedSnapshotStoreTest {
   private static final String PENDING_DIRECTORY = "pending";
 
   private static final String SNAPSHOT_CONTENT_FILE_NAME = "file1.txt";
+  private static final String SNAPSHOT_CONTENT = "this is the content";
+  private static final Integer PARTITION_ID = 1;
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public ActorSchedulerRule scheduler = new ActorSchedulerRule();
@@ -54,11 +61,11 @@ public class FileBasedSnapshotStoreTest {
     final var root = temporaryFolder.getRoot().toPath();
 
     // when
-    final var store = new FileBasedSnapshotStore(1, root);
+    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
 
     // then
-    assertThat(root.resolve(FileBasedSnapshotStore.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
-    assertThat(root.resolve(FileBasedSnapshotStore.PENDING_DIRECTORY)).exists().isDirectory();
+    assertThat(root.resolve(FileBasedSnapshotStoreImpl.SNAPSHOTS_DIRECTORY)).exists().isDirectory();
+    assertThat(root.resolve(FileBasedSnapshotStoreImpl.PENDING_DIRECTORY)).exists().isDirectory();
     assertThat(store.getLatestSnapshot()).isEmpty();
   }
 
@@ -133,7 +140,7 @@ public class FileBasedSnapshotStoreTest {
   public void shouldNotLoadCorruptedSnapshot() throws Exception {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takeTransientSnapshot().persist().join();
-    SnapshotChecksum.persist(persistedSnapshot.getChecksumPath(), new SfvChecksumImpl(0xCAFEL));
+    SnapshotChecksum.persist(persistedSnapshot.getChecksumPath(), new SfvChecksumImpl());
 
     // when
     snapshotStore.close();
@@ -164,7 +171,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
     final var corruptOlderSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptOlderSnapshot.getChecksumPath(), new SfvChecksumImpl(0xCAFEL));
+    SnapshotChecksum.persist(corruptOlderSnapshot.getChecksumPath(), new SfvChecksumImpl());
 
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, snapshotStore).persist().join();
@@ -212,7 +219,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
 
     // when - corrupting old snapshot and adding new valid snapshot
-    SnapshotChecksum.persist(olderSnapshot.getChecksumPath(), new SfvChecksumImpl(0xCAFEL));
+    SnapshotChecksum.persist(olderSnapshot.getChecksumPath(), new SfvChecksumImpl());
     final var newerSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(2, otherStore).persist().join();
 
@@ -230,7 +237,7 @@ public class FileBasedSnapshotStoreTest {
     final var otherStore = createStore(rootDirectory);
     final var corruptSnapshot =
         (FileBasedSnapshot) takeTransientSnapshot(1, otherStore).persist().join();
-    SnapshotChecksum.persist(corruptSnapshot.getChecksumPath(), new SfvChecksumImpl(0xCAFEL));
+    SnapshotChecksum.persist(corruptSnapshot.getChecksumPath(), new SfvChecksumImpl());
 
     // when
     snapshotStore.close();
@@ -240,6 +247,23 @@ public class FileBasedSnapshotStoreTest {
     assertThat(snapshotStore.getLatestSnapshot()).isEmpty();
     assertThat(corruptSnapshot.getDirectory()).exists();
     assertThat(corruptSnapshot.getChecksumPath()).exists();
+  }
+
+  @Test
+  public void shouldUseChecksumProviderForChecksumsIfSupplied() throws IOException {
+    // given
+    final Map<String, Long> badChecksums = new HashMap<>();
+    badChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, 123L);
+    final var testChecksumProvider = new TestChecksumProvider(badChecksums);
+
+    // when
+    final var store = new FileBasedSnapshotStore(0, 1, rootDirectory, testChecksumProvider);
+    scheduler.submitActor(store).join();
+    final var takenSnapshot = (FileBasedSnapshot) takeTransientSnapshot(1, store).persist().join();
+
+    // then
+    final var persistedChecksums = SnapshotChecksum.read(takenSnapshot.getChecksumPath());
+    assertThat(persistedChecksums.getChecksums().get(SNAPSHOT_CONTENT_FILE_NAME)).isEqualTo(123L);
   }
 
   @Test
@@ -333,12 +357,52 @@ public class FileBasedSnapshotStoreTest {
     assertThat(newSnapshot.getPath()).exists();
   }
 
+  @Test
+  public void shouldRestartWithAReceivedSnapshot() throws IOException {
+    // given
+    final Map<String, Long> fileChecksums = new HashMap<>();
+    final var fileContentChecksum = new CRC32C();
+    fileContentChecksum.update(SNAPSHOT_CONTENT.getBytes(StandardCharsets.UTF_8));
+    fileChecksums.put(SNAPSHOT_CONTENT_FILE_NAME, fileContentChecksum.getValue());
+    final var receiverStorePath = temporaryFolder.newFolder("receiver").toPath();
+
+    final var store =
+        new FileBasedSnapshotStore(
+            0, PARTITION_ID, receiverStorePath, new TestChecksumProvider(fileChecksums));
+    scheduler.submitActor(store);
+
+    // when
+    final var persistedSnapshot = takeTransientSnapshot().persist().join();
+    final var receivedSnapshot = store.newReceivedSnapshot(persistedSnapshot.getId()).join();
+    try (final var reader = persistedSnapshot.newChunkReader()) {
+      while (reader.hasNext()) {
+        receivedSnapshot.apply(reader.next()).join();
+      }
+    }
+
+    receivedSnapshot.persist().join();
+
+    // restart store will attempt to update the latest snapshot to the most recent one and check for
+    // corruption.
+    store.close();
+
+    final var restartedStore =
+        new FileBasedSnapshotStore(
+            0, PARTITION_ID, receiverStorePath, new TestChecksumProvider(fileChecksums));
+    scheduler.submitActor(restartedStore).join();
+
+    assertThat(restartedStore.getLatestSnapshot())
+        .describedAs(
+            "The latest snapshot is not detected as corrupted and should be loaded after restart")
+        .hasValueSatisfying(s -> assertThat(s.getId()).isEqualTo(persistedSnapshot.getId()));
+  }
+
   private boolean createSnapshotDir(final Path path) {
     try {
       FileUtil.ensureDirectoryExists(path);
       Files.write(
           path.resolve(SNAPSHOT_CONTENT_FILE_NAME),
-          "This is the content".getBytes(),
+          SNAPSHOT_CONTENT.getBytes(),
           CREATE_NEW,
           StandardOpenOption.WRITE);
     } catch (final IOException e) {
@@ -359,7 +423,7 @@ public class FileBasedSnapshotStoreTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store = new FileBasedSnapshotStore(1, root);
+    final var store = new FileBasedSnapshotStore(0, 1, root, snapshotPath -> Map.of());
     scheduler.submitActor(store).join();
 
     return store;

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.configuration;
 
@@ -17,6 +17,7 @@ public final class SecurityCfg implements ConfigurationEntry {
   private boolean enabled = DEFAULT_ENABLED;
   private File certificateChainPath;
   private File privateKeyPath;
+  private final KeyStoreCfg keyStore = new KeyStoreCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -28,6 +29,8 @@ public final class SecurityCfg implements ConfigurationEntry {
     if (privateKeyPath != null) {
       privateKeyPath = brokerBasePath.resolve(privateKeyPath.toPath()).toFile();
     }
+
+    keyStore.init(globalConfig, brokerBase);
   }
 
   public boolean isEnabled() {
@@ -57,9 +60,13 @@ public final class SecurityCfg implements ConfigurationEntry {
     return this;
   }
 
+  public KeyStoreCfg getKeyStore() {
+    return keyStore;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, certificateChainPath, privateKeyPath);
+    return Objects.hash(enabled, certificateChainPath, privateKeyPath, keyStore);
   }
 
   @Override
@@ -74,7 +81,8 @@ public final class SecurityCfg implements ConfigurationEntry {
     final var that = (SecurityCfg) o;
     return enabled == that.enabled
         && Objects.equals(certificateChainPath, that.certificateChainPath)
-        && Objects.equals(privateKeyPath, that.privateKeyPath);
+        && Objects.equals(privateKeyPath, that.privateKeyPath)
+        && Objects.equals(keyStore, that.keyStore);
   }
 
   @Override
@@ -87,6 +95,8 @@ public final class SecurityCfg implements ConfigurationEntry {
         + "'"
         + ", privateKeyPath='"
         + privateKeyPath
-        + "'}";
+        + ", keyStore="
+        + keyStore
+        + '}';
   }
 }

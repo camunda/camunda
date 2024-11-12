@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.db.impl.rocksdb;
 
@@ -111,8 +111,12 @@ public final class ZeebeRocksDbFactory<
   }
 
   private DBOptions createDefaultDbOptions(final List<AutoCloseable> closeables) {
+    final var props = new Properties();
+    props.put("file_checksum_gen_factory", "FileChecksumGenCrc32cFactory");
+    //    Enables full file checksum
+
     final var dbOptions =
-        new DBOptions()
+        DBOptions.getDBOptionsFromProps(props)
             .setErrorIfExists(false)
             .setCreateIfMissing(true)
             .setParanoidChecks(true)

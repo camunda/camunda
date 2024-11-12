@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
@@ -42,6 +44,7 @@ public final class CallActivityProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnJobBehavior jobBehavior;
 
   public CallActivityProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -53,6 +56,7 @@ public final class CallActivityProcessor
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -63,10 +67,17 @@ public final class CallActivityProcessor
   @Override
   public Either<Failure, ?> onActivate(
       final ExecutableCallActivity element, final BpmnElementContext context) {
-    return variableMappingBehavior
-        .applyInputMappings(context, element)
-        .flatMap(ok -> evaluateProcessId(context, element))
-        .flatMap(processId -> getProcessForProcessId(processId, context.getTenantId()))
+    return variableMappingBehavior.applyInputMappings(context, element);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeActivation(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
+    return evaluateProcessId(context, element)
+        .flatMap(
+            processId ->
+                getCalledProcess(
+                    processId, element.getBindingType(), element.getVersionTag(), context))
         .flatMap(this::checkProcessHasNoneStartEvent)
         .flatMap(p -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> p))
         .thenDo(
@@ -101,12 +112,15 @@ public final class CallActivityProcessor
       final ExecutableCallActivity element, final BpmnElementContext context) {
     return variableMappingBehavior
         .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> {
-              eventSubscriptionBehavior.unsubscribeFromEvents(context);
-              compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
-              return stateTransitionBehavior.transitionToCompleted(element, context);
-            })
+        .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableCallActivity element, final BpmnElementContext context) {
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
         .thenDo(
             completed -> {
               compensationSubscriptionBehaviour.completeCompensationHandler(completed);
@@ -116,6 +130,10 @@ public final class CallActivityProcessor
 
   @Override
   public void onTerminate(final ExecutableCallActivity element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
+
     eventSubscriptionBehavior.unsubscribeFromEvents(context);
     incidentBehavior.resolveIncidents(context);
     stateTransitionBehavior.terminateChildProcessInstance(this, element, context);
@@ -189,18 +207,76 @@ public final class CallActivityProcessor
         processIdExpression, scopeKey);
   }
 
-  private Either<Failure, DeployedProcess> getProcessForProcessId(
+  private Either<Failure, DeployedProcess> getCalledProcess(
+      final DirectBuffer processId,
+      final ZeebeBindingType bindingType,
+      final String versionTag,
+      final BpmnElementContext context) {
+    return switch (bindingType) {
+      case deployment -> getProcessVersionInSameDeployment(processId, context);
+      case latest -> getLatestProcessVersion(processId, context.getTenantId());
+      case versionTag ->
+          getLatestProcessVersionWithVersionTag(processId, versionTag, context.getTenantId());
+    };
+  }
+
+  private Either<Failure, DeployedProcess> getProcessVersionInSameDeployment(
+      final DirectBuffer processId, final BpmnElementContext context) {
+    return stateBehavior
+        .getDeploymentKey(context.getProcessDefinitionKey(), context.getTenantId())
+        .flatMap(
+            deploymentKey ->
+                stateBehavior
+                    .getProcessByProcessIdAndDeploymentKey(
+                        processId, deploymentKey, context.getTenantId())
+                    .<Either<Failure, DeployedProcess>>map(Either::right)
+                    .orElseGet(
+                        () ->
+                            Either.left(
+                                new Failure(
+                                    String.format(
+                                        """
+                                        Expected to call process with BPMN process id '%s' with binding type 'deployment', \
+                                        but no such process found in the deployment with key %s which contained the current process. \
+                                        To resolve this incident, migrate the process instance to a process definition \
+                                        that is deployed together with the intended process definition to call.\
+                                        """,
+                                        BufferUtil.bufferAsString(processId), deploymentKey),
+                                    ErrorType.CALLED_ELEMENT_ERROR))));
+  }
+
+  private Either<Failure, DeployedProcess> getLatestProcessVersion(
       final DirectBuffer processId, final String tenantId) {
     final var process = stateBehavior.getLatestProcessVersion(processId, tenantId);
-    if (process.isPresent()) {
-      return Either.right(process.get());
-    }
-    return Either.left(
-        new Failure(
-            String.format(
-                "Expected process with BPMN process id '%s' to be deployed, but not found.",
-                BufferUtil.bufferAsString(processId)),
-            ErrorType.CALLED_ELEMENT_ERROR));
+    return process
+        .<Either<Failure, DeployedProcess>>map(Either::right)
+        .orElseGet(
+            () ->
+                Either.left(
+                    new Failure(
+                        String.format(
+                            "Expected process with BPMN process id '%s' to be deployed, but not found.",
+                            BufferUtil.bufferAsString(processId)),
+                        ErrorType.CALLED_ELEMENT_ERROR)));
+  }
+
+  private Either<Failure, DeployedProcess> getLatestProcessVersionWithVersionTag(
+      final DirectBuffer processId, final String versionTag, final String tenantId) {
+    final var process =
+        stateBehavior.getProcessByProcessIdAndVersionTag(processId, versionTag, tenantId);
+    return process
+        .<Either<Failure, DeployedProcess>>map(Either::right)
+        .orElseGet(
+            () ->
+                Either.left(
+                    new Failure(
+                        String.format(
+                            """
+                            Expected to call process with BPMN process id '%s' and version tag '%s', but no such process found. \
+                            To resolve this incident, deploy a process with the given process id and version tag.\
+                            """,
+                            BufferUtil.bufferAsString(processId), versionTag),
+                        ErrorType.CALLED_ELEMENT_ERROR)));
   }
 
   private Either<Failure, DeployedProcess> checkProcessHasNoneStartEvent(

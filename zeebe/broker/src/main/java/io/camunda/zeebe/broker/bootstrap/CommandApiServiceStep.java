@@ -2,12 +2,11 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.bootstrap;
 
-import io.camunda.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -41,7 +40,6 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
 
     final var commandApiServiceActor = brokerShutdownContext.getCommandApiService();
 
-    brokerShutdownContext.removePartitionListener(commandApiServiceActor);
     brokerShutdownContext
         .getDiskSpaceUsageMonitor()
         .removeDiskUsageListener(commandApiServiceActor);
@@ -62,30 +60,18 @@ final class CommandApiServiceStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
     final var concurrencyControl = brokerStartupContext.getConcurrencyControl();
-    final var brokerInfo = brokerStartupContext.getBrokerInfo();
     final var brokerCfg = brokerStartupContext.getBrokerConfiguration();
     final var schedulingService = brokerStartupContext.getActorSchedulingService();
 
-    final var backpressureCfg = brokerCfg.getBackpressure();
-    var limiter = PartitionAwareRequestLimiter.newNoopLimiter();
-    if (backpressureCfg.isEnabled()) {
-      limiter = PartitionAwareRequestLimiter.newLimiter(backpressureCfg);
-    }
-
     final var commandApiService =
         new CommandApiServiceImpl(
-            serverTransport,
-            brokerInfo,
-            limiter,
-            schedulingService,
-            brokerCfg.getExperimental().getQueryApi());
+            serverTransport, schedulingService, brokerCfg.getExperimental().getQueryApi());
 
     concurrencyControl.runOnCompletion(
         schedulingService.submitActor(commandApiService),
         proceed(
             () -> {
               brokerStartupContext.setCommandApiService(commandApiService);
-              brokerStartupContext.addPartitionListener(commandApiService);
               brokerStartupContext
                   .getDiskSpaceUsageMonitor()
                   .addDiskUsageListener(commandApiService);

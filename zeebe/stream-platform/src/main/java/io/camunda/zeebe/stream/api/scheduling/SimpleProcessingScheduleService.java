@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.api.scheduling;
 
@@ -26,6 +26,22 @@ public interface SimpleProcessingScheduleService {
    * @return A representation of the scheduled task.
    */
   ScheduledTask runDelayed(Duration delay, Task task);
+
+  /**
+   * Schedules the task to run at or after the given timestamp.
+   *
+   * @implNote Can be silently ignored if the scheduling service is not ready.
+   * @return A representation of the scheduled task.
+   */
+  ScheduledTask runAt(long timestamp, Task task);
+
+  /**
+   * Schedules the task to run at or after the given timestamp.
+   *
+   * @implNote Can be silently ignored if the scheduling service is not ready.
+   * @return A representation of the scheduled task.
+   */
+  ScheduledTask runAt(long timestamp, Runnable task);
 
   /**
    * Schedule a task to execute at a fixed rate. After an initial delay, the task is executed. Once

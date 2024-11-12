@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.protocol.impl.record;
 
@@ -55,6 +55,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private int protocolVersion = Protocol.PROTOCOL_VERSION;
   private VersionInfo brokerVersion = CURRENT_BROKER_VERSION;
   private int recordVersion = DEFAULT_RECORD_VERSION;
+  private long operationReference;
 
   public RecordMetadata() {
     reset();
@@ -78,6 +79,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     valueType = decoder.valueType();
     intent = Intent.fromProtocolValue(valueType, decoder.intent());
     rejectionType = decoder.rejectionType();
+    operationReference = decoder.operationReference();
 
     brokerVersion =
         Optional.ofNullable(decoder.brokerVersion())
@@ -146,7 +148,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         .valueType(valueType)
         .intent(intentValue)
         .rejectionType(rejectionType)
-        .recordVersion(recordVersion);
+        .recordVersion(recordVersion)
+        .operationReference(operationReference);
 
     encoder
         .brokerVersion()
@@ -270,6 +273,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return recordVersion;
   }
 
+  public RecordMetadata operationReference(final long operationReference) {
+    this.operationReference = operationReference;
+    return this;
+  }
+
+  public long getOperationReference() {
+    return operationReference;
+  }
+
   public RecordMetadata reset() {
     recordType = RecordType.NULL_VAL;
     requestId = RecordMetadataEncoder.requestIdNullValue();
@@ -283,6 +295,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     authorization.reset();
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
+    operationReference = RecordMetadataEncoder.operationReferenceNullValue();
     return this;
   }
 
@@ -299,7 +312,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         authorization,
         protocolVersion,
         brokerVersion,
-        recordVersion);
+        recordVersion,
+        operationReference);
   }
 
   @Override
@@ -321,7 +335,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && rejectionReason.equals(that.rejectionReason)
         && authorization.equals(that.authorization)
         && brokerVersion.equals(that.brokerVersion)
-        && recordVersion == that.recordVersion;
+        && recordVersion == that.recordVersion
+        && operationReference == that.operationReference;
   }
 
   @Override
@@ -348,6 +363,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     if (!authorization.isEmpty()) {
       builder.append(", authorization=").append(authorization);
+    }
+    if (operationReference != RecordMetadataEncoder.operationReferenceNullValue()) {
+      builder.append(", operationReference=").append(operationReference);
     }
 
     builder.append('}');

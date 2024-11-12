@@ -2,42 +2,45 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
-import io.camunda.zeebe.broker.StandaloneBroker;
-import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
-import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.Profile;
+import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
+import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
+import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.qa.util.actuator.BrokerHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.GatewayHealthActuator;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
-import io.camunda.zeebe.shared.Profile;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.util.unit.DataSize;
 
-/** Represents an instance of the {@link StandaloneBroker} Spring application. */
+/** Represents an instance of the {@link BrokerModuleConfiguration} Spring application. */
 @SuppressWarnings("UnusedReturnValue")
 public final class TestStandaloneBroker extends TestSpringApplication<TestStandaloneBroker>
     implements TestGateway<TestStandaloneBroker> {
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
-  private final BrokerProperties config;
+  private final BrokerBasedProperties config;
 
   public TestStandaloneBroker() {
-    super(StandaloneBroker.class);
+    super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
 
-    config = new BrokerProperties();
+    config = new BrokerBasedProperties();
 
     config.getNetwork().getCommandApi().setPort(SocketUtil.getNextAddress().getPort());
     config.getNetwork().getInternalApi().setPort(SocketUtil.getNextAddress().getPort());
@@ -49,8 +52,11 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     config.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
     config.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
 
+    config.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
+    config.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
+
     //noinspection resource
-    withBean("config", config, BrokerProperties.class).withAdditionalProfile(Profile.BROKER);
+    withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
   }
 
   @Override
@@ -134,7 +140,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   }
 
   /** Returns the broker configuration */
-  public BrokerProperties brokerConfig() {
+  public BrokerBasedProperties brokerConfig() {
     return config;
   }
 
@@ -142,7 +148,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * Modifies the broker configuration. Will still mutate the configuration if the broker is
    * started, but likely has no effect until it's restarted.
    */
-  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerProperties> modifier) {
+  public TestStandaloneBroker withBrokerConfig(final Consumer<BrokerBasedProperties> modifier) {
     modifier.accept(config);
     return this;
   }
@@ -199,5 +205,19 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
   public TestStandaloneBroker withWorkingDirectory(final Path directory) {
     return withBean(
         "workingDirectory", new WorkingDirectory(directory, false), WorkingDirectory.class);
+  }
+
+  public TestStandaloneBroker withCamundaExporter(final String elasticSearchUrl) {
+    withExporter(
+        "CamundaExporter",
+        cfg -> {
+          cfg.setClassName("io.camunda.exporter.CamundaExporter");
+          cfg.setArgs(
+              Map.of("connect", Map.of("url", elasticSearchUrl), "bulk", Map.of("size", 1)));
+        });
+    final var searchClient = new SearchClientProperties();
+    searchClient.setUrl(elasticSearchUrl);
+    withBean("camundaSearchClient", searchClient, SearchClientProperties.class);
+    return this;
   }
 }

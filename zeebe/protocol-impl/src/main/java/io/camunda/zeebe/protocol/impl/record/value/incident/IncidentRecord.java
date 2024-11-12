@@ -2,20 +2,26 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.protocol.impl.record.value.incident;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.ArrayValue;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public final class IncidentRecord extends UnifiedRecordValue implements IncidentRecordValue {
@@ -33,9 +39,15 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
   private final LongProperty variableScopeKeyProp = new LongProperty("variableScopeKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final ArrayProperty<ArrayValue<LongValue>> elementInstancePathProp =
+      new ArrayProperty<>("elementInstancePath", () -> new ArrayValue<>(LongValue::new));
+  private final ArrayProperty<LongValue> processDefinitionPathProp =
+      new ArrayProperty<>("processDefinitionPath", LongValue::new);
+  private final ArrayProperty<IntegerValue> callingElementPathProp =
+      new ArrayProperty<>("callingElementPath", IntegerValue::new);
 
   public IncidentRecord() {
-    super(10);
+    super(13);
     declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
@@ -45,7 +57,10 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(jobKeyProp)
         .declareProperty(variableScopeKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(elementInstancePathProp)
+        .declareProperty(processDefinitionPathProp)
+        .declareProperty(callingElementPathProp);
   }
 
   public void wrap(final IncidentRecord record) {
@@ -59,6 +74,9 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
     jobKeyProp.setValue(record.getJobKey());
     variableScopeKeyProp.setValue(record.getVariableScopeKey());
     tenantIdProp.setValue(record.getTenantId());
+    setElementInstancePath(record.getElementInstancePath());
+    setProcessDefinitionPath(record.getProcessDefinitionPath());
+    setCallingElementPath(record.getCallingElementPath());
   }
 
   @JsonIgnore
@@ -143,6 +161,54 @@ public final class IncidentRecord extends UnifiedRecordValue implements Incident
 
   public IncidentRecord setVariableScopeKey(final long variableScopeKey) {
     variableScopeKeyProp.setValue(variableScopeKey);
+    return this;
+  }
+
+  @Override
+  public List<List<Long>> getElementInstancePath() {
+    final var elementInstancePath = new ArrayList<List<Long>>();
+    elementInstancePathProp.forEach(
+        pe -> {
+          final var pathEntry = new ArrayList<Long>();
+          pe.forEach(e -> pathEntry.add(e.getValue()));
+          elementInstancePath.add(pathEntry);
+        });
+    return elementInstancePath;
+  }
+
+  public IncidentRecord setElementInstancePath(final List<List<Long>> elementInstancePath) {
+    elementInstancePathProp.reset();
+    elementInstancePath.forEach(
+        pathEntry -> {
+          final var entry = elementInstancePathProp.add();
+          pathEntry.forEach(element -> entry.add().setValue(element));
+        });
+    return this;
+  }
+
+  @Override
+  public List<Long> getProcessDefinitionPath() {
+    final var processDefinitionPath = new ArrayList<Long>();
+    processDefinitionPathProp.forEach(e -> processDefinitionPath.add(e.getValue()));
+    return processDefinitionPath;
+  }
+
+  public IncidentRecord setProcessDefinitionPath(final List<Long> processDefinitionPath) {
+    processDefinitionPathProp.reset();
+    processDefinitionPath.forEach(e -> processDefinitionPathProp.add().setValue(e));
+    return this;
+  }
+
+  @Override
+  public List<Integer> getCallingElementPath() {
+    final var callingElementPath = new ArrayList<Integer>();
+    callingElementPathProp.forEach(e -> callingElementPath.add(e.getValue()));
+    return callingElementPath;
+  }
+
+  public IncidentRecord setCallingElementPath(final List<Integer> callingElementPath) {
+    callingElementPathProp.reset();
+    callingElementPath.forEach(e -> callingElementPathProp.add().setValue(e));
     return this;
   }
 

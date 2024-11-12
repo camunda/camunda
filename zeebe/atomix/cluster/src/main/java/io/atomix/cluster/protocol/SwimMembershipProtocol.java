@@ -99,11 +99,8 @@ public class SwimMembershipProtocol
   private final List<SwimMember> randomMembers = Lists.newCopyOnWriteArrayList();
   private final Map<MemberId, ImmutableMember> updates = new LinkedHashMap<>();
   private final List<SwimMember> syncMembers = new ArrayList<>();
-  private final ScheduledExecutorService swimScheduler =
-      Executors.newSingleThreadScheduledExecutor(
-          namedThreads("atomix-cluster-heartbeat-sender", LOGGER));
-  private final ExecutorService eventExecutor =
-      Executors.newSingleThreadExecutor(namedThreads("atomix-cluster-events", LOGGER));
+  private final ScheduledExecutorService swimScheduler;
+  private final ExecutorService eventExecutor;
   private final AtomicInteger probeCounter = new AtomicInteger();
   private NodeDiscoveryService discoveryService;
   private BootstrapService bootstrapService;
@@ -126,8 +123,16 @@ public class SwimMembershipProtocol
   private final SwimMembershipProtocolMetrics swimMembershipProtocolMetrics =
       new SwimMembershipProtocolMetrics();
 
-  SwimMembershipProtocol(final SwimMembershipProtocolConfig config) {
+  SwimMembershipProtocol(
+      final SwimMembershipProtocolConfig config, final String actorSchedulerName) {
     this.config = config;
+
+    swimScheduler =
+        Executors.newSingleThreadScheduledExecutor(
+            namedThreads("atomix-cluster-heartbeat-sender", LOGGER, actorSchedulerName));
+    eventExecutor =
+        Executors.newSingleThreadExecutor(
+            namedThreads("atomix-cluster-events", LOGGER, actorSchedulerName));
   }
 
   /**
@@ -884,8 +889,9 @@ public class SwimMembershipProtocol
     }
 
     @Override
-    public GroupMembershipProtocol newProtocol(final SwimMembershipProtocolConfig config) {
-      return new SwimMembershipProtocol(config);
+    public GroupMembershipProtocol newProtocol(
+        final SwimMembershipProtocolConfig config, final String actorSchedulerName) {
+      return new SwimMembershipProtocol(config, actorSchedulerName);
     }
   }
 

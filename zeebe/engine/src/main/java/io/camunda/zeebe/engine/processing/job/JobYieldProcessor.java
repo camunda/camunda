@@ -2,11 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -21,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
 
+@ExcludeAuthorizationCheck
 public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> {
   private final JobState jobState;
   private final BpmnJobActivationBehavior jobActivationBehavior;
@@ -34,7 +36,8 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
     jobActivationBehavior = bpmnBehaviors.jobActivationBehavior();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
-    preconditionChecker = new JobCommandPreconditionChecker("yield", List.of(State.ACTIVATED));
+    preconditionChecker =
+        new JobCommandPreconditionChecker(jobState, "yield", List.of(State.ACTIVATED));
   }
 
   @Override
@@ -43,15 +46,13 @@ public final class JobYieldProcessor implements TypedRecordProcessor<JobRecord> 
     final JobState.State state = jobState.getState(jobKey);
 
     preconditionChecker
-        .check(state, jobKey)
+        .check(state, record)
         .ifRightOrLeft(
-            ok -> {
-              final JobRecord yieldedJob = jobState.getJob(jobKey);
-
+            yieldedJob -> {
               stateWriter.appendFollowUpEvent(jobKey, JobIntent.YIELDED, yieldedJob);
               jobActivationBehavior.notifyJobAvailableAsSideEffect(yieldedJob);
             },
-            violation ->
-                rejectionWriter.appendRejection(record, violation.getLeft(), violation.getRight()));
+            rejection ->
+                rejectionWriter.appendRejection(record, rejection.type(), rejection.reason()));
   }
 }

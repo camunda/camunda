@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.util;
 
@@ -11,23 +11,21 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamBuilder;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
-import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
-import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.junit.rules.ExternalResource;
 
 public final class LogStreamRule extends ExternalResource {
-  private final ControlledActorClock clock = new ControlledActorClock();
+  private final ControlledClock clock = new ControlledClock();
   private final boolean shouldStartByDefault;
 
   private final Consumer<LogStreamBuilder> streamBuilder;
-  private SynchronousLogStream logStream;
+  private TestLogStream logStream;
   private LogStreamReader logStreamReader;
   private LogStreamWriter logStreamWriter;
   private LogStreamBuilder builder;
-  private ActorSchedulerRule actorSchedulerRule;
   private ListLogStorage listLogStorage;
 
   private LogStreamRule(final boolean shouldStart, final Consumer<LogStreamBuilder> streamBuilder) {
@@ -45,9 +43,6 @@ public final class LogStreamRule extends ExternalResource {
 
   @Override
   protected void before() {
-    actorSchedulerRule = new ActorSchedulerRule(clock);
-    actorSchedulerRule.before();
-
     if (shouldStartByDefault) {
       createLogStream();
     }
@@ -56,23 +51,19 @@ public final class LogStreamRule extends ExternalResource {
   @Override
   protected void after() {
     stopLogStream();
-
-    actorSchedulerRule.after();
   }
 
   public void createLogStream() {
-    final ActorScheduler actorScheduler = actorSchedulerRule.get();
-
     if (listLogStorage == null) {
       listLogStorage = new ListLogStorage();
     }
 
     builder =
         LogStream.builder()
-            .withActorSchedulingService(actorScheduler)
             .withPartitionId(0)
-            .withLogName("0")
-            .withLogStorage(listLogStorage);
+            .withLogName("logStream-0")
+            .withLogStorage(listLogStorage)
+            .withClock(clock);
 
     // apply additional configs
     streamBuilder.accept(builder);
@@ -90,8 +81,7 @@ public final class LogStreamRule extends ExternalResource {
   }
 
   private void openLogStream() {
-    logStream =
-        SyncLogStream.builder(builder).withActorSchedulingService(actorSchedulerRule.get()).build();
+    logStream = TestLogStream.builder(builder).build();
     listLogStorage.setPositionListener(logStream::setLastWrittenPosition);
   }
 
@@ -123,11 +113,20 @@ public final class LogStreamRule extends ExternalResource {
     return logStreamWriter;
   }
 
-  public SynchronousLogStream getLogStream() {
+  public TestLogStream getLogStream() {
     return logStream;
   }
 
-  public ControlledActorClock getClock() {
+  public ControlledClock getClock() {
     return clock;
+  }
+
+  public static final class ControlledClock implements InstantSource {
+    public InstantSource delegate;
+
+    @Override
+    public Instant instant() {
+      return delegate == null ? Instant.now() : delegate.instant();
+    }
   }
 }

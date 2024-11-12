@@ -2,13 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,6 +34,12 @@ final class EngineCfgTest {
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(1));
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(Integer.MAX_VALUE);
+    assertThat(configuration.getFormCacheCapacity())
+        .isEqualTo(EngineConfiguration.DEFAULT_FORM_CACHE_CAPACITY);
+    assertThat(configuration.getProcessCacheCapacity())
+        .isEqualTo(EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY);
+    assertThat(configuration.getValidatorsResultsOutputMaxSize())
+        .isEqualTo(EngineConfiguration.DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE);
   }
 
   @Test
@@ -50,5 +57,8 @@ final class EngineCfgTest {
     assertThat(configuration.getJobsTimeoutCheckerPollingInterval())
         .isEqualTo(Duration.ofSeconds(15));
     assertThat(configuration.getJobsTimeoutCheckerBatchLimit()).isEqualTo(1000);
+    assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
+    assertThat(configuration.getDrgCacheCapacity()).isEqualTo(2000L);
+    assertThat(configuration.getValidatorsResultsOutputMaxSize()).isEqualTo(2000);
   }
 }

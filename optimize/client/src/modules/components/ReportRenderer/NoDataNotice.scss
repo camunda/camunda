@@ -1,0 +1,47 @@
+.NoDataNotice {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border-radius: 0.5rem;
+  overflow: auto;
+
+  .container {
+    .title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.25rem;
+
+      h1 {
+        font-size: 0.875rem;
+        font-weight: bold;
+        margin: 0;
+      }
+
+      svg {
+        min-height: 1.25rem;
+        min-width: 1.25rem;
+
+        &.warning {
+          color: var(--cds-support-warning);
+        }
+
+        &.error {
+          color: var(--cds-support-error);
+        }
+
+        &.info {
+          color: var(--cds-support-info);
+        }
+      }
+    }
+
+    p {
+      font-size: 0.75rem;
+      margin: 0;
+    }
+  }
+}

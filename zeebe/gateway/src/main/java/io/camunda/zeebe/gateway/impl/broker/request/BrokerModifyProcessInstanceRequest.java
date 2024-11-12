@@ -2,13 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
-import io.camunda.zeebe.gateway.RequestMapper;
+import io.camunda.zeebe.gateway.RequestUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.ActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.TerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ModifyProcessInstanceRequest.VariableInstruction;
@@ -56,11 +56,17 @@ public final class BrokerModifyProcessInstanceRequest
     return this;
   }
 
+  public BrokerModifyProcessInstanceRequest addActivationInstructions(
+      final List<ProcessInstanceModificationActivateInstruction> instructions) {
+    instructions.forEach(requestDto::addActivateInstruction);
+    return this;
+  }
+
   private ProcessInstanceModificationVariableInstruction mapVariableInstruction(
       final VariableInstruction instruction) {
     return new ProcessInstanceModificationVariableInstruction()
         .setElementId(instruction.getScopeId())
-        .setVariables(RequestMapper.ensureJsonSet(instruction.getVariables()));
+        .setVariables(RequestUtil.ensureJsonSet(instruction.getVariables()));
   }
 
   public BrokerModifyProcessInstanceRequest addTerminateInstructions(
@@ -71,6 +77,12 @@ public final class BrokerModifyProcessInstanceRequest
                 new ProcessInstanceModificationTerminateInstruction()
                     .setElementInstanceKey(terminateInstruction.getElementInstanceKey()))
         .forEach(requestDto::addTerminateInstruction);
+    return this;
+  }
+
+  public BrokerModifyProcessInstanceRequest addTerminationInstructions(
+      final List<ProcessInstanceModificationTerminateInstruction> instructions) {
+    instructions.forEach(requestDto::addTerminateInstruction);
     return this;
   }
 

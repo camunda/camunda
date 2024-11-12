@@ -2,16 +2,18 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableExclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableInclusiveGateway;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
@@ -49,6 +51,9 @@ final class ProcessInstanceElementActivatingApplier
   public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
 
     createEventScope(elementInstanceKey, value);
+    final var numberOfTakenSequenceFlows =
+        elementInstanceState.getNumberOfTakenSequenceFlows(
+            value.getFlowScopeKey(), value.getElementIdBuffer());
     cleanupSequenceFlowsTaken(value);
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
@@ -63,7 +68,12 @@ final class ProcessInstanceElementActivatingApplier
     final var flowScopeElementType = flowScopeInstance.getValue().getBpmnElementType();
     final var currentElementType = value.getBpmnElementType();
 
-    decrementActiveSequenceFlow(value, flowScopeInstance, flowScopeElementType, currentElementType);
+    decrementActiveSequenceFlow(
+        value,
+        flowScopeInstance,
+        flowScopeElementType,
+        currentElementType,
+        numberOfTakenSequenceFlows);
 
     if (currentElementType == BpmnElementType.START_EVENT
         && flowScopeElementType == BpmnElementType.EVENT_SUB_PROCESS) {
@@ -86,7 +96,6 @@ final class ProcessInstanceElementActivatingApplier
               value.getTenantId(),
               value.getElementIdBuffer(),
               ExecutableFlowNode.class);
-
       // before a parallel or inclusive gateway is activated, all incoming sequence flows of the
       // gateway must
       // be taken at least once. decrement the number of the taken sequence flows for each incoming
@@ -131,7 +140,20 @@ final class ProcessInstanceElementActivatingApplier
       final ProcessInstanceRecord value,
       final ElementInstance flowScopeInstance,
       final BpmnElementType flowScopeElementType,
-      final BpmnElementType currentElementType) {
+      final BpmnElementType currentElementType,
+      final int numberOfTakenSequenceFlows) {
+    // remove active sequence flows to this element
+    processState
+        .getFlowElement(
+            value.getProcessDefinitionKey(),
+            value.getTenantId(),
+            value.getElementIdBuffer(),
+            ExecutableFlowNode.class)
+        .getIncoming()
+        .stream()
+        .map(ExecutableSequenceFlow::getId)
+        .forEach(flowScopeInstance::removeActiveSequenceFlowId);
+    elementInstanceState.updateInstance(flowScopeInstance);
 
     // We don't want to decrement the active sequence flow for elements which have no incoming
     // sequence flow and for interrupting event sub processes we reset the count completely.
@@ -147,7 +169,7 @@ final class ProcessInstanceElementActivatingApplier
         decrementParallelGatewaySequenceFlow(value, flowScopeInstance);
         break;
       case INCLUSIVE_GATEWAY:
-        decrementInclusiveGatewayGatewaySequenceFlow(flowScopeInstance);
+        decrementInclusiveGatewaySequenceFlow(flowScopeInstance, numberOfTakenSequenceFlows);
         break;
       case EVENT_SUB_PROCESS:
         decrementEventSubProcessSequenceFlow(value, flowScopeInstance);
@@ -203,11 +225,13 @@ final class ProcessInstanceElementActivatingApplier
     elementInstanceState.updateInstance(flowScopeInstance);
   }
 
-  private void decrementInclusiveGatewayGatewaySequenceFlow(
-      final ElementInstance flowScopeInstance) {
-    // Currently the inclusive gateway can only have one incoming sequence flow.
+  private void decrementInclusiveGatewaySequenceFlow(
+      final ElementInstance flowScopeInstance, final int numberOfTakenSequenceFlows) {
+    // Inclusive gateways can have more than one incoming sequence flow, we need to decrement the
+    // active sequence flows based on the satisfied incoming sequence flows.
 
-    flowScopeInstance.decrementActiveSequenceFlows();
+    IntStream.range(0, numberOfTakenSequenceFlows)
+        .forEach(i -> flowScopeInstance.decrementActiveSequenceFlows());
     elementInstanceState.updateInstance(flowScopeInstance);
   }
 
@@ -277,8 +301,10 @@ final class ProcessInstanceElementActivatingApplier
           eventSupplier.getInterruptingElementIds(),
           eventSupplier.getBoundaryElementIds());
     } else if (flowElement instanceof ExecutableJobWorkerElement
-        || flowElement instanceof ExecutableActivity) {
-      // job worker elements without events (e.g. message throw events)
+        || flowElement instanceof ExecutableActivity
+        || flowElement instanceof ExecutableExclusiveGateway
+        || flowElement instanceof ExecutableInclusiveGateway) {
+      // executable elements without events
       eventScopeInstanceState.createInstance(
           elementInstanceKey, Collections.emptySet(), Collections.emptySet());
     }

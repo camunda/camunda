@@ -2,14 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -46,14 +47,17 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
+
   public DeploymentRecord() {
-    super(6);
+    super(7);
     declareProperty(resourcesProp)
         .declareProperty(processesMetadataProp)
         .declareProperty(decisionRequirementsMetadataProp)
         .declareProperty(decisionMetadataProp)
         .declareProperty(formMetadataProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp);
   }
 
   public ValueArray<ProcessMetadata> processesMetadata() {
@@ -147,6 +151,16 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     return metadataList;
   }
 
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public DeploymentRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
+  }
+
   public void resetResources() {
     resourcesProp.reset();
   }
@@ -177,5 +191,12 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
     return getResources().stream()
         .map(io.camunda.zeebe.protocol.record.value.deployment.DeploymentResource::getResourceName)
         .anyMatch(x -> x.endsWith(".form"));
+  }
+
+  public boolean hasDuplicatesOnly() {
+    return processesMetadata().stream().allMatch(ProcessMetadata::isDuplicate)
+        && decisionRequirementsMetadata().stream()
+            .allMatch(DecisionRequirementsMetadataValue::isDuplicate)
+        && formMetadata().stream().allMatch(FormMetadataValue::isDuplicate);
   }
 }

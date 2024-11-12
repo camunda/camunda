@@ -2,13 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.scheduler.lifecycle;
 
 import static org.assertj.core.util.Lists.newArrayList;
-import static org.mockito.Mockito.mock;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
@@ -27,6 +26,7 @@ class LifecycleRecordingActor extends Actor {
           ActorLifecyclePhase.CLOSE_REQUESTED,
           ActorLifecyclePhase.CLOSING,
           ActorLifecyclePhase.CLOSED);
+  private static final BiConsumer<Void, Throwable> NOOP_CONSUMER = (ok, err) -> {};
 
   public final List<ActorLifecyclePhase> phases = new ArrayList<>();
 
@@ -61,26 +61,27 @@ class LifecycleRecordingActor extends Actor {
   }
 
   protected void blockPhase() {
-    blockPhase(new CompletableActorFuture<>(), mock(BiConsumer.class));
+    blockPhase(new CompletableActorFuture<>(), NOOP_CONSUMER);
   }
 
   protected void blockPhase(final ActorFuture<Void> future) {
-    blockPhase(future, mock(BiConsumer.class));
+    blockPhase(future, NOOP_CONSUMER);
   }
 
   @SuppressWarnings("unchecked")
-  protected void blockPhase(final ActorFuture<Void> future, final BiConsumer consumer) {
+  protected void blockPhase(
+      final ActorFuture<Void> future, final BiConsumer<Void, Throwable> consumer) {
     actor.runOnCompletionBlockingCurrentPhase(future, consumer);
   }
 
   @SuppressWarnings("unchecked")
   protected void runOnCompletion() {
-    actor.runOnCompletion(new CompletableActorFuture<>(), mock(BiConsumer.class));
+    actor.runOnCompletion(new CompletableActorFuture<>(), NOOP_CONSUMER);
   }
 
   @SuppressWarnings("unchecked")
   protected void runOnCompletion(final ActorFuture<Void> future) {
-    actor.runOnCompletion(future, mock(BiConsumer.class));
+    actor.runOnCompletion(future, NOOP_CONSUMER);
   }
 
   public ActorControl control() {

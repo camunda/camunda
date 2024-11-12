@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.partitioning.startup;
 
@@ -24,10 +24,11 @@ import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import org.slf4j.Logger;
 
 public final class RaftPartitionFactory {
   public static final String GROUP_NAME = "raft-partition";
-
+  private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private final BrokerCfg brokerCfg;
 
   public RaftPartitionFactory(final BrokerCfg brokerCfg) {
@@ -41,6 +42,13 @@ public final class RaftPartitionFactory {
             .resolve("partitions")
             .resolve(partitionMetadata.id().id().toString());
     try {
+      if (FileUtil.isEmpty(partitionDirectory)) {
+        LOG.info(
+            "Root directory {} for partition {} is empty or does not exist. The partition {} is starting with no pre-existing data.",
+            partitionDirectory,
+            partitionMetadata.id(),
+            partitionMetadata.id());
+      }
       FileUtil.ensureDirectoryExists(partitionDirectory);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
@@ -85,6 +93,8 @@ public final class RaftPartitionFactory {
     partitionConfig.setRequestTimeout(brokerCfg.getExperimental().getRaft().getRequestTimeout());
     partitionConfig.setSnapshotRequestTimeout(
         brokerCfg.getExperimental().getRaft().getSnapshotRequestTimeout());
+    partitionConfig.setSnapshotChunkSize(
+        (int) brokerCfg.getExperimental().getRaft().getSnapshotChunkSize().toBytes());
     partitionConfig.setConfigurationChangeTimeout(
         brokerCfg.getExperimental().getRaft().getConfigurationChangeTimeout());
     partitionConfig.setMaxQuorumResponseTimeout(

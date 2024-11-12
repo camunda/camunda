@@ -1,30 +1,27 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.zeebeimport.v8_6.processors;
 
 import static io.camunda.operate.zeebeimport.util.ImportUtil.tenantOrDefault;
+import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.FULL_VALUE;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.IS_PREVIEW;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.VALUE;
 
-import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.entities.listview.VariableForListViewEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.Tuple;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -47,6 +44,14 @@ public class VariableZeebeRecordProcessor {
   public void processVariableRecords(
       final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
       final BatchRequest batchRequest)
+      throws PersistenceException {
+    processVariableRecords(variablesGroupedByScopeKey, batchRequest, false);
+  }
+
+  public void processVariableRecords(
+      final Map<Long, List<Record<VariableRecordValue>>> variablesGroupedByScopeKey,
+      final BatchRequest batchRequest,
+      final boolean concurrencyMode)
       throws PersistenceException {
     for (final var variableRecords : variablesGroupedByScopeKey.entrySet()) {
       final var temporaryVariableCache = new HashMap<String, Tuple<Intent, VariableEntity>>();
@@ -72,26 +77,27 @@ public class VariableZeebeRecordProcessor {
 
         LOGGER.debug("Variable instance: id {}", variableEntity.getId());
 
-        if (initialIntent == VariableIntent.CREATED) {
-          batchRequest.add(variableTemplate.getFullQualifiedName(), variableEntity);
-        } else if (initialIntent == VariableIntent.MIGRATED) {
-          final Map<String, Object> updateFields = new HashMap<>();
-          updateFields.put(
-              VariableTemplate.PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
-          updateFields.put(VariableTemplate.BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
-          batchRequest.upsert(
+        final Map<String, Object> updateFields = new HashMap<>();
+        updateFields.put(POSITION, variableEntity.getPosition());
+        if (initialIntent == VariableIntent.MIGRATED) {
+          updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
+          updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
+        } else {
+          updateFields.put(VALUE, variableEntity.getValue());
+          updateFields.put(FULL_VALUE, variableEntity.getFullValue());
+          updateFields.put(IS_PREVIEW, variableEntity.getIsPreview());
+          updateFields.put(PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
+          updateFields.put(BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
+        }
+
+        if (concurrencyMode) {
+          batchRequest.upsertWithScript(
               variableTemplate.getFullQualifiedName(),
               variableEntity.getId(),
               variableEntity,
+              getScript(),
               updateFields);
         } else {
-          final Map<String, Object> updateFields = new HashMap<>();
-          updateFields.put(VariableTemplate.VALUE, variableEntity.getValue());
-          updateFields.put(VariableTemplate.FULL_VALUE, variableEntity.getFullValue());
-          updateFields.put(VariableTemplate.IS_PREVIEW, variableEntity.getIsPreview());
-          updateFields.put(
-              VariableTemplate.PROCESS_DEFINITION_KEY, variableEntity.getProcessDefinitionKey());
-          updateFields.put(VariableTemplate.BPMN_PROCESS_ID, variableEntity.getBpmnProcessId());
           batchRequest.upsert(
               variableTemplate.getFullQualifiedName(),
               variableEntity.getId(),
@@ -100,6 +106,39 @@ public class VariableZeebeRecordProcessor {
         }
       }
     }
+  }
+
+  private String getScript() {
+    return String.format(
+        "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
+            + "ctx._source.%s = params.%s; " // position
+            + "if (params.%s != null) {"
+            + "   ctx._source.%s = params.%s; " // VALUE
+            + "   ctx._source.%s = params.%s; " // FULL_VALUE
+            + "   ctx._source.%s = params.%s; " // IS_PREVIEW
+            + "}"
+            + "if (params.%s != null) {"
+            + "   ctx._source.%s = params.%s; " // PROCESS_DEFINITION_KEY
+            + "   ctx._source.%s = params.%s; " // BPMN_PROCESS_ID
+            + "}"
+            + "}",
+        POSITION,
+        POSITION,
+        POSITION,
+        POSITION,
+        POSITION,
+        VALUE,
+        VALUE,
+        VALUE,
+        FULL_VALUE,
+        FULL_VALUE,
+        IS_PREVIEW,
+        IS_PREVIEW,
+        PROCESS_DEFINITION_KEY,
+        PROCESS_DEFINITION_KEY,
+        PROCESS_DEFINITION_KEY,
+        BPMN_PROCESS_ID,
+        BPMN_PROCESS_ID);
   }
 
   private void processVariableRecord(
@@ -115,7 +154,8 @@ public class VariableZeebeRecordProcessor {
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setName(recordValue.getName())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()));
+        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
+        .setPosition(record.getPosition());
     if (recordValue.getValue().length()
         > operateProperties.getImporter().getVariableSizeThreshold()) {
       // store preview

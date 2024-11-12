@@ -1,22 +1,15 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE ("USE"), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * "Licensee" means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
 import React, {useMemo} from 'react';
-import {NavLink, useLocation, useMatch} from 'react-router-dom';
+import {NavLink, useLocation} from 'react-router-dom';
+import {t} from 'i18next';
+import {useTranslation} from 'react-i18next';
 import {isBefore} from 'date-fns';
 import {Stack} from '@carbon/react';
 import {
@@ -31,13 +24,15 @@ import {
   formatISODateTime,
 } from 'modules/utils/formatDateRelative';
 import {unraw} from 'modules/utils/unraw';
-import {CurrentUser, Task as TaskType} from 'modules/types';
-import {TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
+import type {CurrentUser, Task as TaskType} from 'modules/types';
+import {type TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {encodeTaskOpenedRef} from 'modules/utils/reftags';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
 import {DateLabel} from './DateLabel';
+import {PriorityLabel} from './PriorityLabel';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+import {useIsCurrentTaskOpen} from './useIsCurrentTaskOpen';
 
 type Props = {
   taskId: TaskType['id'];
@@ -49,6 +44,7 @@ type Props = {
   followUpDate: TaskType['followUpDate'];
   dueDate: TaskType['dueDate'];
   completionDate: TaskType['completionDate'];
+  priority: TaskType['priority'];
   currentUser: CurrentUser;
   position: number;
 };
@@ -66,12 +62,12 @@ function getNavLinkLabel({
   const isAssignedToCurrentUser = assigneeId === currentUserId;
   if (isAssigned) {
     if (isAssignedToCurrentUser) {
-      return `Task assigned to me: ${name}`;
+      return t('availableTasksNavLinkAssignedToMe', {name});
     } else {
-      return `Assigned task: ${name}`;
+      return t('availableTasksNavLinkAssignedTask', {name});
     }
   } else {
-    return `Unassigned task: ${name}`;
+    return t('availableTasksNavLinkUnassignedTask', {name});
   }
 }
 
@@ -123,20 +119,18 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
       followUpDate: followUpDateString,
       dueDate: dueDateString,
       completionDate: completionDateString,
+      priority,
       currentUser,
       position,
     },
     ref,
   ) => {
-    const match = useMatch('/:id');
     const location = useLocation();
-    const isActive = match?.params?.id === taskId;
+    const isActive = useIsCurrentTaskOpen(taskId);
     const {filter, sortBy} = useTaskFilters();
-    const creationDate = useMemo(
-      () => formatISODateTime(creationDateString),
-      [creationDateString],
-    );
+    const {t} = useTranslation();
 
+    const creationDate = formatISODateTime(creationDateString);
     const completionDate = formatISODate(completionDateString);
     const dueDate = formatISODate(dueDateString);
     const followUpDate = formatISODate(followUpDateString);
@@ -185,7 +179,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
             className={styles.fullWidthAndHeight}
             data-testid={`task-${taskId}`}
             gap={3}
-            ref={ref}
+            ref={ref as React.LegacyRef<React.ReactNode>}
           >
             <div className={cn(styles.flex, styles.flexColumn)}>
               <span className={styles.name}>{name}</span>
@@ -204,10 +198,9 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
               </div>
             )}
 
-            <div className={cn(styles.flex, styles.flexColumn)}>
-              <span>
-                <AssigneeTag currentUser={currentUser} assignee={assignee} />
-              </span>
+            <div className={cn(styles.flex, styles.flexRow)}>
+              <AssigneeTag currentUser={currentUser} assignee={assignee} />
+              {priority === null ? null : <PriorityLabel priority={priority} />}
             </div>
             <div
               data-testid="dates"
@@ -216,51 +209,51 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
               {creationDate ? (
                 <DateLabel
                   date={creationDate}
-                  relativeLabel="Created"
-                  absoluteLabel="Created on"
+                  relativeLabel={t('availableTasksCreatedRelativeLabel')}
+                  absoluteLabel={t('availableTasksCreatedAbsoluteLabel')}
                   icon={<Calendar className={styles.inlineIcon} />}
                 />
               ) : null}
               {secondaryDate.followUpDate !== undefined ? (
                 <DateLabel
                   date={secondaryDate.followUpDate}
-                  relativeLabel="Follow-up"
-                  absoluteLabel="Follow-up on"
+                  relativeLabel={t('availableTasksFollowUpRelativeLabel')}
+                  absoluteLabel={t('availableTasksFollowUpAbsoluteLabel')}
                   icon={
                     <Notification className={styles.inlineIcon} color="blue" />
                   }
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
               {secondaryDate.overDueDate !== undefined ? (
                 <DateLabel
                   date={secondaryDate.overDueDate}
-                  relativeLabel="Overdue"
-                  absoluteLabel="Overdue"
+                  relativeLabel={t('availableTasksOverdueRelativeLabel')}
+                  absoluteLabel={t('availableTasksOverdueAbsoluteLabel')}
                   icon={<Warning className={styles.inlineIcon} color="red" />}
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
               {secondaryDate.dueDate !== undefined ? (
                 <DateLabel
                   date={secondaryDate.dueDate}
-                  relativeLabel="Due"
-                  absoluteLabel="Due on"
-                  align="top-right"
+                  relativeLabel={t('availableTasksDueRelativeLabel')}
+                  absoluteLabel={t('availableTasksDueAbsoluteLabel')}
+                  align="top-end"
                 />
               ) : null}
               {secondaryDate.completionDate !== undefined ? (
                 <DateLabel
                   date={secondaryDate.completionDate}
-                  relativeLabel="Completed"
-                  absoluteLabel="Completed on"
+                  relativeLabel={t('availableTasksCompletedRelativeLabel')}
+                  absoluteLabel={t('availableTasksCompletedAbsoluteLabel')}
                   icon={
                     <CheckmarkFilled
                       className={styles.inlineIcon}
                       color="green"
                     />
                   }
-                  align="top-right"
+                  align="top-end"
                 />
               ) : null}
             </div>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
   xmlns:xi="http://www.w3.org/2001/XInclude"
-  package="io.atomix.raft.snapshot.impl" id="6" version="2"
+  package="io.atomix.raft.snapshot.impl" id="6" version="3"
   semanticVersion="0.1.0" description="Zeebe Snapshot Management Protocol" byteOrder="littleEndian">
 
   <xi:include href="../../../../../protocol/src/main/resources/common-types.xml"/>
@@ -18,7 +18,10 @@
   <sbe:message name="SnapshotChunk" id="4">
     <field name="totalCount" id="0" type="int32"/>
     <field name="checksum" id="1" type="uint64"/>
+    <!-- snapshotChecksum is deprecated and not used anymore, here for backwards compatibility  -->
     <field name="snapshotChecksum" id="5" type="uint64" sinceVersion="2"/>
+    <field name="fileBlockPosition" id="6" type="uint64" sinceVersion="3"/>
+    <field name="totalFileSize" id="7" type="uint64" sinceVersion="3"/>
     <data name="snapshotId" id="2" type="varDataEncoding"/>
     <data name="chunkName" id="3" type="varDataEncoding"/>
     <data name="content" id="4" type="blob"/>

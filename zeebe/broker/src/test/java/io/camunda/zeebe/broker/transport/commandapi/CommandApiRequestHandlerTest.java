@@ -2,32 +2,29 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.transport.commandapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.broker.transport.backpressure.NoopRequestLimiter;
-import io.camunda.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteCommandResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryRequest;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerRule;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.util.Either;
@@ -40,7 +37,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 public class CommandApiRequestHandlerTest {
   @Rule public final ControlledActorSchedulerRule scheduler = new ControlledActorSchedulerRule();
@@ -51,7 +47,7 @@ public class CommandApiRequestHandlerTest {
   public void setup() {
     scheduler.submitActor(handler);
     logStreamWriter = mock(LogStreamWriter.class);
-    handler.addPartition(0, logStreamWriter, new NoopRequestLimiter<>());
+    handler.addPartition(0, logStreamWriter);
     scheduler.workUntilDone();
   }
 
@@ -131,11 +127,34 @@ public class CommandApiRequestHandlerTest {
   }
 
   @Test
-  public void shouldRejectCommandIfResourcesExhausted() {
+  public void shouldWriteToLog() {
     // given
-    final RequestLimiter<Intent> limiter = mock(RequestLimiter.class);
-    when(limiter.tryAcquire(anyInt(), anyLong(), any())).thenReturn(false);
-    handler.addPartition(0, mock(LogStreamWriter.class), limiter);
+    final var logWriter = mock(LogStreamWriter.class);
+    when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
+    handler.addPartition(0, logWriter);
+    scheduler.workUntilDone();
+
+    final var request =
+        new BrokerPublishMessageRequest("test", "1").setMessageId("1").setTimeToLive(0);
+    request.serializeValue();
+
+    // when
+    handleRequest(request);
+
+    // then
+    verify(logWriter).tryWrite(any(WriteContext.class), any(LogAppendEntry.class));
+  }
+
+  @Test
+  public void shouldReturnNormalErrorMessageIfProcessingPausedOnDifferentPartition() {
+    // given
+    final var logWriter = mock(LogStreamWriter.class);
+    when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
+    when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
+    handler.addPartition(0, logWriter);
+    handler.onRecovered(0);
+    handler.onPaused(1);
     scheduler.workUntilDone();
 
     final var request =
@@ -147,19 +166,25 @@ public class CommandApiRequestHandlerTest {
 
     // then
     assertThat(responseFuture)
-        .succeedsWithin(Duration.ofMinutes(1))
+        .succeedsWithin(Duration.ofSeconds(5))
         .matches(Either::isLeft)
         .extracting(Either::getLeft)
-        .extracting(ErrorResponse::getErrorCode)
-        .isEqualTo(ErrorCode.RESOURCE_EXHAUSTED);
+        .extracting(ErrorResponse::getErrorData)
+        .extracting(errorData -> BufferUtil.bufferAsString(errorData))
+        .isEqualTo(
+            "Failed to write client request to partition '0', because the write limit is exhausted.");
   }
 
   @Test
-  public void shouldWriteToLog() {
+  public void shouldReturnProcessingPausedIfPartitionPaused() {
     // given
     final var logWriter = mock(LogStreamWriter.class);
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
-    handler.addPartition(0, logWriter, new NoopRequestLimiter<>());
+    when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
+        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
+    handler.addPartition(0, logWriter);
+    handler.onRecovered(0);
+    handler.onPaused(0);
     scheduler.workUntilDone();
 
     final var request =
@@ -167,10 +192,16 @@ public class CommandApiRequestHandlerTest {
     request.serializeValue();
 
     // when
-    handleRequest(request);
+    final var responseFuture = handleRequest(request);
 
     // then
-    verify(logWriter).tryWrite(Mockito.<LogAppendEntry>any());
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofSeconds(5))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .extracting(ErrorResponse::getErrorData)
+        .extracting(errorData -> BufferUtil.bufferAsString(errorData))
+        .isEqualTo("Processing paused for partition '0'");
   }
 
   @Test
@@ -178,9 +209,9 @@ public class CommandApiRequestHandlerTest {
     // given
     final var logWriter = mock(LogStreamWriter.class);
     when(logWriter.canWriteEvents(anyInt(), anyInt())).thenReturn(true);
-    when(logWriter.tryWrite(any(LogAppendEntry.class)))
+    when(logWriter.tryWrite(any(WriteContext.class), any(LogAppendEntry.class)))
         .thenReturn(Either.left(WriteFailure.CLOSED));
-    handler.addPartition(0, logWriter, new NoopRequestLimiter<>());
+    handler.addPartition(0, logWriter);
     scheduler.workUntilDone();
 
     final var request =

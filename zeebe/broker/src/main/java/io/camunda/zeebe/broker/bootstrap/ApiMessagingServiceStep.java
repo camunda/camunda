@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.bootstrap;
 
@@ -35,8 +35,11 @@ public class ApiMessagingServiceStep extends AbstractBrokerStartupStep {
     if (securityCfg.isEnabled()) {
       messagingConfig
           .setTlsEnabled(true)
-          .setCertificateChain(securityCfg.getCertificateChainPath())
-          .setPrivateKey(securityCfg.getPrivateKeyPath());
+          .configureTls(
+              securityCfg.getKeyStore().getFilePath(),
+              securityCfg.getKeyStore().getPassword(),
+              securityCfg.getPrivateKeyPath(),
+              securityCfg.getCertificateChainPath());
     }
 
     messagingConfig.setCompressionAlgorithm(brokerCfg.getCluster().getMessageCompression());
@@ -45,7 +48,8 @@ public class ApiMessagingServiceStep extends AbstractBrokerStartupStep {
         new NettyMessagingService(
             brokerCfg.getCluster().getClusterName(),
             Address.from(commandApiCfg.getAdvertisedHost(), commandApiCfg.getAdvertisedPort()),
-            messagingConfig);
+            messagingConfig,
+            "Broker-" + brokerCfg.getCluster().getNodeId());
 
     messagingService
         .start()

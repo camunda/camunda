@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.test.util.record;
 
@@ -37,6 +37,10 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
   public RecordStream between(
       final Predicate<Record<?>> lowerBound, final Predicate<Record<?>> upperBound) {
     return supply(dropWhile(Predicate.not(lowerBound))).limit(upperBound::test);
+  }
+
+  public RecordStream after(final long lowerBoundPosition) {
+    return supply(dropWhile(r -> r.getPosition() <= lowerBoundPosition));
   }
 
   public RecordStream limitToProcessInstance(final long processInstanceKey) {
@@ -122,5 +126,10 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
   public UserTaskRecordStream userTaskRecords() {
     return new UserTaskRecordStream(
         filter(r -> r.getValueType() == ValueType.USER_TASK).map(Record.class::cast));
+  }
+
+  public UserRecordStream userRecords() {
+    return new UserRecordStream(
+        filter(r -> r.getValueType() == ValueType.USER).map(Record.class::cast));
   }
 }

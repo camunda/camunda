@@ -1,0 +1,14 @@
+version: v2
+modules:
+  - path: zeebe/dynamic-config/src/main/resources/proto
+    breaking:
+      # as we use this only internally, only break on wire incompatibility; ignore source breaking
+      # changes
+      use:
+        - WIRE
+  - path: zeebe/gateway-protocol/src/main/proto
+    breaking:
+      # as this is meant to be consumed by clients for code generation, we do care about source
+      # backwards compatibility
+      use:
+        - FILE

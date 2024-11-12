@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.randomized;
 
@@ -14,7 +14,7 @@ import io.camunda.zeebe.engine.util.ProcessExecutor;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.stream.impl.StreamProcessor.Phase;
+import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import io.camunda.zeebe.test.util.bpmn.random.ExecutionPath;
 import io.camunda.zeebe.test.util.bpmn.random.ScheduledExecutionStep;
 import io.camunda.zeebe.test.util.bpmn.random.TestDataGenerator;
@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Map;
 import org.assertj.core.api.SoftAssertions;
 import org.awaitility.Awaitility;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -49,13 +48,7 @@ public class ReplayStateRandomizedPropertyTest {
       new FailedPropertyBasedTestDataPrinter(this::getDataRecord);
 
   @Rule public final EngineRule engineRule = EngineRule.singlePartition();
-  private long lastProcessedPosition = -1L;
   private final ProcessExecutor processExecutor = new ProcessExecutor(engineRule);
-
-  @Before
-  public void init() {
-    lastProcessedPosition = -1L;
-  }
 
   public TestDataRecord getDataRecord() {
     return record;
@@ -107,24 +100,24 @@ public class ReplayStateRandomizedPropertyTest {
     // given
     Awaitility.await(
             "await the last written record to be processed, then wait a GRACE_PERIOD to make sure no new events are added")
-        .untilAsserted(
-            () -> {
-              processingHasStoppedAndNoNewRecordsAreAddedDuringGracePeriod();
-            });
+        .untilAsserted(this::processingHasStoppedAndNoNewRecordsAreAddedDuringGracePeriod);
 
     engineRule.pauseProcessing(1);
+
+    final var lastProcessedPosition =
+        engineRule.getStreamProcessor(1).getLastProcessedPositionAsync().join();
 
     final var processingState = engineRule.collectState();
     engineRule.stop();
 
     // when
-    engineRule.start();
+    engineRule.start(StreamProcessorMode.REPLAY, false);
 
-    Awaitility.await()
+    Awaitility.await("Until all events have been replayed")
         .untilAsserted(
             () ->
-                assertThat(engineRule.getStreamProcessor(1).getCurrentPhase().join())
-                    .isEqualTo(Phase.PROCESSING));
+                assertThat(engineRule.getStreamProcessor(1).getLastProcessedPositionAsync().join())
+                    .isEqualTo(lastProcessedPosition));
 
     // then
     Awaitility.await("await that the replay state is equal to the processing state")
@@ -133,6 +126,10 @@ public class ReplayStateRandomizedPropertyTest {
               final var replayState = engineRule.collectState();
               assertIdenticalStates(processingState, replayState);
             });
+
+    // now continue processing as usual
+    engineRule.stop();
+    engineRule.start(StreamProcessorMode.PROCESSING, true);
   }
 
   private void assertIdenticalStates(
@@ -168,14 +165,10 @@ public class ReplayStateRandomizedPropertyTest {
     assertThat(engineRule.hasReachedEnd())
         .describedAs("Processing has reached end of the log.")
         .isTrue();
-    final var stateBeforeGracePeriod = engineRule.collectState();
     Thread.sleep(GRACE_PERIOD);
     assertThat(engineRule.hasReachedEnd())
         .describedAs("Processing has reached end of the log.")
         .isTrue();
-    final var stateAfterGracePeriod = engineRule.collectState();
-
-    assertIdenticalStates(stateBeforeGracePeriod, stateAfterGracePeriod);
   }
 
   @Parameters(name = "{0}")

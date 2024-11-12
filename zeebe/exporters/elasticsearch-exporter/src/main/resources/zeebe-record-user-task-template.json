@@ -78,6 +78,9 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "priority": {
+              "type": "integer"
             }
           }
         }

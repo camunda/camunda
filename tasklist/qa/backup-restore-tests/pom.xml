@@ -5,14 +5,13 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-qa</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
   </parent>
   <artifactId>tasklist-qa-backup-restore-tests</artifactId>
 
   <name>Tasklist QA Backup Tests</name>
 
   <properties>
-    <plugin.version.license>3.0</plugin.version.license>
     <maven.compiler.source>11</maven.compiler.source>
     <maven.compiler.target>11</maven.compiler.target>
   </properties>
@@ -162,13 +161,6 @@
       <groupId>com.graphql-java-kickstart</groupId>
       <artifactId>graphql-spring-boot-test</artifactId>
       <scope>test</scope>
-      <exclusions>
-        <!-- Tasklist depends on org.json:json -->
-        <exclusion>
-          <groupId>com.vaadin.external.google</groupId>
-          <artifactId>android-json</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>

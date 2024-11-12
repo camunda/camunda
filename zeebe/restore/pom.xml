@@ -3,8 +3,8 @@
   ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
   ~ one or more contributor license agreements. See the NOTICE file distributed
   ~ with this work for additional information regarding copyright ownership.
-  ~ Licensed under the Zeebe Community License 1.1. You may not use this file
-  ~ except in compliance with the Zeebe Community License 1.1.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
   -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
@@ -13,7 +13,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
@@ -35,6 +35,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>zeebe-db</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-snapshots</artifactId>
     </dependency>
 
@@ -50,7 +55,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>zeebe-cluster-topology</artifactId>
+      <artifactId>zeebe-cluster-config</artifactId>
     </dependency>
 
     <dependency>

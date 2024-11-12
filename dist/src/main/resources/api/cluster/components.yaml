@@ -1,0 +1,459 @@
+responses:
+  ConcurrentChangeError:
+    description: Failed to accept request. Another topology change is in progress.
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+  InvalidRequest:
+    description: Invalid request.
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+  GatewayError:
+    description: Gateway failed to send request to the broker.
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+  TimeoutError:
+    description: Request from gateway to broker timed out.
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+  InternalError:
+    description: Internal error
+    content:
+      application/json:
+        schema:
+          "$ref": "components.yaml#/schemas/Error"
+
+schemas:
+  Error:
+    title: Error response
+    description: Generic response for all errors
+    type: object
+    properties:
+      message:
+        description: Error message
+        type: string
+        example: something failed
+
+  ScaleRequest:
+    title: ScaleRequest
+    description: Request body for changing the cluster topology
+    type: array
+    items:
+      $ref: "components.yaml#/schemas/BrokerId"
+
+  ClusterConfigPatchRequest:
+    title: ClusterConfigPatchRequest
+    description: Request body for reconfiguring the cluster
+    type: object
+    properties:
+      brokers:
+        type: object
+        description: Specify the required changes to the brokers. You can either provide the set of
+          brokers to add and remove or the new count of brokers.
+        properties:
+          add:
+            type: array
+            description: List of brokers to add. Can be omitted if no brokers are added.
+            items:
+              $ref: "components.yaml#/schemas/BrokerId"
+          remove:
+            type: array
+            description: List of brokers to remove. Can be omitted if no brokers are removed.
+            items:
+              $ref: "components.yaml#/schemas/BrokerId"
+          count:
+            type: integer
+            format: int32
+            description: The new number of brokers. Can be omitted if the broker count is not changed
+              or if the brokers to add or remove is provided.
+            example: 12
+      partitions:
+        type: object
+        properties:
+          count:
+            type: integer
+            format: int32
+            description: The new number of partitions. Can be omitted if the partition count is not
+              changed. This is an experimental feature.
+            example: 12
+          replicationFactor:
+            type: integer
+            format: int32
+            description: The new replication factor. Can be omitted if the replication factor is not changed.
+            example: 3
+
+  PlannedOperationsResponse:
+    title: PlannedOperationsResponse
+    description: Returns the current topology, planned changes and the expected final topology
+      when the planned changes have completed.
+    type: object
+    properties:
+      changeId:
+        $ref: "components.yaml#/schemas/ChangeId"
+      currentTopology:
+        description: Current topology of the cluster
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/BrokerState"
+      plannedChanges:
+        description: A sequence of operations that will be performed to transform the current
+          topology into the expected topology.
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/Operation"
+      expectedTopology:
+        description: The expected final topology when the planned changes have completed.
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/BrokerState"
+
+
+  GetTopologyResponse:
+    title: GetTopologyResponse
+    description: Current topology of the cluster
+    type: object
+    properties:
+      version:
+        $ref: "components.yaml#/schemas/TopologyVersion"
+      brokers:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/BrokerState"
+      lastChange:
+        $ref: "components.yaml#/schemas/CompletedChange"
+      pendingChange:
+        $ref: "components.yaml#/schemas/TopologyChange"
+      routing:
+        $ref: "components.yaml#/schemas/RoutingState"
+
+  RoutingState:
+    description: The routing state, i.e. where requests are sent to and how messages are correlated
+    type: object
+    required:
+      - version
+      - requestHandling
+      - messageCorrelation
+    properties:
+      version:
+        type: integer
+        format: int64
+        description: The version of the routing state
+        example: 1
+      requestHandling:
+        $ref: "components.yaml#/schemas/RequestHandling"
+      messageCorrelation:
+        $ref: "components.yaml#/schemas/MessageCorrelation"
+
+  RequestHandling:
+    description: The request handling strategy
+    oneOf:
+      - $ref: "components.yaml#/schemas/RequestHandlingAllPartitions"
+      - $ref: "components.yaml#/schemas/RequestHandlingActivePartitions"
+    discriminator:
+      propertyName: strategy
+      mapping:
+        AllPartitions: "components.yaml#/schemas/RequestHandlingAllPartitions"
+        ActivePartitions: "components.yaml#/schemas/RequestHandlingActivePartitions"
+
+  RequestHandlingAllPartitions:
+    description: Requests are handled by all partitions
+    type: object
+    required:
+      - partitionCount
+    properties:
+      strategy:
+        type: string
+      partitionCount:
+        type: integer
+        format: int32
+        description: The number of partitions
+        example: 3
+
+  RequestHandlingActivePartitions:
+    description: Requests are only handled by active partitions, inactive partitions are excluded
+    type: object
+    required:
+      - basePartitionCount
+      - additionalActivePartitions
+      - inactivePartitions
+    properties:
+      strategy:
+        type: string
+      basePartitionCount:
+        type: integer
+        format: int32
+        description: Contiguous range of partitions (1..=N) that are active.
+        example: 3
+      additionalActivePartitions:
+        type: array
+        description: A list of additional, active partitions that also accept round-robin requests
+        example: [ 4, 5 ]
+        items:
+          type: integer
+          format: int32
+      inactivePartitions:
+        type: array
+        description: A list of inactive partitions that do not accept round-robing requests
+        example: [ 6, 7 ]
+        items:
+          type: integer
+          format: int32
+
+  MessageCorrelation:
+    description: The message correlation strategy
+    oneOf:
+      - $ref: "components.yaml#/schemas/MessageCorrelationHashMod"
+    discriminator:
+      propertyName: strategy
+      mapping:
+        HashMod: "components.yaml#/schemas/MessageCorrelationHashMod"
+
+  MessageCorrelationHashMod:
+    type: object
+    required:
+      - strategy
+      - partitionCount
+    properties:
+      strategy:
+        type: string
+      partitionCount:
+        type: integer
+        format: int32
+        description: The number of partitions
+        example: 3
+
+  CompletedChange:
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/ChangeId"
+      status:
+        type: string
+        enum:
+          - COMPLETED
+          - FAILED
+          - CANCELLED
+      startedAt:
+        type: string
+        format: date-time
+        description: The time when the topology change was started
+        example: "2020-01-01T00:00:00Z"
+      completedAt:
+        type: string
+        format: date-time
+        description: The time when the topology change was completed
+        example: "2020-01-01T00:00:00Z"
+
+  TopologyChange:
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/ChangeId"
+      status:
+        type: string
+        enum:
+          - IN_PROGRESS
+          - COMPLETED
+          - FAILED
+          - CANCELLED
+      startedAt:
+        type: string
+        format: date-time
+        description: The time when the topology change was started
+        example: "2020-01-01T00:00:00Z"
+      completedAt:
+        type: string
+        format: date-time
+        description: The time when the topology change was completed
+        example: "2020-01-01T00:00:00Z"
+      internalVersion:
+        type: integer
+        format: int64
+        description: The internal version of the topology change
+        example: 1
+      completed:
+        description: The list of operations that have been completed if the change status is not COMPLETED.
+        type: array
+        items:
+          allOf:
+            - $ref: "components.yaml#/schemas/Operation"
+            - type: object
+              properties:
+                completedAt:
+                  type: string
+                  format: date-time
+                  description: The time when the operation was completed
+                  example: "2020-01-01T00:00:00Z"
+      pending:
+        description: The list of operations that are pending.
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/Operation"
+
+  Operation:
+    type: object
+    properties:
+      operation:
+        type: string
+        enum:
+          - BROKER_ADD
+          - BROKER_REMOVE
+          - PARTITION_JOIN
+          - PARTITION_LEAVE
+          - PARTITION_RECONFIGURE_PRIORITY
+          - PARTITION_FORCE_RECONFIGURE
+          - BROKER_FORCE_REMOVE
+          - UNKNOWN
+          - PARTITION_DISABLE_EXPORTER
+          - PARTITION_ENABLE_EXPORTER
+      brokerId:
+        $ref: "components.yaml#/schemas/BrokerId"
+      partitionId:
+        $ref: "components.yaml#/schemas/PartitionId"
+      priority:
+        type: integer
+        format: int32
+        description: The priority of the partition
+        example: 3
+      brokers:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/BrokerId"
+      exporterId:
+        $ref: "components.yaml#/schemas/ExporterId"
+
+  BrokerState:
+    title: BrokerState
+    description: State of a broker
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/BrokerId"
+      state:
+        $ref: "components.yaml#/schemas/BrokerStateCode"
+      version:
+        type: integer
+        format: int64
+        description: The version of the broker state
+        example: 1
+      lastUpdatedAt:
+        type: string
+        format: date-time
+        description: The time when the broker state was last updated
+        example: "2020-01-01T00:00:00Z"
+      partitions:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/PartitionState"
+
+  BrokerStateCode:
+    title: BrokerStateCode
+    description: State of a broker
+    type: string
+    enum:
+      - UNKNOWN
+      - ACTIVE
+      - JOINING
+      - LEAVING
+      - LEFT
+
+  PartitionState:
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/PartitionId"
+      state:
+        $ref: "components.yaml#/schemas/PartitionStateCode"
+      priority:
+        type: integer
+        format: int32
+        description: The priority of the partition
+        example: 1
+      config:
+        $ref: "components.yaml#/schemas/PartitionConfig"
+
+  PartitionConfig:
+    type: object
+    properties:
+      exporting:
+        $ref: "components.yaml#/schemas/ExportingConfig"
+
+  ExportingConfig:
+    type: object
+    properties:
+      exporters:
+        type: array
+        items:
+          $ref: "components.yaml#/schemas/ExporterConfig"
+
+  ExporterConfig:
+    type: object
+    properties:
+      id:
+        $ref: "components.yaml#/schemas/ExporterId"
+      state:
+        $ref: "components.yaml#/schemas/ExporterStateCode"
+
+  ExporterStateCode:
+    title: ExporterStateCode
+    description: State of an exporter
+    type: string
+    enum:
+      - UNKNOWN
+      - ENABLED
+      - DISABLED
+
+  PartitionStateCode:
+    title: PartitionStateCode
+    description: State of a partition
+    type: string
+    enum:
+      - UNKNOWN
+      - JOINING
+      - ACTIVE
+      - LEAVING
+
+  TopologyVersion:
+    title: TopologyVersion
+    description: The version of the topology
+    type: integer
+    format: int64
+    example: 1
+
+  ChangeId:
+    title: ChangeId
+    description: The ID of a topology change operation
+    type: integer
+    format: int64
+    example: 8
+
+  BrokerId:
+    title: BrokerId
+    description: The ID of a broker, starting from 0
+    type: integer
+    format: int32
+    example: 0
+
+  PartitionId:
+    title: PartitionId
+    description: The ID of a partition, starting from 1
+    type: integer
+    format: int32
+    example: 1
+
+  ExporterId:
+    title: Exporter
+    description: The ID of an exporter
+    type: string
+    example: "my-exporter"

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="http://www.omg.org/spec/DMN/20151101/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20151101/DC/" xmlns:di="http://www.omg.org/spec/DMN/20151101/DI/" id="definitions_1" name="definitions" namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="decision_1" name="Loan Eligibility">
+    <decisionTable id="decisionTable_1" hitPolicy="FIRST">
+      <input id="input_1" label="Age">
+        <inputExpression id="inputExpression_1" typeRef="integer">
+          <text>age</text>
+        </inputExpression>
+      </input>
+      <input id="input_2" label="Income">
+        <inputExpression id="inputExpression_2" typeRef="integer">
+          <text>income</text>
+        </inputExpression>
+      </input>
+      <output id="output_1" label="Eligibility" name="eligibility" typeRef="string" />
+      <rule id="rule_1">
+        <inputEntry id="inputEntry_1">
+          <text>&lt; 18</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_2">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_1">
+          <text>"Not Eligible"</text>
+        </outputEntry>
+      </rule>
+      <rule id="rule_2">
+        <inputEntry id="inputEntry_3">
+          <text>&gt;= 18</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_4">
+          <text>&lt; 20000</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_2">
+          <text>"Not Eligible"</text>
+        </outputEntry>
+      </rule>
+      <rule id="rule_3">
+        <inputEntry id="inputEntry_5">
+          <text>&gt;= 18</text>
+        </inputEntry>
+        <inputEntry id="inputEntry_6">
+          <text>&gt;= 20000</text>
+        </inputEntry>
+        <outputEntry id="outputEntry_3">
+          <text>"Eligible"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>

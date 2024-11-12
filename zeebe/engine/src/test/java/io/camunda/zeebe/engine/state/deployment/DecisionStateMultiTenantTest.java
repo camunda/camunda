@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.deployment;
 
@@ -103,6 +103,86 @@ public class DecisionStateMultiTenantTest {
     assertDecision(latestDecisions1.get(0), tenant1, decisionKey, decisionId, version, drgKey);
     assertThat(latestDecisions2).hasSize(1);
     assertDecision(latestDecisions2.get(0), tenant2, decisionKey, decisionId, version, drgKey);
+  }
+
+  @Test
+  public void shouldStoreDecisionKeyByProcessIdAndDeploymentKeyForMultipleTenants() {
+    // given
+    final var drgKey = 123L;
+    final var drgId = "drgId";
+    final var decisionKey = 456L;
+    final var decisionId = "decisionId";
+    final int version = 1;
+    final var tenant1 = "tenant1";
+    final var tenant2 = "tenant2";
+    final var deploymentKey = 789L;
+    final var drg1 = sampleDecisionRequirementsRecord(tenant1, drgKey, drgId, version);
+    final var drg2 = sampleDecisionRequirementsRecord(tenant2, drgKey, drgId, version);
+    final var decision1 =
+        sampleDecisionRecord(tenant1, decisionKey, decisionId, version, drgKey)
+            .setDeploymentKey(deploymentKey);
+    final var decision2 =
+        sampleDecisionRecord(tenant2, decisionKey, decisionId, version, drgKey)
+            .setDeploymentKey(deploymentKey);
+    decisionState.storeDecisionRequirements(drg1);
+    decisionState.storeDecisionRequirements(drg2);
+    decisionState.storeDecisionRecord(decision1);
+    decisionState.storeDecisionRecord(decision2);
+
+    // when
+    decisionState.storeDecisionKeyByDecisionIdAndDeploymentKey(decision1);
+    decisionState.storeDecisionKeyByDecisionIdAndDeploymentKey(decision2);
+
+    // then
+    final var actualDecision1 =
+        decisionState.findDecisionByIdAndDeploymentKey(
+            tenant1, wrapString(decisionId), deploymentKey);
+    final var actualDecision2 =
+        decisionState.findDecisionByIdAndDeploymentKey(
+            tenant2, wrapString(decisionId), deploymentKey);
+    assertDecision(
+        actualDecision1.orElseThrow(), tenant1, decisionKey, decisionId, version, drgKey);
+    assertDecision(
+        actualDecision2.orElseThrow(), tenant2, decisionKey, decisionId, version, drgKey);
+  }
+
+  @Test
+  public void shouldStoreDecisionKeyByProcessIdAndVersionTagForMultipleTenants() {
+    // given
+    final var drgKey = 123L;
+    final var drgId = "drgId";
+    final var decisionKey = 456L;
+    final var decisionId = "decisionId";
+    final int version = 1;
+    final String versionTag = "v1.0";
+    final var tenant1 = "tenant1";
+    final var tenant2 = "tenant2";
+    final var drg1 = sampleDecisionRequirementsRecord(tenant1, drgKey, drgId, version);
+    final var drg2 = sampleDecisionRequirementsRecord(tenant2, drgKey, drgId, version);
+    final var decision1 =
+        sampleDecisionRecord(tenant1, decisionKey, decisionId, version, drgKey)
+            .setVersionTag(versionTag);
+    final var decision2 =
+        sampleDecisionRecord(tenant2, decisionKey, decisionId, version, drgKey)
+            .setVersionTag(versionTag);
+    decisionState.storeDecisionRequirements(drg1);
+    decisionState.storeDecisionRequirements(drg2);
+    decisionState.storeDecisionRecord(decision1);
+    decisionState.storeDecisionRecord(decision2);
+
+    // when
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(decision1);
+    decisionState.storeDecisionKeyByDecisionIdAndVersionTag(decision2);
+
+    // then
+    final var actualDecision1 =
+        decisionState.findDecisionByIdAndVersionTag(tenant1, wrapString(decisionId), versionTag);
+    final var actualDecision2 =
+        decisionState.findDecisionByIdAndVersionTag(tenant2, wrapString(decisionId), versionTag);
+    assertDecision(
+        actualDecision1.orElseThrow(), tenant1, decisionKey, decisionId, version, drgKey);
+    assertDecision(
+        actualDecision2.orElseThrow(), tenant2, decisionKey, decisionId, version, drgKey);
   }
 
   @Test

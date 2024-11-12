@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.message;
 
@@ -22,10 +22,10 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.P
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
@@ -55,11 +55,14 @@ public final class DbMessageSubscriptionState
       messageNameAndCorrelationKeyColumnFamily;
 
   private final TransientPendingSubscriptionState transientState;
+  private final InstantSource clock;
 
   public DbMessageSubscriptionState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
-      final TransientPendingSubscriptionState transientState) {
+      final TransientPendingSubscriptionState transientState,
+      final InstantSource clock) {
+    this.clock = clock;
 
     elementInstanceKey = new DbLong();
     messageName = new DbString();
@@ -96,7 +99,7 @@ public final class DbMessageSubscriptionState
             transientState.add(
                 new PendingSubscription(
                     elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()),
-                ActorClock.currentTimeMillis());
+                clock.millis());
           }
         });
   }
@@ -137,9 +140,8 @@ public final class DbMessageSubscriptionState
 
   @Override
   public void put(final long key, final MessageSubscriptionRecord record) {
-    tenantIdKey.wrapString(record.getTenantId());
-    elementInstanceKey.wrapLong(record.getElementInstanceKey());
-    messageName.wrapBuffer(record.getMessageNameBuffer());
+    wrapSubscriptionKeys(
+        record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
 
     messageSubscription.setKey(key).setRecord(record).setCorrelating(false);
 
@@ -167,7 +169,7 @@ public final class DbMessageSubscriptionState
               record.getElementInstanceKey(), record.getMessageName()));
     }
 
-    // update the message key and the variables
+    // update the message key, variables and request data
     subscription.getRecord().setMessageKey(messageKey).setVariables(messageVariables);
 
     updateCorrelatingFlag(subscription, true);
@@ -177,7 +179,7 @@ public final class DbMessageSubscriptionState
             subscription.getRecord().getElementInstanceKey(),
             subscription.getRecord().getMessageName(),
             subscription.getRecord().getTenantId()),
-        ActorClock.currentTimeMillis());
+        clock.millis());
   }
 
   @Override
@@ -218,6 +220,25 @@ public final class DbMessageSubscriptionState
     transientState.remove(
         new PendingSubscription(
             elementInstanceKey.getValue(), messageName.toString(), tenantIdKey.toString()));
+  }
+
+  @Override
+  public void update(final long key, final MessageSubscriptionRecord record) {
+    final MessageSubscription subscription =
+        get(record.getElementInstanceKey(), record.getMessageNameBuffer());
+
+    if (subscription == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to update subscription but not found. [element-instance-key: %d, message-name: %s]",
+              record.getElementInstanceKey(), record.getMessageName()));
+    }
+
+    wrapSubscriptionKeys(
+        record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
+    messageSubscription.setKey(key).setRecord(record).setCorrelating(subscription.isCorrelating());
+
+    subscriptionColumnFamily.update(elementKeyAndMessageName, messageSubscription);
   }
 
   private void updateCorrelatingFlag(
@@ -274,5 +295,12 @@ public final class DbMessageSubscriptionState
       final long timestampMs) {
     transientState.update(
         new PendingSubscription(elementInstanceKey, messageName, tenantId), timestampMs);
+  }
+
+  private void wrapSubscriptionKeys(
+      final long elementInstanceKey, final DirectBuffer messageName, final String tenantId) {
+    this.elementInstanceKey.wrapLong(elementInstanceKey);
+    this.messageName.wrapBuffer(messageName);
+    tenantIdKey.wrapString(tenantId);
   }
 }

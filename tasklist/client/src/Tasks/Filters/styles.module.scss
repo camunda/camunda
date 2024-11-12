@@ -1,41 +1,35 @@
 /*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a proprietary license.
- * See the License.txt file for more information. You may not use this file
- * except in compliance with the proprietary license.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
-.container {
-  width: 100%;
-  padding: var(--cds-spacing-04) var(--cds-spacing-05);
-  border-bottom: 1px solid var(--cds-border-subtle);
-
-  :global(.cds--custom-sorting-menu-options-wrapper) {
-    width: 180px;
-  }
-}
-
-.form {
-  display: grid;
-  align-items: flex-end;
-  grid-template-columns: 1fr min-content;
-  gap: var(--cds-spacing-03);
-  width: 100%;
-
-  &.customFilters {
-    grid-template-columns: 1fr min-content min-content;
-    gap: var(--cds-spacing-02);
-  }
-}
-
 .sortItem {
-  width: 100%;
+  width: fit-content;
   display: flex;
   gap: var(--cds-spacing-03);
+  white-space: nowrap;
 }
 
-.menuItem {
+.header {
+  width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  padding-right: var(--cds-spacing-03);
+}
+
+.overflowMenu {
+  width: fit-content;
+
+  :global(cds--overflow-menu-options__option),
+  :global(.cds--overflow-menu-options__btn) {
+    width: 100%;
+  }
+
+  :global(.cds--overflow-menu-options__btn) {
+    max-inline-size: unset;
+  }
 }

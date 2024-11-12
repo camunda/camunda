@@ -2,27 +2,25 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.impl.job;
 
 import io.camunda.zeebe.gateway.Loggers;
-import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.Objects;
 import org.slf4j.Logger;
 
-public class InflightActivateJobsRequest {
+public class InflightActivateJobsRequest<T> {
 
   private static final Logger LOG = Loggers.LONG_POLLING;
   private final long requestId;
   private final BrokerActivateJobsRequest request;
-  private final ServerStreamObserver<ActivateJobsResponse> responseObserver;
+  private final ResponseObserver<T> responseObserver;
   private final String jobType;
   private final String worker;
   private final int maxJobsToActivate;
@@ -36,7 +34,7 @@ public class InflightActivateJobsRequest {
   public InflightActivateJobsRequest(
       final long requestId,
       final BrokerActivateJobsRequest request,
-      final ServerStreamObserver<ActivateJobsResponse> responseObserver,
+      final ResponseObserver<T> responseObserver,
       final long requestTimeout) {
     this(
         requestId,
@@ -51,7 +49,7 @@ public class InflightActivateJobsRequest {
   private InflightActivateJobsRequest(
       final long requestId,
       final BrokerActivateJobsRequest request,
-      final ServerStreamObserver<ActivateJobsResponse> responseObserver,
+      final ResponseObserver<T> responseObserver,
       final String jobType,
       final String worker,
       final int maxJobsToActivate,
@@ -96,8 +94,7 @@ public class InflightActivateJobsRequest {
    *           exception (note: in this case {@link Either#isRight() == false})
    *     </ul>
    */
-  public Either<Exception, Boolean> tryToSendActivatedJobs(
-      final ActivateJobsResponse activatedJobs) {
+  public Either<Exception, Boolean> tryToSendActivatedJobs(final T activatedJobs) {
     if (isOpen()) {
       try {
         responseObserver.onNext(activatedJobs);
@@ -136,7 +133,7 @@ public class InflightActivateJobsRequest {
     return request;
   }
 
-  public ServerStreamObserver<ActivateJobsResponse> getResponseObserver() {
+  public ResponseObserver<T> getResponseObserver() {
     return responseObserver;
   }
 

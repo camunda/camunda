@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter;
 
@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -59,7 +60,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class ElasticsearchExporterIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefaultContainer().withEnv("action.destructive_requires_name", "false");
+      TestSearchContainers.createDefeaultElasticsearchContainer()
+          .withEnv("action.destructive_requires_name", "false");
 
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
@@ -121,11 +123,11 @@ final class ElasticsearchExporterIT {
             record);
   }
 
-  // both tests below are regression tests for https://github.com/camunda/zeebe/issues/4640
+  // both tests below are regression tests for https://github.com/camunda/camunda/issues/4640
   // one option would be to get rid of these and instead have unit tests on the templates themselves
   // where we can guarantee that this field is not indexed, for example
 
-  // regression test for https://github.com/camunda/zeebe/issues/4640
+  // regression test for https://github.com/camunda/camunda/issues/4640
   @Test
   void shouldExportJobRecordWithOverlappingCustomHeaders() {
     // given
@@ -145,7 +147,7 @@ final class ElasticsearchExporterIT {
     assertThat(response.source()).isEqualTo(record);
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/4640
+  // regression test for https://github.com/camunda/camunda/issues/4640
   @Test
   void shouldExportJobBatchRecordWithOverlappingCustomHeaders() {
     // given

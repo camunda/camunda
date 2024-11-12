@@ -18,6 +18,7 @@ package io.camunda.zeebe.model.bpmn.builder;
 
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 
 /**
@@ -67,6 +68,20 @@ public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B
     final ZeebeCalledElement calledElement =
         getCreateSingleExtensionElement(ZeebeCalledElement.class);
     calledElement.setPropagateAllParentVariablesEnabled(propagateAllParentVariables);
+    return myself;
+  }
+
+  public B zeebeBindingType(final ZeebeBindingType bindingType) {
+    final ZeebeCalledElement calledElement =
+        getCreateSingleExtensionElement(ZeebeCalledElement.class);
+    calledElement.setBindingType(bindingType);
+    return myself;
+  }
+
+  public B zeebeVersionTag(final String versionTag) {
+    final ZeebeCalledElement calledElement =
+        getCreateSingleExtensionElement(ZeebeCalledElement.class);
+    calledElement.setVersionTag(versionTag);
     return myself;
   }
 }

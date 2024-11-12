@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.job;
 
@@ -408,7 +408,7 @@ public final class ActivateJobsTest {
     assertThat(remainingJobKeys).hasSize(jobCount - expectedJobsInBatch);
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/6207
+  // regression test for https://github.com/camunda/camunda/issues/6207
   @Test
   public void shouldActivateJobUpToMaxMessageSize() {
     // given
@@ -458,7 +458,7 @@ public final class ActivateJobsTest {
         .isEqualTo(Map.of("foo", "x".repeat(variablesSize), "bar", "x".repeat(variablesSize)));
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/10308
+  // regression test for https://github.com/camunda/camunda/issues/10308
   @Test
   public void shouldNotActivateJobWithNoRemainingRetries() {
     // given

@@ -1,0 +1,187 @@
+syntax = 'proto3';
+package topology_protocol;
+
+import "google/protobuf/timestamp.proto";
+
+option java_package = "io.camunda.zeebe.dynamic.config.protocol";
+
+message GossipState {
+  ClusterTopology clusterTopology = 1;
+}
+
+message ClusterTopology {
+  int64 version = 1;
+  map<string, MemberState> members = 2;
+  CompletedChange lastChange = 3;
+  ClusterChangePlan currentChange = 4;
+  RoutingState routingState = 5;
+}
+
+message RoutingState {
+  int64  version = 1;
+  RequestHandling requestHandling = 2;
+  MessageCorrelation messageCorrelation = 3;
+}
+
+message RequestHandling {
+  oneof strategy {
+    AllPartitions allPartitions = 1;
+    ActivePartitions activePartitions = 2;
+  }
+
+  message AllPartitions {
+    sint32 partitionCount = 1;
+  }
+  message ActivePartitions {
+    sint32 basePartitionCount = 1;
+    repeated sint32 additionalActivePartitions = 2;
+    repeated sint32 inactivePartitions = 3;
+  }
+}
+
+message MessageCorrelation {
+  oneof correlation {
+    HashMod hashMod = 1;
+  }
+
+  message HashMod {
+    sint32 partitionCount = 1;
+  }
+}
+
+message MemberState {
+  int64 version = 1;
+  google.protobuf.Timestamp lastUpdated = 2;
+  State state = 3;
+  map<int32, PartitionState> partitions = 4;
+}
+
+message PartitionState {
+  State state = 1;
+  int32 priority = 2;
+  PartitionConfig config = 3;
+}
+
+message PartitionConfig {
+  ExportersConfig exporting = 1;
+}
+
+message ExportersConfig{
+  map<string, ExporterState> exporters = 1;
+}
+
+message ExporterState {
+  EnabledDisabledState state = 1;
+  int64 metadataVersion = 2;
+  optional string initializedFrom = 3;
+}
+
+message ClusterChangePlan {
+  int64 id = 1;
+  int32 version = 2;
+  ChangeStatus status = 3;
+  google.protobuf.Timestamp startedAt = 4;
+  repeated CompletedTopologyChangeOperation completedOperations = 5;
+  repeated TopologyChangeOperation pendingOperations = 6;
+}
+
+message CompletedChange {
+  int64 id = 1;
+  ChangeStatus status = 2;
+  google.protobuf.Timestamp startedAt = 3;
+  google.protobuf.Timestamp completedAt = 4;
+}
+
+message TopologyChangeOperation {
+  string memberId = 1;
+  oneof operation {
+    PartitionJoinOperation partitionJoin = 2;
+    PartitionLeaveOperation partitionLeave = 3;
+    MemberJoinOperation memberJoin = 4;
+    MemberLeaveOperation memberLeave = 5;
+    PartitionReconfigurePriorityOperation partitionReconfigurePriority = 6;
+    PartitionForceReconfigureOperation partitionForceReconfigure = 7;
+    MemberRemoveOperation memberRemove = 8;
+    PartitionDisableExporterOperation partitionDisableExporter = 9;
+    PartitionEnableExporterOperation partitionEnableExporter = 10;
+    PartitionBootstrapOperation partitionBootstrap = 11;
+    StartPartitionScaleUpOperation initiateScaleUpPartitions = 12;
+  }
+}
+
+message CompletedTopologyChangeOperation {
+  TopologyChangeOperation operation = 1;
+  google.protobuf.Timestamp completedAt = 2;
+}
+
+message PartitionJoinOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
+
+message PartitionLeaveOperation {
+  int32 partitionId = 1;
+}
+
+message PartitionReconfigurePriorityOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
+
+message PartitionForceReconfigureOperation {
+  int32 partitionId = 1;
+  repeated string members = 2;
+}
+
+message PartitionDisableExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
+}
+
+message PartitionEnableExporterOperation {
+  int32 partitionId = 1;
+  string exporterId = 2;
+  optional string initializeFrom = 3;
+}
+
+message PartitionBootstrapOperation {
+  int32 partitionId = 1;
+  int32 priority = 2;
+}
+
+message StartPartitionScaleUpOperation {
+  int32 desiredPartitionCount = 2;
+}
+
+message MemberJoinOperation {}
+
+message MemberLeaveOperation {}
+
+message MemberRemoveOperation {
+  string memberToRemove = 1;
+}
+
+enum State {
+  UNKNOWN = 0;
+  JOINING = 1;
+  ACTIVE = 2;
+  LEAVING = 3;
+  LEFT = 4;
+  BOOTSTRAPPING = 5;
+}
+
+enum ChangeStatus {
+  CHANGE_STATUS_UNKNOWN = 0;
+  IN_PROGRESS = 1;
+  COMPLETED = 2;
+  FAILED = 3;
+  CANCELLED = 4;
+}
+
+enum EnabledDisabledState {
+  ENABLED_DISBALED_UNKNOWN = 0;
+  ENABLED = 1;
+  DISABLED = 2;
+}
+
+

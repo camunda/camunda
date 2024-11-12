@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.test.util.asserts.strace;
 
@@ -59,15 +59,6 @@ public final class FSyncTraceAssert extends AbstractObjectAssert<FSyncTraceAsser
     return has(Conditions.hasPath(path));
   }
 
-  /**
-   * Asserts that the fsync call was successful, i.e. its result code was 0.
-   *
-   * @return itself for chaining
-   */
-  public FSyncTraceAssert isSuccessful() {
-    return has(Conditions.hasResult(0));
-  }
-
   public static final class Conditions {
     private Conditions() {}
 
@@ -77,14 +68,6 @@ public final class FSyncTraceAssert extends AbstractObjectAssert<FSyncTraceAsser
           trace -> trace.path().equals(path),
           "fsync call for the '%s'".formatted(path),
           trace -> " but actual path is '%s'".formatted(trace.path()));
-    }
-
-    /** Returns a condition which checks that a trace has the given result code. */
-    public static Condition<FSyncTrace> hasResult(final int result) {
-      return VerboseCondition.verboseCondition(
-          trace -> trace.result() == result,
-          "a fsync call with the result '%d'".formatted(result),
-          trace -> " but result code was '%d'".formatted(trace.result()));
     }
   }
 }

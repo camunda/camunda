@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.management;
 
@@ -23,10 +23,14 @@ import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ZeebeIntegration
 @AutoCloseResources
 final class RebalancingEndpointIT {
+  private static final Logger LOG = LoggerFactory.getLogger(RebalancingEndpointIT.class);
+
   @TestZeebe
   private final TestCluster cluster =
       TestCluster.builder()
@@ -70,7 +74,9 @@ final class RebalancingEndpointIT {
     if (hasGoodLeaderDistribution()) {
       final var brokerId = MemberId.from("1");
       final var stoppedBroker = cluster.brokers().get(brokerId).stop();
+      LOG.debug("Broker stopped");
       waitForBadLeaderDistribution();
+      LOG.debug("Bad distribution of partition: waiting for the broker to be ready");
       stoppedBroker.start().await(TestHealthProbe.READY);
 
       // wait until the node has rejoined the cluster before triggering rebalancing, otherwise it

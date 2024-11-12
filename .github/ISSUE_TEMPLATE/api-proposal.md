@@ -1,7 +1,7 @@
 ---
 
-name: API proposal
-about: General proposal for the API strategy
+name: API Guidelines proposal
+about: Proposal for the general API strategy (not for specific endpoints)
 title: ''
 labels: ['component/c8-api', 'kind/proposal']
 assignees: ''
@@ -12,6 +12,9 @@ projects: ['camunda/111']
 ## Description
 
 _A clear and concise description of what this proposal is about and what problem it solves._
+
+> [!NOTE]
+> To propose specific new API endpoints, create a regular feature request, not a guidelines proposal.
 
 ## Proposal
 

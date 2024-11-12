@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.job;
 
@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.JobMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import java.time.InstantSource;
 import java.util.function.Supplier;
 
 public final class JobEventProcessors {
@@ -29,9 +31,10 @@ public final class JobEventProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
       final JobMetrics jobMetrics,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
 
-    final var jobState = processingState.getJobState();
     final var keyGenerator = processingState.getKeyGenerator();
 
     final EventHandle eventHandle =
@@ -44,12 +47,12 @@ public final class JobEventProcessors {
             bpmnBehaviors.stateBehavior());
 
     final var jobBackoffChecker =
-        new JobBackoffChecker(scheduledTaskStateFactory.get().getJobState());
+        new JobBackoffChecker(clock, scheduledTaskStateFactory.get().getJobState());
     typedRecordProcessors
         .onCommand(
             ValueType.JOB,
             JobIntent.COMPLETE,
-            new JobCompleteProcessor(processingState, jobMetrics, eventHandle))
+            new JobCompleteProcessor(processingState, jobMetrics, eventHandle, authCheckBehavior))
         .onCommand(
             ValueType.JOB,
             JobIntent.FAIL,
@@ -59,7 +62,8 @@ public final class JobEventProcessors {
                 processingState.getKeyGenerator(),
                 jobMetrics,
                 jobBackoffChecker,
-                bpmnBehaviors))
+                bpmnBehaviors,
+                authCheckBehavior))
         .onCommand(
             ValueType.JOB,
             JobIntent.YIELD,
@@ -71,34 +75,47 @@ public final class JobEventProcessors {
                 processingState,
                 bpmnBehaviors.eventPublicationBehavior(),
                 keyGenerator,
-                jobMetrics))
+                jobMetrics,
+                authCheckBehavior))
         .onCommand(
             ValueType.JOB,
             JobIntent.TIME_OUT,
             new JobTimeOutProcessor(
-                processingState, writers, jobMetrics, bpmnBehaviors.jobActivationBehavior()))
+                processingState, writers, jobMetrics, bpmnBehaviors.jobActivationBehavior(), clock))
         .onCommand(
-            ValueType.JOB, JobIntent.UPDATE_RETRIES, new JobUpdateRetriesProcessor(processingState))
+            ValueType.JOB,
+            JobIntent.UPDATE_RETRIES,
+            new JobUpdateRetriesProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE_TIMEOUT,
-            new JobUpdateTimeoutProcessor(processingState, writers))
+            new JobUpdateTimeoutProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
+        .onCommand(
+            ValueType.JOB,
+            JobIntent.UPDATE,
+            new JobUpdateProcessor(bpmnBehaviors.jobUpdateBehaviour(), writers))
         .onCommand(
             ValueType.JOB, JobIntent.CANCEL, new JobCancelProcessor(processingState, jobMetrics))
         .onCommand(
             ValueType.JOB,
             JobIntent.RECUR_AFTER_BACKOFF,
-            new JobRecurProcessor(processingState, writers, bpmnBehaviors.jobActivationBehavior()))
+            new JobRecurProcessor(
+                processingState, writers, bpmnBehaviors.jobActivationBehavior(), clock))
         .onCommand(
             ValueType.JOB_BATCH,
             JobBatchIntent.ACTIVATE,
             new JobBatchActivateProcessor(
-                writers, processingState, processingState.getKeyGenerator(), jobMetrics))
+                writers,
+                processingState,
+                processingState.getKeyGenerator(),
+                jobMetrics,
+                authCheckBehavior))
         .withListener(
             new JobTimeoutCheckerScheduler(
                 scheduledTaskStateFactory.get().getJobState(),
                 config.getJobsTimeoutCheckerPollingInterval(),
-                config.getJobsTimeoutCheckerBatchLimit()))
+                config.getJobsTimeoutCheckerBatchLimit(),
+                clock))
         .withListener(jobBackoffChecker);
   }
 }

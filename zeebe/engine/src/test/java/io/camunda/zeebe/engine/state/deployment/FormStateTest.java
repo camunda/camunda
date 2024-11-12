@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.deployment;
 
@@ -42,6 +42,26 @@ public class FormStateTest {
   void shouldReturnEmptyIfNoFormIsDeployedForFormKey() {
     // when
     final var persistedForm = formState.findFormByKey(1L, tenantId);
+
+    // then
+    assertThat(persistedForm).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyIfNoFormIsDeployedForFormIdAndDeploymentKey() {
+    // when
+    final var persistedForm =
+        formState.findFormByIdAndDeploymentKey(wrapString("form-1"), 1L, tenantId);
+
+    // then
+    assertThat(persistedForm).isEmpty();
+  }
+
+  @Test
+  void shouldReturnEmptyIfNoFormIsDeployedForFormIdAndVersionTag() {
+    // when
+    final var persistedForm =
+        formState.findFormByIdAndVersionTag(wrapString("form-1"), "v1.0", tenantId);
 
     // then
     assertThat(persistedForm).isEmpty();

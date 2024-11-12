@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.migration;
 
@@ -32,6 +32,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMessageSubscripti
 import io.camunda.zeebe.engine.state.migration.to_8_3.DbProcessMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_4.DbSignalSubscriptionMigrationState;
 import io.camunda.zeebe.engine.state.migration.to_8_5.DbColumnFamilyCorrectionMigrationState;
+import io.camunda.zeebe.engine.state.migration.to_8_6.DbDistributionMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
@@ -127,6 +128,7 @@ public class DbMigrationState implements MutableMigrationState {
   private final DbString migratedByVersionValue = new DbString();
 
   private final DbColumnFamilyCorrectionMigrationState columnFamilyCorrectionMigrationState;
+  private final DbDistributionMigrationState distributionState;
 
   public DbMigrationState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -284,6 +286,8 @@ public class DbMigrationState implements MutableMigrationState {
 
     columnFamilyCorrectionMigrationState =
         new DbColumnFamilyCorrectionMigrationState(zeebeDb, transactionContext);
+
+    distributionState = new DbDistributionMigrationState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -500,5 +504,10 @@ public class DbMigrationState implements MutableMigrationState {
   @Override
   public void correctColumnFamilyPrefix() {
     columnFamilyCorrectionMigrationState.correctColumnFamilyPrefix();
+  }
+
+  @Override
+  public void migrateOrderedCommandDistribution() {
+    distributionState.migratePendingDistributionsToRetriableDistributions();
   }
 }

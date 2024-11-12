@@ -2,55 +2,63 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.Process;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.util.unit.DataSize;
 
+@ZeebeIntegration
+@AutoCloseResources
 public final class CreateDeploymentTest {
 
-  private static final int MAX_MSG_SIZE_MB = 1;
-  private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(
-          b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(MAX_MSG_SIZE_MB)));
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  ZeebeClient client;
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withBrokerConfig(b -> b.getNetwork().setMaxMessageSize(DataSize.ofMegabytes(1)));
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  ZeebeResourcesHelper resourcesHelper;
 
-  @Rule
-  public final RecordingExporterTestWatcher recordingExporterTestWatcher =
-      new RecordingExporterTestWatcher();
+  @BeforeEach
+  void initClientAndInstances() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
+  }
 
-  @Test
-  public void shouldDeployProcessModel() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldDeployProcessModel(final boolean useRest, final TestInfo testInfo) {
     // given
-    final String processId = helper.getBpmnProcessId();
+    final String processId = "process-" + testInfo.getTestMethod().get().getName();
     final String resourceName = processId + ".bpmn";
 
     final BpmnModelInstance process =
@@ -62,12 +70,7 @@ public final class CreateDeploymentTest {
 
     // when
     final DeploymentEvent result =
-        CLIENT_RULE
-            .getClient()
-            .newDeployResourceCommand()
-            .addProcessModel(process, resourceName)
-            .send()
-            .join();
+        getCommand(client, useRest).addProcessModel(process, resourceName).send().join();
 
     // then
     assertThat(result.getKey()).isGreaterThan(0);
@@ -80,19 +83,15 @@ public final class CreateDeploymentTest {
     assertThat(deployedProcess.getResourceName()).isEqualTo(resourceName);
   }
 
-  @Test
-  public void shouldDeployDecisionModel() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldDeployDecisionModel(final boolean useRest) {
     // given
     final String resourceName = "dmn/drg-force-user.dmn";
 
     // when
     final DeploymentEvent result =
-        CLIENT_RULE
-            .getClient()
-            .newDeployResourceCommand()
-            .addResourceFromClasspath(resourceName)
-            .send()
-            .join();
+        getCommand(client, useRest).addResourceFromClasspath(resourceName).send().join();
 
     // then
     assertThat(result.getKey()).isPositive();
@@ -123,19 +122,15 @@ public final class CreateDeploymentTest {
     assertThat(decision2.getDecisionRequirementsKey()).isPositive();
   }
 
-  @Test
-  public void shouldRejectDeployIfProcessIsInvalid() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectDeployIfProcessIsInvalid(final boolean useRest) {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process").startEvent().serviceTask("task").done();
 
     // when
-    final var command =
-        CLIENT_RULE
-            .getClient()
-            .newDeployResourceCommand()
-            .addProcessModel(process, "process.bpmn")
-            .send();
+    final var command = getCommand(client, useRest).addProcessModel(process, "process.bpmn").send();
 
     // then
     assertThatThrownBy(command::join)
@@ -143,18 +138,17 @@ public final class CreateDeploymentTest {
         .hasMessageContaining("Must have exactly one 'zeebe:taskDefinition' extension element");
   }
 
-  @Test
-  public void shouldRejectDeployIfResourceIsTooLarge() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectDeployIfResourceIsTooLarge(final boolean useRest) {
     // when
     final var modelThatFitsJustWithinMaxMessageSize =
         Bpmn.createExecutableProcess("PROCESS")
             .startEvent()
-            .documentation("x".repeat((1046700)))
+            .documentation("x".repeat(1046700))
             .done();
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newDeployResourceCommand()
+        getCommand(client, useRest)
             .addProcessModel(modelThatFitsJustWithinMaxMessageSize, "too_large_process.bpmn")
             .send();
 
@@ -164,7 +158,8 @@ public final class CreateDeploymentTest {
         .hasMessageContaining("rejected with code 'EXCEEDED_BATCH_RECORD_SIZE'");
   }
 
-  @Test
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
   public void shouldNotWriteResourcesInformationInRejectedRecords() {
     // when
     final var modelThatFitsJustWithinMaxMessageSize =
@@ -173,9 +168,7 @@ public final class CreateDeploymentTest {
             .documentation("x".repeat((1046900)))
             .done();
     final var command =
-        CLIENT_RULE
-            .getClient()
-            .newDeployResourceCommand()
+        getCommand(client, false)
             .addProcessModel(modelThatFitsJustWithinMaxMessageSize, "too_large_process.bpmn")
             .send();
 
@@ -195,19 +188,15 @@ public final class CreateDeploymentTest {
             });
   }
 
-  @Test
-  public void shouldDeployForm() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldDeployForm(final boolean useRest) {
     // given
     final String resourceName = "form/test-form-1.form";
 
     // when
     final DeploymentEvent result =
-        CLIENT_RULE
-            .getClient()
-            .newDeployResourceCommand()
-            .addResourceFromClasspath(resourceName)
-            .send()
-            .join();
+        getCommand(client, useRest).addResourceFromClasspath(resourceName).send().join();
 
     // then
     assertThat(result.getKey()).isPositive();
@@ -219,5 +208,10 @@ public final class CreateDeploymentTest {
     assertThat(form.getVersion()).isEqualTo(1);
     assertThat(form.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(form.getFormKey()).isPositive();
+  }
+
+  private DeployResourceCommandStep1 getCommand(final ZeebeClient client, final boolean useRest) {
+    final DeployResourceCommandStep1 deployResourceCommand = client.newDeployResourceCommand();
+    return useRest ? deployResourceCommand.useRest() : deployResourceCommand.useGrpc();
   }
 }

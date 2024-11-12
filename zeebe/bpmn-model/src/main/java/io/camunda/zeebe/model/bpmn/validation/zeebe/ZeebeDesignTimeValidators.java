@@ -22,11 +22,14 @@ import io.camunda.zeebe.model.bpmn.instance.ServiceTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePublishMessage;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeScript;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -49,6 +52,7 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new DefinitionsValidator());
     validators.add(new EndEventValidator());
     validators.add(new EventDefinitionValidator());
+    validators.add(new GatewayValidator());
     validators.add(new EventBasedGatewayValidator());
     validators.add(new ErrorEventDefinitionValidator());
     validators.add(new ExclusiveGatewayValidator());
@@ -93,6 +97,12 @@ public final class ZeebeDesignTimeValidators {
                 ZeebeExecutionListener::getRetries, ZeebeConstants.ATTRIBUTE_RETRIES));
     validators.add(new ExecutionListenersValidator());
     validators.add(
+        ZeebeElementValidator.verifyThat(ZeebeTaskListener.class)
+            .hasNonEmptyEnumAttribute(
+                ZeebeTaskListener::getEventType, ZeebeConstants.ATTRIBUTE_EVENT_TYPE)
+            .hasNonEmptyAttribute(ZeebeTaskListener::getType, ZeebeConstants.ATTRIBUTE_TYPE)
+            .hasNonEmptyAttribute(ZeebeTaskListener::getRetries, ZeebeConstants.ATTRIBUTE_RETRIES));
+    validators.add(
         ZeebeElementValidator.verifyThat(ZeebeSubscription.class)
             .hasNonEmptyAttribute(
                 ZeebeSubscription::getCorrelationKey, ZeebeConstants.ATTRIBUTE_CORRELATION_KEY));
@@ -122,6 +132,13 @@ public final class ZeebeDesignTimeValidators {
     validators.add(new IntermediateThrowEventValidator());
     validators.add(new CompensationTaskValidator());
     validators.add(new CompensationEventDefinitionValidator());
+    validators.add(new ZeebeBindingTypeValidator<>(ZeebeCalledDecision.class));
+    validators.add(new ZeebeBindingTypeValidator<>(ZeebeCalledElement.class));
+    validators.add(new ZeebeBindingTypeValidator<>(ZeebeFormDefinition.class));
+    validators.add(
+        ZeebeElementValidator.verifyThat(ZeebePriorityDefinition.class)
+            .hasNonEmptyAttribute(
+                ZeebePriorityDefinition::getPriority, ZeebeConstants.ATTRIBUTE_PRIORITY));
 
     VALIDATORS = Collections.unmodifiableList(validators);
   }

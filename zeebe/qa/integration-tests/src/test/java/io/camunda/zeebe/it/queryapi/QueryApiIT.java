@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.queryapi;
 
@@ -49,20 +49,25 @@ final class QueryApiIT {
           .endEvent()
           .done();
 
-  @TestZeebe
-  private static final TestStandaloneBroker BROKER =
-      new TestStandaloneBroker()
-          .withBrokerConfig(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true))
-          .withBrokerConfig(
-              cfg -> {
-                final var config = new InterceptorCfg();
-                config.setId("auth");
-                config.setClassName(TestAuthorizationServerInterceptor.class.getName());
-                config.setJarPath(createInterceptorJar().getAbsolutePath());
-                cfg.getGateway().getInterceptors().add(config);
-              });
+  @TestZeebe(initMethod = "initTestStandaloneBroker")
+  private static TestStandaloneBroker broker;
 
   private static long processDefinitionKey;
+
+  @SuppressWarnings("unused")
+  static void initTestStandaloneBroker() {
+    broker =
+        new TestStandaloneBroker()
+            .withBrokerConfig(cfg -> cfg.getExperimental().getQueryApi().setEnabled(true))
+            .withBrokerConfig(
+                cfg -> {
+                  final var config = new InterceptorCfg();
+                  config.setId("auth");
+                  config.setClassName(TestAuthorizationServerInterceptor.class.getName());
+                  config.setJarPath(createInterceptorJar().getAbsolutePath());
+                  cfg.getGateway().getInterceptors().add(config);
+                });
+  }
 
   @BeforeAll
   static void beforeAll() {
@@ -199,7 +204,7 @@ final class QueryApiIT {
   }
 
   private static ZeebeClient createZeebeClient(final String tenant) {
-    return BROKER
+    return broker
         .newClientBuilder()
         .withInterceptors(new TestAuthorizationClientInterceptor(tenant))
         .defaultRequestTimeout(Duration.ofMinutes(1))

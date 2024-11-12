@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.multiinstance;
 
@@ -303,7 +303,7 @@ public final class MultiInstanceSubProcessTest {
         .containsExactly(ProcessInstanceIntent.ELEMENT_COMPLETED);
   }
 
-  /** Regression test for bug: https://github.com/camunda/zeebe/issues/11578 */
+  /** Regression test for bug: https://github.com/camunda/camunda/issues/11578 */
   @Test
   public void shouldCorrelateMessagesToEventSubProcessForEachSubProcess() {
     // given
@@ -365,7 +365,7 @@ public final class MultiInstanceSubProcessTest {
         .hasSize(1);
   }
 
-  /** Regression test for: https://github.com/camunda/zeebe/issues/6152 */
+  /** Regression test for: https://github.com/camunda/camunda/issues/6152 */
   @Test
   public void shouldCancelInterruptingEventSubprocessOnTermination() {
     // given

@@ -2,16 +2,21 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.impl.broker;
 
+import static io.camunda.zeebe.protocol.impl.SubscriptionUtil.getSubscriptionPartitionId;
+import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
+
+import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
-import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
-import io.camunda.zeebe.util.buffer.BufferUtil;
+import io.camunda.zeebe.dynamic.config.state.RoutingState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
+import java.util.Optional;
 
 public final class PublishMessageDispatchStrategy implements RequestDispatchStrategy {
 
@@ -23,16 +28,32 @@ public final class PublishMessageDispatchStrategy implements RequestDispatchStra
 
   @Override
   public int determinePartition(final BrokerTopologyManager topologyManager) {
-    final var topology = topologyManager.getTopology();
-    if (topology == null || topology.getPartitionsCount() == 0) {
-      throw new NoTopologyAvailableException(
-          String.format(
-              "Expected to pick partition for message with correlation key '%s', but no topology is available",
-              correlationKey));
-    }
+    return topologyManager
+        .getClusterConfiguration()
+        .routingState()
+        .map(this::fromRoutingState)
+        .or(() -> Optional.ofNullable(topologyManager.getTopology()).map(this::fromTopology))
+        .orElseThrow(
+            () ->
+                new NoTopologyAvailableException(
+                    "Expected to pick partition for message with correlation key '%s', but no topology is available"
+                        .formatted(correlationKey)));
+  }
 
-    final int partitionsCount = topology.getPartitionsCount();
-    return SubscriptionUtil.getSubscriptionPartitionId(
-        BufferUtil.wrapString(correlationKey), partitionsCount);
+  public int fromRoutingState(final RoutingState routingState) {
+    return switch (routingState.messageCorrelation()) {
+      case HashMod(final int partitionCount) ->
+          getSubscriptionPartitionId(wrapString(correlationKey), partitionCount);
+    };
+  }
+
+  public int fromTopology(final BrokerClusterState topology) {
+    final var partitionCount = topology.getPartitionsCount();
+    if (partitionCount == 0) {
+      throw new NoTopologyAvailableException(
+          "Expected to pick partition for message with correlation key '%s', but topology contains no partitions"
+              .formatted(correlationKey));
+    }
+    return getSubscriptionPartitionId(wrapString(correlationKey), partitionCount);
   }
 }

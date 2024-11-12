@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.journal.file;
 
@@ -52,7 +52,7 @@ public final class LogCorrupter {
   }
 
   public static void corruptDescriptor(final File file) throws IOException {
-    final byte[] bytes = new byte[SegmentDescriptor.getEncodingLength()];
+    final byte[] bytes = new byte[SegmentDescriptorSerializer.currentEncodingLength()];
     int read;
 
     try (final BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
@@ -76,7 +76,7 @@ public final class LogCorrupter {
   private static boolean corruptRecord(final byte[] bytes, final long targetIndex) {
     final JournalRecordReaderUtil reader = new JournalRecordReaderUtil(new SBESerializer());
     final ByteBuffer buffer = ByteBuffer.wrap(bytes);
-    buffer.position(SegmentDescriptor.getEncodingLength());
+    buffer.position(SegmentDescriptorSerializer.currentEncodingLength());
 
     for (long index = 1;
         FrameUtil.hasValidVersion(buffer) && FrameUtil.readVersion(buffer) == 1;

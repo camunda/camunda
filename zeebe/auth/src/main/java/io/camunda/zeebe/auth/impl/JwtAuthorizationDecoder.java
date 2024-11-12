@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.auth.impl;
 
@@ -16,9 +16,11 @@ import com.auth0.jwt.interfaces.Verification;
 import io.camunda.zeebe.auth.api.AuthorizationDecoder;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,8 +36,6 @@ public class JwtAuthorizationDecoder
   private Algorithm signingAlgorithm = Algorithm.none();
   private final Set<String> claims = new HashSet<>();
   private String jwtToken;
-
-  public JwtAuthorizationDecoder() {}
 
   public JwtAuthorizationDecoder(final String jwtToken) {
     this.jwtToken = jwtToken;
@@ -79,9 +79,25 @@ public class JwtAuthorizationDecoder
   @Override
   public Map<String, Object> decode() {
     final DecodedJWT decodedJWT = withClaim(Authorization.AUTHORIZED_TENANTS).build();
-    return Map.of(
+    final var claimMap = new HashMap<String, Object>();
+    claimMap.put(
         Authorization.AUTHORIZED_TENANTS,
         decodedJWT.getClaim(Authorization.AUTHORIZED_TENANTS).asList(String.class));
+
+    if (decodedJWT.getClaims().containsKey(Authorization.AUTHORIZED_USER_KEY)) {
+      claimMap.put(
+          Authorization.AUTHORIZED_USER_KEY,
+          decodedJWT.getClaim(Authorization.AUTHORIZED_USER_KEY).asLong());
+    }
+
+    claimMap.putAll(
+        decodedJWT.getClaims().entrySet().stream()
+            .filter(entry -> entry.getKey().startsWith(USER_TOKEN_CLAIM_PREFIX))
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey, claimEntry -> claimEntry.getValue().as(Object.class))));
+
+    return claimMap;
   }
 
   /**

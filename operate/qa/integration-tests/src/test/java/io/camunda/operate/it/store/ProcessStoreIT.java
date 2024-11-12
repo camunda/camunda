@@ -1,39 +1,30 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.it.store;
 
-import static io.camunda.operate.schema.indices.IndexDescriptor.DEFAULT_TENANT_ID;
+import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.SequenceFlowEntity;
-import io.camunda.operate.entities.VariableEntity;
-import io.camunda.operate.entities.listview.ListViewJoinRelation;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.FlowNodeInstanceTemplate;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.ProcessInstanceDependant;
-import io.camunda.operate.schema.templates.SequenceFlowTemplate;
-import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.SequenceFlowEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +45,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
   private ProcessEntity firstProcessDefinition;
   private ProcessEntity secondProcessDefinition;
+  private ProcessEntity thirdProcessDefinition;
   private ProcessInstanceForListViewEntity firstProcessInstance;
   private ProcessInstanceForListViewEntity secondProcessInstance;
   private ProcessInstanceForListViewEntity thirdProcessInstance;
@@ -70,10 +62,6 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setName("Demo process")
             .setBpmnXml(resourceXml);
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        processDefinitionIndex.getFullQualifiedName(),
-        firstProcessDefinition.getId(),
-        firstProcessDefinition);
 
     secondProcessDefinition =
         new ProcessEntity()
@@ -83,10 +71,15 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setName("Demo process 1")
             .setBpmnXml(resourceXml);
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        processDefinitionIndex.getFullQualifiedName(),
-        secondProcessDefinition.getId(),
-        secondProcessDefinition);
+
+    thirdProcessDefinition =
+        new ProcessEntity()
+            .setKey(3251799813685249L)
+            .setId("3251799813685249")
+            .setBpmnProcessId("demoProcess-2")
+            .setTenantId("tenant2")
+            .setName("Demo process 2")
+            .setBpmnXml(resourceXml);
 
     firstProcessInstance =
         new ProcessInstanceForListViewEntity()
@@ -100,10 +93,6 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setTreePath("PI_4503599627370497")
             .setTenantId(DEFAULT_TENANT_ID)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        listViewTemplate.getFullQualifiedName(),
-        firstProcessInstance.getId(),
-        firstProcessInstance);
 
     secondProcessInstance =
         new ProcessInstanceForListViewEntity()
@@ -119,10 +108,6 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setIncident(false)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        listViewTemplate.getFullQualifiedName(),
-        secondProcessInstance.getId(),
-        secondProcessInstance);
 
     thirdProcessInstance =
         new ProcessInstanceForListViewEntity()
@@ -138,12 +123,21 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             .setTenantId(DEFAULT_TENANT_ID)
             .setIncident(true)
             .setJoinRelation(new ListViewJoinRelation("processInstance"));
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        listViewTemplate.getFullQualifiedName(),
-        thirdProcessInstance.getId(),
-        thirdProcessInstance);
 
-    searchContainerManager.refreshIndices("*");
+    final var definitionEntities =
+        List.of(firstProcessDefinition, secondProcessDefinition, thirdProcessDefinition);
+    for (final var entity : definitionEntities) {
+      testSearchRepository.createOrUpdateDocumentFromObject(
+          processDefinitionIndex.getFullQualifiedName(), entity.getId(), entity);
+    }
+    final var instanceEntities =
+        List.of(firstProcessInstance, secondProcessInstance, thirdProcessInstance);
+    for (final var entity : instanceEntities) {
+      testSearchRepository.createOrUpdateDocumentFromObject(
+          listViewTemplate.getFullQualifiedName(), entity.getId(), entity);
+    }
+
+    searchContainerManager.refreshIndices("*operate*");
   }
 
   @Test
@@ -152,7 +146,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
         processStore.getDistinctCountFor(ListViewTemplate.BPMN_PROCESS_ID);
 
     assertThat(optionalCount).isNotNull();
-    assertThat(optionalCount.get()).isEqualTo(2L);
+    assertThat(optionalCount.get()).isEqualTo(3L);
   }
 
   @Test
@@ -178,7 +172,8 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
             DEFAULT_TENANT_ID,
             Set.of(
                 firstProcessDefinition.getBpmnProcessId(),
-                secondProcessDefinition.getBpmnProcessId()));
+                secondProcessDefinition.getBpmnProcessId(),
+                thirdProcessDefinition.getBpmnProcessId()));
 
     assertThat(results.values().size()).isEqualTo(2);
     assertThat(
@@ -390,11 +385,11 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
         getFullIndexNameForDependant(VariableTemplate.INDEX_NAME),
         new VariableEntity().setProcessInstanceKey(processKey));
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
 
     final long deleted = processStore.deleteProcessInstancesAndDependants(Set.of(processKey));
 
-    searchContainerManager.refreshIndices("*");
+    searchContainerManager.refreshIndices("*operate*");
     final var response =
         testSearchRepository.searchTerm(
             listViewTemplate.getFullQualifiedName(),
@@ -406,7 +401,7 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
     assertThat(deleted).isEqualTo(4);
   }
 
-  private String getFullIndexNameForDependant(String indexName) {
+  private String getFullIndexNameForDependant(final String indexName) {
     final ProcessInstanceDependant dependant =
         processInstanceDependantTemplates.stream()
             .filter(template -> template.getFullQualifiedName().contains(indexName))

@@ -5,6 +5,11 @@ on:
       name:
         description: 'Specifies the name of the benchmark'
         required: true
+      reuse-tag:
+        description: 'Docker image tag, that should be reused for benchmark. Allows to skip the docker image build step'
+        type: string
+        default: ""
+        required: false
       ref:
         description: 'Specifies the ref (e.g. main or a commit sha) to benchmark'
         default: 'main'
@@ -29,18 +34,28 @@ on:
         description: 'Measure impact of network latency'
         type: boolean
         required: false
-        default: true
+        default: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
         type: boolean
         required: false
         default: false
+      operate-tag:
+        description: 'Specifies the tag of operate, when Operate should be included in the Benchmark'
+        type: string
+        default: ""
+        required: false
   workflow_call:
     inputs:
       name:
         description: 'Specifies the name of the benchmark'
         type: string
         required: true
+      reuse-tag:
+        description: 'Docker image tag, that should be reused for benchmark. Allows to skip the docker image build step'
+        type: string
+        default: ""
+        required: false
       ref:
         description: 'Specifies the ref (e.g. main or a commit sha) to benchmark'
         default: 'main'
@@ -75,13 +90,32 @@ on:
         type: boolean
         required: false
         default: false
+      operate-tag:
+        description: 'Specifies the tag of operate, when Operate should be included in the Benchmark'
+        type: string
+        default: ""
+        required: false
 jobs:
+  calculate-image-tag:
+    name: Calculate Image Tag
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Get image tag
+        id: image-tag
+        run: |
+          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
   build-zeebe-image:
     name: Build Zeebe
+    needs: calculate-image-tag
+    if: ${{ inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    outputs:
-      image-tag: ${{ steps.image-tag.outputs.image-tag }}
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -89,43 +123,122 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -PskipFrontendBuild -Dmaven.test.skip=true -am -pl :camunda-zeebe
       - uses: google-github-actions/auth@v2
         id: auth
         with:
           token_format: 'access_token'
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - name: Get image tag
-        id: image-tag
-        run: |
-          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-      - name: Setup BuildKit
-        uses: docker/setup-buildx-action@v3
       - name: Login to GCR
         uses: docker/login-action@v3
         with:
           registry: gcr.io
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
-      - uses: docker/build-push-action@v5
+      - uses: ./.github/actions/build-platform-docker
+        with:
+          repository: 'gcr.io/zeebe-io/zeebe'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-zeebe.outputs.distball }}
+
+  build-operate-image:
+    name: Build + Push Operate Docker image
+    if: ${{ inputs.operate-tag != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      # See https://github.com/marketplace/actions/authenticate-to-google-cloud#setup
+      - uses: google-github-actions/auth@v2
+        id: auth
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_USR;
+            secret/data/github.com/organizations/camunda NEXUS_PSW;
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: "adopt"
+          java-version: "21"
+      - name: Setup Maven
+        uses: ./.github/actions/setup-maven-dist
+        with:
+          maven-version: 3.8.8
+          set-mvnw: true
+      - name: Configure Maven
+        uses: ./.github/actions/setup-maven-cache
+        with:
+          maven-cache-key-modifier: operate
+      # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v3.0.0
+        with:
+          githubServer: false
+          servers: |
+           [{
+              "id": "camunda-nexus",
+              "username": "${{ steps.secrets.outputs.NEXUS_USR }}",
+              "password": "${{ steps.secrets.outputs.NEXUS_PSW }}"
+            }]
+          mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
+      - name: Build backend
+        run: ./mvnw clean install -DskipChecks -P -docker -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push to Zeebe gcr.io registry
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
-          tags: gcr.io/zeebe-io/zeebe:${{ steps.image-tag.outputs.image-tag }}
           push: true
-          cache-from: type=gha,ignore-error=true
-          cache-to: type=gha,mode=max,ignore-error=true
-          build-args: DIST=build
-          provenance: false
-          target: app
+          tags: gcr.io/zeebe-io/operate:${{ inputs.operate-tag }}
+          file: operate.Dockerfile
+
   build-benchmark-images:
     name: Build Starter and Worker
+    if: ${{ inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: calculate-image-tag
     permissions:
       contents: 'read'
       id-token: 'write'
-    outputs:
-      image-tag: ${{ steps.image-tag.outputs.image-tag }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -142,23 +255,23 @@ jobs:
           registry: gcr.io
           username: oauth2accesstoken
           password: ${{ steps.auth.outputs.access_token }}
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-      - name: Get image tag
-        id: image-tag
-        run: |
-          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -pl zeebe/benchmarks/project -am install
       - name: Build Starter Image
-        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ steps.image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter -D image="gcr.io/zeebe-io/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Build Worker Image
-        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ steps.image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+
+
   deploy-benchmark-measurement:
     name: Measure
     needs:
+      - calculate-image-tag
       - build-zeebe-image
       - build-benchmark-images
     uses: zeebe-io/zeebe-performance-test/.github/workflows/measure.yaml@main
@@ -169,17 +282,19 @@ jobs:
       chaos: network-latency-5
       publish: ${{ inputs.publish }}
       helm-arguments: >
-        --set global.image.tag=${{ needs.build-benchmark-images.outputs.image-tag }}
+        --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
         --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
-        --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+        --set camunda-platform.zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
         --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
-        --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+        --set camunda-platform.zeebe-gateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+        --set camunda-platform.zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
+        --set camunda-platform.zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
         ${{ inputs.benchmark-load }}
+
   deploy-benchmark-cluster:
     name: Deploy
     needs:
-      - build-zeebe-image
-      - build-benchmark-images
+      - calculate-image-tag
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -193,7 +308,7 @@ jobs:
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.1.0
+      - uses: google-github-actions/get-gke-credentials@v2.2.1
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}
@@ -212,11 +327,14 @@ jobs:
           --namespace ${{ inputs.name }}
           --create-namespace
           --reuse-values
-          --set global.image.tag=${{ needs.build-benchmark-images.outputs.image-tag }}
+          --render-subchart-notes
+          --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
-          --set camunda-platform.zeebe.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+          --set camunda-platform.zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
-          --set camunda-platform.zeebe-gateway.image.tag=${{ needs.build-zeebe-image.outputs.image-tag }}
+          --set camunda-platform.zeebe-gateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set camunda-platform.zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
+          --set camunda-platform.zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && '-f zeebe/benchmarks/setup/default/values-stable.yaml' || '' }}
           ${{ inputs.benchmark-load }}

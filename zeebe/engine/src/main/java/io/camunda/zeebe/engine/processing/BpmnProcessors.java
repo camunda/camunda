@@ -2,14 +2,17 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnStreamProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.message.PendingProcessMessageSubscriptionChecker;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCorrelateProcessor;
 import io.camunda.zeebe.engine.processing.message.ProcessMessageSubscriptionCreateProcessor;
@@ -35,6 +38,7 @@ import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
@@ -46,6 +50,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.time.InstantSource;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -58,14 +63,21 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DueDateTimerChecker timerChecker,
-      final Writers writers) {
+      final Writers writers,
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final int partitionId,
+      final RoutingInfo routingInfo,
+      final InstantSource clock,
+      final EngineConfiguration config,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
 
     final var processEngineMetrics = new ProcessEngineMetrics(processingState.getPartitionId());
 
-    addProcessInstanceCommandProcessor(writers, typedRecordProcessors, processingState);
+    addProcessInstanceCommandProcessor(
+        writers, typedRecordProcessors, processingState, authCheckBehavior);
 
     final var bpmnStreamProcessor =
         new BpmnStreamProcessor(bpmnBehaviors, processingState, writers, processEngineMetrics);
@@ -78,7 +90,8 @@ public final class BpmnProcessors {
         bpmnBehaviors,
         processingState,
         scheduledTaskState,
-        writers);
+        writers,
+        clock);
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
@@ -86,13 +99,27 @@ public final class BpmnProcessors {
         bpmnBehaviors,
         processingState.getElementInstanceState(),
         keyGenerator,
-        writers);
+        writers,
+        authCheckBehavior);
     addProcessInstanceCreationStreamProcessors(
-        typedRecordProcessors, processingState, writers, bpmnBehaviors, processEngineMetrics);
+        typedRecordProcessors,
+        processingState,
+        writers,
+        bpmnBehaviors,
+        processEngineMetrics,
+        config,
+        authCheckBehavior);
     addProcessInstanceModificationStreamProcessors(
-        typedRecordProcessors, processingState, writers, bpmnBehaviors);
+        typedRecordProcessors, processingState, writers, bpmnBehaviors, authCheckBehavior);
     addProcessInstanceMigrationStreamProcessors(
-        typedRecordProcessors, processingState, writers, bpmnBehaviors);
+        typedRecordProcessors,
+        processingState,
+        writers,
+        bpmnBehaviors,
+        commandDistributionBehavior,
+        partitionId,
+        routingInfo,
+        authCheckBehavior);
     addProcessInstanceBatchStreamProcessors(typedRecordProcessors, processingState, writers);
 
     return bpmnStreamProcessor;
@@ -101,11 +128,12 @@ public final class BpmnProcessors {
   private static void addProcessInstanceCommandProcessor(
       final Writers writers,
       final TypedRecordProcessors typedRecordProcessors,
-      final ProcessingState processingState) {
+      final ProcessingState processingState,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE,
         ProcessInstanceIntent.CANCEL,
-        new ProcessInstanceCancelProcessor(processingState, writers));
+        new ProcessInstanceCancelProcessor(processingState, writers, authCheckBehavior));
   }
 
   private static void addBpmnStepProcessor(
@@ -127,7 +155,8 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskState,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     typedRecordProcessors
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
@@ -150,7 +179,8 @@ public final class BpmnProcessors {
         .withListener(
             new PendingProcessMessageSubscriptionChecker(
                 subscriptionCommandSender,
-                scheduledTaskState.get().getPendingProcessMessageSubscriptionState()));
+                scheduledTaskState.get().getPendingProcessMessageSubscriptionState(),
+                clock));
   }
 
   private static void addTimerStreamProcessors(
@@ -177,12 +207,17 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final ElementInstanceState elementInstanceState,
       final KeyGenerator keyGenerator,
-      final Writers writers) {
+      final Writers writers,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.VARIABLE_DOCUMENT,
         VariableDocumentIntent.UPDATE,
         new VariableDocumentUpdateProcessor(
-            elementInstanceState, keyGenerator, bpmnBehaviors.variableBehavior(), writers));
+            elementInstanceState,
+            keyGenerator,
+            bpmnBehaviors.variableBehavior(),
+            writers,
+            authCheckBehavior));
   }
 
   private static void addProcessInstanceCreationStreamProcessors(
@@ -190,14 +225,21 @@ public final class BpmnProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final BpmnBehaviors bpmnBehaviors,
-      final ProcessEngineMetrics metrics) {
+      final ProcessEngineMetrics metrics,
+      final EngineConfiguration config,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final MutableElementInstanceState elementInstanceState =
         processingState.getElementInstanceState();
     final KeyGenerator keyGenerator = processingState.getKeyGenerator();
 
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
-            processingState.getProcessState(), keyGenerator, writers, bpmnBehaviors, metrics);
+            processingState.getProcessState(),
+            keyGenerator,
+            writers,
+            bpmnBehaviors,
+            metrics,
+            authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_CREATION, ProcessInstanceCreationIntent.CREATE, createProcessor);
 
@@ -212,13 +254,15 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final Writers writers,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     final ProcessInstanceModificationModifyProcessor modificationProcessor =
         new ProcessInstanceModificationModifyProcessor(
             writers,
             processingState.getElementInstanceState(),
             processingState.getProcessState(),
-            bpmnBehaviors);
+            bpmnBehaviors,
+            authCheckBehavior);
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MODIFICATION,
         ProcessInstanceModificationIntent.MODIFY,
@@ -229,11 +273,22 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final ProcessingState processingState,
       final Writers writers,
-      final BpmnBehaviors bpmnBehaviors) {
+      final BpmnBehaviors bpmnBehaviors,
+      final CommandDistributionBehavior commandDistributionBehavior,
+      final int partitionId,
+      final RoutingInfo routingInfo,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     typedRecordProcessors.onCommand(
         ValueType.PROCESS_INSTANCE_MIGRATION,
         ProcessInstanceMigrationIntent.MIGRATE,
-        new ProcessInstanceMigrationMigrateProcessor(writers, processingState, bpmnBehaviors));
+        new ProcessInstanceMigrationMigrateProcessor(
+            writers,
+            processingState,
+            bpmnBehaviors,
+            commandDistributionBehavior,
+            partitionId,
+            routingInfo,
+            authCheckBehavior));
   }
 
   private static void addProcessInstanceBatchStreamProcessors(

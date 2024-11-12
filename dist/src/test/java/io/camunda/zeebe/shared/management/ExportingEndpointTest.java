@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.shared.management;
 
@@ -29,9 +29,10 @@ final class ExportingEndpointTest {
     // when
     when(service.pauseExporting()).thenThrow(new RuntimeException());
     when(service.resumeExporting()).thenThrow(new RuntimeException());
+    when(service.softPauseExporting()).thenThrow(new RuntimeException());
 
     // then
-    assertThat(endpoint.post(operation))
+    assertThat(endpoint.post(operation, false))
         .returns(
             WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR, from(WebEndpointResponse::getStatus));
   }
@@ -48,9 +49,11 @@ final class ExportingEndpointTest {
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
     when(service.resumeExporting())
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
+    when(service.softPauseExporting())
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
 
     // then
-    assertThat(endpoint.post(operation))
+    assertThat(endpoint.post(operation, false))
         .returns(
             WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR, from(WebEndpointResponse::getStatus));
   }
@@ -65,9 +68,10 @@ final class ExportingEndpointTest {
     // when
     when(service.pauseExporting()).thenReturn(CompletableFuture.completedFuture(null));
     when(service.resumeExporting()).thenReturn(CompletableFuture.completedFuture(null));
+    when(service.softPauseExporting()).thenReturn(CompletableFuture.completedFuture(null));
 
     // then
-    assertThat(endpoint.post(operation))
+    assertThat(endpoint.post(operation, false))
         .returns(WebEndpointResponse.STATUS_NO_CONTENT, from(WebEndpointResponse::getStatus));
   }
 }

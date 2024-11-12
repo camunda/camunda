@@ -2,14 +2,17 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.clustering.dynamic;
 
 import static org.assertj.core.api.Assertions.*;
 
 import feign.FeignException;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestBrokers;
+import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequestPartitions;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -39,13 +42,6 @@ final class ClusterEndpointErrorResponseIT {
             .withBrokersCount(1)
             .withPartitionsCount(1)
             .withReplicationFactor(1)
-            .withBrokerConfig(
-                broker ->
-                    broker
-                        .brokerConfig()
-                        .getExperimental()
-                        .getFeatures()
-                        .setEnableDynamicClusterTopology(true))
             .build();
 
     @Test
@@ -83,7 +79,49 @@ final class ClusterEndpointErrorResponseIT {
                   "Scale request with invalid brokerId",
                   a -> a.scaleBrokersInvalidType(List.of("a", "b", "c"))),
               Tuple.of(
-                  "Add broker request with invalid brokerId", a -> a.addBrokerInvalidType("a")));
+                  "Add broker request with invalid brokerId", a -> a.addBrokerInvalidType("a")),
+              Tuple.of(
+                  "Force scale cluster size",
+                  a ->
+                      a.patchCluster(
+                          new ClusterConfigPatchRequest()
+                              .brokers(new ClusterConfigPatchRequestBrokers().count(3)),
+                          false,
+                          true)),
+              Tuple.of(
+                  "Force add brokers",
+                  a ->
+                      a.patchCluster(
+                          new ClusterConfigPatchRequest()
+                              .brokers(new ClusterConfigPatchRequestBrokers().add(List.of(1, 2))),
+                          false,
+                          true)),
+              Tuple.of(
+                  "Force change partitions count",
+                  a ->
+                      a.patchCluster(
+                          new ClusterConfigPatchRequest()
+                              .partitions(new ClusterConfigPatchRequestPartitions().count(3)),
+                          false,
+                          true)),
+              Tuple.of(
+                  "Force change replicationFactor",
+                  a ->
+                      a.patchCluster(
+                          new ClusterConfigPatchRequest()
+                              .partitions(
+                                  new ClusterConfigPatchRequestPartitions().replicationFactor(3)),
+                          false,
+                          true)),
+              Tuple.of(
+                  "Change broker size and add or remove brokers simultaneously",
+                  a -> {
+                    final var brokers = new ClusterConfigPatchRequestBrokers();
+                    brokers.setCount(3);
+                    brokers.setAdd(List.of(1, 2));
+                    brokers.setRemove(List.of(3));
+                    a.patchCluster(new ClusterConfigPatchRequest().brokers(brokers), false, false);
+                  }));
       return operations.stream().map(c -> Arguments.of(Named.of(c.getLeft(), c.getRight())));
     }
   }

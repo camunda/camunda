@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
@@ -14,6 +14,9 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelE
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collections;
+import java.util.List;
 
 public final class CallActivityTransformer implements ModelElementTransformer<CallActivity> {
 
@@ -29,10 +32,11 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
     final ExecutableCallActivity callActivity =
         process.getElementById(element.getId(), ExecutableCallActivity.class);
 
-    transformProcessId(element, callActivity, context.getExpressionLanguage());
+    transformCalledElement(element, callActivity, context.getExpressionLanguage());
+    transformLexicographicIndex(element, context.getProcesses(), callActivity);
   }
 
-  private void transformProcessId(
+  private void transformCalledElement(
       final CallActivity element,
       final ExecutableCallActivity callActivity,
       final ExpressionLanguage expressionLanguage) {
@@ -52,5 +56,26 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
     final var propagateAllParentVariablesEnabled =
         calledElement.isPropagateAllParentVariablesEnabled();
     callActivity.setPropagateAllParentVariablesEnabled(propagateAllParentVariablesEnabled);
+
+    final var bindingType = calledElement.getBindingType();
+    callActivity.setBindingType(bindingType);
+
+    final var versionTag = calledElement.getVersionTag();
+    callActivity.setVersionTag(versionTag);
+  }
+
+  private static void transformLexicographicIndex(
+      final CallActivity element,
+      final List<ExecutableProcess> processes,
+      final ExecutableCallActivity callActivity) {
+    final List<String> allCallActivityIds =
+        processes.stream()
+            .flatMap(p -> p.getFlowElements().stream())
+            .filter(ExecutableCallActivity.class::isInstance)
+            .map(ca -> BufferUtil.bufferAsString(ca.getId()))
+            .sorted()
+            .toList();
+    final int index = Collections.binarySearch(allCallActivityIds, element.getId());
+    callActivity.setLexicographicIndex(index);
   }
 }

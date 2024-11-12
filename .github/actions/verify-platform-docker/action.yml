@@ -1,0 +1,52 @@
+# This action expects the docker to be setup beforehand
+---
+name: Verify Platform Docker Image
+description: Verifies metadata of the a Docker image
+
+inputs:
+  imageName:
+    description: 'Full name of the image, without the tag.'
+    required: true
+  date:
+    description: 'Date when the image to verify was built, used to verify the date label of the image.'
+    required: true
+  version:
+    description: 'Version tag of the image to verify.'
+    required: true
+  revision:
+    description: 'Revision from which the image to verify was built, used to verify the date label of the image.'
+    required: true
+  platforms:
+    # See https://docs.docker.com/build/ci/github-actions/examples/#multi-platform-images
+    description: 'Comma separated-list of platforms to verify the image for; defaults to linux/amd64'
+    required: false
+    default: 'linux/amd64'
+  dockerfile:
+    description: 'The name of the Dockerfile that was used to create the image and should be verified'
+    required: false
+    default: 'Dockerfile'
+  goldenfile:
+    description: 'The name of the golden file that should be used to verify the docker image'
+    required: false
+    default: 'zeebe-docker-labels.golden.json'
+
+runs:
+  using: composite
+  steps:
+    - name: Verify Docker image
+      id: verify-docker-image
+      shell: bash
+      env:
+        DATE: ${{ inputs.date }}
+        REVISION: ${{ inputs.revision }}
+        VERSION: ${{ inputs.version }}
+        PLATFORMS_RAW: ${{ inputs.platforms }}
+        DOCKERFILENAME: ${{ inputs.dockerfile }}
+        GOLDENFILE: ${{ inputs.goldenfile }}
+      run: |
+        declare -a platforms=(${PLATFORMS_RAW//,/ })
+
+        for platform in "${platforms[@]}"; do
+          docker pull --platform "$platform" "${{ inputs.imageName }}:${VERSION}"
+          ${PWD}/.ci/docker/test/verify.sh "${{ inputs.imageName }}:${VERSION}" "$(echo $platform | cut -d '/' -f 2)"
+        done

@@ -1,0 +1,85 @@
+name: Operate CI Build Observability Reusable
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "The branch name to be used for the workflow"
+        required: true
+        type: string
+      forkCount:
+        description: "The number of VMs to fork in parallel in order to execute the tests"
+        required: false
+        default: 4
+        type: number
+      command:
+        description: "Maven command to trigger the test"
+        required: true
+        type: string
+      runner-type:
+        description: "CI runner type for the tests"
+        default: gcp-core-4-default
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+# Define environment variable for concurrency
+env:
+  BRANCH_NAME: ${{ inputs.branch }}
+  LIMITS_CPU: ${{ inputs.forkCount }}  # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
+
+jobs:
+  check-build:
+    name: Java Checks
+    timeout-minutes: 20
+    runs-on: ${{ inputs.runner-type }}
+    if: ${{ !startsWith(inputs.branch, 'fe-') && !(startsWith(inputs.branch, 'renovate/') && contains(inputs.branch, '-fe-')) }}
+
+    steps:
+      # Setup: checkout branch
+      - name: Checkout '${{ inputs.branch }}' branch
+        uses: actions/checkout@v4
+        with:
+          ref: refs/heads/${{ inputs.branch }}
+          fetch-depth: 0 # fetches all history for all branches and tags
+
+      # Setup: import secrets from vault
+      - name: Import Secrets
+        id: secrets  # important to refer to it in later steps
+        uses: hashicorp/vault-action@v3
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false  # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
+
+      # Setup: configure Java, Maven, settings.xml
+      - uses: ./.github/actions/setup-build
+        name: Build setup
+        with:
+          java-distribution: adopt
+          maven-cache-key-modifier: operate
+          maven-version: 3.8.6
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      # Build: all Maven artifacts
+      - name: Build Maven
+        run: |
+          ${{ inputs.command }}
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

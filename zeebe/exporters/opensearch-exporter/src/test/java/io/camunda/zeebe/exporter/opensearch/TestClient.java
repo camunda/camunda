@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter.opensearch;
 
@@ -23,6 +23,7 @@ import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyReq
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Action;
+import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.DeleteAction;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition.Conditions;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
@@ -62,6 +63,19 @@ final class TestClient implements CloseableSilently {
     this.indexRouter = indexRouter;
 
     restClient = RestClientFactory.of(config, true);
+
+    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
+    osClient = new OpenSearchClient(transport);
+  }
+
+  TestClient(
+      final OpensearchExporterConfiguration config,
+      final RecordIndexRouter indexRouter,
+      final RestClient restClient) {
+    this.config = config;
+    this.indexRouter = indexRouter;
+
+    this.restClient = restClient;
 
     final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
     osClient = new OpenSearchClient(transport);
@@ -157,7 +171,7 @@ final class TestClient implements CloseableSilently {
             List.of(new Transition(ISM_DELETE_STATE, new Conditions(minimumAge))));
     final var deleteState =
         new State(
-            ISM_DELETE_STATE, List.of(new Action(new ObjectMapper())), Collections.emptyList());
+            ISM_DELETE_STATE, List.of(new Action(new DeleteAction())), Collections.emptyList());
     final var policy =
         new Policy(
             config.retention.getPolicyDescription(),

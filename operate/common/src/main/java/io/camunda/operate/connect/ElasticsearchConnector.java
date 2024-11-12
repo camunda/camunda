@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.connect;
 
@@ -27,10 +18,13 @@ import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.SslProperties;
 import io.camunda.operate.util.RetryOperation;
+import io.camunda.search.connect.plugin.PluginRepository;
+import io.camunda.zeebe.util.VisibleForTesting;
 import jakarta.annotation.PreDestroy;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyManagementException;
@@ -43,6 +37,7 @@ import java.security.cert.CertificateFactory;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
 import org.apache.http.HttpHost;
+import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -59,7 +54,6 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -70,21 +64,36 @@ public class ElasticsearchConnector {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
-  @Autowired private OperateProperties operateProperties;
-
+  private PluginRepository esClientRepository = new PluginRepository();
+  private PluginRepository zeebeEsClientRepository = new PluginRepository();
+  private final OperateProperties operateProperties;
   private ElasticsearchClient elasticsearchClient;
 
-  public static void closeEsClient(RestHighLevelClient esClient) {
+  public ElasticsearchConnector(final OperateProperties operateProperties) {
+    this.operateProperties = operateProperties;
+  }
+
+  @VisibleForTesting
+  public void setEsClientRepository(final PluginRepository esClientRepository) {
+    this.esClientRepository = esClientRepository;
+  }
+
+  @VisibleForTesting
+  public void setZeebeEsClientRepository(final PluginRepository zeebeEsClientRepository) {
+    this.zeebeEsClientRepository = zeebeEsClientRepository;
+  }
+
+  public static void closeEsClient(final RestHighLevelClient esClient) {
     if (esClient != null) {
       try {
         esClient.close();
-      } catch (IOException e) {
+      } catch (final IOException e) {
         LOGGER.error("Could not close esClient", e);
       }
     }
   }
 
-  public static void closeEsClient(ElasticsearchClient esClient) {
+  public static void closeEsClient(final ElasticsearchClient esClient) {
     if (esClient != null) {
       esClient.shutdown();
     }
@@ -94,6 +103,9 @@ public class ElasticsearchConnector {
   public ElasticsearchClient elasticsearchClient() {
     LOGGER.debug("Creating ElasticsearchClient ...");
     final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
+
+    esClientRepository.load(operateProperties.getElasticsearch().getInterceptorPlugins());
+
     final RestClientBuilder restClientBuilder = RestClient.builder(getHttpHost(elsConfig));
     if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
       restClientBuilder.setRequestConfigCallback(
@@ -102,7 +114,9 @@ public class ElasticsearchConnector {
     final RestClient restClient =
         restClientBuilder
             .setHttpClientConfigCallback(
-                httpClientBuilder -> configureHttpClient(httpClientBuilder, elsConfig))
+                httpClientBuilder ->
+                    configureHttpClient(
+                        httpClientBuilder, elsConfig, esClientRepository.asRequestInterceptor()))
             .build();
 
     // Create the transport with a Jackson mapper
@@ -111,15 +125,20 @@ public class ElasticsearchConnector {
 
     // And create the API client
     elasticsearchClient = new ElasticsearchClient(transport);
-    if (!checkHealth(elasticsearchClient)) {
-      LOGGER.warn("Elasticsearch cluster is not accessible");
+
+    if (operateProperties.getElasticsearch().isHealthCheckEnabled()) {
+      if (!checkHealth(elasticsearchClient)) {
+        LOGGER.warn("Elasticsearch cluster is not accessible");
+      } else {
+        LOGGER.debug("Elasticsearch connection was successfully created.");
+      }
     } else {
-      LOGGER.debug("Elasticsearch connection was successfully created.");
+      LOGGER.warn("Elasticsearch cluster health check is disabled.");
     }
     return elasticsearchClient;
   }
 
-  public boolean checkHealth(ElasticsearchClient elasticsearchClient) {
+  public boolean checkHealth(final ElasticsearchClient elasticsearchClient) {
     final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     try {
       return RetryOperation.<Boolean>newBuilder()
@@ -140,7 +159,7 @@ public class ElasticsearchConnector {
               })
           .build()
           .retry();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
     }
   }
@@ -150,7 +169,8 @@ public class ElasticsearchConnector {
     // some weird error when ELS sets available processors number for Netty - see
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");
-    return createEsClient(operateProperties.getElasticsearch());
+    esClientRepository.load(operateProperties.getElasticsearch().getInterceptorPlugins());
+    return createEsClient(operateProperties.getElasticsearch(), esClientRepository);
   }
 
   @Bean("zeebeEsClient")
@@ -158,7 +178,8 @@ public class ElasticsearchConnector {
     // some weird error when ELS sets available processors number for Netty - see
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
     System.setProperty("es.set.netty.runtime.available.processors", "false");
-    return createEsClient(operateProperties.getZeebeElasticsearch());
+    zeebeEsClientRepository.load(operateProperties.getZeebeElasticsearch().getInterceptorPlugins());
+    return createEsClient(operateProperties.getZeebeElasticsearch(), zeebeEsClientRepository);
   }
 
   @PreDestroy
@@ -166,18 +187,21 @@ public class ElasticsearchConnector {
     if (elasticsearchClient != null) {
       try {
         elasticsearchClient._transport().close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
       }
     }
   }
 
-  public RestHighLevelClient createEsClient(ElasticsearchProperties elsConfig) {
+  public RestHighLevelClient createEsClient(
+      final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
     LOGGER.debug("Creating Elasticsearch connection...");
     final RestClientBuilder restClientBuilder =
         RestClient.builder(getHttpHost(elsConfig))
             .setHttpClientConfigCallback(
-                httpClientBuilder -> configureHttpClient(httpClientBuilder, elsConfig));
+                httpClientBuilder ->
+                    configureHttpClient(
+                        httpClientBuilder, elsConfig, pluginRepository.asRequestInterceptor()));
     if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
       restClientBuilder.setRequestConfigCallback(
           configCallback -> setTimeouts(configCallback, elsConfig));
@@ -186,17 +210,29 @@ public class ElasticsearchConnector {
         new RestHighLevelClientBuilder(restClientBuilder.build())
             .setApiCompatibilityMode(true)
             .build();
-    if (!checkHealth(esClient)) {
-      LOGGER.warn("Elasticsearch cluster is not accessible");
+    if (operateProperties.getElasticsearch().isHealthCheckEnabled()) {
+      if (!checkHealth(esClient)) {
+        LOGGER.warn("Elasticsearch cluster is not accessible");
+      } else {
+        LOGGER.debug("Elasticsearch connection was successfully created.");
+      }
     } else {
-      LOGGER.debug("Elasticsearch connection was successfully created.");
+      LOGGER.warn("Elasticsearch cluster health check is disabled.");
     }
     return esClient;
   }
 
   protected HttpAsyncClientBuilder configureHttpClient(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, ElasticsearchProperties elsConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder,
+      final ElasticsearchProperties elsConfig,
+      final HttpRequestInterceptor... interceptors) {
     setupAuthentication(httpAsyncClientBuilder, elsConfig);
+
+    LOGGER.trace("Attempt to load interceptor plugins");
+    for (final HttpRequestInterceptor interceptor : interceptors) {
+      httpAsyncClientBuilder.addInterceptorLast(interceptor);
+    }
+
     if (elsConfig.getSsl() != null) {
       setupSSLContext(httpAsyncClientBuilder, elsConfig.getSsl());
     }
@@ -204,18 +240,18 @@ public class ElasticsearchConnector {
   }
 
   private void setupSSLContext(
-      HttpAsyncClientBuilder httpAsyncClientBuilder, SslProperties sslConfig) {
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final SslProperties sslConfig) {
     try {
       httpAsyncClientBuilder.setSSLContext(getSSLContext(sslConfig));
       if (!sslConfig.isVerifyHostname()) {
         httpAsyncClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Error in setting up SSLContext", e);
     }
   }
 
-  private SSLContext getSSLContext(SslProperties sslConfig)
+  private SSLContext getSSLContext(final SslProperties sslConfig)
       throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {
     final KeyStore truststore = loadCustomTrustStore(sslConfig);
     final TrustStrategy trustStrategy =
@@ -228,7 +264,7 @@ public class ElasticsearchConnector {
     }
   }
 
-  private KeyStore loadCustomTrustStore(SslProperties sslConfig) {
+  private KeyStore loadCustomTrustStore(final SslProperties sslConfig) {
     try {
       final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(null);
@@ -238,7 +274,7 @@ public class ElasticsearchConnector {
         setCertificateInTrustStore(trustStore, serverCertificate);
       }
       return trustStore;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           "Could not create certificate trustStore for the secured Elasticsearch Connection!";
       throw new OperateRuntimeException(message, e);
@@ -250,7 +286,7 @@ public class ElasticsearchConnector {
     try {
       final Certificate cert = loadCertificateFromPath(serverCertificate);
       trustStore.setCertificateEntry("elasticsearch-host", cert);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       final String message =
           "Could not load configured server certificate for the secured Elasticsearch Connection!";
       throw new OperateRuntimeException(message, e);
@@ -260,7 +296,8 @@ public class ElasticsearchConnector {
   private Certificate loadCertificateFromPath(final String certificatePath)
       throws IOException, CertificateException {
     final Certificate cert;
-    try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(certificatePath))) {
+    try (final BufferedInputStream bis =
+        new BufferedInputStream(new FileInputStream(certificatePath))) {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
       if (bis.available() > 0) {
@@ -284,17 +321,17 @@ public class ElasticsearchConnector {
     return builder;
   }
 
-  private HttpHost getHttpHost(ElasticsearchProperties elsConfig) {
+  private HttpHost getHttpHost(final ElasticsearchProperties elsConfig) {
     try {
       final URI uri = new URI(elsConfig.getUrl());
       return new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme());
-    } catch (URISyntaxException e) {
+    } catch (final URISyntaxException e) {
       throw new OperateRuntimeException("Error in url: " + elsConfig.getUrl(), e);
     }
   }
 
   private void setupAuthentication(
-      final HttpAsyncClientBuilder builder, ElasticsearchProperties elsConfig) {
+      final HttpAsyncClientBuilder builder, final ElasticsearchProperties elsConfig) {
     final String username = elsConfig.getUsername();
     final String password = elsConfig.getPassword();
 
@@ -309,7 +346,7 @@ public class ElasticsearchConnector {
     builder.setDefaultCredentialsProvider(credentialsProvider);
   }
 
-  public boolean checkHealth(RestHighLevelClient esClient) {
+  public boolean checkHealth(final RestHighLevelClient esClient) {
     final ElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
     try {
       return RetryOperation.<Boolean>newBuilder()
@@ -328,7 +365,7 @@ public class ElasticsearchConnector {
               })
           .build()
           .retry();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new OperateRuntimeException("Couldn't connect to Elasticsearch. Abort.", e);
     }
   }

@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.model.bpmn.builder;
 
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
+
 /** A fluent builder for zeebe specific user task related properties. */
 public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertiesBuilder<B>> {
 
@@ -166,4 +168,36 @@ public interface ZeebeUserTaskPropertiesBuilder<B extends ZeebeUserTaskPropertie
    * @return the builder object
    */
   B zeebeExternalFormReferenceExpression(String expression);
+
+  /**
+   * Sets the binding type for the user task's form.
+   *
+   * @param bindingType the binding type to set
+   * @return the builder object
+   */
+  B zeebeFormBindingType(final ZeebeBindingType bindingType);
+
+  /**
+   * Sets the version tag for the user task's form.
+   *
+   * @param versionTag the version tag to set
+   * @return the builder object
+   */
+  B zeebeFormVersionTag(final String versionTag);
+
+  /**
+   * Sets a static priority for the user task.
+   *
+   * @param priority the priority value to set
+   * @return the builder object
+   */
+  B zeebeTaskPriority(final String priority);
+
+  /**
+   * Sets a dynamic priority for the user task retrieved from the given expression.
+   *
+   * @param expression the expression for the priority to set
+   * @return the builder object
+   */
+  B zeebeTaskPriorityExpression(final String expression);
 }

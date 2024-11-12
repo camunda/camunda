@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
@@ -53,11 +53,15 @@ import org.junit.jupiter.api.Test;
 @AutoCloseResources
 @ZeebeIntegration
 final class StreamJobsTest {
-  @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true);
+  @TestZeebe(initMethod = "initTestStandaloneBroker")
+  private static TestStandaloneBroker zeebe;
 
-  @AutoCloseResource private final ZeebeClient client = ZEEBE.newClientBuilder().build();
+  @AutoCloseResource private final ZeebeClient client = zeebe.newClientBuilder().build();
+
+  @SuppressWarnings("unused")
+  static void initTestStandaloneBroker() {
+    zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  }
 
   @Test
   void shouldStreamJobs() {
@@ -200,7 +204,7 @@ final class StreamJobsTest {
             .workerName("stream")
             .send();
     awaitStreamRegistered(uniqueId);
-    ZEEBE.stop().start().awaitCompleteTopology();
+    zeebe.stop().start().awaitCompleteTopology();
 
     // then
     assertThat((Future<?>) stream)
@@ -214,7 +218,7 @@ final class StreamJobsTest {
   }
 
   private void awaitStreamRegistered(final String jobType) {
-    final var actuator = JobStreamActuator.of(ZEEBE);
+    final var actuator = JobStreamActuator.of(zeebe);
     Awaitility.await("until stream with type '%s' is registered".formatted(jobType))
         .untilAsserted(
             () ->

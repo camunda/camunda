@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.mutable;
 
@@ -25,6 +25,20 @@ public interface MutableFormState extends FormState {
    * @param record the record of the form
    */
   void storeFormInFormByIdAndVersionColumnFamily(FormRecord record);
+
+  /**
+   * Put the given form in FORM_KEY_BY_FORM_ID_AND_DEPLOYMENT_KEY column family
+   *
+   * @param record the record of the form
+   */
+  void storeFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(FormRecord record);
+
+  /**
+   * Put the given form in FORM_KEY_BY_FORM_ID_AND_VERSION_TAG column family
+   *
+   * @param record the record of the form
+   */
+  void storeFormInFormKeyByFormIdAndVersionTagColumnFamily(FormRecord record);
 
   /**
    * Update the latest version of the form if it is newer.
@@ -53,4 +67,18 @@ public interface MutableFormState extends FormState {
    * @param record the record of the form that is deleted
    */
   void deleteFormInFormVersionColumnFamily(FormRecord record);
+
+  /**
+   * Deletes a form from FORM_KEY_BY_FORM_ID_AND_DEPLOYMENT_KEY column family
+   *
+   * @param record the record of the form that is deleted
+   */
+  void deleteFormInFormKeyByFormIdAndDeploymentKeyColumnFamily(FormRecord record);
+
+  /**
+   * Deletes a form from FORM_KEY_BY_FORM_ID_AND_VERSION_TAG column family
+   *
+   * @param record the record of the form that is deleted
+   */
+  void deleteFormInFormKeyByFormIdAndVersionTagColumnFamily(FormRecord record);
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
@@ -23,9 +23,13 @@ public class ExporterStateEntry extends UnpackedObject implements DbValue {
   private final BinaryProperty metadataProp =
       new BinaryProperty("exporterMetadata", EMPTY_METADATA);
 
+  private final LongProperty metadataVersionProp = new LongProperty("metadataVersion", 0L);
+
   public ExporterStateEntry() {
-    super(2);
-    declareProperty(positionProp).declareProperty(metadataProp);
+    super(3);
+    declareProperty(positionProp)
+        .declareProperty(metadataProp)
+        .declareProperty(metadataVersionProp);
   }
 
   public long getPosition() {
@@ -44,6 +48,15 @@ public class ExporterStateEntry extends UnpackedObject implements DbValue {
 
   public ExporterStateEntry setMetadata(final DirectBuffer metadata) {
     metadataProp.setValue(metadata);
+    return this;
+  }
+
+  public long getMetadataVersion() {
+    return metadataVersionProp.getValue();
+  }
+
+  public ExporterStateEntry setMetadataVersion(final long metadataVersion) {
+    metadataVersionProp.setValue(metadataVersion);
     return this;
   }
 }

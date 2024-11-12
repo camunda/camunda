@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.repo;
 
@@ -11,12 +11,18 @@ import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.exporter.api.Exporter;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.jar.ExternalJarLoadException;
 import io.camunda.zeebe.util.jar.ExternalJarRepository;
 import io.camunda.zeebe.util.jar.ThreadContextUtil;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.InstantSource;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public final class ExporterRepository {
@@ -26,12 +32,18 @@ public final class ExporterRepository {
   private final Map<String, ExporterDescriptor> exporters;
 
   public ExporterRepository() {
-    this(new HashMap<>(), new ExternalJarRepository());
+    this(new ArrayList<>());
+  }
+
+  public ExporterRepository(final List<ExporterDescriptor> exporters) {
+    this(exporters, new ExternalJarRepository());
   }
 
   public ExporterRepository(
-      final Map<String, ExporterDescriptor> exporters, final ExternalJarRepository jarRepository) {
-    this.exporters = exporters;
+      final List<ExporterDescriptor> exporters, final ExternalJarRepository jarRepository) {
+    this.exporters =
+        exporters.stream()
+            .collect(Collectors.toMap(ExporterDescriptor::getId, Function.identity()));
     this.jarRepository = jarRepository;
   }
 
@@ -39,12 +51,8 @@ public final class ExporterRepository {
     return Collections.unmodifiableMap(exporters);
   }
 
-  public ExporterDescriptor load(final String id, final Class<? extends Exporter> exporterClass)
-      throws ExporterLoadException {
-    return load(id, exporterClass, null);
-  }
-
-  public ExporterDescriptor load(
+  @VisibleForTesting
+  public ExporterDescriptor validateAndAddExporterDescriptor(
       final String id,
       final Class<? extends Exporter> exporterClass,
       final Map<String, Object> args)
@@ -83,17 +91,25 @@ public final class ExporterRepository {
       throw new ExporterLoadException(id, "cannot load specified class", e);
     }
 
-    return load(id, exporterClass, config.getArgs());
+    return validateAndAddExporterDescriptor(id, exporterClass, config.getArgs());
   }
 
   private void validate(final ExporterDescriptor descriptor) throws ExporterLoadException {
     try {
       final Exporter instance = descriptor.newInstance();
-      final ExporterContext context =
-          new ExporterContext(LOG, descriptor.getConfiguration(), NULL_PARTITION_ID);
+      try (final var context =
+          new ExporterContext(
+              LOG,
+              descriptor.getConfiguration(),
+              NULL_PARTITION_ID,
+              new SimpleMeterRegistry(),
+              InstantSource.system())) {
 
-      ThreadContextUtil.runCheckedWithClassLoader(
-          () -> instance.configure(context), instance.getClass().getClassLoader());
+        ThreadContextUtil.runCheckedWithClassLoader(
+            () -> instance.configure(context), instance.getClass().getClassLoader());
+      } finally {
+        instance.close();
+      }
     } catch (final Exception ex) {
       throw new ExporterLoadException(descriptor.getId(), "failed validation", ex);
     }

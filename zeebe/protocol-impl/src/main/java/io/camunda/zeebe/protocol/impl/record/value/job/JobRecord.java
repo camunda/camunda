@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.protocol.impl.record.value.job;
 
@@ -12,27 +12,36 @@ import static io.camunda.zeebe.protocol.impl.record.value.processinstance.Proces
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JobRecord extends UnifiedRecordValue implements JobRecordValue {
 
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
+  public static final String RETRIES = "retries";
+  public static final String TIMEOUT = "timeout";
   private static final String EMPTY_STRING = "";
-  private static final String RETRIES = "retries";
   private static final String TYPE = "type";
   private static final String CUSTOM_HEADERS = "customHeaders";
   private static final String VARIABLES = "variables";
@@ -42,7 +51,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   private final StringProperty workerProp = new StringProperty("worker", EMPTY_STRING);
   private final LongProperty deadlineProp = new LongProperty("deadline", -1);
-  private final LongProperty timeoutProp = new LongProperty("timeout", -1);
+  private final LongProperty timeoutProp = new LongProperty(TIMEOUT, -1);
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
   private final LongProperty retryBackoffProp = new LongProperty("retryBackoff", 0);
   private final LongProperty recurringTimeProp = new LongProperty("recurringTime", -1);
@@ -63,13 +72,20 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new LongProperty("processDefinitionKey", -1L);
   private final EnumProperty<JobKind> jobKindProp =
       new EnumProperty<>("jobKind", JobKind.class, JobKind.BPMN_ELEMENT);
+  private final EnumProperty<JobListenerEventType> jobListenerEventTypeProp =
+      new EnumProperty<>(
+          "jobListenerEventType", JobListenerEventType.class, JobListenerEventType.UNSPECIFIED);
   private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final ArrayProperty<StringValue> changedAttributesProp =
+      new ArrayProperty<>("changedAttributes", StringValue::new);
+  private final ObjectProperty<JobResult> resultProp =
+      new ObjectProperty<>("result", new JobResult());
 
   public JobRecord() {
-    super(19);
+    super(22);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -86,9 +102,12 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(jobKindProp)
+        .declareProperty(jobListenerEventTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(changedAttributesProp)
+        .declareProperty(resultProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -108,9 +127,12 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     processDefinitionKeyProp.setValue(record.getProcessDefinitionKey());
     processInstanceKeyProp.setValue(record.getProcessInstanceKey());
     jobKindProp.setValue(record.getJobKind());
+    jobListenerEventTypeProp.setValue(record.getJobListenerEventType());
     elementIdProp.setValue(record.getElementIdBuffer());
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
+    setChangedAttributes(record.getChangedAttributes());
+    resultProp.getValue().wrap(record.getResult());
   }
 
   public void wrap(final JobRecord record) {
@@ -228,6 +250,36 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     return this;
   }
 
+  @Override
+  public JobListenerEventType getJobListenerEventType() {
+    return jobListenerEventTypeProp.getValue();
+  }
+
+  @Override
+  public Set<String> getChangedAttributes() {
+    return StreamSupport.stream(changedAttributesProp.spliterator(), false)
+        .map(StringValue::getValue)
+        .map(BufferUtil::bufferAsString)
+        .collect(Collectors.toSet());
+  }
+
+  public JobRecord setChangedAttributes(final Set<String> changedAttributes) {
+    changedAttributesProp.reset();
+    changedAttributes.forEach(
+        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
+    return this;
+  }
+
+  @Override
+  public JobResult getResult() {
+    return resultProp.getValue();
+  }
+
+  public JobRecord setResult(final JobResult result) {
+    resultProp.getValue().wrap(result);
+    return this;
+  }
+
   public JobRecord setProcessDefinitionVersion(final int version) {
     processDefinitionVersionProp.setValue(version);
     return this;
@@ -317,6 +369,16 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
 
   public JobRecord setType(final DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
+  }
+
+  public JobRecord setListenerEventType(final JobListenerEventType jobListenerEventType) {
+    jobListenerEventTypeProp.setValue(jobListenerEventType);
+    return this;
+  }
+
+  @JsonIgnore
+  public Map<String, Object> getCustomHeadersObjectMap() {
+    return MsgPackConverter.convertToMap(customHeadersProp.getValue());
   }
 
   @JsonIgnore

@@ -2,14 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.management;
 
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -31,6 +32,7 @@ public class BrokerAdminServiceEndpoint {
     operations.put("takeSnapshot", this::takeSnapshot);
     operations.put("prepareUpgrade", this::prepareUpgrade);
     operations.put("pauseExporting", this::pauseExporting);
+    operations.put("softPauseExporting", this::softPauseExporting);
     operations.put("resumeExporting", this::resumeExporting);
   }
 
@@ -60,6 +62,11 @@ public class BrokerAdminServiceEndpoint {
     return partitionStatus();
   }
 
+  private Map<Integer, PartitionStatus> softPauseExporting() {
+    springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::softPauseExporting);
+    return partitionStatus();
+  }
+
   private Map<Integer, PartitionStatus> resumeExporting() {
     springBrokerBridge.getAdminService().ifPresent(BrokerAdminService::resumeExporting);
     return partitionStatus();
@@ -81,5 +88,10 @@ public class BrokerAdminServiceEndpoint {
         .getAdminService()
         .map(BrokerAdminService::getPartitionStatus)
         .orElse(Map.of());
+  }
+
+  @ReadOperation
+  public Optional<PartitionStatus> singlePartition(@Selector final Integer partitionId) {
+    return Optional.ofNullable(partitionStatus().get(partitionId));
   }
 }

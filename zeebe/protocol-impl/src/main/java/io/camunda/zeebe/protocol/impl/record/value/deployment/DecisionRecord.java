@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
@@ -34,9 +34,11 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public DecisionRecord() {
-    super(8);
+    super(10);
     declareProperty(decisionIdProp)
         .declareProperty(decisionNameProp)
         .declareProperty(versionProp)
@@ -44,7 +46,9 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
         .declareProperty(decisionRequirementsIdProp)
         .declareProperty(decisionRequirementsKeyProp)
         .declareProperty(isDuplicateProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
   }
 
   @Override
@@ -60,6 +64,11 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
   @Override
   public int getVersion() {
     return versionProp.getValue();
+  }
+
+  @Override
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
   }
 
   @Override
@@ -82,6 +91,21 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
     return isDuplicateProp.getValue();
   }
 
+  public DecisionRecord setDuplicate(final boolean duplicate) {
+    isDuplicateProp.setValue(duplicate);
+    return this;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public DecisionRecord setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
+  }
+
   public DecisionRecord setDecisionRequirementsKey(final long decisionRequirementsKey) {
     decisionRequirementsKeyProp.setValue(decisionRequirementsKey);
     return this;
@@ -97,6 +121,11 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
     return this;
   }
 
+  public DecisionRecord setVersionTag(final String versionTag) {
+    versionTagProp.setValue(versionTag);
+    return this;
+  }
+
   public DecisionRecord setVersion(final int version) {
     versionProp.setValue(version);
     return this;
@@ -109,11 +138,6 @@ public final class DecisionRecord extends UnifiedRecordValue implements Decision
 
   public DecisionRecord setDecisionId(final String decisionId) {
     decisionIdProp.setValue(decisionId);
-    return this;
-  }
-
-  public DecisionRecord markAsDuplicate() {
-    isDuplicateProp.setValue(true);
     return this;
   }
 

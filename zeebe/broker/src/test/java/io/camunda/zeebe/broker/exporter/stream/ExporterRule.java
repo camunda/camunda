@@ -2,14 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.exporter.stream;
 
 import static org.mockito.Mockito.spy;
 
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
+import io.camunda.zeebe.broker.exporter.stream.ExporterDirector.ExporterInitializationInfo;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.ExporterMode;
 import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -23,11 +24,13 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
 import io.camunda.zeebe.stream.api.EventFilter;
+import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.test.util.AutoCloseableRule;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
@@ -98,23 +101,36 @@ public final class ExporterRule implements TestRule {
   }
 
   public void startExporterDirector(final List<ExporterDescriptor> exporterDescriptors) {
+    startExporterDirector(exporterDescriptors, ExporterPhase.EXPORTING);
+  }
+
+  public void startExporterDirector(
+      final List<ExporterDescriptor> exporterDescriptors, final ExporterPhase phase) {
     final var stream = streams.getLogStream(STREAM_NAME);
     final var runtimeFolder = streams.createRuntimeFolder(stream);
     capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile()));
+
+    final var descriptorsWithInitializationInfo =
+        exporterDescriptors.stream()
+            .collect(
+                Collectors.toMap(
+                    descriptor -> descriptor,
+                    descriptor -> new ExporterInitializationInfo(0, null)));
 
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)
             .name(PROCESSOR_NAME)
-            .logStream(stream.getAsyncLogStream())
+            .logStream(stream)
+            .clock(StreamClock.system())
             .zeebeDb(capturedZeebeDb)
             .exporterMode(exporterMode)
             .distributionInterval(distributionInterval)
             .partitionMessagingService(partitionMessagingService)
-            .descriptors(exporterDescriptors)
+            .descriptors(descriptorsWithInitializationInfo)
             .positionsToSkipFilter(positionsToSkipFilter);
 
-    director = new ExporterDirector(context, ExporterPhase.EXPORTING);
+    director = new ExporterDirector(context, phase);
     director.startAsync(actorSchedulerRule.get()).join();
   }
 
@@ -168,7 +184,7 @@ public final class ExporterRule implements TestRule {
 
     @Override
     protected void before() {
-      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get());
+      streams = new TestStreams(tempFolder, closeables, actorSchedulerRule.get(), clock);
       streams.createLogStream(STREAM_NAME, partitionId);
     }
   }

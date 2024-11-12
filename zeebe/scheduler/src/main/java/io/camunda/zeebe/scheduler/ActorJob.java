@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.scheduler;
 
@@ -22,41 +22,28 @@ public final class ActorJob {
   private static final FatalErrorHandler FATAL_ERROR_HANDLER = FatalErrorHandler.withLogger(LOG);
 
   TaskSchedulingState schedulingState;
-  Actor actor;
   ActorTask task;
-  ActorThread actorThread;
   private Callable<?> callable;
   private Runnable runnable;
-  private Object invocationResult;
   private ActorFuture resultFuture;
   private ActorSubscription subscription;
   private long scheduledAt = -1;
 
   public void onJobAddedToTask(final ActorTask task) {
     scheduledAt = System.nanoTime();
-    actor = task.actor;
     this.task = task;
     schedulingState = TaskSchedulingState.QUEUED;
   }
 
   @Async.Execute
   void execute(final ActorThread runner) {
-    actorThread = runner;
     observeSchedulingLatency(runner.getActorMetrics());
     try {
       invoke();
-
-      if (resultFuture != null) {
-        resultFuture.complete(invocationResult);
-        resultFuture = null;
-      }
-
     } catch (final Throwable e) {
       FATAL_ERROR_HANDLER.handleError(e);
       task.onFailure(e);
     } finally {
-      actorThread = null;
-
       // in any case, success or exception, decide if the job should be resubmitted
       if (isTriggeredBySubscription() || runnable == null) {
         schedulingState = TaskSchedulingState.TERMINATED;
@@ -84,9 +71,11 @@ public final class ActorJob {
   }
 
   private void invoke() throws Exception {
+    final Object invocationResult;
     if (callable != null) {
       invocationResult = callable.call();
     } else {
+      invocationResult = null;
       // only tasks triggered by a subscription can "yield"; everything else just executes once
       if (!isTriggeredBySubscription()) {
         final Runnable r = runnable;
@@ -95,6 +84,10 @@ public final class ActorJob {
       } else {
         runnable.run();
       }
+    }
+    if (resultFuture != null) {
+      resultFuture.complete(invocationResult);
+      resultFuture = null;
     }
   }
 
@@ -113,14 +106,10 @@ public final class ActorJob {
     schedulingState = TaskSchedulingState.NOT_SCHEDULED;
     scheduledAt = -1;
 
-    actor = null;
-
     task = null;
-    actorThread = null;
 
     callable = null;
     runnable = null;
-    invocationResult = null;
 
     resultFuture = null;
     subscription = null;
@@ -128,18 +117,26 @@ public final class ActorJob {
 
   @Override
   public String toString() {
-    String toString = "";
-
-    if (runnable != null) {
-      toString += runnable.getClass().getName();
-    }
+    final StringBuilder sb = new StringBuilder("ActorJob{");
+    sb.append("schedulingState=").append(schedulingState);
+    sb.append(", task=").append(task);
     if (callable != null) {
-      toString += callable.getClass().getName();
+      sb.append(", callable=").append(callable);
     }
-
-    toString += " " + schedulingState;
-
-    return toString;
+    if (runnable != null) {
+      sb.append(", runnable=").append(runnable);
+    }
+    if (resultFuture != null) {
+      sb.append(", resultFuture=").append(resultFuture);
+    }
+    if (subscription != null) {
+      sb.append(", subscription=").append(subscription);
+    }
+    if (scheduledAt != -1) {
+      sb.append(", scheduledAt=").append(scheduledAt);
+    }
+    sb.append('}');
+    return sb.toString();
   }
 
   public boolean isTriggeredBySubscription() {
@@ -160,7 +157,7 @@ public final class ActorJob {
   }
 
   public Actor getActor() {
-    return actor;
+    return task.actor;
   }
 
   public void setResultFuture(final ActorFuture resultFuture) {

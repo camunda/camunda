@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.protocol.impl.record.value.deployment;
 
@@ -39,16 +39,20 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
+  private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public ProcessMetadata() {
-    super(7);
+    super(9);
     declareProperty(bpmnProcessIdProp)
         .declareProperty(versionProp)
         .declareProperty(keyProp)
         .declareProperty(resourceNameProp)
         .declareProperty(checksumProp)
         .declareProperty(isDuplicateProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(deploymentKeyProp)
+        .declareProperty(versionTagProp);
   }
 
   @Override
@@ -84,6 +88,21 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
   @Override
   public boolean isDuplicate() {
     return isDuplicateProp.getValue();
+  }
+
+  public ProcessMetadata setDuplicate(final boolean isDuplicate) {
+    isDuplicateProp.setValue(isDuplicate);
+    return this;
+  }
+
+  @Override
+  public long getDeploymentKey() {
+    return deploymentKeyProp.getValue();
+  }
+
+  public ProcessMetadata setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
   }
 
   public ProcessMetadata setResourceName(final String resourceName) {
@@ -154,11 +173,6 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
     return this;
   }
 
-  public ProcessMetadata markAsDuplicate() {
-    isDuplicateProp.setValue(true);
-    return this;
-  }
-
   @Override
   public String getTenantId() {
     return bufferAsString(tenantIdProp.getValue());
@@ -166,6 +180,16 @@ public final class ProcessMetadata extends UnifiedRecordValue implements Process
 
   public ProcessMetadata setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  @Override
+  public String getVersionTag() {
+    return bufferAsString(versionTagProp.getValue());
+  }
+
+  public ProcessMetadata setVersionTag(final String versionTag) {
+    versionTagProp.setValue(versionTag);
     return this;
   }
 }

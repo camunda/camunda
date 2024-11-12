@@ -414,7 +414,7 @@ public final class RaftMemberContext {
    *
    * @param nextSnapshotChunk The member's next expected snapshot chunk ID.
    */
-  public void setNextSnapshotChunk(final ByteBuffer nextSnapshotChunk) {
+  public void setNextSnapshotChunkId(final ByteBuffer nextSnapshotChunk) {
     this.nextSnapshotChunk = nextSnapshotChunk;
   }
 

@@ -15,11 +15,19 @@
  */
 package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstanceTest;
+import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
+import java.io.ByteArrayInputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import org.junit.Test;
 
 public class ZeebeCalledDecisionTest extends BpmnModelElementInstanceTest {
 
@@ -37,6 +45,56 @@ public class ZeebeCalledDecisionTest extends BpmnModelElementInstanceTest {
   public Collection<AttributeAssumption> getAttributesAssumptions() {
     return Arrays.asList(
         new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "decisionId", false, true),
-        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "resultVariable", false, true));
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "resultVariable", false, true),
+        new AttributeAssumption(
+            BpmnModelConstants.ZEEBE_NS, "bindingType", false, false, ZeebeBindingType.latest),
+        new AttributeAssumption(BpmnModelConstants.ZEEBE_NS, "versionTag", false, false));
+  }
+
+  @Test
+  public void shouldReadValidBindingTypeFromXml() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .businessRuleTask("task", task -> task.zeebeBindingType(ZeebeBindingType.deployment))
+            .done();
+    final String modelXml = Bpmn.convertToString(modelInstance);
+
+    // when
+    final BusinessRuleTask businessRuleTask =
+        Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
+            .getModelElementById("task");
+    final ZeebeCalledDecision calledDecision =
+        businessRuleTask.getSingleExtensionElement(ZeebeCalledDecision.class);
+
+    // then
+    assertThat(calledDecision.getBindingType()).isEqualTo(ZeebeBindingType.deployment);
+  }
+
+  @Test
+  public void shouldThrowExceptionForInvalidBindingTypeInXml() {
+    // given
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .businessRuleTask("task", task -> task.zeebeBindingType(ZeebeBindingType.deployment))
+            .done();
+    final String modelXml =
+        Bpmn.convertToString(modelInstance)
+            .replace("bindingType=\"deployment\"", "bindingType=\"foo\"");
+
+    // when
+    final BusinessRuleTask businessRuleTask =
+        Bpmn.readModelFromStream(new ByteArrayInputStream(modelXml.getBytes()))
+            .getModelElementById("task");
+    final ZeebeCalledDecision calledDecision =
+        businessRuleTask.getSingleExtensionElement(ZeebeCalledDecision.class);
+
+    // then
+    assertThatThrownBy(calledDecision::getBindingType)
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessage(
+            "No enum constant io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType.foo");
   }
 }

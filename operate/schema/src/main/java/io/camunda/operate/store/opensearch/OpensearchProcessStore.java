@@ -1,23 +1,12 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.store.opensearch;
 
-import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
-import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TERMS_AGG_SIZE;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations.TOPHITS_AGG_SIZE;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
@@ -30,22 +19,24 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate.TREE_PATH;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
 import static java.util.function.UnaryOperator.identity;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.entities.ProcessEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.schema.indices.ProcessIndex;
-import io.camunda.operate.schema.templates.ListViewTemplate;
-import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.schema.templates.ProcessInstanceDependant;
-import io.camunda.operate.schema.templates.TemplateDescriptor;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.TreePath;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
@@ -78,7 +69,7 @@ public class OpensearchProcessStore implements ProcessStore {
   @Autowired private List<ProcessInstanceDependant> processInstanceDependantTemplates;
 
   @Override
-  public Optional<Long> getDistinctCountFor(String fieldName) {
+  public Optional<Long> getDistinctCountFor(final String fieldName) {
     final SearchResponse<Void> response;
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
@@ -90,7 +81,7 @@ public class OpensearchProcessStore implements ProcessStore {
     try {
       response = richOpenSearchClient.doc().search(searchRequestBuilder, Void.class);
       return Optional.of(response.aggregations().get(DISTINCT_FIELD_COUNTS).cardinality().value());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error(
           String.format(
               "Error in distinct count for field %s in index alias %s.",
@@ -101,12 +92,12 @@ public class OpensearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public void refreshIndices(String... indices) {
+  public void refreshIndices(final String... indices) {
     richOpenSearchClient.index().refresh(indices);
   }
 
   @Override
-  public ProcessEntity getProcessByKey(Long processDefinitionKey) {
+  public ProcessEntity getProcessByKey(final Long processDefinitionKey) {
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
             .query(withTenantCheck(term(ProcessIndex.KEY, processDefinitionKey)));
@@ -118,7 +109,7 @@ public class OpensearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public String getDiagramByKey(Long processDefinitionKey) {
+  public String getDiagramByKey(final Long processDefinitionKey) {
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
             .query(withTenantCheck(ids(processDefinitionKey.toString())));
@@ -131,7 +122,7 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Override
   public Map<ProcessKey, List<ProcessEntity>> getProcessesGrouped(
-      String tenantId, Set<String> allowedBPMNProcessIds) {
+      final String tenantId, final Set<String> allowedBPMNProcessIds) {
     final String tenantsGroupsAggName = "group_by_tenantId";
     final String groupsAggName = "group_by_bpmnProcessId";
     final String processesAggName = "processes";
@@ -140,6 +131,7 @@ public class OpensearchProcessStore implements ProcessStore {
             ProcessIndex.ID,
             ProcessIndex.NAME,
             ProcessIndex.VERSION,
+            ProcessIndex.VERSION_TAG,
             ProcessIndex.BPMN_PROCESS_ID,
             ProcessIndex.TENANT_ID);
     final Query query =
@@ -206,7 +198,7 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Override
   public Map<Long, ProcessEntity> getProcessesIdsToProcessesWithFields(
-      Set<String> allowedBPMNIds, int maxSize, String... fields) {
+      final Set<String> allowedBPMNIds, final int maxSize, final String... fields) {
     final Query query =
         allowedBPMNIds == null
             ? matchAll()
@@ -225,7 +217,7 @@ public class OpensearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public long deleteProcessDefinitionsByKeys(Long... processDefinitionKeys) {
+  public long deleteProcessDefinitionsByKeys(final Long... processDefinitionKeys) {
     if (CollectionUtil.isEmpty(processDefinitionKeys)) {
       return 0;
     }
@@ -236,7 +228,8 @@ public class OpensearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(Long processInstanceKey) {
+  public ProcessInstanceForListViewEntity getProcessInstanceListViewByKey(
+      final Long processInstanceKey) {
     final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate, ALL)
             .query(
@@ -254,7 +247,7 @@ public class OpensearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public Map<String, Long> getCoreStatistics(Set<String> allowedBPMNIds) {
+  public Map<String, Long> getCoreStatistics(final Set<String> allowedBPMNIds) {
     final Query incidentsQuery =
         and(term(INCIDENT, true), term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
     final Query runningQuery = term(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.name());
@@ -289,7 +282,7 @@ public class OpensearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public String getProcessInstanceTreePathById(String processInstanceId) {
+  public String getProcessInstanceTreePathById(final String processInstanceId) {
     record Result(String treePath) {}
     final var searchRequestBuilder =
         searchRequestBuilder(listViewTemplate)
@@ -308,7 +301,7 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Override
   public List<Map<String, String>> createCallHierarchyFor(
-      List<String> processInstanceIds, String currentProcessInstanceId) {
+      final List<String> processInstanceIds, final String currentProcessInstanceId) {
     record Result(
         String id, String processDefinitionKey, String processName, String bpmnProcessId) {}
     final List<String> processInstanceIdsWithoutCurrentProcess =
@@ -334,12 +327,13 @@ public class OpensearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public long deleteDocument(String indexName, String idField, String id) throws IOException {
+  public long deleteDocument(final String indexName, final String idField, final String id)
+      throws IOException {
     return richOpenSearchClient.doc().delete(indexName, idField, id).deleted();
   }
 
   @Override
-  public void deleteProcessInstanceFromTreePath(String processInstanceKey) {
+  public void deleteProcessInstanceFromTreePath(final String processInstanceKey) {
     record Result(String id, String treePath) {}
     record ProcessEntityUpdate(String treePath) {}
 
@@ -366,7 +360,7 @@ public class OpensearchProcessStore implements ProcessStore {
     final Map<String, String> idToIndex = new HashMap<>();
     final Consumer<List<Hit<Result>>> hitsConsumer =
         hits -> {
-          for (Hit<Result> hit : hits) {
+          for (final Hit<Result> hit : hits) {
             results.add(hit.source());
             idToIndex.put(hit.id(), hit.index());
           }
@@ -401,10 +395,10 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Override
   public List<ProcessInstanceForListViewEntity> getProcessInstancesByProcessAndStates(
-      long processDefinitionKey,
-      Set<ProcessInstanceState> states,
-      int size,
-      String[] includeFields) {
+      final long processDefinitionKey,
+      final Set<ProcessInstanceState> states,
+      final int size,
+      final String[] includeFields) {
     if (CollectionUtil.isEmpty(states)) {
       throw new OperateRuntimeException("Parameter 'states' is needed to search by states.");
     }
@@ -427,7 +421,7 @@ public class OpensearchProcessStore implements ProcessStore {
 
   @Override
   public List<ProcessInstanceForListViewEntity> getProcessInstancesByParentKeys(
-      Set<Long> parentProcessInstanceKeys, int size, String[] includeFields) {
+      final Set<Long> parentProcessInstanceKeys, final int size, final String[] includeFields) {
     if (CollectionUtil.isEmpty(parentProcessInstanceKeys)) {
       throw new OperateRuntimeException(
           "Parameter 'parentProcessInstanceKeys' is needed to search by parents.");
@@ -447,7 +441,7 @@ public class OpensearchProcessStore implements ProcessStore {
   }
 
   @Override
-  public long deleteProcessInstancesAndDependants(Set<Long> processInstanceKeys) {
+  public long deleteProcessInstancesAndDependants(final Set<Long> processInstanceKeys) {
     if (CollectionUtil.isEmpty(processInstanceKeys)) {
       return 0;
     }
@@ -457,8 +451,8 @@ public class OpensearchProcessStore implements ProcessStore {
         processInstanceDependantTemplates.stream()
             .filter(template -> !(template instanceof OperationTemplate))
             .toList();
-    for (ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
-      final String indexName = ((TemplateDescriptor) template).getAlias();
+    for (final ProcessInstanceDependant template : processInstanceDependantsWithoutOperation) {
+      final String indexName = ((IndexTemplateDescriptor) template).getAlias();
       count +=
           richOpenSearchClient
               .doc()
@@ -475,7 +469,7 @@ public class OpensearchProcessStore implements ProcessStore {
     return count;
   }
 
-  private Query withTenantIdQuery(@Nullable String tenantId, @Nullable Query query) {
+  private Query withTenantIdQuery(@Nullable final String tenantId, @Nullable final Query query) {
     final Query tenantIdQ = tenantId != null ? term(ProcessIndex.TENANT_ID, tenantId) : null;
 
     if (query != null || tenantId != null) {

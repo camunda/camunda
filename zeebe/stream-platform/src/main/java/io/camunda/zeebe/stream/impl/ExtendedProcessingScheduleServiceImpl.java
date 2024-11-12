@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.impl;
 
@@ -54,6 +54,18 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
   }
 
   @Override
+  public ScheduledTask runAtAsync(final long timestamp, final Task task) {
+    final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
+    concurrencyControl.run(
+        () -> {
+          // we must run in different actor in order to schedule task
+          final var scheduledTask = asyncActorService.runAt(timestamp, task);
+          futureScheduledTask.complete(scheduledTask);
+        });
+    return new AsyncScheduledTask(futureScheduledTask);
+  }
+
+  @Override
   public ScheduledTask runDelayed(final Duration delay, final Runnable task) {
     if (alwaysAsync) {
       final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
@@ -75,6 +87,31 @@ public class ExtendedProcessingScheduleServiceImpl implements ProcessingSchedule
       return runDelayedAsync(delay, task);
     } else {
       return processorActorService.runDelayed(delay, task);
+    }
+  }
+
+  @Override
+  public ScheduledTask runAt(final long timestamp, final Task task) {
+    if (alwaysAsync) {
+      return runAtAsync(timestamp, task);
+    } else {
+      return processorActorService.runAt(timestamp, task);
+    }
+  }
+
+  @Override
+  public ScheduledTask runAt(final long timestamp, final Runnable task) {
+    if (alwaysAsync) {
+      final var futureScheduledTask = concurrencyControl.<ScheduledTask>createFuture();
+      concurrencyControl.run(
+          () -> {
+            // we must run in different actor in order to schedule task
+            final var scheduledTask = asyncActorService.runAt(timestamp, task);
+            futureScheduledTask.complete(scheduledTask);
+          });
+      return new AsyncScheduledTask(futureScheduledTask);
+    } else {
+      return processorActorService.runAt(timestamp, task);
     }
   }
 

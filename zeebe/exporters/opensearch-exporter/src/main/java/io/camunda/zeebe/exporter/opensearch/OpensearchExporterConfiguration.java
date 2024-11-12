@@ -2,14 +2,17 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.ArrayList;
+import java.util.List;
 
 public class OpensearchExporterConfiguration {
 
@@ -25,6 +28,7 @@ public class OpensearchExporterConfiguration {
   public final BulkConfiguration bulk = new BulkConfiguration();
   public final AwsConfiguration aws = new AwsConfiguration();
   public final RetentionConfiguration retention = new RetentionConfiguration();
+  public final List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
 
   public boolean hasAuthenticationPresent() {
@@ -33,6 +37,10 @@ public class OpensearchExporterConfiguration {
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
+  }
+
+  public List<PluginConfiguration> getInterceptorPlugins() {
+    return interceptorPlugins;
   }
 
   @Override
@@ -49,6 +57,8 @@ public class OpensearchExporterConfiguration {
         + aws
         + ", retention="
         + retention
+        + ", interceptorPlugins="
+        + interceptorPlugins
         + '}';
   }
 
@@ -125,6 +135,12 @@ public class OpensearchExporterConfiguration {
         return index.userTask;
       case COMPENSATION_SUBSCRIPTION:
         return index.compensationSubscription;
+      case MESSAGE_CORRELATION:
+        return index.messageCorrelation;
+      case USER:
+        return index.user;
+      case AUTHORIZATION:
+        return index.authorization;
       default:
         return false;
     }
@@ -190,6 +206,10 @@ public class OpensearchExporterConfiguration {
     public boolean form = true;
     public boolean userTask = true;
     public boolean compensationSubscription = true;
+    public boolean messageCorrelation = true;
+    public boolean user = true;
+
+    public boolean authorization = true;
 
     // index settings
     private Integer numberOfShards = null;
@@ -289,6 +309,12 @@ public class OpensearchExporterConfiguration {
           + userTask
           + ", compensationSubscription="
           + compensationSubscription
+          + ", messageCorrelation="
+          + messageCorrelation
+          + ", user="
+          + user
+          + ", authorization="
+          + authorization
           + '}';
     }
   }

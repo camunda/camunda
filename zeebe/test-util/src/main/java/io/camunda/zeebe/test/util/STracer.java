@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.test.util;
 
@@ -128,17 +128,16 @@ public final class STracer implements AutoCloseable {
   public Stream<FSyncTrace> fSyncTraces() {
     try {
       return Files.readAllLines(outputFile).stream()
-          .filter(s -> s.contains("fsync"))
+          .filter(s -> s.contains("fsync") && !s.contains("resumed"))
           .map(FSyncTrace::of);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  public record FSyncTrace(int pid, int fd, Path path, int result) {
+  public record FSyncTrace(int pid, int fd, Path path) {
     private static final Pattern FSYNC_CALL =
-        Pattern.compile(
-            "^(?<pid>[0-9]+)\\s+fsync\\((?<fd>[0-9]+)<(?<path>.+?)>\\)\\s+=\\s+(?<result>[0-9]+)$");
+        Pattern.compile("^(?<pid>[0-9]+)\\s+fsync\\((?<fd>[0-9]+)<(?<path>.+?)>.+$");
 
     public static FSyncTrace of(final String straceLine) {
       final var matcher = FSYNC_CALL.matcher(straceLine);
@@ -151,9 +150,8 @@ public final class STracer implements AutoCloseable {
       final var pid = Integer.parseInt(matcher.group("pid"));
       final var fd = Integer.parseInt(matcher.group("fd"));
       final var path = Path.of(matcher.group("path"));
-      final var result = Integer.parseInt(matcher.group("result"));
 
-      return new FSyncTrace(pid, fd, path, result);
+      return new FSyncTrace(pid, fd, path);
     }
   }
 

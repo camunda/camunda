@@ -1,0 +1,27 @@
+.StringInput {
+  .valueSelection {
+    .Checklist {
+      border-bottom: 1px solid var(--cds-border-subtle);
+
+      tbody {
+        max-height: calc(100vh - 650px);
+      }
+    }
+  }
+
+  .customValueInput {
+    display: flex;
+
+    .cds--btn {
+      margin-left: 1rem;
+    }
+  }
+
+  .buttonsRow {
+    display: flex;
+
+    .customValueButton {
+      margin-left: auto;
+    }
+  }
+}

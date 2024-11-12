@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.instance;
 
@@ -81,6 +81,13 @@ public final class DbTimerInstanceState implements MutableTimerInstanceState {
 
     dueDate.wrapLong(timer.getDueDate());
     dueDateColumnFamily.deleteExisting(dueDateCompositeKey);
+  }
+
+  @Override
+  public void update(final TimerInstance timer) {
+    elementInstanceKey.inner().wrapLong(timer.getElementInstanceKey());
+    timerKey.wrapLong(timer.getKey());
+    timerInstanceColumnFamily.update(elementAndTimerKey, timer);
   }
 
   @Override

@@ -2,12 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots;
 
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.nio.file.Path;
 
 /** Represents a snapshot, which was persisted at the {@link PersistedSnapshotStore}. */
@@ -72,11 +73,11 @@ public interface PersistedSnapshot {
   String getId();
 
   /**
-   * Returns the checksum of the snapshot, which can be used to verify integrity.
+   * Returns the checksums of the snapshot files, which can be used to verify integrity.
    *
-   * @return the checksum of the snapshot
+   * @return the checksum of the snapshot files
    */
-  long getChecksum();
+  ImmutableChecksumsSFV getChecksums();
 
   /**
    * SnapshotMetadata includes information related to a snapshot.
@@ -98,4 +99,7 @@ public interface PersistedSnapshot {
    * @return future with SnapshotReservation
    */
   ActorFuture<SnapshotReservation> reserve();
+
+  @VisibleForTesting
+  boolean isReserved();
 }

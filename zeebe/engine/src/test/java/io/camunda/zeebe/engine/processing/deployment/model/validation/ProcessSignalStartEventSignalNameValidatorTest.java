@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
@@ -22,7 +22,7 @@ import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.StartEvent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
+import java.time.InstantSource;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -46,7 +46,7 @@ public class ProcessSignalStartEventSignalNameValidatorTest {
 
     final var sutValidator =
         new ProcessSignalStartEventSignalNameValidator(
-            new FeelExpressionLanguage(new ZeebeFeelEngineClock(ActorClock.current())));
+            new FeelExpressionLanguage(new ZeebeFeelEngineClock(InstantSource.system())));
 
     // when
     assertThatNoException()

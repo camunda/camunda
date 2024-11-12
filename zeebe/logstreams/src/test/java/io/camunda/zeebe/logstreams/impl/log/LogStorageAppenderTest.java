@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
@@ -15,14 +15,17 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.logstreams.impl.flowcontrol.AppenderMetrics;
+import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
+import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.storage.LogStorage.AppendListener;
 import io.camunda.zeebe.logstreams.util.ListLogStorage;
 import io.camunda.zeebe.logstreams.util.TestEntry;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import java.nio.ByteBuffer;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -54,13 +57,15 @@ final class LogStorageAppenderTest {
 
   @BeforeEach
   void beforeEach() {
+    final var logStreamMetrics = new LogStreamMetrics(PARTITION_ID);
     sequencer =
         new Sequencer(
             logStorage,
             INITIAL_POSITION,
             4 * 1024 * 1024,
+            InstantSource.system(),
             new SequencerMetrics(PARTITION_ID),
-            new AppenderMetrics(PARTITION_ID));
+            new FlowControl(logStreamMetrics));
     reader = new LogStreamReaderImpl(logStorage.newReader());
   }
 
@@ -76,7 +81,7 @@ final class LogStorageAppenderTest {
     final var entry = TestEntry.ofDefaults();
     // when
     logStorage.setPositionListener(i -> latch.countDown());
-    final var position = sequencer.tryWrite(entry).get();
+    final var position = sequencer.tryWrite(WriteContext.internal(), entry).get();
 
     // then
     assertThat(latch.await(5, TimeUnit.SECONDS)).as("value was written within 5 seconds").isTrue();
@@ -94,7 +99,7 @@ final class LogStorageAppenderTest {
 
     // when
     logStorage.setPositionListener(i -> latch.countDown());
-    final var highestPosition = sequencer.tryWrite(entries).get();
+    final var highestPosition = sequencer.tryWrite(WriteContext.internal(), entries).get();
     final var lowestPosition = highestPosition - 1;
 
     // then

@@ -1,32 +1,23 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.TreePath;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -38,6 +29,7 @@ public class ListViewProcessInstanceDto {
   private String processId;
   private String processName;
   private Integer processVersion;
+  private String processVersionTag;
 
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -67,26 +59,26 @@ public class ListViewProcessInstanceDto {
   private Set<String> permissions;
 
   public static ListViewProcessInstanceDto createFrom(
-      ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations,
-      ObjectMapper objectMapper) {
+      final ProcessInstanceForListViewEntity processInstanceEntity,
+      final List<OperationEntity> operations,
+      final ObjectMapper objectMapper) {
     return createFrom(processInstanceEntity, operations, null, null, objectMapper);
   }
 
   public static ListViewProcessInstanceDto createFrom(
-      ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations,
-      List<ProcessInstanceReferenceDto> callHierarchy,
-      ObjectMapper objectMapper) {
+      final ProcessInstanceForListViewEntity processInstanceEntity,
+      final List<OperationEntity> operations,
+      final List<ProcessInstanceReferenceDto> callHierarchy,
+      final ObjectMapper objectMapper) {
     return createFrom(processInstanceEntity, operations, callHierarchy, null, objectMapper);
   }
 
   public static ListViewProcessInstanceDto createFrom(
-      ProcessInstanceForListViewEntity processInstanceEntity,
-      List<OperationEntity> operations,
-      List<ProcessInstanceReferenceDto> callHierarchy,
-      PermissionsService permissionsService,
-      ObjectMapper objectMapper) {
+      final ProcessInstanceForListViewEntity processInstanceEntity,
+      final List<OperationEntity> operations,
+      final List<ProcessInstanceReferenceDto> callHierarchy,
+      final PermissionsService permissionsService,
+      final ObjectMapper objectMapper) {
     if (processInstanceEntity == null) {
       return null;
     }
@@ -108,6 +100,7 @@ public class ListViewProcessInstanceDto {
         .setBpmnProcessId(processInstanceEntity.getBpmnProcessId())
         .setProcessName(processInstanceEntity.getProcessName())
         .setProcessVersion(processInstanceEntity.getProcessVersion())
+        .setProcessVersionTag(processInstance.getProcessVersionTag())
         .setOperations(DtoCreator.create(operations, OperationDto.class))
         .setTenantId(processInstanceEntity.getTenantId());
     if (operations != null) {
@@ -146,9 +139,9 @@ public class ListViewProcessInstanceDto {
   }
 
   public static List<ListViewProcessInstanceDto> createFrom(
-      List<ProcessInstanceForListViewEntity> processInstanceEntities,
-      Map<Long, List<OperationEntity>> operationsPerProcessInstance,
-      ObjectMapper objectMapper) {
+      final List<ProcessInstanceForListViewEntity> processInstanceEntities,
+      final Map<Long, List<OperationEntity>> operationsPerProcessInstance,
+      final ObjectMapper objectMapper) {
     if (processInstanceEntities == null) {
       return new ArrayList<>();
     }
@@ -167,7 +160,7 @@ public class ListViewProcessInstanceDto {
     return id;
   }
 
-  public ListViewProcessInstanceDto setId(String id) {
+  public ListViewProcessInstanceDto setId(final String id) {
     this.id = id;
     return this;
   }
@@ -176,7 +169,7 @@ public class ListViewProcessInstanceDto {
     return processId;
   }
 
-  public ListViewProcessInstanceDto setProcessId(String processId) {
+  public ListViewProcessInstanceDto setProcessId(final String processId) {
     this.processId = processId;
     return this;
   }
@@ -185,7 +178,7 @@ public class ListViewProcessInstanceDto {
     return processName;
   }
 
-  public ListViewProcessInstanceDto setProcessName(String processName) {
+  public ListViewProcessInstanceDto setProcessName(final String processName) {
     this.processName = processName;
     return this;
   }
@@ -194,8 +187,17 @@ public class ListViewProcessInstanceDto {
     return processVersion;
   }
 
-  public ListViewProcessInstanceDto setProcessVersion(Integer processVersion) {
+  public ListViewProcessInstanceDto setProcessVersion(final Integer processVersion) {
     this.processVersion = processVersion;
+    return this;
+  }
+
+  public String getProcessVersionTag() {
+    return processVersionTag;
+  }
+
+  public ListViewProcessInstanceDto setProcessVersionTag(final String processVersionTag) {
+    this.processVersionTag = processVersionTag;
     return this;
   }
 
@@ -203,7 +205,7 @@ public class ListViewProcessInstanceDto {
     return startDate;
   }
 
-  public ListViewProcessInstanceDto setStartDate(OffsetDateTime startDate) {
+  public ListViewProcessInstanceDto setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }
@@ -212,7 +214,7 @@ public class ListViewProcessInstanceDto {
     return endDate;
   }
 
-  public ListViewProcessInstanceDto setEndDate(OffsetDateTime endDate) {
+  public ListViewProcessInstanceDto setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
@@ -221,7 +223,7 @@ public class ListViewProcessInstanceDto {
     return state;
   }
 
-  public ListViewProcessInstanceDto setState(ProcessInstanceStateDto state) {
+  public ListViewProcessInstanceDto setState(final ProcessInstanceStateDto state) {
     this.state = state;
     return this;
   }
@@ -230,7 +232,7 @@ public class ListViewProcessInstanceDto {
     return bpmnProcessId;
   }
 
-  public ListViewProcessInstanceDto setBpmnProcessId(String bpmnProcessId) {
+  public ListViewProcessInstanceDto setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -239,7 +241,7 @@ public class ListViewProcessInstanceDto {
     return hasActiveOperation;
   }
 
-  public ListViewProcessInstanceDto setHasActiveOperation(boolean hasActiveOperation) {
+  public ListViewProcessInstanceDto setHasActiveOperation(final boolean hasActiveOperation) {
     this.hasActiveOperation = hasActiveOperation;
     return this;
   }
@@ -248,7 +250,7 @@ public class ListViewProcessInstanceDto {
     return operations;
   }
 
-  public ListViewProcessInstanceDto setOperations(List<OperationDto> operations) {
+  public ListViewProcessInstanceDto setOperations(final List<OperationDto> operations) {
     this.operations = operations;
     return this;
   }
@@ -285,7 +287,7 @@ public class ListViewProcessInstanceDto {
     return tenantId;
   }
 
-  public ListViewProcessInstanceDto setTenantId(String tenantId) {
+  public ListViewProcessInstanceDto setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -294,7 +296,7 @@ public class ListViewProcessInstanceDto {
     return sortValues;
   }
 
-  public ListViewProcessInstanceDto setSortValues(SortValuesWrapper[] sortValues) {
+  public ListViewProcessInstanceDto setSortValues(final SortValuesWrapper[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -303,7 +305,7 @@ public class ListViewProcessInstanceDto {
     return permissions;
   }
 
-  public void setPermissions(Set<String> permissions) {
+  public void setPermissions(final Set<String> permissions) {
     this.permissions = permissions;
   }
 
@@ -315,6 +317,7 @@ public class ListViewProcessInstanceDto {
             processId,
             processName,
             processVersion,
+            processVersionTag,
             startDate,
             endDate,
             state,
@@ -331,7 +334,7 @@ public class ListViewProcessInstanceDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -344,6 +347,7 @@ public class ListViewProcessInstanceDto {
         && Objects.equals(processId, that.processId)
         && Objects.equals(processName, that.processName)
         && Objects.equals(processVersion, that.processVersion)
+        && Objects.equals(processVersionTag, that.processVersionTag)
         && Objects.equals(startDate, that.startDate)
         && Objects.equals(endDate, that.endDate)
         && state == that.state

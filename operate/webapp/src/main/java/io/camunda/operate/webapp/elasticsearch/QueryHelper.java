@@ -1,27 +1,18 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.webapp.elasticsearch;
 
-import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithOr;
+import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
 import static org.apache.lucene.search.join.ScoreMode.None;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -32,11 +23,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.join.query.JoinQueryBuilders.hasChildQuery;
 
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.operate.entities.FlowNodeState;
-import io.camunda.operate.entities.FlowNodeType;
-import io.camunda.operate.entities.listview.ProcessInstanceState;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -44,6 +31,10 @@ import io.camunda.operate.webapp.rest.dto.listview.VariablesQueryDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import java.time.format.DateTimeFormatter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.elasticsearch.action.search.SearchRequest;
@@ -73,14 +64,14 @@ public class QueryHelper {
 
   @Autowired private ListViewTemplate listViewTemplate;
 
-  public SearchRequest createSearchRequest(ListViewQueryDto processInstanceRequest) {
+  public SearchRequest createSearchRequest(final ListViewQueryDto processInstanceRequest) {
     if (processInstanceRequest.isFinished()) {
       return ElasticsearchUtil.createSearchRequest(listViewTemplate, ALL);
     }
     return ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME);
   }
 
-  public QueryBuilder createRequestQuery(ListViewQueryDto request) {
+  public QueryBuilder createRequestQuery(final ListViewQueryDto request) {
     final QueryBuilder query = createQueryFragment(request);
 
     final TermQueryBuilder isProcessInstanceQuery =
@@ -90,7 +81,7 @@ public class QueryHelper {
     return constantScoreQuery(queryBuilder);
   }
 
-  public ConstantScoreQueryBuilder createProcessInstancesQuery(ListViewQueryDto query) {
+  public ConstantScoreQueryBuilder createProcessInstancesQuery(final ListViewQueryDto query) {
     final TermQueryBuilder isProcessInstanceQuery =
         termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION);
     final QueryBuilder queryBuilder =
@@ -98,7 +89,7 @@ public class QueryHelper {
     return constantScoreQuery(queryBuilder);
   }
 
-  public QueryBuilder createQueryFragment(ListViewQueryDto query) {
+  public QueryBuilder createQueryFragment(final ListViewQueryDto query) {
     return joinWithAnd(
         createRunningFinishedQuery(query),
         createRetriesLeftQuery(query),
@@ -132,35 +123,35 @@ public class QueryHelper {
         : termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
   }
 
-  private QueryBuilder createBatchOperationIdQuery(ListViewQueryDto query) {
+  private QueryBuilder createBatchOperationIdQuery(final ListViewQueryDto query) {
     if (query.getBatchOperationId() != null) {
       return termQuery(ListViewTemplate.BATCH_OPERATION_IDS, query.getBatchOperationId());
     }
     return null;
   }
 
-  private QueryBuilder createParentInstanceIdQuery(ListViewQueryDto query) {
+  private QueryBuilder createParentInstanceIdQuery(final ListViewQueryDto query) {
     if (query.getParentInstanceId() != null) {
       return termQuery(ListViewTemplate.PARENT_PROCESS_INSTANCE_KEY, query.getParentInstanceId());
     }
     return null;
   }
 
-  private QueryBuilder createTenantIdQuery(ListViewQueryDto query) {
+  private QueryBuilder createTenantIdQuery(final ListViewQueryDto query) {
     if (query.getTenantId() != null) {
       return termQuery(ListViewTemplate.TENANT_ID, query.getTenantId());
     }
     return null;
   }
 
-  private QueryBuilder createProcessDefinitionKeysQuery(ListViewQueryDto query) {
+  private QueryBuilder createProcessDefinitionKeysQuery(final ListViewQueryDto query) {
     if (CollectionUtil.isNotEmpty(query.getProcessIds())) {
       return termsQuery(ListViewTemplate.PROCESS_KEY, query.getProcessIds());
     }
     return null;
   }
 
-  private QueryBuilder createBpmnProcessIdQuery(ListViewQueryDto query) {
+  private QueryBuilder createBpmnProcessIdQuery(final ListViewQueryDto query) {
     if (!StringUtils.isEmpty(query.getBpmnProcessId())) {
       final TermQueryBuilder bpmnProcessIdQ =
           termQuery(ListViewTemplate.BPMN_PROCESS_ID, query.getBpmnProcessId());
@@ -173,7 +164,7 @@ public class QueryHelper {
     return null;
   }
 
-  private QueryBuilder createVariablesQuery(ListViewQueryDto query) {
+  private QueryBuilder createVariablesQuery(final ListViewQueryDto query) {
     final VariablesQueryDto variablesQuery = query.getVariable();
     if (variablesQuery != null && StringUtils.hasLength(variablesQuery.getValue())) {
       if (variablesQuery.getName() == null) {
@@ -189,7 +180,7 @@ public class QueryHelper {
     return null;
   }
 
-  private QueryBuilder createVariablesInQuery(ListViewQueryDto query) {
+  private QueryBuilder createVariablesInQuery(final ListViewQueryDto query) {
     final VariablesQueryDto variablesQuery = query.getVariable();
     if (variablesQuery != null && !ArrayUtils.isEmpty(variablesQuery.getValues())) {
       if (variablesQuery.getName() == null) {
@@ -205,14 +196,14 @@ public class QueryHelper {
     return null;
   }
 
-  private QueryBuilder createExcludeIdsQuery(ListViewQueryDto query) {
+  private QueryBuilder createExcludeIdsQuery(final ListViewQueryDto query) {
     if (CollectionUtil.isNotEmpty(query.getExcludeIds())) {
       return boolQuery().mustNot(termsQuery(ListViewTemplate.ID, query.getExcludeIds()));
     }
     return null;
   }
 
-  private QueryBuilder createEndDateQuery(ListViewQueryDto query) {
+  private QueryBuilder createEndDateQuery(final ListViewQueryDto query) {
     if (query.getEndDateAfter() != null || query.getEndDateBefore() != null) {
       final RangeQueryBuilder rangeQueryBuilder = rangeQuery(ListViewTemplate.END_DATE);
       if (query.getEndDateAfter() != null) {
@@ -227,7 +218,7 @@ public class QueryHelper {
     return null;
   }
 
-  private QueryBuilder createStartDateQuery(ListViewQueryDto query) {
+  private QueryBuilder createStartDateQuery(final ListViewQueryDto query) {
     if (query.getStartDateAfter() != null || query.getStartDateBefore() != null) {
       final RangeQueryBuilder rangeQueryBuilder = rangeQuery(ListViewTemplate.START_DATE);
       if (query.getStartDateAfter() != null) {
@@ -243,19 +234,19 @@ public class QueryHelper {
     return null;
   }
 
-  private QueryBuilder createErrorMessageAsAndMatchQuery(String errorMessage) {
+  private QueryBuilder createErrorMessageAsAndMatchQuery(final String errorMessage) {
     return hasChildQuery(
         ACTIVITIES_JOIN_RELATION,
         QueryBuilders.matchQuery(ERROR_MSG, errorMessage).operator(Operator.AND),
         None);
   }
 
-  private QueryBuilder createErrorMessageAsWildcardQuery(String errorMessage) {
+  private QueryBuilder createErrorMessageAsWildcardQuery(final String errorMessage) {
     return hasChildQuery(
         ACTIVITIES_JOIN_RELATION, QueryBuilders.wildcardQuery(ERROR_MSG, errorMessage), None);
   }
 
-  private QueryBuilder createErrorMessageQuery(ListViewQueryDto query) {
+  private QueryBuilder createErrorMessageQuery(final ListViewQueryDto query) {
     final String errorMessage = query.getErrorMessage();
     if (!StringUtils.isEmpty(errorMessage)) {
       if (errorMessage.contains(WILD_CARD)) {
@@ -267,14 +258,14 @@ public class QueryHelper {
     return null;
   }
 
-  private QueryBuilder createIdsQuery(ListViewQueryDto query) {
+  private QueryBuilder createIdsQuery(final ListViewQueryDto query) {
     if (CollectionUtil.isNotEmpty(query.getIds())) {
       return termsQuery(ListViewTemplate.ID, query.getIds());
     }
     return null;
   }
 
-  private QueryBuilder createRunningFinishedQuery(ListViewQueryDto query) {
+  private QueryBuilder createRunningFinishedQuery(final ListViewQueryDto query) {
 
     final boolean active = query.isActive();
     final boolean incidents = query.isIncidents();
@@ -337,7 +328,7 @@ public class QueryHelper {
     return processInstanceQuery;
   }
 
-  private QueryBuilder createRetriesLeftQuery(ListViewQueryDto query) {
+  private QueryBuilder createRetriesLeftQuery(final ListViewQueryDto query) {
     if (query.isRetriesLeft()) {
       final QueryBuilder retriesLeftQuery = termQuery(JOB_FAILED_WITH_RETRIES_LEFT, true);
       return hasChildQuery(ACTIVITIES_JOIN_RELATION, retriesLeftQuery, None);
@@ -345,7 +336,7 @@ public class QueryHelper {
     return null;
   }
 
-  private QueryBuilder createActivityIdQuery(ListViewQueryDto query) {
+  private QueryBuilder createActivityIdQuery(final ListViewQueryDto query) {
     if (StringUtils.isEmpty(query.getActivityId())) {
       return null;
     }
@@ -374,35 +365,35 @@ public class QueryHelper {
         canceledActivityIdQuery);
   }
 
-  private QueryBuilder createCanceledQuery(ListViewQueryDto query) {
+  private QueryBuilder createCanceledQuery(final ListViewQueryDto query) {
     if (query.isCanceled()) {
       return termQuery(STATE, ProcessInstanceState.CANCELED.toString());
     }
     return null;
   }
 
-  private QueryBuilder createCompletedQuery(ListViewQueryDto query) {
+  private QueryBuilder createCompletedQuery(final ListViewQueryDto query) {
     if (query.isCompleted()) {
       return termQuery(STATE, ProcessInstanceState.COMPLETED.toString());
     }
     return null;
   }
 
-  private QueryBuilder createIncidentsQuery(ListViewQueryDto query) {
+  private QueryBuilder createIncidentsQuery(final ListViewQueryDto query) {
     if (query.isIncidents()) {
       return termQuery(INCIDENT, true);
     }
     return null;
   }
 
-  private QueryBuilder createActiveQuery(ListViewQueryDto query) {
+  private QueryBuilder createActiveQuery(final ListViewQueryDto query) {
     if (query.isActive()) {
       return termQuery(INCIDENT, false);
     }
     return null;
   }
 
-  private QueryBuilder createActivityIdQuery(String activityId, FlowNodeState state) {
+  private QueryBuilder createActivityIdQuery(final String activityId, final FlowNodeState state) {
     final QueryBuilder activitiesQuery = termQuery(ACTIVITY_STATE, state.name());
     final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ID, activityId);
     QueryBuilder activityIsEndNodeQuery = null;
@@ -416,7 +407,7 @@ public class QueryHelper {
         None);
   }
 
-  private QueryBuilder createActivityIdIncidentQuery(String activityId) {
+  private QueryBuilder createActivityIdIncidentQuery(final String activityId) {
     final QueryBuilder activitiesQuery = termQuery(ACTIVITY_STATE, FlowNodeState.ACTIVE.name());
     final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ID, activityId);
     final ExistsQueryBuilder incidentExists = existsQuery(ERROR_MSG);

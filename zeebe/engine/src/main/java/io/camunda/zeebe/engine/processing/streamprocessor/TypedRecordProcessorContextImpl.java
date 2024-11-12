@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
@@ -17,7 +17,9 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessorContext;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class TypedRecordProcessorContextImpl implements TypedRecordProcessorContext {
@@ -31,6 +33,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   private final EngineConfiguration config;
   private final TransientPendingSubscriptionState transientMessageSubscriptionState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+  private final ControllableStreamClock clock;
 
   public TypedRecordProcessorContextImpl(
       final RecordProcessorContext context,
@@ -41,6 +44,7 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
     zeebeDb = context.getZeebeDb();
     transientMessageSubscriptionState = new TransientPendingSubscriptionState();
     transientProcessMessageSubscriptionState = new TransientPendingSubscriptionState();
+    clock = Objects.requireNonNull(context.getClock());
     processingState =
         new ProcessingDbState(
             partitionId,
@@ -49,7 +53,8 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             context.getKeyGenerator(),
             transientMessageSubscriptionState,
             transientProcessMessageSubscriptionState,
-            config);
+            config,
+            clock);
     this.writers = writers;
     partitionCommandSender = context.getPartitionCommandSender();
     this.config = config;
@@ -88,11 +93,17 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
             zeebeDb.createContext(),
             partitionId,
             transientMessageSubscriptionState,
-            transientProcessMessageSubscriptionState);
+            transientProcessMessageSubscriptionState,
+            clock);
   }
 
   @Override
   public EngineConfiguration getConfig() {
     return config;
+  }
+
+  @Override
+  public ControllableStreamClock getClock() {
+    return clock;
   }
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state;
 
@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.state.message.DbMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.DbProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.time.InstantSource;
 
 /** Contains read-only state that can be accessed safely by scheduled tasks. */
 public final class ScheduledTaskDbState implements ScheduledTaskState {
@@ -46,7 +47,8 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
       final TransactionContext transactionContext,
       final int partitionId,
       final TransientPendingSubscriptionState transientMessageSubscriptionState,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final InstantSource clock) {
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
     messageState = new DbMessageState(zeebeDb, transactionContext, partitionId);
     timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
@@ -54,10 +56,10 @@ public final class ScheduledTaskDbState implements ScheduledTaskState {
     deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
     pendingMessageSubscriptionState =
         new DbMessageSubscriptionState(
-            zeebeDb, transactionContext, transientMessageSubscriptionState);
+            zeebeDb, transactionContext, transientMessageSubscriptionState, clock);
     pendingProcessMessageSubscriptionState =
         new DbProcessMessageSubscriptionState(
-            zeebeDb, transactionContext, transientProcessMessageSubscriptionState);
+            zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
   }
 

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.clustering.dynamic;
 
@@ -18,8 +18,10 @@ import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.qa.util.topology.ClusterActuatorAssert;
+import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.Objects;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
@@ -28,13 +30,6 @@ final class SnapshotAfterScalingTest {
   @TestZeebe
   TestCluster cluster =
       TestCluster.builder()
-          .withBrokerConfig(
-              broker ->
-                  broker
-                      .brokerConfig()
-                      .getExperimental()
-                      .getFeatures()
-                      .setEnableDynamicClusterTopology(true))
           .useRecordingExporter(true)
           .withBrokersCount(2)
           .withReplicationFactor(1)
@@ -48,7 +43,7 @@ final class SnapshotAfterScalingTest {
   void shouldTakeSnapshotOnAllReplicasAfterScaling() {
     // Instead of doing a full scaling operation, we just add a new replica to partition 1. This is
     // done to simplify the test setup. This test fails without the fix
-    // https://github.com/camunda/zeebe/pull/15277
+    // https://github.com/camunda/camunda/pull/15277
 
     // given
     final var actuator = ClusterActuator.of(cluster.availableGateway());
@@ -88,6 +83,7 @@ final class SnapshotAfterScalingTest {
             .map(PartitionsActuator::query)
             .map(s -> s.get(1))
             .toList();
+
     assertThat(
             statuses.stream()
                 .map(PartitionStatus::exportedPosition)
@@ -108,12 +104,23 @@ final class SnapshotAfterScalingTest {
             .map(PartitionsActuator::of)
             .map(PartitionsActuator::query)
             .toList();
-    assertThat(statuses.stream().map(status -> status.get(1).snapshotId()).count())
+    assertThat(
+            statuses.stream()
+                .map(status -> status.get(1).snapshotId())
+                .filter(Objects::nonNull)
+                .count())
         .describedAs("Expected both replicas to have taken snapshot. Received status %s", statuses)
         .isEqualTo(2);
 
-    assertThat(statuses.stream().map(status -> status.get(1).snapshotId()).distinct().count())
-        .describedAs("Expected both replicas to have same snapshot. Received status %s", statuses)
+    assertThat(
+            statuses.stream()
+                .map(
+                    status ->
+                        FileBasedSnapshotId.ofFileName(status.get(1).snapshotId()).get().getIndex())
+                .distinct()
+                .count())
+        .describedAs(
+            "Expected both replicas to have snapshot at same index. Received status %s", statuses)
         .isOne();
   }
 }

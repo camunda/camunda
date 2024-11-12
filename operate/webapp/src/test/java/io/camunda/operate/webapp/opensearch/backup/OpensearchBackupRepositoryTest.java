@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.webapp.opensearch.backup;
 
@@ -26,6 +17,8 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.property.BackupProperties;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncSnapshotOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchSnapshotOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -36,7 +29,9 @@ import io.camunda.operate.webapp.backup.BackupService;
 import io.camunda.operate.webapp.backup.Metadata;
 import io.camunda.operate.webapp.management.dto.BackupStateDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -62,11 +57,18 @@ class OpensearchBackupRepositoryTest {
 
   @Mock private ObjectMapper objectMapper;
 
+  @Mock private OperateProperties operateProperties;
+
   private OpensearchBackupRepository repository;
+  private final long incompleteCheckTimeoutLength =
+      new BackupProperties().getIncompleteCheckTimeoutInSeconds() * 1000;
+  private long now;
 
   @BeforeEach
   public void setUp() {
-    repository = new OpensearchBackupRepository(richOpenSearchClient, objectMapper);
+    repository =
+        new OpensearchBackupRepository(richOpenSearchClient, objectMapper, operateProperties);
+    now = Instant.now().toEpochMilli();
   }
 
   private void mockAsynchronSnapshotOperations() {
@@ -198,7 +200,8 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void getBackupState() {
+  void getBackupStateShouldBeInProgress() {
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
     mockSynchronSnapshotOperations();
     mockObjectMapperForMetadata(new Metadata().setPartCount(3));
 
@@ -209,7 +212,40 @@ class OpensearchBackupRepositoryTest {
                     new OpenSearchSnapshotInfo()
                         .setSnapshot("snapshot")
                         .setState(SnapshotState.SUCCESS)
-                        .setStartTimeInMillis(23L))));
+                        .setStartTimeInMillis(now - (incompleteCheckTimeoutLength / 2))
+                        .setEndTimeInMillis(now))));
+
+    final var response = repository.getBackupState("repo", 5L);
+
+    assertThat(response).isNotNull();
+    assertThat(response.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+    assertThat(response.getBackupId()).isEqualTo(5L);
+    final var snapshotDetails = response.getDetails();
+    assertThat(snapshotDetails).hasSize(1);
+    final var snapshotDetail = snapshotDetails.get(0);
+    assertThat(snapshotDetail.getState()).isEqualTo(SnapshotState.SUCCESS.toString());
+    assertThat(snapshotDetail.getSnapshotName()).isEqualTo("snapshot");
+    assertThat(snapshotDetail.getFailures()).isNull();
+  }
+
+  @Test
+  void getBackupStateShouldBeIncompleteDueToTimeout() {
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
+
+    final long endtime = now - (incompleteCheckTimeoutLength * 2);
+
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(
+            new OpenSearchGetSnapshotResponse(
+                List.of(
+                    new OpenSearchSnapshotInfo()
+                        .setSnapshot("snapshot")
+                        .setState(SnapshotState.SUCCESS)
+                        .setStartTimeInMillis(endtime - 20)
+                        // end time was double the timeout from now
+                        .setEndTimeInMillis(endtime))));
 
     final var response = repository.getBackupState("repo", 5L);
 
@@ -220,7 +256,6 @@ class OpensearchBackupRepositoryTest {
     assertThat(snapshotDetails).hasSize(1);
     final var snapshotDetail = snapshotDetails.get(0);
     assertThat(snapshotDetail.getState()).isEqualTo(SnapshotState.SUCCESS.toString());
-    assertThat(snapshotDetail.getStartTime().toInstant().toEpochMilli()).isEqualTo(23L);
     assertThat(snapshotDetail.getSnapshotName()).isEqualTo("snapshot");
     assertThat(snapshotDetail.getFailures()).isNull();
   }
@@ -276,5 +311,104 @@ class OpensearchBackupRepositoryTest {
             () -> repository.validateNoDuplicateBackupId("repo", 42L));
     assertThat(exception.getMessage())
         .isEqualTo("A backup with ID [42] already exists. Found snapshots: [test]");
+  }
+
+  @Test
+  void shouldReturnBackupStateIncompleteWhenEndIsInTimeout() throws IOException {
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
+    final long timeoutTime = now - incompleteCheckTimeoutLength * 2;
+    final var firstSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.SUCCESS)
+            .setStartTimeInMillis(timeoutTime - 50)
+            .setEndTimeInMillis(timeoutTime - 40);
+    final var lastSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.SUCCESS)
+            .setStartTimeInMillis(timeoutTime - 30)
+            .setEndTimeInMillis(timeoutTime - 20);
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(
+            new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo, lastSnapshotInfo)));
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
+  }
+
+  @Test
+  void shouldReturnBackupStateInProgressWhenStartIsInTimeoutButEndIsNot() throws IOException {
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
+
+    final var firstSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.SUCCESS)
+            .setStartTimeInMillis(now - incompleteCheckTimeoutLength)
+            .setEndTimeInMillis(now - 20);
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
+  }
+
+  @Test
+  void shouldReturnBackupStateFailedWhenSnapshotIsPartialCompleted() throws IOException {
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(1));
+    final var firstSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.PARTIAL)
+            .setStartTimeInMillis(Instant.now().toEpochMilli());
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.FAILED);
+  }
+
+  @Test
+  void shouldReturnBackupStateFailedCompleted() throws IOException {
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(2));
+    final var firstSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.SUCCESS)
+            .setStartTimeInMillis(Instant.now().toEpochMilli());
+    final var lastSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.SUCCESS)
+            .setStartTimeInMillis(Instant.now().toEpochMilli());
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(
+            new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo, lastSnapshotInfo)));
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
+  }
+
+  @Test
+  void shouldReturnBackupStateFailedWhenSnapshotIsFailed() throws IOException {
+    mockSynchronSnapshotOperations();
+    mockObjectMapperForMetadata(new Metadata().setPartCount(1));
+    final var firstSnapshotInfo =
+        new OpenSearchSnapshotInfo()
+            .setUuid("uuid")
+            .setState(SnapshotState.FAILED)
+            .setStartTimeInMillis(Instant.now().toEpochMilli());
+    when(openSearchSnapshotOperations.get(any()))
+        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+    // Test
+    final var backupState = repository.getBackupState("repository-name", 5L);
+    assertThat(backupState.getState()).isEqualTo(BackupStateDto.FAILED);
   }
 }

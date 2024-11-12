@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.timer;
 
@@ -741,7 +741,7 @@ public final class TimerCatchEventTest {
         .hasSize(expectedRepetitions);
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/5420
+  // regression test for https://github.com/camunda/camunda/issues/5420
   @Test
   public void shouldHaveNoSourceRecordPositionOnTimerTrigger() {
     // given
@@ -792,7 +792,7 @@ public final class TimerCatchEventTest {
     assertThat(triggerTimer.getSourceRecordPosition()).isLessThan(0);
   }
 
-  // regression test for https://github.com/camunda/zeebe/issues/5934
+  // regression test for https://github.com/camunda/camunda/issues/5934
   @Test
   public void shouldRaiseIncidentWhenDurationExpressionResultIsNotADuration() {
     // This duration expression is faulty because the process expects a duration,

@@ -1,22 +1,14 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.property;
 
 import io.camunda.operate.conditions.DatabaseInfo;
+import io.camunda.operate.conditions.DatabaseType;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -29,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @ConfigurationProperties(OperateProperties.PREFIX)
-@PropertySource("classpath:version.properties")
+@PropertySource("classpath:operate-version.properties")
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
@@ -47,7 +39,7 @@ public class OperateProperties {
   private boolean persistentSessionsEnabled = false;
 
   /** Indicates, whether CSRF prevention is enabled. */
-  @Deprecated private boolean csrfPreventionEnabled = true;
+  private boolean csrfPreventionEnabled = true;
 
   /** Standard user data */
   private String userId = "demo";
@@ -116,7 +108,7 @@ public class OperateProperties {
     return importerEnabled;
   }
 
-  public void setImporterEnabled(boolean importerEnabled) {
+  public void setImporterEnabled(final boolean importerEnabled) {
     this.importerEnabled = importerEnabled;
   }
 
@@ -124,7 +116,7 @@ public class OperateProperties {
     return archiverEnabled;
   }
 
-  public void setArchiverEnabled(boolean archiverEnabled) {
+  public void setArchiverEnabled(final boolean archiverEnabled) {
     this.archiverEnabled = archiverEnabled;
   }
 
@@ -132,7 +124,7 @@ public class OperateProperties {
     return webappEnabled;
   }
 
-  public void setWebappEnabled(boolean webappEnabled) {
+  public void setWebappEnabled(final boolean webappEnabled) {
     this.webappEnabled = webappEnabled;
   }
 
@@ -140,17 +132,15 @@ public class OperateProperties {
     return batchOperationMaxSize;
   }
 
-  public void setBatchOperationMaxSize(Long batchOperationMaxSize) {
+  public void setBatchOperationMaxSize(final Long batchOperationMaxSize) {
     this.batchOperationMaxSize = batchOperationMaxSize;
   }
 
-  @Deprecated
   public boolean isCsrfPreventionEnabled() {
     return csrfPreventionEnabled;
   }
 
-  @Deprecated
-  public void setCsrfPreventionEnabled(boolean csrfPreventionEnabled) {
+  public void setCsrfPreventionEnabled(final boolean csrfPreventionEnabled) {
     this.csrfPreventionEnabled = csrfPreventionEnabled;
   }
 
@@ -158,11 +148,15 @@ public class OperateProperties {
     return elasticsearch;
   }
 
+  public void setElasticsearch(final OperateElasticsearchProperties elasticsearch) {
+    this.elasticsearch = elasticsearch;
+  }
+
   public OperateOpensearchProperties getOpensearch() {
     return opensearch;
   }
 
-  public void setOpensearch(OperateOpensearchProperties opensearch) {
+  public void setOpensearch(final OperateOpensearchProperties opensearch) {
     this.opensearch = opensearch;
   }
 
@@ -170,7 +164,7 @@ public class OperateProperties {
     return zeebeElasticsearch;
   }
 
-  public void setZeebeElasticsearch(ZeebeElasticsearchProperties zeebeElasticsearch) {
+  public void setZeebeElasticsearch(final ZeebeElasticsearchProperties zeebeElasticsearch) {
     this.zeebeElasticsearch = zeebeElasticsearch;
   }
 
@@ -178,7 +172,7 @@ public class OperateProperties {
     return zeebeOpensearch;
   }
 
-  public void setZeebeOpensearch(ZeebeOpensearchProperties zeebeOpensearch) {
+  public void setZeebeOpensearch(final ZeebeOpensearchProperties zeebeOpensearch) {
     this.zeebeOpensearch = zeebeOpensearch;
   }
 
@@ -186,7 +180,7 @@ public class OperateProperties {
     return zeebe;
   }
 
-  public void setZeebe(ZeebeProperties zeebe) {
+  public void setZeebe(final ZeebeProperties zeebe) {
     this.zeebe = zeebe;
   }
 
@@ -194,7 +188,7 @@ public class OperateProperties {
     return ldap;
   }
 
-  public void setLdap(LdapProperties ldap) {
+  public void setLdap(final LdapProperties ldap) {
     this.ldap = ldap;
   }
 
@@ -218,7 +212,7 @@ public class OperateProperties {
     return password;
   }
 
-  public void setPassword(String password) {
+  public void setPassword(final String password) {
     this.password = password;
   }
 
@@ -226,7 +220,7 @@ public class OperateProperties {
     return operationExecutor;
   }
 
-  public void setOperationExecutor(OperationExecutorProperties operationExecutor) {
+  public void setOperationExecutor(final OperationExecutorProperties operationExecutor) {
     this.operationExecutor = operationExecutor;
   }
 
@@ -234,7 +228,7 @@ public class OperateProperties {
     return importer;
   }
 
-  public void setImporter(ImportProperties importer) {
+  public void setImporter(final ImportProperties importer) {
     this.importer = importer;
   }
 
@@ -242,7 +236,7 @@ public class OperateProperties {
     return archiver;
   }
 
-  public void setArchiver(ArchiverProperties archiver) {
+  public void setArchiver(final ArchiverProperties archiver) {
     this.archiver = archiver;
   }
 
@@ -250,7 +244,7 @@ public class OperateProperties {
     return clusterNode;
   }
 
-  public void setClusterNode(ClusterNodeProperties clusterNode) {
+  public void setClusterNode(final ClusterNodeProperties clusterNode) {
     this.clusterNode = clusterNode;
   }
 
@@ -258,7 +252,7 @@ public class OperateProperties {
     return enterprise;
   }
 
-  public void setEnterprise(boolean enterprise) {
+  public void setEnterprise(final boolean enterprise) {
     this.enterprise = enterprise;
   }
 
@@ -310,7 +304,7 @@ public class OperateProperties {
     return persistentSessionsEnabled;
   }
 
-  public OperateProperties setPersistentSessionsEnabled(boolean persistentSessionsEnabled) {
+  public OperateProperties setPersistentSessionsEnabled(final boolean persistentSessionsEnabled) {
     this.persistentSessionsEnabled = persistentSessionsEnabled;
     return this;
   }
@@ -337,7 +331,7 @@ public class OperateProperties {
     return backup;
   }
 
-  public OperateProperties setBackup(BackupProperties backup) {
+  public OperateProperties setBackup(final BackupProperties backup) {
     this.backup = backup;
     return this;
   }
@@ -346,7 +340,7 @@ public class OperateProperties {
     return tasklistUrl;
   }
 
-  public void setTasklistUrl(String tasklistUrl) {
+  public void setTasklistUrl(final String tasklistUrl) {
     this.tasklistUrl = tasklistUrl;
   }
 
@@ -354,7 +348,7 @@ public class OperateProperties {
     return version;
   }
 
-  public OperateProperties setVersion(String version) {
+  public OperateProperties setVersion(final String version) {
     this.version = version;
     return this;
   }
@@ -372,23 +366,19 @@ public class OperateProperties {
     return rfc3339ApiDateFormat;
   }
 
-  public void setRfc3339ApiDateFormat(boolean rfc3339ApiDateFormat) {
+  public void setRfc3339ApiDateFormat(final boolean rfc3339ApiDateFormat) {
     this.rfc3339ApiDateFormat = rfc3339ApiDateFormat;
   }
 
+  public String getIndexPrefix(final DatabaseType databaseType) {
+    return switch (databaseType) {
+      case Elasticsearch -> getElasticsearch() == null ? null : getElasticsearch().getIndexPrefix();
+      case Opensearch -> getOpensearch() == null ? null : getOpensearch().getIndexPrefix();
+      default -> null;
+    };
+  }
+
   public String getIndexPrefix() {
-    if (DatabaseInfo.isElasticsearch()) {
-      if (this.getElasticsearch() != null) {
-        return this.getElasticsearch().getIndexPrefix();
-      } else {
-        return null;
-      }
-    } else {
-      if (this.getOpensearch() != null) {
-        return this.getOpensearch().getIndexPrefix();
-      } else {
-        return null;
-      }
-    }
+    return getIndexPrefix(DatabaseInfo.getCurrent());
   }
 }

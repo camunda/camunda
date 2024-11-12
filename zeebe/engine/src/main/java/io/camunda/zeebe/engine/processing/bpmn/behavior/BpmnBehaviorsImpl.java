@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
@@ -16,6 +16,8 @@ import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.EventTriggerBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.job.behaviour.JobUpdateBehaviour;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -23,7 +25,8 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import java.time.InstantSource;
 
 public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
@@ -47,6 +50,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnSignalBehavior signalBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
   private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final JobUpdateBehaviour jobUpdateBehaviour;
 
   public BpmnBehaviorsImpl(
       final MutableProcessingState processingState,
@@ -54,13 +58,14 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final JobMetrics jobMetrics,
       final DecisionBehavior decisionBehavior,
       final SubscriptionCommandSender subscriptionCommandSender,
-      final int partitionsCount,
+      final RoutingInfo routingInfo,
       final DueDateTimerChecker timerChecker,
-      final JobStreamer jobStreamer) {
+      final JobStreamer jobStreamer,
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     expressionBehavior =
         new ExpressionProcessor(
-            ExpressionLanguageFactory.createExpressionLanguage(
-                new ZeebeFeelEngineClock(ActorClock.current())),
+            ExpressionLanguageFactory.createExpressionLanguage(new ZeebeFeelEngineClock(clock)),
             new VariableStateEvaluationContextLookup(processingState.getVariableState()));
 
     variableBehavior =
@@ -76,11 +81,14 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers.state(),
             writers.sideEffect(),
             timerChecker,
-            partitionsCount);
+            routingInfo,
+            clock);
 
     eventTriggerBehavior =
         new EventTriggerBehavior(
             processingState.getKeyGenerator(), catchEventBehavior, writers, processingState);
+
+    stateBehavior = new BpmnStateBehavior(processingState, variableBehavior);
 
     bpmnDecisionBehavior =
         new BpmnDecisionBehavior(
@@ -89,9 +97,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             eventTriggerBehavior,
             writers.state(),
             processingState.getKeyGenerator(),
-            expressionBehavior);
-
-    stateBehavior = new BpmnStateBehavior(processingState, variableBehavior);
+            expressionBehavior,
+            stateBehavior);
 
     stateTransitionGuard = new ProcessInstanceStateTransitionGuard(stateBehavior);
 
@@ -124,15 +131,17 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             processingState.getKeyGenerator(),
             eventTriggerBehavior,
             stateBehavior,
-            writers);
+            writers,
+            clock);
 
     jobActivationBehavior =
         new BpmnJobActivationBehavior(
             jobStreamer,
-            processingState.getVariableState(),
+            processingState,
             writers,
             processingState.getKeyGenerator(),
-            jobMetrics);
+            jobMetrics,
+            clock);
 
     multiInstanceOutputCollectionBehavior =
         new MultiInstanceOutputCollectionBehavior(stateBehavior, expressionBehavior());
@@ -158,7 +167,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             expressionBehavior,
             stateBehavior,
             processingState.getFormState(),
-            processingState.getUserTaskState());
+            processingState.getUserTaskState(),
+            clock);
 
     jobBehavior =
         new BpmnJobBehavior(
@@ -175,6 +185,9 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
     compensationSubscriptionBehaviour =
         new BpmnCompensationSubscriptionBehaviour(
             processingState.getKeyGenerator(), processingState, writers, stateBehavior);
+
+    jobUpdateBehaviour =
+        new JobUpdateBehaviour(processingState.getJobState(), clock, authCheckBehavior);
   }
 
   @Override
@@ -275,5 +288,10 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   @Override
   public BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour() {
     return compensationSubscriptionBehaviour;
+  }
+
+  @Override
+  public JobUpdateBehaviour jobUpdateBehaviour() {
+    return jobUpdateBehaviour;
   }
 }

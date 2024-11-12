@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.ProcessInstanceMapper">
+  <select id="findOne" parameterType="java.lang.Long"
+    resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
+    SELECT pi.PROCESS_INSTANCE_KEY,
+           pi.PROCESS_DEFINITION_ID,
+           pi.PROCESS_DEFINITION_KEY,
+           pi.STATE,
+           pi.START_DATE,
+           pi.END_DATE,
+           pi.TENANT_ID,
+           NULL           as TREE_PATH,
+           NULL           as INCIDENT,
+           pi.PARENT_PROCESS_INSTANCE_KEY,
+           pi.PARENT_ELEMENT_INSTANCE_KEY,
+           pi.ELEMENT_ID,
+           pi.VERSION,
+           pd.NAME        AS PROCESS_DEFINITION_NAME,
+           pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
+    FROM PROCESS_INSTANCE pi
+           LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </select>
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*)
+    FROM PROCESS_INSTANCE pi
+    <!-- TODO: only when definition filters are active -->
+    LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
+    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
+  </select>
+
+  <!-- default search statement for databases supporting LIMIT/OFFSET-->
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery" resultMap="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchResultMap">
+    SELECT
+      pi.PROCESS_INSTANCE_KEY,
+      pi.PROCESS_DEFINITION_ID,
+      pi.PROCESS_DEFINITION_KEY,
+      pi.STATE,
+      pi.START_DATE,
+      pi.END_DATE,
+      pi.TENANT_ID,
+      NULL as TREE_PATH,
+      NULL as INCIDENT,
+      pi.PARENT_PROCESS_INSTANCE_KEY,
+      pi.PARENT_ELEMENT_INSTANCE_KEY,
+      pi.ELEMENT_ID,
+      pi.VERSION,
+      pd.NAME AS PROCESS_DEFINITION_NAME,
+      pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
+    FROM PROCESS_INSTANCE pi
+        LEFT JOIN PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
+    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
+    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
+      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
+        <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.processInstanceSortMapper"/>
+        ${item.order}
+      </foreach>
+    </if>
+    ${paging.after}
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND PROCESS_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionIdOperations" item="operation">
+        AND pi.PROCESS_DEFINITION_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+        AND pi.PROCESS_DEFINITION_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.parentProcessInstanceKeyOperations != null and !filter.parentProcessInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.parentProcessInstanceKeyOperations" item="operation">
+        AND PARENT_PROCESS_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.parentFlowNodeInstanceKeyOperations != null and !filter.parentFlowNodeInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.parentFlowNodeInstanceKeyOperations" item="operation">
+        AND PARENT_ELEMENT_INSTANCE_KEY <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.stateOperations" item="operation">
+        AND pi.STATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+      <foreach collection="filter.tenantIdOperations" item="operation">
+        AND TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+    <!-- date filters -->
+    <if test="filter.startDateOperations != null and !filter.startDateOperations.isEmpty()">
+      <foreach collection="filter.startDateOperations" item="operation">
+        AND START_DATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.endDateOperations != null and !filter.endDateOperations.isEmpty()">
+      <foreach collection="filter.endDateOperations" item="operation">
+        AND END_DATE <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+
+    <!-- process definition filters -->
+    <if test="filter.processDefinitionNameOperations != null and !filter.processDefinitionNameOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionNameOperations" item="operation">
+        AND pd.NAME <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionVersionOperations != null and !filter.processDefinitionVersionOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionVersionOperations" item="operation">
+        AND pd.VERSION <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionVersionTagOperations != null and !filter.processDefinitionVersionTagOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionVersionTagOperations" item="operation">
+        AND pd.VERSION_TAG <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
+  <sql id="processInstanceSortMapper">
+    <choose>
+      <when test='item.field == "bpmnProcessId"'>
+        pi.PROCESS_DEFINITION_ID
+      </when>
+      <when test='item.field == "processName"'>
+        pd.NAME
+      </when>
+      <when test='item.field == "processVersion"'>
+        pi.VERSION
+      </when>
+      <when test='item.field == "processVersionTag"'>
+        pd.VERSION_TAG
+      </when>
+      <when test='item.field == "processDefinitionKey"'>
+        pi.PROCESS_DEFINITION_KEY
+      </when>
+      <when test='item.field == "parentProcessInstanceKey"'>
+        pi.PARENT_PROCESS_INSTANCE_KEY
+      </when>
+      <when test='item.field == "startDate"'>
+        pi.START_DATE
+      </when>
+      <when test='item.field == "endDate"'>
+        pi.END_DATE
+      </when>
+      <when test='item.field == "tenantId"'>
+        pi.TENANT_ID
+      </when>
+    </choose>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessInstanceEntity">
+    <constructor>
+      <idArg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_NAME" javaType="java.lang.String"/>
+      <arg column="VERSION" javaType="java.lang.Integer"/>
+      <arg column="PROCESS_DEFINITION_VERSION_TAG" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="PARENT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="PARENT_ELEMENT_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="TREE_PATH" javaType="java.lang.String"/>
+      <arg column="START_DATE" javaType="java.time.OffsetDateTime" />
+      <arg column="END_DATE" javaType="java.time.OffsetDateTime" />
+      <arg column="STATE" javaType="io.camunda.search.entities.ProcessInstanceEntity$ProcessInstanceState"/>
+      <arg column="INCIDENT" javaType="java.lang.Boolean"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+    </constructor>
+
+  </resultMap>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
+    flushCache="true">
+    INSERT INTO PROCESS_INSTANCE (PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, PROCESS_DEFINITION_KEY, STATE, START_DATE, END_DATE, TENANT_ID, PARENT_PROCESS_INSTANCE_KEY, PARENT_ELEMENT_INSTANCE_KEY,
+                                  VERSION)
+    VALUES (#{processInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state}, #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId}, #{parentProcessInstanceKey},
+            #{parentElementInstanceKey}, #{version})
+  </insert>
+
+  <update
+    id="update"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
+    flushCache="true">
+    UPDATE PROCESS_INSTANCE p
+    SET STATE    = #{state},
+        END_DATE = #{endDate}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <update
+    id="updateCurrentElementId"
+    statementType="PREPARED"
+    parameterType="hashMap"
+    flushCache="true">
+    UPDATE PROCESS_INSTANCE p
+    SET ELEMENT_ID = #{elementId}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+</mapper>

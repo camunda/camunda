@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.migration;
 
@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.Collections;
 import java.util.List;
@@ -32,16 +33,17 @@ public class DbMigratorImplTest {
     final var mockMigrationState = mock(MutableMigrationState.class);
     when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
     final var mockMigration = mock(MigrationTask.class);
-    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(true);
+    final var context =
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState);
+    when(mockMigration.needsToRun(context)).thenReturn(true);
 
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, Collections.singletonList(mockMigration));
+    final var sut = new DbMigratorImpl(context, Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
 
     // then
-    verify(mockMigration).runMigration(mockProcessingState);
+    verify(mockMigration).runMigration(context);
   }
 
   @Test
@@ -51,16 +53,17 @@ public class DbMigratorImplTest {
     final var mockMigrationState = mock(MutableMigrationState.class);
     when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
     final var mockMigration = mock(MigrationTask.class);
-    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(false);
+    final var context =
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState);
+    when(mockMigration.needsToRun(context)).thenReturn(false);
 
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, Collections.singletonList(mockMigration));
+    final var sut = new DbMigratorImpl(context, Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
 
     // then
-    verify(mockMigration, never()).runMigration(mockProcessingState);
+    verify(mockMigration, never()).runMigration(context);
   }
 
   @Test
@@ -70,12 +73,13 @@ public class DbMigratorImplTest {
     final var mockMigrationState = mock(MutableMigrationState.class);
     when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
     final var mockMigration1 = mock(MigrationTask.class);
-    when(mockMigration1.needsToRun(mockProcessingState)).thenReturn(true);
+    final var context =
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState);
+    when(mockMigration1.needsToRun(context)).thenReturn(true);
     final var mockMigration2 = mock(MigrationTask.class);
-    when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
+    when(mockMigration2.needsToRun(context)).thenReturn(true);
 
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, List.of(mockMigration1, mockMigration2));
+    final var sut = new DbMigratorImpl(context, List.of(mockMigration1, mockMigration2));
 
     // when
     sut.runMigrations();
@@ -83,8 +87,8 @@ public class DbMigratorImplTest {
     // then
     final var inOrder = Mockito.inOrder(mockMigration1, mockMigration2);
 
-    inOrder.verify(mockMigration1).runMigration(mockProcessingState);
-    inOrder.verify(mockMigration2).runMigration(mockProcessingState);
+    inOrder.verify(mockMigration1).runMigration(context);
+    inOrder.verify(mockMigration2).runMigration(context);
   }
 
   @Test
@@ -95,16 +99,17 @@ public class DbMigratorImplTest {
     when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
 
     final var mockMigration1 = mock(MigrationTask.class);
-    when(mockMigration1.needsToRun(mockProcessingState)).thenReturn(true);
+    final var context =
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState);
+    when(mockMigration1.needsToRun(context)).thenReturn(true);
 
     final var mockMigration2 = mock(MigrationTask.class);
-    when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
+    when(mockMigration2.needsToRun(context)).thenReturn(true);
 
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, List.of(mockMigration1, mockMigration2));
+    final var sut = new DbMigratorImpl(context, List.of(mockMigration1, mockMigration2));
 
     // when -- first migration fails
-    doThrow(RuntimeException.class).when(mockMigration1).runMigration(mockProcessingState);
+    doThrow(RuntimeException.class).when(mockMigration1).runMigration(context);
 
     // then -- running migrations fails
     assertThatThrownBy(sut::runMigrations).isInstanceOf(RuntimeException.class);
@@ -122,16 +127,17 @@ public class DbMigratorImplTest {
     when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
 
     final var mockMigration1 = mock(MigrationTask.class);
-    when(mockMigration1.needsToRun(mockProcessingState)).thenReturn(true);
+    final var context =
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState);
+    when(mockMigration1.needsToRun(context)).thenReturn(true);
 
     final var mockMigration2 = mock(MigrationTask.class);
-    when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
+    when(mockMigration2.needsToRun(context)).thenReturn(true);
 
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, List.of(mockMigration1, mockMigration2));
+    final var sut = new DbMigratorImpl(context, List.of(mockMigration1, mockMigration2));
 
     // when -- second migration fails
-    doThrow(RuntimeException.class).when(mockMigration2).runMigration(mockProcessingState);
+    doThrow(RuntimeException.class).when(mockMigration2).runMigration(context);
 
     // then -- running migrations fails
     assertThatThrownBy(sut::runMigrations).isInstanceOf(RuntimeException.class);
@@ -148,13 +154,14 @@ public class DbMigratorImplTest {
     when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
 
     final var mockMigration1 = mock(MigrationTask.class);
-    when(mockMigration1.needsToRun(mockProcessingState)).thenReturn(true);
+    final var context =
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState);
+    when(mockMigration1.needsToRun(context)).thenReturn(true);
 
     final var mockMigration2 = mock(MigrationTask.class);
-    when(mockMigration2.needsToRun(mockProcessingState)).thenReturn(true);
+    when(mockMigration2.needsToRun(context)).thenReturn(true);
 
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, List.of(mockMigration1, mockMigration2));
+    final var sut = new DbMigratorImpl(context, List.of(mockMigration1, mockMigration2));
 
     // when -- running migrations
     sut.runMigrations();
@@ -171,9 +178,10 @@ public class DbMigratorImplTest {
     when(mockProcessingState.getMigrationState()).thenReturn(mockMigrationState);
     when(mockMigrationState.getMigratedByVersion()).thenReturn("1.0.0");
     final var mockMigration = mock(MigrationTask.class);
-    when(mockMigration.needsToRun(mockProcessingState)).thenReturn(true);
-    final var sut =
-        new DbMigratorImpl(mockProcessingState, Collections.singletonList(mockMigration));
+    when(mockMigration.needsToRun(any())).thenReturn(true);
+    final var context =
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState);
+    final var sut = new DbMigratorImpl(context, Collections.singletonList(mockMigration));
 
     // when -- upgrading to a version that is not compatible
     try (final var util = Mockito.mockStatic(VersionUtil.class)) {
@@ -195,7 +203,8 @@ public class DbMigratorImplTest {
     }
 
     // then -- migration is not run
-    verify(mockMigration, never()).runMigration(mockProcessingState);
+    verify(mockMigration, never())
+        .runMigration(new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState));
   }
 
   @Test
@@ -211,12 +220,14 @@ public class DbMigratorImplTest {
     final var mockMigration = mock(MigrationTask.class);
 
     final var sut =
-        new DbMigratorImpl(mockProcessingState, Collections.singletonList(mockMigration));
+        new DbMigratorImpl(
+            new MigrationTaskContextImpl(new ClusterContextImpl(1), mockProcessingState),
+            Collections.singletonList(mockMigration));
 
     // when
     sut.runMigrations();
 
     // then
-    verify(mockMigration, never()).runMigration(mockProcessingState);
+    verify(mockMigration, never()).runMigration(any());
   }
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
@@ -136,7 +136,7 @@ public final class BpmnStateTransitionBehavior {
    * reason why we throw an exception.
    *
    * <p>Should be removed as soon as possible, e.g. as part of
-   * https://github.com/camunda/zeebe/issues/8005
+   * https://github.com/camunda/camunda/issues/8005
    *
    * @param context the element instance context
    * @param methodName the method which is called
@@ -427,7 +427,7 @@ public final class BpmnStateTransitionBehavior {
           try {
             containerProcessor.onChildTerminated(containerScope, containerContext, childContext);
           } catch (final StackOverflowError stackOverFlow) {
-            // This is a dirty quick "fix" for https://github.com/camunda/zeebe/issues/8955
+            // This is a dirty quick "fix" for https://github.com/camunda/camunda/issues/8955
             // It's done so a cluster doesn't die when a user encounters this.
             final var message =
                 String.format(

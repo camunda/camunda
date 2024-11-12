@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
@@ -25,10 +25,15 @@
   <properties>
     <version.java>8</version.java>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-    <protocol.version>4</protocol.version>
+    <protocol.version>5</protocol.version>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-core</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
@@ -174,29 +179,16 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
-        <configuration>
-          <includeProjectDependencies>false</includeProjectDependencies>
-          <includePluginDependencies>true</includePluginDependencies>
-          <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
-          <arguments>
-            <argument>${project.build.outputDirectory}/protocol.xml</argument>
-            <argument>${project.build.outputDirectory}/cluster-management-protocol.xml</argument>
-          </arguments>
-          <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>uk.co.real-logic</groupId>
-            <artifactId>sbe-tool</artifactId>
-            <version>${version.sbe}</version>
-          </dependency>
-        </dependencies>
         <executions>
           <execution>
-            <goals>
-              <goal>java</goal>
-            </goals>
+            <id>generate-sbe</id>
             <phase>generate-sources</phase>
+            <configuration>
+              <arguments>
+                <argument>${project.build.outputDirectory}/protocol.xml</argument>
+                <argument>${project.build.outputDirectory}/cluster-management-protocol.xml</argument>
+              </arguments>
+            </configuration>
           </execution>
         </executions>
       </plugin>

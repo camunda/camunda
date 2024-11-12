@@ -2,10 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.scheduler.testing;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -20,6 +22,8 @@ import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import org.agrona.concurrent.IdleStrategy;
 import org.junit.rules.ExternalResource;
 
@@ -46,11 +50,16 @@ public final class ControlledActorSchedulerRule extends ExternalResource {
   @Override
   protected void before() {
     actorScheduler.start();
+    controlledActorTaskRunner.waitUntilDone();
   }
 
   @Override
   protected void after() {
-    actorScheduler.stop();
+    try {
+      actorScheduler.stop().get(5000, MILLISECONDS);
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public ActorFuture<Void> submitActor(final Actor actor) {

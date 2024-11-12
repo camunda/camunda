@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.bootstrap;
 
@@ -124,19 +124,6 @@ class CommandApiServiceStepTest {
     }
 
     @Test
-    void shouldAddCommandApiServiceAsPartitionListener() {
-      // when
-      sut.startupInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, startupFuture);
-      await().until(startupFuture::isDone);
-
-      // then
-      final var commandApiService = testBrokerStartupContext.getCommandApiService();
-
-      assertThat(commandApiService).isNotNull();
-      assertThat(testBrokerStartupContext.getPartitionListeners()).contains(commandApiService);
-    }
-
-    @Test
     void shouldAddCommandApiServiceAsDiskSpaceUsageListener() {
       // given
       final var mockDiskSpaceUsageMonitor = mock(DiskSpaceUsageMonitorActor.class);
@@ -174,7 +161,6 @@ class CommandApiServiceStepTest {
 
       testBrokerStartupContext.setGatewayBrokerTransport(mockAtomixServerTransport);
       testBrokerStartupContext.setCommandApiService(mockCommandApiService);
-      testBrokerStartupContext.addPartitionListener(mockCommandApiService);
       testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitorActor.class));
       testBrokerStartupContext
           .getDiskSpaceUsageMonitor()
@@ -195,17 +181,6 @@ class CommandApiServiceStepTest {
 
       // then
       verify(mockDiskSpaceUsageMonitor).removeDiskUsageListener(mockCommandApiService);
-    }
-
-    @Test
-    void shouldRemoveCommandApiFromPartitionListenerList() {
-      // when
-      sut.shutdownInternal(testBrokerStartupContext, CONCURRENCY_CONTROL, shutdownFuture);
-      await().until(shutdownFuture::isDone);
-
-      // then
-      assertThat(testBrokerStartupContext.getPartitionListeners())
-          .doesNotContain(mockCommandApiService);
     }
 
     @Test

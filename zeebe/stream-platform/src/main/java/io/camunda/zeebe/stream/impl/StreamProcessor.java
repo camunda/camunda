@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.impl;
 
@@ -13,7 +13,6 @@ import io.camunda.zeebe.logstreams.impl.Loggers;
 import io.camunda.zeebe.logstreams.log.LogRecordAwaiter;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
-import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -21,17 +20,20 @@ import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.StreamClock;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
+import io.camunda.zeebe.stream.impl.metrics.ScheduledTaskMetrics;
 import io.camunda.zeebe.stream.impl.metrics.StreamProcessorMetrics;
 import io.camunda.zeebe.stream.impl.records.RecordValues;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import io.camunda.zeebe.stream.impl.state.StreamProcessorDbState;
-import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -112,6 +114,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   private ProcessingScheduleServiceImpl processorActorService;
   private ProcessingScheduleServiceImpl asyncScheduleService;
   private AsyncProcessingScheduleServiceActor asyncActor;
+  private ScheduledTaskMetrics scheduledTaskMetrics;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorSchedulingService = processorBuilder.getActorSchedulingService();
@@ -151,8 +154,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   protected void onActorStarting() {
-    actor.runOnCompletionBlockingCurrentPhase(
-        logStream.newLogStreamReader(), this::onRetrievingReader);
+    final var reader = logStream.newLogStreamReader();
+    logStreamReader = reader;
+    streamProcessorContext.logStreamReader(reader);
   }
 
   @Override
@@ -162,20 +166,25 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
       final var startRecoveryTimer = metrics.startRecoveryTimer();
       final long snapshotPosition = recoverFromSnapshot();
 
-      // the schedule service actor is only opened if the replay is done,
-      // until then it is an unusable and closed schedule service
+      scheduledTaskMetrics = ScheduledTaskMetrics.of(streamProcessorContext.getMeterRegistry());
       processorActorService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase,
               streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter,
-              scheduledCommandCache);
+              scheduledCommandCache,
+              streamProcessorContext.getClock(),
+              streamProcessorContext.getScheduledTaskCheckInterval(),
+              scheduledTaskMetrics);
       asyncScheduleService =
           new ProcessingScheduleServiceImpl(
               streamProcessorContext::getStreamProcessorPhase, // this is volatile
-              () -> false, // we will just stop the actor in this case, no need to provide this
+              streamProcessorContext.getAbortCondition(),
               logStream::newLogStreamWriter,
-              scheduledCommandCache);
+              scheduledCommandCache,
+              streamProcessorContext.getClock(),
+              streamProcessorContext.getScheduledTaskCheckInterval(),
+              scheduledTaskMetrics);
       asyncActor = new AsyncProcessingScheduleServiceActor(asyncScheduleService, partitionId);
       final var extendedProcessingScheduleService =
           new ExtendedProcessingScheduleServiceImpl(
@@ -307,29 +316,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             });
   }
 
-  private void onRetrievingWriter(
-      final LogStreamWriter writer,
-      final Throwable errorOnReceivingWriter,
-      final LastProcessingPositions lastProcessingPositions) {
-
-    if (errorOnReceivingWriter == null) {
-      streamProcessorContext.logStreamWriter(writer);
-
-      streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
-      metrics.setStreamProcessorProcessing();
-
-      chainSteps(
-          0,
-          new Step[] {
-            () -> processorActorService.open(actor),
-            () -> actorSchedulingService.submitActor(asyncActor)
-          },
-          () -> startProcessing(lastProcessingPositions));
-    } else {
-      onFailure(errorOnReceivingWriter);
-    }
-  }
-
   private void startProcessing(final LastProcessingPositions lastProcessingPositions) {
     processingStateMachine =
         new ProcessingStateMachine(
@@ -345,17 +331,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
     processingStateMachine.startProcessing(lastProcessingPositions);
     if (!shouldProcess) {
       setStateToPausedAndNotifyListeners();
-    }
-  }
-
-  private void onRetrievingReader(
-      final LogStreamReader reader, final Throwable errorOnReceivingReader) {
-    if (errorOnReceivingReader == null) {
-      logStreamReader = reader;
-      streamProcessorContext.logStreamReader(reader);
-    } else {
-      LOG.error("Unexpected error on retrieving reader from log stream.", errorOnReceivingReader);
-      actor.close();
     }
   }
 
@@ -376,7 +351,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             zeebeDb,
             streamProcessorContext.getTransactionContext(),
             streamProcessorContext.getPartitionCommandSender(),
-            streamProcessorContext.getKeyGeneratorControls());
+            streamProcessorContext.getKeyGeneratorControls(),
+            streamProcessorContext.getClock());
 
     recordProcessors.forEach(processor -> processor.init(processorContext));
 
@@ -414,12 +390,18 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   private void onRecovered(final LastProcessingPositions lastProcessingPositions) {
-    logStream
-        .newLogStreamWriter()
-        .onComplete(
-            (logStreamWriter, errorOnReceivingWriter) ->
-                onRetrievingWriter(
-                    logStreamWriter, errorOnReceivingWriter, lastProcessingPositions));
+    final var writer = logStream.newLogStreamWriter();
+    streamProcessorContext.logStreamWriter(writer);
+    streamProcessorContext.streamProcessorPhase(Phase.PROCESSING);
+    metrics.setStreamProcessorProcessing();
+
+    chainSteps(
+        0,
+        new Step[] {
+          () -> processorActorService.open(actor),
+          () -> actorSchedulingService.submitActor(asyncActor)
+        },
+        () -> startProcessing(lastProcessingPositions));
   }
 
   private void onFailure(final Throwable throwable) {
@@ -433,13 +415,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
             openFuture.completeExceptionally(throwable);
           }
 
-          if (throwable instanceof UnrecoverableException) {
-            final var report = HealthReport.dead(this).withIssue(throwable);
-            failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
-          } else {
-            final var report = HealthReport.unhealthy(this).withIssue(throwable);
-            failureListeners.forEach(l -> l.onFailure(report));
-          }
+          final var report =
+              HealthReport.dead(this).withIssue(throwable, ActorClock.current().instant());
+          failureListeners.forEach(l -> l.onUnrecoverableFailure(report));
         });
   }
 
@@ -486,20 +464,22 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
 
   @Override
   public HealthReport getHealthReport() {
+    final var instant =
+        ActorClock.current() != null ? ActorClock.current().instant() : Instant.now();
     if (actor.isClosed()) {
-      return HealthReport.unhealthy(this).withMessage("actor is closed");
+      return HealthReport.unhealthy(this).withMessage("actor is closed", instant);
     }
 
     if (processingStateMachine != null && !processingStateMachine.isMakingProgress()) {
       return HealthReport.unhealthy(this)
-          .withMessage("Processing not making progress. It is in an error handling loop.");
+          .withMessage("Processing not making progress. It is in an error handling loop.", instant);
     }
 
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
     if (ActorClock.currentTimeMillis() - lastTickTime > HEALTH_CHECK_TICK_DURATION.toMillis() * 2) {
-      return HealthReport.unhealthy(this).withMessage("actor appears blocked");
+      return HealthReport.unhealthy(this).withMessage("actor appears blocked", instant);
     } else if (streamProcessorContext.getStreamProcessorPhase() == Phase.FAILED) {
-      return HealthReport.unhealthy(this).withMessage("in failed phase");
+      return HealthReport.unhealthy(this).withMessage("in failed phase", instant);
     } else {
       return HealthReport.healthy(this);
     }
@@ -578,6 +558,24 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   public void onRecordAvailable() {
     actor.run(processingStateMachine::tryToReadNextRecord);
   }
+
+  /**
+   * Returns an immutable clock fixed at the time of the call, and with the current modification. We
+   * do not return the instant source but really a fixed time since the instant source may not
+   * always be thread safe.
+   *
+   * <p>NOTE: this method is mostly for visibility to allow us to debug timing issues.
+   */
+  public ActorFuture<StreamClock> getClock() {
+    return actor.call(
+        () -> {
+          final var clock = streamProcessorContext.getClock();
+          return new ImmutableStreamClock(clock.instant(), clock.currentModification());
+        });
+  }
+
+  private record ImmutableStreamClock(Instant instant, Modification currentModification)
+      implements StreamClock {}
 
   private static final class AsyncProcessingScheduleServiceActor extends Actor {
 

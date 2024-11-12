@@ -15,7 +15,7 @@
 # This can be done through GitHub's UI by navigating to the "Actions" tab of the `operate` repository, then clicking on the
 # "Run workflow" dropdown, selecting the workflow, filling in the input fields and clicking "Run workflow".
 #
-# Link to Release manual workflow: https://github.com/camunda/zeebe/actions/workflows/release-manual.yml
+# Link to Release manual workflow: https://github.com/camunda/camunda/actions/workflows/release-manual.yml
 
 name: Operate Release manual
 

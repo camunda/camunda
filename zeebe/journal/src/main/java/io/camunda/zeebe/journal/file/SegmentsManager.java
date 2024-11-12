@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.journal.file;
 
@@ -326,13 +326,13 @@ final class SegmentsManager implements AutoCloseable {
     nextSegment = CompletableFuture.supplyAsync(() -> createUninitializedSegment(descriptor));
   }
 
-  Collection<Segment> getTailSegments(final long index) {
+  SortedMap<Long, Segment> getTailSegments(final long index) {
     final var segment = getSegment(index);
     if (segment == null) {
-      return Collections.emptySet();
+      return Collections.emptySortedMap();
     }
 
-    return Collections.unmodifiableSortedMap(segments.tailMap(segment.index(), true)).values();
+    return Collections.unmodifiableSortedMap(segments.tailMap(segment.index(), true)); // inclusive
   }
 
   private UninitializedSegment createUninitializedSegment(final SegmentDescriptor descriptor) {

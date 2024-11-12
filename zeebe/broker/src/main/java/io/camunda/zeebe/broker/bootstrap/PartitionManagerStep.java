@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.bootstrap;
 
@@ -11,9 +11,9 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.topology.state.ClusterTopology;
 import org.slf4j.Logger;
 
 final class PartitionManagerStep extends AbstractBrokerStartupStep {
@@ -45,13 +45,15 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             brokerStartupContext.getExporterRepository(),
             brokerStartupContext.getGatewayBrokerTransport(),
             brokerStartupContext.getJobStreamService().jobStreamer(),
-            brokerStartupContext.getClusterTopology().getPartitionDistribution());
+            brokerStartupContext.getClusterConfigurationService(),
+            brokerStartupContext.getMeterRegistry(),
+            brokerStartupContext.getBrokerClient());
     concurrencyControl.run(
         () -> {
           try {
             brokerStartupContext
-                .getClusterTopology()
-                .registerTopologyChangeListener(
+                .getClusterConfigurationService()
+                .registerInconsistentConfigurationListener(
                     (newTopology, oldTopology) ->
                         shutdownOnInconsistentTopology(
                             brokerStartupContext.getBrokerInfo().getNodeId(),
@@ -61,8 +63,8 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
             partitionManager.start();
             brokerStartupContext.setPartitionManager(partitionManager);
             brokerStartupContext
-                .getClusterTopology()
-                .registerPartitionChangeExecutor(partitionManager);
+                .getClusterConfigurationService()
+                .registerChangeExecutors(partitionManager, partitionManager);
             startupFuture.complete(brokerStartupContext);
           } catch (final Exception e) {
             startupFuture.completeExceptionally(e);
@@ -81,7 +83,7 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
       return;
     }
 
-    brokerShutdownContext.getClusterTopology().removePartitionChangeExecutor();
+    brokerShutdownContext.getClusterConfigurationService().removePartitionChangeExecutor();
 
     concurrencyControl.runOnCompletion(
         partitionManager.stop(),
@@ -94,14 +96,16 @@ final class PartitionManagerStep extends AbstractBrokerStartupStep {
           }
         });
 
-    brokerShutdownContext.getClusterTopology().removeTopologyChangeListener();
+    brokerShutdownContext
+        .getClusterConfigurationService()
+        .removeInconsistentConfigurationListener();
   }
 
   private void shutdownOnInconsistentTopology(
       final int localBrokerId,
       final SpringBrokerBridge springBrokerBridge,
-      final ClusterTopology newTopology,
-      final ClusterTopology oldTopology) {
+      final ClusterConfiguration newTopology,
+      final ClusterConfiguration oldTopology) {
     final MemberId localMemberId = MemberId.from(String.valueOf(localBrokerId));
     LOGGER.warn(
         """

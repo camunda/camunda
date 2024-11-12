@@ -1,31 +1,14 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE ("USE"), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * "Licensee" means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
 import {observer} from 'mobx-react';
 import {useLocation} from 'react-router-dom';
-import {
-  TableBatchAction,
-  Stack,
-  ComposedModal,
-  ModalHeader,
-  ModalBody,
-  Button,
-  ModalFooter,
-} from '@carbon/react';
+import {TableBatchAction, Stack} from '@carbon/react';
 import {Move} from '@carbon/react/icons';
 import {Restricted} from 'modules/components/Restricted';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
@@ -43,9 +26,12 @@ import modalButtonsImageDark from './images/modal-buttons-image-dark.png';
 import modalDiagramImageLight from './images/modal-diagram-image-light.png';
 import modalDiagramImageDark from './images/modal-diagram-image-dark.png';
 import {currentTheme} from 'modules/stores/currentTheme';
-import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
-import {Checkbox} from './styled';
+import {getStateLocally} from 'modules/utils/localStorage';
 import {batchModificationStore} from 'modules/stores/batchModification';
+import {tracking} from 'modules/tracking';
+import {HelperModal} from 'modules/components/HelperModal';
+
+const localStorageKey = 'hideMoveModificationHelperModal';
 
 const MoveAction: React.FC = observer(() => {
   const location = useLocation();
@@ -56,7 +42,7 @@ const MoveAction: React.FC = observer(() => {
   const {hasSelectedRunningInstances} = processInstancesSelectionStore;
 
   const businessObject: BusinessObject | null = flowNodeId
-    ? processXmlStore.getFlowNode(flowNodeId) ?? null
+    ? (processXmlStore.getFlowNode(flowNodeId) ?? null)
     : null;
 
   const isTypeSupported = (businessObject: BusinessObject) => {
@@ -111,7 +97,10 @@ const MoveAction: React.FC = observer(() => {
           <TableBatchAction
             renderIcon={Move}
             onClick={() => {
-              if (getStateLocally()?.hideMoveModificationHelperModal) {
+              tracking.track({
+                eventName: 'batch-move-modification-move-button-clicked',
+              });
+              if (getStateLocally()?.[localStorageKey]) {
                 batchModificationStore.enable();
               } else {
                 setOpen(true);
@@ -129,67 +118,47 @@ const MoveAction: React.FC = observer(() => {
         )}
       >
         {({open, setOpen}) => (
-          <ComposedModal
+          <HelperModal
+            title="Process instance batch move mode"
             open={open}
-            preventCloseOnClickOutside
-            size="md"
-            aria-label="Process instance batch move mode"
             onClose={() => setOpen(false)}
+            onSubmit={() => {
+              setOpen(false);
+              batchModificationStore.enable();
+            }}
+            localStorageKey={localStorageKey}
           >
-            <ModalHeader title="Process instance batch move mode" />
-            <ModalBody>
-              <Stack gap={5}>
-                <div>
-                  This mode allows you to move multiple instances as a batch in
-                  a one operation
-                </div>
-                <div>1. Click on the target flow node.</div>
-                {currentTheme.theme === 'light' ? (
-                  <img
-                    src={modalDiagramImageLight}
-                    alt="A bpmn diagram with a selected flow node"
-                  />
-                ) : (
-                  <img
-                    src={modalDiagramImageDark}
-                    alt="A bpmn diagram with a selected flow node"
-                  />
-                )}
-                <div>2. Apply</div>
-                {currentTheme.theme === 'light' ? (
-                  <img
-                    src={modalButtonsImageLight}
-                    alt="A button with the label Apply Modifications"
-                  />
-                ) : (
-                  <img
-                    src={modalButtonsImageDark}
-                    alt="A button with the label Apply Modifications"
-                  />
-                )}
-              </Stack>
-            </ModalBody>
-            <ModalFooter>
-              <Checkbox
-                labelText="Do not show this message again"
-                id="do-not-show"
-                onChange={(_, {checked}) => {
-                  storeStateLocally({
-                    hideMoveModificationHelperModal: checked,
-                  });
-                }}
-              />
-              <Button
-                kind="primary"
-                onClick={() => {
-                  setOpen(false);
-                  batchModificationStore.enable();
-                }}
-              >
-                Continue
-              </Button>
-            </ModalFooter>
-          </ComposedModal>
+            <Stack gap={5}>
+              <div>
+                This mode allows you to move multiple instances as a batch in a
+                one operation
+              </div>
+              <div>1. Click on the target flow node.</div>
+              {currentTheme.theme === 'light' ? (
+                <img
+                  src={modalDiagramImageLight}
+                  alt="A bpmn diagram with a selected flow node"
+                />
+              ) : (
+                <img
+                  src={modalDiagramImageDark}
+                  alt="A bpmn diagram with a selected flow node"
+                />
+              )}
+              <div>2. Apply</div>
+              {currentTheme.theme === 'light' ? (
+                <img
+                  src={modalButtonsImageLight}
+                  alt="A button with the label Apply Modifications"
+                />
+              ) : (
+                <img
+                  src={modalButtonsImageDark}
+                  alt="A button with the label Apply Modifications"
+                />
+              )}
+            </Stack>
+          </HelperModal>
         )}
       </ModalStateManager>
     </Restricted>

@@ -1,0 +1,205 @@
+openapi: "3.0.2"
+info:
+  title: Cluster Topology Management API
+  version: "1.0"
+  description: API for managing cluster membership and partition distribution.
+servers:
+  - url: "{schema}://{host}:{port}/actuator/cluster"
+    variables:
+      host:
+        default: localhost
+        description: Management server hostname
+      port:
+        default: "9600"
+        description: Management server port
+      schema:
+        default: http
+        description: Management server schema
+paths:
+  /brokers/{brokerId}:
+    post:
+      summary: Add a broker to the cluster
+      description: Add a broker with the given brokerId to the cluster. The broker must be running
+        to complete the operation.
+      parameters:
+        - $ref: '#/components/parameters/BrokerId'
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          $ref: '#/components/responses/AddBrokersResponse'
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+    delete:
+      summary: Remove a broker from the cluster.
+      description: Remove a broker with the given brokerId from the cluster. The broker must be
+        running to complete the operation.
+      parameters:
+        - $ref: '#/components/parameters/BrokerId'
+        - $ref: '#/components/parameters/DryRunParameter'
+      responses:
+        '202':
+          $ref: '#/components/responses/RemoveBrokerResponse'
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+  /brokers:
+    post:
+      summary: Reconfigure the cluster with the given brokers.
+      description: The final cluster consists of only the brokers in the request body. New brokers
+        in the request will be added to the cluster. Any existing brokers that are not part
+        of the request will be removed from the cluster. The partitions will be re-distributed
+        to the given brokers. All brokers must be running to complete the operation unless the
+        parameter force is set to true.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/ScaleRequest"
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/ForceParameter'
+        - $ref: '#/components/parameters/ReplicationFactorParameter'
+      responses:
+        '202':
+          $ref: "#/components/responses/ScaleBrokersResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
+  /:
+    get:
+      summary: Get current topology
+      description: Returns the current topology of the cluster.
+      responses:
+        '200':
+          $ref: "#/components/responses/GetTopologyResponse"
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
+    patch:
+      summary: Reconfigure cluster
+      description: Reconfigure cluster by adding or removing brokers, adding more partitions, or
+                   changing the replicationFactor. Note that adding partitions is an experimental
+                   feature and not fully supported.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "components.yaml#/schemas/ClusterConfigPatchRequest"
+      parameters:
+        - $ref: '#/components/parameters/DryRunParameter'
+        - $ref: '#/components/parameters/ForceParameter'
+      responses:
+        '202':
+          $ref: "#/components/responses/ClusterConfigPatchResponse"
+        '400':
+          $ref: 'components.yaml#/responses/InvalidRequest'
+        '409':
+          $ref: 'components.yaml#/responses/ConcurrentChangeError'
+        '500':
+          $ref: 'components.yaml#/responses/InternalError'
+        '502':
+          $ref: 'components.yaml#/responses/GatewayError'
+        '504':
+          $ref: 'components.yaml#/responses/TimeoutError'
+
+components:
+  parameters:
+    BrokerId:
+      name: brokerId
+      required: true
+      in: path
+      description: Id of the broker
+      schema:
+        $ref: 'components.yaml#/schemas/BrokerId'
+    DryRunParameter:
+      name: dryRun
+      description: If true, requested changes are only simulated and not actually applied.
+      in: query
+      style: form
+      required: false
+      schema:
+        type: boolean
+        default: false
+    ForceParameter:
+      name: force
+      description: If true, the operation is a force operation. This is typically used to force remove a set of brokers when they are not available.
+      in: query
+      style: form
+      required: false
+      schema:
+        type: boolean
+        default: false
+    ReplicationFactorParameter:
+      name: replicationFactor
+      description: The new replication factor for the partitions. If not specified, the current replication factor is used.
+      in: query
+      style: form
+      required: false
+      schema:
+        type: integer
+        format: int32
+
+  responses:
+    AddBrokersResponse:
+      description: Request to add a new broker is accepted.
+      content:
+        application.json:
+          schema:
+            $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+
+    ScaleBrokersResponse:
+      description: Request to reconfigure brokers is accepted.
+      content:
+        application.json:
+          schema:
+            $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+
+    ClusterConfigPatchResponse:
+      description: Request to reconfigure cluster is accepted.
+      content:
+        application.json:
+          schema:
+            $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+
+    RemoveBrokerResponse:
+      description: Request to remove broker is accepted.
+      content:
+        application.json:
+          schema:
+            $ref: "components.yaml#/schemas/PlannedOperationsResponse"
+
+    GetTopologyResponse:
+      description: response body for getting current topology
+      content:
+        application.json:
+          schema:
+            $ref: "components.yaml#/schemas/GetTopologyResponse"

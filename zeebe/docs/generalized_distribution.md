@@ -13,15 +13,23 @@ When we deploy a new process this process must be available on all
 partitions. If this is not the case we would only be able to start instances of this process on a
 single partition. By distributing it instances can be started across all partitions.
 
+Like deployed processes, other parts of the system also need to distribute the related entities.
+Rather than build the same feature many times, we've built a generic solution that allows
+distributing a command to other partitions.
+
 ## How do we distribute commands?
 
-On a high-level we use commands and event to distribute commands. The image below provides a nice
+On a high-level we use commands and events to distribute commands. The image below provides a nice
 overview of the flow of commands and events that are written during distribution.
+
+Note that `CommandDistribution` records only exist on the partition that initiated the distribution.
+The other partitions only receive the specific command that is distributed.
 
 ![Generalized distribution overview](assets/generalized_distribution.png)
 
 The distribution starts when a processor calls the `distributeCommand` method on
-the `CommandDistributionBehavior`. It needs to pass a key, which will be used for the distribution.
+the `CommandDistributionBehavior`. It needs to pass a key, which will be used to store the pending
+distribution.
 In general this should be the same as command that is getting distributed as it makes it possible to
 correlate the two.
 
@@ -37,6 +45,10 @@ distribute te command again! For this we have the `isCommandDistributed` method 
 the `TypedRecord`. We can detect if a command is distributed by checking the key. Encoded within the
 key is the partition id that generated it. If this doesn't match the partition id that is processing
 the command, it has been distributed before.
+
+> [!TIP]
+> Typically, you want to implement `DistributedTypedRecordProcessor` rather than
+> `TypedRecordProcessor` to differentiate between new and distributed commands in the processor.
 
 At the end of processing the processor must acknowledge the distribution by calling
 the `acknowledgeCommand` method on the `CommandDistributionBehavior`. This method will decode the
@@ -54,16 +66,20 @@ metadata and raw record value are removed from the state.
 The diagram shows the flow of commands and events. What it doesn't highlight is the record that
 belongs to these.
 
-The `CommandDistributionRecord` is relatively simple. It contains 4 properties which are required to
-distribute a command successfully.
+The `CommandDistributionRecord` is relatively simple. It contains the following properties:
 
 #### Partition id
 
 The value of the partition id depends on the `CommandDistributionIntent`:
 
 - `STARTED` and `FINISHED`: The partition id is equal to the distributing partition
-- `DISTRIBUTING`, `ACKNOWLEDGE` and `ACKNOWLEDGED`: The partition id is equal to the partition that
+- `ENQUEUED`, `DISTRIBUTING`, `ACKNOWLEDGE` and `ACKNOWLEDGED`: The partition id is equal to the partition that
   the command is distributed to.
+
+#### Queue id
+
+This property is optional (empty string indicates no queue id). It is set on the `ENQUEUED` and `STARTED` intents.
+If it is set, the next property `queueInsertionKey` must be set as well.
 
 #### Value type
 
@@ -79,6 +95,30 @@ distribute the command with.
 
 The command value is the record which is getting distributed. This contains the actual data required
 by the processor on the other partition.
+
+### Ordered distribution
+
+In some cases we need to distribute commands in a specific order. For this we have the option to specify a queue id.
+
+```java
+void distributeInOrder() {
+  commandDistributionBehavior
+    .withKey(firstDistributionKey)
+    .inQueue("my-queue")
+    .distribute(firstCommand);
+  commandDistributionBehavior
+    .withKey(secondDistributionKey)
+    .inQueue("my-queue")
+    .distribute(secondCommand);
+}
+```
+
+Command distributions submitted with the same queue will be distributed in the natural sort order of their distribution key.
+The queue is maintained per receiving partition.
+This way we can ensure that all partitions process distributed commands in the correct order, while preventing that partial unavailability, for example just one partition not processing, does not block progress for other partitions.
+
+It is the caller's responsibility to ensure that the queue id is unique.
+Using different queue ids per partition or conversely maintaining order across partitions is not supported.
 
 ### Redistributing
 

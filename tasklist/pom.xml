@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
   <groupId>io.camunda</groupId>
@@ -20,12 +20,11 @@
     <module>els-schema</module>
     <module>data-generator</module>
     <module>importer-common</module>
-    <module>importer-850</module>
     <module>importer-860</module>
+    <module>importer-870</module>
     <module>importer</module>
     <module>archiver</module>
     <module>webapp</module>
-    <module>../tasklist-distro</module>
     <module>mvc-auth-commons</module>
   </modules>
 
@@ -40,21 +39,30 @@
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
 
-    <license.header>${maven.multiModuleProjectDirectory}/license/license-header</license.header>
-
     <skip.fe.build>true</skip.fe.build>
-
+    <maven.javadoc.skip>true</maven.javadoc.skip>
   </properties>
 
   <build>
     <pluginManagement>
       <plugins>
+        <!-- Javadoc generation fails under Java 11 -->
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-javadoc-plugin</artifactId>
-          <configuration>
-            <skip>true</skip>
-          </configuration>
+          <artifactId>maven-jar-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>empty-javadoc-jar</id>
+              <goals>
+                <goal>jar</goal>
+              </goals>
+              <phase>package</phase>
+              <configuration>
+                <classifier>javadoc</classifier>
+                <classesDirectory>${basedir}/javadoc</classesDirectory>
+              </configuration>
+            </execution>
+          </executions>
         </plugin>
 
         <plugin>
@@ -104,29 +112,6 @@
         </plugin>
 
         <plugin>
-          <groupId>com.mycila</groupId>
-          <artifactId>license-maven-plugin</artifactId>
-          <configuration>
-            <header>${license.header}</header>
-            <includes>
-              <include>**/*.java</include>
-            </includes>
-            <mapping>
-              <java>SLASHSTAR_STYLE</java>
-            </mapping>
-          </configuration>
-          <executions>
-            <execution>
-              <id>add-license</id>
-              <goals>
-                <goal>format</goal>
-              </goals>
-              <phase>compile</phase>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
           <configuration>
@@ -155,7 +140,7 @@
     <profile>
       <!--
         We have to skip spotbugs analysis until we fix several findings
-        See https://github.com/camunda/zeebe/issues/17598
+        See https://github.com/camunda/camunda/issues/17598
       -->
       <id>spotbugs</id>
       <build>
@@ -172,12 +157,16 @@
     </profile>
     <!--
       The QA module is enabled per default, but having it in a profile allows us to exclude it easily.
-      That is useful for example for creating releases.
+      That is useful for example for creating releases. This profile is active if the skipQaBuild
+      property is not present, or is present and set to a value other than 'true'.
        -->
     <profile>
-      <id>integration-tests</id>
+      <id>integration-tests-build</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>skipQaBuild</name>
+          <value>!true</value>
+        </property>
       </activation>
       <modules>
         <module>qa</module>

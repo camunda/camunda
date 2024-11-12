@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
@@ -11,10 +11,12 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.client.api.command.ClientStatusException;
+import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
+import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
+import io.camunda.zeebe.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -22,50 +24,46 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+@ZeebeIntegration
+@AutoCloseResources
 public final class ThrowErrorTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
-
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
-
   private static final String ERROR_CODE = "error";
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  @AutoCloseResource ZeebeClient client;
 
-  private String jobType;
-  private long jobKey;
+  @TestZeebe
+  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @Before
+  ZeebeResourcesHelper resourcesHelper;
+
+  @BeforeEach
   public void init() {
-    jobType = helper.getJobType();
-
-    final var processDefinitionKey =
-        CLIENT_RULE.deployProcess(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType(jobType))
-                .boundaryEvent("error", b -> b.error(ERROR_CODE).endEvent())
-                .endEvent()
-                .done());
-
-    CLIENT_RULE.createProcessInstance(processDefinitionKey);
-
-    jobKey = activateJob().getKey();
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
-  @Test
-  public void shouldThrowError() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldThrowError(final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final long jobKey = activateJob(client, useRest, jobType).getKey();
+
     // when
-    CLIENT_RULE.getClient().newThrowErrorCommand(jobKey).errorCode(ERROR_CODE).send().join();
+    getCommand(client, useRest, jobKey).errorCode(ERROR_CODE).send().join();
 
     // then
     final Record<JobRecordValue> record =
@@ -82,16 +80,16 @@ public final class ThrowErrorTest {
         .isTrue();
   }
 
-  @Test
-  public void shouldThrowErrorWithErrorMessage() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldThrowErrorWithErrorMessage(final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final long jobKey = activateJob(client, useRest, jobType).getKey();
+
     // when
-    CLIENT_RULE
-        .getClient()
-        .newThrowErrorCommand(jobKey)
-        .errorCode(ERROR_CODE)
-        .errorMessage("test")
-        .send()
-        .join();
+    getCommand(client, useRest, jobKey).errorCode(ERROR_CODE).errorMessage("test").send().join();
 
     // then
     final Record<JobRecordValue> record =
@@ -99,10 +97,14 @@ public final class ThrowErrorTest {
     Assertions.assertThat(record.getValue()).hasErrorMessage("test");
   }
 
-  @Test
-  public void shouldRejectIfJobIsAlreadyCompleted() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRejectIfJobIsAlreadyCompleted(final boolean useRest, final TestInfo testInfo) {
     // given
-    CLIENT_RULE.getClient().newCompleteCommand(jobKey).send().join();
+    final String jobType = "job-" + testInfo.getDisplayName();
+    createProcessInstance(jobType);
+    final long jobKey = activateJob(client, useRest, jobType).getKey();
+    getCompleteCommand(client, useRest, jobKey).send().join();
 
     // when
     final var expectedMessage =
@@ -110,31 +112,49 @@ public final class ThrowErrorTest {
             "Expected to throw an error for job with key '%d', but no such job was found", jobKey);
 
     assertThatThrownBy(
-            () ->
-                CLIENT_RULE
-                    .getClient()
-                    .newThrowErrorCommand(jobKey)
-                    .errorCode(ERROR_CODE)
-                    .send()
-                    .join())
-        .isInstanceOf(ClientStatusException.class)
+            () -> getCommand(client, useRest, jobKey).errorCode(ERROR_CODE).send().join())
         .hasMessageContaining(expectedMessage);
   }
 
-  private ActivatedJob activateJob() {
+  private ActivatedJob activateJob(
+      final ZeebeClient client, final boolean useRest, final String jobType) {
     final var activateResponse =
-        CLIENT_RULE
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(1)
-            .send()
-            .join();
+        getActivateCommand(client, useRest).jobType(jobType).maxJobsToActivate(1).send().join();
 
     assertThat(activateResponse.getJobs())
         .describedAs("Expected one job to be activated")
         .hasSize(1);
 
     return activateResponse.getJobs().get(0);
+  }
+
+  private ThrowErrorCommandStep1 getCommand(
+      final ZeebeClient client, final boolean useRest, final long jobKey) {
+    final ThrowErrorCommandStep1 throwErrorCommandStep1 = client.newThrowErrorCommand(jobKey);
+    return useRest ? throwErrorCommandStep1.useRest() : throwErrorCommandStep1.useGrpc();
+  }
+
+  private ActivateJobsCommandStep1 getActivateCommand(
+      final ZeebeClient client, final boolean useRest) {
+    final ActivateJobsCommandStep1 activateJobsCommandStep1 = client.newActivateJobsCommand();
+    return useRest ? activateJobsCommandStep1.useRest() : activateJobsCommandStep1.useGrpc();
+  }
+
+  private CompleteJobCommandStep1 getCompleteCommand(
+      final ZeebeClient client, final boolean useRest, final long jobKey) {
+    final CompleteJobCommandStep1 completeJobCommandStep1 = client.newCompleteCommand(jobKey);
+    return useRest ? completeJobCommandStep1.useRest() : completeJobCommandStep1.useGrpc();
+  }
+
+  private void createProcessInstance(final String jobType) {
+    final var processDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess("process")
+                .startEvent()
+                .serviceTask("task", t -> t.zeebeJobType(jobType))
+                .boundaryEvent("error", b -> b.error(ERROR_CODE).endEvent())
+                .endEvent()
+                .done());
+    resourcesHelper.createProcessInstance(processDefinitionKey);
   }
 }

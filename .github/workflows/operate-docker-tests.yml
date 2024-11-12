@@ -15,6 +15,7 @@ on:
       - 'operate/**'
       - 'parent/*'
       - 'pom.xml'
+      - 'webapps-common/**'
   pull_request:
     paths:
       - '.ci/**'
@@ -25,18 +26,19 @@ on:
       - 'operate/**'
       - 'parent/*'
       - 'pom.xml'
+      - 'webapps-common/**'
 
-# This will limit the workflow to 1 concurrent run per ref (branch / PR).
-# If a new commits occurs, the current run will be canceled to save costs.
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Exception for main branch: complete builds for every commit needed for confidenence
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
   integration-tests:
     name: Docker container tests
-    runs-on: gcp-core-2-default
-    timeout-minutes: 20
+    runs-on: gcp-core-4-default
+    timeout-minutes: 40
     env:
       OPERATE_TEST_DOCKER_IMAGE: localhost:5000/camunda/operate:current-test
     services:
@@ -53,7 +55,7 @@ jobs:
           dockerfile: operate.Dockerfile
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.8.1
+        uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -68,9 +70,10 @@ jobs:
           distribution: "adopt"
           java-version: "21"
       - name: Setup Maven
-        uses: stCarolas/setup-maven@v4.5
+        uses: ./.github/actions/setup-maven-dist
         with:
           maven-version: "3.9.6"
+          set-mvnw: true
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
         uses: s4u/maven-settings-action@v3.0.0
@@ -84,22 +87,35 @@ jobs:
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: mvn clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        run: ./mvnw clean install -B -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: network=host
       - name: Build and push to local registry
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           push: true
           tags: ${{ env.OPERATE_TEST_DOCKER_IMAGE }}
           file: operate.Dockerfile
       - name: Run Docker tests
-        run: mvn -pl operate/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+        run: ./mvnw -pl operate/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
       - name: Upload Test Report
         if: failure()
-        uses: ./.github/actions/collect-operate-test-artifacts
+        uses: ./.github/actions/collect-test-artifacts
         with:
           name: "docker tests"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

@@ -2,13 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.metrics.ProcessEngineMetrics;
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -41,6 +42,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.slf4j.Logger;
 
+@ExcludeAuthorizationCheck
 public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
 
   private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;
@@ -128,10 +130,10 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
               case ACTIVATE_ELEMENT -> stateTransitionBehavior.transitionToActivating(context);
               case COMPLETE_ELEMENT -> stateTransitionBehavior.transitionToCompleting(context);
               case TERMINATE_ELEMENT -> stateTransitionBehavior.transitionToTerminating(context);
-                // even though we don't know how to resolve this incident, we can still
-                // raise it so the user can use modification to recover. The incident resolution
-                // logic is smart enough to deal with this case. It will log an error due to
-                // IllegalStateException.
+              // even though we don't know how to resolve this incident, we can still
+              // raise it so the user can use modification to recover. The incident resolution
+              // logic is smart enough to deal with this case. It will log an error due to
+              // IllegalStateException.
               default -> context;
             };
         incidentBehavior.createIncident(
@@ -236,18 +238,16 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       return finalizer.apply(element, context);
     }
 
-    return createExecutionListenerJob(element, context, listeners.getFirst());
+    return createExecutionListenerJob(context, listeners.getFirst());
   }
 
   private Either<Failure, ?> createExecutionListenerJob(
-      final ExecutableFlowElement element,
-      final BpmnElementContext context,
-      final ExecutionListener listener) {
+      final BpmnElementContext context, final ExecutionListener listener) {
     return jobBehavior
         .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
         .thenDo(
             elJobProperties ->
-                jobBehavior.createNewExecutionListenerJob(context, element, elJobProperties));
+                jobBehavior.createNewExecutionListenerJob(context, elJobProperties, listener));
   }
 
   public Either<Failure, ?> onStartExecutionListenerComplete(
@@ -286,7 +286,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
     final Optional<ExecutionListener> nextListener =
         findNextExecutionListener(listeners, currentListenerIndex);
     return nextListener.isPresent()
-        ? createExecutionListenerJob(element, context, nextListener.get())
+        ? createExecutionListenerJob(context, nextListener.get())
         : finalizer.apply(element, context);
   }
 

@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.os;
 
@@ -28,6 +19,7 @@ import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
 import jakarta.json.JsonReader;
+import jakarta.json.JsonValue;
 import jakarta.json.stream.JsonParser;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -42,7 +34,6 @@ import java.util.stream.Collectors;
 import net.jodah.failsafe.Failsafe;
 import net.jodah.failsafe.RetryPolicy;
 import net.jodah.failsafe.function.CheckedSupplier;
-import org.json.JSONObject;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.ResponseException;
@@ -65,6 +56,7 @@ import org.opensearch.client.opensearch.tasks.GetTasksResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -82,8 +74,15 @@ public class RetryOpenSearchClient {
       30 * 10; // 30*10 with 2 seconds = 10 minutes retry loop
   public static final int DEFAULT_DELAY_INTERVAL_IN_SECONDS = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(RetryOpenSearchClient.class);
-  @Autowired protected RestClient opensearchRestClient;
-  @Autowired private OpenSearchClient openSearchClient;
+
+  @Autowired
+  @Qualifier("tasklistOsRestClient")
+  private RestClient opensearchRestClient;
+
+  @Autowired
+  @Qualifier("tasklistOsClient")
+  private OpenSearchClient openSearchClient;
+
   private int numberOfRetries = DEFAULT_NUMBER_OF_RETRIES;
   private int delayIntervalInSeconds = DEFAULT_DELAY_INTERVAL_IN_SECONDS;
   @Autowired private OpenSearchInternalTask openSearchInternalTask;
@@ -250,10 +249,14 @@ public class RetryOpenSearchClient {
   }
 
   public boolean createTemplate(final PutIndexTemplateRequest request) {
+    return createTemplate(request, false);
+  }
+
+  public boolean createTemplate(final PutIndexTemplateRequest request, final boolean overwrite) {
     return executeWithRetries(
         "CreateTemplate " + request.name(),
         () -> {
-          if (!templatesExist(request.name())) {
+          if (overwrite || !templatesExist(request.name())) {
             return openSearchClient.indices().putIndexTemplate(request).acknowledged();
           }
           return true;
@@ -630,13 +633,13 @@ public class RetryOpenSearchClient {
         });
   }
 
-  public Response getLifecyclePolicy(final String policyName) {
+  public Optional<Response> getLifecyclePolicy(final String policyName) {
     final Request request = new Request("GET", "/_plugins/_ism/policies/" + policyName);
     try {
-      return opensearchRestClient.performRequest(request);
+      return Optional.ofNullable(opensearchRestClient.performRequest(request));
     } catch (final ResponseException e) {
       if (e.getResponse().getStatusLine().getStatusCode() == HttpStatus.NOT_FOUND.value()) {
-        return null;
+        return Optional.empty();
       } else {
         throw new TasklistRuntimeException("Communication error with OpenSearch", e);
       }
@@ -649,12 +652,15 @@ public class RetryOpenSearchClient {
   public Response putLifeCyclePolicy(final String indexName, final String policyName) {
     final Request request = new Request("PUT", indexName + "/_settings");
 
-    final JSONObject settings = new JSONObject();
-    final JSONObject indexSettings = new JSONObject();
-    indexSettings.put(
-        "plugins.index_state_management.policy_id",
-        Objects.requireNonNullElse(policyName, JSONObject.NULL));
-    settings.put("index", indexSettings);
+    final JsonObject settings =
+        Json.createObjectBuilder()
+            .add(
+                "index",
+                Json.createObjectBuilder()
+                    .add(
+                        "plugins.index_state_management.policy_id",
+                        policyName != null ? Json.createValue(policyName) : JsonValue.NULL))
+            .build();
 
     request.setJsonEntity(settings.toString());
 
@@ -696,5 +702,74 @@ public class RetryOpenSearchClient {
     final Request request = new Request("PUT", "/_index_template/" + templateName);
     request.setJsonEntity(updateJson);
     opensearchRestClient.performRequest(request);
+  }
+
+  public void putMapping(final PutMappingRequest request) {
+    executeWithRetries(
+        "PutMapping " + request.index(),
+        () -> {
+          openSearchClient.indices().putMapping(request);
+          return true;
+        });
+  }
+
+  public JsonObject getExplainIndexResponse(final String indexName) {
+    final Request request = new Request("GET", "/_plugins/_ism/explain/" + indexName);
+    try {
+      final Response response = opensearchRestClient.performRequest(request);
+
+      // Parse the response entity into a JsonObject
+      final InputStream responseStream = response.getEntity().getContent();
+      final JsonReader jsonReader = Json.createReader(responseStream);
+      final JsonObject responseObject = jsonReader.readObject();
+      jsonReader.close();
+
+      return responseObject.getJsonObject(
+          indexName); // Ensure this extracts the correct JSON object
+    } catch (final ResponseException e) {
+      if (e.getResponse().getStatusLine().getStatusCode() == HttpStatus.NOT_FOUND.value()) {
+        return null; // No ISM policy found for the index
+      } else {
+        throw new TasklistRuntimeException("Communication error with OpenSearch", e);
+      }
+    } catch (final IOException e) {
+      // Handle other I/O errors
+      throw new TasklistRuntimeException("Communication error with OpenSearch", e);
+    }
+  }
+
+  public void addISMPolicyToIndex(final String indexName, final String policyId) {
+    executeWithRetries(
+        "AddISMPolicyToIndex " + indexName,
+        () -> {
+          try {
+            final Request request = new Request("POST", "/_plugins/_ism/add/" + indexName);
+
+            // Create the JSON object to assign the policy
+            final String policyAssignment = String.format("{\"policy_id\": \"%s\"}", policyId);
+
+            request.setJsonEntity(policyAssignment.toString());
+
+            opensearchRestClient.performRequest(request);
+            return true;
+          } catch (final IOException e) {
+            throw new RuntimeException("Failed to apply ISM policy to index: " + indexName, e);
+          }
+        });
+  }
+
+  public void removeISMPolicyFromIndex(final String indexName) {
+    executeWithRetries(
+        "RemoveISMPolicyToIndex " + indexName,
+        () -> {
+          try {
+            final Request request = new Request("POST", "/_plugins/_ism/remove/" + indexName);
+
+            opensearchRestClient.performRequest(request);
+            return true;
+          } catch (final IOException e) {
+            throw new RuntimeException("Failed to apply ISM policy to index: " + indexName, e);
+          }
+        });
   }
 }

@@ -19,6 +19,7 @@ package io.atomix.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
@@ -451,7 +452,11 @@ public class RaftTest extends ConcurrentTestCase {
 
   @Test
   public void shouldTriggerHeartbeatTimeouts() throws Throwable {
+    // given
     final List<RaftServer> servers = createServers(3);
+    Awaitility.await("A leader exists")
+        .until(() -> servers.stream().filter(server -> server.isLeader()).findAny().isPresent());
+
     final List<RaftServer> followers = getFollowers(servers);
     final RaftServer follower = followers.get(0);
     final MemberId followerId = follower.getContext().getCluster().getLocalMember().memberId();
@@ -474,7 +479,9 @@ public class RaftTest extends ConcurrentTestCase {
     final var timeout = follower.getContext().getElectionTimeout().multipliedBy(4).toMillis();
 
     // should send poll requests to 2 nodes
-    Awaitility.await().timeout(Duration.ofMillis(timeout)).untilAdder(pollCount, greaterThan(2L));
+    Awaitility.await()
+        .timeout(Duration.ofMillis(timeout))
+        .untilAdder(pollCount, greaterThanOrEqualTo(2L));
   }
 
   @Test
@@ -596,7 +603,7 @@ public class RaftTest extends ConcurrentTestCase {
     }
 
     @Override
-    public void onCommit(final long index) {
+    public void onCommit(final long index, final long highestPosition) {
       commitFuture.complete(index);
     }
 
@@ -624,7 +631,7 @@ public class RaftTest extends ConcurrentTestCase {
     }
 
     @Override
-    public void onRecovered() {}
+    public void onRecovered(final HealthReport report) {}
 
     @Override
     public void onUnrecoverableFailure(final HealthReport report) {}

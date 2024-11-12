@@ -2,13 +2,10 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.migration;
-
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 
 /**
  * Interface for migration tasks.
@@ -25,7 +22,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
  *   <li>All methods should be implemented with the context in mind, that they will be called
  *       synchronously during recovery.
  *   <li>Migrations that are expected to potentially take a long time, should only be implemented
- *       after https://github.com/camunda/zeebe/issues/7248 has been solved
+ *       after https://github.com/camunda/camunda/issues/7248 has been solved
  *   <li>None of the methods must commit or roll back the transaction. The transaction is handled
  *       outside
  *   <li>Methods may throw exceptions to indicate a critical error during migration
@@ -51,18 +48,9 @@ public interface MigrationTask {
    */
   String getIdentifier();
 
-  /**
-   * Returns whether the migration needs to run.
-   *
-   * @param processingState the immutable Zeebe state
-   * @return whether the migration needs to run
-   */
-  boolean needsToRun(final ProcessingState processingState);
+  /** Returns whether the migration needs to run. */
+  boolean needsToRun(final MigrationTaskContext context);
 
-  /**
-   * Implementations of this method perform the actual migration
-   *
-   * @param processingState the mutable Zeebe state
-   */
-  void runMigration(final MutableProcessingState processingState);
+  /** Implementations of this method perform the actual migration */
+  void runMigration(final MutableMigrationTaskContext context);
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.shared.management;
 
@@ -72,7 +72,7 @@ public class ActorClockEndpoint {
    * To add a relative time offset:
    *
    * <pre>{@code
-   * curl -X POST -H 'Content-Type: application/json' -d '{"offsetMilli": 250}' "http://0.0.0.0:9600/actuator/clock/pin"
+   * curl -X POST -H 'Content-Type: application/json' -d '{"offsetMilli": 250}' "http://0.0.0.0:9600/actuator/clock/add"
    * "2021-10-31T09:36:04.783Z"%
    * }</pre>
    *

@@ -2,11 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -18,9 +19,10 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.time.InstantSource;
 
+@ExcludeAuthorizationCheck
 public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
 
   private static final String NOT_FAILED_JOB_MESSAGE =
@@ -29,15 +31,18 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
+  private final InstantSource clock;
 
   public JobRecurProcessor(
       final ProcessingState processingState,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final InstantSource clock) {
     jobState = processingState.getJobState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.jobActivationBehavior = jobActivationBehavior;
+    this.clock = clock;
   }
 
   @Override
@@ -76,6 +81,6 @@ public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
   }
 
   private boolean hasRecurred(final JobRecord job) {
-    return job.getRecurringTime() < ActorClock.currentTimeMillis();
+    return job.getRecurringTime() < clock.millis();
   }
 }

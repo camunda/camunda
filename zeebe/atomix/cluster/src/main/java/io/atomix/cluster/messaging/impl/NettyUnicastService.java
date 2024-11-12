@@ -39,6 +39,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.resolver.dns.BiDnsQueryLifecycleObserverFactory;
 import io.netty.resolver.dns.DnsAddressResolverGroup;
 import io.netty.resolver.dns.DnsNameResolverBuilder;
@@ -83,8 +84,18 @@ public class NettyUnicastService implements ManagedUnicastService {
 
   private DnsAddressResolverGroup dnsAddressResolverGroup;
 
+  private final String actorSchedulerName;
+
   public NettyUnicastService(
       final String clusterId, final Address advertisedAddress, final MessagingConfig config) {
+    this(clusterId, advertisedAddress, config, "");
+  }
+
+  public NettyUnicastService(
+      final String clusterId,
+      final Address advertisedAddress,
+      final MessagingConfig config,
+      final String actorSchedulerName) {
     this.advertisedAddress = advertisedAddress;
     this.config = config;
     preamble = clusterId.hashCode();
@@ -92,7 +103,8 @@ public class NettyUnicastService implements ManagedUnicastService {
     // as we use SO_BROADCAST, it's only possible to bind to wildcard without root privilege, so we
     // don't support binding to multiple interfaces here; wouldn't make sense anyway
     final var port = config.getPort() != null ? config.getPort() : advertisedAddress.port();
-    bindAddress = Address.from("0.0.0.0", port);
+    bindAddress = new Address(new InetSocketAddress(port));
+    this.actorSchedulerName = actorSchedulerName != null ? actorSchedulerName : "";
   }
 
   @Override
@@ -207,7 +219,9 @@ public class NettyUnicastService implements ManagedUnicastService {
 
   @Override
   public CompletableFuture<UnicastService> start() {
-    group = new NioEventLoopGroup(0, namedThreads("netty-unicast-event-nio-client-%d", log));
+    group =
+        new NioEventLoopGroup(
+            0, namedThreads("netty-unicast-event-nio-client-%d", log, actorSchedulerName));
     return bootstrap()
         .thenRun(
             () -> {
@@ -216,10 +230,12 @@ public class NettyUnicastService implements ManagedUnicastService {
               dnsAddressResolverGroup =
                   new DnsAddressResolverGroup(
                       new DnsNameResolverBuilder(group.next())
+                          .consolidateCacheSize(128)
                           .dnsQueryLifecycleObserverFactory(
                               new BiDnsQueryLifecycleObserverFactory(
                                   ignored -> metrics,
                                   new LoggingDnsQueryLifeCycleObserverFactory()))
+                          .socketChannelType(NioSocketChannel.class)
                           .channelType(NioDatagramChannel.class));
             })
         .thenApply(

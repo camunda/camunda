@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.incident;
 
@@ -225,7 +225,7 @@ public final class MultiInstanceIncidentTest {
     // note, that this failed in a bug where the task was completed at the same time the incident
     // was created. If the problem was resolved and the other tasks completed, the multi instance
     // would still complete normally, but would not have collected the output of the first task.
-    // for more information see: https://github.com/camunda/zeebe/issues/6546
+    // for more information see: https://github.com/camunda/camunda/issues/6546
     assertThat(
             RecordingExporter.variableRecords()
                 .withProcessInstanceKey(processInstanceKey)
@@ -326,7 +326,7 @@ public final class MultiInstanceIncidentTest {
   }
 
   @Test
-  public void shouldResolveIncidentDueToInputCollection() {
+  public void shouldResolveIncidentDueToInputCollectionForSequentialMultiInstance() {
     // given
     ENGINE
         .deployment()
@@ -340,6 +340,73 @@ public final class MultiInstanceIncidentTest {
                             .multiInstance(
                                 b ->
                                     b.sequential()
+                                        .zeebeInputCollectionExpression(INPUT_COLLECTION)
+                                        .zeebeInputElement(INPUT_ELEMENT)))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("multi-task")
+            .withVariable(INPUT_COLLECTION, List.of(1, 2, 3))
+            .create();
+
+    final var activatedTask =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(ELEMENT_ID)
+            .getFirst();
+
+    ENGINE
+        .variables()
+        .ofScope(activatedTask.getKey())
+        .withDocument(Collections.singletonMap(INPUT_COLLECTION, "not a list"))
+        .update();
+
+    completeNthJob(processInstanceKey, 1);
+
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    // when
+    ENGINE
+        .variables()
+        .ofScope(activatedTask.getKey())
+        .withDocument(Collections.singletonMap(INPUT_COLLECTION, List.of(1, 2, 3)))
+        .update();
+
+    ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
+
+    // then
+    completeNthJob(processInstanceKey, 2);
+    completeNthJob(processInstanceKey, 3);
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.PROCESS)
+        .limitToProcessInstanceCompleted()
+        .await();
+  }
+
+  @Test
+  public void shouldResolveIncidentDueToInputCollectionForParallelMultiInstance() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("multi-task")
+                .startEvent()
+                .serviceTask(
+                    ELEMENT_ID,
+                    t ->
+                        t.zeebeJobType(jobType)
+                            .multiInstance(
+                                b ->
+                                    b.parallel()
                                         .zeebeInputCollectionExpression(INPUT_COLLECTION)
                                         .zeebeInputElement(INPUT_ELEMENT)))
                 .endEvent()

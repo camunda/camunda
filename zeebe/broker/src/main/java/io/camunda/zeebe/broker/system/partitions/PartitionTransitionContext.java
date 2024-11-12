@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions;
 
@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.transport.backupapi.BackupApiRequestHandler;
+import io.camunda.zeebe.broker.transport.commandapi.CommandApiService;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -30,13 +31,11 @@ import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
-import io.camunda.zeebe.stream.api.CommandResponseWriter;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.List;
-import java.util.function.Consumer;
 
 public interface PartitionTransitionContext extends PartitionContext {
 
@@ -70,9 +69,7 @@ public interface PartitionTransitionContext extends PartitionContext {
 
   void setZeebeDb(ZeebeDb zeebeDb);
 
-  CommandResponseWriter getCommandResponseWriter();
-
-  Consumer<TypedRecord<?>> getOnProcessedListener();
+  CommandApiService getCommandApiService();
 
   TypedRecordProcessorFactory getTypedRecordProcessorFactory();
 
@@ -93,8 +90,6 @@ public interface PartitionTransitionContext extends PartitionContext {
   InterPartitionCommandSenderService getPartitionCommandSender();
 
   void setPartitionCommandSender(InterPartitionCommandSenderService sender);
-
-  boolean shouldExport();
 
   ExporterPhase getExporterPhase();
 
@@ -131,4 +126,10 @@ public interface PartitionTransitionContext extends PartitionContext {
   BackupStore getBackupStore();
 
   void setBackupStore(BackupStore backupStore);
+
+  MeterRegistry getBrokerMeterRegistry();
+
+  MeterRegistry getPartitionMeterRegistry();
+
+  void setPartitionMeterRegistry(MeterRegistry partitionMeterRegistry);
 }

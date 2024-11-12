@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment;
 
@@ -35,6 +35,12 @@ public final class DmnDeploymentTest {
 
   private static final String DMN_DECISION_TABLE = "/dmn/decision-table.dmn";
   private static final String DMN_DECISION_TABLE_V2 = "/dmn/decision-table_v2.dmn";
+  private static final String DMN_DECISION_TABLE_WITH_VERSION_TAG_V1 =
+      "/dmn/decision-table-with-version-tag-v1.dmn";
+  private static final String DMN_DECISION_TABLE_WITH_VERSION_TAG_V1_NEW =
+      "/dmn/decision-table-with-version-tag-v1-new.dmn";
+  private static final String DMN_DECISION_TABLE_WITH_VERSION_TAG_V2 =
+      "/dmn/decision-table-with-version-tag-v2.dmn";
   private static final String DMN_DECISION_TABLE_RENAMED_DRG =
       "/dmn/decision-table-with-renamed-drg.dmn";
   private static final String DMN_DECISION_TABLE_RENAMED_DRG_AND_DECISION =
@@ -70,7 +76,7 @@ public final class DmnDeploymentTest {
         .hasValueType(ValueType.DEPLOYMENT)
         .hasRecordType(RecordType.EVENT);
 
-    verifyDeploymentForTenant(deploymentEvent, tenant);
+    verifyDeploymentForTenant(deploymentEvent, tenant, DMN_DECISION_TABLE, "");
   }
 
   @Test
@@ -97,8 +103,29 @@ public final class DmnDeploymentTest {
         .hasValueType(ValueType.DEPLOYMENT)
         .hasRecordType(RecordType.EVENT);
 
-    verifyDeploymentForTenant(deploymentEvent, tenant);
-    verifyDeploymentForTenant(deploymentEvent2, tenant2);
+    verifyDeploymentForTenant(deploymentEvent, tenant, DMN_DECISION_TABLE, "");
+    verifyDeploymentForTenant(deploymentEvent2, tenant2, DMN_DECISION_TABLE, "");
+  }
+
+  @Test
+  public void shouldDeployDmnResourceWithVersionTag() {
+    // when
+    final var tenant = "tenant";
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V1)
+            .withTenantId(tenant)
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATED)
+        .hasValueType(ValueType.DEPLOYMENT)
+        .hasRecordType(RecordType.EVENT);
+
+    verifyDeploymentForTenant(
+        deploymentEvent, tenant, DMN_DECISION_TABLE_WITH_VERSION_TAG_V1, "v1.0");
   }
 
   @Test
@@ -175,9 +202,10 @@ public final class DmnDeploymentTest {
   }
 
   @Test
-  public void shouldWriteDecisionRecord() {
+  public void shouldWriteDecisionRecordWithoutVersionTag() {
     // when
-    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deployment =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
     // then
     final var record = RecordingExporter.decisionRecords().getFirst();
@@ -188,22 +216,37 @@ public final class DmnDeploymentTest {
         .hasRecordType(RecordType.EVENT);
 
     assertThat(record.getKey()).isPositive();
+    assertThat(record.getRecordVersion()).isEqualTo(2);
 
     final var decisionRecord = record.getValue();
     Assertions.assertThat(decisionRecord)
         .hasDecisionId("jedi_or_sith")
         .hasDecisionName("Jedi or Sith")
         .hasDecisionRequirementsId("force_users")
-        .hasVersion(1);
+        .hasVersion(1)
+        .hasVersionTag("")
+        .hasDeploymentKey(deployment.getKey());
 
     assertThat(decisionRecord.getDecisionKey()).isPositive();
     assertThat(decisionRecord.getDecisionRequirementsKey()).isPositive();
   }
 
   @Test
+  public void shouldWriteDecisionRecordWithVersionTag() {
+    // when
+    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V1).deploy();
+
+    // then
+    final var record = RecordingExporter.decisionRecords().getFirst();
+    final var decisionRecord = record.getValue();
+    Assertions.assertThat(decisionRecord).hasVersionTag("v1.0");
+  }
+
+  @Test
   public void shouldWriteOneRecordForEachDecision() {
     // when
-    engine.deployment().withXmlClasspathResource(DMN_WITH_TWO_DECISIONS).deploy();
+    final var deployment =
+        engine.deployment().withXmlClasspathResource(DMN_WITH_TWO_DECISIONS).deploy();
 
     // then
     final var decisionRequirementsRecord =
@@ -219,38 +262,54 @@ public final class DmnDeploymentTest {
     assertThat(decisionRecords)
         .hasSize(2)
         .extracting(Record::getValue)
-        .extracting(DecisionRecordValue::getDecisionId, DecisionRecordValue::getDecisionName)
-        .contains(tuple("jedi_or_sith", "Jedi or Sith"), tuple("force_user", "Which force user?"));
+        .extracting(
+            DecisionRecordValue::getDecisionId,
+            DecisionRecordValue::getDecisionName,
+            DecisionRecordValue::getVersionTag)
+        .contains(
+            tuple("jedi_or_sith", "Jedi or Sith", "v1.0"),
+            tuple("force_user", "Which force user?", "v2.0"));
 
     assertThat(decisionRecords)
         .extracting(Record::getValue)
         .allSatisfy(
-            record -> {
-              assertThat(record.getDecisionRequirementsId()).isEqualTo(decisionRequirementsId);
-              assertThat(record.getDecisionRequirementsKey()).isEqualTo(decisionRequirementsKey);
-            });
+            record ->
+                Assertions.assertThat(record)
+                    .hasDecisionRequirementsId(decisionRequirementsId)
+                    .hasDecisionRequirementsKey(decisionRequirementsKey)
+                    .hasDeploymentKey(deployment.getKey()));
 
     assertThat(decisionRecords.get(0).getKey())
         .describedAs("Expect that the decision records have different keys")
         .isNotEqualTo(decisionRecords.get(1).getKey());
+
+    assertThat(decisionRecords)
+        .allSatisfy(record -> assertThat(record.getRecordVersion()).isEqualTo(2));
   }
 
   @Test
   public void shouldDeployNewVersion() {
     // given
-    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deployment1 =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V1)
+            .deploy();
 
     // when
-    final var deploymentEvent =
-        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+    final var deployment2 =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V2)
+            .deploy();
 
     // then
-    assertThat(deploymentEvent.getValue().getDecisionRequirementsMetadata())
+    assertThat(deployment2.getValue().getDecisionRequirementsMetadata())
         .extracting(DecisionRequirementsMetadataValue::getDecisionRequirementsVersion)
         .describedAs("Expect that the DRG version is increased")
         .containsExactly(2);
 
-    assertThat(deploymentEvent.getValue().getDecisionsMetadata())
+    assertThat(deployment2.getValue().getDecisionsMetadata())
         .extracting(DecisionRecordValue::getVersion)
         .describedAs("Expect that the decision version is increased")
         .containsExactly(2);
@@ -266,8 +325,48 @@ public final class DmnDeploymentTest {
     assertThat(RecordingExporter.decisionRecords().limit(2))
         .hasSize(2)
         .extracting(Record::getValue)
-        .extracting(DecisionRecordValue::getDecisionId, DecisionRecordValue::getVersion)
-        .contains(tuple("jedi_or_sith", 1), tuple("jedi_or_sith", 2));
+        .extracting(
+            DecisionRecordValue::getDecisionId,
+            DecisionRecordValue::getVersion,
+            DecisionRecordValue::getVersionTag,
+            DecisionRecordValue::getDeploymentKey)
+        .contains(
+            tuple("jedi_or_sith", 1, "v1.0", deployment1.getKey()),
+            tuple("jedi_or_sith", 2, "v2.0", deployment2.getKey()));
+  }
+
+  @Test
+  public void shouldDeployNewVersionWithExistingVersionTag() {
+    // given
+    final var deployment1 =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V1)
+            .deploy();
+
+    // when
+    final var deployment2 =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DMN_DECISION_TABLE_WITH_VERSION_TAG_V1_NEW)
+            .deploy();
+
+    // then
+    assertThat(deployment2.getValue().getDecisionsMetadata())
+        .extracting(DecisionRecordValue::getVersion, DecisionRecordValue::getVersionTag)
+        .describedAs("Expect that the decision version is increased for the same version tag")
+        .containsExactly(tuple(2, "v1.0"));
+
+    assertThat(RecordingExporter.decisionRecords().limit(2))
+        .extracting(Record::getValue)
+        .extracting(
+            DecisionRecordValue::getDecisionId,
+            DecisionRecordValue::getVersion,
+            DecisionRecordValue::getVersionTag,
+            DecisionRecordValue::getDeploymentKey)
+        .containsExactly(
+            tuple("jedi_or_sith", 1, "v1.0", deployment1.getKey()),
+            tuple("jedi_or_sith", 2, "v1.0", deployment2.getKey()));
   }
 
   @Test
@@ -305,12 +404,14 @@ public final class DmnDeploymentTest {
   @Test
   public void shouldOmitRecordsForDuplicate() {
     // given
-    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
+    final var deployment1 =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
     // when
     engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE).deploy();
 
-    engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
+    final var deployment3 =
+        engine.deployment().withXmlClasspathResource(DMN_DECISION_TABLE_V2).deploy();
 
     // then
     assertThat(RecordingExporter.decisionRequirementsRecords().limit(2))
@@ -321,9 +422,9 @@ public final class DmnDeploymentTest {
 
     assertThat(RecordingExporter.decisionRecords().limit(2))
         .extracting(Record::getValue)
-        .extracting(DecisionRecordValue::getVersion)
+        .extracting(DecisionRecordValue::getVersion, DecisionRecordValue::getDeploymentKey)
         .describedAs("Expect to omit decision record for duplicate")
-        .containsExactly(1, 2);
+        .containsExactly(tuple(1, deployment1.getKey()), tuple(2, deployment3.getKey()));
   }
 
   @Test
@@ -533,7 +634,10 @@ public final class DmnDeploymentTest {
   }
 
   private void verifyDeploymentForTenant(
-      final Record<DeploymentRecordValue> deploymentEvent, final String tenant) {
+      final Record<DeploymentRecordValue> deploymentEvent,
+      final String tenant,
+      final String resourceName,
+      final String versionTag) {
     assertThat(deploymentEvent.getValue().getDecisionRequirementsMetadata()).hasSize(1);
     final var drgMetadata = deploymentEvent.getValue().getDecisionRequirementsMetadata().get(0);
     Assertions.assertThat(drgMetadata)
@@ -541,13 +645,13 @@ public final class DmnDeploymentTest {
         .hasDecisionRequirementsName("Force Users")
         .hasDecisionRequirementsVersion(1)
         .hasNamespace("http://camunda.org/schema/1.0/dmn")
-        .hasResourceName(DMN_DECISION_TABLE)
+        .hasResourceName(resourceName)
         .hasTenantId(tenant)
         .isNotDuplicate();
     assertThat(drgMetadata.getDecisionRequirementsKey()).isPositive();
     assertThat(drgMetadata.getChecksum())
         .describedAs("Expect the MD5 checksum of the DMN resource")
-        .isEqualTo(getChecksum(DMN_DECISION_TABLE));
+        .isEqualTo(getChecksum(resourceName));
 
     assertThat(deploymentEvent.getValue().getDecisionsMetadata()).hasSize(1);
 
@@ -557,6 +661,7 @@ public final class DmnDeploymentTest {
         .hasDecisionName("Jedi or Sith")
         .hasDecisionRequirementsId("force_users")
         .hasVersion(1)
+        .hasVersionTag(versionTag)
         .hasDecisionRequirementsId("force_users")
         .hasDecisionRequirementsKey(drgMetadata.getDecisionRequirementsKey())
         .hasTenantId(tenant)

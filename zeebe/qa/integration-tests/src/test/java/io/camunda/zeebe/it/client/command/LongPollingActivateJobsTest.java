@@ -2,161 +2,153 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
-import io.netty.util.NetUtil;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.time.Duration;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+@ZeebeIntegration
+@AutoCloseResources
 public class LongPollingActivateJobsTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE =
-      new EmbeddedBrokerRule(LongPollingActivateJobsTest::enableLongPolling);
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @AutoCloseResource ZeebeClient client;
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  final TestStandaloneBroker zeebe =
+      new TestStandaloneBroker()
+          .withRecordingExporter(true)
+          .withGatewayConfig(c -> c.getLongPolling().setEnabled(true));
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
+  ZeebeResourcesHelper resourcesHelper;
 
-  private String jobType;
-
-  private static void enableLongPolling(final BrokerCfg config) {
-    config.getGateway().getLongPolling().setEnabled(true);
+  @BeforeEach
+  void initClientAndInstances() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
-  @Before
-  public void init() {
-    jobType = helper.getJobType();
-  }
-
-  @Test
-  public void shouldActivateJobsRespectingAmountLimit() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldActivateJobsRespectingAmountLimit(
+      final boolean useRest, final TestInfo testInfo) {
     // given
     final int availableJobs = 3;
     final int activateJobs = 2;
 
-    CLIENT_RULE.createJobs(jobType, availableJobs);
+    final String jobType = "job-" + testInfo.getDisplayName();
+    resourcesHelper.createJobs(jobType, availableJobs);
 
     // when
     final ActivateJobsResponse response =
-        CLIENT_RULE
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(activateJobs)
-            .send()
-            .join();
+        getCommand(client, useRest).jobType(jobType).maxJobsToActivate(activateJobs).send().join();
 
     // then
     assertThat(response.getJobs()).hasSize(activateJobs);
   }
 
-  @Test
-  public void shouldActivateJobsIfBatchIsTruncated() {
+  // TODO: the REST use case is currently not working, see
+  // https://github.com/camunda/camunda/issues/19883
+  @ParameterizedTest
+  @ValueSource(booleans = {false})
+  public void shouldActivateJobsIfBatchIsTruncated(final boolean useRest, final TestInfo testInfo) {
     // given
     final int availableJobs = 10;
 
-    final int maxMessageSize =
-        (int) BROKER_RULE.getBrokerCfg().getNetwork().getMaxMessageSizeInBytes();
+    final int maxMessageSize = (int) zeebe.brokerConfig().getNetwork().getMaxMessageSizeInBytes();
     final var largeVariableValue = "x".repeat(maxMessageSize / 4);
     final String variablesJson = String.format("{\"variablesJson\":\"%s\"}", largeVariableValue);
 
-    CLIENT_RULE.createJobs(jobType, b -> {}, variablesJson, availableJobs);
+    final String jobType = "job-" + testInfo.getDisplayName();
+    resourcesHelper.createJobs(jobType, b -> {}, variablesJson, availableJobs);
 
     // when
     final var response =
-        CLIENT_RULE
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(availableJobs)
-            .send()
-            .join();
+        getCommand(client, useRest).jobType(jobType).maxJobsToActivate(availableJobs).send().join();
 
     // then
     assertThat(response.getJobs()).hasSize(availableJobs);
   }
 
-  @Test
-  public void shouldWaitUntilJobsAvailable() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldWaitUntilJobsAvailable(final boolean useRest, final TestInfo testInfo) {
     // given
     final int expectedJobsCount = 1;
 
+    final String jobType = "job-" + testInfo.getDisplayName();
+
     final ZeebeFuture<ActivateJobsResponse> responseFuture =
-        CLIENT_RULE
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(expectedJobsCount)
-            .send();
+        getCommand(client, useRest).jobType(jobType).maxJobsToActivate(expectedJobsCount).send();
 
     // when
-    CLIENT_RULE.createSingleJob(jobType);
+    resourcesHelper.createSingleJob(jobType);
 
     // then
     final ActivateJobsResponse response = responseFuture.join();
     assertThat(response.getJobs()).hasSize(expectedJobsCount);
   }
 
-  @Test
-  public void shouldActivatedJobForOpenRequest() throws InterruptedException {
+  // TODO: the REST use case is currently not working, see
+  // https://github.com/camunda/camunda/issues/19883
+  @ParameterizedTest
+  @ValueSource(booleans = {false})
+  public void shouldActivateJobForOpenRequest(final boolean useRest, final TestInfo testInfo)
+      throws InterruptedException {
     // given
-    sendActivateRequestsAndClose(jobType, 3);
+    final String jobType = "job-" + testInfo.getDisplayName();
+
+    sendActivateRequestsAndClose(useRest, jobType);
 
     final var activateJobsResponse =
-        CLIENT_RULE
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(5)
-            .workerName("open")
-            .send();
+        getCommand(client, useRest).jobType(jobType).maxJobsToActivate(5).workerName("open").send();
 
-    sendActivateRequestsAndClose(jobType, 3);
+    sendActivateRequestsAndClose(useRest, jobType);
 
     // when
-    CLIENT_RULE.createSingleJob(jobType);
+    resourcesHelper.createSingleJob(jobType);
 
     // then
     final var jobs = activateJobsResponse.join().getJobs();
     assertThat(jobs).hasSize(1).extracting(ActivatedJob::getWorker).contains("open");
   }
 
-  private void sendActivateRequestsAndClose(final String jobType, final int count)
-      throws InterruptedException {
-    for (int i = 0; i < count; i++) {
-      final ZeebeClient client =
-          ZeebeClient.newClientBuilder()
-              .gatewayAddress(NetUtil.toSocketAddressString(BROKER_RULE.getGatewayAddress()))
-              .usePlaintext()
-              .build();
+  private ActivateJobsCommandStep1 getCommand(final ZeebeClient client, final boolean useRest) {
+    final ActivateJobsCommandStep1 activateJobsCommandStep1 = client.newActivateJobsCommand();
+    return useRest ? activateJobsCommandStep1.useRest() : activateJobsCommandStep1.useGrpc();
+  }
 
-      client
-          .newActivateJobsCommand()
+  private void sendActivateRequestsAndClose(final boolean useRest, final String jobType)
+      throws InterruptedException {
+    for (int i = 0; i < 3; i++) {
+      final ZeebeClient tempClient = zeebe.newClientBuilder().usePlaintext().build();
+
+      getCommand(tempClient, useRest)
           .jobType(jobType)
           .maxJobsToActivate(5)
           .workerName("closed-" + i)
           .send();
 
       Thread.sleep(100);
-      client.close();
+      tempClient.close();
     }
   }
 }

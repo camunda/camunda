@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
@@ -11,6 +11,7 @@ import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.logstreams.storage.LogStorageReader;
 import java.util.NoSuchElementException;
+import net.jcip.annotations.NotThreadSafe;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -21,25 +22,20 @@ import org.agrona.concurrent.UnsafeBuffer;
  * <p>This implementation assumes that blocks have no padding - they contain a contiguous series of
  * {@link LoggedEvent} which fits exactly within the block.
  */
+@NotThreadSafe
 final class LogStreamReaderImpl implements LogStreamReader {
   private final LogStorageReader reader;
 
-  private final LoggedEventImpl currentEvent;
-  private final DirectBuffer currentEventBuffer;
+  private LoggedEventImpl currentEvent;
+  private DirectBuffer currentEventBuffer;
 
-  private final LoggedEventImpl nextEvent;
-  private final DirectBuffer nextEventBuffer;
+  private LoggedEventImpl nextEvent;
+  private DirectBuffer nextEventBuffer;
 
   private int nextEventOffset;
 
   LogStreamReaderImpl(final LogStorageReader reader) {
     this.reader = reader;
-
-    currentEvent = new LoggedEventImpl();
-    currentEventBuffer = new UnsafeBuffer();
-
-    nextEvent = new LoggedEventImpl();
-    nextEventBuffer = new UnsafeBuffer();
 
     reset();
     seekToFirstEvent();
@@ -147,6 +143,14 @@ final class LogStreamReaderImpl implements LogStreamReader {
   }
 
   @Override
+  public LoggedEvent peekNext() {
+    if (!hasNext()) {
+      throw new NoSuchElementException();
+    }
+    return nextEvent;
+  }
+
+  @Override
   public void close() {
     reset();
     reader.close();
@@ -168,19 +172,14 @@ final class LogStreamReaderImpl implements LogStreamReader {
     return -1;
   }
 
-  @Override
-  public LoggedEvent peekNext() {
-    if (!hasNext()) {
-      throw new NoSuchElementException();
-    }
-    return nextEvent;
-  }
-
   private void reset() {
-    currentEventBuffer.wrap(0, 0);
-    currentEvent.wrap(currentEventBuffer, 0);
+    currentEvent = new LoggedEventImpl();
+    currentEventBuffer = new UnsafeBuffer();
 
-    nextEventBuffer.wrap(0, 0);
+    nextEvent = new LoggedEventImpl();
+    nextEventBuffer = new UnsafeBuffer();
+
+    currentEvent.wrap(currentEventBuffer, 0);
     nextEvent.wrap(nextEventBuffer, 0);
     nextEventOffset = 0;
   }
@@ -203,6 +202,6 @@ final class LogStreamReaderImpl implements LogStreamReader {
   }
 
   private boolean isEventBufferValid(final DirectBuffer eventBuffer) {
-    return eventBuffer.addressOffset() != 0;
+    return eventBuffer.capacity() > 0;
   }
 }

@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.util;
 
@@ -50,7 +41,7 @@ public abstract class ZeebeTestUtil {
    * @param classpathResources classpath resources
    * @return process id
    */
-  public static String deployProcess(ZeebeClient client, String... classpathResources) {
+  public static String deployProcess(final ZeebeClient client, final String... classpathResources) {
     return deployProcess(DEFAULT_TENANT_IDENTIFIER, client, classpathResources);
   }
 
@@ -63,12 +54,12 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static String deployProcess(
-      String tenantId, ZeebeClient client, String... classpathResources) {
+      final String tenantId, final ZeebeClient client, final String... classpathResources) {
     if (classpathResources.length == 0) {
       return null;
     }
     DeployResourceCommandStep1 deployProcessCommandStep1 = client.newDeployResourceCommand();
-    for (String classpathResource : classpathResources) {
+    for (final String classpathResource : classpathResources) {
       deployProcessCommandStep1 =
           deployProcessCommandStep1.addResourceFromClasspath(classpathResource).tenantId(tenantId);
     }
@@ -93,12 +84,15 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static String deployProcess(
-      ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
+      final ZeebeClient client, final BpmnModelInstance processModel, final String resourceName) {
     return deployProcess(DEFAULT_TENANT_IDENTIFIER, client, processModel, resourceName);
   }
 
   public static String deployProcess(
-      ZeebeClient client, BpmnModelInstance processModel, String resourceName, String tenantId) {
+      final ZeebeClient client,
+      final BpmnModelInstance processModel,
+      final String resourceName,
+      final String tenantId) {
     return deployProcess(tenantId, client, processModel, resourceName);
   }
 
@@ -112,7 +106,10 @@ public abstract class ZeebeTestUtil {
    * @return process id
    */
   public static String deployProcess(
-      String tenantId, ZeebeClient client, BpmnModelInstance processModel, String resourceName) {
+      final String tenantId,
+      final ZeebeClient client,
+      final BpmnModelInstance processModel,
+      final String resourceName) {
     final DeployResourceCommandStep1.DeployResourceCommandStep2 deployProcessCommandStep1 =
         client
             .newDeployResourceCommand()
@@ -123,7 +120,7 @@ public abstract class ZeebeTestUtil {
     return String.valueOf(deploymentEvent.getProcesses().get(0).getProcessDefinitionKey());
   }
 
-  public static void deleteResource(ZeebeClient client, long resourceKey) {
+  public static void deleteResource(final ZeebeClient client, final long resourceKey) {
     client.newDeleteResourceCommand(resourceKey).send().join();
     LOGGER.debug("Deletion of resource [{}] was performed", resourceKey);
   }
@@ -135,7 +132,7 @@ public abstract class ZeebeTestUtil {
    * @return process instance id
    */
   public static String startProcessInstance(
-      ZeebeClient client, String bpmnProcessId, String payload) {
+      final ZeebeClient client, final String bpmnProcessId, final String payload) {
     return startProcessInstance(DEFAULT_TENANT_IDENTIFIER, client, bpmnProcessId, payload);
   }
 
@@ -147,7 +144,10 @@ public abstract class ZeebeTestUtil {
    * @return process instance id
    */
   public static String startProcessInstance(
-      String tenantId, ZeebeClient client, String bpmnProcessId, String payload) {
+      final String tenantId,
+      final ZeebeClient client,
+      final String bpmnProcessId,
+      final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
             client
@@ -162,7 +162,7 @@ public abstract class ZeebeTestUtil {
     try {
       processInstanceEvent = createProcessInstanceCommandStep3.send().join();
       LOGGER.debug("Process instance created for process [{}]", bpmnProcessId);
-    } catch (ClientException ex) {
+    } catch (final ClientException ex) {
       // retry once
       sleepFor(300L);
       processInstanceEvent = createProcessInstanceCommandStep3.send().join();
@@ -171,17 +171,25 @@ public abstract class ZeebeTestUtil {
     return String.valueOf(processInstanceEvent.getProcessInstanceKey());
   }
 
-  public static void cancelProcessInstance(ZeebeClient client, long processInstanceKey) {
+  public static void cancelProcessInstance(
+      final ZeebeClient client, final long processInstanceKey) {
     client.newCancelInstanceCommand(processInstanceKey).send().join();
   }
 
   public static void completeTask(
-      ZeebeClient client, String jobType, String workerName, String payload) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final String payload) {
     completeTask(client, jobType, workerName, payload, 1);
   }
 
   public static void completeTask(
-      ZeebeClient client, String jobType, String workerName, String payload, int count) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final String payload,
+      final int count) {
     handleTasks(
         client,
         jobType,
@@ -197,11 +205,11 @@ public abstract class ZeebeTestUtil {
   }
 
   public static Long failTask(
-      ZeebeClient client,
-      String jobType,
-      String workerName,
-      int numberOfFailures,
-      String errorMessage) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final int numberOfFailures,
+      final String errorMessage) {
     return handleTasks(
             client,
             jobType,
@@ -219,12 +227,12 @@ public abstract class ZeebeTestUtil {
   }
 
   public static Long failTaskWithRetries(
-      ZeebeClient client,
-      String jobType,
-      String workerName,
-      int numberOfJobs,
-      int numberOfRetries,
-      String errorMessage) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final int numberOfJobs,
+      final int numberOfRetries,
+      final String errorMessage) {
     return handleTasks(
             client,
             jobType,
@@ -242,12 +250,12 @@ public abstract class ZeebeTestUtil {
   }
 
   public static Long throwErrorInTask(
-      ZeebeClient client,
-      String jobType,
-      String workerName,
-      int numberOfFailures,
-      String errorCode,
-      String errorMessage) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final int numberOfFailures,
+      final String errorCode,
+      final String errorMessage) {
     return handleTasks(
             client,
             jobType,
@@ -265,11 +273,11 @@ public abstract class ZeebeTestUtil {
   }
 
   private static List<Long> handleTasks(
-      ZeebeClient client,
-      String jobType,
-      String workerName,
-      int jobCount,
-      BiConsumer<JobClient, ActivatedJob> jobHandler) {
+      final ZeebeClient client,
+      final String jobType,
+      final String workerName,
+      final int jobCount,
+      final BiConsumer<JobClient, ActivatedJob> jobHandler) {
     final List<Long> jobKeys = new ArrayList<>();
     while (jobKeys.size() < jobCount) {
       client
@@ -290,12 +298,14 @@ public abstract class ZeebeTestUtil {
     return jobKeys;
   }
 
-  public static void resolveIncident(ZeebeClient client, Long jobKey, Long incidentKey) {
+  public static void resolveIncident(
+      final ZeebeClient client, final Long jobKey, final Long incidentKey) {
     client.newUpdateRetriesCommand(jobKey).retries(3).send().join();
     client.newResolveIncidentCommand(incidentKey).send().join();
   }
 
-  public static void updateVariables(ZeebeClient client, Long scopeKey, String newPayload) {
+  public static void updateVariables(
+      final ZeebeClient client, final Long scopeKey, final String newPayload) {
     client.newSetVariablesCommand(scopeKey).variables(newPayload).local(true).send().join();
   }
 }

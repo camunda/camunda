@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.backup.management;
 
@@ -24,13 +24,14 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Predicate;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +51,7 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   private final Path segmentsDirectory;
 
-  private final Predicate<Path> isSegmentsFile;
+  private final JournalInfoProvider journalInfoProvider;
 
   // Snapshot related data
   private boolean hasSnapshot = true;
@@ -67,14 +68,14 @@ final class InProgressBackupImpl implements InProgressBackup {
       final int numberOfPartitions,
       final ConcurrencyControl concurrencyControl,
       final Path segmentsDirectory,
-      final Predicate<Path> isSegmentsFile) {
+      final JournalInfoProvider journalInfoProvider) {
     this.snapshotStore = snapshotStore;
     this.backupId = backupId;
     this.checkpointPosition = checkpointPosition;
     this.numberOfPartitions = numberOfPartitions;
     this.concurrencyControl = concurrencyControl;
     this.segmentsDirectory = segmentsDirectory;
-    this.isSegmentsFile = isSegmentsFile;
+    this.journalInfoProvider = journalInfoProvider;
   }
 
   @Override
@@ -104,6 +105,7 @@ final class InProgressBackupImpl implements InProgressBackup {
               } else if (snapshots.isEmpty()) {
                 // no snapshot is taken until now, so return successfully
                 hasSnapshot = false;
+                availableValidSnapshots = Collections.emptySet();
                 result.complete(null);
               } else {
                 final var eitherSnapshots = findValidSnapshot(snapshots);
@@ -176,26 +178,37 @@ final class InProgressBackupImpl implements InProgressBackup {
   @Override
   public ActorFuture<Void> findSegmentFiles() {
     final ActorFuture<Void> filesCollected = concurrencyControl.createFuture();
-    try (final var stream = Files.list(segmentsDirectory)) {
-      final var fileSet =
-          stream
-              .filter(isSegmentsFile)
-              .collect(
-                  Collectors.toMap(
-                      path -> segmentsDirectory.relativize(path).toString(), path -> path));
-
-      if (fileSet.isEmpty()) {
-        filesCollected.completeExceptionally(
-            new IllegalStateException("Segments must not be empty"));
-        return filesCollected;
+    try {
+      long maxIndex = 0L;
+      if (availableValidSnapshots != null) {
+        maxIndex =
+            availableValidSnapshots.stream()
+                .mapToLong(PersistedSnapshot::getIndex)
+                .max()
+                .orElse(0L);
       }
-
-      segmentsFileSet = new NamedFileSetImpl(fileSet);
-      filesCollected.complete(null);
-    } catch (final IOException e) {
+      final var segments = journalInfoProvider.getTailSegments(maxIndex);
+      segments.whenComplete(
+          (journalMetadata, throwable) -> {
+            if (throwable != null) {
+              filesCollected.completeExceptionally(throwable);
+            } else if (journalMetadata.isEmpty()) {
+              filesCollected.completeExceptionally(
+                  new IllegalStateException("Segments must not be empty"));
+            } else {
+              final Map<String, Path> map =
+                  journalMetadata.stream()
+                      .collect(
+                          Collectors.toMap(
+                              path -> segmentsDirectory.relativize(path).toString(),
+                              Function.identity()));
+              segmentsFileSet = new NamedFileSetImpl(map);
+              filesCollected.complete(null);
+            }
+          });
+    } catch (final Exception e) {
       filesCollected.completeExceptionally(e);
     }
-
     return filesCollected;
   }
 

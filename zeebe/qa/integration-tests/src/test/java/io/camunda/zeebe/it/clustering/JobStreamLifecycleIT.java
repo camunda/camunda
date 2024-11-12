@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.clustering;
 
@@ -32,19 +32,24 @@ import org.junit.jupiter.api.Test;
 @AutoCloseResources
 @ZeebeIntegration
 final class JobStreamLifecycleIT {
-  @TestZeebe
-  private static final TestCluster CLUSTER =
-      TestCluster.builder()
-          .withReplicationFactor(2)
-          .withBrokersCount(2)
-          .withGatewaysCount(2)
-          .withEmbeddedGateway(false)
-          .build();
+  @TestZeebe(initMethod = "initTestCluster")
+  private static TestCluster cluster;
 
-  private final TestGateway<?> gateway = CLUSTER.availableGateway();
+  private final TestGateway<?> gateway = cluster.availableGateway();
   @AutoCloseResource private final ZeebeClient client = gateway.newClientBuilder().build();
 
   private final String jobType = Strings.newRandomValidBpmnId();
+
+  @SuppressWarnings("unused")
+  static void initTestCluster() {
+    cluster =
+        TestCluster.builder()
+            .withReplicationFactor(2)
+            .withBrokersCount(2)
+            .withGatewaysCount(2)
+            .withEmbeddedGateway(false)
+            .build();
+  }
 
   @Test
   void shouldRegisterStream() {
@@ -173,7 +178,7 @@ final class JobStreamLifecycleIT {
     }
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/17513")
+  @RegressionTest("https://github.com/camunda/camunda/issues/17513")
   void shouldAggregateStreamsEvenAcrossRestarts() {
     // given - many logically equivalent streams
     final List<JobWorker> workers = new ArrayList<>();
@@ -198,7 +203,7 @@ final class JobStreamLifecycleIT {
 
     // when - trigger stream restarts by restarting the gateway
     gateway.stop().start();
-    CLUSTER.awaitCompleteTopology();
+    cluster.awaitCompleteTopology();
     Awaitility.await("until streams are re-registered")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
@@ -225,7 +230,7 @@ final class JobStreamLifecycleIT {
     // given - two logically equivalent streams on different gateways
     //noinspection resource
     final var otherGateway =
-        CLUSTER.gateways().values().stream()
+        cluster.gateways().values().stream()
             .filter(g -> !g.nodeId().equals(gateway.nodeId()))
             .findAny()
             .orElseThrow();
@@ -355,8 +360,8 @@ final class JobStreamLifecycleIT {
                     .haveConnectedTo(2, jobType, 0, 1));
 
     // when
-    CLUSTER.availableGateway().stop().start().await(TestHealthProbe.READY);
-    CLUSTER.awaitCompleteTopology();
+    cluster.availableGateway().stop().start().await(TestHealthProbe.READY);
+    cluster.awaitCompleteTopology();
 
     // then - no streams will be registered on any broker
     for (int nodeId = 0; nodeId < 2; nodeId++) {
@@ -372,7 +377,7 @@ final class JobStreamLifecycleIT {
 
   private JobStreamActuator brokerActuator(final int nodeId) {
     final var brokerId = MemberId.from(String.valueOf(nodeId));
-    final var broker = CLUSTER.brokers().get(brokerId);
+    final var broker = cluster.brokers().get(brokerId);
     return JobStreamActuator.of(broker);
   }
 }

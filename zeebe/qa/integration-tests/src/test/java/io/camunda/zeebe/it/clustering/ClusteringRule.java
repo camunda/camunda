@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.clustering;
 
@@ -21,20 +21,25 @@ import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.utils.Version;
+import io.camunda.application.commons.actor.ActorClockConfiguration;
+import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
+import io.camunda.application.commons.actor.ActorSchedulerConfiguration;
+import io.camunda.application.commons.broker.client.BrokerClientConfiguration;
+import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
+import io.camunda.application.commons.clustering.DynamicClusterServices;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
+import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
+import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.zeebe.broker.Broker;
-import io.camunda.zeebe.broker.BrokerClusterConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.bootstrap.BrokerContext;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
-import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
-import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
-import io.camunda.zeebe.broker.shared.BrokerConfiguration;
-import io.camunda.zeebe.broker.shared.BrokerConfiguration.BrokerProperties;
-import io.camunda.zeebe.broker.shared.WorkingDirectoryConfiguration;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.NetworkCfg;
@@ -44,25 +49,19 @@ import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.client.api.response.BrokerInfo;
-import io.camunda.zeebe.client.api.response.PartitionInfo;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.camunda.zeebe.engine.state.QueryService;
-import io.camunda.zeebe.gateway.ActorSchedulerConfiguration;
 import io.camunda.zeebe.gateway.Gateway;
-import io.camunda.zeebe.gateway.GatewayClusterConfiguration;
-import io.camunda.zeebe.gateway.GatewayConfiguration;
-import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.JobStreamComponent;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.shared.ActorClockConfiguration;
-import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategySupplier;
 import io.camunda.zeebe.shared.management.ActorClockService.MutableClock;
 import io.camunda.zeebe.snapshots.SnapshotId;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
@@ -71,6 +70,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.exception.UncheckedExecutionException;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.netty.util.NetUtil;
 import java.io.File;
 import java.io.IOException;
@@ -100,6 +100,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.awaitility.Awaitility;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -130,7 +131,7 @@ public class ClusteringRule extends ExternalResource {
   private final Consumer<GatewayCfg> gatewayConfigurator;
   private final Consumer<ZeebeClientBuilder> clientConfigurator;
   private final Map<Integer, Broker> brokers;
-  private final Map<Integer, BrokerProperties> brokerCfgs;
+  private final Map<Integer, BrokerBasedProperties> brokerCfgs;
   private final List<Integer> partitionIds;
   private final String clusterName;
   private final Map<Integer, LogStream> logstreams;
@@ -341,21 +342,23 @@ public class ClusteringRule extends ExternalResource {
 
     final var atomixCluster =
         new AtomixCluster(
-            new BrokerClusterConfiguration().clusterConfig(brokerSpringConfig),
-            Version.from(VersionUtil.getVersion()));
+            brokerSpringConfig.clusterConfig(), Version.from(VersionUtil.getVersion()), "Broker");
+
     final var scheduler =
-        new io.camunda.zeebe.broker.ActorSchedulerConfiguration(
-                brokerSpringConfig, actorClockConfiguration)
-            .scheduler(IdleStrategySupplier.ofDefault());
-    final var topologyManager =
-        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
-    final var brokerClient =
-        new BrokerClientImpl(
-            brokerCfg.getGateway().getCluster().getRequestTimeout(),
-            atomixCluster.getMessagingService(),
-            atomixCluster.getEventService(),
-            scheduler,
-            topologyManager);
+        new ActorSchedulerConfiguration(
+                brokerSpringConfig.schedulerConfiguration(),
+                IdleStrategySupplier.ofDefault(),
+                actorClockConfiguration)
+            .scheduler();
+
+    final var dynamicClusterServices = new DynamicClusterServices(scheduler, atomixCluster);
+    final var topologyManager = dynamicClusterServices.brokerTopologyManager();
+
+    final var brokerClientConfig = brokerSpringConfig.brokerClientConfig();
+    final var brokerClientConfiguration =
+        new BrokerClientConfiguration(
+            brokerClientConfig, atomixCluster, scheduler, topologyManager);
+    final var brokerClient = brokerClientConfiguration.brokerClient();
 
     final var systemContext =
         new SystemContext(
@@ -364,11 +367,9 @@ public class ClusteringRule extends ExternalResource {
             null,
             scheduler,
             atomixCluster,
-            brokerClient);
+            brokerClient,
+            new SimpleMeterRegistry());
     systemContexts.put(nodeId, systemContext);
-    scheduler.submitActor(topologyManager).join();
-
-    atomixCluster.getMembershipService().addListener(topologyManager);
 
     final Broker broker =
         new Broker(
@@ -391,12 +392,12 @@ public class ClusteringRule extends ExternalResource {
         .isBrokerHealthy();
   }
 
-  public BrokerProperties getBrokerCfg(final int nodeId) {
+  public BrokerBasedProperties getBrokerCfg(final int nodeId) {
     return brokerCfgs.computeIfAbsent(nodeId, this::createBrokerCfg);
   }
 
-  private BrokerProperties createBrokerCfg(final int nodeId) {
-    final BrokerProperties brokerCfg = new BrokerProperties();
+  private BrokerBasedProperties createBrokerCfg(final int nodeId) {
+    final BrokerBasedProperties brokerCfg = new BrokerBasedProperties();
 
     // build-in exporters
     if (ENABLE_DEBUG_EXPORTER) {
@@ -447,7 +448,7 @@ public class ClusteringRule extends ExternalResource {
                         brokerCfg.getNetwork().getInternalApi().getAddress()))
             .collect(Collectors.toList());
 
-    final GatewayProperties gatewayCfg = new GatewayProperties();
+    final GatewayBasedProperties gatewayCfg = new GatewayBasedProperties();
     gatewayCfg
         .getCluster()
         .setInitialContactPoints(initialContactPoints)
@@ -463,34 +464,35 @@ public class ClusteringRule extends ExternalResource {
     return createGateway(gatewayCfg);
   }
 
-  private GatewayResource createGateway(final GatewayProperties gatewayCfg) {
-    final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
-    final var clusterFactory = new GatewayClusterConfiguration();
-    final var atomixCluster = clusterFactory.atomixCluster(clusterFactory.clusterConfig(config));
-    atomixCluster.start().join();
+  private GatewayResource createGateway(final GatewayBasedProperties gatewayCfg) {
+    final var config = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
+    final var clusterConfig = config.clusterConfig();
+    final var actorConfig = config.schedulerConfiguration();
 
     final ActorScheduler actorScheduler =
-        new ActorSchedulerConfiguration(gatewayCfg, actorClockConfiguration)
-            .actorScheduler(IdleStrategySupplier.ofDefault());
-    final var topologyManager =
-        new BrokerTopologyManagerImpl(() -> atomixCluster.getMembershipService().getMembers());
-    actorScheduler.submitActor(topologyManager).join();
-    atomixCluster.getMembershipService().addListener(topologyManager);
+        new ActorSchedulerConfiguration(
+                actorConfig, IdleStrategySupplier.ofDefault(), actorClockConfiguration)
+            .scheduler();
 
-    final var brokerClient =
-        new BrokerClientImpl(
-            gatewayCfg.getCluster().getRequestTimeout(),
-            atomixCluster.getMessagingService(),
-            atomixCluster.getEventService(),
-            actorScheduler,
-            topologyManager);
+    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig, actorConfig);
+    final var atomixCluster = clusterConfiguration.atomixCluster();
+    atomixCluster.start().join();
+
+    final var dynamicClusterServices = new DynamicClusterServices(actorScheduler, atomixCluster);
+    final var topologyManager = dynamicClusterServices.brokerTopologyManager();
+
+    final var brokerClientConfig = config.brokerClientConfig();
+    final var brokerClientConfiguration =
+        new BrokerClientConfiguration(
+            brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
+    final var brokerClient = brokerClientConfiguration.brokerClient();
+
     final var jobStreamClient =
         new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
     jobStreamClient.start().join();
 
     // before we can add the job stream client as a topology listener, we need to wait for the
     // topology to be set up, otherwise the callback may be lost
-    brokerClient.start().forEach(ActorFuture::join);
     topologyManager.addTopologyListener(jobStreamClient);
 
     final var gateway =
@@ -585,13 +587,6 @@ public class ClusteringRule extends ExternalResource {
     }
   }
 
-  /** Returns the list of available brokers in a cluster. */
-  public List<InetSocketAddress> getBrokersInCluster() {
-    return client.newTopologyRequest().send().join().getBrokers().stream()
-        .map(b -> new InetSocketAddress(b.getHost(), b.getPort()))
-        .collect(Collectors.toList());
-  }
-
   public Collection<Broker> getBrokers() {
     return brokers.values();
   }
@@ -601,19 +596,6 @@ public class ClusteringRule extends ExternalResource {
         .map(b -> b.getConfig().getNetwork().getCommandApi().getAddress())
         .filter(a -> !address.equals(a))
         .toArray(InetSocketAddress[]::new);
-  }
-
-  public InetSocketAddress[] getOtherBrokers(final int nodeId) {
-    final InetSocketAddress filter = getBrokerCfg(nodeId).getNetwork().getCommandApi().getAddress();
-    return getOtherBrokers(filter);
-  }
-
-  /** Returns the count of partition leaders */
-  public long getPartitionLeaderCount() {
-    return client.newTopologyRequest().send().join().getBrokers().stream()
-        .flatMap(broker -> broker.getPartitions().stream())
-        .filter(PartitionInfo::isLeader)
-        .count();
   }
 
   public BrokerInfo awaitOtherLeader(final int partitionId, final int previousLeader) {
@@ -726,9 +708,12 @@ public class ClusteringRule extends ExternalResource {
             });
   }
 
-  public long createProcessInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
+  public long createProcessInstanceOnPartition(
+      final int partitionId, final String bpmnProcessId, final Map<String, String> variables) {
     final BrokerCreateProcessInstanceRequest request =
-        new BrokerCreateProcessInstanceRequest().setBpmnProcessId(bpmnProcessId);
+        new BrokerCreateProcessInstanceRequest()
+            .setBpmnProcessId(bpmnProcessId)
+            .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)));
 
     request.setPartitionId(partitionId);
 
@@ -746,6 +731,10 @@ public class ClusteringRule extends ExternalResource {
               + ": "
               + response);
     }
+  }
+
+  public long createProcessInstanceOnPartition(final int partitionId, final String bpmnProcessId) {
+    return createProcessInstanceOnPartition(partitionId, bpmnProcessId, Collections.emptyMap());
   }
 
   public InetSocketAddress getGatewayAddress() {
@@ -937,12 +926,12 @@ public class ClusteringRule extends ExternalResource {
   // Future tests should not use the clustering rule anymore, and should be migrated away, as it has
   // to replicate all the wiring Spring is doing
   @Deprecated(forRemoval = true)
-  private BrokerConfiguration getBrokerConfiguration(
-      final File brokerBase, final BrokerProperties cfg) {
+  private BrokerBasedConfiguration getBrokerConfiguration(
+      final File brokerBase, final BrokerBasedProperties cfg) {
     final var workingDir =
         new WorkingDirectoryConfiguration.WorkingDirectory(brokerBase.toPath(), false);
 
-    return new BrokerConfiguration(workingDir, cfg, new LifecycleProperties());
+    return new BrokerBasedConfiguration(workingDir, cfg, new LifecycleProperties());
   }
 
   public Leader getCurrentLeaderForPartition(final int partition) {

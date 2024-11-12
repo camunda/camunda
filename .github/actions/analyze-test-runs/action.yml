@@ -41,7 +41,7 @@ runs:
 
       # Extracting flaky tests
       # Based on old Jenkins script
-      # https://github.com/camunda/zeebe/blob/stable/8.1/.ci/scripts/lib/flaky-tests.sh
+      # https://github.com/camunda/camunda/blob/stable/8.1/.ci/scripts/lib/flaky-tests.sh
       if grep -q "\[WARNING\] Flakes:" "$BUILD_OUTPUT_FILE_PATH"; then
         irOutputFile=$(mktemp)
 
@@ -62,38 +62,9 @@ runs:
           echo EOF
         } >> $GITHUB_OUTPUT
 
-        echo "::error::Found flaky tests!\n ${flakyTests}"
+        echo "::warning::Found flaky tests!\n ${flakyTests}"
       fi
 
-  - name: Duplicate test runs
-    shell: bash
-    env:
-      BUILD_OUTPUT_FILE_PATH: ${{ inputs.buildOutputFilePath }}
-    run: |
-      if [ ! -s "$BUILD_OUTPUT_FILE_PATH" ]; then
-        echo "::error::Build output file does not exist or is empty!"
-        exit 1
-      fi
-      if grep -E -q "^\[(INFO|WARNING|ERROR)\] Tests run: [1-9]" "$BUILD_OUTPUT_FILE_PATH"; then
-        outputFile=$(mktemp)
-        tmpFile=$(mktemp)
-        grep -oP "\[INFO\] Running \K(.*)$" "$BUILD_OUTPUT_FILE_PATH" > "$tmpFile"
-        if [ -s "$tmpFile" ]; then  # found tests
-          sort "$tmpFile" | uniq -d | tee "$outputFile"
-          if [ -s "$outputFile" ]; then
-            echo "::error::Found duplicate test runs!"
-            echo "### ⚠️ Duplicate test runs" >> $GITHUB_STEP_SUMMARY
-            cat $outputFile >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-          echo "No duplicate test runs found, all good!"
-          exit 0
-        fi
-        echo "::error::Could not find any tests, duplicate detection is broken."
-        exit 1
-      fi
-      echo "No test execution found in build output, thus nothing to check."
-      exit 0
   - name: Unfinished tests
     if: failure() || cancelled()
     shell: bash

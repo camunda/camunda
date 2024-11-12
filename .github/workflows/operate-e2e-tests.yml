@@ -3,43 +3,43 @@ name: Operate E2E Tests
 on:
   push:
     branches:
-      - 'main'
-      - 'stable/**'
-      - 'release/**'
+      - "main"
+      - "stable/**"
+      - "release/**"
     paths:
-      - '.ci/**'
-      - '.github/actions/**'
-      - '.github/workflows/operate-*'
-      - 'bom/*'
-      - 'distro/**'
-      - 'operate.Dockerfile'
-      - 'operate/**'
-      - 'parent/*'
-      - 'pom.xml'
+      - ".ci/**"
+      - ".github/actions/**"
+      - ".github/workflows/operate-*"
+      - "bom/*"
+      - "distro/**"
+      - "operate.Dockerfile"
+      - "operate/**"
+      - "parent/*"
+      - "pom.xml"
   pull_request:
     paths:
-      - '.ci/**'
-      - '.github/actions/**'
-      - '.github/workflows/operate-*'
-      - 'bom/*'
-      - 'distro/**'
-      - 'operate.Dockerfile'
-      - 'operate/**'
-      - 'parent/*'
-      - 'pom.xml'
+      - ".ci/**"
+      - ".github/actions/**"
+      - ".github/workflows/operate-*"
+      - "bom/*"
+      - "distro/**"
+      - "operate.Dockerfile"
+      - "operate/**"
+      - "parent/*"
+      - "pom.xml"
 
-# This will limit the workflow to 1 concurrent run per ref (branch / PR).
-# If a new commits occurs, the current run will be canceled to save costs.
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Exception for main branch: complete builds for every commit needed for confidenence
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
   test:
     runs-on: gcp-core-4-default
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.11.3
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -50,7 +50,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.5.0
+        image: camunda/zeebe:SNAPSHOT
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
@@ -64,7 +64,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@v2.8.1
+        uses: hashicorp/vault-action@v3.0.0
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -73,15 +73,10 @@ jobs:
           secrets: |
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
         with:
-          node-version: "18"
-      - name: Setup yarn
-        run: npm install -g yarn
-      - name: Install node dependencies
-        working-directory: ./operate/client
-        run: yarn install
+          directory: ./operate/client
       - name: Add Yarn binaries to Path
         working-directory: ./operate/client
         run: |
@@ -90,18 +85,16 @@ jobs:
       - name: Install Playwright
         run: yarn exec playwright install -- --with-deps chromium
         working-directory: ./operate/client
-      - name: Build frontend
-        working-directory: ./operate/client
-        run: yarn build
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: "adopt"
           java-version: "21"
       - name: Setup Maven
-        uses: stCarolas/setup-maven@v4.5
+        uses: ./.github/actions/setup-maven-dist
         with:
           maven-version: "3.9.6"
+          set-mvnw: true
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: "Create settings.xml"
         uses: s4u/maven-settings-action@v3.0.0
@@ -115,9 +108,13 @@ jobs:
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        # Currently, the e2e environment of operate conflicts with the optimize build. For the moment,
+        # we're excluding optimize from the build, not to impact this operate's workflow.
+        run: ./mvnw clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Operate
-        run: mvn -q -B spring-boot:start -pl operate/webapp -Dspring-boot.run.fork=true -DCAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED=false
+        run: ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true -Dspring-boot.run.main-class=io.camunda.application.StandaloneOperate
+        env:
+          CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED: false
       - name: Run tests
         working-directory: ./operate/client
         run: yarn run test:e2e:ci
@@ -129,3 +126,13 @@ jobs:
           name: Playwright report
           path: operate/client/playwright-report/
           retention-days: 30
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

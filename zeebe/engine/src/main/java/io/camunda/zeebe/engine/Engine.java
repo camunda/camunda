@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine;
 
@@ -23,7 +23,10 @@ import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceRelatedIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.stream.api.ProcessingResult;
@@ -46,7 +49,7 @@ public class Engine implements RecordProcessor {
       "Expected to process record '%s' without errors, but exception occurred with message '%s'.";
 
   private static final EnumSet<ValueType> SUPPORTED_VALUETYPES =
-      EnumSet.range(ValueType.JOB, ValueType.COMPENSATION_SUBSCRIPTION);
+      EnumSet.range(ValueType.JOB, ValueType.SCALE);
 
   private EventApplier eventApplier;
   private RecordProcessorMap recordProcessorMap;
@@ -83,6 +86,10 @@ public class Engine implements RecordProcessor {
 
     recordProcessorContext.addLifecycleListeners(typedRecordProcessors.getLifecycleListeners());
     recordProcessorMap = typedRecordProcessors.getRecordProcessorMap();
+
+    recordProcessorContext
+        .getClock()
+        .applyModification(processingState.getClockState().getModification());
   }
 
   @Override
@@ -118,12 +125,7 @@ public class Engine implements RecordProcessor {
         return processingResultBuilder.build();
       }
 
-      // There is no ban check needed if the intent is not instance related
-      // nor if the intent is to create new instances, which can't be banned yet
-      final boolean noBanCheckNeeded =
-          !(record.getIntent() instanceof ProcessInstanceRelatedIntent)
-              || record.getIntent() instanceof ProcessInstanceCreationIntent;
-      if (noBanCheckNeeded || !processingState.getBannedInstanceState().isBanned(typedCommand)) {
+      if (shouldProcessCommand(typedCommand)) {
         currentProcessor.processRecord(record);
       }
     }
@@ -160,6 +162,30 @@ public class Engine implements RecordProcessor {
       }
     }
     return processingResultBuilder.build();
+  }
+
+  private boolean shouldProcessCommand(final TypedRecord<?> typedCommand) {
+    // There is no ban check needed if the intent is not instance related
+    // nor if the intent is to create new instances, which can't be banned yet
+    final Intent intent = typedCommand.getIntent();
+    final boolean noBanCheckNeeded =
+        !(intent instanceof ProcessInstanceRelatedIntent)
+            || intent instanceof ProcessInstanceCreationIntent;
+
+    if (noBanCheckNeeded) {
+      return true;
+    }
+
+    final boolean banned = processingState.getBannedInstanceState().isBanned(typedCommand);
+
+    if (!banned) {
+      return true;
+    }
+
+    // Commands allowed to be processed on banned instances
+    return intent == ProcessInstanceIntent.CANCEL
+        || intent == ProcessInstanceIntent.TERMINATE_ELEMENT
+        || intent == ProcessInstanceBatchIntent.TERMINATE;
   }
 
   private void handleUnexpectedError(

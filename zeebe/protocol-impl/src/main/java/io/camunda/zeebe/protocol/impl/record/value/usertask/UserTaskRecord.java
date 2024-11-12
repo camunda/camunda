@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.protocol.impl.record.value.usertask;
 
@@ -40,12 +40,14 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public static final String CANDIDATE_USERS = "candidateUsersList";
   public static final String DUE_DATE = "dueDate";
   public static final String FOLLOW_UP_DATE = "followUpDate";
+  public static final String PRIORITY = "priority";
 
   private static final String EMPTY_STRING = "";
   private static final StringValue CANDIDATE_GROUPS_VALUE = new StringValue(CANDIDATE_GROUPS);
   private static final StringValue CANDIDATE_USERS_VALUE = new StringValue(CANDIDATE_USERS);
   private static final StringValue DUE_DATE_VALUE = new StringValue(DUE_DATE);
   private static final StringValue FOLLOW_UP_DATE_VALUE = new StringValue(FOLLOW_UP_DATE);
+  private static final StringValue PRIORITY_VALUE = new StringValue(PRIORITY);
 
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
   private final StringProperty assigneeProp = new StringProperty("assignee", EMPTY_STRING);
@@ -78,9 +80,10 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       new ArrayProperty<>("changedAttributes", StringValue::new);
   private final StringProperty actionProp = new StringProperty("action", EMPTY_STRING);
   private final LongProperty creationTimestampProp = new LongProperty("creationTimestamp", -1L);
+  private final IntegerProperty priorityProp = new IntegerProperty(PRIORITY, 50);
 
   public UserTaskRecord() {
-    super(20);
+    super(21);
     declareProperty(userTaskKeyProp)
         .declareProperty(assigneeProp)
         .declareProperty(candidateGroupsListProp)
@@ -100,7 +103,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(tenantIdProp)
         .declareProperty(changedAttributesProp)
         .declareProperty(actionProp)
-        .declareProperty(creationTimestampProp);
+        .declareProperty(creationTimestampProp)
+        .declareProperty(priorityProp);
   }
 
   public void wrapWithoutVariables(final UserTaskRecord record) {
@@ -124,6 +128,12 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     creationTimestampProp.setValue(record.getCreationTimestamp());
     setChangedAttributesProp(record.getChangedAttributesProp());
     actionProp.setValue(record.getActionBuffer());
+    priorityProp.setValue(record.getPriority());
+  }
+
+  public void wrap(final UserTaskRecord record) {
+    wrapWithoutVariables(record);
+    variableProp.setValue(record.getVariablesBuffer());
   }
 
   public void wrapChangedAttributes(
@@ -148,6 +158,9 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         break;
       case FOLLOW_UP_DATE:
         followUpDateProp.setValue(record.getFollowUpDateBuffer());
+        break;
+      case PRIORITY:
+        priorityProp.setValue(record.getPriority());
         break;
       default:
         break;
@@ -250,6 +263,16 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setProcessDefinitionKey(final long processDefinitionKey) {
     processDefinitionKeyProp.setValue(processDefinitionKey);
+    return this;
+  }
+
+  @Override
+  public int getPriority() {
+    return priorityProp.getValue();
+  }
+
+  public UserTaskRecord setPriority(final int priority) {
+    priorityProp.setValue(priority);
     return this;
   }
 
@@ -391,6 +414,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setFollowUpDateChanged() {
     changedAttributesProp.add().wrap(FOLLOW_UP_DATE_VALUE);
+    return this;
+  }
+
+  public UserTaskRecord setPriorityChanged() {
+    changedAttributesProp.add().wrap(PRIORITY_VALUE);
     return this;
   }
 

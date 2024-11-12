@@ -394,7 +394,7 @@ final class LeaderAppender {
         return Optional.empty();
       }
       member.setNextSnapshotIndex(persistedSnapshot.getIndex());
-      member.setNextSnapshotChunk(null);
+      member.setNextSnapshotChunkId(null);
     }
 
     final SnapshotChunkReader reader = member.getSnapshotChunkReader();
@@ -413,6 +413,7 @@ final class LeaderAppender {
       if (!reader.hasNext()) {
         return Optional.empty();
       }
+      final ByteBuffer currentChunkId = reader.nextId();
       final SnapshotChunk chunk = reader.next();
 
       // Create the install request, indicating whether this is the last chunk of data based on
@@ -427,7 +428,7 @@ final class LeaderAppender {
               .withTerm(persistedSnapshot.getTerm())
               .withVersion(persistedSnapshot.version())
               .withData(new SnapshotChunkImpl(chunk).toByteBuffer())
-              .withChunkId(ByteBuffer.wrap(chunk.getChunkName().getBytes()))
+              .withChunkId(currentChunkId)
               .withInitial(member.getNextSnapshotChunk() == null)
               .withComplete(!reader.hasNext())
               .withNextChunkId(reader.nextId())
@@ -441,7 +442,7 @@ final class LeaderAppender {
           e);
       // If snapshot was deleted, a new reader should be created with the new snapshot
       member.setNextSnapshotIndex(0);
-      member.setNextSnapshotChunk(null);
+      member.setNextSnapshotChunkId(null);
       return Optional.empty();
     }
   }
@@ -485,7 +486,7 @@ final class LeaderAppender {
 
     if (!isTimeout) {
       member.setNextSnapshotIndex(0);
-      member.setNextSnapshotChunk(null);
+      member.setNextSnapshotChunkId(null);
     }
 
     // Log the failed attempt to contact the member.
@@ -494,21 +495,27 @@ final class LeaderAppender {
 
   /** Handles an OK install response. */
   private void handleInstallResponseOk(
-      final RaftMemberContext member, final InstallRequest request) {
+      final RaftMemberContext member,
+      final InstallRequest request,
+      final InstallResponse response) {
     // Reset the member failure count and update the member's status if necessary.
     succeedAttempt(member);
 
+    //    if not given in response defaults to 0
+    if (response.preferredChunkSize() > 0) {
+      member.getSnapshotChunkReader().setMaximumChunkSize(response.preferredChunkSize());
+    }
     // If the install request was completed successfully, set the member's snapshotIndex and reset
     // the next snapshot index/offset.
     if (request.complete()) {
       member.setNextSnapshotIndex(0);
-      member.setNextSnapshotChunk(null);
+      member.setNextSnapshotChunkId(null);
       member.setSnapshotIndex(request.index());
       resetNextIndex(member, request.index() + 1);
     }
     // If more install requests remain, increment the member's snapshot offset.
     else {
-      member.setNextSnapshotChunk(request.nextChunkId());
+      member.setNextSnapshotChunkId(request.nextChunkId());
     }
 
     // Recursively append entries to the member.
@@ -528,7 +535,7 @@ final class LeaderAppender {
         response.error().toString());
 
     member.setNextSnapshotIndex(0);
-    member.setNextSnapshotChunk(null);
+    member.setNextSnapshotChunkId(null);
   }
 
   /**
@@ -843,7 +850,7 @@ final class LeaderAppender {
       final InstallResponse response,
       final long timestamp) {
     if (response.status() == RaftResponse.Status.OK) {
-      handleInstallResponseOk(member, request);
+      handleInstallResponseOk(member, request, response);
     } else {
       handleInstallResponseError(member, request, response);
     }
@@ -882,7 +889,7 @@ final class LeaderAppender {
     if (member.getSnapshotIndex() >= persistedSnapshot.getIndex()) {
       // Member has the latest snapshot, replicating the snapshot again wouldn't help.
       // WARNING! This is load-bearing and not just an optimization. See
-      // https://github.com/camunda/zeebe/issues/9820 for context.
+      // https://github.com/camunda/camunda/issues/9820 for context.
       return false;
     }
     if (raft.getLog().getFirstIndex() > member.getCurrentIndex()) {

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -25,6 +26,7 @@ public final class EventSubProcessProcessor
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
   private final BpmnVariableMappingBehavior variableMappingBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public EventSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -33,6 +35,7 @@ public final class EventSubProcessProcessor
     this.stateTransitionBehavior = stateTransitionBehavior;
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -43,29 +46,37 @@ public final class EventSubProcessProcessor
   @Override
   public Either<Failure, ?> onActivate(
       final ExecutableFlowElementContainer element, final BpmnElementContext activating) {
-    return variableMappingBehavior
-        .applyInputMappings(activating, element)
-        .thenDo(
-            ok -> {
-              final var activated =
-                  stateTransitionBehavior.transitionToActivated(activating, element.getEventType());
-              stateTransitionBehavior.activateChildInstance(
-                  activated, element.getStartEvents().getFirst());
-            });
+    return variableMappingBehavior.applyInputMappings(activating, element);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeActivation(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    final var activated =
+        stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+    stateTransitionBehavior.activateChildInstance(activated, element.getStartEvents().getFirst());
+    return SUCCESS;
   }
 
   @Override
   public Either<Failure, ?> onComplete(
       final ExecutableFlowElementContainer element, final BpmnElementContext completing) {
 
-    return variableMappingBehavior
-        .applyOutputMappings(completing, element)
-        .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, completing));
+    return variableMappingBehavior.applyOutputMappings(completing, element);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    return stateTransitionBehavior.transitionToCompleted(element, context);
   }
 
   @Override
   public void onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(terminating);
+    }
 
     incidentBehavior.resolveIncidents(terminating);
 

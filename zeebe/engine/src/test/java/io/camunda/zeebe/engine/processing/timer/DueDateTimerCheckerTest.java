@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.timer;
 
@@ -24,9 +24,9 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import java.time.Duration;
+import java.time.Instant;
+import java.time.InstantSource;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -41,7 +41,7 @@ class DueDateTimerCheckerTest {
     @Test
     void shouldAbortIterationAndGiveYieldAfterSomeTimeHasPassed() {
       /* This test verifies that the class will yield control at some point. This is related to
-       * https://github.com/camunda/zeebe/issues/8991 where one issue was that the list of due timers
+       * https://github.com/camunda/camunda/issues/8991 where one issue was that the list of due timers
        * grew substantially to millions of entries. The algorithm iterated over each entry and blocked
        * the execution of any other work on that thread during that time.
        */
@@ -178,7 +178,7 @@ class DueDateTimerCheckerTest {
     }
   }
 
-  private final class TestActorClock implements ActorClock {
+  private final class TestActorClock implements InstantSource {
 
     private long time = 0;
 
@@ -186,25 +186,19 @@ class DueDateTimerCheckerTest {
       this.time = time;
     }
 
-    @Override
     public boolean update() {
       time = time + 10;
       return true;
     }
 
     @Override
-    public long getTimeMillis() {
+    public Instant instant() {
+      return Instant.ofEpochMilli(time);
+    }
+
+    @Override
+    public long millis() {
       return time;
-    }
-
-    @Override
-    public long getNanosSinceLastMillisecond() {
-      return 0;
-    }
-
-    @Override
-    public long getNanoTime() {
-      return Duration.ofMillis(getTimeMillis()).toNanos();
     }
   }
 

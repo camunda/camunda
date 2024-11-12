@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.common;
 
@@ -50,13 +50,43 @@ public class DecisionBehavior {
     this.metrics = metrics;
   }
 
-  public Either<Failure, PersistedDecision> findDecisionByIdAndTenant(
+  public Either<Failure, PersistedDecision> findLatestDecisionByIdAndTenant(
       final String decisionId, final String tenantId) {
     return Either.ofOptional(
             decisionState.findLatestDecisionByIdAndTenant(
                 BufferUtil.wrapString(decisionId), tenantId))
         .orElse(new Failure("no decision found for id '%s'".formatted(decisionId)))
         .mapLeft(failure -> formatDecisionLookupFailure(failure, decisionId));
+  }
+
+  public Either<Failure, PersistedDecision> findDecisionByIdAndDeploymentKeyAndTenant(
+      final String decisionId, final long deploymentKey, final String tenantId) {
+    return Either.ofOptional(
+            decisionState.findDecisionByIdAndDeploymentKey(
+                tenantId, BufferUtil.wrapString(decisionId), deploymentKey))
+        .orElse(
+            new Failure(
+                """
+                Expected to evaluate decision '%s' with binding type 'deployment', \
+                but no such decision found in the deployment with key %s which contained the current process. \
+                To resolve this incident, migrate the process instance to a process definition \
+                that is deployed together with the intended decision to evaluate.\
+                """
+                    .formatted(decisionId, deploymentKey)));
+  }
+
+  public Either<Failure, PersistedDecision> findDecisionByIdAndVersionTagAndTenant(
+      final String decisionId, final String versionTag, final String tenantId) {
+    return Either.ofOptional(
+            decisionState.findDecisionByIdAndVersionTag(
+                tenantId, BufferUtil.wrapString(decisionId), versionTag))
+        .orElse(
+            new Failure(
+                """
+                Expected to evaluate decision with id '%s' and version tag '%s', but no such decision found. \
+                To resolve this incident, deploy a decision with the given id and version tag.\
+                """
+                    .formatted(decisionId, versionTag)));
   }
 
   public Either<Failure, PersistedDecision> findDecisionByKeyAndTenant(

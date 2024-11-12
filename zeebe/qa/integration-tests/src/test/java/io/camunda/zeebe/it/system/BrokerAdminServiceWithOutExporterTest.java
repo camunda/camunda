@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.system;
 
@@ -39,7 +39,7 @@ public class BrokerAdminServiceWithOutExporterTest {
     assertThat(partitionStatus.snapshotId()).isNull();
     assertThat(partitionStatus.processedPositionInSnapshot()).isNull();
     assertThat(partitionStatus.streamProcessorPhase()).isEqualTo(Phase.PROCESSING);
-    assertThat(partitionStatus.exporterPhase()).isEqualTo(ExporterPhase.CLOSED);
+    assertThat(partitionStatus.exporterPhase()).isEqualTo(ExporterPhase.EXPORTING);
     assertThat(partitionStatus.exportedPosition()).isEqualTo(-1);
   }
 }

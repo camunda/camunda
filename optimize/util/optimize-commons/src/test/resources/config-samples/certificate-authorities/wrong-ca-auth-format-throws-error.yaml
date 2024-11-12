@@ -1,0 +1,9 @@
+es:
+  security:
+    username: ''
+    password: ''
+    ssl:
+      certificate: ''
+      certificate_authorities:
+        foo: 'bar'
+      enabled: true

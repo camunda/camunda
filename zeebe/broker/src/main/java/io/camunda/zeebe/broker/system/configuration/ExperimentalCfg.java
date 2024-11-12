@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.configuration;
 
@@ -19,7 +19,7 @@ import org.springframework.util.unit.DataSize;
  */
 public class ExperimentalCfg implements ConfigurationEntry {
 
-  public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 2;
+  public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 6;
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
 

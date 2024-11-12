@@ -30,6 +30,14 @@
 
 # ----------------------------------------------------
 
+# Enable the Camunda REST API to start on gateway startup.
+# This setting can also be overridden using the environment variable CAMUNDA_REST_ENABLED.
+# camunda.rest.enabled: true
+
+# Enable the Camunda REST Query API to start on gateway startup.
+# This setting can also be overridden using the environment variable CAMUNDA_REST_QUERY_ENABLED.
+# camunda.rest.query.enabled: false
+
 # zeebe:
   # gateway:
     # network:
@@ -87,10 +95,15 @@
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_PORT.
       # port: 26502
 
-      # Controls the advertised host; if omitted defaults to the host. This is particularly useful if your
-      # gateway stands behind a proxy.
+      # Controls the advertised host. This is particularly useful if your broker stands behind a
+      # proxy. If not set, its default is computed as:
+      #   - If zeebe.gateway.cluster.host was explicitly set, use this.
+      #   - If not, try to resolve the machine's hostname to an IP address and use that.
+      #   - If the hostname is not resolvable, use the first non-loopback IP address.
+      #   - If there is none, use the loopback address.
+      #
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_ADVERTISEDHOST.
-      # advertisedHost: 0.0.0.0
+      # advertisedHost:
 
       # Controls the advertised port; if omitted defaults to the port. This is particularly useful if your
       # gateway stands behind a proxy.
@@ -144,8 +157,26 @@
         # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_MEMBERSHIP_SYNCINTERVAL
         # syncInterval: 10s
 
+      # Configure the parameters used to propagate the dynamic cluster configuration across brokers and gateways
+      # configManager:
+        # Configure the parameters used for gossiping the dynamic cluster configuration.
+        # Note that this is not related to cluster membership gossip.
+        # gossip:
+          # Sets the interval between two synchronization requests to other members of the cluster
+          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_CONFIGMANAGER_GOSSIP_SYNCDELAY
+          # syncDelay: 10s
+          # Sets the timeout for the synchronization requests
+          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_CONFIGMANAGER_GOSSIP_SYNCREQUESTTIMEOUT
+          # syncRequestTimeout: 2s
+          # Sets the number of cluster members the configuration is gossiped to.
+          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_CONFIGMANAGER_GOSSIP_GOSSIPFANOUT
+          # gossipFanout: 2
+
       # security:
         # Enables TLS authentication between this gateway and other nodes in the cluster
+        # If this setting is enabled then the certificate and private key must either be provided separately
+        # or in a keystore file containing both, these options are mutually exclusive and setting both at the same time will
+        # cause an error.
         # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_ENABLED.
         # enabled: false
 
@@ -156,6 +187,19 @@
         # Sets the path to the private key file location
         # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_PRIVATEKEYPATH.
         # privateKeyPath:
+
+        # keyStore:
+          # Configures the keystore file containing both the certificate chain and the private key.
+          # Currently only supports PKCS12 format.
+
+          # The path for keystore file
+          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_KEYSTORE_FILEPATH
+          # filePath:
+
+          # Sets the password for the keystore file, if not set it is assumed there is no password
+          # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_SECURITY_KEYSTORE_PASSWORD
+          # password:
+
 
         # authentication:
           # Controls which authentication mode is active, supported modes are 'none' and 'identity'.
@@ -197,21 +241,6 @@
       # Sets the number of threads the gateway will use to communicate with the broker cluster
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS.
       # managementThreads: 1
-      #
-      # A separate thread pool is used to run the gRPC business logic. The thread pool is elastic
-      # (meaning it will start/stop threads dynamically), but will always keep a minimum number of
-      # threads, and only start up to a maximum number of threads. By default, this range is from
-      # 1 thread per core, up to 2 threads per core.
-      #
-      # Sets the minimum number of threads in the gRPC thread pool. Only accepts static values;
-      # defaults to the number of cores available.
-      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_GRPCMINTHREADS.
-      # grpcMinThreads:
-      #
-      # Sets the maximum number of threads in the gRPC thread pool. Only accepts static values;
-      # defaults to twice the number of cores available.
-      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_GRPCMAXTHREADS.
-      # grpcMaxThreads:
 
     # security:
       # Enables TLS authentication between clients and the gateway
@@ -230,6 +259,19 @@
       # Enables long polling for available jobs
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_ENABLED.
       # enabled: true
+
+      # Set the timeout for long polling in milliseconds
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_TIMEOUT.
+      # timeout: 10000
+
+      # Set the probe timeout for long polling in milliseconds
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_PROBETIMEOUT.
+      # probeTimeout: 10000
+
+      # Set the number of minimum empty responses, a minimum number of responses with jobCount of 0
+      # infers that no jobs are available
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_MINEMPTYRESPONSES.
+      # minEmptyResponses: 3
 
     # multiTenancy:
       # Enables multi tenancy for the gateway.

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
@@ -14,11 +14,8 @@ import io.camunda.zeebe.backup.management.NoopBackupManager;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
-import io.camunda.zeebe.journal.file.SegmentFile;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.nio.file.Path;
-import java.util.function.Predicate;
 
 public final class BackupServiceTransitionStep implements PartitionTransitionStep {
 
@@ -102,9 +99,6 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
     // now because SegmentedJournal requires some information from RaftContext in its builder. Until
     // we can refactor SegmentedJournal and build it outside of raft, we have to do this in this
     // hacky way.
-    final Predicate<Path> isSegmentsFile =
-        path ->
-            SegmentFile.isSegmentFile(context.getRaftPartition().name(), path.toFile().getName());
     final BackupService backupManager =
         new BackupService(
             context.getNodeId(),
@@ -113,7 +107,7 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
             context.getBackupStore(),
             context.getPersistedSnapshotStore(),
             context.getRaftPartition().dataDirectory().toPath(),
-            isSegmentsFile);
+            index -> context.getRaftPartition().getServer().getTailSegments(index));
 
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context

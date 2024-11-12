@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.common;
 
@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.state.immutable.EventScopeInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -184,11 +183,13 @@ public final class EventHandle {
     }
   }
 
-  public void triggerMessageStartEvent(
+  public long triggerMessageStartEvent(
       final long subscriptionKey,
       final MessageStartEventSubscriptionRecord subscription,
       final long messageKey,
-      final MessageRecord message) {
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey,
+      final DirectBuffer variables) {
 
     final var newProcessInstanceKey = keyGenerator.nextKey();
     startEventSubscriptionRecord
@@ -196,10 +197,10 @@ public final class EventHandle {
         .setBpmnProcessId(subscription.getBpmnProcessIdBuffer())
         .setStartEventId(subscription.getStartEventIdBuffer())
         .setProcessInstanceKey(newProcessInstanceKey)
-        .setCorrelationKey(message.getCorrelationKeyBuffer())
+        .setCorrelationKey(correlationKey)
         .setMessageKey(messageKey)
-        .setMessageName(message.getNameBuffer())
-        .setVariables(message.getVariablesBuffer())
+        .setMessageName(messageName)
+        .setVariables(variables)
         .setTenantId(subscription.getTenantId());
 
     stateWriter.appendFollowUpEvent(
@@ -211,8 +212,10 @@ public final class EventHandle {
         subscription.getProcessDefinitionKey(),
         newProcessInstanceKey,
         startEventSubscriptionRecord.getStartEventIdBuffer(),
-        message.getVariablesBuffer(),
+        variables,
         subscription.getTenantId());
+
+    return newProcessInstanceKey;
   }
 
   public void activateProcessInstanceForStartEvent(

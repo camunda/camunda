@@ -31,13 +31,13 @@ jobs:
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
           ref: ${{ steps.target-branch.outputs.branch }}
 
       - name: Calculate changelog
-        uses: dlavrenuek/conventional-changelog-action@v1.2.4
+        uses: dlavrenuek/conventional-changelog-action@v1.2.5
         id: changelog
         with:
           from: ${{ github.event.inputs.commit }}

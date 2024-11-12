@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
     <relativePath>parent/pom.xml</relativePath>
   </parent>
 
@@ -20,18 +20,30 @@
     <module>parent</module>
     <module>dist</module>
     <module>build-tools</module>
-    <module>spring-boot-starter-camunda-sdk</module>
     <module>zeebe</module>
     <module>operate</module>
     <module>tasklist</module>
     <module>identity</module>
+    <module>webapps-common</module>
+    <module>webapps-schema</module>
+    <module>authentication</module>
+    <module>db</module>
+    <module>search</module>
+    <module>service</module>
+    <module>clients/java</module>
+    <module>clients/spring-boot-starter-camunda-sdk</module>
+    <module>testing/camunda-process-test-java</module>
+    <module>testing/camunda-process-test-spring</module>
+    <module>testing/camunda-process-test-example</module>
+    <module>document</module>
+    <module>security</module>
   </modules>
 
   <scm>
-    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/zeebe.git</developerConnection>
+    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</connection>
+    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</developerConnection>
     <tag>HEAD</tag>
-    <url>https://github.com/camunda/zeebe</url>
+    <url>https://github.com/camunda/camunda</url>
   </scm>
 
   <build>
@@ -50,9 +62,9 @@
             </includes>
             <excludes>
               <exclude>**/target/**/*.md</exclude>
-              <exclude>clients/go/vendor/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
               <exclude>tasklist/client/**/*.md</exclude>
+              <exclude>optimize/client/**/*.md</exclude>
             </excludes>
             <flexmark></flexmark>
           </markdown>
@@ -61,4 +73,36 @@
     </plugins>
   </build>
 
+  <profiles>
+    <!--
+      The QA module is enabled by default, but having it in a profile allows us to exclude it easily.
+      That is useful for example for creating releases. This profile is active if the skipQaBuild
+      property is not present, or is present and set to a value other than 'true'.
+      -->
+    <profile>
+      <id>integration-tests-build</id>
+      <activation>
+        <property>
+          <name>skipQaBuild</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <modules>
+        <module>qa</module>
+      </modules>
+    </profile>
+
+    <profile>
+      <id>include-optimize</id>
+      <activation>
+        <property>
+          <name>skipOptimize</name>
+          <value>!true</value>
+        </property>
+      </activation>
+      <modules>
+        <module>optimize</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>

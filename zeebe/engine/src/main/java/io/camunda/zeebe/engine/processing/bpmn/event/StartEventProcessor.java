@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.event;
 
@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
@@ -28,6 +29,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   private final BpmnIncidentBehavior incidentBehavior;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnStateBehavior stateBehavior;
+  private final BpmnJobBehavior jobBehavior;
 
   public StartEventProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -37,6 +39,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
     variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     stateBehavior = bpmnBehaviors.stateBehavior();
+    jobBehavior = bpmnBehaviors.jobBehavior();
   }
 
   @Override
@@ -45,7 +48,7 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   }
 
   @Override
-  public Either<Failure, ?> onActivate(
+  public Either<Failure, ?> finalizeActivation(
       final ExecutableStartEvent element, final BpmnElementContext context) {
     final var activated =
         stateTransitionBehavior.transitionToActivated(context, element.getEventType());
@@ -56,21 +59,30 @@ public class StartEventProcessor implements BpmnElementProcessor<ExecutableStart
   @Override
   public Either<Failure, ?> onComplete(
       final ExecutableStartEvent element, final BpmnElementContext context) {
+
+    return variableMappingBehavior.applyOutputMappings(context, element);
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableStartEvent element, final BpmnElementContext context) {
     final var flowScope = (ExecutableCatchEventSupplier) element.getFlowScope();
 
     final BpmnElementContextImpl flowScopeInstanceContext =
         buildContextForFlowScopeInstance(context);
 
-    return variableMappingBehavior
-        .applyOutputMappings(context, element)
-        .flatMap(
-            ok -> eventSubscriptionBehavior.subscribeToEvents(flowScope, flowScopeInstanceContext))
+    return eventSubscriptionBehavior
+        .subscribeToEvents(flowScope, flowScopeInstanceContext)
         .flatMap(ok -> stateTransitionBehavior.transitionToCompleted(element, context))
         .thenDo(completed -> stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed));
   }
 
   @Override
   public void onTerminate(final ExecutableStartEvent element, final BpmnElementContext context) {
+    if (element.hasExecutionListeners()) {
+      jobBehavior.cancelJob(context);
+    }
+
     final var terminated =
         stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
 

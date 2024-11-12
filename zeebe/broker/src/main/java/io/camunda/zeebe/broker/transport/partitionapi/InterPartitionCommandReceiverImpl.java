@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.transport.partitionapi;
 
@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.protocol.MessageHeaderDecoder;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
+import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
@@ -105,7 +106,8 @@ final class InterPartitionCommandReceiverImpl {
             .intent(CheckpointIntent.CREATE)
             .valueType(ValueType.CHECKPOINT);
     final var checkpointRecord = new CheckpointRecord().setCheckpointId(decoded.checkpointId);
-    return logStreamWriter.tryWrite(LogAppendEntry.of(metadata, checkpointRecord));
+    return logStreamWriter.tryWrite(
+        WriteContext.interPartition(), LogAppendEntry.of(metadata, checkpointRecord));
   }
 
   private Either<WriteFailure, Long> writeCommand(final DecodedMessage decoded) {
@@ -115,7 +117,7 @@ final class InterPartitionCommandReceiverImpl {
             .map(key -> LogAppendEntry.of(key, decoded.metadata(), decoded.command()))
             .orElseGet(() -> LogAppendEntry.of(decoded.metadata(), decoded.command()));
 
-    return logStreamWriter.tryWrite(appendEntry);
+    return logStreamWriter.tryWrite(WriteContext.interPartition(), appendEntry);
   }
 
   void setDiskSpaceAvailable(final boolean available) {

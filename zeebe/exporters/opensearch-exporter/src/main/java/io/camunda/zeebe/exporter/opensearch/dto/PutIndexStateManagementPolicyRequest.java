@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter.opensearch.dto;
 
@@ -20,7 +20,9 @@ public record PutIndexStateManagementPolicyRequest(Policy policy) {
 
     public record State(String name, List<Action> actions, List<Transition> transitions) {
 
-      public record Action(Object delete) {}
+      public record Action(DeleteAction delete) {}
+
+      public record DeleteAction() {}
 
       public record Transition(
           @JsonProperty("state_name") String stateName, Conditions conditions) {

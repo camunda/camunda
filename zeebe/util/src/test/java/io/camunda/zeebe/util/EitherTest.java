@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.util;
 
@@ -306,9 +306,9 @@ class EitherTest {
     }
   }
 
-  @DisplayName("Folding method tests")
+  @DisplayName("`fold` method tests")
   @Nested
-  class FoldingMethodTests {
+  class FoldMethodTests {
 
     @DisplayName("Folds `Left`s into target types using the left function.")
     @ParameterizedTest
@@ -318,7 +318,7 @@ class EitherTest {
       final Function<Object, String> rightMapper = o -> "Unexpected-" + o.toString();
       final String mappedValue = leftMapper.apply(value);
       assertThat(mappedValue).isNotEqualTo(value);
-      assertThat(Either.left(value).fold(rightMapper, leftMapper)).isEqualTo(mappedValue);
+      assertThat(Either.left(value).fold(leftMapper, rightMapper)).isEqualTo(mappedValue);
     }
 
     @DisplayName("Folds `Right`s into target types using the right function.")
@@ -329,7 +329,7 @@ class EitherTest {
       final Function<Object, String> rightMapper = o -> "Expected-" + o.toString();
       final String mappedValue = rightMapper.apply(value);
       assertThat(mappedValue).isNotEqualTo(value);
-      assertThat(Either.right(value).fold(rightMapper, leftMapper)).isEqualTo(mappedValue);
+      assertThat(Either.right(value).fold(leftMapper, rightMapper)).isEqualTo(mappedValue);
     }
   }
 }

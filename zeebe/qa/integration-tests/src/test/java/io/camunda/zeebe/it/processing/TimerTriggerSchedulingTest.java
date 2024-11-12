@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.processing;
 
@@ -31,7 +31,8 @@ public class TimerTriggerSchedulingTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   /**
-   * Regression test against issue <a href="https://github.com/camunda/zeebe/issues/17128">17128</a>
+   * Regression test against issue <a
+   * href="https://github.com/camunda/camunda/issues/17128">17128</a>
    *
    * <p>Given a process with a timer event that triggers some time in the future, and a process that
    * schedules a timer event every second, we should not produce many Timer TRIGGER commands for any

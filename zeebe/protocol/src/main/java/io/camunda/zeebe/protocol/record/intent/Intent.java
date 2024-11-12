@@ -15,8 +15,11 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
+import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_CORRELATION;
+
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -56,7 +59,16 @@ public interface Intent {
           FormIntent.class,
           UserTaskIntent.class,
           ProcessInstanceMigrationIntent.class,
-          CompensationSubscriptionIntent.class);
+          CompensationSubscriptionIntent.class,
+          MessageCorrelationIntent.class,
+          UserIntent.class,
+          ClockIntent.class,
+          AuthorizationIntent.class,
+          RoleIntent.class,
+          TenantIntent.class,
+          ScaleIntent.class,
+          GroupIntent.class,
+          MappingIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -140,6 +152,24 @@ public interface Intent {
         return ProcessInstanceMigrationIntent.from(intent);
       case COMPENSATION_SUBSCRIPTION:
         return CompensationSubscriptionIntent.from(intent);
+      case MESSAGE_CORRELATION:
+        return MessageCorrelationIntent.from(intent);
+      case USER:
+        return UserIntent.from(intent);
+      case CLOCK:
+        return ClockIntent.from(intent);
+      case AUTHORIZATION:
+        return AuthorizationIntent.from(intent);
+      case ROLE:
+        return RoleIntent.from(intent);
+      case TENANT:
+        return TenantIntent.from(intent);
+      case SCALE:
+        return ScaleIntent.from(intent);
+      case GROUP:
+        return GroupIntent.from(intent);
+      case MAPPING:
+        return MappingIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -215,6 +245,24 @@ public interface Intent {
         return ProcessInstanceMigrationIntent.valueOf(intent);
       case COMPENSATION_SUBSCRIPTION:
         return CompensationSubscriptionIntent.valueOf(intent);
+      case MESSAGE_CORRELATION:
+        return MessageCorrelationIntent.valueOf(intent);
+      case USER:
+        return UserIntent.valueOf(intent);
+      case CLOCK:
+        return ClockIntent.valueOf(intent);
+      case AUTHORIZATION:
+        return AuthorizationIntent.valueOf(intent);
+      case ROLE:
+        return RoleIntent.valueOf(intent);
+      case TENANT:
+        return TenantIntent.valueOf(intent);
+      case SCALE:
+        return ScaleIntent.valueOf(intent);
+      case GROUP:
+        return GroupIntent.valueOf(intent);
+      case MAPPING:
+        return MappingIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

@@ -2,25 +2,36 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.WILDCARD_PERMISSION;
+
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.MutableInteger;
@@ -37,23 +48,23 @@ final class JobBatchCollector {
 
   private final JobState jobState;
   private final JobVariablesCollector jobVariablesCollector;
+  private final AuthorizationCheckBehavior authCheckBehavior;
   private final Predicate<Integer> canWriteEventOfLength;
 
   /**
-   * @param jobState the state from which jobs are collected
-   * @param variableState the state from which variables are resolved and collected
    * @param canWriteEventOfLength a predicate which should return whether the resulting {@link
    *     TypedRecord} containing the {@link JobBatchRecord} will be writable or not. The predicate
    *     takes in the size of the record, and should return true if it can write such a record, and
    *     false otherwise
    */
   JobBatchCollector(
-      final JobState jobState,
-      final VariableState variableState,
-      final Predicate<Integer> canWriteEventOfLength) {
-    this.jobState = jobState;
+      final ProcessingState state,
+      final Predicate<Integer> canWriteEventOfLength,
+      final AuthorizationCheckBehavior authCheckBehavior) {
+    jobState = state.getJobState();
     this.canWriteEventOfLength = canWriteEventOfLength;
-    jobVariablesCollector = new JobVariablesCollector(variableState);
+    jobVariablesCollector = new JobVariablesCollector(state);
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   /**
@@ -65,9 +76,11 @@ final class JobBatchCollector {
    * key. On success, it will return the amount of jobs activated.
    *
    * @param record the batch activate command; jobs and their keys will be added directly into it
-   * @return the amount of activated jobs on success, or a job which was too large to activate
+   * @return the amount of activated jobs per jobKind on success, or a job which was too large to
+   *     activate on failure
    */
-  Either<TooLargeJob, Integer> collectJobs(final TypedRecord<JobBatchRecord> record) {
+  public Either<TooLargeJob, Map<JobKind, Integer>> collectJobs(
+      final TypedRecord<JobBatchRecord> record) {
     final JobBatchRecord value = record.getValue();
     final ValueArray<JobRecord> jobIterator = value.jobs();
     final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
@@ -79,11 +92,21 @@ final class JobBatchCollector {
         value.getTenantIds().isEmpty()
             ? List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
             : value.getTenantIds();
+    final Map<JobKind, Integer> jobCountPerJobKind = new EnumMap<>(JobKind.class);
+    final var authorizedProcessIds =
+        authCheckBehavior.getAuthorizedResourceIdentifiers(
+            new AuthorizationRequest(
+                record, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE));
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),
         tenantIds,
         (key, jobRecord) -> {
+          if (!isAuthorizedForJob(jobRecord, authorizedProcessIds)) {
+            // Skip Jobs the user is not authorized for
+            return true;
+          }
+
           // fill in the job record properties first in order to accurately estimate its size before
           // adding it to the batch
           final var deadline = record.getTimestamp() + value.getTimeout();
@@ -102,6 +125,10 @@ final class JobBatchCollector {
               && canWriteEventOfLength.test(expectedEventLength)) {
             appendJobToBatch(jobIterator, jobKeyIterator, key, jobRecord);
             activatedCount.increment();
+
+            // track the count of activated jobs by their JobKind
+            jobCountPerJobKind.merge(jobRecord.getJobKind(), 1, Integer::sum);
+
           } else {
             // if no jobs were activated, then the current job is simply too large, and we cannot
             // activate it
@@ -120,7 +147,13 @@ final class JobBatchCollector {
       return Either.left(unwritableJob.ref);
     }
 
-    return Either.right(activatedCount.value);
+    return Either.right(jobCountPerJobKind);
+  }
+
+  private boolean isAuthorizedForJob(
+      final JobRecord jobRecord, final Set<String> authorizedProcessIds) {
+    return authorizedProcessIds.contains(WILDCARD_PERMISSION)
+        || authorizedProcessIds.contains(jobRecord.getBpmnProcessId());
   }
 
   private void appendJobToBatch(

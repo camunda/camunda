@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.management;
 
@@ -26,12 +26,16 @@ import org.junit.jupiter.api.Test;
 @ZeebeIntegration
 @AutoCloseResources
 final class JobStreamEndpointIT {
-  @TestZeebe
-  private static final TestCluster CLUSTER =
-      TestCluster.builder().withGatewaysCount(2).withEmbeddedGateway(false).build();
+  @TestZeebe(initMethod = "initTestCluster")
+  private static TestCluster cluster;
 
-  private final TestGateway<?> gateway = CLUSTER.availableGateway();
+  private final TestGateway<?> gateway = cluster.availableGateway();
   @AutoCloseResource private final ZeebeClient client = gateway.newClientBuilder().build();
+
+  @SuppressWarnings("unused")
+  static void initTestCluster() {
+    cluster = TestCluster.builder().withGatewaysCount(2).withEmbeddedGateway(false).build();
+  }
 
   @AfterEach
   void afterEach() {
@@ -69,7 +73,7 @@ final class JobStreamEndpointIT {
         .send();
 
     // then
-    final var brokerActuator = JobStreamActuator.of(CLUSTER.brokers().get(MemberId.from("0")));
+    final var brokerActuator = JobStreamActuator.of(cluster.brokers().get(MemberId.from("0")));
     Awaitility.await("until foo stream is registered")
         .untilAsserted(
             () ->
@@ -99,7 +103,7 @@ final class JobStreamEndpointIT {
     // given
     //noinspection resource
     final var otherGateway =
-        CLUSTER.gateways().values().stream()
+        cluster.gateways().values().stream()
             .filter(g -> !g.nodeId().equals(gateway.nodeId()))
             .findAny()
             .orElseThrow();
@@ -122,7 +126,7 @@ final class JobStreamEndpointIT {
           .send();
 
       // then
-      final var brokerActuator = JobStreamActuator.of(CLUSTER.brokers().get(MemberId.from("0")));
+      final var brokerActuator = JobStreamActuator.of(cluster.brokers().get(MemberId.from("0")));
       Awaitility.await("until all streams are registered")
           .untilAsserted(
               () ->

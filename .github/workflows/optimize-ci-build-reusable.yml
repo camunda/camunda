@@ -1,0 +1,104 @@
+# This GitHub Actions workflow automates the CI build process for the 'optimize' service.
+# It triggers on a `workflow_call` event and accepts inputs for branch name[required], Java version[optional]
+#
+# It consists of a several steps:
+# 1. Setup: Checks out the branch, defines environment variables, fetches the main branch, reads Java/Maven project info, logs into the Harbor registry, and sets up Maven.
+# 2. Build: Generates a production .tar.gz file using Maven and builds a Docker image with appropriate tags.
+# 3. Upload: Pushes the Docker image to the Harbor registry tagged for the pull request.
+#
+# Environment variables are used to define the image tags used for Docker builds.
+# This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
+# and enables detailed reporting of test results.
+
+name: Optimize CI Reusable
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "The branch name to be used for the workflow"
+        required: true
+        type: string
+      pushDocker:
+        description: "Whether the built docker images are pushed to camunda registry"
+        type: boolean
+        default: false
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Setup: checkout branch
+      - name: Checkout '${{ inputs.branch }}' branch
+        uses: actions/checkout@v4
+        with:
+          ref: refs/heads/${{ inputs.branch }}
+          fetch-depth: 0 # fetches all history for all branches and tags
+
+      #########################################################################
+      # Setup: define env variables
+      - name: Set GitHub environment variables
+        run: |
+          GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
+          echo "GIT_COMMIT_HASH=$GIT_COMMIT_HASH" >> $GITHUB_ENV
+          echo "IMAGE_TAG=registry.camunda.cloud/team-camunda/optimize:pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
+
+      #########################################################################
+      # Setup: read java version from pom
+      - name: "Read Java / Version Info"
+        id: pom-info
+        uses: YunaBraska/java-info-action@72dd3fb638d774fb4353d99d2bb3fddddd084789 # 2.1.0
+        with:
+          work-dir: ./optimize
+
+      #########################################################################
+      # Setup and configure Maven
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          harbor: true
+          maven-cache-key-modifier: optimize
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      #########################################################################
+      # Build Optimize frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+
+      #########################################################################
+      # Build Optimize
+      - name: Generate production .tar.gz
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -P skipFrontendBuild,runAssembly -T 1
+
+      #########################################################################
+      # Build Docker image
+      - name: Build and push Docker image
+        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: optimize.Dockerfile
+          provenance: false
+          build-args: |
+            VERSION=${{ steps.pom-info.outputs.project_version }}
+            REVISION=${{ env.GIT_COMMIT_HASH }}
+          tags: ${{ env.IMAGE_TAG }}
+          push: ${{ inputs.pushDocker }}

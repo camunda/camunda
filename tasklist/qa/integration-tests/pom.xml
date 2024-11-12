@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-qa</artifactId>
-    <version>8.6.0-SNAPSHOT</version>
+    <version>8.7.0-SNAPSHOT</version>
   </parent>
   <artifactId>tasklist-it-tests</artifactId>
 
@@ -51,13 +51,13 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-850</artifactId>
+      <artifactId>tasklist-importer-860</artifactId>
       <scope>test</scope>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer-860</artifactId>
+      <artifactId>tasklist-importer-870</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -122,11 +122,6 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-starter-logging</artifactId>
         </exclusion>
-        <!-- Tasklist depends on org.json:json -->
-        <exclusion>
-          <groupId>com.vaadin.external.google</groupId>
-          <artifactId>android-json</artifactId>
-        </exclusion>
       </exclusions>
     </dependency>
 
@@ -175,6 +170,12 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -235,6 +236,18 @@
     <dependency>
       <groupId>com.graphql-java-kickstart</groupId>
       <artifactId>graphql-spring-boot-test-autoconfigure</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.graphql-java-kickstart</groupId>
+      <artifactId>graphql-spring-boot-autoconfigure</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.graphql-java</groupId>
+      <artifactId>graphql-java</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -323,6 +336,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-text</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
       <scope>test</scope>
@@ -349,12 +368,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -389,12 +402,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.json</groupId>
-      <artifactId>json</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
       <scope>test</scope>
@@ -415,6 +422,77 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-jose</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-zeebe</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-plugin</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-connect</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wiremock</groupId>
+      <artifactId>wiremock</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>net.bytebuddy</groupId>
+      <artifactId>byte-buddy</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-authentication</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpasyncclient</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -488,7 +566,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <version>3.3.0</version>
         <executions>
           <execution>
             <goals>
@@ -508,10 +585,10 @@
           </ignoredUsedUndeclaredDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
+            <dependency>jakarta.json:jakarta.json-api</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>org.glassfish:jakarta.json</dependency>
-            <dependency>org.json:json</dependency>
-            <dependency>io.camunda:tasklist-importer-850</dependency>
+            <dependency>io.camunda:tasklist-importer-860</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>
@@ -545,8 +622,11 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
+                  <environmentVariables>
+                    <DATABASE>opensearch</DATABASE>
+                  </environmentVariables>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>up</argument>
                     <argument>-d</argument>
@@ -562,9 +642,12 @@
                 </goals>
                 <phase>post-integration-test</phase>
                 <configuration>
+                  <environmentVariables>
+                    <DATABASE>opensearch</DATABASE>
+                  </environmentVariables>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>down</argument>
                   </arguments>
@@ -606,8 +689,11 @@
                 <phase>pre-integration-test</phase>
                 <configuration>
                   <skip>${skipTests}</skip>
+                  <environmentVariables>
+                    <DATABASE>elasticsearch</DATABASE>
+                  </environmentVariables>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>up</argument>
                     <argument>-d</argument>
@@ -623,9 +709,12 @@
                 </goals>
                 <phase>post-integration-test</phase>
                 <configuration>
+                  <environmentVariables>
+                    <DATABASE>elasticsearch</DATABASE>
+                  </environmentVariables>
                   <skip>${skipTests}</skip>
                   <executable>docker-compose</executable>
-                  <workingDirectory>..</workingDirectory>
+                  <workingDirectory>../../config</workingDirectory>
                   <arguments>
                     <argument>down</argument>
                   </arguments>

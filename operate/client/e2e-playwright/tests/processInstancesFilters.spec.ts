@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE ("USE"), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * "Licensee" means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
 import {setup} from './processInstancesFilters.mocks';
@@ -47,12 +38,12 @@ test.beforeEach(async ({page, dashboardPage}) => {
 });
 
 test.describe('Process Instances Filters', () => {
-  test('Apply Filters', async ({page, processesPage}) => {
+  test('Apply Filters', async ({page, processesPage: {filtersPanel}}) => {
     const callActivityProcessInstanceKey =
       initialData.callActivityProcessInstance.processInstanceKey;
 
-    await processesPage.displayOptionalFilter('Parent Process Instance Key');
-    await processesPage.parentProcessInstanceKey.type(
+    await filtersPanel.displayOptionalFilter('Parent Process Instance Key');
+    await filtersPanel.parentProcessInstanceKey.type(
       callActivityProcessInstanceKey,
     );
     await expect(
@@ -82,15 +73,15 @@ test.describe('Process Instances Filters', () => {
 
     await expect(await rowCount).toBe(1);
 
-    await processesPage.resetFiltersButton.click();
-    await expect(processesPage.parentProcessInstanceKey).not.toBeVisible();
+    await filtersPanel.resetFiltersButton.click();
+    await expect(filtersPanel.parentProcessInstanceKey).not.toBeVisible();
     await expect.poll(() => allRows.count()).toBeGreaterThan(1);
 
     await page.locator('label').filter({hasText: 'Completed'}).click();
 
     let currentRowCount = await allRows.count();
-    await processesPage.displayOptionalFilter('End Date Range');
-    await processesPage.pickDateTimeRange({
+    await filtersPanel.displayOptionalFilter('End Date Range');
+    await filtersPanel.pickDateTimeRange({
       fromDay: '1',
       toDay: `${day}`,
     });
@@ -98,19 +89,19 @@ test.describe('Process Instances Filters', () => {
     await expect.poll(() => allRows.count()).toBeLessThan(currentRowCount);
 
     currentRowCount = await allRows.count();
-    await processesPage.resetFiltersButton.click();
+    await filtersPanel.resetFiltersButton.click();
     await expect.poll(() => allRows.count()).toBeGreaterThan(currentRowCount);
 
     currentRowCount = await allRows.count();
-    await processesPage.displayOptionalFilter('Error Message');
-    await processesPage.errorMessageFilter.type(
+    await filtersPanel.displayOptionalFilter('Error Message');
+    await filtersPanel.errorMessageFilter.type(
       "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'",
     );
 
     await expect.poll(() => allRows.count()).toBeLessThan(currentRowCount);
 
-    await processesPage.displayOptionalFilter('Start Date Range');
-    await processesPage.pickDateTimeRange({
+    await filtersPanel.displayOptionalFilter('Start Date Range');
+    await filtersPanel.pickDateTimeRange({
       fromDay: '1',
       toDay: '1',
       fromTime: '00:00:00',
@@ -121,30 +112,29 @@ test.describe('Process Instances Filters', () => {
       page.getByText('There are no Instances matching this filter set'),
     ).toBeVisible();
 
-    await processesPage.resetFiltersButton.click();
+    await filtersPanel.resetFiltersButton.click();
     await expect(
       page.getByText('There are no Instances matching this filter set'),
     ).not.toBeVisible();
 
-    await expect(processesPage.errorMessageFilter).not.toBeVisible();
-    await expect(processesPage.startDateFilter).not.toBeVisible();
+    await expect(filtersPanel.errorMessageFilter).not.toBeVisible();
+    await expect(filtersPanel.startDateFilter).not.toBeVisible();
   });
 
   test('Interaction between diagram and filters', async ({
     page,
     processesPage,
+    processesPage: {filtersPanel},
   }) => {
-    await processesPage.selectProcess('Process With Multiple Versions');
+    await filtersPanel.selectProcess('Process With Multiple Versions');
 
-    await expect(await processesPage.processVersionFilter.innerText()).toBe(
-      '2',
-    );
+    await expect(await filtersPanel.processVersionFilter.innerText()).toBe('2');
 
     // change version and see flow node filter has been reset
-    await processesPage.selectVersion('1');
-    await expect(processesPage.flowNodeFilter).toHaveValue('');
+    await filtersPanel.selectVersion('1');
+    await expect(filtersPanel.flowNodeFilter).toHaveValue('');
 
-    await processesPage.selectFlowNode('StartEvent_1');
+    await filtersPanel.selectFlowNode('StartEvent_1');
     await expect(
       page.getByText('There are no Instances matching this filter set'),
     ).toBeVisible();
@@ -152,7 +142,7 @@ test.describe('Process Instances Filters', () => {
     // select another flow node from the diagram
     await processesPage.diagram.clickFlowNode('always fails');
 
-    await expect(processesPage.flowNodeFilter).toHaveValue('Always fails');
+    await expect(filtersPanel.flowNodeFilter).toHaveValue('Always fails');
 
     // select same flow node again and see filter is removed
     await processesPage.diagram.clickFlowNode('always fails');
@@ -161,10 +151,14 @@ test.describe('Process Instances Filters', () => {
       page.getByText('There are no Instances matching this filter set'),
     ).not.toBeVisible();
 
-    await expect(processesPage.flowNodeFilter).toHaveValue('');
+    await expect(filtersPanel.flowNodeFilter).toHaveValue('');
   });
 
-  test('variable filters', async ({page, processesPage}) => {
+  test('variable filters', async ({
+    page,
+    processesPage,
+    processesPage: {filtersPanel},
+  }) => {
     const {
       callActivityProcessInstance: {
         processInstanceKey: callActivityProcessInstanceKey,
@@ -173,16 +167,16 @@ test.describe('Process Instances Filters', () => {
     } = initialData;
 
     // filter by process instances keys, including completed instances
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
-    await processesPage.processInstanceKeysFilter.fill(
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.processInstanceKeysFilter.fill(
       `${orderProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
     );
-    await processesPage.completedCheckbox.check({force: true});
+    await filtersPanel.completedCheckbox.check({force: true});
 
     // add variable filter
-    await processesPage.displayOptionalFilter('Variable');
-    await processesPage.variableNameFilter.fill('filtersTest');
-    await processesPage.variableValueFilter.fill('123');
+    await filtersPanel.displayOptionalFilter('Variable');
+    await filtersPanel.variableNameFilter.fill('filtersTest');
+    await filtersPanel.variableValueFilter.fill('123');
 
     // open json editor modal and check content
     await page.getByRole('button', {name: /open json editor modal/i}).click();
@@ -215,9 +209,9 @@ test.describe('Process Instances Filters', () => {
     ).not.toBeVisible();
 
     // switch to multiple mode and add multiple variables
-    await page.getByRole('switch', {name: /multiple/i}).click({force: true});
-    await processesPage.variableNameFilter.fill('filtersTest');
-    await processesPage.variableValueFilter.fill('123, 456');
+    await filtersPanel.multipleVariablesSwitch.click({force: true});
+    await filtersPanel.variableNameFilter.fill('filtersTest');
+    await filtersPanel.variableValueFilter.fill('123, 456');
 
     // open editor modal and check content
     await page.getByRole('button', {name: /open editor modal/i}).click();

@@ -2,13 +2,13 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
 import io.camunda.zeebe.el.Expression;
-import io.camunda.zeebe.protocol.record.value.ExecutionListenerEventType;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -60,7 +60,9 @@ public class ExecutableFlowNode extends AbstractFlowElement {
   }
 
   public void addListener(
-      final ExecutionListenerEventType eventType, final Expression type, final Expression retries) {
+      final ZeebeExecutionListenerEventType eventType,
+      final Expression type,
+      final Expression retries) {
     final ExecutionListener listener = new ExecutionListener();
     listener.setEventType(eventType);
 
@@ -73,13 +75,17 @@ public class ExecutableFlowNode extends AbstractFlowElement {
 
   public List<ExecutionListener> getStartExecutionListeners() {
     return executionListeners.stream()
-        .filter(el -> el.getEventType() == ExecutionListenerEventType.START)
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.start)
         .toList();
   }
 
   public List<ExecutionListener> getEndExecutionListeners() {
     return executionListeners.stream()
-        .filter(el -> el.getEventType() == ExecutionListenerEventType.END)
+        .filter(el -> el.getEventType() == ZeebeExecutionListenerEventType.end)
         .toList();
+  }
+
+  public boolean hasExecutionListeners() {
+    return !executionListeners.isEmpty();
   }
 }

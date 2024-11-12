@@ -2,13 +2,11 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.impl.job;
 
-import com.google.rpc.Code;
-import com.google.rpc.Status;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -17,29 +15,25 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.broker.client.impl.PartitionIdIterator;
 import io.camunda.zeebe.broker.client.impl.RoundRobinDispatchStrategy;
 import io.camunda.zeebe.gateway.Loggers;
-import io.camunda.zeebe.gateway.ResponseMapper;
-import io.camunda.zeebe.gateway.ResponseMapper.JobActivationResult;
-import io.camunda.zeebe.gateway.grpc.ServerStreamObserver;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerFailJobRequest;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
+import io.camunda.zeebe.gateway.impl.job.JobActivationResult.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.util.Either;
-import io.grpc.protobuf.StatusProto;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Iterates in round-robin fashion over partitions to activate jobs. Uses a map from job type to
  * partition-IDs to determine the next partition to use.
  */
-public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler {
+public final class RoundRobinActivateJobsHandler<T> implements ActivateJobsHandler<T> {
 
   private static final String ACTIVATE_JOB_NOT_SENT_MSG = "Failed to send activated jobs to client";
   private static final String ACTIVATE_JOB_NOT_SENT_MSG_WITH_REASON =
@@ -52,13 +46,21 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
   private final long maxMessageSize;
+  private final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper;
 
   private ActorControl actor;
+  private final Function<String, Throwable> requestCanceledExceptionProvider;
 
-  public RoundRobinActivateJobsHandler(final BrokerClient brokerClient, final long maxMessageSize) {
+  public RoundRobinActivateJobsHandler(
+      final BrokerClient brokerClient,
+      final long maxMessageSize,
+      final Function<JobActivationResponse, JobActivationResult<T>> activationResultMapper,
+      final Function<String, Throwable> requestCanceledExceptionProvider) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
     this.maxMessageSize = maxMessageSize;
+    this.activationResultMapper = activationResultMapper;
+    this.requestCanceledExceptionProvider = requestCanceledExceptionProvider;
   }
 
   @Override
@@ -69,12 +71,13 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   @Override
   public void activateJobs(
       final BrokerActivateJobsRequest request,
-      final ServerStreamObserver<ActivateJobsResponse> responseObserver,
+      final ResponseObserver<T> responseObserver,
+      final Consumer<Runnable> setCancelHandler,
       final long requestTimeout) {
     final var topology = topologyManager.getTopology();
     if (topology != null) {
       final var inflightRequest =
-          new InflightActivateJobsRequest(
+          new InflightActivateJobsRequest<>(
               ACTIVATE_JOBS_REQUEST_ID_GENERATOR.getAndIncrement(),
               request,
               responseObserver,
@@ -89,7 +92,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
 
   public void activateJobs(
       final int partitionsCount,
-      final InflightActivateJobsRequest request,
+      final InflightActivateJobsRequest<T> request,
       final Consumer<Throwable> onError,
       final BiConsumer<Integer, Boolean> onCompleted) {
     final var jobType = request.getType();
@@ -104,7 +107,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   }
 
   private void activateJobs(
-      final InflightActivateJobsRequest request,
+      final InflightActivateJobsRequest<T> request,
       final InflightActivateJobsRequestState requestState,
       final ResponseObserverDelegate delegate) {
     actor.run(
@@ -136,7 +139,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   }
 
   private BiConsumer<BrokerResponse<JobBatchRecord>, Throwable> handleBrokerResponse(
-      final InflightActivateJobsRequest request,
+      final InflightActivateJobsRequest<T> request,
       final InflightActivateJobsRequestState requestState,
       final ResponseObserverDelegate delegate) {
     return (brokerResponse, error) -> {
@@ -149,20 +152,20 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   }
 
   private void handleResponseSuccess(
-      final InflightActivateJobsRequest request,
+      final InflightActivateJobsRequest<T> request,
       final InflightActivateJobsRequestState requestState,
       final ResponseObserverDelegate delegate,
       final BrokerResponse<JobBatchRecord> brokerResponse) {
     actor.run(
         () -> {
           final var response = brokerResponse.getResponse();
-          final JobActivationResult jobActivationResult =
-              ResponseMapper.toActivateJobsResponse(
-                  brokerResponse.getKey(), response, maxMessageSize);
+          final JobActivationResult<T> jobActivationResult =
+              activationResultMapper.apply(
+                  new JobActivationResponse(brokerResponse.getKey(), response, maxMessageSize));
 
-          final List<ActivatedJob> jobsToDefer = jobActivationResult.jobsToDefer();
+          final List<ActivatedJob> jobsToDefer = jobActivationResult.getJobsToDefer();
           if (!jobsToDefer.isEmpty()) {
-            final var jobKeys = jobsToDefer.stream().map(ActivatedJob::getKey).toList();
+            final var jobKeys = jobsToDefer.stream().map(ActivatedJob::key).toList();
             final var jobType = request.getType();
             final var reason = String.format(MAX_MESSAGE_SIZE_EXCEEDED_MSG, maxMessageSize);
 
@@ -170,15 +173,15 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
             reactivateJobs(jobsToDefer, reason);
           }
 
-          final ActivateJobsResponse grpcResponse = jobActivationResult.activateJobsResponse();
-          final var jobsCount = grpcResponse.getJobsCount();
+          final T activateJobsResponse = jobActivationResult.getActivateJobsResponse();
+          final var jobsCount = jobActivationResult.getJobsCount();
           final var jobsActivated = jobsCount > 0;
           if (jobsActivated) {
-            final var result = request.tryToSendActivatedJobs(grpcResponse);
+            final var result = request.tryToSendActivatedJobs(activateJobsResponse);
             final var responseWasSent = result.getOrElse(false);
 
             if (!responseWasSent) {
-              final var activatedJobsToReactivate = grpcResponse.getJobsList();
+              final var activatedJobsToReactivate = jobActivationResult.getJobs();
               final var jobKeys = response.getJobKeys();
               final var jobType = request.getType();
               final var reason = createReasonMessage(result);
@@ -224,24 +227,22 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
             (response, error) -> {
               if (error != null) {
                 Loggers.GATEWAY_LOGGER.info(
-                    "Failed to reactivate job {} due to {}", job.getKey(), error.getMessage());
+                    "Failed to reactivate job {} due to {}", job.key(), error.getMessage());
               }
             });
   }
 
   private BrokerFailJobRequest toFailJobRequest(final ActivatedJob job, final String errorMessage) {
-    return new BrokerFailJobRequest(job.getKey(), job.getRetries(), 0)
-        .setErrorMessage(errorMessage);
+    return new BrokerFailJobRequest(job.key(), job.retries(), 0).setErrorMessage(errorMessage);
   }
 
   private void cancelActivateJobsRequest(
       final String reason, final ResponseObserverDelegate delegate) {
-    final var status = Status.newBuilder().setCode(Code.CANCELLED_VALUE).setMessage(reason).build();
-    delegate.onError(StatusProto.toStatusException(status));
+    delegate.onError(requestCanceledExceptionProvider.apply(reason));
   }
 
   private void handleResponseError(
-      final InflightActivateJobsRequest request,
+      final InflightActivateJobsRequest<T> request,
       final InflightActivateJobsRequestState state,
       final ResponseObserverDelegate delegate,
       final Throwable error) {

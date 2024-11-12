@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.scheduler.future;
 
@@ -108,7 +108,7 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * Convenience wrapper over {@link #andThen(Function, Executor)} for the case where the next step
    * does not require the result of this future.
    */
-  ActorFuture<V> andThen(Supplier<ActorFuture<V>> next, Executor executor);
+  <U> ActorFuture<U> andThen(Supplier<ActorFuture<U>> next, Executor executor);
 
   /**
    * Similar to {@link CompletableFuture#thenCompose(Function)} in that it applies a function to the
@@ -122,6 +122,25 @@ public interface ActorFuture<V> extends Future<V>, BiConsumer<V, Throwable> {
    * @return a new future that completes with the result of applying the function to the result of
    *     this future or exceptionally if this future completes exceptionally. This future can be
    *     used for further chaining.
+   * @param <U> the type of the new future
    */
-  ActorFuture<V> andThen(Function<V, ActorFuture<V>> next, Executor executor);
+  <U> ActorFuture<U> andThen(Function<V, ActorFuture<U>> next, Executor executor);
+
+  /**
+   * Similar to {@link CompletableFuture#thenApply(Function)} in that it applies a function to the
+   * result of this future, allowing you to change types on the fly.
+   *
+   * <p>Implementations may be somewhat inefficient and create intermediate futures, schedule
+   * completion callbacks on the provided executor etc. As such, it should normally be used for
+   * orchestrating futures in a non-performance critical context, for example for startup and
+   * shutdown sequence.
+   *
+   * @param next function to apply to the result of this future.
+   * @param executor The executor used to handle completion callbacks.
+   * @return a new future that completes with the result of applying the function to the result of
+   *     this future or exceptionally if this future completes exceptionally. This future can be
+   *     used for further chaining.
+   * @param <U> the type of the new future
+   */
+  <U> ActorFuture<U> thenApply(Function<V, U> next, Executor executor);
 }

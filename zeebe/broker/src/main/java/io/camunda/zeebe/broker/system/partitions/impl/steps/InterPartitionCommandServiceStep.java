@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
@@ -87,23 +87,22 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
 
   private ActorFuture<Void> installReceiver(final PartitionTransitionContext context) {
     final ActorFuture<Void> future = context.getConcurrencyControl().createFuture();
-
+    final var logStreamWriter = context.getLogStream().newLogStreamWriter();
+    final var receiver =
+        new InterPartitionCommandReceiverActor(
+            context.getPartitionId(), context.getClusterCommunicationService(), logStreamWriter);
     context
-        .getLogStream()
-        .newLogStreamWriter()
+        .getActorSchedulingService()
+        .submitActor(receiver)
         .onComplete(
-            (writer, error) -> {
+            (ignore, error) -> {
               if (error != null) {
                 future.completeExceptionally(error);
-                return;
+              } else {
+                context.setPartitionCommandReceiver(receiver);
+                context.getCheckpointProcessor().addCheckpointListener(receiver);
+                future.complete(null);
               }
-              final var receiver =
-                  new InterPartitionCommandReceiverActor(
-                      context.getPartitionId(), context.getClusterCommunicationService(), writer);
-              context.getActorSchedulingService().submitActor(receiver);
-              context.setPartitionCommandReceiver(receiver);
-              context.getCheckpointProcessor().addCheckpointListener(receiver);
-              future.complete(null);
             });
     return future;
   }

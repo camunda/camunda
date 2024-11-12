@@ -1,0 +1,237 @@
+name: Optimize Command Engineering
+on:
+  repository_dispatch:
+    types: [eng-command]
+jobs:
+  optimize-eng-command:
+    name: Eng Command
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Create URL to the run output
+        id: vars
+        run: |
+          {
+            echo "project_id=101"
+            echo "run_url=https://github.com/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+            echo "qa_engineer=RobertDorlan"
+            echo "pm=toco-cam"
+            echo "commenter=${{ github.event.client_payload.github.payload.comment.user.login }}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: GITHUB_OPTIMIZE_APP_ID
+          github-app-id-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          github-app-private-key-vault-key: GITHUB_OPTIMIZE_APP_KEY
+          github-app-private-key-vault-path: secret/data/products/optimize/ci/camunda-optimize
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID}}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Dump the client payload context
+        env:
+          PAYLOAD_CONTEXT: ${{ toJson(github.event.client_payload) }}
+        run: echo "$PAYLOAD_CONTEXT"
+
+      - name: Parse args
+        id: parse-args
+        run: |
+          ARG1=${{ github.event.client_payload.slash_command.args.unnamed.arg1 }}
+          ARG2=${{ github.event.client_payload.slash_command.args.unnamed.arg2 }}
+          REVIEWER="${ARG2//@/}"
+          COMMENTER="${{ github.event.client_payload.github.payload.comment.user.login }}"
+          {
+            echo "arg1=${ARG1}"
+            echo "arg2=${ARG2}"
+            echo "reviewer=${REVIEWER}"
+            echo "commenter=${COMMENTER}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Get issue project
+        id: issue-project
+        env:
+          ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
+          PROJECT_ID: ${{ steps.vars.outputs.project_id }}
+          PROJECT_OWNER: ${{ github.event.client_payload.github.payload.organization.login }}
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: ./.github/optimize/scripts/commands/get-issue-project-data.sh
+
+      - name: Get Engineering DRI
+        id: get-engineering-dri
+        env:
+          ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+        run: ./.github/optimize/scripts/commands/get-issue-engineering-dri.sh
+
+      - name: Validate inputs
+        run: |
+          # General checks
+          if [ -z "${{ steps.parse-args.outputs.arg1 }}" ]; then
+            echo "No command provided"
+            exit 1
+          fi
+          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'start' ]; then
+            if [ -z "${{ steps.get-engineering-dri.outputs.engineering_dri }}" ]; then
+              echo "Issue has no Engineering DRI"
+              exit 1
+            fi
+          fi
+          if [ "${{ steps.issue-project.outputs.is_in_project }}" != "true" ]; then
+            echo "Issue is not part of the '${{ steps.issue-project.outputs.project_title }}' project"
+            exit 1
+          fi
+
+          # Validate if the command is valid
+          if [ "${{ steps.parse-args.outputs.arg1 }}" != 'approve' ] &&
+             [ "${{ steps.parse-args.outputs.arg1 }}" != 'reject' ] &&
+             [ "${{ steps.parse-args.outputs.arg1 }}" != 'start' ] &&
+             [ "${{ steps.parse-args.outputs.arg1 }}" != 'review' ]; then
+            echo "Invalid command. See `/help` for more information"
+            exit 1
+          fi
+
+          project_status="${{ steps.issue-project.outputs.project_status }}"
+
+          # Validate 'review' command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'review' ]; then
+            # Check if reviewer is provided
+            if [ -z "${{ steps.parse-args.outputs.reviewer }}" ]; then
+              echo "No reviewer provided"
+              exit 1
+            fi
+
+            # Check if the issue is in the correct status
+            if [ "$project_status" != 'Ready' ] && [ "$project_status" != 'In Progress' ]; then
+              echo "Issue can be moved to Eng Review only from 'Ready' or 'In Progress' status"
+              exit 1
+            fi
+          fi
+
+          # Validate 'approve'/'reject' command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ] ||
+             [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            # Check if the issue is in the correct status
+            if [ "$project_status" != 'Eng Review' ]; then
+              echo "Eng Review can be approved/rejected only from 'Eng Review' status"
+              exit 1
+            fi
+          fi
+
+          # Validate 'start' command
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'start' ]; then
+            # Check if the issue is in the correct status
+            if [ "$project_status" != 'Global Backlog' ] ||
+               [ "$project_status" != 'Ready' ] ||
+               [ "$project_status" != 'On Hold' ] ||
+               [ "$project_status" != 'Inbox' ]; then
+              echo "Issue can be moved to In Progress only from 'Global Backlog', 'Ready', 'On Hold' or 'Inbox' status"
+              exit 1
+            fi
+          fi
+
+      - name: Get new assignee
+        id: assignee
+        run: |
+          new_assignee=""
+          remove_assignee=true
+
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa/notNeeded') }}" == "true" ]; then
+              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" == "true" ]; then
+                new_assignee="${{ steps.vars.outputs.pm }}"
+              else
+                new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"
+              fi
+            else
+              new_assignee="${{ steps.vars.outputs.qa_engineer }}"
+            fi
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            new_assignee="${{ steps.get-engineering-dri.outputs.engineering_dri }}"
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'review' ]; then
+            new_assignee="${{ steps.parse-args.outputs.reviewer }}"
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'start' ]; then
+            new_assignee="${{ steps.parse-args.outputs.commenter }}"
+          fi
+
+          echo "new_assignee=${new_assignee}" >> "$GITHUB_OUTPUT"
+          echo "remove_assignee=${remove_assignee}" >> "$GITHUB_OUTPUT"
+
+      - name: Assign new assignee
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ steps.assignee.outputs.remove_assignee }}" == "true" ]; then
+            gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --remove-assignee ""
+            sleep 2  # avoiding race condition between two commands
+          fi
+
+          if [ -n "${{ steps.assignee.outputs.new_assignee }}" ]; then
+            gh issue edit ${{ github.event.client_payload.github.payload.issue.html_url }} --add-assignee ${{ steps.assignee.outputs.new_assignee }}
+          fi
+
+      - name: Gen new status
+        id: status
+        run: |
+          new_status=""
+          if [ "${{ steps.parse-args.outputs.arg1 }}" == 'approve' ]; then
+            if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'qa/notNeeded') }}" == "true" ]; then
+              if [ "${{ contains(github.event.client_payload.github.payload.issue.labels.*.name, 'kind/epic') }}" == "true" ]; then
+                new_status="PM Review"
+              else
+                new_status="Ready to Complete"
+              fi
+            else
+              new_status="QA Review"
+            fi
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'reject' ]; then
+            new_status="In Progress"
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'review' ]; then
+            new_status="Eng Review"
+          elif [ "${{ steps.parse-args.outputs.arg1 }}" == 'start' ]; then
+            new_status="In Progress"
+          fi
+
+          echo "new_status=${new_status}" >> "$GITHUB_OUTPUT"
+
+      - name: Assign new status
+        if: steps.status.outputs.new_status != ''
+        uses: github/update-project-action@main
+        with:
+          github_token: ${{ steps.github-token.outputs.token }}
+          organization: ${{ github.event.client_payload.github.payload.organization.login }}
+          project_number: ${{ steps.vars.outputs.project_id }}
+          content_id: ${{ github.event.client_payload.github.payload.issue.node_id }}
+          field: Status
+          value: ${{ steps.status.outputs.new_status }}
+
+      - name: Add Engineering DRI to issue description
+        if: steps.parse-args.outputs.arg1 == 'start'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_URL: ${{ github.event.client_payload.github.payload.issue.html_url }}
+          ENGINEERING_DRI: ${{ steps.parse-args.outputs.commenter }}
+        run: .github/optimize/scripts/commands/add-engineering-dri-to-issue-description.sh
+
+      - name: Add reaction
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ steps.github-token.outputs.token }}
+          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          reactions: "+1"
+          reactions-edit-mode: replace
+
+      - name: Update comment in case of failure
+        if: failure()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
+          body: |
+            > Had issues fulfilling your command, check the [logs](${{ steps.vars.outputs.run_url }})
+          reactions: confused

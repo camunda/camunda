@@ -1,28 +1,21 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE ("USE"), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * "Licensee" means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
 import {setup} from './processes.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {convertToQueryString} from '../utils/convertToQueryString';
-import {deployProcess} from '../setup-utils';
+import {zeebeGrpcApi} from '../api/zeebe-grpc';
 import {config} from '../config';
 import {SETUP_WAITING_TIME} from './constants';
 import {Paths} from 'modules/Routes';
+
+const {deployProcesses} = zeebeGrpcApi;
 
 let initialData: Awaited<ReturnType<typeof setup>>;
 
@@ -104,28 +97,31 @@ test.beforeEach(async ({page, dashboardPage}) => {
 });
 
 test.describe('Processes', () => {
-  test('Processes Page Initial Load', async ({processesPage, page}) => {
-    await processesPage.validateCheckedState({
+  test('Processes Page Initial Load', async ({
+    processesPage: {filtersPanel},
+    page,
+  }) => {
+    await filtersPanel.validateCheckedState({
       checked: [
-        processesPage.runningInstancesCheckbox,
-        processesPage.activeCheckbox,
-        processesPage.incidentsCheckbox,
+        filtersPanel.runningInstancesCheckbox,
+        filtersPanel.activeCheckbox,
+        filtersPanel.incidentsCheckbox,
       ],
       unChecked: [
-        processesPage.finishedInstancesCheckbox,
-        processesPage.completedCheckbox,
-        processesPage.canceledCheckbox,
+        filtersPanel.finishedInstancesCheckbox,
+        filtersPanel.completedCheckbox,
+        filtersPanel.canceledCheckbox,
       ],
     });
 
     await expect(page.getByText('There is no Process selected')).toBeVisible();
     await expect(
-      page.getByText('To see a Diagram, select a Process in the Filters panel'),
+      page.getByText('To see a Diagram, select a Process in the filters panel'),
     ).toBeVisible();
 
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
+    await filtersPanel.displayOptionalFilter('Process Instance Key(s)');
 
-    await processesPage.processInstanceKeysFilter.fill(
+    await filtersPanel.processInstanceKeysFilter.fill(
       `${initialData.instanceWithoutAnIncident.processInstanceKey}, ${initialData.instanceWithAnIncident.processInstanceKey}`,
     );
 
@@ -147,38 +143,42 @@ test.describe('Processes', () => {
     ).toBeVisible();
   });
 
-  test('Select flow node in diagram', async ({processesPage, page}) => {
+  test('Select flow node in diagram', async ({
+    processesPage,
+    processesPage: {filtersPanel},
+    page,
+  }) => {
     const instance = initialData.instanceWithoutAnIncident;
+    const version = initialData.deployedProcess!.version.toString();
 
-    await processesPage.displayOptionalFilter('Process Instance Key(s)');
-
-    // Filter by Process Instance Key
-    await processesPage.processInstanceKeysFilter.fill(
-      instance.processInstanceKey,
-    );
-
-    await expect(page.getByTestId('diagram')).not.toBeInViewport();
-
-    await processesPage.selectProcess('Order process');
+    processesPage.navigateToProcesses({
+      searchParams: {
+        active: 'true',
+        incidents: 'true',
+        ids: instance.processInstanceKey,
+        process: instance.bpmnProcessId,
+        version,
+      },
+    });
 
     // Select "Ship Articles" flow node
     const shipArticlesTaskId = 'shipArticles';
     await expect(page.getByTestId('diagram')).toBeInViewport();
 
     await processesPage.diagram.clickFlowNode('Ship Articles');
-    await expect(processesPage.flowNodeFilter).toHaveValue('Ship Articles');
+    await expect(filtersPanel.flowNodeFilter).toHaveValue('Ship Articles');
 
     await expect(
       page.getByText('There are no Instances matching this filter set'),
     ).toBeVisible();
 
     await expect(page).toHaveURL(
-      `${Paths.processes()}?${convertToQueryString({
+      `.${Paths.processes()}?${convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
         process: 'orderProcess',
-        version: '1',
+        version,
         flowNodeId: shipArticlesTaskId,
       })}`,
     );
@@ -192,17 +192,17 @@ test.describe('Processes', () => {
     const checkPaymentTaskId = 'checkPayment';
 
     await processesPage.diagram.clickFlowNode('Check payment');
-    await expect(processesPage.flowNodeFilter).toHaveValue('Check payment');
+    await expect(filtersPanel.flowNodeFilter).toHaveValue('Check payment');
 
     await expect(page.getByRole('table').getByRole('row')).toHaveCount(2);
 
     await expect(page).toHaveURL(
-      `${Paths.processes()}?${convertToQueryString({
+      `.${Paths.processes()}?${convertToQueryString({
         active: 'true',
         incidents: 'true',
         ids: instance.processInstanceKey,
         process: 'orderProcess',
-        version: '1',
+        version,
         flowNodeId: checkPaymentTaskId,
       })}`,
     );
@@ -218,7 +218,11 @@ test.describe('Processes', () => {
     ).toHaveClass(/selected/);
   });
 
-  test('Wait for process creation', async ({processesPage, page}) => {
+  test('Wait for process creation', async ({
+    processesPage,
+    processesPage: {filtersPanel},
+    page,
+  }) => {
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
@@ -231,9 +235,9 @@ test.describe('Processes', () => {
     await expect(page.getByTestId('data-table-skeleton')).toBeVisible();
     await expect(page.getByTestId('diagram-spinner')).toBeVisible();
 
-    await expect(processesPage.processNameFilter).toBeDisabled();
+    await expect(filtersPanel.processNameFilter).toBeDisabled();
 
-    await deployProcess(['newProcess.bpmn']);
+    await deployProcesses(['newProcess.bpmn']);
 
     await expect(page.getByTestId('diagram')).toBeInViewport({timeout: 20000});
 
@@ -244,14 +248,15 @@ test.describe('Processes', () => {
       page.getByText('There are no Instances matching this filter set'),
     ).toBeVisible();
 
-    await expect(processesPage.processNameFilter).toBeEnabled();
-    await expect(processesPage.processNameFilter).toHaveValue('Test Process');
+    await expect(filtersPanel.processNameFilter).toBeEnabled();
+    await expect(filtersPanel.processNameFilter).toHaveValue('Test Process');
   });
 
-  test('Delete process definition after canceling running instance', async ({
+  test('Delete process definition after canceling running instance @roundtrip', async ({
     processesPage,
     page,
   }) => {
+    test.slow();
     await processesPage.navigateToProcesses({
       searchParams: {
         active: 'true',
@@ -321,7 +326,7 @@ test.describe('Processes', () => {
           const definitions: {total: number} = await response.json();
           return definitions.total;
         },
-        {timeout: SETUP_WAITING_TIME},
+        {timeout: 60000},
       )
       .toBe(0);
   });

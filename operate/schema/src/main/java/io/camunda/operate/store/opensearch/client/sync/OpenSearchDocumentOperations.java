@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.store.opensearch.client.sync;
 
@@ -64,33 +55,34 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   public static final int TERMS_AGG_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
 
-  public OpenSearchDocumentOperations(Logger logger, OpenSearchClient openSearchClient) {
+  public OpenSearchDocumentOperations(
+      final Logger logger, final OpenSearchClient openSearchClient) {
     super(logger, openSearchClient);
   }
 
-  private static Function<Exception, String> defaultSearchErrorMessage(String index) {
+  private static Function<Exception, String> defaultSearchErrorMessage(final String index) {
     return e -> format("Failed to search index: %s! Reason: %s", index, e.getMessage());
   }
 
-  private static String defaultDeleteErrorMessage(String index) {
+  private static String defaultDeleteErrorMessage(final String index) {
     return format("Failed to delete index: %s", index);
   }
 
-  private static String defaultPersistErrorMessage(String index) {
+  private static String defaultPersistErrorMessage(final String index) {
     return format("Failed to persist index: %s", index);
   }
 
-  private void clearScroll(String scrollId) {
+  private void clearScroll(final String scrollId) {
     if (scrollId != null) {
       try {
         openSearchClient.clearScroll(clearScrollRequest(scrollId));
-      } catch (Exception e) {
+      } catch (final Exception e) {
         logger.warn("Error occurred when clearing the scroll with id [{}]", scrollId);
       }
     }
   }
 
-  private void checkFailedShards(SearchRequest request, SearchResponse<?> response) {
+  private void checkFailedShards(final SearchRequest request, final SearchResponse<?> response) {
     if (!response.shards().failures().isEmpty()) {
       throw new OpenSearchFailedShardsException(
           format(
@@ -100,11 +92,11 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public <R> Map<String, Aggregate> unsafeScrollWith(
-      SearchRequest.Builder searchRequestBuilder,
-      Consumer<List<Hit<R>>> hitsConsumer,
-      Consumer<HitsMetadata<R>> hitsMetadataConsumer,
-      Class<R> clazz,
-      boolean retry)
+      final SearchRequest.Builder searchRequestBuilder,
+      final Consumer<List<Hit<R>>> hitsConsumer,
+      final Consumer<HitsMetadata<R>> hitsMetadataConsumer,
+      final Class<R> clazz,
+      final boolean retry)
       throws IOException {
     final var request = searchRequestBuilder.scroll(time(SCROLL_KEEP_ALIVE_MS)).build();
 
@@ -114,10 +106,10 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   private <R> Map<String, Aggregate> scrollWith(
-      SearchRequest request,
-      Consumer<List<Hit<R>>> hitsConsumer,
-      Consumer<HitsMetadata<R>> hitsMetadataConsumer,
-      Class<R> clazz)
+      final SearchRequest request,
+      final Consumer<List<Hit<R>>> hitsConsumer,
+      final Consumer<HitsMetadata<R>> hitsMetadataConsumer,
+      final Class<R> clazz)
       throws IOException {
     String scrollId = null;
 
@@ -153,17 +145,17 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   private <R> Map<String, Aggregate> safeScrollWith(
-      SearchRequest.Builder requestBuilder,
-      Class<R> entityClass,
-      Consumer<List<Hit<R>>> hitsConsumer) {
+      final SearchRequest.Builder requestBuilder,
+      final Class<R> entityClass,
+      final Consumer<List<Hit<R>>> hitsConsumer) {
     return safeScrollWith(requestBuilder, entityClass, hitsConsumer, null);
   }
 
   private <R> Map<String, Aggregate> safeScrollWith(
-      SearchRequest.Builder requestBuilder,
-      Class<R> entityClass,
-      Consumer<List<Hit<R>>> hitsConsumer,
-      Consumer<HitsMetadata<R>> hitsMetadataConsumer) {
+      final SearchRequest.Builder requestBuilder,
+      final Class<R> entityClass,
+      final Consumer<List<Hit<R>>> hitsConsumer,
+      final Consumer<HitsMetadata<R>> hitsMetadataConsumer) {
     return safe(
         () ->
             unsafeScrollWith(
@@ -172,7 +164,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   private <R> AggregatedResult<R> scroll(
-      SearchRequest.Builder searchRequestBuilder, Class<R> clazz, boolean retry)
+      final SearchRequest.Builder searchRequestBuilder, final Class<R> clazz, final boolean retry)
       throws IOException {
     final var result = scrollHits(searchRequestBuilder, clazz, retry);
     return new AggregatedResult<>(
@@ -180,7 +172,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public <R> AggregatedResult<Hit<R>> scrollHits(
-      SearchRequest.Builder searchRequestBuilder, Class<R> clazz) throws IOException {
+      final SearchRequest.Builder searchRequestBuilder, final Class<R> clazz) throws IOException {
     final List<Hit<R>> result = new ArrayList<>();
     final var aggregates =
         unsafeScrollWith(searchRequestBuilder, result::addAll, null, clazz, false);
@@ -188,7 +180,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public <R> AggregatedResult<Hit<R>> scrollHits(
-      SearchRequest.Builder searchRequestBuilder, Class<R> clazz, boolean retry)
+      final SearchRequest.Builder searchRequestBuilder, final Class<R> clazz, final boolean retry)
       throws IOException {
     final List<Hit<R>> result = new ArrayList<>();
     final var aggregates =
@@ -197,56 +189,58 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public <R> void scrollWith(
-      SearchRequest.Builder requestBuilder,
-      Class<R> entityClass,
-      Consumer<List<Hit<R>>> hitsConsumer) {
+      final SearchRequest.Builder requestBuilder,
+      final Class<R> entityClass,
+      final Consumer<List<Hit<R>>> hitsConsumer) {
     safeScrollWith(requestBuilder, entityClass, hitsConsumer);
   }
 
   public <R> void scrollWith(
-      SearchRequest.Builder requestBuilder,
-      Class<R> entityClass,
-      Consumer<List<Hit<R>>> hitsConsumer,
-      Consumer<HitsMetadata<R>> hitsMetadataConsumer) {
+      final SearchRequest.Builder requestBuilder,
+      final Class<R> entityClass,
+      final Consumer<List<Hit<R>>> hitsConsumer,
+      final Consumer<HitsMetadata<R>> hitsMetadataConsumer) {
     safeScrollWith(requestBuilder, entityClass, hitsConsumer, hitsMetadataConsumer);
   }
 
   public <R> AggregatedResult<R> scrollValuesAndAggregations(
-      SearchRequest.Builder requestBuilder, Class<R> entityClass) {
+      final SearchRequest.Builder requestBuilder, final Class<R> entityClass) {
     return safe(
         () -> scroll(requestBuilder, entityClass, false),
         defaultSearchErrorMessage(getIndex(requestBuilder)));
   }
 
   public <R> AggregatedResult<R> scrollValuesAndAggregations(
-      SearchRequest.Builder requestBuilder, Class<R> entityClass, boolean retry) {
+      final SearchRequest.Builder requestBuilder, final Class<R> entityClass, final boolean retry) {
     return safe(
         () -> scroll(requestBuilder, entityClass, retry),
         defaultSearchErrorMessage(getIndex(requestBuilder)));
   }
 
-  public <R> List<R> scrollValues(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
+  public <R> List<R> scrollValues(
+      final SearchRequest.Builder requestBuilder, final Class<R> entityClass) {
     return scrollValuesAndAggregations(requestBuilder, entityClass).values();
   }
 
   public <R> List<R> scrollValues(
-      SearchRequest.Builder requestBuilder, Class<R> entityClass, boolean retry) {
+      final SearchRequest.Builder requestBuilder, final Class<R> entityClass, final boolean retry) {
     return scrollValuesAndAggregations(requestBuilder, entityClass, retry).values();
   }
 
-  private <R> SearchResponse<R> unsafeSearch(SearchRequest request, Class<R> entityClass)
-      throws IOException {
+  private <R> SearchResponse<R> unsafeSearch(
+      final SearchRequest request, final Class<R> entityClass) throws IOException {
     final var response = openSearchClient.search(request, entityClass);
     checkFailedShards(request, response);
     return response;
   }
 
-  public <R> SearchResponse<R> search(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
+  public <R> SearchResponse<R> search(
+      final SearchRequest.Builder requestBuilder, final Class<R> entityClass) {
     return search(requestBuilder, entityClass, false);
   }
 
   public <R> SearchResponse<R> search(
-      SearchRequest.Builder requestBuilder, Class<R> entityClass, boolean retry) {
+      final SearchRequest.Builder requestBuilder, final Class<R> entityClass, final boolean retry) {
     final var request = requestBuilder.build();
     return retry
         ? executeWithRetries(() -> unsafeSearch(request, entityClass))
@@ -255,24 +249,25 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
             defaultSearchErrorMessage(getIndex(requestBuilder)));
   }
 
-  public <R> List<R> searchValues(SearchRequest.Builder requestBuilder, Class<R> entityClass) {
+  public <R> List<R> searchValues(
+      final SearchRequest.Builder requestBuilder, final Class<R> entityClass) {
     return searchValues(requestBuilder, entityClass, false);
   }
 
   public <R> List<R> searchValues(
-      SearchRequest.Builder requestBuilder, Class<R> entityClass, boolean retry) {
+      final SearchRequest.Builder requestBuilder, final Class<R> entityClass, final boolean retry) {
     return search(requestBuilder, entityClass, retry).hits().hits().stream()
         .map(Hit::source)
         .toList();
   }
 
-  public Map<String, Aggregate> searchAggregations(SearchRequest.Builder requestBuilder) {
+  public Map<String, Aggregate> searchAggregations(final SearchRequest.Builder requestBuilder) {
     requestBuilder.size(0);
     return search(requestBuilder, Void.class).aggregations();
   }
 
   public <R> R searchUnique(
-      SearchRequest.Builder requestBuilder, Class<R> entityClass, String key) {
+      final SearchRequest.Builder requestBuilder, final Class<R> entityClass, final String key) {
     final SearchResponse<R> response = search(requestBuilder, entityClass);
 
     if (response.hits().total().value() == 1) {
@@ -286,12 +281,12 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     }
   }
 
-  public long docCount(SearchRequest.Builder requestBuilder) {
+  public long docCount(final SearchRequest.Builder requestBuilder) {
     requestBuilder.size(0);
     return search(requestBuilder, Void.class).hits().total().value();
   }
 
-  public Map<String, String> getIndexNames(String index, Collection<String> ids) {
+  public Map<String, String> getIndexNames(final String index, final Collection<String> ids) {
     final Map<String, String> result = new HashMap<>();
     final var searchRequestBuilder =
         new SearchRequest.Builder().index(index).query(ids(ids)).source(s -> s.fetch(false));
@@ -305,7 +300,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   // TODO check unused
-  public boolean documentExistsWithGivenRetries(String name, String id) {
+  public boolean documentExistsWithGivenRetries(final String name, final String id) {
     return executeWithGivenRetries(
         10,
         format("Exists document from %s with id %s", name, id),
@@ -313,7 +308,8 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         null);
   }
 
-  public <R> Optional<R> getWithRetries(String index, String id, Class<R> entitiyClass) {
+  public <R> Optional<R> getWithRetries(
+      final String index, final String id, final Class<R> entitiyClass) {
     return executeWithRetries(
         () -> {
           final GetResponse<R> response = openSearchClient.get(getRequest(index, id), entitiyClass);
@@ -321,7 +317,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         });
   }
 
-  public DeleteResponse delete(String index, String id) {
+  public DeleteResponse delete(final String index, final String id) {
     final var deleteRequestBuilder = new DeleteRequest.Builder().index(index).id(id);
 
     return safe(
@@ -329,7 +325,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         e -> defaultDeleteErrorMessage(index));
   }
 
-  public DeleteByQueryResponse delete(String index, String field, String value) {
+  public DeleteByQueryResponse delete(final String index, final String field, final String value) {
     final var deleteRequestBuilder =
         new DeleteByQueryRequest.Builder().index(index).query(term(field, value));
 
@@ -338,7 +334,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         e -> defaultDeleteErrorMessage(index));
   }
 
-  public boolean deleteWithRetries(String index, Query query) {
+  public boolean deleteWithRetries(final String index, final Query query) {
     return executeWithRetries(
         () -> {
           final DeleteByQueryRequest request =
@@ -348,7 +344,7 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         });
   }
 
-  public long deleteByQuery(String index, Query query) {
+  public long deleteByQuery(final String index, final Query query) {
     return executeWithRetries(
         () -> {
           final DeleteByQueryRequest request =
@@ -358,36 +354,37 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
         });
   }
 
-  public boolean deleteWithRetries(String index, String id) {
+  public boolean deleteWithRetries(final String index, final String id) {
     return executeWithRetries(
         () ->
             openSearchClient.delete(deleteRequestBuilder(index, id).build()).result()
                 == Result.Deleted);
   }
 
-  public <A> IndexResponse index(IndexRequest.Builder<A> requestBuilder) {
+  public <A> IndexResponse index(final IndexRequest.Builder<A> requestBuilder) {
     return safe(
         () -> openSearchClient.index(requestBuilder.build()),
         e -> defaultPersistErrorMessage(getIndex(requestBuilder)));
   }
 
-  public <A> boolean indexWithRetries(IndexRequest.Builder<A> requestBuilder) {
+  public <A> boolean indexWithRetries(final IndexRequest.Builder<A> requestBuilder) {
+    final IndexRequest<A> indexRequest = requestBuilder.build();
     return executeWithRetries(
         () -> {
-          final IndexResponse response = openSearchClient.index(requestBuilder.build());
+          final IndexResponse response = openSearchClient.index(indexRequest);
           return List.of(Result.Created, Result.Updated).contains(response.result());
         });
   }
 
   public <A> UpdateResponse<Void> update(
-      UpdateRequest.Builder<Void, A> requestBuilder,
-      Function<Exception, String> errorMessageSupplier) {
+      final UpdateRequest.Builder<Void, A> requestBuilder,
+      final Function<Exception, String> errorMessageSupplier) {
     return safe(
         () -> openSearchClient.update(requestBuilder.build(), Void.class), errorMessageSupplier);
   }
 
-  public <R> SearchResponse<R> fixedSearch(SearchRequest request, Class<R> classR) {
-    if (openSearchClient instanceof ExtendedOpenSearchClient extendedOpenSearchClient) {
+  public <R> SearchResponse<R> fixedSearch(final SearchRequest request, final Class<R> classR) {
+    if (openSearchClient instanceof final ExtendedOpenSearchClient extendedOpenSearchClient) {
       return safe(
           () -> extendedOpenSearchClient.fixedSearch(request, classR),
           e -> defaultDeleteErrorMessage(request.index().toString()));
@@ -398,9 +395,9 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
     }
   }
 
-  public Map<String, Object> searchAsMap(SearchRequest.Builder requestBuilder) {
+  public Map<String, Object> searchAsMap(final SearchRequest.Builder requestBuilder) {
     final var request = requestBuilder.size(0).build();
-    if (openSearchClient instanceof ExtendedOpenSearchClient extendedOpenSearchClient) {
+    if (openSearchClient instanceof final ExtendedOpenSearchClient extendedOpenSearchClient) {
       return safe(
           () -> extendedOpenSearchClient.searchAsMap(request),
           e -> defaultDeleteErrorMessage(request.index().toString()));

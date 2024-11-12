@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.message;
 
@@ -16,8 +16,8 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.test.util.MsgPackUtil;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -305,7 +305,7 @@ public final class MessageStateTest {
   @Test
   public void shouldVisitMessagesBeforeTimeInOrder() {
     // given
-    final long now = ActorClock.currentTimeMillis();
+    final long now = InstantSource.system().millis();
 
     final var message = createMessage("name", "correlationKey", "{}", "nr1", 1234);
     final var message2 = createMessage("name", "correlationKey", "{}", "nr1", 2000);
@@ -483,7 +483,7 @@ public final class MessageStateTest {
     messageState.remove(2L);
 
     // then
-    final long deadline = ActorClock.currentTimeMillis() + 2_000L;
+    final long deadline = InstantSource.system().millis() + 2_000L;
     final List<Long> readMessages = new ArrayList<>();
     messageState.visitMessagesWithDeadlineBeforeTimestamp(
         deadline, null, (d, e) -> readMessages.add(e));

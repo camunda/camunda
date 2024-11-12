@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
@@ -18,6 +18,7 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
+import io.atomix.utils.net.Address;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -26,18 +27,22 @@ import java.util.Optional;
 
 public final class ClusterCfg {
 
+  private static final String DEFAULT_ADVERTISED_HOST =
+      Address.defaultAdvertisedHost().getHostAddress();
   private List<String> initialContactPoints =
       Collections.singletonList(DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT);
   private Duration requestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private String clusterName = DEFAULT_CLUSTER_NAME;
   private String memberId = DEFAULT_CLUSTER_MEMBER_ID;
-  private String host = DEFAULT_CLUSTER_HOST;
+  // leave host and advertised host to null, so we can distinguish if they are set explicitly or not
+  private String host = null;
   private String advertisedHost = null;
   private int port = DEFAULT_CLUSTER_PORT;
   private Integer advertisedPort = null;
   private MembershipCfg membership = new MembershipCfg();
   private SecurityCfg security = new SecurityCfg();
   private CompressionAlgorithm messageCompression = CompressionAlgorithm.NONE;
+  private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
 
   public String getMemberId() {
     return memberId;
@@ -49,7 +54,7 @@ public final class ClusterCfg {
   }
 
   public String getHost() {
-    return host;
+    return host != null ? host : DEFAULT_CLUSTER_HOST;
   }
 
   public ClusterCfg setHost(final String host) {
@@ -58,7 +63,15 @@ public final class ClusterCfg {
   }
 
   public String getAdvertisedHost() {
-    return Optional.ofNullable(advertisedHost).orElseGet(this::getHost);
+    if (advertisedHost != null) {
+      return advertisedHost;
+    }
+
+    if (host != null) {
+      return host;
+    }
+
+    return DEFAULT_ADVERTISED_HOST;
   }
 
   public ClusterCfg setAdvertisedHost(final String advertisedHost) {
@@ -144,6 +157,15 @@ public final class ClusterCfg {
     return this;
   }
 
+  public ConfigManagerCfg getConfigManager() {
+    return configManager;
+  }
+
+  public ClusterCfg setConfigManager(final ConfigManagerCfg configManagerCfg) {
+    configManager = configManagerCfg;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -155,7 +177,8 @@ public final class ClusterCfg {
         port,
         membership,
         security,
-        messageCompression);
+        messageCompression,
+        configManager);
   }
 
   @Override
@@ -175,7 +198,8 @@ public final class ClusterCfg {
         && Objects.equals(host, that.host)
         && Objects.equals(membership, that.membership)
         && Objects.equals(security, that.security)
-        && Objects.equals(messageCompression, that.messageCompression);
+        && Objects.equals(messageCompression, that.messageCompression)
+        && Objects.equals(configManager, that.configManager);
   }
 
   @Override
@@ -202,6 +226,8 @@ public final class ClusterCfg {
         + security
         + ", messageCompression="
         + messageCompression
+        + ", configManagerCfg="
+        + configManager
         + '}';
   }
 }

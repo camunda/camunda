@@ -2,13 +2,14 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots.impl;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
@@ -25,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import org.assertj.core.api.Assertions;
@@ -156,14 +156,14 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldNotPersistOnPartialSnapshotOnInvalidChecksumPersist() {
+  public void shouldPersistOnPartialSnapshotOnInvalidChecksumPersist() {
     // given
     final var persistedSnapshot = (FileBasedSnapshot) takePersistedSnapshot(1L);
     final var corruptedSnapshot =
         new FileBasedSnapshot(
             persistedSnapshot.getDirectory(),
             persistedSnapshot.getChecksumPath(),
-            0xDEADBEEFL,
+            new SfvChecksumImpl(),
             persistedSnapshot.getSnapshotId(),
             null,
             s -> {},
@@ -171,15 +171,11 @@ public class FileBasedReceivedSnapshotTest {
 
     // when
     final var receivedSnapshot = receiveSnapshot(corruptedSnapshot);
-    final var didPersist = receivedSnapshot.persist();
+    final var didPersist = receivedSnapshot.persist().join();
 
-    // then
     assertThat(didPersist)
-        .as("the snapshot was not persisted as it has a checksum mismatch")
-        .failsWithin(Duration.ofSeconds(5));
-    assertThat(receiverSnapshotsDir)
-        .as("the partial snapshot was rolled back")
-        .isDirectoryNotContaining(name -> name.getFileName().toString().equals("1-0-1-0.checksum"));
+        .as("The snapshot should persist with mis-match in combined checksums")
+        .isEqualTo(receiverSnapshotStore.getLatestSnapshot().get());
   }
 
   @Test
@@ -218,32 +214,6 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   @Test
-  public void shouldNotWriteChunkIfItHasTheWrongSnapshotChecksum() {
-    // given
-    final var persistedSnapshot = takePersistedSnapshot(1L);
-
-    // when
-    final var receivedSnapshot =
-        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
-
-    final SnapshotChunk firstChunk;
-    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
-      firstChunk = snapshotChunkReader.next();
-      receivedSnapshot.apply(firstChunk).join();
-
-      final SnapshotChunk corruptedChunk =
-          SnapshotChunkWrapper.withSnapshotChecksum(firstChunk, 0xCAFEL);
-      receivedSnapshot.apply(corruptedChunk).join();
-    }
-
-    assertThat(receivedSnapshot.getPath())
-        .asInstanceOf(DirectoryAssert.factory())
-        .as("the received snapshot should contain only the first chunk")
-        .isDirectoryContainingExactly(
-            receivedSnapshot.getPath().resolve(firstChunk.getChunkName()));
-  }
-
-  @Test
   public void shouldNotWriteChunkWithInvalidChunkChecksum() {
     // given
     final var persistedSnapshot = takePersistedSnapshot(1L);
@@ -257,15 +227,15 @@ public class FileBasedReceivedSnapshotTest {
       receivedSnapshot.apply(firstChunk).join();
 
       final var corruptedChunk = SnapshotChunkWrapper.withChecksum(firstChunk, 0xCAFEL);
-      receivedSnapshot.apply(corruptedChunk).join();
-    }
 
-    // then
-    assertThat(receivedSnapshot.getPath())
-        .asInstanceOf(DirectoryAssert.factory())
-        .as("the received snapshot should contain only the first chunk")
-        .isDirectoryContainingExactly(
-            receivedSnapshot.getPath().resolve(firstChunk.getChunkName()));
+      // then
+      assertThatCode(() -> receivedSnapshot.apply(corruptedChunk).join())
+          .hasCauseInstanceOf(SnapshotWriteException.class)
+          .hasMessageContaining(
+              "Expected to have checksum "
+                  + 0xCAFEL
+                  + " for snapshot chunk file1 (1-0-1-0-0), but calculated 3806033162");
+    }
   }
 
   @Test
@@ -337,7 +307,45 @@ public class FileBasedReceivedSnapshotTest {
         .describedAs("Metadata file is persisted in snapshot path")
         .isDirectoryContaining(
             name ->
-                name.getFileName().toString().equals(FileBasedSnapshotStore.METADATA_FILE_NAME));
+                name.getFileName()
+                    .toString()
+                    .equals(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME));
+  }
+
+  @Test
+  public void shouldReceiveSnapshotCorrectlyWhenFilesAreChunked() throws IOException {
+    // given
+    final var persistedSnapshot = takePersistedSnapshot(1L);
+    final var receivedSnapshot =
+        receiverSnapshotStore.newReceivedSnapshot(persistedSnapshot.getId()).join();
+
+    // when
+    try (final var snapshotChunkReader = persistedSnapshot.newChunkReader()) {
+      snapshotChunkReader.setMaximumChunkSize(2);
+
+      while (snapshotChunkReader.hasNext()) {
+        receivedSnapshot.apply(snapshotChunkReader.next()).join();
+      }
+    }
+
+    receivedSnapshot.persist().join();
+
+    //    then
+    try (final var files = Files.list(receivedSnapshot.getPath())) {
+      files.forEach(
+          filePath -> {
+            final var fileName = filePath.getFileName().toString();
+            try {
+              final var fileBytes = Files.readAllBytes(filePath);
+              final var persistedFileBytes =
+                  Files.readAllBytes(persistedSnapshot.getPath().resolve(fileName));
+
+              assertThat(fileBytes).isEqualTo(persistedFileBytes);
+            } catch (final IOException e) {
+              throw new RuntimeException(e);
+            }
+          });
+    }
   }
 
   private ReceivedSnapshot receiveSnapshot(final PersistedSnapshot persistedSnapshot) {
@@ -375,7 +383,7 @@ public class FileBasedReceivedSnapshotTest {
   }
 
   private FileBasedSnapshotStore createStore(final Path root) {
-    final var store = new FileBasedSnapshotStore(PARTITION_ID, root);
+    final var store = new FileBasedSnapshotStore(0, PARTITION_ID, root, snapshotPath -> Map.of());
     scheduler.submitActor(store);
 
     return store;

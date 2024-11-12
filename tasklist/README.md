@@ -4,6 +4,9 @@ Tasklist is an graphical and API application to manage user tasks in Zeebe.
 
 ## Build and run
 
+> By default, all Makefile commands run against Elasticsearch.
+> Passing `DATABASE=opensearch` argument targets OpenSearch.
+
 To build and run the project with all the dependencies, run the below command:
 
 ```sh
@@ -29,10 +32,42 @@ make env-down
 In order to run the application locally for debug purposes, you can start only the Tasklist dependencies using:
 
 ```sh
-docker-compose up elasticsearch zeebe
+DATABASE=elasticsearch docker compose -f /config/docker-compose.yml up -d zeebe
+```
+
+You can export the `DATABASE` variable in your shell for convenience. Similarly, for opensearch:
+
+```sh
+DATABASE=opensearch docker compose -f /config/docker-compose.yml up -d zeebe
 ```
 
 And then start the spring-boot application under webapp folder in your preferred IDE.
+
+#### Docker Compose
+
+The [docker compose file](/config/docker-compose.yml) is built in an incremental way relying on the /env directory configuration files
+to provide the relevant environment variables for the services. Targeting a top level service will result in all it's dependencies being created.
+There are four configuration bundles:
+- Base configurations, no suffix
+- *_identity: Identity with plain authentication configuration
+- *_oauth: Identity with OAuth configuration
+- *_mt: Multitenancy configuration with OAuth and Identity
+
+For example, to start Tasklist with multitenancy configuration:
+
+```sh
+DATABASE=elasticsearch docker compose -f /config/docker-compose.yml up -d tasklist_mt
+```
+
+This will result in the creation of all dependencies for the multitenancy configuration. (Zeebe, Elasticsearch, Identity, Postgres, Keycloak and finally Tasklist).
+
+Similar to run Zeebe alone for testing purposes, you can run:
+
+```sh
+DATABASE=elasticsearch docker compose -f /config/docker-compose.yml up -d zeebe_mt
+```
+
+This will result in all the above dependencies being created, except for Tasklist.
 
 ### Running E2E tests
 
@@ -40,9 +75,8 @@ We use Playwright for E2E tests, which are executed on every push to any branch 
 
 To run these tests locally, follow the steps:
 
-1. In the root folder, execute `make env-up` and confirm Tasklist is running by checking `localhost:8080`.
-2. In the same root folder, execute `make start-e2e`.
-3. Lastly, inside the `client/` folder run `yarn test:e2e`.
+1. Run `make start-e2e`.
+2. Then, inside the `client/` folder run `yarn test:e2e`.
 
 ### Running visual regression tests
 
@@ -63,7 +97,7 @@ If you made feature changes and want to purposely wants to update the UI baselin
 
 Sometimes the visual regression tests might fail in the CI and you want to check why. To achieve that you can download the Playwright report assets (like in the image below), unzip the folder and then run `npx @playwright/test show-report folder-with-unzipped-assets/`.
 
-<img src="/docs_assets/playwright_report.png" alt="Playwright report artifact download" width="500"/>
+<img src="./docs_assets/playwright_report.png" alt="Playwright report artifact download" width="500"/>
 
 ## Backporting changes
 

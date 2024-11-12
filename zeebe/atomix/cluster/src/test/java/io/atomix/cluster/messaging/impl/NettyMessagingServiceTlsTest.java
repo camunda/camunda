@@ -18,10 +18,10 @@ package io.atomix.cluster.messaging.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.messaging.MessagingConfig;
+import io.atomix.cluster.messaging.MessagingException;
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import java.net.ConnectException;
 import java.security.cert.CertificateException;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -74,7 +74,7 @@ final class NettyMessagingServiceTlsTest {
         .failsWithin(Duration.ofSeconds(10))
         .withThrowableOfType(ExecutionException.class)
         .havingRootCause()
-        .isInstanceOf(ConnectException.class);
+        .isInstanceOf(MessagingException.ConnectionClosed.class);
   }
 
   @Test
@@ -100,13 +100,14 @@ final class NettyMessagingServiceTlsTest {
         .failsWithin(Duration.ofSeconds(2))
         .withThrowableOfType(ExecutionException.class)
         .havingRootCause()
-        .isInstanceOf(ConnectException.class);
+        .isInstanceOf(MessagingException.ConnectionClosed.class);
   }
 
   private NettyMessagingService createInsecureMessagingService() {
     final var config =
         new MessagingConfig().setPort(SocketUtil.getNextAddress().getPort()).setTlsEnabled(false);
-    return new NettyMessagingService("cluster", Address.from(config.getPort()), config);
+    return new NettyMessagingService(
+        "cluster", Address.from(config.getPort()), config, "insecureTestPrefix");
   }
 
   private NettyMessagingService createSecureMessagingService(
@@ -117,6 +118,7 @@ final class NettyMessagingServiceTlsTest {
             .setTlsEnabled(true)
             .setCertificateChain(certificate.certificate())
             .setPrivateKey(certificate.privateKey());
-    return new NettyMessagingService("cluster", Address.from(config.getPort()), config);
+    return new NettyMessagingService(
+        "cluster", Address.from(config.getPort()), config, "secureTestPrefix");
   }
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
@@ -112,6 +112,11 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
   public static boolean isValidDateTime(
       final Expression staticExp, final ExpressionProcessor expressionProcessor) {
     return expressionProcessor.evaluateDateTimeExpression(staticExp, NO_VARIABLE_SCOPE).isRight();
+  }
+
+  public static boolean isValidInt(
+      final Expression staticExp, final ExpressionProcessor expressionProcessor) {
+    return expressionProcessor.evaluateIntegerExpression(staticExp, NO_VARIABLE_SCOPE).isRight();
   }
 
   public static class Builder<T extends ModelElementInstance> {

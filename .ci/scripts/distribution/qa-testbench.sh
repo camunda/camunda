@@ -4,14 +4,13 @@
 # Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
 # one or more contributor license agreements. See the NOTICE file distributed
 # with this work for additional information regarding copyright ownership.
-# Licensed under the Zeebe Community License 1.1. You may not use this file
-# except in compliance with the Zeebe Community License 1.1.
+# Licensed under the Camunda License 1.0. You may not use this file
+# except in compliance with the Camunda License 1.0.
 #
-chmod +x clients/go/cmd/zbctl/dist/zbctl
+curl -LO https://github.com/camunda/camunda/releases/download/8.5.7/zbctl
+chmod +x zbctl
 
-zbctl="clients/go/cmd/zbctl/dist/zbctl"
-
-"${zbctl}" create instance external-tool-integration --variables "${QA_RUN_VARIABLES}"
+./zbctl create instance external-tool-integration --variables "${QA_RUN_VARIABLES}"
 
 businessKey="${BUSINESS_KEY}"
 
@@ -20,7 +19,7 @@ jobKey=""
 
 while true; do
     # activate jobs non-zero exits can be ignored with `<command> || true`
-    "${zbctl}" activate jobs "$businessKey" > activationresponse.txt 2>/dev/null || true
+    ./zbctl activate jobs "$businessKey" > activationresponse.txt 2>/dev/null || true
     jobKey=$(jq -r '.jobs[0].key' < activationresponse.txt)
 
     if [[ -z "$jobKey" || "$jobKey" == "null" ]]; then
@@ -39,7 +38,7 @@ echo "Job variables are: $variables"
 testResult=$(echo "$variables" | jq -r '.aggregatedTestResult')
 echo "Test result is: $testResult"
 
-"${zbctl}" complete job "$jobKey"
+./zbctl complete job "$jobKey"
 
 if [ "$testResult" == "FAILED" ]; then
   echo "Test failed"

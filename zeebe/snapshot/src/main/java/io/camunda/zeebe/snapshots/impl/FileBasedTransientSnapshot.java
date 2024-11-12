@@ -2,14 +2,15 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots.impl;
 
-import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.MutableChecksumsSFV;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotNotFoundException;
@@ -33,24 +34,27 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private static final Logger LOGGER = LoggerFactory.getLogger(FileBasedTransientSnapshot.class);
 
   private final Path directory;
-  private final ActorControl actor;
-  private final FileBasedSnapshotStore snapshotStore;
+  private final ConcurrencyControl actor;
+  private final FileBasedSnapshotStoreImpl snapshotStore;
   private final FileBasedSnapshotId snapshotId;
   private final ActorFuture<Void> takenFuture = new CompletableActorFuture<>();
   private boolean isValid = false;
   private PersistedSnapshot snapshot;
   private MutableChecksumsSFV checksum;
+  private final CRC32CChecksumProvider checksumProvider;
   private long lastFollowupEventPosition = Long.MAX_VALUE;
 
   FileBasedTransientSnapshot(
       final FileBasedSnapshotId snapshotId,
       final Path directory,
-      final FileBasedSnapshotStore snapshotStore,
-      final ActorControl actor) {
+      final FileBasedSnapshotStoreImpl snapshotStore,
+      final ConcurrencyControl actor,
+      final CRC32CChecksumProvider checksumProvider) {
     this.snapshotId = snapshotId;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
     this.actor = actor;
+    this.checksumProvider = checksumProvider;
   }
 
   @Override
@@ -81,7 +85,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                       directory)));
 
         } else {
-          checksum = SnapshotChecksum.calculate(directory);
+          checksum = SnapshotChecksum.calculateWithProvidedChecksums(directory, checksumProvider);
 
           snapshot = null;
           isValid = true;
@@ -110,7 +114,11 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   @Override
   public ActorFuture<PersistedSnapshot> persist() {
     final CompletableActorFuture<PersistedSnapshot> future = new CompletableActorFuture<>();
-    actor.call(() -> persistInternal(future));
+    actor.call(
+        () -> {
+          persistInternal(future);
+          return null;
+        });
     return future;
   }
 
@@ -144,7 +152,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     try {
       final var metadata =
           new FileBasedSnapshotMetadata(
-              FileBasedSnapshotStore.VERSION,
+              FileBasedSnapshotStoreImpl.VERSION,
               snapshotId.getProcessedPosition(),
               snapshotId.getExportedPosition(),
               lastFollowupEventPosition);
@@ -160,7 +168,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
 
   private void writeMetadataAndUpdateChecksum(final FileBasedSnapshotMetadata metadata)
       throws IOException {
-    final var metadataPath = directory.resolve(FileBasedSnapshotStore.METADATA_FILE_NAME);
+    final var metadataPath = directory.resolve(FileBasedSnapshotStoreImpl.METADATA_FILE_NAME);
     // Write metadata file along with snapshot files
     try (final var channel =
             FileChannel.open(

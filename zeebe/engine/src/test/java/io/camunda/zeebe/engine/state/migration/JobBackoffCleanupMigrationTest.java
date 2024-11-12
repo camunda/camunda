@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.migration;
 
@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,7 +62,7 @@ public class JobBackoffCleanupMigrationTest {
     jobKey.wrapLong(1);
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldCleanOrphanBackoffEntries() {
     // given
@@ -72,13 +73,14 @@ public class JobBackoffCleanupMigrationTest {
     jobsColumnFamily.deleteExisting(jobKey);
 
     // when
-    jobBackoffCleanupMigration.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isTrue();
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shouldNotCleanUpFailedJobs() {
     // given
@@ -88,13 +90,14 @@ public class JobBackoffCleanupMigrationTest {
     jobState.fail(jobKey.getValue(), record);
 
     // when
-    jobBackoffCleanupMigration.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();
   }
 
-  // regression test of https://github.com/camunda/zeebe/issues/14329
+  // regression test of https://github.com/camunda/camunda/issues/14329
   @Test
   public void shoulCleanDuplicatedBackoffEntries() {
     // given
@@ -108,7 +111,8 @@ public class JobBackoffCleanupMigrationTest {
     jobState.fail(jobKey.getValue(), record);
 
     // when
-    jobBackoffCleanupMigration.runMigration(processingState);
+    jobBackoffCleanupMigration.runMigration(
+        new MigrationTaskContextImpl(new ClusterContextImpl(1), processingState));
 
     // then
     assertThat(backoffColumnFamily.isEmpty()).isFalse();

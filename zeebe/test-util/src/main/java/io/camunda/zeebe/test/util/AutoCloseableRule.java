@@ -2,13 +2,12 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.test.util;
 
-import java.util.ArrayList;
-import java.util.List;
+import io.camunda.zeebe.test.DynamicAutoCloseable;
 import org.junit.After;
 import org.junit.rules.ExternalResource;
 
@@ -20,21 +19,15 @@ import org.junit.rules.ExternalResource;
  */
 public final class AutoCloseableRule extends ExternalResource {
 
-  final List<AutoCloseable> thingsToClose = new ArrayList<>();
+  private final DynamicAutoCloseable dynAutoCloseable = new DynamicAutoCloseable();
 
-  public void manage(final AutoCloseable closeable) {
-    thingsToClose.add(closeable);
+  public <A extends AutoCloseable> A manage(final A closeable) {
+    dynAutoCloseable.manage(closeable);
+    return closeable;
   }
 
   @Override
   public void after() {
-    final int size = thingsToClose.size();
-    for (int i = size - 1; i >= 0; i--) {
-      try {
-        thingsToClose.remove(i).close();
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
+    dynAutoCloseable.close();
   }
 }

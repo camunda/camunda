@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
@@ -12,68 +12,76 @@ import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
+import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.ProcessInstanceResult;
-import io.camunda.zeebe.it.util.GrpcClientRule;
+import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.collection.Maps;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+@ZeebeIntegration
+@AutoCloseResources
 public final class CreateProcessInstanceWithResultTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
-  private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
+  @AutoCloseResource ZeebeClient client;
 
-  @ClassRule
-  public static RuleChain ruleChain = RuleChain.outerRule(BROKER_RULE).around(CLIENT_RULE);
+  @TestZeebe
+  final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
-
+  ZeebeResourcesHelper resourcesHelper;
   private String processId;
   private long processDefinitionKey;
   private String jobType;
 
-  @Before
-  public void deployProcess() {
-    processId = helper.getBpmnProcessId();
-    processDefinitionKey =
-        CLIENT_RULE.deployProcess(Bpmn.createExecutableProcess(processId).startEvent("v1").done());
-    jobType = helper.getJobType();
+  @BeforeEach
+  public void init() {
+    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(15)).build();
+    resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
-  @Test
-  public void shouldCreateProcessInstanceAwaitResults() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateProcessInstanceAwaitResults(
+      final boolean useRest, final TestInfo testInfo) {
+    deployProcesses(testInfo);
     final Map<String, Object> variables = Maps.of(entry("foo", "bar"));
-    final ProcessInstanceResult result = createProcessInstanceWithVariables(variables).join();
+    final ProcessInstanceResult result =
+        createProcessInstanceWithVariables(variables, useRest).join();
 
     assertThat(result.getBpmnProcessId()).isEqualTo(processId);
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(result.getVariablesAsMap()).containsExactly(entry("foo", "bar"));
   }
 
-  @Test
-  public void shouldCreateProcessInstanceAwaitResultsWithNoVariables() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateProcessInstanceAwaitResultsWithNoVariables(
+      final boolean useRest, final TestInfo testInfo) {
     // given
+    deployProcesses(testInfo);
     final ProcessInstanceResult result =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
+        getCommand(client, useRest)
             .processDefinitionKey(processDefinitionKey)
             .withResult()
             .send()
@@ -85,13 +93,15 @@ public final class CreateProcessInstanceWithResultTest {
     assertThat(result.getVariablesAsMap()).isEmpty();
   }
 
-  @Test
-  public void shouldCollectMergedVariables() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCollectMergedVariables(final boolean useRest, final TestInfo testInfo) {
     // given
+    deployProcesses(testInfo);
     deployProcessWithJob();
     final Map<String, Object> variables = Maps.of(entry("foo", "bar"));
     final ZeebeFuture<ProcessInstanceResult> resultFuture =
-        createProcessInstanceWithVariables(variables);
+        createProcessInstanceWithVariables(variables, useRest);
 
     completeJobWithVariables(Map.of("x", "y"));
 
@@ -102,9 +112,11 @@ public final class CreateProcessInstanceWithResultTest {
         .containsExactlyInAnyOrderEntriesOf(Map.of("foo", "bar", "x", "y"));
   }
 
-  @Test
-  public void shouldOnlyReturnVariablesInRootScope() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldOnlyReturnVariablesInRootScope(final boolean useRest, final TestInfo testInfo) {
     // given
+    deployProcesses(testInfo);
     final BpmnModelInstance processWithVariableScopes =
         Bpmn.createExecutableProcess(processId)
             .startEvent()
@@ -119,10 +131,10 @@ public final class CreateProcessInstanceWithResultTest {
                 })
             .endEvent()
             .done();
-    processDefinitionKey = CLIENT_RULE.deployProcess(processWithVariableScopes);
+    processDefinitionKey = resourcesHelper.deployProcess(processWithVariableScopes);
 
     final ZeebeFuture<ProcessInstanceResult> resultFuture =
-        createProcessInstanceWithVariables(Map.of("x", "1"));
+        createProcessInstanceWithVariables(Map.of("x", "1"), useRest);
 
     // when
     completeJobWithVariables(Map.of("y", "2"));
@@ -134,29 +146,24 @@ public final class CreateProcessInstanceWithResultTest {
     assertThat(result.getVariablesAsMap()).containsExactly(entry("x", "1"));
   }
 
-  @Test
-  public void shouldReceiveRejectionCreateProcessInstanceAwaitResults() {
-    final var command =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
-            .processDefinitionKey(123L)
-            .withResult()
-            .send();
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldReceiveRejectionCreateProcessInstanceAwaitResults(final boolean useRest) {
+    final var command = getCommand(client, useRest).processDefinitionKey(123L).withResult().send();
 
-    assertThatThrownBy(() -> command.join())
-        .isInstanceOf(ClientException.class)
+    assertThatThrownBy(command::join)
         .hasMessageContaining("Expected to find process definition with key '123', but none found");
   }
 
-  @Test
-  public void shouldCreateProcessInstanceAwaitResultsWithFetchVariables() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateProcessInstanceAwaitResultsWithFetchVariables(
+      final boolean useRest, final TestInfo testInfo) {
+    deployProcesses(testInfo);
     // when
     final Map<String, Object> variables = Map.of("x", "foo", "y", "bar");
     final ProcessInstanceResult result =
-        CLIENT_RULE
-            .getClient()
-            .newCreateInstanceCommand()
+        getCommand(client, useRest)
             .processDefinitionKey(processDefinitionKey)
             .variables(variables)
             .withResult()
@@ -170,10 +177,12 @@ public final class CreateProcessInstanceWithResultTest {
     assertThat(result.getVariablesAsMap()).containsExactly(entry("y", "bar"));
   }
 
-  @Test
-  public void shouldRespondResultWhenCompletedByPublishedMessage() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRespondResultWhenCompletedByPublishedMessage(
+      final boolean useRest, final TestInfo testInfo) {
     // given
-    final var client = CLIENT_RULE.getClient();
+    deployProcesses(testInfo);
     client
         .newDeployResourceCommand()
         .addProcessModel(
@@ -188,8 +197,7 @@ public final class CreateProcessInstanceWithResultTest {
         .join();
 
     final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
-        client
-            .newCreateInstanceCommand()
+        getCommand(client, useRest)
             .bpmnProcessId(processId)
             .latestVersion()
             .variables(Map.of("key", "key-1"))
@@ -210,10 +218,12 @@ public final class CreateProcessInstanceWithResultTest {
         .containsEntry("message", "correlated");
   }
 
-  @Test
-  public void shouldRespondResultWhenCompletedByCompletedJob() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRespondResultWhenCompletedByCompletedJob(
+      final boolean useRest, final TestInfo testInfo) {
     // given
-    final var client = CLIENT_RULE.getClient();
+    deployProcesses(testInfo);
     client
         .newDeployResourceCommand()
         .addProcessModel(
@@ -227,12 +237,7 @@ public final class CreateProcessInstanceWithResultTest {
         .join();
 
     final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .withResult()
-            .send();
+        getCommand(client, useRest).bpmnProcessId(processId).latestVersion().withResult().send();
 
     final List<ActivatedJob> jobs =
         client
@@ -252,10 +257,12 @@ public final class CreateProcessInstanceWithResultTest {
     assertThat(processInstanceResult.join().getVariablesAsMap()).containsEntry("job", "completed");
   }
 
-  @Test
-  public void shouldRespondResultWhenCompletedByThrownError() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRespondResultWhenCompletedByThrownError(
+      final boolean useRest, final TestInfo testInfo) {
     // given
-    final var client = CLIENT_RULE.getClient();
+    deployProcesses(testInfo);
     client
         .newDeployResourceCommand()
         .addProcessModel(
@@ -273,12 +280,7 @@ public final class CreateProcessInstanceWithResultTest {
         .join();
 
     final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .withResult()
-            .send();
+        getCommand(client, useRest).bpmnProcessId(processId).latestVersion().withResult().send();
 
     final List<ActivatedJob> jobs =
         client
@@ -305,10 +307,12 @@ public final class CreateProcessInstanceWithResultTest {
     assertThat(processInstanceResult.join().getVariablesAsMap()).containsEntry("error", "thrown");
   }
 
-  @Test
-  public void shouldRespondResultWhenCompletedByResolvedIncident() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRespondResultWhenCompletedByResolvedIncident(
+      final boolean useRest, final TestInfo testInfo) {
     // given
-    final var client = CLIENT_RULE.getClient();
+    deployProcesses(testInfo);
     client
         .newDeployResourceCommand()
         .addProcessModel(
@@ -328,12 +332,7 @@ public final class CreateProcessInstanceWithResultTest {
         .join();
 
     final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .withResult()
-            .send();
+        getCommand(client, useRest).bpmnProcessId(processId).latestVersion().withResult().send();
 
     final var incident =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED)
@@ -352,10 +351,12 @@ public final class CreateProcessInstanceWithResultTest {
     assertThat(processInstanceResult.join().getVariablesAsMap()).containsEntry("x", 21);
   }
 
-  @Test
-  public void shouldRespondResultWhenCompletedByModifiedProcessInstance() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldRespondResultWhenCompletedByModifiedProcessInstance(
+      final boolean useRest, final TestInfo testInfo) {
     // given
-    final var client = CLIENT_RULE.getClient();
+    deployProcesses(testInfo);
     client
         .newDeployResourceCommand()
         .addProcessModel(
@@ -369,12 +370,7 @@ public final class CreateProcessInstanceWithResultTest {
         .join();
 
     final ZeebeFuture<ProcessInstanceResult> processInstanceResult =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId(processId)
-            .latestVersion()
-            .withResult()
-            .send();
+        getCommand(client, useRest).bpmnProcessId(processId).latestVersion().withResult().send();
 
     final List<ActivatedJob> jobs =
         client
@@ -403,39 +399,49 @@ public final class CreateProcessInstanceWithResultTest {
         .containsEntry("process instance", "modified");
   }
 
-  @Test
-  public void shouldCreateProcessInstanceAndGetSingleVariable() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateProcessInstanceAndGetSingleVariable(
+      final boolean useRest, final TestInfo testInfo) {
+    deployProcesses(testInfo);
     final Map<String, Object> variables = Maps.of(entry("foo", "bar"), entry("key", "value"));
-    final ProcessInstanceResult result = createProcessInstanceWithVariables(variables).join();
+    final ProcessInstanceResult result =
+        createProcessInstanceWithVariables(variables, useRest).join();
 
     assertThat(result.getVariable("foo")).isEqualTo("bar");
     assertThat(result.getVariable("key")).isEqualTo("value");
   }
 
-  @Test
-  public void shouldCreateProcessInstanceAndGetSingleVariableWithNullValue() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateProcessInstanceAndGetSingleVariableWithNullValue(
+      final boolean useRest, final TestInfo testInfo) {
+    deployProcesses(testInfo);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("key", null);
-    final ProcessInstanceResult result = createProcessInstanceWithVariables(variables).join();
+    final ProcessInstanceResult result =
+        createProcessInstanceWithVariables(variables, useRest).join();
 
     assertThat(result.getVariable("key")).isNull();
   }
 
-  @Test
-  public void shouldCreateProcessInstanceAndThrowAnErrorIfVariableIsNotPresent() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCreateProcessInstanceAndThrowAnErrorIfVariableIsNotPresent(
+      final boolean useRest, final TestInfo testInfo) {
+    deployProcesses(testInfo);
     final Map<String, Object> variables = new HashMap<>();
     variables.put("key", "value");
-    final ProcessInstanceResult result = createProcessInstanceWithVariables(variables).join();
+    final ProcessInstanceResult result =
+        createProcessInstanceWithVariables(variables, useRest).join();
 
     assertThatThrownBy(() -> result.getVariable("notPresentKey"))
         .isInstanceOf(ClientException.class);
   }
 
   private ZeebeFuture<ProcessInstanceResult> createProcessInstanceWithVariables(
-      final Map<String, Object> variables) {
-    return CLIENT_RULE
-        .getClient()
-        .newCreateInstanceCommand()
+      final Map<String, Object> variables, final boolean useRest) {
+    return getCommand(client, useRest)
         .processDefinitionKey(processDefinitionKey)
         .variables(variables)
         .withResult()
@@ -443,9 +449,9 @@ public final class CreateProcessInstanceWithResultTest {
   }
 
   private void deployProcessWithJob() {
-    processId = helper.getBpmnProcessId();
+    processId = "processWithJob";
     processDefinitionKey =
-        CLIENT_RULE.deployProcess(
+        resourcesHelper.deployProcess(
             Bpmn.createExecutableProcess(processId)
                 .startEvent("v1")
                 .serviceTask(
@@ -461,19 +467,27 @@ public final class CreateProcessInstanceWithResultTest {
     waitUntil(() -> RecordingExporter.jobRecords(JobIntent.CREATED).withType(jobType).exists());
 
     final ActivateJobsResponse response =
-        CLIENT_RULE
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(1)
-            .send()
-            .join();
+        client.newActivateJobsCommand().jobType(jobType).maxJobsToActivate(1).send().join();
 
     // when
-    CLIENT_RULE
-        .getClient()
+    client
         .newCompleteCommand(response.getJobs().iterator().next().getKey())
         .variables(variables)
         .send();
+  }
+
+  private CreateProcessInstanceCommandStep1 getCommand(
+      final ZeebeClient client, final boolean useRest) {
+    final CreateProcessInstanceCommandStep1 createInstanceCommand =
+        client.newCreateInstanceCommand();
+    return useRest ? createInstanceCommand.useRest() : createInstanceCommand.useGrpc();
+  }
+
+  private void deployProcesses(final TestInfo testInfo) {
+    processId = "process-" + testInfo.getTestMethod().get().getName();
+    processDefinitionKey =
+        resourcesHelper.deployProcess(
+            Bpmn.createExecutableProcess(processId).startEvent("v1").done());
+    jobType = "job-" + testInfo.getTestMethod().get().getName();
   }
 }

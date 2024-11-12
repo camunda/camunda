@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE ("USE"), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * "Licensee" means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
 import {useEffect, useState} from 'react';
@@ -34,6 +25,7 @@ import {
   ACTIVE_BADGE,
   INCIDENTS_BADGE,
   COMPLETED_BADGE,
+  COMPLETED_END_EVENT_BADGE,
 } from 'modules/bpmn-js/badgePositions';
 import {processInstanceDetailsStatisticsStore} from 'modules/stores/processInstanceDetailsStatistics';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
@@ -47,6 +39,7 @@ import {processInstanceDetailsDiagramStore} from 'modules/stores/processInstance
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
+import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -56,6 +49,7 @@ const overlayPositions = {
   incidents: INCIDENTS_BADGE,
   canceled: CANCELED_BADGE,
   completed: COMPLETED_BADGE,
+  completedEndEvents: COMPLETED_END_EVENT_BADGE,
 } as const;
 
 type ModificationBadgePayload = {
@@ -64,7 +58,8 @@ type ModificationBadgePayload = {
 };
 
 const TopPanel: React.FC = observer(() => {
-  const {selectableFlowNodes} = processInstanceDetailsStatisticsStore;
+  const {selectableFlowNodes, executedFlowNodes} =
+    processInstanceDetailsStatisticsStore;
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const flowNodeSelection = flowNodeSelectionStore.state.selection;
   const [isInTransition, setIsInTransition] = useState(false);
@@ -80,7 +75,7 @@ const TopPanel: React.FC = observer(() => {
     };
   }, [processInstanceId]);
 
-  const flowNodeStateOverlays =
+  const allFlowNodeStateOverlays =
     processInstanceDetailsStatisticsStore.flowNodeStatistics.map(
       ({flowNodeState, count, flowNodeId}) => ({
         payload: {flowNodeState, count},
@@ -89,6 +84,25 @@ const TopPanel: React.FC = observer(() => {
         position: overlayPositions[flowNodeState],
       }),
     );
+
+  const notCompletedFlowNodeStateOverlays = allFlowNodeStateOverlays.filter(
+    (stateOverlay) => stateOverlay.payload.flowNodeState !== 'completed',
+  );
+
+  const flowNodeStateOverlays = executionCountToggleStore.state
+    .isExecutionCountVisible
+    ? allFlowNodeStateOverlays
+    : notCompletedFlowNodeStateOverlays;
+
+  const compensationAssociationIds =
+    processInstanceDetailsDiagramStore.compensationAssociations
+      .filter(({targetRef}) => {
+        // check if the target element for the association was executed
+        return executedFlowNodes.find(({activityId, completed}) => {
+          return targetRef?.id === activityId && completed > 0;
+        });
+      })
+      .map(({id}) => id);
 
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsStore.modificationsByFlowNode).reduce<
@@ -244,11 +258,17 @@ const TopPanel: React.FC = observer(() => {
                   !isIncidentBarOpen && <MetadataPopover />
                 )
               }
-              highlightedSequenceFlows={processedSequenceFlows}
+              highlightedSequenceFlows={[
+                ...processedSequenceFlows,
+                ...compensationAssociationIds,
+              ]}
+              highlightedFlowNodeIds={executedFlowNodes.map(
+                ({activityId}) => activityId,
+              )}
             >
               {stateOverlays.map((overlay) => {
                 const payload = overlay.payload as {
-                  flowNodeState: FlowNodeState;
+                  flowNodeState: FlowNodeState | 'completedEndEvents';
                   count: number;
                 };
 
@@ -261,6 +281,11 @@ const TopPanel: React.FC = observer(() => {
                     isFaded={modificationsStore.hasPendingCancelOrMoveModification(
                       overlay.flowNodeId,
                     )}
+                    title={
+                      payload.flowNodeState === 'completed'
+                        ? 'Execution Count'
+                        : undefined
+                    }
                   />
                 );
               })}

@@ -22,12 +22,17 @@ import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.USER_TASK_FORM_KEY
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.UserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeFormDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeHeader;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskHeaders;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTaskForm;
+import java.util.function.Consumer;
 
 /**
  * @author Sebastian Menski
@@ -159,6 +164,7 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
   @Override
   public B zeebeUserTask() {
     getCreateSingleExtensionElement(ZeebeUserTask.class);
+    getCreateSingleExtensionElement(ZeebePriorityDefinition.class);
     return myself;
   }
 
@@ -175,6 +181,35 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     return zeebeExternalFormReference(asZeebeExpression(expression));
   }
 
+  @Override
+  public B zeebeFormBindingType(final ZeebeBindingType bindingType) {
+    final ZeebeFormDefinition formDefinition =
+        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
+    formDefinition.setBindingType(bindingType);
+    return myself;
+  }
+
+  @Override
+  public B zeebeFormVersionTag(final String versionTag) {
+    final ZeebeFormDefinition formDefinition =
+        getCreateSingleExtensionElement(ZeebeFormDefinition.class);
+    formDefinition.setVersionTag(versionTag);
+    return myself;
+  }
+
+  @Override
+  public B zeebeTaskPriority(final String priority) {
+    final ZeebePriorityDefinition priorityDefinition =
+        myself.getCreateSingleExtensionElement(ZeebePriorityDefinition.class);
+    priorityDefinition.setPriority(priority);
+    return myself;
+  }
+
+  @Override
+  public B zeebeTaskPriorityExpression(final String expression) {
+    return zeebeTaskPriority(asZeebeExpression(expression));
+  }
+
   public B zeebeTaskHeader(final String key, final String value) {
     final ZeebeTaskHeaders taskHeaders = getCreateSingleExtensionElement(ZeebeTaskHeaders.class);
     final ZeebeHeader header = createChild(taskHeaders, ZeebeHeader.class);
@@ -182,5 +217,20 @@ public abstract class AbstractUserTaskBuilder<B extends AbstractUserTaskBuilder<
     header.setValue(value);
 
     return myself;
+  }
+
+  public B zeebeTaskListener(final Consumer<TaskListenerBuilder> taskListenerBuilderConsumer) {
+    final ZeebeTaskListener listener = createTaskListenerElement();
+    listener.setRetries(ZeebeTaskListener.DEFAULT_RETRIES);
+
+    final TaskListenerBuilder builder = new TaskListenerBuilder(listener, myself);
+    taskListenerBuilderConsumer.accept(builder);
+    return myself;
+  }
+
+  private ZeebeTaskListener createTaskListenerElement() {
+    final ZeebeTaskListeners taskListeners =
+        myself.getCreateSingleExtensionElement(ZeebeTaskListeners.class);
+    return myself.createChild(taskListeners, ZeebeTaskListener.class);
   }
 }

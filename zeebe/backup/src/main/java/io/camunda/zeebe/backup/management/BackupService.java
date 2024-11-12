@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.backup.management;
 
@@ -21,7 +21,6 @@ import io.camunda.zeebe.snapshots.PersistedSnapshotStore;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,13 +28,13 @@ import org.slf4j.LoggerFactory;
 public final class BackupService extends Actor implements BackupManager {
   private static final Logger LOG = LoggerFactory.getLogger(BackupService.class);
   private final String actorName;
+  private final JournalInfoProvider journalInfoProvider;
   private final int nodeId;
   private final int partitionId;
   private final int numberOfPartitions;
   private final BackupServiceImpl internalBackupManager;
   private final PersistedSnapshotStore snapshotStore;
   private final Path segmentsDirectory;
-  private final Predicate<Path> isSegmentsFile;
   private final BackupManagerMetrics metrics;
 
   public BackupService(
@@ -45,16 +44,16 @@ public final class BackupService extends Actor implements BackupManager {
       final BackupStore backupStore,
       final PersistedSnapshotStore snapshotStore,
       final Path segmentsDirectory,
-      final Predicate<Path> isSegmentsFile) {
+      final JournalInfoProvider raftMetadataProvider) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.numberOfPartitions = numberOfPartitions;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
-    this.isSegmentsFile = isSegmentsFile;
     metrics = new BackupManagerMetrics(partitionId);
     internalBackupManager = new BackupServiceImpl(backupStore);
     actorName = buildActorName("BackupService", partitionId);
+    journalInfoProvider = raftMetadataProvider;
   }
 
   @Override
@@ -69,7 +68,8 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public void takeBackup(final long checkpointId, final long checkpointPosition) {
+  public ActorFuture<Void> takeBackup(final long checkpointId, final long checkpointPosition) {
+    final ActorFuture<Void> result = createFuture();
     actor.run(
         () -> {
           final InProgressBackupImpl inProgressBackup =
@@ -80,7 +80,7 @@ public final class BackupService extends Actor implements BackupManager {
                   numberOfPartitions,
                   actor,
                   segmentsDirectory,
-                  isSegmentsFile);
+                  journalInfoProvider);
 
           final var opMetrics = metrics.startTakingBackup();
           final var backupResult = internalBackupManager.takeBackup(inProgressBackup, actor);
@@ -101,7 +101,9 @@ public final class BackupService extends Actor implements BackupManager {
                       inProgressBackup.checkpointPosition());
                 }
               });
+          backupResult.onComplete(result);
         });
+    return result;
   }
 
   @Override

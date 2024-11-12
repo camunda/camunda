@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
@@ -25,23 +25,23 @@ import org.slf4j.LoggerFactory;
  * CommandDistributionRecord}s to other partitions. This is needed because the communication between
  * partitions is unreliable.
  *
- * <p>A simple exponential backoff is used for retrying these pending distributions. This
+ * <p>A simple exponential backoff is used for retrying these retriable distributions. This
  * exponential backoff is statically configured to start of at 10 seconds {@link
  * #COMMAND_REDISTRIBUTION_INTERVAL} until it reaches a maximum of 5 minutes {@link
- * #RETRY_MAX_BACKOFF_DURATION}, doubling every time. This backoff is tracked for each pending
+ * #RETRY_MAX_BACKOFF_DURATION}, doubling every time. This backoff is tracked for each retriable
  * distribution individually.
  */
 public final class CommandRedistributor implements StreamProcessorLifecycleAware {
 
   /**
    * Specifies how often this redistributor runs, i.e. the fixed delay between runs. It is also used
-   * to specify the initial interval for retrying a specific pending distribution.
+   * to specify the initial interval for retrying a specific retriable distribution.
    */
   public static final Duration COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
 
   /**
-   * Specifies the maximum backoff interval for retrying a specific pending distribution, i.e. the
-   * maximum delay between two retries of the same pending distribution.
+   * Specifies the maximum backoff interval for retrying a specific retriable distribution, i.e. the
+   * maximum delay between two retries of the same retriable distribution.
    */
   private static final Duration RETRY_MAX_BACKOFF_DURATION = Duration.ofMinutes(5);
 
@@ -58,10 +58,11 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
   private final InterPartitionCommandSender commandSender;
 
   /**
-   * Tracks the number of attempted retry cycles for each pending distribution. Note that this
-   * includes retry cycles where the pending distribution was not resend due to exponential backoff.
+   * Tracks the number of attempted retry cycles for each retriable distribution. Note that this
+   * includes retry cycles where the retriable distribution was not resend due to exponential
+   * backoff.
    */
-  private final Map<PendingDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
+  private final Map<RetriableDistribution, Long> retryCyclesPerDistribution = new HashMap<>();
 
   public CommandRedistributor(
       final DistributionState distributionState, final InterPartitionCommandSender commandSender) {
@@ -77,51 +78,51 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
   }
 
   private void runRetryCycle() {
-    final var pendingDistributions = new HashSet<PendingDistribution>();
-    distributionState.foreachPendingDistribution(
+    final var retriableDistributions = new HashSet<RetriableDistribution>();
+    distributionState.foreachRetriableDistribution(
         (distributionKey, record) -> {
-          final var pending = new PendingDistribution(distributionKey, record.getPartitionId());
-          pendingDistributions.add(pending);
-          retryDistribution(pending, record);
+          final var retriable = new RetriableDistribution(distributionKey, record.getPartitionId());
+          retriableDistributions.add(retriable);
+          retryDistribution(retriable, record);
         });
 
     // Remove retry cycle tracking for completed distributions, i.e. those not visited in this cycle
-    retryCyclesPerDistribution.keySet().removeIf(Predicate.not(pendingDistributions::contains));
+    retryCyclesPerDistribution.keySet().removeIf(Predicate.not(retriableDistributions::contains));
   }
 
   private void retryDistribution(
-      final PendingDistribution pending,
+      final RetriableDistribution retriable,
       final CommandDistributionRecord commandDistributionRecord) {
-    if (!shouldRetryNow(pending)) {
+    if (!shouldRetryNow(retriable)) {
       return;
     }
 
     LOG.info(
-        "Retrying to distribute pending command {} to partition {}",
-        pending.distributionKey,
-        pending.partitionId);
+        "Retrying to distribute retriable command {} to partition {}",
+        retriable.distributionKey,
+        retriable.partitionId);
 
     commandSender.sendCommand(
-        pending.partitionId,
+        retriable.partitionId,
         commandDistributionRecord.getValueType(),
         commandDistributionRecord.getIntent(),
-        pending.distributionKey,
+        retriable.distributionKey,
         commandDistributionRecord.getCommandValue());
   }
 
   /**
-   * Returns whether a pending distribution should be retried now, or not in this cycle.
+   * Returns whether a retriable distribution should be retried now, or not in this cycle.
    *
    * <p>Calling this method increments the retry cycles tracking ({@link
-   * #retryCyclesPerDistribution}) of that pending distribution, or initiates it at 0. The number of
-   * cycles is used to implement a simple exponential backoff.
+   * #retryCyclesPerDistribution}) of that retriable distribution, or initiates it at 0. The number
+   * of cycles is used to implement a simple exponential backoff.
    */
-  private boolean shouldRetryNow(final PendingDistribution pendingDistribution) {
+  private boolean shouldRetryNow(final RetriableDistribution retriableDistribution) {
     // retryCycles starts off at 0, ensuring that we wait between COMMAND_REDISTRIBUTION_INTERVAL
     // and 2 * COMMAND_REDISTRIBUTION_INTERVAL before retrying distribution.
     final long retryCycle =
         retryCyclesPerDistribution.compute(
-            pendingDistribution, (k, retryCycles) -> retryCycles != null ? retryCycles + 1 : 0L);
+            retriableDistribution, (k, retryCycles) -> retryCycles != null ? retryCycles + 1 : 0L);
 
     if (retryCycle >= MAX_RETRY_CYCLES) {
       // Retry in intervals of RETRY_MAX_BACKOFF_DURATION
@@ -133,5 +134,5 @@ public final class CommandRedistributor implements StreamProcessorLifecycleAware
     }
   }
 
-  private record PendingDistribution(long distributionKey, int partitionId) {}
+  private record RetriableDistribution(long distributionKey, int partitionId) {}
 }

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
@@ -25,7 +25,7 @@ public class RejectLargeDeploymentTest {
   @TestZeebe
   private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/15989")
+  @RegressionTest("https://github.com/camunda/camunda/issues/15989")
   void shouldExportLargeDeploymentRejection() {
     // given - a deployment with a large, unparsable input expression
     final var data = "x".repeat(Short.MAX_VALUE * 2);

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.util;
 
@@ -53,6 +53,12 @@ public final class RecordToWrite implements LogAppendEntry {
   public static RecordToWrite command() {
     final RecordMetadata recordMetadata = new RecordMetadata();
     return new RecordToWrite(recordMetadata.recordType(RecordType.COMMAND));
+  }
+
+  public static RecordToWrite command(final long operationReference) {
+    final var recordMetadata =
+        new RecordMetadata().recordType(RecordType.COMMAND).operationReference(operationReference);
+    return new RecordToWrite(recordMetadata);
   }
 
   public static RecordToWrite userCommand() {

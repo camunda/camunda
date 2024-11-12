@@ -3,40 +3,40 @@ name: Tasklist E2E Tests
 on:
   push:
     branches:
-      - 'main'
-      - 'stable/**'
+      - "main"
+      - "stable/**"
     paths:
-      - '.github/actions/**'
-      - '.github/workflows/tasklist-*'
-      - 'bom/*'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'tasklist/**'
-      - 'tasklist-distro/**'
-      - 'tasklist.Dockerfile'
+      - ".github/actions/**"
+      - ".github/workflows/tasklist-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "tasklist/**"
+      - "tasklist.Dockerfile"
+      - "webapps-common/**"
   pull_request:
     paths:
-      - '.github/actions/**'
-      - '.github/workflows/tasklist-*'
-      - 'bom/*'
-      - 'parent/*'
-      - 'pom.xml'
-      - 'tasklist/**'
-      - 'tasklist-distro/**'
-      - 'tasklist.Dockerfile'
+      - ".github/actions/**"
+      - ".github/workflows/tasklist-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "tasklist/**"
+      - "tasklist.Dockerfile"
+      - "webapps-common/**"
 
-# This will limit the workflow to 1 concurrent run per ref (branch / PR).
-# If a new commits occurs, the current run will be canceled to save costs.
+# Limit workflow to 1 concurrent run per ref (branch): new commit -> old runs are canceled to save costs
+# Exception for main branch: complete builds for every commit needed for confidenence
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+  group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
   test:
     runs-on: ubuntu-latest
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.9.2
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -48,7 +48,7 @@ jobs:
           - 9200:9200
           - 9300:9300
       zeebe:
-        image: camunda/zeebe:8.5.0
+        image: camunda/zeebe:8.6.0-alpha3
         env:
           JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m"
           ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME: io.camunda.zeebe.exporter.ElasticsearchExporter
@@ -57,12 +57,13 @@ jobs:
           ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
         ports:
           - 26500:26500
+          - 8089:8080
     steps:
       - name: Check out repository code
-        uses: actions/checkout@1d96c772d19495a3b5c517cd2bc0cb401ea0529f # v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Import Secrets
         id: secrets
-        uses: hashicorp/vault-action@47dbc643a8c668dcca731c2ee3e84331ffd3986c
+        uses: hashicorp/vault-action@8b7eaceb79bd7be97b311993e7c1cc5d051213c7
         with:
           url: ${{ secrets.VAULT_ADDR }}
           method: approle
@@ -97,9 +98,10 @@ jobs:
           distribution: "adopt"
           java-version: "21"
       - name: Setup Maven
-        uses: stCarolas/setup-maven@v4.5
+        uses: ./.github/actions/setup-maven-dist
         with:
           maven-version: "3.9.6"
+          set-mvnw: true
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: "Create settings.xml"
         uses: s4u/maven-settings-action@v3.0.0
@@ -113,9 +115,11 @@ jobs:
             }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Build backend
-        run: mvn clean install -T1C -DskipChecks -P -docker,skipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+        # Currently, the e2e environment of tasklist conflicts with the optimize build. For the moment,
+        # we're excluding optimize from the build, not to impact this tasklist's workflow.
+        run: ./mvnw clean install -T1C -DskipChecks -PskipFrontendBuild -DskipTests=true -B -DskipRemoteStaging=true -Dmaven.deploy.skip=true
       - name: Start Tasklist
-        run: mvn -q -B spring-boot:start -pl tasklist/webapp -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
+        run: ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.main-class=io.camunda.application.StandaloneTasklist -Dspring-boot.run.fork=true -Dspring-boot.run.profiles=e2e-test -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
       - name: Python setup
         if: always()
         uses: actions/setup-python@v5
@@ -132,3 +136,12 @@ jobs:
           name: Playwright report
           path: tasklist/client/playwright-report/
           retention-days: 30
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

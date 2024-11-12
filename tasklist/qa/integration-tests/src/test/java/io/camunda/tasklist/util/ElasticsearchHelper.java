@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.util;
 
@@ -52,6 +43,7 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -71,11 +63,14 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   @Autowired private VariableIndex variableIndex;
 
-  @Autowired private RestHighLevelClient esClient;
+  @Autowired
+  @Qualifier("tasklistEsClient")
+  private RestHighLevelClient esClient;
 
   @Autowired private ObjectMapper objectMapper;
 
-  public TaskEntity getTask(String taskId) {
+  @Override
+  public TaskEntity getTask(final String taskId) {
     try {
       final GetRequest getRequest = new GetRequest(taskTemplate.getAlias()).id(taskId);
       final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
@@ -85,14 +80,15 @@ public class ElasticsearchHelper implements NoSqlHelper {
         throw new NotFoundApiException(
             String.format("Could not find  task for taskId [%s].", taskId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the task: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  public ProcessInstanceEntity getProcessInstance(String processInstanceId) {
+  @Override
+  public ProcessInstanceEntity getProcessInstance(final String processInstanceId) {
     try {
       final GetRequest getRequest =
           new GetRequest(processInstanceIndex.getAlias()).id(processInstanceId);
@@ -104,14 +100,15 @@ public class ElasticsearchHelper implements NoSqlHelper {
         throw new NotFoundApiException(
             String.format("Could not find task for processInstanceId [%s].", processInstanceId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  public List<ProcessInstanceEntity> getProcessInstances(List<String> processInstanceIds) {
+  @Override
+  public List<ProcessInstanceEntity> getProcessInstances(final List<String> processInstanceIds) {
     try {
       final SearchRequest request =
           new SearchRequest(processInstanceIndex.getAlias())
@@ -120,7 +117,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
                       .query(idsQuery().addIds(processInstanceIds.toArray(String[]::new))));
       final SearchResponse searchResponse = esClient.search(request, RequestOptions.DEFAULT);
       return scroll(request, ProcessInstanceEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format(
               "Exception occurred, while obtaining list of processes: %s", e.getMessage());
@@ -128,7 +125,8 @@ public class ElasticsearchHelper implements NoSqlHelper {
     }
   }
 
-  public List<TaskEntity> getTask(String processInstanceId, String flowNodeBpmnId) {
+  @Override
+  public List<TaskEntity> getTask(final String processInstanceId, final String flowNodeBpmnId) {
     TermQueryBuilder piId = null;
     if (processInstanceId != null) {
       piId = termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId);
@@ -152,13 +150,14 @@ public class ElasticsearchHelper implements NoSqlHelper {
                 "Could not find task for processInstanceId [%s] with flowNodeBpmnId [%s].",
                 processInstanceId, flowNodeBpmnId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
+  @Override
   public boolean checkVariableExists(final String taskId, final String varName) {
     final TermQueryBuilder taskIdQ = termQuery(TaskVariableTemplate.TASK_ID, taskId);
     final TermQueryBuilder varNameQ = termQuery(TaskVariableTemplate.NAME, varName);
@@ -170,13 +169,14 @@ public class ElasticsearchHelper implements NoSqlHelper {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
+  @Override
   public boolean checkVariablesExist(final String[] varNames) {
     final SearchRequest searchRequest =
         new SearchRequest(variableIndex.getAlias())
@@ -186,13 +186,14 @@ public class ElasticsearchHelper implements NoSqlHelper {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value == varNames.length;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
+  @Override
   public List<String> getIdsFromIndex(
       final String idFieldName, final String index, final List<String> ids) {
     final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
@@ -203,11 +204,12 @@ public class ElasticsearchHelper implements NoSqlHelper {
       final List<String> idsFromEls =
           ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
       return idsFromEls;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
 
+  @Override
   public List<TaskEntity> getTasksFromIdAndIndex(final String index, final List<String> ids) {
     final TermsQueryBuilder q =
         termsQuery(TaskTemplate.ID, CollectionUtil.toSafeArrayOfStrings(ids));
@@ -216,13 +218,13 @@ public class ElasticsearchHelper implements NoSqlHelper {
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return mapSearchHits(response.getHits().getHits(), objectMapper, TaskEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  public List<TaskEntity> getAllTasks(String index) {
+  public List<TaskEntity> getAllTasks(final String index) {
     try {
       final SearchRequest searchRequest =
           new SearchRequest(index)
@@ -232,7 +234,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return ElasticsearchUtil.mapSearchHits(
           response.getHits().getHits(), objectMapper, TaskEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -248,13 +250,13 @@ public class ElasticsearchHelper implements NoSqlHelper {
           esClient.search(
               new SearchRequest(index).source(searchSourceBuilder), RequestOptions.DEFAULT);
       return searchResponse.getHits().getTotalHits().value;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       return -1L;
     }
   }
 
   @Override
-  public Boolean isIndexDynamicMapping(IndexDescriptor indexDescriptor, final String dynamic)
+  public Boolean isIndexDynamicMapping(final IndexDescriptor indexDescriptor, final String dynamic)
       throws IOException {
     final Map<String, MappingMetadata> mappings =
         esClient
@@ -267,7 +269,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
   }
 
   @Override
-  public Map<String, Object> getFieldDescription(IndexDescriptor indexDescriptor)
+  public Map<String, Object> getFieldDescription(final IndexDescriptor indexDescriptor)
       throws IOException {
     final Map<String, MappingMetadata> mappings =
         esClient
@@ -281,7 +283,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
   }
 
   @Override
-  public Boolean indexHasAlias(String index, String alias) throws IOException {
+  public Boolean indexHasAlias(final String index, final String alias) throws IOException {
     final GetIndexResponse getIndexResponse =
         esClient.indices().get(new GetIndexRequest(index), RequestOptions.DEFAULT);
     return getIndexResponse.getAliases().size() == 1
@@ -289,13 +291,14 @@ public class ElasticsearchHelper implements NoSqlHelper {
   }
 
   @Override
-  public void delete(String index, String id) throws IOException {
+  public void delete(final String index, final String id) throws IOException {
     final DeleteRequest request = new DeleteRequest().index(index).id(id);
     esClient.delete(request, RequestOptions.DEFAULT);
   }
 
   @Override
-  public void update(String index, String id, Map<String, Object> jsonMap) throws IOException {
+  public void update(final String index, final String id, final Map<String, Object> jsonMap)
+      throws IOException {
     final UpdateRequest request = new UpdateRequest().index(index).id(id).doc(jsonMap);
     esClient.update(request, RequestOptions.DEFAULT);
   }

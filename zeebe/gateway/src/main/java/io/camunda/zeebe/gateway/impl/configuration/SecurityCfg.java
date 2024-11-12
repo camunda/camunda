@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
@@ -18,6 +18,7 @@ public final class SecurityCfg {
   private File certificateChainPath;
   private File privateKeyPath;
   private AuthenticationCfg authentication = new AuthenticationCfg();
+  private KeyStoreCfg keyStore = new KeyStoreCfg();
 
   public boolean isEnabled() {
     return enabled;
@@ -54,9 +55,17 @@ public final class SecurityCfg {
     this.authentication = authentication;
   }
 
+  public KeyStoreCfg getKeyStore() {
+    return keyStore;
+  }
+
+  public void setKeyStore(final KeyStoreCfg keyStore) {
+    this.keyStore = keyStore;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(enabled, certificateChainPath, privateKeyPath, authentication);
+    return Objects.hash(enabled, certificateChainPath, privateKeyPath, authentication, keyStore);
   }
 
   @Override
@@ -71,7 +80,8 @@ public final class SecurityCfg {
     return enabled == that.enabled
         && Objects.equals(certificateChainPath, that.certificateChainPath)
         && Objects.equals(privateKeyPath, that.privateKeyPath)
-        && Objects.equals(authentication, that.authentication);
+        && Objects.equals(authentication, that.authentication)
+        && Objects.equals(keyStore, that.keyStore);
   }
 
   @Override
@@ -85,6 +95,8 @@ public final class SecurityCfg {
         + privateKeyPath
         + ", authentication="
         + authentication
+        + ", keyStore="
+        + keyStore
         + '}';
   }
 }

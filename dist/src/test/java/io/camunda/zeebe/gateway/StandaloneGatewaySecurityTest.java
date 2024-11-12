@@ -2,29 +2,38 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.gateway;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.application.commons.actor.ActorClockConfiguration;
+import io.camunda.application.commons.actor.ActorIdleStrategyConfiguration.IdleStrategySupplier;
+import io.camunda.application.commons.actor.ActorSchedulerConfiguration;
+import io.camunda.application.commons.broker.client.BrokerClientConfiguration;
+import io.camunda.application.commons.clustering.AtomixClusterConfiguration;
+import io.camunda.application.commons.clustering.DynamicClusterServices;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration;
+import io.camunda.application.commons.configuration.GatewayBasedConfiguration.GatewayBasedProperties;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.gateway.GatewayConfiguration.GatewayProperties;
 import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.stream.JobStreamClient;
 import io.camunda.zeebe.scheduler.ActorScheduler;
-import io.camunda.zeebe.shared.ActorClockConfiguration;
-import io.camunda.zeebe.shared.IdleStrategyConfig.IdleStrategySupplier;
 import io.camunda.zeebe.test.util.asserts.SslAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +42,7 @@ import org.springframework.boot.autoconfigure.context.LifecycleProperties;
 
 final class StandaloneGatewaySecurityTest {
   private SelfSignedCertificate certificate;
-  private StandaloneGateway gateway;
+  private GatewayModuleConfiguration gateway;
   private BrokerClient brokerClient;
   private AtomixCluster atomixCluster;
   private ActorScheduler actorScheduler;
@@ -57,7 +66,30 @@ final class StandaloneGatewaySecurityTest {
 
     // when
     gateway = buildGateway(cfg);
-    gateway.run();
+    gateway.gateway();
+
+    // then
+    final var clusterAddress =
+        new InetSocketAddress(cfg.getCluster().getHost(), cfg.getCluster().getPort());
+    SslAssert.assertThat(clusterAddress).isSecuredBy(certificate);
+  }
+
+  @Test
+  void shouldStartWithTlsEnabledWithPasswordProtectedKeyStoreFile() {
+    // given
+    final var cfg = createGatewayCfg();
+    final var pkcs12 = createPKCS12File();
+    cfg.getSecurity()
+        .setEnabled(true)
+        .setCertificateChainPath(null)
+        .setPrivateKeyPath(null)
+        .getKeyStore()
+        .setFilePath(pkcs12)
+        .setPassword("password");
+
+    // when
+    gateway = buildGateway(cfg);
+    gateway.gateway();
 
     // then
     final var clusterAddress =
@@ -117,10 +149,29 @@ final class StandaloneGatewaySecurityTest {
             "Expected a certificate chain in order to enable inter-cluster communication security, but none given");
   }
 
-  private GatewayProperties createGatewayCfg() {
+  private File createPKCS12File() {
+    try {
+      final var store = KeyStore.getInstance("PKCS12");
+      final var chain = new Certificate[] {certificate.cert()};
+      final var file = Files.createTempFile("id", ".p12").toFile();
+
+      store.load(null, null);
+      store.setKeyEntry("key", certificate.key(), "password".toCharArray(), chain);
+
+      try (final var fOut = new FileOutputStream(file)) {
+        store.store(fOut, "password".toCharArray());
+      }
+
+      return file;
+    } catch (final Exception e) {
+      throw new RuntimeException("Failed to create PKCS12 file", e);
+    }
+  }
+
+  private GatewayBasedProperties createGatewayCfg() {
     final var gatewayAddress = SocketUtil.getNextAddress();
     final var clusterAddress = SocketUtil.getNextAddress();
-    final var config = new GatewayProperties();
+    final var config = new GatewayBasedProperties();
     config.setNetwork(
         new NetworkCfg().setHost(gatewayAddress.getHostName()).setPort(gatewayAddress.getPort()));
     config.setCluster(
@@ -135,25 +186,31 @@ final class StandaloneGatewaySecurityTest {
     return config;
   }
 
-  private StandaloneGateway buildGateway(final GatewayProperties gatewayCfg) {
-    final var config = new GatewayConfiguration(gatewayCfg, new LifecycleProperties());
-    final var clusterConfig = new GatewayClusterConfiguration();
-    atomixCluster =
-        new GatewayClusterConfiguration().atomixCluster(clusterConfig.clusterConfig(config));
-    final ActorSchedulerConfiguration actorSchedulerConfiguration =
-        new ActorSchedulerConfiguration(gatewayCfg, new ActorClockConfiguration(false));
-    actorScheduler = actorSchedulerConfiguration.actorScheduler(IdleStrategySupplier.ofDefault());
-    final var topologyServices = new TopologyServices(actorScheduler, atomixCluster);
-    final var clusterTopologyService = topologyServices.gatewayClusterTopologyService();
-    final var topologyManager = topologyServices.brokerTopologyManager(clusterTopologyService);
+  private GatewayModuleConfiguration buildGateway(final GatewayBasedProperties gatewayCfg) {
+    final var gatewayConfig = new GatewayBasedConfiguration(gatewayCfg, new LifecycleProperties());
+    final var schedulerConfig = gatewayConfig.schedulerConfiguration();
+    final var brokerClientConfig = gatewayConfig.brokerClientConfig();
 
-    final BrokerClientComponent brokerClientComponent =
-        new BrokerClientComponent(config, atomixCluster, actorScheduler, topologyManager);
-    brokerClient = brokerClientComponent.brokerClient();
+    final var clusterConfig = gatewayConfig.clusterConfig();
+    final var clusterConfiguration = new AtomixClusterConfiguration(clusterConfig, null);
+    atomixCluster = clusterConfiguration.atomixCluster();
+    final ActorSchedulerConfiguration actorSchedulerConfiguration =
+        new ActorSchedulerConfiguration(
+            schedulerConfig, IdleStrategySupplier.ofDefault(), new ActorClockConfiguration(false));
+
+    actorScheduler = actorSchedulerConfiguration.scheduler();
+    final var topologyServices = new DynamicClusterServices(actorScheduler, atomixCluster);
+    final var topologyManager = topologyServices.brokerTopologyManager();
+    topologyServices.gatewayClusterTopologyService(topologyManager, gatewayCfg);
+
+    final var brokerClientConfiguration =
+        new BrokerClientConfiguration(
+            brokerClientConfig, atomixCluster, actorScheduler, topologyManager);
+    brokerClient = brokerClientConfiguration.brokerClient();
     jobStreamClient = new JobStreamComponent().jobStreamClient(actorScheduler, atomixCluster);
 
-    return new StandaloneGateway(
-        config,
+    return new GatewayModuleConfiguration(
+        gatewayConfig,
         null, // identity is disabled by default
         new SpringGatewayBridge(),
         actorScheduler,

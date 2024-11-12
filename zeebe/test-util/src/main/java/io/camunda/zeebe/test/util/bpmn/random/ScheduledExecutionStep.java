@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.test.util.bpmn.random;
 
@@ -32,7 +32,7 @@ import java.util.Map;
  * <p>Distinguishing the activation vs. the execution time is important for calculating correct
  * values for timeouts.
  *
- * <p>For a broader discussion, please consult https://github.com/camunda/zeebe/issues/6568 which
+ * <p>For a broader discussion, please consult https://github.com/camunda/camunda/issues/6568 which
  * discusses the problem and the concept.
  */
 public class ScheduledExecutionStep {

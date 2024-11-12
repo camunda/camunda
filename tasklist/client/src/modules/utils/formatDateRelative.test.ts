@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE ("USE"), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * "Licensee" means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
 import {add, setDefaultOptions, sub} from 'date-fns';
@@ -281,7 +272,7 @@ describe('format', () => {
           text: 'Now',
           speech: 'Now',
         },
-        absolute: {text: '10 Jan 2024, 12:00'},
+        absolute: {text: '10 Jan 2024, 12:00 PM'},
       });
     });
     it('shows minutes when date is within one hour', () => {
@@ -292,7 +283,7 @@ describe('format', () => {
           text: '1 minute ago',
           speech: '1 minute ago',
         },
-        absolute: {text: '10 Jan 2024, 11:59'},
+        absolute: {text: '10 Jan 2024, 11:59 AM'},
       });
       expect(formatDateTime(sub(now, {minutes: 10}), now)).toEqual({
         date: new Date(Date.parse('2024-01-10T11:50:00Z')),
@@ -301,7 +292,7 @@ describe('format', () => {
           text: '10 minutes ago',
           speech: '10 minutes ago',
         },
-        absolute: {text: '10 Jan 2024, 11:50'},
+        absolute: {text: '10 Jan 2024, 11:50 AM'},
       });
       expect(formatDateTime(sub(now, {minutes: 60}), now)).toEqual({
         date: new Date(Date.parse('2024-01-10T11:00:00Z')),
@@ -310,7 +301,7 @@ describe('format', () => {
           text: '60 minutes ago',
           speech: '60 minutes ago',
         },
-        absolute: {text: '10 Jan 2024, 11:00'},
+        absolute: {text: '10 Jan 2024, 11:00 AM'},
       });
       expect(formatDateTime(sub(now, {minutes: 61}), now)).not.toEqual({
         date: new Date(Date.parse('2024-01-10T10:59:00Z')),
@@ -319,7 +310,7 @@ describe('format', () => {
           text: '61 minutes ago',
           speech: '61 minutes ago',
         },
-        absolute: {text: '10 Jan 2024, 10:59'},
+        absolute: {text: '10 Jan 2024, 10:59 AM'},
       });
       expect(formatDateTime(add(now, {minutes: 1}), now)).toEqual({
         date: new Date(Date.parse('2024-01-10T12:01:00Z')),
@@ -328,7 +319,7 @@ describe('format', () => {
           text: 'In 1 minute',
           speech: 'In 1 minute',
         },
-        absolute: {text: '10 Jan 2024, 12:01'},
+        absolute: {text: '10 Jan 2024, 12:01 PM'},
       });
       expect(formatDateTime(add(now, {minutes: 10}), now)).toEqual({
         date: new Date(Date.parse('2024-01-10T12:10:00Z')),
@@ -337,7 +328,7 @@ describe('format', () => {
           text: 'In 10 minutes',
           speech: 'In 10 minutes',
         },
-        absolute: {text: '10 Jan 2024, 12:10'},
+        absolute: {text: '10 Jan 2024, 12:10 PM'},
       });
       expect(formatDateTime(add(now, {minutes: 60}), now)).toEqual({
         date: new Date(Date.parse('2024-01-10T13:00:00Z')),
@@ -346,7 +337,7 @@ describe('format', () => {
           text: 'In 60 minutes',
           speech: 'In 60 minutes',
         },
-        absolute: {text: '10 Jan 2024, 13:00'},
+        absolute: {text: '10 Jan 2024, 1:00 PM'},
       });
       expect(formatDateTime(add(now, {minutes: 61}), now)).not.toEqual({
         date: new Date(Date.parse('2024-01-10T13:01:00Z')),
@@ -355,7 +346,7 @@ describe('format', () => {
           text: 'In 61 minutes',
           speech: 'In 61 minutes',
         },
-        absolute: {text: '10 Jan 2024, 13:01'},
+        absolute: {text: '10 Jan 2024, 1:01 PM'},
       });
     });
     it('shows Today when day is the same', () => {
@@ -363,19 +354,19 @@ describe('format', () => {
         date: new Date(Date.parse('2024-01-10T10:59:00Z')),
         relative: {
           resolution: 'days',
-          text: 'Today, 10:59',
-          speech: 'Today at 10:59',
+          text: 'Today, 10:59 AM',
+          speech: 'Today at 10:59 AM',
         },
-        absolute: {text: '10 Jan 2024, 10:59'},
+        absolute: {text: '10 Jan 2024, 10:59 AM'},
       });
       expect(formatDateTime(add(now, {minutes: 61}), now)).toEqual({
         date: new Date(Date.parse('2024-01-10T13:01:00Z')),
         relative: {
           resolution: 'days',
-          text: 'Today, 13:01',
-          speech: 'Today at 13:01',
+          text: 'Today, 1:01 PM',
+          speech: 'Today at 1:01 PM',
         },
-        absolute: {text: '10 Jan 2024, 13:01'},
+        absolute: {text: '10 Jan 2024, 1:01 PM'},
       });
     });
     it('shows Tomorrow when day is the next day', () => {
@@ -383,10 +374,10 @@ describe('format', () => {
         date: new Date(Date.parse('2024-01-11T12:00:00Z')),
         relative: {
           resolution: 'days',
-          text: 'Tomorrow, 12:00',
-          speech: 'Tomorrow at 12:00',
+          text: 'Tomorrow, 12:00 PM',
+          speech: 'Tomorrow at 12:00 PM',
         },
-        absolute: {text: '11 Jan 2024, 12:00'},
+        absolute: {text: '11 Jan 2024, 12:00 PM'},
       });
     });
     it('shows Yesterday when day is the previous day', () => {
@@ -394,10 +385,10 @@ describe('format', () => {
         date: new Date(Date.parse('2024-01-09T12:00:00Z')),
         relative: {
           resolution: 'days',
-          text: 'Yesterday, 12:00',
-          speech: 'Yesterday at 12:00',
+          text: 'Yesterday, 12:00 PM',
+          speech: 'Yesterday at 12:00 PM',
         },
-        absolute: {text: '9 Jan 2024, 12:00'},
+        absolute: {text: '9 Jan 2024, 12:00 PM'},
       });
     });
     it('shows day of week when day is beyond the previous or next day', () => {
@@ -405,55 +396,55 @@ describe('format', () => {
         date: new Date(Date.parse('2024-01-06T12:00:00Z')),
         relative: {
           resolution: 'week',
-          text: 'Saturday, 12:00',
-          speech: 'Saturday at 12:00',
+          text: 'Saturday, 12:00 PM',
+          speech: 'Saturday at 12:00 PM',
         },
-        absolute: {text: '6 Jan 2024, 12:00'},
+        absolute: {text: '6 Jan 2024, 12:00 PM'},
       });
       expect(formatDateTime(sub(now, {days: 3}), now)).toEqual({
         date: new Date(Date.parse('2024-01-07T12:00:00Z')),
         relative: {
           resolution: 'week',
-          text: 'Sunday, 12:00',
-          speech: 'Sunday at 12:00',
+          text: 'Sunday, 12:00 PM',
+          speech: 'Sunday at 12:00 PM',
         },
-        absolute: {text: '7 Jan 2024, 12:00'},
+        absolute: {text: '7 Jan 2024, 12:00 PM'},
       });
       expect(formatDateTime(sub(now, {days: 2}), now)).toEqual({
         date: new Date(Date.parse('2024-01-08T12:00:00Z')),
         relative: {
           resolution: 'week',
-          text: 'Monday, 12:00',
-          speech: 'Monday at 12:00',
+          text: 'Monday, 12:00 PM',
+          speech: 'Monday at 12:00 PM',
         },
-        absolute: {text: '8 Jan 2024, 12:00'},
+        absolute: {text: '8 Jan 2024, 12:00 PM'},
       });
       expect(formatDateTime(add(now, {days: 2}), now)).toEqual({
         date: new Date(Date.parse('2024-01-12T12:00:00Z')),
         relative: {
           resolution: 'week',
-          text: 'Friday, 12:00',
-          speech: 'Friday at 12:00',
+          text: 'Friday, 12:00 PM',
+          speech: 'Friday at 12:00 PM',
         },
-        absolute: {text: '12 Jan 2024, 12:00'},
+        absolute: {text: '12 Jan 2024, 12:00 PM'},
       });
       expect(formatDateTime(add(now, {days: 3}), now)).toEqual({
         date: new Date(Date.parse('2024-01-13T12:00:00Z')),
         relative: {
           resolution: 'week',
-          text: 'Saturday, 12:00',
-          speech: 'Saturday at 12:00',
+          text: 'Saturday, 12:00 PM',
+          speech: 'Saturday at 12:00 PM',
         },
-        absolute: {text: '13 Jan 2024, 12:00'},
+        absolute: {text: '13 Jan 2024, 12:00 PM'},
       });
       expect(formatDateTime(add(now, {days: 4}), now)).not.toEqual({
         date: new Date(Date.parse('2024-01-14T12:00:00Z')),
         relative: {
           resolution: 'week',
-          text: 'Sunday, 12:00',
-          speech: 'Sunday at 12:00',
+          text: 'Sunday, 12:00 PM',
+          speech: 'Sunday at 12:00 PM',
         },
-        absolute: {text: '14 Jan 2024, 12:00'},
+        absolute: {text: '14 Jan 2024, 12:00 PM'},
       });
     });
     it('shows date when day is beyond the current week', () => {
@@ -461,19 +452,19 @@ describe('format', () => {
         date: new Date(Date.parse('2024-01-06T12:00:00Z')),
         relative: {
           resolution: 'months',
-          text: '6 Jan, 12:00',
-          speech: '6th of January at 12:00',
+          text: '6 Jan, 12:00 PM',
+          speech: '6th of January at 12:00 PM',
         },
-        absolute: {text: '6 Jan 2024, 12:00'},
+        absolute: {text: '6 Jan 2024, 12:00 PM'},
       });
       expect(formatDateTime(add(now, {days: 4}), now)).toEqual({
         date: new Date(Date.parse('2024-01-14T12:00:00Z')),
         relative: {
           resolution: 'months',
-          text: '14 Jan, 12:00',
-          speech: '14th of January at 12:00',
+          text: '14 Jan, 12:00 PM',
+          speech: '14th of January at 12:00 PM',
         },
-        absolute: {text: '14 Jan 2024, 12:00'},
+        absolute: {text: '14 Jan 2024, 12:00 PM'},
       });
     });
     it('shows date and year when day is beyond the current week', () => {
@@ -481,37 +472,37 @@ describe('format', () => {
         date: new Date(Date.parse('2023-12-31T12:00:00Z')),
         relative: {
           resolution: 'years',
-          text: '31 Dec 2023, 12:00',
-          speech: '31st of December, 2023 at 12:00',
+          text: '31 Dec 2023, 12:00 PM',
+          speech: '31st of December, 2023 at 12:00 PM',
         },
-        absolute: {text: '31 Dec 2023, 12:00'},
+        absolute: {text: '31 Dec 2023, 12:00 PM'},
       });
       expect(formatDateTime(sub(now, {days: 9}), now)).toEqual({
         date: new Date(Date.parse('2024-01-01T12:00:00Z')),
         relative: {
           resolution: 'months',
-          text: '1 Jan, 12:00',
-          speech: '1st of January at 12:00',
+          text: '1 Jan, 12:00 PM',
+          speech: '1st of January at 12:00 PM',
         },
-        absolute: {text: '1 Jan 2024, 12:00'},
+        absolute: {text: '1 Jan 2024, 12:00 PM'},
       });
       expect(formatDateTime(add(now, {days: 356}), now)).toEqual({
         date: new Date(Date.parse('2024-12-31T12:00:00Z')),
         relative: {
           resolution: 'months',
-          text: '31 Dec, 12:00',
-          speech: '31st of December at 12:00',
+          text: '31 Dec, 12:00 PM',
+          speech: '31st of December at 12:00 PM',
         },
-        absolute: {text: '31 Dec 2024, 12:00'},
+        absolute: {text: '31 Dec 2024, 12:00 PM'},
       });
       expect(formatDateTime(add(now, {days: 357}), now)).toEqual({
         date: new Date(Date.parse('2025-01-01T12:00:00Z')),
         relative: {
           resolution: 'years',
-          text: '1 Jan 2025, 12:00',
-          speech: '1st of January, 2025 at 12:00',
+          text: '1 Jan 2025, 12:00 PM',
+          speech: '1st of January, 2025 at 12:00 PM',
         },
-        absolute: {text: '1 Jan 2025, 12:00'},
+        absolute: {text: '1 Jan 2025, 12:00 PM'},
       });
     });
   });

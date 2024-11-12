@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.migration;
 
@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDe
 import io.camunda.zeebe.engine.state.migration.to_8_4.MultiTenancySignalSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_5.ColumnFamilyPrefixCorrectionMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,20 +57,23 @@ public class DbMigratorImpl implements DbMigrator {
           new MultiTenancyJobStateMigration(),
           new ColumnFamilyPrefixCorrectionMigration(),
           new MultiTenancySignalSubscriptionStateMigration(),
-          new JobBackoffRestoreMigration());
-  // Be mindful of https://github.com/camunda/zeebe/issues/7248. In particular, that issue
+          new JobBackoffRestoreMigration(),
+          new RoutingInfoMigration());
+  // Be mindful of https://github.com/camunda/camunda/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 
-  private final MutableProcessingState processingState;
+  private final MutableMigrationTaskContext migrationTaskContext;
   private final List<MigrationTask> migrationTasks;
 
-  public DbMigratorImpl(final MutableProcessingState processingState) {
-    this(processingState, MIGRATION_TASKS);
+  public DbMigratorImpl(
+      final ClusterContext clusterContext, final MutableProcessingState processingState) {
+    this(new MigrationTaskContextImpl(clusterContext, processingState), MIGRATION_TASKS);
   }
 
   public DbMigratorImpl(
-      final MutableProcessingState processingState, final List<MigrationTask> migrationTasks) {
-    this.processingState = processingState;
+      final MutableMigrationTaskContext migrationTaskContext,
+      final List<MigrationTask> migrationTasks) {
+    this.migrationTaskContext = migrationTaskContext;
     this.migrationTasks = migrationTasks;
   }
 
@@ -95,7 +99,8 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   private VersionCompatibilityCheck.CheckResult checkVersionCompatibility() {
-    final var migratedByVersion = processingState.getMigrationState().getMigratedByVersion();
+    final var migratedByVersion =
+        migrationTaskContext.processingState().getMigrationState().getMigratedByVersion();
     final var currentVersion = VersionUtil.getVersion();
     final CheckResult checkResult =
         VersionCompatibilityCheck.check(migratedByVersion, currentVersion);
@@ -122,7 +127,10 @@ public class DbMigratorImpl implements DbMigrator {
   }
 
   private void markMigrationsAsCompleted() {
-    processingState.getMigrationState().setMigratedByVersion(VersionUtil.getVersion());
+    migrationTaskContext
+        .processingState()
+        .getMigrationState()
+        .setMigratedByVersion(VersionUtil.getVersion());
   }
 
   private void logPreview(final List<MigrationTask> migrationTasks) {
@@ -149,7 +157,7 @@ public class DbMigratorImpl implements DbMigrator {
 
   private boolean handleMigrationTask(
       final MigrationTask migrationTask, final int index, final int total) {
-    if (migrationTask.needsToRun(processingState)) {
+    if (migrationTask.needsToRun(migrationTaskContext)) {
       runMigration(migrationTask, index, total);
       return true;
     } else {
@@ -170,7 +178,7 @@ public class DbMigratorImpl implements DbMigrator {
   private void runMigration(final MigrationTask migrationTask, final int index, final int total) {
     LOGGER.info("Starting {} migration ({}/{})", migrationTask.getIdentifier(), index, total);
     final var startTime = System.currentTimeMillis();
-    migrationTask.runMigration(processingState);
+    migrationTask.runMigration(migrationTaskContext);
     final var duration = System.currentTimeMillis() - startTime;
 
     LOGGER.debug("{} migration completed in {} ms.", migrationTask.getIdentifier(), duration);

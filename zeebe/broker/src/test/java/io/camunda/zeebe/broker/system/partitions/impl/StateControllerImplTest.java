@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions.impl;
 
@@ -28,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Comparator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.collections.MutableLong;
@@ -60,7 +61,9 @@ public final class StateControllerImplTest {
   @Before
   public void setup() throws IOException {
 
-    store = new FileBasedSnapshotStore(1, tempFolderRule.newFolder("data").toPath());
+    store =
+        new FileBasedSnapshotStore(
+            0, 1, tempFolderRule.newFolder("data").toPath(), snapshotPath -> Map.of());
     actorSchedulerRule.submitActor(store).join();
 
     runtimeDirectory = tempFolderRule.getRoot().toPath().resolve("runtime");

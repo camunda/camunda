@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.test;
 
@@ -112,7 +112,7 @@ final class RollingUpdateTest {
     updateBroker(broker, to);
 
     // then
-    try (final var client = cluster.newClientBuilder().build()) {
+    try (final var client = cluster.newClientBuilder().build(); ) {
       Awaitility.await()
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
@@ -135,7 +135,7 @@ final class RollingUpdateTest {
     cluster.start();
 
     // when
-    try (final var client = cluster.newClientBuilder().build()) {
+    try (final var client = cluster.newClientBuilder().build(); ) {
       deployProcess(client);
 
       // potentially retry in case we're faster than the deployment distribution
@@ -151,7 +151,7 @@ final class RollingUpdateTest {
     final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(brokerId);
     broker.stop();
 
-    try (final var client = cluster.newClientBuilder().build()) {
+    try (final var client = cluster.newClientBuilder().build(); ) {
       Awaitility.await("broker is removed from topology")
           .atMost(Duration.ofSeconds(120))
           .pollInterval(Duration.ofMillis(100))
@@ -203,7 +203,7 @@ final class RollingUpdateTest {
     // when
     final long firstProcessInstanceKey;
     ZeebeGatewayNode<?> availableGateway = cluster.getGateways().get("0");
-    try (final var client = newZeebeClient(availableGateway)) {
+    try (final var client = newClient(availableGateway)) {
       deployProcess(client);
 
       // potentially retry in case we're faster than the deployment distribution
@@ -217,7 +217,7 @@ final class RollingUpdateTest {
     }
 
     for (int i = cluster.getBrokers().size() - 1; i >= 0; i--) {
-      try (final ZeebeClient client = newZeebeClient(availableGateway)) {
+      try (final ZeebeClient client = newClient(availableGateway)) {
         final var brokerId = i;
         final ZeebeBrokerNode<?> broker = cluster.getBrokers().get(i);
         broker.stop();
@@ -254,7 +254,7 @@ final class RollingUpdateTest {
               });
         };
 
-    try (final var client = newZeebeClient(availableGateway)) {
+    try (final var client = newClient(availableGateway)) {
       final var secondProcessInstanceKey = createProcessInstance(client).getProcessInstanceKey();
       final var expectedActivatedJobs =
           Map.of(
@@ -320,8 +320,8 @@ final class RollingUpdateTest {
   }
 
   private void assertTopologyContainsUpdatedBroker(
-      final ZeebeClient zeebeClient, final int brokerId, final String expectedVersion) {
-    final var topology = zeebeClient.newTopologyRequest().send().join();
+      final ZeebeClient client, final int brokerId, final String expectedVersion) {
+    final var topology = client.newTopologyRequest().send().join();
     TopologyAssert.assertThat(topology)
         .as("the topology contains all the brokers")
         .isComplete(
@@ -348,7 +348,7 @@ final class RollingUpdateTest {
         .hasExpectedReplicasCount(cluster.getPartitionsCount(), cluster.getBrokers().size() - 1);
   }
 
-  private ZeebeClient newZeebeClient(final ZeebeGatewayNode<?> gateway) {
+  private ZeebeClient newClient(final ZeebeGatewayNode<?> gateway) {
     return ZeebeClient.newClientBuilder()
         .usePlaintext()
         .gatewayAddress(gateway.getExternalGatewayAddress())

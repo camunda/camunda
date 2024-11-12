@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter.opensearch;
 
@@ -12,31 +12,11 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.EnumSet;
 import java.util.stream.Stream;
-import org.opensearch.client.RestClient;
-import org.opensearch.testcontainers.OpensearchContainer;
-import org.testcontainers.utility.DockerImageName;
 
 /** Collection of utilities for unit and integration tests. */
 final class TestSupport {
-  private static final DockerImageName OPENSEARCH_IMAGE =
-      DockerImageName.parse("opensearchproject/opensearch")
-          .withTag(RestClient.class.getPackage().getImplementationVersion());
 
   private TestSupport() {}
-
-  /**
-   * Returns an OpenSearch container pointing at the same version as the {@link RestClient}.
-   *
-   * <p>The container is configured to use 512m of heap and 512m of direct memory. This is required
-   * because OpenSearch, by default, will grab all the RAM available otherwise.
-   *
-   * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
-   */
-  static OpensearchContainer<?> createDefaultContainer() {
-    return new OpensearchContainer<>(OPENSEARCH_IMAGE)
-        .withEnv("ES_JAVA_OPTS", "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=536870912")
-        .withEnv("action.auto_create_index", "true");
-  }
 
   /**
    * Sets the correct indexing configuration field for the given value type. This is particularly
@@ -81,6 +61,9 @@ final class TestSupport {
       case FORM -> config.form = value;
       case USER_TASK -> config.userTask = value;
       case COMPENSATION_SUBSCRIPTION -> config.compensationSubscription = value;
+      case MESSAGE_CORRELATION -> config.messageCorrelation = value;
+      case USER -> config.user = value;
+      case AUTHORIZATION -> config.authorization = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -108,12 +91,22 @@ final class TestSupport {
    * Returns a stream of value types which are export-able by the exporter, i.e. the ones with an
    * index template.
    *
-   * <p>Issue https://github.com/camunda/zeebe/issues/8337 should fix this and ensure all types have
-   * an index template.
+   * <p>Issue https://github.com/camunda/camunda/issues/8337 should fix this and ensure all types
+   * have an index template.
    */
   static Stream<ValueType> provideValueTypes() {
     final var excludedValueTypes =
-        EnumSet.of(ValueType.SBE_UNKNOWN, ValueType.NULL_VAL, ValueType.PROCESS_INSTANCE_RESULT);
+        EnumSet.of(
+            ValueType.SBE_UNKNOWN,
+            ValueType.NULL_VAL,
+            ValueType.PROCESS_INSTANCE_RESULT,
+            ValueType.CLOCK,
+            ValueType.SCALE,
+            // these are not yet supported
+            ValueType.ROLE,
+            ValueType.TENANT,
+            ValueType.GROUP,
+            ValueType.MAPPING);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }

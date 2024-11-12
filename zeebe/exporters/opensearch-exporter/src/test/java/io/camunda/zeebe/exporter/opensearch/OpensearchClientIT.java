@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.exporter.opensearch;
 
@@ -15,6 +15,8 @@ import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTe
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -29,9 +31,14 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 final class OpensearchClientIT {
+  private static final String PASSWORD = "P@a$5w0rd";
+  private static final String ADMIN_PASSWORD_ENV_VAR = "OPENSEARCH_INITIAL_ADMIN_PASSWORD";
+
   @Container
-  private static final OpensearchContainer CONTAINER =
-      TestSupport.createDefaultContainer().withSecurityEnabled();
+  private static final OpensearchContainer<?> CONTAINER =
+      TestSearchContainers.createDefaultOpensearchContainer()
+          .withSecurityEnabled()
+          .withEnv(ADMIN_PASSWORD_ENV_VAR, PASSWORD);
 
   private static final int PARTITION_ID = 1;
 
@@ -50,7 +57,7 @@ final class OpensearchClientIT {
     config.index.prefix = UUID.randomUUID() + "-test-record";
     config.url = CONTAINER.getHttpHostAddress();
     config.getAuthentication().setUsername(CONTAINER.getUsername());
-    config.getAuthentication().setPassword(CONTAINER.getPassword());
+    config.getAuthentication().setPassword(PASSWORD);
     testClient = new TestClient(config, indexRouter);
     client =
         new OpensearchClient(
@@ -59,7 +66,7 @@ final class OpensearchClientIT {
             RestClientFactory.of(config, true),
             indexRouter,
             templateReader,
-            new OpensearchMetrics(PARTITION_ID));
+            new OpensearchMetrics(new SimpleMeterRegistry()));
   }
 
   @AfterEach
@@ -150,7 +157,7 @@ final class OpensearchClientIT {
             RestClientFactory.of(config, true),
             indexRouter,
             templateReader,
-            new OpensearchMetrics(PARTITION_ID));
+            new OpensearchMetrics(new SimpleMeterRegistry()));
     authenticatedClient.putComponentTemplate();
 
     // then

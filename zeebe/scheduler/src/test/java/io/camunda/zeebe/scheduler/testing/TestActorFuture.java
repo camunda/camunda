@@ -2,16 +2,18 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.scheduler.testing;
 
 import io.camunda.zeebe.scheduler.ActorTask;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
@@ -108,13 +110,53 @@ public final class TestActorFuture<V> implements ActorFuture<V> {
   }
 
   @Override
-  public ActorFuture<V> andThen(final Supplier<ActorFuture<V>> next, final Executor executor) {
-    throw new UnsupportedOperationException("Not yet implemented");
+  public <U> ActorFuture<U> andThen(final Supplier<ActorFuture<U>> next, final Executor executor) {
+    return andThen(ignored -> next.get(), executor);
   }
 
   @Override
-  public ActorFuture<V> andThen(final Function<V, ActorFuture<V>> next, final Executor executor) {
-    throw new UnsupportedOperationException("Not yet implemented");
+  public <U> ActorFuture<U> andThen(
+      final Function<V, ActorFuture<U>> next, final Executor executor) {
+    final ActorFuture<U> nextFuture = new CompletableActorFuture<>();
+    onComplete(
+        (thisResult, thisError) -> {
+          if (thisError != null) {
+            nextFuture.completeExceptionally(thisError);
+          } else {
+            next.apply(thisResult)
+                .onComplete(
+                    (nextResult, nextError) -> {
+                      if (nextError != null) {
+                        nextFuture.completeExceptionally(nextError);
+                      } else {
+                        nextFuture.complete(nextResult);
+                      }
+                    },
+                    executor);
+          }
+        },
+        executor);
+    return nextFuture;
+  }
+
+  @Override
+  public <U> ActorFuture<U> thenApply(final Function<V, U> next, final Executor executor) {
+    final ActorFuture<U> nextFuture = new TestActorFuture<>();
+    onComplete(
+        (value, error) -> {
+          if (error != null) {
+            nextFuture.completeExceptionally(error);
+            return;
+          }
+
+          try {
+            nextFuture.complete(next.apply(value));
+          } catch (final Exception e) {
+            nextFuture.completeExceptionally(new CompletionException(e));
+          }
+        },
+        executor);
+    return nextFuture;
   }
 
   private void triggerOnCompleteListeners() {

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.variable.mapping;
 
@@ -16,8 +16,8 @@ import io.camunda.zeebe.el.ResultType;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.VariableMappingTransformer;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
-import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.test.util.MsgPackUtil;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -30,7 +30,7 @@ public final class VariableOutputMappingTransformerTest {
   private final VariableMappingTransformer transformer = new VariableMappingTransformer();
   private final ExpressionLanguage expressionLanguage =
       ExpressionLanguageFactory.createExpressionLanguage(
-          new ZeebeFeelEngineClock(ActorClock.current()));
+          new ZeebeFeelEngineClock(InstantSource.system()));
 
   public static Object[][] parametersSuccessfulEvaluationToObject() {
     return new Object[][] {

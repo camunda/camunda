@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.management;
 
@@ -24,16 +24,13 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpRequest.Builder;
-import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandler;
-import java.net.http.HttpResponse.BodySubscriber;
-import java.net.http.HttpResponse.ResponseInfo;
+import java.net.http.HttpResponse.BodySubscribers;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -65,7 +62,7 @@ final class ControlledActorClockEndpointIT {
             .POST(BodyPublishers.ofByteArray(MAPPER.writeValueAsBytes(Map.of("epochMilli", now))))
             .build();
     final var process = Bpmn.createExecutableProcess().startEvent().endEvent().done();
-    final var response = httpClient.send(request, new ResponseHandler());
+    final var response = httpClient.send(request, newResponseHandler());
 
     // when - producing records
     zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
@@ -92,7 +89,7 @@ final class ControlledActorClockEndpointIT {
                     MAPPER.writeValueAsBytes(Map.of("offsetMilli", offset.toMillis()))))
             .build();
     final var beforeRecords = Instant.now();
-    final var response = httpClient.send(request, new ResponseHandler());
+    final var response = httpClient.send(request, newResponseHandler());
 
     // when - producing records
     zeebeClient.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
@@ -121,24 +118,20 @@ final class ControlledActorClockEndpointIT {
         .headers("Content-Type", "application/json", "Accept", "application/json");
   }
 
+  private BodyHandler<Response> newResponseHandler() {
+    return responseInfo ->
+        BodySubscribers.mapping(BodySubscribers.ofByteArray(), this::mapResponse);
+  }
+
+  private Response mapResponse(final byte[] bytes) {
+    try {
+      return MAPPER.readValue(bytes, Response.class);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
   @JsonIgnoreProperties(ignoreUnknown = true)
   private record Response(
       @JsonProperty("epochMilli") long epochMilli, @JsonProperty("instant") Instant instant) {}
-
-  private static final class ResponseHandler implements BodyHandler<Response> {
-
-    @Override
-    public BodySubscriber<Response> apply(final ResponseInfo responseInfo) {
-      return HttpResponse.BodySubscribers.mapping(
-          HttpResponse.BodySubscribers.ofInputStream(), this::unsafeRead);
-    }
-
-    private Response unsafeRead(final InputStream input) {
-      try {
-        return MAPPER.readValue(input, Response.class);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
-    }
-  }
 }

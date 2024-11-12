@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.test.broker.protocol.brokerapi;
 
@@ -26,6 +26,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.agrona.concurrent.SnowflakeIdGenerator;
 
 public final class StubBroker implements AutoCloseable {
 
@@ -90,7 +91,9 @@ public final class StubBroker implements AutoCloseable {
     cluster.start().join();
 
     final var transportFactory = new TransportFactory(scheduler);
-    serverTransport = transportFactory.createServerTransport(nodeId, cluster.getMessagingService());
+    final var requestIdGenerator = new SnowflakeIdGenerator(nodeId);
+    serverTransport =
+        transportFactory.createServerTransport(cluster.getMessagingService(), requestIdGenerator);
 
     channelHandler = new StubRequestHandler(msgPackHelper);
     serverTransport.subscribe(partitionId, RequestType.COMMAND, channelHandler);

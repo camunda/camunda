@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
@@ -13,16 +13,15 @@ import io.camunda.zeebe.broker.engine.impl.ScheduledCommandCacheMetrics.BoundedC
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.engine.Engine;
-import io.camunda.zeebe.logstreams.log.LoggedEvent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.RecordProcessor;
-import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.impl.SkipPositionsFilter;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
-import io.camunda.zeebe.stream.impl.StreamProcessorListener;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
 import java.util.List;
 import java.util.function.BiFunction;
@@ -152,29 +151,43 @@ public final class StreamProcessorTransitionStep implements PartitionTransitionS
         SkipPositionsFilter.of(context.getBrokerCfg().getProcessing().skipPositions());
 
     return StreamProcessor.builder()
+        .meterRegistry(context.getPartitionMeterRegistry())
         .logStream(context.getLogStream())
         .actorSchedulingService(context.getActorSchedulingService())
         .zeebeDb(context.getZeebeDb())
         .recordProcessors(recordProcessors)
         .nodeId(context.getNodeId())
-        .commandResponseWriter(context.getCommandResponseWriter())
+        .commandResponseWriter(context.getCommandApiService().newCommandResponseWriter())
         .maxCommandsInBatch(context.getBrokerCfg().getProcessing().getMaxCommandsInBatch())
         .setEnableAsyncScheduledTasks(
             context.getBrokerCfg().getProcessing().isEnableAsyncScheduledTasks())
+        .setScheduledTaskCheckInterval(
+            context.getBrokerCfg().getProcessing().getScheduledTaskCheckInterval())
         .processingFilter(processingFilter)
         .listener(
-            new StreamProcessorListener() {
+            processedCommand ->
+                context.getLogStream().getFlowControl().onProcessed(processedCommand.getPosition()))
+        .addLifecycleListener(
+            new StreamProcessorLifecycleAware() {
               @Override
-              public void onProcessed(final TypedRecord<?> processedCommand) {
-                context.getOnProcessedListener().accept(processedCommand);
+              public void onRecovered(final ReadonlyStreamProcessorContext ignored) {
+                context.getCommandApiService().onRecovered(context.getPartitionId());
               }
 
               @Override
-              public void onSkipped(final LoggedEvent skippedRecord) {}
+              public void onPaused() {
+                context.getCommandApiService().onPaused(context.getPartitionId());
+              }
+
+              @Override
+              public void onResumed() {
+                context.getCommandApiService().onResumed(context.getPartitionId());
+              }
             })
         .streamProcessorMode(streamProcessorMode)
         .partitionCommandSender(context.getPartitionCommandSender())
         .scheduledCommandCache(scheduledCommandCache)
+        .clock(context.getStreamClock())
         .build();
   }
 }

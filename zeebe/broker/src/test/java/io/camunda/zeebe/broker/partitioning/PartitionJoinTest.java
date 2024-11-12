@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.partitioning;
 
@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
+import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -85,7 +86,10 @@ final class PartitionJoinTest {
 
       // then
       Assertions.assertThat(
-              partitionManager.join(1, Map.of(MemberId.from("0"), 2, MemberId.from("1"), 1)))
+              partitionManager.join(
+                  1,
+                  Map.of(MemberId.from("0"), 2, MemberId.from("1"), 1),
+                  DynamicPartitionConfig.init()))
           .succeedsWithin(Duration.ofSeconds(10));
     }
   }

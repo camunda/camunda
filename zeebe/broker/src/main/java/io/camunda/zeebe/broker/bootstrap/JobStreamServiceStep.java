@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.bootstrap;
 
@@ -116,7 +116,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     }
   }
 
-  @VisibleForTesting("https://github.com/camunda/zeebe/issues/14624")
+  @VisibleForTesting("https://github.com/camunda/camunda/issues/14624")
   static JobActivationProperties readJobActivationProperties(final DirectBuffer buffer) {
     final var mutable = new JobActivationPropertiesImpl();
     mutable.wrap(buffer);

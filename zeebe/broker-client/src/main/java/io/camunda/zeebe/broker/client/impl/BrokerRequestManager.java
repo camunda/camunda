@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.client.impl;
 
@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.BrokerResponseException;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.api.IllegalBrokerResponseException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
+import io.camunda.zeebe.broker.client.api.PartitionInactiveException;
 import io.camunda.zeebe.broker.client.api.PartitionNotFoundException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -121,6 +122,11 @@ final class BrokerRequestManager extends Actor {
       BrokerClientMetrics.registerFailedRequest(
           request.getPartitionId(), request.getType(), "NO_TOPOLOGY");
       return;
+    } catch (final PartitionInactiveException e) {
+      returnFuture.completeExceptionally(e);
+      BrokerClientMetrics.registerFailedRequest(
+          request.getPartitionId(), request.getType(), "PARTITION_INACTIVE");
+      return;
     }
 
     final ActorFuture<DirectBuffer> responseFuture =
@@ -208,6 +214,7 @@ final class BrokerRequestManager extends Actor {
       if (topology != null && !topology.getPartitions().contains(request.getPartitionId())) {
         throw new PartitionNotFoundException(request.getPartitionId());
       }
+      throwIfPartitionInactive(request.getPartitionId());
       // already know partition id
       return new BrokerAddressProvider(request.getPartitionId());
     } else if (request.requiresPartitionId()) {
@@ -223,10 +230,27 @@ final class BrokerRequestManager extends Actor {
       }
       request.setPartitionId(partitionId);
 
+      throwIfPartitionInactive(partitionId);
+
       return new BrokerAddressProvider(request.getPartitionId());
     } else {
       // random broker
       return new BrokerAddressProvider();
+    }
+  }
+
+  private void throwIfPartitionInactive(final int partitionId) {
+    final BrokerClusterState topology = topologyManager.getTopology();
+    if (topology == null) {
+      throw new NoTopologyAvailableException();
+    }
+
+    final var inactiveNodes = topology.getInactiveNodesForPartition(partitionId);
+    final var someNodesInactive = inactiveNodes != null && !inactiveNodes.isEmpty();
+    final var noPartitionLeader =
+        topology.getLeaderForPartition(partitionId) == BrokerClusterState.NODE_ID_NULL;
+    if (someNodesInactive && noPartitionLeader) {
+      throw new PartitionInactiveException(partitionId);
     }
   }
 

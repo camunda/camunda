@@ -2,15 +2,16 @@
 <definitions xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="definitions_7b2230cb-14cf-4977-8c8d-222b7e2def2e" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="Camunda Modeler" exporterVersion="5.19.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0">
   <process id="process" isExecutable="true">
     <startEvent id="start">
-      <extensionElements>
-        <zeebe:executionListeners>
-          <zeebe:executionListener eventType="start" type="start_event_start_el" retries="4" />
-          <zeebe:executionListener eventType="end" type="start_event_end_el" retries="5" />
-        </zeebe:executionListeners>
-      </extensionElements>
       <outgoing>Flow_031kcs6</outgoing>
     </startEvent>
-    <sequenceFlow id="Flow_031kcs6" sourceRef="start" targetRef="current_date_script_task" />
+    <sequenceFlow id="Flow_031kcs6" sourceRef="start" targetRef="current_date_script_task">
+      <extensionElements>
+        <zeebe:executionListeners>
+          <zeebe:executionListener eventType="start" retries="4" type="start_event_start_el"/>
+          <zeebe:executionListener eventType="end" retries="5" type="start_event_end_el"/>
+        </zeebe:executionListeners>
+      </extensionElements>
+    </sequenceFlow>
     <scriptTask id="current_date_script_task">
       <extensionElements>
         <zeebe:script expression="=today()" resultVariable="currentDate" />

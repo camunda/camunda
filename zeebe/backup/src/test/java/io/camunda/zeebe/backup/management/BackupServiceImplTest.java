@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.backup.management;
 
@@ -155,7 +155,10 @@ class BackupServiceImplTest {
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
 
     // then
-    assertThat(result).failsWithin(Duration.ofMillis(100));
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Expected");
     verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
@@ -169,7 +172,10 @@ class BackupServiceImplTest {
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
 
     // then
-    assertThat(result).failsWithin(Duration.ofMillis(100));
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Expected");
     verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
@@ -184,7 +190,10 @@ class BackupServiceImplTest {
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
 
     // then
-    assertThat(result).failsWithin(Duration.ofMillis(100));
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Expected");
     verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
@@ -273,7 +282,8 @@ class BackupServiceImplTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 List.of(inProgressStatus, notExistingStatus, completedStatus)));
-
+    when(backupStore.markFailed(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
     // when
     backupService.failInProgressBackups(1, 10, concurrencyControl);
 

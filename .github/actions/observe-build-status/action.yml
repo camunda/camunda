@@ -1,0 +1,74 @@
+# This action expects the code to have been checked out beforehand, e.g. via actions/checkout@v4
+#
+# This action expects certain secrets to be provided:
+#   - VAULT_ADDR
+#   - VAULT_ROLE_ID
+#   - VAULT_SECRET_ID
+---
+name: Observe Build Status
+description: Records the build status remotely for analytic purposes
+
+inputs:
+  build_status:
+    description: 'The status of the job, one of: success, failure, aborted, cancelled'
+    required: true
+  user_reason:
+    description: 'Optional string (200 chars max) the user can submit to indicate the reason why a build has ended with a certain build status.'
+    required: false
+  user_description:
+    description: 'Optional string (200 chars max) the user can submit to indicate the reason why a build has ended with a certain build status.'
+    required: false
+  job_name:
+    description: 'Optional string, the job whose status is being observed; defaults to $GITHUB_JOB when omitted'
+    required: false
+  secret_vault_address:
+    description: 'Secret vault url'
+    required: false
+  secret_vault_roleId:
+    description: 'Secret vault roleId'
+    required: false
+  secret_vault_secretId:
+    description: 'Secret vault ID'
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Import Secrets
+      id: secrets
+      uses: hashicorp/vault-action@v3.0.0
+      if: |
+        inputs.secret_vault_address != ''
+        && inputs.secret_vault_roleId != ''
+        && inputs.secret_vault_secretId != ''
+      with:
+        url: ${{ inputs.secret_vault_address }}
+        method: approle
+        roleId: ${{ inputs.secret_vault_roleId }}
+        secretId: ${{ inputs.secret_vault_secretId }}
+        exportEnv: false # we rely on step outputs, no need for environment variables
+        secrets: |
+          secret/data/products/zeebe/ci/ci-analytics gcloud_sa_key;
+
+    - name: Get build duration in milliseconds
+      id: get-build-duration-millis
+      shell: bash
+      run: |
+        duration=$(expr $(date +'%s') - $(date -r "$GITHUB_ACTION_PATH" +"%s"))
+
+        # only submit plausible durations below 72 hours
+        if [ $duration -le 259200 ]; then
+          echo "result=$(expr $duration \* 1000)" >> $GITHUB_OUTPUT
+        else
+          echo "result=" >> $GITHUB_OUTPUT
+        fi
+
+    - uses: camunda/infra-global-github-actions/submit-build-status@main
+      if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
+      with:
+        job_name_override: "${{ inputs.job_name }}"
+        build_status: "${{ inputs.build_status }}"
+        build_duration_millis: "${{ steps.get-build-duration-millis.outputs.result }}"
+        user_reason: "${{ inputs.user_reason }}"
+        user_description: "${{ inputs.user_description }}"
+        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"

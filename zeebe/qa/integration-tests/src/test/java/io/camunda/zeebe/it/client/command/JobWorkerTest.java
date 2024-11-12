@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.it.client.command;
 
@@ -51,17 +51,20 @@ import org.junit.jupiter.params.provider.MethodSource;
 @ZeebeIntegration
 final class JobWorkerTest {
 
-  @TestZeebe
-  private static final TestStandaloneBroker ZEEBE =
-      new TestStandaloneBroker().withRecordingExporter(true);
+  @TestZeebe(initMethod = "initTestStandaloneBroker")
+  private static TestStandaloneBroker zeebe;
 
   private static GrpcClientRule client;
-
   private final String jobType = Strings.newRandomValidBpmnId();
+
+  @SuppressWarnings("unused")
+  static void initTestStandaloneBroker() {
+    zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  }
 
   @BeforeAll
   static void beforeAll() {
-    client = new GrpcClientRule(ZEEBE.newClientBuilder().build());
+    client = new GrpcClientRule(zeebe.newClientBuilder().build());
   }
 
   @AfterAll
@@ -210,7 +213,7 @@ final class JobWorkerTest {
     // when
     try (final var ignored = builder.open()) {
       awaitStreamRegistered(jobType);
-      ZEEBE.stop().start().awaitCompleteTopology();
+      zeebe.stop().start().awaitCompleteTopology();
       // need to stream being registered, as otherwise the job will be polled, not streamed
       awaitStreamRegistered(jobType);
       client.createSingleJob(jobType, b -> {});
@@ -292,7 +295,7 @@ final class JobWorkerTest {
   }
 
   private static void awaitStreamRegistered(final String jobType) {
-    final var actuator = JobStreamActuator.of(ZEEBE);
+    final var actuator = JobStreamActuator.of(zeebe);
     Awaitility.await("until stream is registered")
         .untilAsserted(
             () ->
@@ -302,7 +305,7 @@ final class JobWorkerTest {
   }
 
   private void awaitStreamRemoved(final String jobType) {
-    final var actuator = JobStreamActuator.of(ZEEBE);
+    final var actuator = JobStreamActuator.of(zeebe);
     Awaitility.await("until no streams are registered")
         .untilAsserted(
             () ->

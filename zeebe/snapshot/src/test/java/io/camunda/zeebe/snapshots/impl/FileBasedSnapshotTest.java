@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.snapshots.impl;
 
@@ -111,7 +111,7 @@ public final class FileBasedSnapshotTest {
 
   private FileBasedSnapshot createSnapshot(final Path snapshotPath, final Path checksumPath)
       throws IOException {
-    final var metadata = new FileBasedSnapshotId(1L, 1L, 1L, 1L);
+    final var metadata = new FileBasedSnapshotId(1L, 1L, 1L, 1L, 0);
 
     FileUtil.ensureDirectoryExists(snapshotPath);
     for (final var entry : SNAPSHOT_FILE_CONTENTS.entrySet()) {
@@ -122,7 +122,13 @@ public final class FileBasedSnapshotTest {
     SnapshotChecksum.persist(checksumPath, SnapshotChecksum.calculate(snapshotPath));
 
     return new FileBasedSnapshot(
-        snapshotPath, checksumPath, 1L, metadata, null, s -> {}, actor.getActorControl());
+        snapshotPath,
+        checksumPath,
+        new SfvChecksumImpl(),
+        metadata,
+        null,
+        s -> {},
+        actor.getActorControl());
   }
 
   static class TestActor extends Actor {

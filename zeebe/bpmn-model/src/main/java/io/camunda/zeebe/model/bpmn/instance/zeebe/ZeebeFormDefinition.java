@@ -30,4 +30,12 @@ public interface ZeebeFormDefinition extends BpmnModelElementInstance {
   String getExternalReference();
 
   void setExternalReference(String externalReference);
+
+  ZeebeBindingType getBindingType();
+
+  void setBindingType(ZeebeBindingType bindingType);
+
+  String getVersionTag();
+
+  void setVersionTag(String versionTag);
 }

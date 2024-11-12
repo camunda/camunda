@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.tasklist.store.opensearch;
 
@@ -36,6 +27,7 @@ import io.camunda.tasklist.queries.Sort;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
+import io.camunda.tasklist.queries.TaskSortFields;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
@@ -54,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -74,6 +67,7 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.util.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -92,14 +86,16 @@ public class TaskStoreOpenSearch implements TaskStore {
           TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
 
   @Autowired
-  @Qualifier("openSearchClient")
+  @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired
+  @Qualifier("tasklistObjectMapper")
+  private ObjectMapper objectMapper;
 
   @Autowired private VariableStore variableStoreElasticSearch;
 
@@ -112,13 +108,13 @@ public class TaskStoreOpenSearch implements TaskStore {
     try {
       return getRawResponseWithTenantCheck(
           id, taskTemplate, ALL, tenantAwareClient, TaskEntity.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
   @Override
-  public List<String> getTaskIdsByProcessInstanceId(String processInstanceId) {
+  public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
     final SearchRequest.Builder searchRequest =
         OpenSearchUtil.createSearchRequest(taskTemplate)
             .query(
@@ -131,13 +127,14 @@ public class TaskStoreOpenSearch implements TaskStore {
 
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
   @Override
-  public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(String processDefinitionId) {
+  public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
+      final String processDefinitionId) {
     final SearchRequest.Builder searchRequest =
         OpenSearchUtil.createSearchRequest(taskTemplate)
             .query(
@@ -150,13 +147,13 @@ public class TaskStoreOpenSearch implements TaskStore {
 
     try {
       return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
   @Override
-  public List<TaskSearchView> getTasks(TaskQuery query) {
+  public List<TaskSearchView> getTasks(final TaskQuery query) {
     final List<TaskSearchView> response = queryTasks(query);
 
     // query one additional instance
@@ -171,6 +168,106 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
 
     return response;
+  }
+
+  /**
+   * Persist that task is completed even before the corresponding events are imported from Zeebe.
+   */
+  @Override
+  public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
+    final Hit taskBeforeSearchHit;
+    try {
+      taskBeforeSearchHit = getTaskRawResponse(taskBefore.getId());
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+
+    final TaskEntity completedTask =
+        taskBefore.makeCopy().setState(TaskState.COMPLETED).setCompletionTime(OffsetDateTime.now());
+
+    try {
+      // update task with optimistic locking
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
+
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      final UpdateRequest.Builder updateRequest = new UpdateRequest.Builder();
+      updateRequest
+          .index(taskTemplate.getFullQualifiedName())
+          .id(taskBeforeSearchHit.id())
+          .doc(jsonMap)
+          .refresh(Refresh.WaitFor)
+          .ifSeqNo(taskBeforeSearchHit.seqNo())
+          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
+      OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
+    } catch (final Exception e) {
+      // we're OK with not updating the task here, it will be marked as completed within import
+      LOGGER.error(e.getMessage(), e);
+    }
+    return completedTask;
+  }
+
+  @Override
+  public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
+    final Hit taskBeforeSearchHit;
+    try {
+      taskBeforeSearchHit = getTaskRawResponse(taskBefore.getId());
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+
+    final TaskEntity completedTask = taskBefore.makeCopy().setCompletionTime(null);
+
+    try {
+      // update task with optimistic locking
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
+
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      final UpdateRequest.Builder updateRequest = new UpdateRequest.Builder();
+      updateRequest
+          .index(taskTemplate.getFullQualifiedName())
+          .id(taskBeforeSearchHit.id())
+          .doc(jsonMap)
+          .refresh(Refresh.WaitFor)
+          .ifSeqNo(taskBeforeSearchHit.seqNo())
+          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
+      OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
+    } catch (final Exception e) {
+      // we're OK with not updating the task here, it will be marked as completed within import
+      LOGGER.error(e.getMessage(), e);
+    }
+    return completedTask;
+  }
+
+  @Override
+  public TaskEntity persistTaskClaim(final TaskEntity taskBefore, final String assignee) {
+
+    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
+
+    return taskBefore.makeCopy().setAssignee(assignee);
+  }
+
+  @Override
+  public TaskEntity persistTaskUnclaim(final TaskEntity task) {
+    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
+    return task.makeCopy().setAssignee(null);
+  }
+
+  @Override
+  public List<TaskEntity> getTasksById(final List<String> ids) {
+    try {
+      final List<Hit<TaskEntity>> response = getTasksRawResponse(ids);
+      return response.stream().map(Hit::source).collect(Collectors.toList());
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -220,7 +317,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     return queryTasks(query, null);
   }
 
-  private List<TaskSearchView> queryTasks(final TaskQuery query, String taskId) {
+  private List<TaskSearchView> queryTasks(final TaskQuery query, final String taskId) {
     List<String> tasksIds = null;
     if (query.getTaskVariables() != null && query.getTaskVariables().length > 0) {
       tasksIds = getTasksContainsVarNameAndValue(query.getTaskVariables());
@@ -283,14 +380,15 @@ public class TaskStoreOpenSearch implements TaskStore {
         }
       }
       return tasks;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  private List<String> getTasksContainsVarNameAndValue(TaskByVariables[] taskVariablesFilter) {
+  private List<String> getTasksContainsVarNameAndValue(
+      final TaskByVariables[] taskVariablesFilter) {
     final List<String> varNames =
         Arrays.stream(taskVariablesFilter).map(TaskByVariables::getName).collect(toList());
     final List<String> varValues =
@@ -310,7 +408,7 @@ public class TaskStoreOpenSearch implements TaskStore {
         .collect(Collectors.toList());
   }
 
-  private static OpenSearchUtil.QueryType getQueryTypeByTaskState(TaskState taskState) {
+  private static OpenSearchUtil.QueryType getQueryTypeByTaskState(final TaskState taskState) {
     return TaskState.CREATED == taskState
         ? OpenSearchUtil.QueryType.ONLY_RUNTIME
         : OpenSearchUtil.QueryType.ALL;
@@ -333,7 +431,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
   }
 
-  private Query.Builder buildQuery(TaskQuery query, List<String> taskIds) {
+  private Query.Builder buildQuery(final TaskQuery query, final List<String> taskIds) {
     final Query.Builder stateQ = new Query.Builder();
     stateQ.bool(
         b ->
@@ -488,6 +586,8 @@ public class TaskStoreOpenSearch implements TaskStore {
                   .value(FieldValue.of(query.getImplementation().name())));
     }
 
+    final Query.Builder priorityQ = buildPriorityQuery(query);
+
     final Query.Builder jointQ =
         joinQueryBuilderWithAnd(
             stateQ,
@@ -505,7 +605,8 @@ public class TaskStoreOpenSearch implements TaskStore {
             processDefinitionIdQ,
             followUpQ,
             dueDateQ,
-            implementationQ);
+            implementationQ,
+            priorityQ);
 
     if (jointQ == null) {
       jointQ.matchAll(new MatchAllQuery.Builder().build());
@@ -515,7 +616,8 @@ public class TaskStoreOpenSearch implements TaskStore {
     return result;
   }
 
-  private Query.Builder returnUserGroupBoolQuery(List<String> userGroups, String userName) {
+  private Query.Builder returnUserGroupBoolQuery(
+      final List<String> userGroups, final String userName) {
     final Query.Builder userNameAssigneeQ = new Query.Builder();
     userNameAssigneeQ.term(t -> t.field(TaskTemplate.ASSIGNEE).value(FieldValue.of(userName)));
 
@@ -524,7 +626,7 @@ public class TaskStoreOpenSearch implements TaskStore {
         t -> t.field(TaskTemplate.CANDIDATE_USERS).value(FieldValue.of(userName)));
 
     Query.Builder userNameCandidateGroupsQ = null;
-    for (String group : userGroups) {
+    for (final String group : userGroups) {
       final Query.Builder singleUserNameCandidateGroupQ = new Query.Builder();
       singleUserNameCandidateGroupQ.term(
           t -> t.field(TaskTemplate.CANDIDATE_GROUPS).value(FieldValue.of(group)));
@@ -563,7 +665,8 @@ public class TaskStoreOpenSearch implements TaskStore {
    * @param searchRequestBuilder
    * @param query
    */
-  private void applySorting(SearchRequest.Builder searchRequestBuilder, TaskQuery query) {
+  private void applySorting(
+      final SearchRequest.Builder searchRequestBuilder, final TaskQuery query) {
 
     final boolean isSortOnRequest;
     if (query.getSort() != null) {
@@ -606,45 +709,18 @@ public class TaskStoreOpenSearch implements TaskStore {
       for (int i = 0; i < query.getSort().length; i++) {
         final TaskOrderBy orderBy = query.getSort()[i];
         final String field = orderBy.getField().toString();
-        final SortOrder sortOrder;
+        final SortOrder sortOrder =
+            directSorting
+                ? orderBy.getOrder().equals(Sort.DESC) ? SortOrder.Desc : SortOrder.Asc
+                : orderBy.getOrder().equals(Sort.DESC) ? SortOrder.Asc : SortOrder.Desc;
 
-        final String nullDate;
-        if (orderBy.getOrder().equals(Sort.ASC)) {
-          nullDate = "2099-12-31";
+        if (!orderBy.getField().equals(TaskSortFields.priority)) {
+          searchRequestBuilder.sort(applyDateSortScript(orderBy.getOrder(), field, sortOrder));
         } else {
-          nullDate = "1900-01-01";
+          searchRequestBuilder.sort(
+              mapNullInSort(
+                  TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.Number));
         }
-        final Script.Builder scriptBuilder = new Script.Builder();
-        scriptBuilder.inline(
-            in ->
-                in.source(
-                    "def sf = new SimpleDateFormat(\"yyyy-MM-dd\"); "
-                        + "def nullDate=sf.parse('"
-                        + nullDate
-                        + "');"
-                        + "if(doc['"
-                        + field
-                        + "'].size() == 0){"
-                        + "nullDate.getTime().toString()"
-                        + "}else{"
-                        + "doc['"
-                        + field
-                        + "'].value.getMillis().toString()"
-                        + "}"));
-        if (directSorting) {
-          sortOrder = orderBy.getOrder().equals(Sort.DESC) ? SortOrder.Desc : SortOrder.Asc;
-        } else {
-          sortOrder = orderBy.getOrder().equals(Sort.DESC) ? SortOrder.Asc : SortOrder.Desc;
-        }
-
-        searchRequestBuilder.sort(
-            s ->
-                s.script(
-                    script ->
-                        script
-                            .script(scriptBuilder.build())
-                            .order(sortOrder)
-                            .type(ScriptSortType.String)));
       }
 
     } else {
@@ -688,94 +764,35 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
   }
 
-  /**
-   * Persist that task is completed even before the corresponding events are imported from Zeebe.
-   */
-  @Override
-  public TaskEntity persistTaskCompletion(final TaskEntity taskBefore) {
-    final Hit taskBeforeSearchHit;
-    try {
-      taskBeforeSearchHit = this.getTaskRawResponse(taskBefore.getId());
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
+  private Function<SortOptions.Builder, ObjectBuilder<SortOptions>> applyDateSortScript(
+      final Sort sorting, final String field, final SortOrder sortOrder) {
+    final String nullDate;
+    if (sorting.equals(Sort.ASC)) {
+      nullDate = "2099-12-31";
+    } else {
+      nullDate = "1900-01-01";
     }
-
-    final TaskEntity completedTask =
-        taskBefore.makeCopy().setState(TaskState.COMPLETED).setCompletionTime(OffsetDateTime.now());
-
-    try {
-      // update task with optimistic locking
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, completedTask.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
-
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      final UpdateRequest.Builder updateRequest = new UpdateRequest.Builder();
-      updateRequest
-          .index(taskTemplate.getFullQualifiedName())
-          .id(taskBeforeSearchHit.id())
-          .doc(jsonMap)
-          .refresh(Refresh.WaitFor)
-          .ifSeqNo(taskBeforeSearchHit.seqNo())
-          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
-      OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
-    } catch (Exception e) {
-      // we're OK with not updating the task here, it will be marked as completed within import
-      LOGGER.error(e.getMessage(), e);
-    }
-    return completedTask;
-  }
-
-  @Override
-  public TaskEntity rollbackPersistTaskCompletion(final TaskEntity taskBefore) {
-    final Hit taskBeforeSearchHit;
-    try {
-      taskBeforeSearchHit = this.getTaskRawResponse(taskBefore.getId());
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-
-    final TaskEntity completedTask = taskBefore.makeCopy().setCompletionTime(null);
-
-    try {
-      // update task with optimistic locking
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, completedTask.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
-
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-      final UpdateRequest.Builder updateRequest = new UpdateRequest.Builder();
-      updateRequest
-          .index(taskTemplate.getFullQualifiedName())
-          .id(taskBeforeSearchHit.id())
-          .doc(jsonMap)
-          .refresh(Refresh.WaitFor)
-          .ifSeqNo(taskBeforeSearchHit.seqNo())
-          .ifPrimaryTerm(taskBeforeSearchHit.primaryTerm());
-      OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
-    } catch (Exception e) {
-      // we're OK with not updating the task here, it will be marked as completed within import
-      LOGGER.error(e.getMessage(), e);
-    }
-    return completedTask;
-  }
-
-  @Override
-  public TaskEntity persistTaskClaim(TaskEntity taskBefore, String assignee) {
-
-    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
-
-    return taskBefore.makeCopy().setAssignee(assignee);
-  }
-
-  @Override
-  public TaskEntity persistTaskUnclaim(TaskEntity task) {
-    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
-    return task.makeCopy().setAssignee(null);
+    final Script.Builder scriptBuilder = new Script.Builder();
+    scriptBuilder.inline(
+        in ->
+            in.source(
+                "def sf = new SimpleDateFormat(\"yyyy-MM-dd\"); "
+                    + "def nullDate=sf.parse('"
+                    + nullDate
+                    + "');"
+                    + "if(doc['"
+                    + field
+                    + "'].size() == 0){"
+                    + "nullDate.getTime().toString()"
+                    + "}else{"
+                    + "doc['"
+                    + field
+                    + "'].value.getMillis().toString()"
+                    + "}"));
+    return s ->
+        s.script(
+            script ->
+                script.script(scriptBuilder.build()).order(sortOrder).type(ScriptSortType.String));
   }
 
   private void updateTask(final String taskId, final Map<String, Object> updateFields) {
@@ -794,7 +811,7 @@ public class TaskStoreOpenSearch implements TaskStore {
           .ifSeqNo(searchHit.seqNo())
           .ifPrimaryTerm(searchHit.primaryTerm());
       OpenSearchUtil.executeUpdate(osClient, updateRequest.build());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
@@ -814,15 +831,6 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
   }
 
-  public List<TaskEntity> getTasksById(List<String> ids) {
-    try {
-      final List<Hit<TaskEntity>> response = getTasksRawResponse(ids);
-      return response.stream().map(Hit::source).collect(Collectors.toList());
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   private List<Hit<TaskEntity>> getTasksRawResponse(final List<String> ids) throws IOException {
     final SearchRequest.Builder request =
         OpenSearchUtil.createSearchRequest(taskTemplate)
@@ -837,7 +845,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   }
 
   private List<String> getTasksIdsCompletedWithMatchingVars(
-      List<String> varNames, List<String> varValues) {
+      final List<String> varNames, final List<String> varValues) {
 
     final List<Set<String>> listOfTaskIdsSets = new ArrayList<>();
 
@@ -906,7 +914,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
         listOfTaskIdsSets.add(taskIdsForCurrentVar);
 
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String message =
             String.format("Exception occurred while obtaining taskIds: %s", e.getMessage());
         throw new TasklistRuntimeException(message, e);
@@ -925,7 +933,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   }
 
   private List<String> retrieveTaskIdByProcessInstanceId(
-      List<String> processIds, TaskByVariables[] taskVariablesFilter) {
+      final List<String> processIds, final TaskByVariables[] taskVariablesFilter) {
     final List<String> taskIdsCreated = new ArrayList<>();
     final Map<String, String> variablesMap =
         IntStream.range(0, taskVariablesFilter.length)
@@ -934,9 +942,9 @@ public class TaskStoreOpenSearch implements TaskStore {
                 Collectors.toMap(
                     i -> taskVariablesFilter[i].getName(), i -> taskVariablesFilter[i].getValue()));
 
-    for (String processId : processIds) {
+    for (final String processId : processIds) {
       final List<String> taskIds = getTaskIdsByProcessInstanceId(processId);
-      for (String taskId : taskIds) {
+      for (final String taskId : taskIds) {
         final TaskEntity taskEntity = getTask(taskId);
         if (taskEntity.getState() == TaskState.CREATED) {
           final List<VariableStore.GetVariablesRequest> request =
@@ -950,5 +958,56 @@ public class TaskStoreOpenSearch implements TaskStore {
       }
     }
     return taskIdsCreated;
+  }
+
+  private Query.Builder buildPriorityQuery(final TaskQuery query) {
+    if (query.getPriority() != null) {
+      final var priority = query.getPriority();
+      if (priority.getEq() != null) {
+        return new Query.Builder()
+                .term(
+                    t ->
+                        t.field(TaskTemplate.PRIORITY)
+                            .value(FieldValue.of(((Integer) priority.getEq()))))
+                .build()
+                .toBuilder();
+      } else {
+        return new Query.Builder()
+                .range(
+                    r -> {
+                      r = r.field(TaskTemplate.PRIORITY);
+                      if (priority.getGt() != null) {
+                        r = r.gt(JsonData.of(priority.getGt()));
+                      }
+                      if (priority.getGte() != null) {
+                        r = r.gte(JsonData.of(priority.getGte()));
+                      }
+                      if (priority.getLt() != null) {
+                        r = r.lt(JsonData.of(priority.getLt()));
+                      }
+                      if (priority.getLte() != null) {
+                        r = r.lte(JsonData.of(priority.getLte()));
+                      }
+                      return r;
+                    })
+                .build()
+                .toBuilder();
+      }
+    }
+    return null;
+  }
+
+  private Function<SortOptions.Builder, ObjectBuilder<SortOptions>> mapNullInSort(
+      final String field,
+      final String defaultValue,
+      final SortOrder order,
+      final ScriptSortType sortType) {
+    final String nullHandlingScript =
+        String.format(
+            "if (doc['%s'].size() == 0) { %s } else { doc['%s'].value }",
+            field, defaultValue, field);
+
+    final Script script = new Script.Builder().inline(i -> i.source(nullHandlingScript)).build();
+    return f -> f.script(s -> s.script(script).order(order).type(sortType));
   }
 }

@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE (“USE”), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * “Licensee” means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.webapp.rest.dto.listview;
 
@@ -78,7 +69,7 @@ public class ListViewQueryDto {
     return running;
   }
 
-  public ListViewQueryDto setRunning(boolean running) {
+  public ListViewQueryDto setRunning(final boolean running) {
     this.running = running;
     return this;
   }
@@ -87,7 +78,7 @@ public class ListViewQueryDto {
     return completed;
   }
 
-  public ListViewQueryDto setCompleted(boolean completed) {
+  public ListViewQueryDto setCompleted(final boolean completed) {
     this.completed = completed;
     return this;
   }
@@ -96,7 +87,7 @@ public class ListViewQueryDto {
     return incidents;
   }
 
-  public ListViewQueryDto setIncidents(boolean incidents) {
+  public ListViewQueryDto setIncidents(final boolean incidents) {
     this.incidents = incidents;
     return this;
   }
@@ -105,7 +96,7 @@ public class ListViewQueryDto {
     return active;
   }
 
-  public ListViewQueryDto setActive(boolean active) {
+  public ListViewQueryDto setActive(final boolean active) {
     this.active = active;
     return this;
   }
@@ -114,7 +105,7 @@ public class ListViewQueryDto {
     return finished;
   }
 
-  public ListViewQueryDto setFinished(boolean finished) {
+  public ListViewQueryDto setFinished(final boolean finished) {
     this.finished = finished;
     return this;
   }
@@ -123,7 +114,7 @@ public class ListViewQueryDto {
     return canceled;
   }
 
-  public ListViewQueryDto setCanceled(boolean canceled) {
+  public ListViewQueryDto setCanceled(final boolean canceled) {
     this.canceled = canceled;
     return this;
   }
@@ -132,7 +123,7 @@ public class ListViewQueryDto {
     return retriesLeft;
   }
 
-  public ListViewQueryDto setRetriesLeft(boolean retriesLeft) {
+  public ListViewQueryDto setRetriesLeft(final boolean retriesLeft) {
     this.retriesLeft = retriesLeft;
     return this;
   }
@@ -141,7 +132,7 @@ public class ListViewQueryDto {
     return ids;
   }
 
-  public ListViewQueryDto setIds(List<String> ids) {
+  public ListViewQueryDto setIds(final List<String> ids) {
     this.ids = ids;
     return this;
   }
@@ -150,7 +141,7 @@ public class ListViewQueryDto {
     return errorMessage;
   }
 
-  public ListViewQueryDto setErrorMessage(String errorMessage) {
+  public ListViewQueryDto setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
     return this;
   }
@@ -159,7 +150,7 @@ public class ListViewQueryDto {
     return activityId;
   }
 
-  public ListViewQueryDto setActivityId(String activityId) {
+  public ListViewQueryDto setActivityId(final String activityId) {
     this.activityId = activityId;
     return this;
   }
@@ -168,7 +159,7 @@ public class ListViewQueryDto {
     return startDateAfter;
   }
 
-  public ListViewQueryDto setStartDateAfter(OffsetDateTime startDateAfter) {
+  public ListViewQueryDto setStartDateAfter(final OffsetDateTime startDateAfter) {
     this.startDateAfter = startDateAfter;
     return this;
   }
@@ -177,7 +168,7 @@ public class ListViewQueryDto {
     return startDateBefore;
   }
 
-  public ListViewQueryDto setStartDateBefore(OffsetDateTime startDateBefore) {
+  public ListViewQueryDto setStartDateBefore(final OffsetDateTime startDateBefore) {
     this.startDateBefore = startDateBefore;
     return this;
   }
@@ -186,7 +177,7 @@ public class ListViewQueryDto {
     return endDateAfter;
   }
 
-  public ListViewQueryDto setEndDateAfter(OffsetDateTime endDateAfter) {
+  public ListViewQueryDto setEndDateAfter(final OffsetDateTime endDateAfter) {
     this.endDateAfter = endDateAfter;
     return this;
   }
@@ -195,7 +186,7 @@ public class ListViewQueryDto {
     return endDateBefore;
   }
 
-  public ListViewQueryDto setEndDateBefore(OffsetDateTime endDateBefore) {
+  public ListViewQueryDto setEndDateBefore(final OffsetDateTime endDateBefore) {
     this.endDateBefore = endDateBefore;
     return this;
   }
@@ -204,7 +195,7 @@ public class ListViewQueryDto {
     return processIds;
   }
 
-  public ListViewQueryDto setProcessIds(List<String> processIds) {
+  public ListViewQueryDto setProcessIds(final List<String> processIds) {
     this.processIds = processIds;
     return this;
   }
@@ -213,7 +204,7 @@ public class ListViewQueryDto {
     return bpmnProcessId;
   }
 
-  public ListViewQueryDto setBpmnProcessId(String bpmnProcessId) {
+  public ListViewQueryDto setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
     return this;
   }
@@ -222,7 +213,7 @@ public class ListViewQueryDto {
     return processVersion;
   }
 
-  public ListViewQueryDto setProcessVersion(Integer processVersion) {
+  public ListViewQueryDto setProcessVersion(final Integer processVersion) {
     this.processVersion = processVersion;
     return this;
   }
@@ -231,7 +222,7 @@ public class ListViewQueryDto {
     return excludeIds;
   }
 
-  public ListViewQueryDto setExcludeIds(List<String> excludeIds) {
+  public ListViewQueryDto setExcludeIds(final List<String> excludeIds) {
     this.excludeIds = excludeIds;
     return this;
   }
@@ -240,7 +231,7 @@ public class ListViewQueryDto {
     return variable;
   }
 
-  public ListViewQueryDto setVariable(VariablesQueryDto variable) {
+  public ListViewQueryDto setVariable(final VariablesQueryDto variable) {
     this.variable = variable;
     return this;
   }
@@ -249,8 +240,9 @@ public class ListViewQueryDto {
     return batchOperationId;
   }
 
-  public void setBatchOperationId(String batchOperationId) {
+  public ListViewQueryDto setBatchOperationId(final String batchOperationId) {
     this.batchOperationId = batchOperationId;
+    return this;
   }
 
   public Long getParentInstanceId() {
@@ -266,7 +258,7 @@ public class ListViewQueryDto {
     return tenantId;
   }
 
-  public ListViewQueryDto setTenantId(String tenantId) {
+  public ListViewQueryDto setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
@@ -298,7 +290,7 @@ public class ListViewQueryDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

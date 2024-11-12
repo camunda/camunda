@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.state.mutable;
 
@@ -27,6 +27,22 @@ public interface MutableDecisionState extends DecisionState {
    * @param record the record of the DRG
    */
   void storeDecisionRequirements(DecisionRequirementsRecord record);
+
+  /**
+   * Store a reference to the decision key in the state, using the decision id and deployment key as
+   * composite database key.
+   *
+   * @param record the record of the decision
+   */
+  void storeDecisionKeyByDecisionIdAndDeploymentKey(DecisionRecord record);
+
+  /**
+   * Store a reference to the decision key in the state, using the decision id and version tag as
+   * composite database key.
+   *
+   * @param record the record of the decision
+   */
+  void storeDecisionKeyByDecisionIdAndVersionTag(DecisionRecord record);
 
   /**
    * Deletes a decision from the state. Updates the latest version of the decision if the deleted

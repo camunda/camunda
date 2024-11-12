@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.util;
 
@@ -350,22 +350,22 @@ public sealed interface Either<L, R> {
    * <p>A common use case is to map to a new common value in success and error cases. Example:
    *
    * <pre>{@code
-   * * Either<String, Integer> success = Either.right(42); // => Right(42)
-   * * Either<String, Integer> failure = Either.left("Error occurred"); // => Left("Error occurred")
-   * *
-   * * var rightFn = result -> "Success: " + result;
-   * * var leftFn = error -> "Failure: " + error;
-   * *
-   * * success.fold(rightFn, leftFn); // => "Success: 42"
-   * * failure.fold(rightFn, leftFn); // => "Failure: Error occurred"
+   * Either<String, Integer> success = Either.right(42); // => Right(42)
+   * Either<String, Integer> failure = Either.left("Error occurred"); // => Left("Error occurred")
+   *
+   * var rightFn = result -> "Success: " + result;
+   * var leftFn = error -> "Failure: " + error;
+   *
+   * success.fold(leftFn, rightFn); // => "Success: 42"
+   * failure.fold(leftFn, rightFn); // => "Failure: Error occurred"
    * }</pre>
    *
-   * @param rightFn the mapping function for the right value
    * @param leftFn the mapping function for the left value
+   * @param rightFn the mapping function for the right value
    * @return either a mapped {@link Left} or {@link Right}, folded to the new type
    * @param <T> the type of the resulting value
    */
-  <T> T fold(Function<? super R, ? extends T> rightFn, Function<? super L, ? extends T> leftFn);
+  <T> T fold(Function<? super L, ? extends T> leftFn, Function<? super R, ? extends T> rightFn);
 
   /**
    * A right for either a left or right. By convention, right is used for success and left for
@@ -440,8 +440,8 @@ public sealed interface Either<L, R> {
 
     @Override
     public <T> T fold(
-        final Function<? super R, ? extends T> rightFn,
-        final Function<? super L, ? extends T> leftFn) {
+        final Function<? super L, ? extends T> leftFn,
+        final Function<? super R, ? extends T> rightFn) {
       return rightFn.apply(value);
     }
   }
@@ -519,8 +519,8 @@ public sealed interface Either<L, R> {
 
     @Override
     public <T> T fold(
-        final Function<? super R, ? extends T> rightFn,
-        final Function<? super L, ? extends T> leftFn) {
+        final Function<? super L, ? extends T> leftFn,
+        final Function<? super R, ? extends T> rightFn) {
       return leftFn.apply(value);
     }
   }

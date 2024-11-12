@@ -1,18 +1,9 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE ("USE"), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * "Licensee" means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
 import {Route} from '@playwright/test';
@@ -149,6 +140,7 @@ const mockGroupedProcesses = [
         name: 'Always completing process',
         version: 1,
         bpmnProcessId: 'always-completing-process',
+        versionTag: null,
       },
     ],
   },
@@ -163,6 +155,7 @@ const mockGroupedProcesses = [
         name: 'Big variable process',
         version: 1,
         bpmnProcessId: 'bigVarProcess',
+        versionTag: null,
       },
     ],
   },
@@ -177,6 +170,7 @@ const mockGroupedProcesses = [
         name: 'Call Activity Process',
         version: 1,
         bpmnProcessId: 'call-activity-process',
+        versionTag: null,
       },
     ],
   },
@@ -191,6 +185,7 @@ const mockGroupedProcesses = [
         name: 'DMN invoice',
         version: 1,
         bpmnProcessId: 'invoice',
+        versionTag: null,
       },
     ],
   },
@@ -205,6 +200,7 @@ const mockGroupedProcesses = [
         name: 'Data store process',
         version: 1,
         bpmnProcessId: 'dataStoreProcess',
+        versionTag: null,
       },
     ],
   },
@@ -219,6 +215,7 @@ const mockGroupedProcesses = [
         name: 'Error Process',
         version: 1,
         bpmnProcessId: 'errorProcess',
+        versionTag: null,
       },
     ],
   },
@@ -233,12 +230,14 @@ const mockGroupedProcesses = [
         name: 'Escalation events',
         version: 2,
         bpmnProcessId: 'escalationEvents',
+        versionTag: null,
       },
       {
         id: '2251799813686163',
         name: 'Escalation events',
         version: 1,
         bpmnProcessId: 'escalationEvents',
+        versionTag: null,
       },
     ],
   },
@@ -253,6 +252,7 @@ const mockGroupedProcesses = [
         name: 'Event Subprocess Process',
         version: 1,
         bpmnProcessId: 'eventSubprocessProcess',
+        versionTag: null,
       },
     ],
   },
@@ -267,12 +267,14 @@ const mockGroupedProcesses = [
         name: 'Event based gateway with timer start',
         version: 2,
         bpmnProcessId: 'eventBasedGatewayProcess',
+        versionTag: null,
       },
       {
         id: '2251799813686134',
         name: 'Event based gateway with message start',
         version: 1,
         bpmnProcessId: 'eventBasedGatewayProcess',
+        versionTag: null,
       },
     ],
   },
@@ -287,12 +289,14 @@ const mockGroupedProcesses = [
         name: 'Flight registration',
         version: 2,
         bpmnProcessId: 'flightRegistration',
+        versionTag: null,
       },
       {
         id: '2251799813686118',
         name: 'Flight registration',
         version: 1,
         bpmnProcessId: 'flightRegistration',
+        versionTag: null,
       },
     ],
   },
@@ -307,6 +311,7 @@ const mockGroupedProcesses = [
         name: 'Inclusive gateway',
         version: 1,
         bpmnProcessId: 'inclusiveGatewayProcess',
+        versionTag: null,
       },
     ],
   },
@@ -321,6 +326,7 @@ const mockGroupedProcesses = [
         name: 'Input Output Mapping Test',
         version: 1,
         bpmnProcessId: 'Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f',
+        versionTag: null,
       },
     ],
   },
@@ -335,6 +341,7 @@ const mockGroupedProcesses = [
         name: 'Link events process',
         version: 1,
         bpmnProcessId: 'linkEventProcess',
+        versionTag: null,
       },
     ],
   },
@@ -349,12 +356,14 @@ const mockGroupedProcesses = [
         name: 'Multi-Instance Process',
         version: 2,
         bpmnProcessId: 'multiInstanceProcess',
+        versionTag: null,
       },
       {
         id: '2251799813686120',
         name: 'Sequential Multi-Instance Process',
         version: 1,
         bpmnProcessId: 'multiInstanceProcess',
+        versionTag: null,
       },
     ],
   },
@@ -369,6 +378,7 @@ const mockGroupedProcesses = [
         name: 'Nested subprocesses',
         version: 1,
         bpmnProcessId: 'prWithSubprocess',
+        versionTag: null,
       },
     ],
   },
@@ -383,12 +393,14 @@ const mockGroupedProcesses = [
         name: 'Only Incidents Process',
         version: 2,
         bpmnProcessId: 'onlyIncidentsProcess',
+        versionTag: null,
       },
       {
         id: '2251799813685257',
         name: 'Only Incidents Process',
         version: 1,
         bpmnProcessId: 'onlyIncidentsProcess',
+        versionTag: null,
       },
     ],
   },
@@ -403,12 +415,14 @@ const mockGroupedProcesses = [
         name: 'Order process',
         version: 2,
         bpmnProcessId: 'orderProcess',
+        versionTag: null,
       },
       {
         id: '2251799813686114',
         name: 'Order process',
         version: 1,
         bpmnProcessId: 'orderProcess',
+        versionTag: null,
       },
     ],
   },
@@ -423,6 +437,7 @@ const mockGroupedProcesses = [
         name: 'Signal event',
         version: 1,
         bpmnProcessId: 'signalEventProcess',
+        versionTag: null,
       },
     ],
   },
@@ -437,6 +452,7 @@ const mockGroupedProcesses = [
         name: 'Terminate End Event',
         version: 1,
         bpmnProcessId: 'terminateEndEvent',
+        versionTag: null,
       },
     ],
   },
@@ -451,12 +467,14 @@ const mockGroupedProcesses = [
         name: 'Timer process',
         version: 2,
         bpmnProcessId: 'timerProcess',
+        versionTag: null,
       },
       {
         id: '2251799813686143',
         name: 'Timer process',
         version: 1,
         bpmnProcessId: 'timerProcess',
+        versionTag: null,
       },
     ],
   },
@@ -471,12 +489,14 @@ const mockGroupedProcesses = [
         name: 'Without Incidents Process',
         version: 2,
         bpmnProcessId: 'withoutIncidentsProcess',
+        versionTag: null,
       },
       {
         id: '2251799813685350',
         name: 'Without Incidents Process',
         version: 1,
         bpmnProcessId: 'withoutIncidentsProcess',
+        versionTag: null,
       },
     ],
   },
@@ -491,12 +511,14 @@ const mockGroupedProcesses = [
         name: 'Without Instances Process',
         version: 2,
         bpmnProcessId: 'noInstancesProcess',
+        versionTag: null,
       },
       {
         id: '2251799813685253',
         name: 'Without Instances Process',
         version: 1,
         bpmnProcessId: 'noInstancesProcess',
+        versionTag: null,
       },
     ],
   },
@@ -511,6 +533,7 @@ const mockGroupedProcesses = [
         name: 'undefined-task',
         version: 1,
         bpmnProcessId: 'undefined-task-process',
+        versionTag: null,
       },
     ],
   },
@@ -525,6 +548,7 @@ const mockGroupedProcesses = [
         name: null,
         version: 1,
         bpmnProcessId: 'bigProcess',
+        versionTag: null,
       },
     ],
   },
@@ -539,12 +563,14 @@ const mockGroupedProcesses = [
         name: null,
         version: 2,
         bpmnProcessId: 'called-process',
+        versionTag: null,
       },
       {
         id: '2251799813687210',
         name: 'Called Process',
         version: 1,
         bpmnProcessId: 'called-process',
+        versionTag: null,
       },
     ],
   },
@@ -559,18 +585,21 @@ const mockGroupedProcesses = [
         name: null,
         version: 3,
         bpmnProcessId: 'complexProcess',
+        versionTag: null,
       },
       {
         id: '2251799813687201',
         name: null,
         version: 2,
         bpmnProcessId: 'complexProcess',
+        versionTag: null,
       },
       {
         id: '2251799813686132',
         name: null,
         version: 1,
         bpmnProcessId: 'complexProcess',
+        versionTag: null,
       },
     ],
   },
@@ -585,6 +614,7 @@ const mockGroupedProcesses = [
         name: null,
         version: 1,
         bpmnProcessId: 'error-end-process',
+        versionTag: null,
       },
     ],
   },
@@ -599,6 +629,7 @@ const mockGroupedProcesses = [
         name: null,
         version: 1,
         bpmnProcessId: 'intermediate-message-throw-event-process',
+        versionTag: null,
       },
     ],
   },
@@ -613,6 +644,7 @@ const mockGroupedProcesses = [
         name: null,
         version: 1,
         bpmnProcessId: 'intermediate-none-event-process',
+        versionTag: null,
       },
     ],
   },
@@ -627,12 +659,14 @@ const mockGroupedProcesses = [
         name: null,
         version: 2,
         bpmnProcessId: 'interruptingBoundaryEvent',
+        versionTag: null,
       },
       {
         id: '2251799813686139',
         name: null,
         version: 1,
         bpmnProcessId: 'interruptingBoundaryEvent',
+        versionTag: null,
       },
     ],
   },
@@ -647,6 +681,7 @@ const mockGroupedProcesses = [
         name: null,
         version: 1,
         bpmnProcessId: 'loanProcess',
+        versionTag: null,
       },
     ],
   },
@@ -661,6 +696,7 @@ const mockGroupedProcesses = [
         name: null,
         version: 1,
         bpmnProcessId: 'manual-task-process',
+        versionTag: null,
       },
     ],
   },
@@ -675,6 +711,7 @@ const mockGroupedProcesses = [
         name: null,
         version: 1,
         bpmnProcessId: 'message-end-event-process',
+        versionTag: null,
       },
     ],
   },
@@ -689,12 +726,14 @@ const mockGroupedProcesses = [
         name: null,
         version: 2,
         bpmnProcessId: 'nonInterruptingBoundaryEvent',
+        versionTag: null,
       },
       {
         id: '2251799813686141',
         name: null,
         version: 1,
         bpmnProcessId: 'nonInterruptingBoundaryEvent',
+        versionTag: null,
       },
     ],
   },
@@ -709,6 +748,14 @@ const mockGroupedProcesses = [
         name: 'Lots Of Tasks',
         version: 1,
         bpmnProcessId: 'LotsOfTasks',
+        versionTag: null,
+      },
+      {
+        id: '2251799813686145',
+        name: 'Lots Of Tasks',
+        version: 2,
+        bpmnProcessId: 'LotsOfTasks',
+        versionTag: null,
       },
     ],
   },
@@ -735,6 +782,8 @@ const mockBatchOperations: OperationEntity[] = [
     instancesCount: 3,
     operationsTotalCount: 1,
     operationsFinishedCount: 1,
+    completedOperationsCount: 3,
+    failedOperationsCount: 0,
   },
   {
     id: 'bf547ac3-9a35-45b9-ab06-b80b43785154',
@@ -742,9 +791,11 @@ const mockBatchOperations: OperationEntity[] = [
     type: 'ADD_VARIABLE',
     startDate: '2023-08-24T11:24:21.942+0300',
     endDate: '2023-08-24T11:24:27.467+0300',
-    instancesCount: 1,
+    instancesCount: 5,
     operationsTotalCount: 1,
     operationsFinishedCount: 1,
+    completedOperationsCount: 3,
+    failedOperationsCount: 2,
   },
   {
     id: '5dd91cae-5f0c-4e35-a698-5a7887c4fbbd',
@@ -752,9 +803,11 @@ const mockBatchOperations: OperationEntity[] = [
     type: 'RESOLVE_INCIDENT',
     startDate: '2023-08-18T13:19:23.269+0300',
     endDate: '2023-08-18T13:19:23.314+0300',
-    instancesCount: 1,
+    instancesCount: 3,
     operationsTotalCount: 0,
     operationsFinishedCount: 0,
+    completedOperationsCount: 0,
+    failedOperationsCount: 3,
   },
   {
     id: 'b1454600-5f13-4365-bb45-960e8372136b',
@@ -765,6 +818,8 @@ const mockBatchOperations: OperationEntity[] = [
     instancesCount: 1,
     operationsTotalCount: 1,
     operationsFinishedCount: 1,
+    completedOperationsCount: 0,
+    failedOperationsCount: 1,
   },
   {
     id: '513aa565-b7f2-440a-9523-1b2f647ddfdd',
@@ -775,6 +830,8 @@ const mockBatchOperations: OperationEntity[] = [
     instancesCount: 1,
     operationsTotalCount: 1,
     operationsFinishedCount: 1,
+    completedOperationsCount: 1,
+    failedOperationsCount: 0,
   },
   {
     id: 'c4e125da-2b5c-42f5-badc-9a78ebd8f006',
@@ -965,6 +1022,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '25350af0-92a5-44d9-85fa-f694d88a6dba',
@@ -972,6 +1030,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '2e25ce5b-673f-42fa-bb29-a91569206e4f',
@@ -979,6 +1038,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '31820589-a50f-42de-bd1e-544e472f65ff',
@@ -986,6 +1046,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '5635a619-cbd7-4267-a590-0f59069bb8ca',
@@ -993,6 +1054,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '5dc3f7d2-92c3-40a3-8243-0eda83003ccd',
@@ -1000,6 +1062,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '77fe7726-00a3-4c83-9c7f-244df2ad8b37',
@@ -1007,6 +1070,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: null,
@@ -1231,6 +1295,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: '6755399441062817',
@@ -1275,6 +1340,7 @@ const mockProcessInstances: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: null,
@@ -1914,6 +1980,24 @@ const mockProcessInstances: ProcessInstancesDto = {
       permissions: [],
       tenantId: '',
     },
+    {
+      id: '2251799813838240',
+      processId: '2251799813686145',
+      processName: 'Lots Of Tasks',
+      processVersion: 2,
+      startDate: '2023-08-28T12:52:47.586+0000',
+      endDate: null,
+      state: 'ACTIVE',
+      bpmnProcessId: 'LotsOfTasks',
+      hasActiveOperation: false,
+      operations: [],
+      parentInstanceId: null,
+      rootInstanceId: null,
+      callHierarchy: [],
+      sortValues: [],
+      permissions: [],
+      tenantId: '',
+    },
   ],
   totalCount: 891,
 };
@@ -1937,6 +2021,7 @@ const mockProcessInstancesWithOperationError: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'FAILED',
           errorMessage: 'Batch Operation Error Message',
+          completedDate: null,
         },
       ],
       parentInstanceId: '6755399441062817',
@@ -1963,6 +2048,7 @@ const mockProcessInstancesWithOperationError: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: '6755399441062816',
@@ -2013,6 +2099,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '25350af0-92a5-44d9-85fa-f694d88a6dba',
@@ -2020,6 +2107,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '2e25ce5b-673f-42fa-bb29-a91569206e4f',
@@ -2027,6 +2115,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '31820589-a50f-42de-bd1e-544e472f65ff',
@@ -2034,6 +2123,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '5635a619-cbd7-4267-a590-0f59069bb8ca',
@@ -2041,6 +2131,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '5dc3f7d2-92c3-40a3-8243-0eda83003ccd',
@@ -2048,6 +2139,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
         {
           id: '77fe7726-00a3-4c83-9c7f-244df2ad8b37',
@@ -2055,6 +2147,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: null,
@@ -2279,6 +2372,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'ADD_VARIABLE',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: '6755399441062817',
@@ -2323,6 +2417,7 @@ const mockProcessInstancesAfterResolvingIncident: ProcessInstancesDto = {
           type: 'RESOLVE_INCIDENT',
           state: 'COMPLETED',
           errorMessage: null,
+          completedDate: null,
         },
       ],
       parentInstanceId: null,
@@ -2987,6 +3082,40 @@ const mockFinishedOrderProcessInstances: ProcessInstancesDto = {
   ),
 };
 
+const mockOrderProcessInstancesWithFailedOperations: ProcessInstancesDto = {
+  totalCount: mockOrderProcessInstances.totalCount,
+  processInstances: mockOrderProcessInstances.processInstances.map(
+    (instance, index) => {
+      return {
+        ...instance,
+        operations:
+          index < 3
+            ? [
+                {
+                  id: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+                  batchOperationId: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+                  type: 'MIGRATE_PROCESS_INSTANCE',
+                  state: 'FAILED',
+                  errorMessage:
+                    "Unable to process operation: Command 'MIGRATE' rejected with code 'INVALID_STATE': Expected to migrate process instance but target process has an event subprocess. Target processes with event subprocesses cannot be migrated yet.",
+                  completedDate: null,
+                },
+              ]
+            : [
+                {
+                  id: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+                  batchOperationId: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
+                  type: 'MIGRATE_PROCESS_INSTANCE',
+                  state: 'COMPLETED',
+                  errorMessage: null,
+                  completedDate: '2023-09-29T14:12:11.684+0000',
+                },
+              ],
+      };
+    },
+  ),
+};
+
 const mockOrderProcessV2Instances: ProcessInstancesDto = {
   totalCount: 3,
   processInstances: Array(3)
@@ -3263,6 +3392,7 @@ export {
   mockDeleteProcess,
   mockOrderProcessInstances,
   mockFinishedOrderProcessInstances,
+  mockOrderProcessInstancesWithFailedOperations,
   mockOrderProcessV2Instances,
   mockMigrationOperation,
 };

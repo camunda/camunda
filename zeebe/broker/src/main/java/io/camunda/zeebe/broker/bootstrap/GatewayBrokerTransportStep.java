@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.bootstrap;
 
@@ -40,12 +40,12 @@ final class GatewayBrokerTransportStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture) {
 
     final var concurrencyControl = brokerStartupContext.getConcurrencyControl();
-    final var brokerInfo = brokerStartupContext.getBrokerInfo();
     final var schedulingService = brokerStartupContext.getActorSchedulingService();
     final var messagingService = brokerStartupContext.getApiMessagingService();
+    final var requestIdGenerator = brokerStartupContext.getRequestIdGenerator();
 
     final var atomixServerTransport =
-        new AtomixServerTransport(messagingService, brokerInfo.getNodeId());
+        new AtomixServerTransport(messagingService, requestIdGenerator);
 
     concurrencyControl.runOnCompletion(
         schedulingService.submitActor(atomixServerTransport),

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.journal.file;
 
@@ -257,7 +257,7 @@ class SegmentsManagerTest {
     assertThatNoException().isThrownBy(() -> segments.open());
   }
 
-  @RegressionTest("https://github.com/camunda/zeebe/issues/12754")
+  @RegressionTest("https://github.com/camunda/camunda/issues/12754")
   void shouldDeleteSegmentsInReverseOrderOnReset() {
     // given
     final var loader = Mockito.spy(journalFactory.segmentLoader());
@@ -278,7 +278,7 @@ class SegmentsManagerTest {
     segments = journalFactory.segmentsManager(directory, loader, metaStore);
     try (final var journal = journalFactory.journal(segments)) {
       // grab all segments and copy them to avoid the map getting cleared
-      final var loadedSegments = new ArrayList<>(segments.getTailSegments(0));
+      final var loadedSegments = new ArrayList<>(segments.getTailSegments(0).values());
       journal.reset(10);
 
       // then - assert we reset first, then delete the segments in reversed order

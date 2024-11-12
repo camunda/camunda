@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
@@ -88,6 +88,14 @@ public final class MultiInstanceOutputCollectionBehavior {
               // collection, but that is slower.
               final var currentCollection =
                   stateBehavior.getLocalVariable(flowScopeContext, variableName);
+              if (currentCollection == null) {
+                return Either.left(
+                    new Failure(
+                        "Expected the output collection variable '%s' to be of type list, but it was NIL"
+                            .formatted(bufferAsString(variableName)),
+                        ErrorType.EXTRACT_VALUE_ERROR,
+                        flowScopeContext.getElementInstanceKey()));
+              }
               return replaceAt(
                       currentCollection,
                       loopCounter,

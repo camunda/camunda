@@ -2,12 +2,16 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.engine.processing.incident;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -24,11 +28,15 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 
 public final class IncidentResolveProcessor implements TypedRecordProcessor<IncidentRecord> {
 
+  public static final String NO_RETRIES_LEFT_MSG =
+      "Expected to resolve incident with key '%d', but job with key '%d' has no retries left. Please update the job retries and retry resolving the incident";
   public static final String NO_INCIDENT_FOUND_MSG =
       "Expected to resolve incident with key '%d', but no such incident was found";
   private static final String ELEMENT_NOT_IN_SUPPORTED_STATE_MSG =
@@ -45,12 +53,14 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   private final TypedResponseWriter responseWriter;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final JobState jobState;
+  private final AuthorizationCheckBehavior authCheckBehavior;
 
   public IncidentResolveProcessor(
       final ProcessingState processingState,
       final TypedRecordProcessor<ProcessInstanceRecord> bpmnStreamProcessor,
       final Writers writers,
-      final BpmnJobActivationBehavior jobActivationBehavior) {
+      final BpmnJobActivationBehavior jobActivationBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.bpmnStreamProcessor = bpmnStreamProcessor;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
@@ -59,6 +69,7 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
     elementInstanceState = processingState.getElementInstanceState();
     this.jobActivationBehavior = jobActivationBehavior;
     jobState = processingState.getJobState();
+    this.authCheckBehavior = authCheckBehavior;
   }
 
   @Override
@@ -72,10 +83,29 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       return;
     }
 
+    final var authRequest =
+        new AuthorizationRequest(
+                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+            .addResourceId(incident.getBpmnProcessId());
+    if (!authCheckBehavior.isAuthorized(authRequest)) {
+      final var reason =
+          UNAUTHORIZED_ERROR_MESSAGE.formatted(
+              authRequest.getPermissionType(), authRequest.getResourceType());
+      rejectResolveCommand(command, reason, RejectionType.UNAUTHORIZED);
+      return;
+    }
+
+    final long jobKey = incident.getJobKey();
+    if (isJobRelatedIncident(jobKey) && jobState.getJob(jobKey).getRetries() <= 0) {
+      final var errorMessage = String.format(NO_RETRIES_LEFT_MSG, key, jobKey);
+      rejectResolveCommand(command, errorMessage, RejectionType.INVALID_STATE);
+      return;
+    }
+
     stateWriter.appendFollowUpEvent(key, IncidentIntent.RESOLVED, incident);
     responseWriter.writeEventOnCommand(key, IncidentIntent.RESOLVED, incident, command);
 
-    publishIncidentRelatedJob(incident.getJobKey());
+    publishIncidentRelatedJob(jobKey);
 
     // if it fails, a new incident is raised
     attemptToContinueProcessProcessing(command, incident);
@@ -87,15 +117,14 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
       final RejectionType rejectionType) {
 
     rejectionWriter.appendRejection(command, rejectionType, errorMessage);
-    responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+    responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
   }
 
   private void attemptToContinueProcessProcessing(
       final TypedRecord<IncidentRecord> command, final IncidentRecord incident) {
     final long jobKey = incident.getJobKey();
-    final boolean isJobIncident = jobKey > 0;
 
-    if (isJobIncident) {
+    if (isJobRelatedIncident(jobKey)) {
       return;
     }
 
@@ -143,10 +172,13 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   }
 
   private void publishIncidentRelatedJob(final long jobKey) {
-    final boolean isJobRelatedIncident = jobKey > 0;
-    if (isJobRelatedIncident) {
+    if (isJobRelatedIncident(jobKey)) {
       final JobRecord failedJobRecord = jobState.getJob(jobKey);
       jobActivationBehavior.publishWork(jobKey, failedJobRecord);
     }
+  }
+
+  private static boolean isJobRelatedIncident(final long jobKey) {
+    return jobKey > 0;
   }
 }

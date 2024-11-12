@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.stream.impl;
 
@@ -14,9 +14,11 @@ import io.camunda.zeebe.stream.api.CommandResponseWriter;
 import io.camunda.zeebe.stream.api.EventFilter;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.RecordProcessor;
+import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.NoopScheduledCommandCache;
 import io.camunda.zeebe.stream.api.scheduling.ScheduledCommandCache.StageableScheduledCommandCache;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -97,8 +99,10 @@ public final class StreamProcessorBuilder {
     return Collections.unmodifiableList(lifecycleListeners);
   }
 
-  public void addLifecycleListener(final StreamProcessorLifecycleAware lifecycleAware) {
+  public StreamProcessorBuilder addLifecycleListener(
+      final StreamProcessorLifecycleAware lifecycleAware) {
     lifecycleListeners.add(lifecycleAware);
+    return this;
   }
 
   public ZeebeDb getZeebeDb() {
@@ -157,6 +161,23 @@ public final class StreamProcessorBuilder {
 
   public StreamProcessorBuilder processingFilter(final EventFilter processingFilter) {
     streamProcessorContext.processingFilter(processingFilter);
+    return this;
+  }
+
+  public StreamProcessorBuilder clock(final ControllableStreamClock clock) {
+    streamProcessorContext.clock(clock);
+    return this;
+  }
+
+  public StreamProcessorBuilder meterRegistry(
+      final io.micrometer.core.instrument.MeterRegistry meterRegistry) {
+    streamProcessorContext.meterRegistry(meterRegistry);
+    return this;
+  }
+
+  public StreamProcessorBuilder setScheduledTaskCheckInterval(
+      final Duration scheduledTaskCheckInterval) {
+    streamProcessorContext.setScheduledTaskCheckInterval(scheduledTaskCheckInterval);
     return this;
   }
 }

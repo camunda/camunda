@@ -1,37 +1,33 @@
 /*
- * Copyright Camunda Services GmbH
- *
- * BY INSTALLING, DOWNLOADING, ACCESSING, USING, OR DISTRIBUTING THE SOFTWARE ("USE"), YOU INDICATE YOUR ACCEPTANCE TO AND ARE ENTERING INTO A CONTRACT WITH, THE LICENSOR ON THE TERMS SET OUT IN THIS AGREEMENT. IF YOU DO NOT AGREE TO THESE TERMS, YOU MUST NOT USE THE SOFTWARE. IF YOU ARE RECEIVING THE SOFTWARE ON BEHALF OF A LEGAL ENTITY, YOU REPRESENT AND WARRANT THAT YOU HAVE THE ACTUAL AUTHORITY TO AGREE TO THE TERMS AND CONDITIONS OF THIS AGREEMENT ON BEHALF OF SUCH ENTITY.
- * "Licensee" means you, an individual, or the entity on whose behalf you receive the Software.
- *
- * Permission is hereby granted, free of charge, to the Licensee obtaining a copy of this Software and associated documentation files to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject in each case to the following conditions:
- * Condition 1: If the Licensee distributes the Software or any derivative works of the Software, the Licensee must attach this Agreement.
- * Condition 2: Without limiting other conditions in this Agreement, the grant of rights is solely for non-production use as defined below.
- * "Non-production use" means any use of the Software that is not directly related to creating products, services, or systems that generate revenue or other direct or indirect economic benefits.  Examples of permitted non-production use include personal use, educational use, research, and development. Examples of prohibited production use include, without limitation, use for commercial, for-profit, or publicly accessible systems or use for commercial or revenue-generating purposes.
- *
- * If the Licensee is in breach of the Conditions, this Agreement, including the rights granted under it, will automatically terminate with immediate effect.
- *
- * SUBJECT AS SET OUT BELOW, THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- * NOTHING IN THIS AGREEMENT EXCLUDES OR RESTRICTS A PARTY’S LIABILITY FOR (A) DEATH OR PERSONAL INJURY CAUSED BY THAT PARTY’S NEGLIGENCE, (B) FRAUD, OR (C) ANY OTHER LIABILITY TO THE EXTENT THAT IT CANNOT BE LAWFULLY EXCLUDED OR RESTRICTED.
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 
-import {InlineLoadingStatus, Stack} from '@carbon/react';
+import {type InlineLoadingProps, Stack} from '@carbon/react';
 import {ArrowRight} from '@carbon/react/icons';
 import {AsyncActionButton} from 'modules/components/AsyncActionButton';
 import {notificationsStore} from 'modules/stores/notifications';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
 import {useState} from 'react';
 import {useNavigate, useMatch, useLocation} from 'react-router-dom';
+import {useTranslation} from 'react-i18next';
+import {t} from 'i18next';
 import {pages} from 'modules/routing';
 import {logger} from 'modules/utils/logger';
 import {tracking} from 'modules/tracking';
 import {useStartProcess} from 'modules/mutations/useStartProcess';
-import {Process, Task} from 'modules/types';
+import type {Process, Task} from 'modules/types';
 import {FormModal} from './FormModal';
 import {getProcessDisplayName} from 'modules/utils/getProcessDisplayName';
 import {ProcessTag} from './ProcessTag';
 import styles from './styles.module.scss';
 import cn from 'classnames';
+import {useUploadDocuments} from 'modules/mutations/useUploadDocuments';
+
+type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';
 
@@ -47,19 +43,19 @@ function convertStatus(status: LoadingStatus): InlineLoadingStatus {
 
 function getAsyncButtonDescription(status: LoadingStatus) {
   if (status === 'active') {
-    return 'Starting process...';
+    return t('processesStartProcessPendingStatusText');
   }
 
   if (status === 'active-tasks') {
-    return 'Waiting for tasks...';
+    return t('processesStartProcessWaitForTasksText');
   }
 
   if (status === 'finished') {
-    return 'Process started';
+    return t('processesStartProcessSuccess');
   }
 
   if (status === 'error') {
-    return 'Process start failed';
+    return t('processesStartProcessFailed');
   }
 
   return '';
@@ -95,6 +91,8 @@ const ProcessTile: React.FC<Props> = ({
   className,
   ...props
 }) => {
+  const {t} = useTranslation();
+  const {mutateAsync: uploadDocuments} = useUploadDocuments();
   const {mutateAsync: startProcess} = useStartProcess({
     onSuccess(data) {
       tracking.track({
@@ -111,7 +109,7 @@ const ProcessTile: React.FC<Props> = ({
       notificationsStore.displayNotification({
         isDismissable: true,
         kind: 'success',
-        title: 'Process has started',
+        title: t('processesStartProcessNotificationSuccess'),
       });
     },
   });
@@ -135,7 +133,10 @@ const ProcessTile: React.FC<Props> = ({
           </span>
         </Stack>
         <div className={styles.buttonRow}>
-          <ul title="Process Attributes" aria-hidden={tags.length === 0}>
+          <ul
+            title={t('processesProcessTileAttributes')}
+            aria-hidden={tags.length === 0}
+          >
             {tags.map((type) => (
               <li key={type}>
                 <ProcessTag variant={type} />
@@ -149,7 +150,7 @@ const ProcessTile: React.FC<Props> = ({
               kind: 'tertiary',
               size: 'sm',
               className: 'startButton',
-              renderIcon: startEventFormId === null ? null : ArrowRight,
+              renderIcon: startEventFormId === null ? undefined : ArrowRight,
               id: isFirst ? 'main-content' : '',
               autoFocus: isFirst,
               disabled: isStartButtonDisabled,
@@ -185,14 +186,14 @@ const ProcessTile: React.FC<Props> = ({
                 notificationsStore.displayNotification({
                   isDismissable: false,
                   kind: 'error',
-                  title: 'Process start failed. Please select a tenant.',
+                  title: t('processesStartProcessFailedMissingTenant'),
                   subtitle: displayName,
                 });
               } else {
                 notificationsStore.displayNotification({
                   isDismissable: false,
                   kind: 'error',
-                  title: 'Process start failed',
+                  title: t('processesStartProcessFailed'),
                   subtitle: displayName,
                 });
               }
@@ -207,7 +208,7 @@ const ProcessTile: React.FC<Props> = ({
               },
             }}
           >
-            Start process
+            {t('processesTileStartProcessButtonLabel')}
           </AsyncActionButton>
         </div>
       </Stack>
@@ -232,6 +233,15 @@ const ProcessTile: React.FC<Props> = ({
             navigate({
               ...location,
               pathname: '/processes',
+            });
+          }}
+          onFileUpload={async (files: Map<string, File[]>) => {
+            if (files.size === 0) {
+              return new Map();
+            }
+
+            return uploadDocuments({
+              files,
             });
           }}
           isMultiTenancyEnabled={isMultiTenancyEnabled}

@@ -2,8 +2,8 @@
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
  * one or more contributor license agreements. See the NOTICE file distributed
  * with this work for additional information regarding copyright ownership.
- * Licensed under the Zeebe Community License 1.1. You may not use this file
- * except in compliance with the Zeebe Community License 1.1.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.zeebe.broker.system.partitions;
 
@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.broker.system.monitoring.HealthMetrics;
 import io.camunda.zeebe.broker.system.partitions.impl.RecoverablePartitionTransitionException;
 import io.camunda.zeebe.scheduler.Actor;
+import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
@@ -56,6 +57,8 @@ public final class ZeebePartition extends Actor
   private PartitionStartupContext startupContext;
   private final PartitionAdminAccess adminAccess;
   private final PartitionTransition transition;
+  private PartitionConfigurationManager partitionConfigurationManager;
+
   private CompletableActorFuture<Void> closeFuture;
   private boolean closing = false;
 
@@ -124,6 +127,10 @@ public final class ZeebePartition extends Actor
               transition.updateTransitionContext(transitionContext);
 
               context = transitionContext.getPartitionContext();
+
+              partitionConfigurationManager =
+                  new PartitionConfigurationManager(
+                      LOG, context, transitionContext.getExportedDescriptors(), actor);
 
               registerListeners();
             });
@@ -316,11 +323,11 @@ public final class ZeebePartition extends Actor
 
   @Override
   @Deprecated // will be removed from public API of ZeebePartition
-  public void onRecovered() {
+  public void onRecovered(final HealthReport report) {
     actor.run(
         () -> {
           healthMetrics.setHealthy();
-          failureListeners.forEach(FailureListener::onRecovered);
+          failureListeners.forEach(l -> l.onRecovered(report));
         });
   }
 
@@ -377,7 +384,9 @@ public final class ZeebePartition extends Actor
   }
 
   private void handleUnrecoverableFailure(final Throwable error) {
-    final var report = HealthReport.dead(this).withIssue(error);
+    final var instant = ActorClock.current().instant();
+
+    final var report = HealthReport.dead(this).withIssue(error, instant);
     healthMetrics.setDead();
     zeebePartitionHealth.onUnrecoverableFailure(error);
     stopPartitionOnError();
@@ -412,7 +421,7 @@ public final class ZeebePartition extends Actor
         () -> {
           failureListeners.add(failureListener);
           if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
-            failureListener.onRecovered();
+            failureListener.onRecovered(getHealthReport());
           } else {
             failureListener.onFailure(getHealthReport());
           }
@@ -506,5 +515,22 @@ public final class ZeebePartition extends Actor
 
   public ActorFuture<Role> getCurrentRole() {
     return actor.call(() -> context.getCurrentRole());
+  }
+
+  public ActorFuture<Void> disableExporter(final String exporterId) {
+    final var future = new CompletableActorFuture<Void>();
+    actor.run(() -> partitionConfigurationManager.disableExporter(exporterId).onComplete(future));
+    return future;
+  }
+
+  public ActorFuture<Void> enableExporter(
+      final String exporterId, final long metadataVersion, final String initializeFrom) {
+    final var future = new CompletableActorFuture<Void>();
+    actor.run(
+        () ->
+            partitionConfigurationManager
+                .enableExporter(exporterId, metadataVersion, initializeFrom)
+                .onComplete(future));
+    return future;
   }
 }
