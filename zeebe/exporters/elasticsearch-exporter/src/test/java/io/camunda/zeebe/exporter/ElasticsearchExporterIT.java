@@ -113,9 +113,7 @@ final class ElasticsearchExporterIT {
   @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
   void shouldExportRecord(final ValueType valueType) {
     // given
-    final var record =
-        factory.generateRecord(
-            valueType, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+    final var record = generateRecord(valueType);
 
     // when
     export(record);
@@ -196,9 +194,7 @@ final class ElasticsearchExporterIT {
         "no template is created because the exporter is configured filter out records of this type");
 
     // given
-    final var record =
-        factory.generateRecord(
-            valueType, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+    final var record = generateRecord(valueType);
     final var expectedIndexTemplateName =
         indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
 
@@ -239,15 +235,18 @@ final class ElasticsearchExporterIT {
     return true;
   }
 
+  private <T extends RecordValue> Record<T> generateRecord(final ValueType valueType) {
+    return factory.generateRecord(
+        valueType, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+  }
+
   @Nested
   final class IndexSettingsTest {
     @Test
     void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
       // given
       configureExporter(false);
-      final var record1 =
-          factory.generateRecord(
-              ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+      final var record1 = generateRecord(ValueType.JOB);
 
       // when
       export(record1);
@@ -261,9 +260,7 @@ final class ElasticsearchExporterIT {
       /* Tests when retention is later enabled all indices should have lifecycle policy */
       // given
       configureExporter(true);
-      final var record2 =
-          factory.generateRecord(
-              ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+      final var record2 = generateRecord(ValueType.JOB);
 
       // when
       export(record2);
@@ -281,9 +278,7 @@ final class ElasticsearchExporterIT {
     void shouldRemoveIndexLifecycleSettingsFromExistingIndicesOnRerunWhenRetentionIsDisabled() {
       // given
       configureExporter(true);
-      final var record1 =
-          factory.generateRecord(
-              ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+      final var record1 = generateRecord(ValueType.JOB);
 
       // when
       export(record1);
@@ -296,9 +291,7 @@ final class ElasticsearchExporterIT {
       /* Tests when retention is later disabled all indices should not have a lifecycle policy */
       // given
       configureExporter(false);
-      final var record2 =
-          factory.generateRecord(
-              ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+      final var record2 = generateRecord(ValueType.JOB);
 
       // when
       export(record2);
@@ -326,17 +319,13 @@ final class ElasticsearchExporterIT {
       // using 498 here as we will export one more record after (1 main shard, 1 replica)
       final int limit = 498;
       for (int i = 0; i < limit; i++) {
-        final var record =
-            factory.generateRecord(
-                ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+        final var record = generateRecord(ValueType.JOB);
         records.add(record);
         export(record);
       }
       // when
       configureExporter(true);
-      final var record2 =
-          factory.generateRecord(
-              ValueType.JOB, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+      final var record2 = generateRecord(ValueType.JOB);
       // when
       await("New record is exported, and existing indices are updated")
           .atMost(Duration.ofSeconds(30))

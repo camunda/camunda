@@ -112,13 +112,13 @@ final class RecordIndexRouterTest {
     // given
     config.prefix = "foo-bar";
     final var valueType = ValueType.PROCESS;
+    final var version = "8.6.0";
 
     // when
-    final var prefix =
-        router.searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase());
+    final var prefix = router.searchPatternForValueType(valueType, version);
 
     // then
-    assertThat(prefix).isEqualTo("foo-bar_process_" + VersionUtil.getVersionLowerCase() + "_*");
+    assertThat(prefix).isEqualTo("foo-bar_process_" + version + "_*");
   }
 
   @Test
