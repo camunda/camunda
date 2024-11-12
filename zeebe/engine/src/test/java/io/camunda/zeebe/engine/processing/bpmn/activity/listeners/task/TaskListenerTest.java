@@ -831,12 +831,12 @@ public class TaskListenerTest {
       final JobListenerEventType eventType,
       final String... listenerTypes) {
     assertThat(
-        RecordingExporter.jobRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .withJobKind(JobKind.TASK_LISTENER)
-            .withJobListenerEventType(eventType)
-            .withIntent(JobIntent.COMPLETED)
-            .limit(listenerTypes.length))
+            RecordingExporter.jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withJobListenerEventType(eventType)
+                .withIntent(JobIntent.COMPLETED)
+                .limit(listenerTypes.length))
         .extracting(Record::getValue)
         .extracting(JobRecordValue::getType)
         .describedAs("Verify that all task listeners were completed in the correct sequence")
@@ -846,8 +846,8 @@ public class TaskListenerTest {
   private void assertUserTaskIntentsSequence(final UserTaskIntent... intents) {
     assertThat(intents).describedAs("Expected intents not to be empty").isNotEmpty();
     assertThat(
-        RecordingExporter.userTaskRecords()
-            .limit(r -> r.getIntent() == intents[intents.length - 1]))
+            RecordingExporter.userTaskRecords()
+                .limit(r -> r.getIntent() == intents[intents.length - 1]))
         .extracting(Record::getIntent)
         .describedAs("Verify the expected sequence of User Task intents")
         .containsSequence(intents);
@@ -858,10 +858,10 @@ public class TaskListenerTest {
       final UserTaskIntent intent,
       final Consumer<UserTaskRecordValue> consumer) {
     assertThat(
-        RecordingExporter.userTaskRecords(intent)
-            .withProcessInstanceKey(processInstanceKey)
-            .findFirst()
-            .map(Record::getValue))
+            RecordingExporter.userTaskRecords(intent)
+                .withProcessInstanceKey(processInstanceKey)
+                .findFirst()
+                .map(Record::getValue))
         .describedAs("Expected to have User Task record with '%s' intent", intent)
         .hasValueSatisfying(consumer);
   }
