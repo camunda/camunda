@@ -315,7 +315,7 @@ public class JobControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldCompleteJobWithResult() {
+  void shouldCompleteJobWithResultDeniedTrue() {
     // given
     when(jobServices.completeJob(anyLong(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
@@ -344,6 +344,70 @@ public class JobControllerTest extends RestControllerTest {
     Mockito.verify(jobServices)
         .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
     Assertions.assertTrue(jobResultArgumentCaptor.getValue().isDenied());
+  }
+
+  @Test
+  void shouldCompleteJobWithResultDeniedFalse() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "denied": false
+          }
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+    Assertions.assertFalse(jobResultArgumentCaptor.getValue().isDenied());
+  }
+
+  @Test
+  void shouldCompleteJobWithResultAndIgnoreUnknownField() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "unknownField": true
+          }
+        }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+    Assertions.assertFalse(jobResultArgumentCaptor.getValue().isDenied());
   }
 
   @Test
