@@ -73,7 +73,6 @@ public final class CompleteJobTest {
         .hasDeadline(job.getDeadline())
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-    // TODO assertj-assertions-generator
     assertFalse(recordValue.getResult().isDenied());
   }
 

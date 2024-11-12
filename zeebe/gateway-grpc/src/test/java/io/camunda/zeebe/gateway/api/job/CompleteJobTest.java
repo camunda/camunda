@@ -92,9 +92,9 @@ public final class CompleteJobTest extends GatewayTest {
     final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
 
-    final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    final JobRecord jobRecord = brokerRequest.getRequestWriter();
 
-    assertThat(brokerRequestValue.getResult().isDenied()).isTrue();
+    assertThat(jobRecord.getResult().isDenied()).isTrue();
   }
 
   @Test
@@ -117,9 +117,9 @@ public final class CompleteJobTest extends GatewayTest {
     final BrokerCompleteJobRequest brokerRequest = brokerClient.getSingleBrokerRequest();
     assertThat(brokerRequest.getKey()).isEqualTo(stub.getKey());
 
-    final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
+    final JobRecord jobRecord = brokerRequest.getRequestWriter();
 
-    assertThat(brokerRequestValue.getResult().isDenied()).isFalse();
+    assertThat(jobRecord.getResult().isDenied()).isFalse();
   }
 
   @Test
