@@ -12,10 +12,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import io.camunda.exporter.cache.CachedProcessEntity;
-import io.camunda.exporter.cache.ProcessCache;
+import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 public class ListViewProcessInstanceFromIncidentHandlerTest {
@@ -36,7 +34,7 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
 
-  private final ProcessCache processCache = mock(ProcessCache.class);
+  private final TestProcessCache processCache = new TestProcessCache();
   private final ListViewProcessInstanceFromIncidentHandler underTest =
       new ListViewProcessInstanceFromIncidentHandler(indexName, processCache);
 
@@ -167,13 +165,12 @@ public class ListViewProcessInstanceFromIncidentHandlerTest {
                 List.of(pi3Key, flowNodeInstanceKey)),
             List.of(callActivityIndex1, callActivityIndex2),
             List.of(processDefinitionKey1, processDefinitionKey2, 777L));
-    final CachedProcessEntity process1CacheEntity = mock(CachedProcessEntity.class);
-    when(process1CacheEntity.callElementIds()).thenReturn(List.of("0", "1", "2", callActivityId1));
-    when(processCache.get(processDefinitionKey1)).thenReturn(Optional.of(process1CacheEntity));
+    processCache.put(
+        processDefinitionKey1,
+        new CachedProcessEntity(null, null, List.of("0", "1", "2", callActivityId1)));
 
-    final CachedProcessEntity process2CacheEntity = mock(CachedProcessEntity.class);
-    when(process2CacheEntity.callElementIds()).thenReturn(List.of("0", callActivityId2));
-    when(processCache.get(processDefinitionKey2)).thenReturn(Optional.of(process2CacheEntity));
+    processCache.put(
+        processDefinitionKey2, new CachedProcessEntity(null, null, List.of("0", callActivityId2)));
 
     // when parent proces instance
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity1 =

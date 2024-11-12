@@ -10,8 +10,8 @@ package io.camunda.exporter.handlers;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.TREE_PATH;
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 
-import io.camunda.exporter.cache.CachedProcessEntity;
-import io.camunda.exporter.cache.ProcessCache;
+import io.camunda.exporter.cache.ExporterEntityCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
@@ -33,10 +33,10 @@ public class ListViewProcessInstanceFromIncidentHandler
       LoggerFactory.getLogger(ListViewProcessInstanceFromIncidentHandler.class);
 
   private final String indexName;
-  private final ProcessCache processCache;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
   public ListViewProcessInstanceFromIncidentHandler(
-      final String indexName, final ProcessCache processCache) {
+      final String indexName, final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.indexName = indexName;
     this.processCache = processCache;
   }

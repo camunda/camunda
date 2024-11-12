@@ -153,13 +153,15 @@ class ProcessCacheImplIT {
 
   static ProcessCacheArgument getESProcessCache(final String indexName) {
     return new ProcessCacheArgument(
-        new ExporterEntityCacheImpl(10, new ElasticSearchProcessCacheLoader(elsClient, indexName)),
+        new ExporterEntityCacheImpl(
+            10, new ElasticSearchProcessCacheLoader(elsClient, indexName, new XMLUtil())),
         ProcessCacheImplIT::indexInElasticSearch);
   }
 
   static ProcessCacheArgument getOSProcessCache(final String indexName) {
     return new ProcessCacheArgument(
-        new ExporterEntityCacheImpl(10, new OpenSearchProcessCacheLoader(osClient, indexName)),
+        new ExporterEntityCacheImpl(
+            10, new OpenSearchProcessCacheLoader(osClient, indexName, new XMLUtil())),
         ProcessCacheImplIT::indexInOpenSearch);
   }
 
