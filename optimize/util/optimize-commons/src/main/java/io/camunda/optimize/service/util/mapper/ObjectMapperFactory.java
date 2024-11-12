@@ -85,7 +85,7 @@ public class ObjectMapperFactory {
         OffsetDateTime.class,
         new CustomOffsetDateTimeDeserializer(deserializationDateTimeFormatter));
 
-    Jackson2ObjectMapperBuilder jackson2ObjectMapperBuilder =
+    final Jackson2ObjectMapperBuilder jackson2ObjectMapperBuilder =
         Jackson2ObjectMapperBuilder.json()
             .modules(new Jdk8Module(), javaTimeModule)
             .featuresToDisable(
@@ -104,7 +104,7 @@ public class ObjectMapperFactory {
           DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
     }
 
-    ObjectMapper mapper = jackson2ObjectMapperBuilder.build();
+    final ObjectMapper mapper = jackson2ObjectMapperBuilder.build();
 
     final SimpleModule module = new SimpleModule();
     module.addDeserializer(
