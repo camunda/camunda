@@ -14,11 +14,8 @@
       "name": {
         "type": "keyword"
       },
-      "entityKey": {
+      "assignedMemberKeys": {
         "type": "long"
-      },
-      "entityType": {
-        "type": "keyword"
       }
     }
   }

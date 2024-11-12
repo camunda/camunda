@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import java.util.Set;
 
 public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
 
@@ -17,8 +18,7 @@ public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
   private Long tenantKey;
   private String tenantId;
   private String name;
-  private Long entityKey;
-  private String entityType;
+  private Set<Long> assignedMemberKeys;
 
   @Override
   public String getId() {
@@ -58,21 +58,11 @@ public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
     return this;
   }
 
-  public Long getEntityKey() {
-    return entityKey;
+  public Set<Long> getAssignedMemberKeys() {
+    return assignedMemberKeys;
   }
 
-  public TenantEntity setEntityKey(final Long entityKey) {
-    this.entityKey = entityKey;
-    return this;
-  }
-
-  public String getEntityType() {
-    return entityType;
-  }
-
-  public TenantEntity setEntityType(final String entityType) {
-    this.entityType = entityType;
-    return this;
+  public void setAssignedMemberKeys(final Set<Long> assignedMemberKeys) {
+    this.assignedMemberKeys = assignedMemberKeys;
   }
 }
