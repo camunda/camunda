@@ -65,8 +65,10 @@ public class JobUpdateBehaviour {
       return Either.left(
           new Rejection(
               RejectionType.UNAUTHORIZED,
-              AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                  authRequest.getPermissionType(), authRequest.getResourceType())));
+              AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                  authRequest.getPermissionType(),
+                  authRequest.getResourceType(),
+                  "BPMN process id '%s'".formatted(job.getBpmnProcessId()))));
     }
     return Either.right(job);
   }

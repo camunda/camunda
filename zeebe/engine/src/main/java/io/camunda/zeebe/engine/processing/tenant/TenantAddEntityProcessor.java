@@ -77,7 +77,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
             .addResourceId(record.getTenantId());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      rejectCommandWithUnauthorizedError(command, authorizationRequest);
+      rejectCommandWithUnauthorizedError(command, authorizationRequest, record.getTenantId());
       return;
     }
 
@@ -165,10 +165,14 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   }
 
   private void rejectCommandWithUnauthorizedError(
-      final TypedRecord<TenantRecord> command, final AuthorizationRequest authorizationRequest) {
+      final TypedRecord<TenantRecord> command,
+      final AuthorizationRequest authorizationRequest,
+      final String tenantId) {
     final var errorMessage =
-        AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
-            authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+        AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+            authorizationRequest.getPermissionType(),
+            authorizationRequest.getResourceType(),
+            "tenant id '%s'".formatted(tenantId));
     rejectCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
   }
 

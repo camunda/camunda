@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -79,8 +79,10 @@ public class GroupRemoveEntityProcessor implements DistributedTypedRecordProcess
             .addResourceId(persistedRecord.get().getName());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authorizationRequest.getPermissionType(),
+              authorizationRequest.getResourceType(),
+              "group name '%s'".formatted(persistedRecord.get().getName()));
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return;

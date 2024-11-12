@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -85,7 +85,9 @@ public final class DefaultJobCommandPreconditionGuard {
     return Either.left(
         new Rejection(
             RejectionType.UNAUTHORIZED,
-            UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                request.getPermissionType(), request.getResourceType())));
+            UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                request.getPermissionType(),
+                request.getResourceType(),
+                "BPMN process id '%s'".formatted(job.getBpmnProcessId()))));
   }
 }

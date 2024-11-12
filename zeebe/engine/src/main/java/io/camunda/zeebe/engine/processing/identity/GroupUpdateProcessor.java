@@ -71,8 +71,10 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
             .addResourceId(persistedRecord.get().getName());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authorizationRequest.getPermissionType(),
+              authorizationRequest.getResourceType(),
+              "group name '%s'".formatted(persistedRecord.get().getName()));
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return;

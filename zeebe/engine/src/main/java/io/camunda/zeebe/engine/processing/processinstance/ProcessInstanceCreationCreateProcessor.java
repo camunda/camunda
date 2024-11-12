@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -139,18 +139,21 @@ public final class ProcessInstanceCreationCreateProcessor
   private Either<Rejection, DeployedProcess> isAuthorized(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final DeployedProcess deployedProcess) {
+    final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
     final var request =
         new AuthorizationRequest(
                 command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.CREATE)
-            .addResourceId(bufferAsString(deployedProcess.getBpmnProcessId()));
+            .addResourceId(processId);
 
     if (authCheckBehavior.isAuthorized(request)) {
       return Either.right(deployedProcess);
     }
 
     final var errorMessage =
-        UNAUTHORIZED_ERROR_MESSAGE.formatted(
-            request.getPermissionType(), request.getResourceType());
+        UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+            request.getPermissionType(),
+            request.getResourceType(),
+            "BPMN process id '%s'".formatted(processId));
     return Either.left(new Rejection(RejectionType.UNAUTHORIZED, errorMessage));
   }
 
