@@ -11,6 +11,8 @@ import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionProgres
 
 public interface MutableRedistributionState extends RedistributionState {
 
+  void initializeState(RedistributionStage stage, RedistributionProgress progress);
+
   void updateState(RedistributionStage stage, RedistributionProgress progress);
 
   /** Clears the state, removing the stage and progress. */

@@ -24,7 +24,7 @@ public class RedistributionStartedApplier
 
   @Override
   public void applyState(final long key, final RedistributionRecord value) {
-    redistributionState.updateState(
+    redistributionState.initializeState(
         RedistributionStage.nextStage(new Done()), new RedistributionProgress());
   }
 }

@@ -17,7 +17,6 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionProgress;
-import java.util.Objects;
 
 public final class DbRedistributionState implements MutableRedistributionState {
   private final ColumnFamily<DbString, PersistedState> redistributionColumnFamily;
@@ -44,12 +43,20 @@ public final class DbRedistributionState implements MutableRedistributionState {
   }
 
   @Override
-  public void updateState(final RedistributionStage stage, final RedistributionProgress progress) {
-    final var persistedState =
-        Objects.requireNonNullElseGet(redistributionColumnFamily.get(key), PersistedState::new);
+  public void initializeState(
+      final RedistributionStage stage, final RedistributionProgress progress) {
+    final var persistedState = new PersistedState();
     persistedState.stage.setValue(RedistributionStage.stageToIndex(stage));
     persistedState.progress.getValue().copyFrom(progress);
-    redistributionColumnFamily.upsert(key, persistedState);
+    redistributionColumnFamily.insert(key, persistedState);
+  }
+
+  @Override
+  public void updateState(final RedistributionStage stage, final RedistributionProgress progress) {
+    final var persistedState = redistributionColumnFamily.get(key);
+    persistedState.stage.setValue(RedistributionStage.stageToIndex(stage));
+    persistedState.progress.getValue().copyFrom(progress);
+    redistributionColumnFamily.update(key, persistedState);
   }
 
   @Override
