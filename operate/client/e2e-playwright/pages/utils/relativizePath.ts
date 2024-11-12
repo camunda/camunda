@@ -6,10 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_LOCAL = !Boolean(process.env.CI);
-
 const relativizePath = (path: string) => {
-  return IS_LOCAL ? `.${path}` : path;
+  return `.${path}`;
 };
 
 export {relativizePath};
