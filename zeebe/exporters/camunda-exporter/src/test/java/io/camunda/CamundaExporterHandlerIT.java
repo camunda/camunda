@@ -37,6 +37,7 @@ import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MappingCreatedHandler;
+import io.camunda.exporter.handlers.MappingDeletedHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
@@ -387,23 +388,16 @@ public class CamundaExporterHandlerIT {
       throws IOException {
     final var handler = getHandler(config, MappingCreatedHandler.class);
     basicAssertWhereHandlerCreatesDefaultEntity(
-        handler,
-        config,
-        clientAdapter,
-        recordGenerator(
-            handler,
-            () -> {
-              final var mappingRecordValue =
-                  ImmutableMappingRecordValue.builder()
-                      .from(factory.generateObject(MappingRecordValue.class))
-                      .build();
-              return factory.generateRecord(
-                  ValueType.MAPPING,
-                  r ->
-                      r.withValue(mappingRecordValue)
-                          .withIntent(MappingIntent.CREATED)
-                          .withTimestamp(System.currentTimeMillis()));
-            }));
+        handler, config, clientAdapter, mappingRecordGenerator(handler, MappingIntent.CREATED));
+  }
+
+  @TestTemplate
+  void shouldExportUsingMappingDeletedHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, MappingDeletedHandler.class);
+    basicAssertWhereHandlerDeletesDefaultEntity(
+        handler, config, clientAdapter, mappingRecordGenerator(handler, MappingIntent.DELETED));
   }
 
   @SuppressWarnings("unchecked")
@@ -471,6 +465,33 @@ public class CamundaExporterHandlerIT {
             "Handler [%s] correctly handles a [%s] record",
             handler.getClass().getSimpleName(), handler.getHandledValueType())
         .isEqualTo(expectedEntity);
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue>
+      void basicAssertWhereHandlerDeletesDefaultEntity(
+          final ExportHandler<S, T> handler,
+          final ExporterConfiguration config,
+          final SearchClientAdapter clientAdapter,
+          final Record<T> record)
+          throws IOException {
+
+    // given
+    final var exporter = getExporter(config, handler);
+
+    final var expectedEntity = getExpectedEntity(record, handler);
+
+    // when
+    exporter.export(record);
+
+    // then
+    final var responseEntity =
+        clientAdapter.get(expectedEntity.getId(), handler.getIndexName(), handler.getEntityType());
+
+    assertThat(responseEntity)
+        .describedAs(
+            "Handler [%s] correctly deletes a [%s] record",
+            handler.getClass().getSimpleName(), handler.getHandledValueType())
+        .isNull();
   }
 
   private <S extends ExporterEntity<S>, T extends RecordValue> void testForOperationHandlers(
@@ -551,6 +572,24 @@ public class CamundaExporterHandlerIT {
           return factory.generateRecord(
               ValueType.DECISION_EVALUATION,
               r -> r.withValue((T) decisionRecordValue).withTimestamp(System.currentTimeMillis()));
+        });
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> mappingRecordGenerator(
+      final ExportHandler<S, T> handler, final MappingIntent intent) {
+    return recordGenerator(
+        handler,
+        () -> {
+          final var mappingRecordValue =
+              ImmutableMappingRecordValue.builder()
+                  .from(factory.generateObject(MappingRecordValue.class))
+                  .build();
+          return factory.generateRecord(
+              ValueType.MAPPING,
+              r ->
+                  r.withValue((T) mappingRecordValue)
+                      .withIntent(intent)
+                      .withTimestamp(System.currentTimeMillis()));
         });
   }
 
