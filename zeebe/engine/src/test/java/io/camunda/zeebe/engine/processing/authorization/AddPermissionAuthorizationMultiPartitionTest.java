@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -54,7 +53,6 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     engine
         .authorization()
         .permission()
-        .withAction(PermissionAction.ADD)
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
@@ -122,7 +120,6 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     engine
         .authorization()
         .permission()
-        .withAction(PermissionAction.ADD)
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
@@ -158,7 +155,6 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     engine
         .authorization()
         .permission()
-        .withAction(PermissionAction.ADD)
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")

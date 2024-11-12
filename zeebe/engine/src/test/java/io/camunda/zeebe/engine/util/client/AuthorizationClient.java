@@ -14,7 +14,6 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.function.Function;
@@ -73,11 +72,6 @@ public final class AuthorizationClient {
 
     public AuthorizationPermissionClient withOwnerKey(final Long ownerKey) {
       authorizationCreationRecord.setOwnerKey(ownerKey);
-      return this;
-    }
-
-    public AuthorizationPermissionClient withAction(final PermissionAction action) {
-      authorizationCreationRecord.setAction(action);
       return this;
     }
 

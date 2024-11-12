@@ -14,7 +14,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -277,7 +276,6 @@ public class RoleTest {
         .withOwnerKey(roleKey)
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.ROLE)
-        .withAction(PermissionAction.REMOVE)
         .add();
 
     // when

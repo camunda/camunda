@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Set;
@@ -45,7 +44,6 @@ public class RemovePermissionAuthorizationTest {
     engine
         .authorization()
         .permission()
-        .withAction(PermissionAction.ADD)
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
@@ -58,7 +56,6 @@ public class RemovePermissionAuthorizationTest {
         engine
             .authorization()
             .permission()
-            .withAction(PermissionAction.REMOVE)
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.CREATE, "foo")
@@ -69,15 +66,11 @@ public class RemovePermissionAuthorizationTest {
     // then
     assertThat(response)
         .extracting(
-            AuthorizationRecordValue::getAction,
             AuthorizationRecordValue::getOwnerKey,
             AuthorizationRecordValue::getOwnerType,
             AuthorizationRecordValue::getResourceType)
         .containsExactly(
-            PermissionAction.REMOVE,
-            ownerKey,
-            AuthorizationOwnerType.USER,
-            AuthorizationResourceType.DEPLOYMENT);
+            ownerKey, AuthorizationOwnerType.USER, AuthorizationResourceType.DEPLOYMENT);
     assertThat(response.getPermissions())
         .extracting(PermissionValue::getPermissionType, PermissionValue::getResourceIds)
         .containsExactly(
@@ -95,7 +88,6 @@ public class RemovePermissionAuthorizationTest {
         engine
             .authorization()
             .permission()
-            .withAction(PermissionAction.REMOVE)
             .withOwnerKey(ownerKey)
             .withResourceType(AuthorizationResourceType.DEPLOYMENT)
             .withPermission(PermissionType.CREATE, "foo")

@@ -31,7 +31,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.net.URI;
 import java.util.List;
@@ -80,7 +79,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
         new AuthorizationRecord()
             .setOwnerKey(ownerKey)
             .setOwnerType(AuthorizationOwnerType.USER)
-            .setAction(PermissionAction.valueOf(request.getAction().name()))
             .setResourceType(AuthorizationResourceType.valueOf(request.getResourceType().name()))
             .addPermission(permission);
 
@@ -101,7 +99,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
     verify(authorizationServices, times(1)).patchAuthorization(captor.capture());
     final var capturedRequest = captor.getValue();
     assertEquals(capturedRequest.ownerKey(), authorizationRecord.getOwnerKey());
-    assertEquals(capturedRequest.action(), authorizationRecord.getAction());
     assertEquals(capturedRequest.resourceType(), authorizationRecord.getResourceType());
     assertEquals(capturedRequest.permissions().size(), 1);
     assertEquals(

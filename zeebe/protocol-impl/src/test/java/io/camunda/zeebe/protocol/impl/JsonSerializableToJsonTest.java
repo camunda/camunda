@@ -77,7 +77,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserType;
@@ -2612,7 +2611,6 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
-                    .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
                     .setOwnerType(AuthorizationOwnerType.USER)
                     .setResourceType(AuthorizationResourceType.DEPLOYMENT)
@@ -2625,7 +2623,6 @@ final class JsonSerializableToJsonTest {
                         new Permission().setPermissionType(PermissionType.READ).addResourceId("*")),
         """
         {
-          "action": "ADD",
           "ownerKey": 1,
           "ownerType": "USER",
           "resourceType": "DEPLOYMENT",
@@ -2650,12 +2647,10 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
-                    .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
                     .setResourceType(AuthorizationResourceType.DEPLOYMENT),
         """
         {
-          "action": "ADD",
           "ownerKey": 1,
           "ownerType": "UNSPECIFIED",
           "resourceType": "DEPLOYMENT",

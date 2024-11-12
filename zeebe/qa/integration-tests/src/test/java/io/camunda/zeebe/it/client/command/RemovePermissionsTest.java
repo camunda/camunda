@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.client.api.response.AddPermissionsResponse;
 import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
@@ -28,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
-public class AddPermissionsTest {
+public class RemovePermissionsTest {
 
   ZeebeClient client;
 
@@ -44,31 +45,35 @@ public class AddPermissionsTest {
   }
 
   @Test
-  void shouldAddPermissionsToOwner() {
+  void shouldRemovePermissionsFromOwner() {
     // given
     final long ownerKey = createUser();
+    final var resourceType = ResourceTypeEnum.DEPLOYMENT;
+    final var permissionType = PermissionTypeEnum.CREATE;
+    final var resourceId = "resourceId";
+    addPermissionToOwner(ownerKey, resourceType, permissionType, resourceId);
 
     // when
     client
-        .newAddPermissionsCommand(ownerKey)
-        .resourceType(ResourceTypeEnum.DEPLOYMENT)
-        .permission(PermissionTypeEnum.CREATE)
-        .resourceId("resourceId")
+        .newRemovePermissionsCommand(ownerKey)
+        .resourceType(resourceType)
+        .permission(permissionType)
+        .resourceId(resourceId)
         .send()
         .join();
 
     // then
     final var recordValue =
-        RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_ADDED)
+        RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_REMOVED)
             .withOwnerKey(ownerKey)
-            .limit(2)
-            .getLast()
+            .limit(1)
+            .getFirst()
             .getValue();
     assertThat(recordValue.getResourceType()).isEqualTo(AuthorizationResourceType.DEPLOYMENT);
     assertThat(recordValue.getOwnerType()).isEqualTo(AuthorizationOwnerType.USER);
     final var permission = recordValue.getPermissions().getFirst();
     assertThat(permission.getPermissionType()).isEqualTo(PermissionType.CREATE);
-    assertThat(permission.getResourceIds()).containsExactly("resourceId");
+    assertThat(permission.getResourceIds()).containsExactly(resourceId);
   }
 
   @Test
@@ -79,7 +84,7 @@ public class AddPermissionsTest {
     // when
     final var future =
         client
-            .newAddPermissionsCommand(nonExistingOwnerKey)
+            .newRemovePermissionsCommand(nonExistingOwnerKey)
             .resourceType(ResourceTypeEnum.DEPLOYMENT)
             .permission(PermissionTypeEnum.CREATE)
             .resourceId("resourceId")
@@ -105,5 +110,19 @@ public class AddPermissionsTest {
         .send()
         .join()
         .getUserKey();
+  }
+
+  private AddPermissionsResponse addPermissionToOwner(
+      final long ownerKey,
+      final ResourceTypeEnum resourceType,
+      final PermissionTypeEnum permissionType,
+      final String resourceId) {
+    return client
+        .newAddPermissionsCommand(ownerKey)
+        .resourceType(resourceType)
+        .permission(permissionType)
+        .resourceId(resourceId)
+        .send()
+        .join();
   }
 }

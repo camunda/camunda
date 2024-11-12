@@ -17,12 +17,12 @@ package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
-import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep2;
-import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep3;
-import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep4;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.response.AddPermissionsResponse;
+import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1;
+import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1.RemovePermissionsCommandStep2;
+import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1.RemovePermissionsCommandStep3;
+import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1.RemovePermissionsCommandStep4;
+import io.camunda.zeebe.client.api.response.RemovePermissionsResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
@@ -33,11 +33,11 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class AddPermissionsCommandImpl
-    implements AddPermissionsCommandStep1,
-        AddPermissionsCommandStep2,
-        AddPermissionsCommandStep3,
-        AddPermissionsCommandStep4 {
+public class RemovePermissionsCommandImpl
+    implements RemovePermissionsCommandStep1,
+        RemovePermissionsCommandStep2,
+        RemovePermissionsCommandStep3,
+        RemovePermissionsCommandStep4 {
 
   private final PatchAuthorizationCommand delegate;
   private final HttpClient httpClient;
@@ -45,49 +45,49 @@ public class AddPermissionsCommandImpl
   private final String path;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public AddPermissionsCommandImpl(
+  public RemovePermissionsCommandImpl(
       final long ownerKey, final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     path = "/authorizations/" + ownerKey;
     httpRequestConfig = httpClient.newRequestConfig();
-    delegate = new PatchAuthorizationCommand(ActionEnum.ADD);
+    delegate = new PatchAuthorizationCommand(ActionEnum.REMOVE);
   }
 
   @Override
-  public AddPermissionsCommandStep2 resourceType(final ResourceTypeEnum resourceType) {
+  public RemovePermissionsCommandStep2 resourceType(final ResourceTypeEnum resourceType) {
     delegate.resourceType(resourceType);
     return this;
   }
 
   @Override
-  public AddPermissionsCommandStep3 permission(final PermissionTypeEnum permissionType) {
+  public RemovePermissionsCommandStep3 permission(final PermissionTypeEnum permissionType) {
     delegate.permission(permissionType);
     return this;
   }
 
   @Override
-  public AddPermissionsCommandStep4 resourceIds(final List<String> resourceIds) {
+  public RemovePermissionsCommandStep4 resourceIds(final List<String> resourceIds) {
     delegate.resourceIds(resourceIds);
     return this;
   }
 
   @Override
-  public AddPermissionsCommandStep4 resourceId(final String resourceId) {
+  public RemovePermissionsCommandStep4 resourceId(final String resourceId) {
     delegate.resourceId(resourceId);
     return this;
   }
 
   @Override
-  public FinalCommandStep<AddPermissionsResponse> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<RemovePermissionsResponse> requestTimeout(final Duration requestTimeout) {
     ArgumentUtil.ensurePositive("requestTimeout", requestTimeout);
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public ZeebeFuture<AddPermissionsResponse> send() {
-    final HttpZeebeFuture<AddPermissionsResponse> result = new HttpZeebeFuture<>();
+  public ZeebeFuture<RemovePermissionsResponse> send() {
+    final HttpZeebeFuture<RemovePermissionsResponse> result = new HttpZeebeFuture<>();
     httpClient.patch(
         path, jsonMapper.toJson(delegate.getRequest()), httpRequestConfig.build(), result);
     return result;
