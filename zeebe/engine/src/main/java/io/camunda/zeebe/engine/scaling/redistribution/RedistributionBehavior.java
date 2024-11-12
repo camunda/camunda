@@ -113,9 +113,10 @@ public final class RedistributionBehavior {
       final RedistributionStage currentStage) {
     final var nextStage = RedistributionStage.nextStage(currentStage);
 
-    final var continuedRedistribution = new RedistributionRecord();
-    continuedRedistribution.setProgress(progress);
-    continuedRedistribution.setStage(RedistributionStage.stageToIndex(nextStage));
+    final var continuedRedistribution =
+        new RedistributionRecord()
+            .setProgress(progress)
+            .setStage(RedistributionStage.stageToIndex(nextStage));
 
     stateWriter.appendFollowUpEvent(
         redistributionKey, RedistributionIntent.CONTINUED, continuedRedistribution);
