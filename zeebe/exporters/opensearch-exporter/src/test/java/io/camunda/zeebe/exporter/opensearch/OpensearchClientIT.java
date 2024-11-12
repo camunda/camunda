@@ -105,7 +105,9 @@ final class OpensearchClientIT {
     final String indexTemplateAlias = indexRouter.aliasNameForValueType(valueType);
     final Template expectedTemplate =
         templateReader.readIndexTemplate(
-            valueType, indexRouter.searchPatternForValueType(valueType), indexTemplateAlias);
+            valueType,
+            indexRouter.searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase()),
+            indexTemplateAlias);
 
     // required since all index templates are composed with it
     client.putComponentTemplate();

@@ -154,12 +154,15 @@ public class OpensearchClient implements AutoCloseable {
    * @return true if request was acknowledged
    */
   public boolean putIndexTemplate(final ValueType valueType) {
-    final String templateName =
-        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
+    return putIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+  }
+
+  public boolean putIndexTemplate(final ValueType valueType, final String version) {
+    final String templateName = indexRouter.indexPrefixForValueType(valueType, version);
     final Template template =
         templateReader.readIndexTemplate(
             valueType,
-            indexRouter.searchPatternForValueType(valueType),
+            indexRouter.searchPatternForValueType(valueType, version),
             indexRouter.aliasNameForValueType(valueType));
 
     return putIndexTemplate(templateName, template);

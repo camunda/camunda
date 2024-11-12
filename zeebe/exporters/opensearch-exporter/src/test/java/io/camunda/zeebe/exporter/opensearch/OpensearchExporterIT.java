@@ -27,13 +27,16 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.agrona.CloseHelper;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -490,6 +493,70 @@ final class OpensearchExporterIT {
 
       final var document = testClient.getExportedDocumentFor(oldRecord);
       assertThat(document.index().contains(oldRecord.getBrokerVersion())).isTrue();
+    }
+
+    @Test
+    void shouldExportToCorrectIndexWithElasticsearchNotReachable() throws IOException {
+
+      // given
+      final var currentPort = CONTAINER.getFirstMappedPort();
+      CONTAINER.stop();
+      Awaitility.await().until(() -> !CONTAINER.isRunning());
+
+      final var record = factory.generateRecord(r -> r.withBrokerVersion("8.6.0"));
+
+      try (final var mockVersion =
+          Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
+        mockVersion.when(VersionUtil::getVersionLowerCase).thenReturn("8.6.0");
+        configureExporter(false);
+
+        assertThatThrownBy(() -> export(record));
+      }
+
+      CONTAINER
+          .withEnv("discovery.type", "single-node")
+          .setPortBindings(List.of(currentPort + ":9200"));
+      CONTAINER.start();
+      Awaitility.await().until(CONTAINER::isRunning);
+
+      // when
+      final var record2 = factory.generateRecord(r -> r.withBrokerVersion("8.7.0"));
+      try (final var mockVersion =
+          Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
+        mockVersion.when(VersionUtil::getVersionLowerCase).thenReturn("8.7.0");
+        configureExporter(false);
+
+        export(record);
+        export(record2);
+      }
+
+      // then
+
+      // If the templates are not created then the dynamically created indices will not have an
+      // alias versus with a template as the template defines an alias.
+      final var firstRecordIndexName = indexRouter.indexFor(record);
+      final var firstRecordIndexAliases =
+          testClient
+              .getOsClient()
+              .indices()
+              .get(r -> r.index(firstRecordIndexName))
+              .result()
+              .get(firstRecordIndexName)
+              .aliases();
+      assertThat(firstRecordIndexAliases.size()).isEqualTo(1);
+      assertThat(firstRecordIndexName).contains("8.6.0");
+
+      final var secondRecordIndexName = indexRouter.indexFor(record2);
+      final var secondRecordIndexAliases =
+          testClient
+              .getOsClient()
+              .indices()
+              .get(r -> r.index(secondRecordIndexName))
+              .result()
+              .get(secondRecordIndexName)
+              .aliases();
+      assertThat(secondRecordIndexAliases.size()).isEqualTo(1);
+      assertThat(secondRecordIndexName).contains("8.7.0");
     }
 
     private void assertHasISMPolicy(final Optional<IndexISMPolicyDto> indexSettings) {
