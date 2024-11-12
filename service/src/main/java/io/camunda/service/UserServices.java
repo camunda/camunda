@@ -21,18 +21,22 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.concurrent.CompletableFuture;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 public class UserServices extends SearchQueryService<UserServices, UserQuery, UserEntity> {
 
   private final UserSearchClient userSearchClient;
+  private final PasswordEncoder passwordEncoder;
 
   public UserServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
-      final Authentication authentication) {
+      final Authentication authentication,
+      final PasswordEncoder passwordEncoder) {
     super(brokerClient, securityContextProvider, authentication);
     this.userSearchClient = userSearchClient;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @Override
@@ -47,30 +51,28 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   @Override
   public UserServices withAuthentication(final Authentication authentication) {
     return new UserServices(
-        brokerClient, securityContextProvider, userSearchClient, authentication);
+        brokerClient, securityContextProvider, userSearchClient, authentication, passwordEncoder);
   }
 
   public CompletableFuture<UserRecord> createUser(final UserDTO request) {
+    final String encodedPassword = passwordEncoder.encode(request.password());
     return sendBrokerRequest(
         new BrokerUserCreateRequest()
             .setUsername(request.username())
             .setName(request.name())
             .setEmail(request.email())
-            .setPassword(request.password()));
+            .setPassword(encodedPassword));
   }
 
   public CompletableFuture<UserRecord> updateUser(final UserDTO request) {
+    final String encodedPassword = passwordEncoder.encode(request.password());
     return sendBrokerRequest(
         new BrokerUserUpdateRequest()
             .setUserKey(request.userKey())
             .setUsername(request.username())
             .setName(request.name())
             .setEmail(request.email())
-            .setPassword(request.password()));
-  }
-
-  public CompletableFuture<UserRecord> updateUser(final long userKey, final String name) {
-    return updateUser(new UserDTO(userKey, null, name, null, null));
+            .setPassword(encodedPassword));
   }
 
   public CompletableFuture<UserRecord> deleteUser(final long userKey) {

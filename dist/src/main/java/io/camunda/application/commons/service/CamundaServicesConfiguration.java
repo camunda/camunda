@@ -51,6 +51,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnRestGatewayEnabled
@@ -151,8 +152,10 @@ public class CamundaServicesConfiguration {
   public UserServices userServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final UserSearchClient userSearchClient) {
-    return new UserServices(brokerClient, securityContextProvider, userSearchClient, null);
+      final UserSearchClient userSearchClient,
+      final PasswordEncoder passwordEncoder) {
+    return new UserServices(
+        brokerClient, securityContextProvider, userSearchClient, null, passwordEncoder);
   }
 
   @Bean
