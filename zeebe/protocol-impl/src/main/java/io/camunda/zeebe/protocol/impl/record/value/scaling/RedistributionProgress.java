@@ -20,21 +20,27 @@ import io.camunda.zeebe.protocol.record.value.scaling.RedistributionProgressValu
 })
 public final class RedistributionProgress extends UnpackedObject
     implements RedistributionProgressValue {
-  LongProperty deployment = new LongProperty("deployment", -1);
+
+  /**
+   * The key of the latest deployment that has been redistributed. Deployments with keys less than
+   * this value have been redistributed, while deployments with keys greater than this value are not
+   * yet redistributed.
+   */
+  LongProperty deploymentKey = new LongProperty("deploymentKey", -1);
 
   public RedistributionProgress() {
     super(1);
-    declareProperty(deployment);
+    declareProperty(deploymentKey);
   }
 
   @Override
   public long getDeploymentKey() {
-    return deployment.getValue();
+    return deploymentKey.getValue();
   }
 
   public RedistributionProgress claimDeploymentKey(final long deploymentKey) {
-    if (deploymentKey > deployment.getValue()) {
-      deployment.setValue(deploymentKey);
+    if (deploymentKey > this.deploymentKey.getValue()) {
+      this.deploymentKey.setValue(deploymentKey);
     }
     return this;
   }
