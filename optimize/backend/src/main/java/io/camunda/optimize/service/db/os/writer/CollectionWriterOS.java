@@ -20,7 +20,7 @@ import io.camunda.optimize.dto.optimize.query.collection.CollectionRoleUpdateReq
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.writer.CollectionWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.conflict.OptimizeCollectionConflictException;

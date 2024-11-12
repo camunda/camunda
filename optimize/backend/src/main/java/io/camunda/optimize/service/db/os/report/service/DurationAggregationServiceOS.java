@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.service;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.filter;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.filter;
 import static io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS.createUserTaskFlowNodeTypeFilter;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.wrapWithFilterLimitedParentAggregation;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.NumberHistogramAggregationUtilOS.generateHistogramFromScript;

@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.os.externalcode.client.dsl;
+package io.camunda.optimize.service.db.os.client.dsl;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations.SCROLL_KEEP_ALIVE_MS;
+import static io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations.SCROLL_KEEP_ALIVE_MS;
 
 import java.util.List;
 import org.opensearch.client.opensearch._types.Refresh;

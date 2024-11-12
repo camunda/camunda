@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.util;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.json;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.json;
 
 import io.camunda.optimize.util.types.MapUtil;
 import java.util.List;

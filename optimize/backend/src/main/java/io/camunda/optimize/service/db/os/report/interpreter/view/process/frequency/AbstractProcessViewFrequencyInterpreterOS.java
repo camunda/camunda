@@ -8,8 +8,8 @@
 package io.camunda.optimize.service.db.os.report.interpreter.view.process.frequency;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.filterAggregation;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.filterAggregation;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
 
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;

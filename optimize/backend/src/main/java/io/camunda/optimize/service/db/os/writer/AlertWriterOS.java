@@ -9,13 +9,13 @@ package io.camunda.optimize.service.db.os.writer;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.ids;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.ids;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static java.lang.String.format;
 
 import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
+import io.camunda.optimize.service.db.os.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.schema.index.AlertIndex;
 import io.camunda.optimize.service.db.writer.AlertWriter;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;

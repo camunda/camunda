@@ -9,8 +9,8 @@ package io.camunda.optimize.service.db.os;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.GB_UNIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.getRequestBuilder;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.scrollRequest;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.getRequestBuilder;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.scrollRequest;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
@@ -23,8 +23,8 @@ import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -169,11 +169,10 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   private static String getHintForErrorMsg(final boolean containsNestedDocumentLimitErrorMessage) {
     if (containsNestedDocumentLimitErrorMessage) {
       // exception potentially related to nested object limit
-      return
-          "If you are experiencing failures due to too many nested documents, try carefully increasing the "
-              + "configured nested object limit (opensearch.settings.index.nested_documents_limit) or enabling the skipping of "
-              + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
-              + "See Optimize documentation for details.";
+      return "If you are experiencing failures due to too many nested documents, try carefully increasing the "
+          + "configured nested object limit (opensearch.settings.index.nested_documents_limit) or enabling the skipping of "
+          + "documents that have reached this limit during import (import.skipDataAfterNestedDocLimitReached). "
+          + "See Optimize documentation for details.";
     }
     return "";
   }
@@ -641,7 +640,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   }
 
   public long count(final String indexName, final String errorMessage) {
-    return count(new String[]{indexName}, QueryDSL.matchAll(), errorMessage);
+    return count(new String[] {indexName}, QueryDSL.matchAll(), errorMessage);
   }
 
   public UpdateByQueryResponse submitUpdateTask(final UpdateByQueryRequest request)

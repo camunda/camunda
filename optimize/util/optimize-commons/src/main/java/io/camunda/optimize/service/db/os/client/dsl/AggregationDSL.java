@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.os.externalcode.client.dsl;
+package io.camunda.optimize.service.db.os.client.dsl;
 
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.List;

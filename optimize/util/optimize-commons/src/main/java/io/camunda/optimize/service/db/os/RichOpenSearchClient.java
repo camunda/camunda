@@ -7,11 +7,11 @@
  */
 package io.camunda.optimize.service.db.os;
 
-import io.camunda.optimize.service.db.os.externalcode.client.async.OpenSearchAsyncDocumentOperations;
-import io.camunda.optimize.service.db.os.externalcode.client.async.OpenSearchAsyncSnapshotOperations;
-import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
-import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchIndexOperations;
-import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchTaskOperations;
+import io.camunda.optimize.service.db.os.client.async.OpenSearchAsyncDocumentOperations;
+import io.camunda.optimize.service.db.os.client.async.OpenSearchAsyncSnapshotOperations;
+import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
+import io.camunda.optimize.service.db.os.client.sync.OpenSearchIndexOperations;
+import io.camunda.optimize.service.db.os.client.sync.OpenSearchTaskOperations;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;

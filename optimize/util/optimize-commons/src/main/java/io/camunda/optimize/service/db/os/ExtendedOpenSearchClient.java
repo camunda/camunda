@@ -72,8 +72,7 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
   }
 
   private Map<String, Object> jsonToMap(final String json) throws JsonProcessingException {
-    return objectMapper().readValue(json, new TypeReference<>() {
-    });
+    return objectMapper().readValue(json, new TypeReference<>() {});
   }
 
   private String json(final SearchRequest request) {

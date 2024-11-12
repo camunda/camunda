@@ -5,20 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.os.externalcode.client.sync;
+package io.camunda.optimize.service.db.os.client.sync;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.ids;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.clearScrollRequest;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.deleteByQueryRequestBuilder;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.deleteRequestBuilder;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.scrollRequest;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.time;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.updateByQueryRequestBuilder;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.ids;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.clearScrollRequest;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.deleteByQueryRequestBuilder;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.deleteRequestBuilder;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.scrollRequest;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.time;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.updateByQueryRequestBuilder;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
+import io.camunda.optimize.service.db.os.client.dsl.RequestDSL;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.io.IOException;
