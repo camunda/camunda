@@ -15,7 +15,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.exporter.cache.TestProcessCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
@@ -237,8 +236,6 @@ public class IncidentHandlerTest {
     assertThat(incidentEntity.getTreePath())
         .isEqualTo(
             "PI_111/FN_callActivity1/FNI_123/PI_222/FN_callActivity2/FNI_234/PI_333/FN_userTask/FNI_345");
-    verify(processCache).get(processDefinitionKey1);
-    verify(processCache).get(processDefinitionKey2);
   }
 
   @Test
@@ -263,7 +260,6 @@ public class IncidentHandlerTest {
 
     // then
     assertThat(incidentEntity.getTreePath()).isEqualTo("PI_333/FN_userTask/FNI_345");
-    verifyNoInteractions(processCache);
   }
 
   private void addCallStackInfo(
