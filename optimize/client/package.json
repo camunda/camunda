@@ -44,7 +44,7 @@
     "e2e": "testcafe -c 3 chrome e2e/sm-tests/*.js --disable-screenshots",
     "e2e:ci:headless": "testcafe -c 3 chrome:headless e2e/sm-tests/*.js -e --disable-screenshots --assertion-timeout 40000 -q attemptLimit=3,successThreshold=1",
     "e2e:ci:cloud:headless": "testcafe chrome:headless e2e/cloud-tests/smokeTest.js -e",
-    "e2e:ci:sm:headless": "testcafe -c 3 firefox:headless e2e/sm-tests/*.js -e --disable-screenshots --assertion-timeout 40000 -q attemptLimit=3,successThreshold=1",
+    "e2e:ci:sm:headless": "testcafe -c 3 chrome:headless e2e/sm-tests/*.js -e --disable-screenshots --assertion-timeout 40000 -q attemptLimit=3,successThreshold=1",
     "e2e:cloud": "testcafe chrome e2e/cloud-tests/smokeTest.js",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules && patch-package",
