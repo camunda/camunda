@@ -52,6 +52,11 @@ public final class DbRedistributionState implements MutableRedistributionState {
     redistributionColumnFamily.upsert(key, persistedState);
   }
 
+  @Override
+  public void clearState() {
+    redistributionColumnFamily.deleteExisting(key);
+  }
+
   private static final class PersistedState extends UnpackedObject implements DbValue {
     private final IntegerProperty stage =
         new IntegerProperty(

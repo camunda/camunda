@@ -7,10 +7,8 @@
  */
 package io.camunda.zeebe.engine.scaling.redistribution;
 
-import io.camunda.zeebe.engine.scaling.redistribution.RedistributionStage.Done;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionProgress;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionRecord;
 import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 
@@ -24,6 +22,6 @@ public class RedistributionCompletedApplier
 
   @Override
   public void applyState(final long key, final RedistributionRecord value) {
-    redistributionState.updateState(new Done(), new RedistributionProgress());
+    redistributionState.clearState();
   }
 }
