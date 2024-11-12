@@ -72,6 +72,8 @@ public class FormHandler implements ExportHandler<FormEntity, Form> {
       // update local cache so that the form info is available immediately
       final var cachedFormEntity = new CachedFormEntity(entity.getFormId(), entity.getVersion());
       formCache.put(entity.getId(), cachedFormEntity);
+    } else {
+      formCache.remove(entity.getId());
     }
   }
 
