@@ -41,6 +41,8 @@ public class MigrationRunner implements Migrator {
   private static final Logger LOG = LoggerFactory.getLogger(MigrationRunner.class);
   private static final Long INITIAL_BACKOFF = 1000L;
   private static final int MAX_RETRIES = 3;
+  final AtomicLong backoff = new AtomicLong(INITIAL_BACKOFF);
+  final AtomicInteger retries = new AtomicInteger();
   private final Adapter adapter;
   private final XMLUtil xmlParser;
 
@@ -54,69 +56,66 @@ public class MigrationRunner implements Migrator {
     try {
       xmlParser = new XMLUtil();
     } catch (final MigrationException e) {
-      throw new RuntimeException(e);
+      throw new MigrationException("Failed to initialize XML parser", e);
     }
   }
 
   @Override
   public void run() {
     final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    final AtomicLong backoff = new AtomicLong(INITIAL_BACKOFF);
-    final AtomicInteger retries = new AtomicInteger();
 
     LOG.info("Tasklist Migration started");
-    List<io.camunda.tasklist.entities.ProcessEntity> items = adapter.nextBatch();
+    String lastMigratedProcessDefinitionKey = adapter.readLastMigratedEntity();
+
+    List<ProcessEntity> items = adapter.nextBatch(lastMigratedProcessDefinitionKey);
     while (!items.isEmpty()) {
-      try {
-        if (!adapter.migrate(processBatch(items))) {
-          throw new MigrationException(
-              "Migration contained errors, backing off for %s ms".formatted(backoff));
-        } else {
-          backoff.set(INITIAL_BACKOFF);
-          retries.set(0);
-        }
-      } catch (final MigrationException e) {
-        if (retries.get() >= MAX_RETRIES) {
-          LOG.error("Migration failed after {} retries", retries);
-          throw new MigrationException("Migration exceeded maximum retries");
-        }
-        LOG.error(e.getMessage());
-        try {
-          scheduler.schedule(() -> {}, backoff.get(), TimeUnit.MILLISECONDS).get();
-          backoff.updateAndGet(v -> v * 2);
-          retries.getAndIncrement();
-        } catch (final Exception ie) {
-          Thread.currentThread().interrupt();
-          throw new RuntimeException("Migration interrupted", ie);
-        }
+      lastMigratedProcessDefinitionKey = migrateBatch(items);
+      final boolean retry = lastMigratedProcessDefinitionKey == null;
+      scheduleNextBatch(scheduler, retry);
+      if (retries.get() >= MAX_RETRIES) {
+        break;
       }
-
-      // Add a delay between each batch processing
-      try {
-        scheduler.schedule(() -> {}, 1, TimeUnit.SECONDS).get();
-      } catch (final InterruptedException | ExecutionException e) {
-        Thread.currentThread().interrupt();
-        throw new RuntimeException("Delay interrupted", e);
-      }
-
-      items = adapter.nextBatch();
+      items = retry ? items : adapter.nextBatch(lastMigratedProcessDefinitionKey);
     }
-
-    scheduler.shutdown();
-    try {
-      adapter.close();
-    } catch (final IOException e) {
-      LOG.error("Failed to close adapter", e);
-    }
+    terminate(scheduler);
     LOG.info("Tasklist Migration completed");
   }
 
-  private List<ProcessEntity> processBatch(
-      final List<io.camunda.tasklist.entities.ProcessEntity> tasklistProcesses) {
+  protected String migrateBatch(final List<ProcessEntity> processes) {
+    String lastMigratedProcessDefinitionKey = null;
+    try {
+      lastMigratedProcessDefinitionKey = adapter.migrate(extractBatchData(processes));
+      resetBackoff();
+      adapter.writeLastMigratedEntity(lastMigratedProcessDefinitionKey);
+    } catch (final MigrationException me) {
+      LOG.error(me.getMessage());
+    }
+    return lastMigratedProcessDefinitionKey;
+  }
+
+  private void scheduleNextBatch(final ScheduledExecutorService scheduler, final boolean retry) {
+    try {
+      scheduler.schedule(() -> {}, backoff.get(), TimeUnit.MILLISECONDS).get();
+      if (retry) {
+        backoff.updateAndGet(v -> v * 2);
+        retries.getAndIncrement();
+      }
+    } catch (final ExecutionException | InterruptedException ex) {
+      Thread.currentThread().interrupt();
+      LOG.error("Schedule interrupted", ex);
+    }
+  }
+
+  private void resetBackoff() {
+    backoff.set(INITIAL_BACKOFF);
+    retries.set(0);
+  }
+
+  private List<ProcessEntity> extractBatchData(final List<ProcessEntity> tasklistProcesses) {
     return tasklistProcesses.stream().map(this::map).toList();
   }
 
-  private ProcessEntity map(final io.camunda.tasklist.entities.ProcessEntity entity) {
+  private ProcessEntity map(final ProcessEntity entity) {
     final ProcessEntity processEntity = new ProcessEntity();
     processEntity.setId(entity.getId());
     processEntity.setVersion(entity.getVersion());
@@ -130,5 +129,18 @@ public class MigrationRunner implements Migrator {
                 .setFormId(parsedEntity.getFormId())
                 .setIsPublic(parsedEntity.getIsPublic()));
     return processEntity;
+  }
+
+  private void terminate(final ScheduledExecutorService scheduler) {
+    scheduler.shutdown();
+    try {
+      adapter.close();
+    } catch (final IOException e) {
+      LOG.error("Failed to close adapter", e);
+    }
+
+    if (retries.get() >= MAX_RETRIES) {
+      throw new MigrationException("Tasklist migration failed, retries exceeded");
+    }
   }
 }

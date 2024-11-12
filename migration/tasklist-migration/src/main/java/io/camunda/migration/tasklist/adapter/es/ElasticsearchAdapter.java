@@ -7,23 +7,33 @@
  */
 package io.camunda.migration.tasklist.adapter.es;
 
+import static java.util.stream.Collectors.toList;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.UpdateRequest;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.json.JsonData;
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.tasklist.MigrationRepositoryIndex;
 import io.camunda.migration.tasklist.TasklistMigrationProperties;
 import io.camunda.migration.tasklist.adapter.Adapter;
-import io.camunda.migration.tasklist.util.IndexUtil;
+import io.camunda.operate.schema.migration.AbstractStep;
+import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.tasklist.entities.ProcessEntity;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,60 +42,111 @@ public class ElasticsearchAdapter implements Adapter {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchAdapter.class);
   private final ElasticsearchClient client;
   private final TasklistMigrationProperties properties;
-  private final String sourceIndexName;
-  private final String targetIndexName;
+  private final MigrationRepositoryIndex migrationRepositoryIndex;
+  private final ProcessIndex processIndex;
 
   public ElasticsearchAdapter(
       final TasklistMigrationProperties properties, final ElasticsearchConnector connector) {
     this.properties = properties;
-    targetIndexName = IndexUtil.getTargetIndexName(properties);
-    sourceIndexName = IndexUtil.getSourceIndexName(properties);
+    migrationRepositoryIndex =
+        new MigrationRepositoryIndex(properties.getConnect().getIndexPrefix(), true);
+    processIndex = new ProcessIndex(properties.getConnect().getIndexPrefix(), true);
     client = connector.createClient();
   }
 
   @Override
-  public boolean migrate(
-      final List<io.camunda.webapps.schema.entities.operate.ProcessEntity> entities) {
+  public String migrate(final List<ProcessEntity> entities) throws MigrationException {
     try {
-      /* Migrate Entities */
       final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
       entities.forEach(entity -> migrateEntity(entity, bulkRequest));
-      BulkResponse response = client.bulk(bulkRequest.build());
+      final BulkResponse response = client.bulk(bulkRequest.build());
+      return lastUpdatedProcessDefinition(response.items());
 
-      final List<String> idsToBeDeleted = getMigratedIds(response);
-
-      if (idsToBeDeleted.isEmpty()) {
-        return !response.errors();
-      }
-      /* Delete Entities */
-      final BulkRequest deleteRequest = buildDeleteRequest(idsToBeDeleted);
-      response = client.bulk(deleteRequest);
-      if (response.errors()) {
-        LOG.error("Failed to delete entities: {}", response.items());
-      }
-      return !response.errors();
     } catch (final IOException e) {
       throw new MigrationException("Tasklist migration step failed", e);
     }
   }
 
   @Override
-  public List<ProcessEntity> nextBatch() {
+  public List<ProcessEntity> nextBatch(final String lastMigratedEntity) {
     final SearchRequest searchRequest =
-        SearchRequest.of(
-            s ->
-                s.index(sourceIndexName)
-                    .size(properties.getBatchSize())
-                    .query(Query.of(q -> q.matchAll(m -> m))));
+        new SearchRequest.Builder()
+            .index(processIndex.getFullQualifiedName())
+            .size(properties.getBatchSize())
+            .sort(s -> s.field(f -> f.field(PROCESS_DEFINITION_KEY).order(SortOrder.Asc)))
+            .query(
+                q ->
+                    q.range(
+                        m ->
+                            m.field(PROCESS_DEFINITION_KEY)
+                                .gt(
+                                    JsonData.of(
+                                        lastMigratedEntity == null ? "" : lastMigratedEntity))))
+            .build();
     final SearchResponse<ProcessEntity> searchResponse;
     try {
       searchResponse = client.search(searchRequest, ProcessEntity.class);
-    } catch (final IOException e) {
+    } catch (final IOException | ElasticsearchException e) {
       LOG.error("Failed to acquire new migration batch", e);
-      throw new MigrationException("Failed to acquire new migration batch", e);
+      return List.of();
     }
 
-    return searchResponse.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
+    return searchResponse.hits().hits().stream().map(Hit::source).collect(toList());
+  }
+
+  @Override
+  public String readLastMigratedEntity() throws MigrationException {
+    final SearchRequest searchRequest =
+        new SearchRequest.Builder()
+            .index(migrationRepositoryIndex.getFullQualifiedName())
+            .size(1)
+            .query(
+                q ->
+                    q.bool(
+                        b ->
+                            b.must(
+                                    m ->
+                                        m.match(
+                                            t ->
+                                                t.field(MigrationRepositoryIndex.TYPE)
+                                                    .query(PROCESSOR_STEP_TYPE)))
+                                .must(
+                                    m ->
+                                        m.term(
+                                            t ->
+                                                t.field(MigrationRepositoryIndex.ID)
+                                                    .value(PROCESSOR_STEP_ID)))))
+            .build();
+    final SearchResponse<ProcessorStep> searchResponse;
+    try {
+      searchResponse = client.search(searchRequest, ProcessorStep.class);
+      return searchResponse.hits().hits().stream()
+          .map(Hit::source)
+          .filter(Objects::nonNull)
+          .map(AbstractStep::getContent)
+          .findFirst()
+          .orElse(null);
+    } catch (final IOException | ElasticsearchException e) {
+      throw new MigrationException("Failed to fetch next batch", e);
+    }
+  }
+
+  @Override
+  public void writeLastMigratedEntity(final String processDefinitionKey) throws MigrationException {
+    final UpdateRequest<ProcessorStep, ProcessorStep> updateRequest =
+        new UpdateRequest.Builder<ProcessorStep, ProcessorStep>()
+            .index(migrationRepositoryIndex.getFullQualifiedName())
+            .id(PROCESSOR_STEP_ID)
+            .docAsUpsert(true)
+            .doc(upsertProcessorStep(processDefinitionKey))
+            .refresh(Refresh.True)
+            .upsert(upsertProcessorStep(processDefinitionKey))
+            .build();
+    try {
+      client.update(updateRequest, ProcessorStep.class);
+    } catch (final IOException e) {
+      throw new MigrationException("Failed to write last migrated entity", e);
+    }
   }
 
   @Override
@@ -93,38 +154,26 @@ public class ElasticsearchAdapter implements Adapter {
     client._transport().close();
   }
 
-  private List<String> getMigratedIds(final BulkResponse bulkResponse) {
-    final List<String> idsToBeDeleted = new ArrayList<>();
-    bulkResponse
-        .items()
-        .forEach(
-            i -> {
-              if (i.error() != null) {
-                LOG.error("Failed to migrate entity with id: {}, reason: {}", i.id(), i.error());
-              } else {
-                idsToBeDeleted.add(i.id());
-              }
-            });
-    return idsToBeDeleted;
-  }
-
-  private void migrateEntity(
-      final io.camunda.webapps.schema.entities.operate.ProcessEntity entity,
-      final BulkRequest.Builder bulkRequest) {
-
+  private void migrateEntity(final ProcessEntity entity, final BulkRequest.Builder bulkRequest) {
     bulkRequest.operations(
         op ->
             op.update(
                 e ->
-                    e.index(targetIndexName)
+                    e.index(processIndex.getFullQualifiedName())
                         .id(entity.getId())
                         .action(act -> act.doc(getUpdateMap(entity)))));
   }
 
-  private BulkRequest buildDeleteRequest(final List<String> ids) {
-    final BulkRequest.Builder deleteRequest = new BulkRequest.Builder();
-    ids.forEach(
-        id -> deleteRequest.operations(op -> op.delete(d -> d.index(sourceIndexName).id(id))));
-    return deleteRequest.build();
+  private String lastUpdatedProcessDefinition(final List<BulkResponseItem> items) {
+    final var sorted = items.stream().sorted(Comparator.comparing(BulkResponseItem::id)).toList();
+    for (int i = 0; i < sorted.size(); i++) {
+      if (sorted.get(i).error() != null) {
+        return i > 0
+            ? Objects.requireNonNull(sorted.get(i - 1).id())
+            : Objects.requireNonNull(sorted.get(i).id());
+      }
+    }
+
+    return Objects.requireNonNull(sorted.getLast().id());
   }
 }

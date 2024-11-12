@@ -7,4 +7,5 @@
  */
 package io.camunda.migration.api;
 
+/** Scanned interface for migration tasks. */
 public interface Migrator extends Runnable {}

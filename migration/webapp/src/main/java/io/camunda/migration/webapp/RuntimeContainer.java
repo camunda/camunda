@@ -7,16 +7,20 @@
  */
 package io.camunda.migration.webapp;
 
+import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RuntimeContainer {
 
+  private static final Logger LOG = LoggerFactory.getLogger(RuntimeContainer.class);
   private final List<Migrator> migrators;
   private final ThreadPoolExecutor executor;
 
@@ -31,8 +35,13 @@ public class RuntimeContainer {
         m ->
             executor.submit(
                 () -> {
-                  m.run();
-                  latch.countDown();
+                  try {
+                    m.run();
+                  } catch (final MigrationException ex) {
+                    LOG.error(ex.getMessage());
+                  } finally {
+                    latch.countDown();
+                  }
                 }));
     latch.await();
   }

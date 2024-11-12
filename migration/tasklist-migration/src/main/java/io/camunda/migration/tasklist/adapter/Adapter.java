@@ -7,7 +7,11 @@
  */
 package io.camunda.migration.tasklist.adapter;
 
-import io.camunda.tasklist.entities.ProcessEntity;
+import io.camunda.migration.api.MigrationException;
+import io.camunda.operate.schema.migration.ProcessorStep;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
@@ -15,24 +19,38 @@ import java.util.Map;
 
 public interface Adapter {
 
-  boolean migrate(List<io.camunda.webapps.schema.entities.operate.ProcessEntity> records);
+  String PROCESSOR_STEP_ID = VersionUtil.getVersion() + "-1";
+  String PROCESSOR_STEP_TYPE = "processorStep";
+  String PROCESS_DEFINITION_KEY = "key";
+  String STEP_DESCRIPTION = "Process Migration last migrated document";
 
-  List<ProcessEntity> nextBatch();
+  String migrate(List<ProcessEntity> records) throws MigrationException;
+
+  List<ProcessEntity> nextBatch(final String processDefinitionKey);
+
+  String readLastMigratedEntity() throws MigrationException;
+
+  void writeLastMigratedEntity(final String processDefinitionKey) throws MigrationException;
 
   void close() throws IOException;
 
-  default Map<String, Object> getUpdateMap(
-      final io.camunda.webapps.schema.entities.operate.ProcessEntity entity) {
+  default Map<String, Object> getUpdateMap(final ProcessEntity entity) {
     final Map<String, Object> updateMap = new HashMap<>();
-    updateMap.put(
-        io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.IS_PUBLIC,
-        entity.getIsPublic());
+    updateMap.put(ProcessIndex.IS_PUBLIC, entity.getIsPublic());
 
     if (entity.getFormId() != null) {
-      updateMap.put(
-          io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.FORM_ID,
-          entity.getFormId());
+      updateMap.put(ProcessIndex.FORM_ID, entity.getFormId());
     }
     return updateMap;
+  }
+
+  default ProcessorStep upsertProcessorStep(final String processDefinitionKey) {
+    final ProcessorStep step = new ProcessorStep();
+    step.setContent(processDefinitionKey);
+    step.setApplied(true);
+    step.setIndexName(ProcessIndex.INDEX_NAME);
+    step.setDescription(STEP_DESCRIPTION);
+    step.setVersion(VersionUtil.getVersion());
+    return step;
   }
 }
