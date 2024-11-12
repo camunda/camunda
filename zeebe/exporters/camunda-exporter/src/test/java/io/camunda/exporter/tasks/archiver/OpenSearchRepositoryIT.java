@@ -147,7 +147,7 @@ final class OpenSearchRepositoryIT {
     testClient.indices().refresh(r -> r.index(sourceIndexName));
     testClient.indices().create(r -> r.index(destIndexName));
 
-    // when - delete the first two documents
+    // when - reindex the first two documents
     final var result =
         repository.reindexDocuments(
             sourceIndexName,
@@ -186,7 +186,7 @@ final class OpenSearchRepositoryIT {
     testClient.indices().refresh(r -> r.index(sourceIndexName));
     testClient.indices().create(r -> r.index(destIndexName));
 
-    // when - delete the first two documents
+    // when - move the first two documents
     final var result =
         repository.moveDocuments(
             sourceIndexName,
