@@ -34,6 +34,7 @@ import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
+import io.camunda.exporter.handlers.MappingCreatedHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
@@ -72,6 +73,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import java.util.Collection;
 import java.util.Map;
@@ -141,7 +143,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             UserIndex.class,
             new UserIndex(globalPrefix, isElasticsearch),
             AuthorizationIndex.class,
-            new AuthorizationIndex(globalPrefix, isElasticsearch));
+            new AuthorizationIndex(globalPrefix, isElasticsearch),
+            MappingIndex.class,
+            new MappingIndex(globalPrefix, isElasticsearch));
 
     final var processCache =
         new ExporterEntityCacheImpl<Long, CachedProcessEntity>(
@@ -230,7 +234,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new OperationFromVariableDocumentHandler(
                 templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
             new OperationFromIncidentHandler(
-                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()));
+                templateDescriptorsMap.get(OperationTemplate.class).getFullQualifiedName()),
+            new MappingCreatedHandler(
+                indexDescriptorsMap.get(MappingIndex.class).getFullQualifiedName()));
   }
 
   @Override
