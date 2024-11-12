@@ -8,7 +8,6 @@
 package io.camunda.operate.schema;
 
 import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.property.OperateProperties;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -32,7 +31,7 @@ public class SchemaStartup {
   @Autowired private OperateProperties operateProperties;
 
   @PostConstruct
-  public void initializeSchema() throws MigrationException {
+  public void initializeSchema() {
     try {
       LOGGER.info("SchemaStartup started.");
       LOGGER.info("SchemaStartup: validate index versions.");
