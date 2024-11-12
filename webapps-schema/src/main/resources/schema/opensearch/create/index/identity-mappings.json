@@ -1,0 +1,16 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "mappingKey": {
+        "type": "long"
+      },
+      "claimName": {
+        "type": "keyword"
+      },
+      "claimValue": {
+        "type": "keyword"
+      }
+    }
+  }
+}
