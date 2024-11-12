@@ -162,6 +162,12 @@ public final class DbDeploymentState implements MutableDeploymentState {
           nextRawDeployment.set(rawDeployment);
           return false;
         });
-    return nextRawDeployment.get() == null ? null : nextRawDeployment.get().getDeploymentRecord();
+    if (nextRawDeployment.get() == null) {
+      return null;
+    }
+
+    final var copy = new DeploymentRecord();
+    copy.copyFrom(nextRawDeployment.get().getDeploymentRecord());
+    return copy;
   }
 }

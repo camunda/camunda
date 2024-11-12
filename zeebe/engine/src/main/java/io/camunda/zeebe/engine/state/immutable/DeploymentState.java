@@ -35,8 +35,8 @@ public interface DeploymentState {
   void foreachPendingDeploymentDistribution(PendingDeploymentVisitor pendingDeploymentVisitor);
 
   /**
-   * Returns the first deployment that has a higher key than the provided one or null if no such
-   * deployment exists.
+   * Returns a copy of the first deployment that has a higher key than the provided one or null if
+   * no such deployment exists.
    */
   DeploymentRecord nextDeployment(long previousDeploymentKey);
 
