@@ -43,14 +43,12 @@ import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -225,7 +223,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
             .field(context.getDateField())
             .calendarInterval(mapToCalendarInterval(context.getAggregateByDateUnit()))
             .format(OPTIMIZE_DATE_FORMAT)
-            .timeZone(context.getTimezone().getDisplayName(TextStyle.SHORT, Locale.US));
+            .timeZone(context.getTimezone().toString());
 
     if (context.isExtendBoundsToMinMaxStats()
         && context.getMinMaxStats().isMaxValid()
@@ -257,7 +255,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
                         .field(context.getDateField())
                         .calendarInterval(mapToCalendarInterval(context.getAggregateByDateUnit()))
                         .format(OPTIMIZE_DATE_FORMAT)
-                        .timeZone(context.getTimezone().getDisplayName(TextStyle.SHORT, Locale.US)))
+                        .timeZone(context.getTimezone().toString()))
             .aggregations(context.getSubAggregations())
             .build());
   }
@@ -359,7 +357,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
             .dateRange(
                 b ->
                     b.field(context.getDateField())
-                        .timeZone(min.getZone().getDisplayName(TextStyle.SHORT, Locale.US))
+                        .timeZone(min.getZone().toString())
                         .ranges(ranges))
             .build();
 
