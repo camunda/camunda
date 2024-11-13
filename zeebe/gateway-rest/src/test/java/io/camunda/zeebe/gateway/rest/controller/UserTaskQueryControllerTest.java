@@ -186,7 +186,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       new Builder<VariableEntity>()
           .total(1L)
           .items(
-              List.of(new VariableEntity(0L, "name", "value", "test", false, 1L, 2L, "<default>")))
+              List.of(
+                  new VariableEntity(
+                      0L, "name", "value", "test", false, 1L, 2L, "bpid", "<default>")))
           .sortValues(new Object[] {"v"})
           .build();
 

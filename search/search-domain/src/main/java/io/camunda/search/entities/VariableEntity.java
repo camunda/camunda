@@ -18,4 +18,5 @@ public final record VariableEntity(
     Boolean isPreview,
     Long scopeKey,
     Long processInstanceKey,
+    String bpmnProcessId,
     String tenantId) {}

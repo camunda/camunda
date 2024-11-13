@@ -7,15 +7,15 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.SearchQueryBuilders.processInstanceSearchQuery;
+
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -71,24 +71,24 @@ public final class ProcessInstanceServices
 
   public SearchQueryResult<ProcessInstanceEntity> search(
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
-    return search(SearchQueryBuilders.processInstanceSearchQuery(fn));
+    return search(processInstanceSearchQuery(fn));
   }
 
   public ProcessInstanceEntity getByKey(final Long processInstanceKey) {
-    final SearchQueryResult<ProcessInstanceEntity> result =
-        search(
-            SearchQueryBuilders.processInstanceSearchQuery()
-                .filter(f -> f.processInstanceKeys(processInstanceKey))
-                .build());
-    if (result.total() < 1) {
-      throw new NotFoundException(
-          String.format("Process Instance with key %d not found", processInstanceKey));
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          String.format("Found Process Instance with key %d more than once", processInstanceKey));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
+    final var result =
+        processInstanceSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchProcessInstances(
+                processInstanceSearchQuery(
+                    q -> q.filter(f -> f.processInstanceKeys(processInstanceKey))));
+    final var processInstanceEntity =
+        getSingleResultOrThrow(result, processInstanceKey, "Process instance");
+    final var authorization = Authorization.of(a -> a.processDefinition().readInstance());
+    if (!securityContextProvider.isAuthorized(
+        processInstanceEntity.bpmnProcessId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
     }
+    return processInstanceEntity;
   }
 
   public CompletableFuture<ProcessInstanceCreationRecord> createProcessInstance(

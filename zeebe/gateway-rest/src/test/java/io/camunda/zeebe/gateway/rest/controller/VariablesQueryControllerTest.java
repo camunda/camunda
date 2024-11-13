@@ -83,7 +83,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   private static final SearchQueryResult<VariableEntity> SEARCH_QUERY_RESULT =
       new Builder<VariableEntity>()
           .total(1L)
-          .items(List.of(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "<default>")))
+          .items(List.of(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "bpid", "<default>")))
           .sortValues(new Object[] {"v"})
           .build();
   @MockBean VariableServices variableServices;
@@ -94,7 +94,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .thenReturn(variableServices);
 
     when(variableServices.getByKey(VALID_VARIABLE_KEY))
-        .thenReturn(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "<default>"));
+        .thenReturn(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "bpid", "<default>"));
 
     when(variableServices.getByKey(INVALID_VARIABLE_KEY))
         .thenThrow(
