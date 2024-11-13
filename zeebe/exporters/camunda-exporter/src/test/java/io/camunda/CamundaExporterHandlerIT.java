@@ -319,7 +319,7 @@ public class CamundaExporterHandlerIT {
   }
 
   @TestTemplate
-  void shouldExportUsingRoleTaskVariableHandler(
+  void shouldExportUsingRoleCreateUpdateHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     final var handler = getHandler(config, RoleCreateUpdateHandler.class);
