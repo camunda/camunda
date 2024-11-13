@@ -78,6 +78,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
@@ -225,9 +226,10 @@ public class RequestMapper {
 
   public static CompleteJobRequest toJobCompletionRequest(
       final JobCompletionRequest completionRequest, final long jobKey) {
-
     return new CompleteJobRequest(
-        jobKey, getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables));
+        jobKey,
+        getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
+        getJobResultOrDefault(completionRequest));
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
@@ -646,7 +648,22 @@ public class RequestMapper {
 
   private static <R> Map<String, Object> getMapOrEmpty(
       final R request, final Function<R, Map<String, Object>> mapExtractor) {
-    return request == null ? Map.of() : mapExtractor.apply(request);
+    final Map<String, Object> value = request == null ? null : mapExtractor.apply(request);
+    return value == null ? Map.of() : value;
+  }
+
+  private static JobResult getJobResultOrDefault(final JobCompletionRequest request) {
+    if (request == null || request.getResult() == null) {
+      return new JobResult();
+    }
+    return new JobResult()
+        .setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
+  }
+
+  private static <R> boolean getBooleanOrDefault(
+      final R request, final Function<R, Boolean> valueExtractor, final boolean defaultValue) {
+    final Boolean value = request == null ? null : valueExtractor.apply(request);
+    return value == null ? defaultValue : value;
   }
 
   private static <R> String getStringOrEmpty(
@@ -699,7 +716,7 @@ public class RequestMapper {
   public record ErrorJobRequest(
       long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
 
-  public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
+  public record CompleteJobRequest(long jobKey, Map<String, Object> variables, JobResult result) {}
 
   public record UpdateJobRequest(long jobKey, UpdateJobChangeset changeset) {}
 
