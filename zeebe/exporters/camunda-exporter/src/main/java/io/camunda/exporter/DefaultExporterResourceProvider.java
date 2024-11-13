@@ -54,6 +54,7 @@ import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
+import io.camunda.exporter.handlers.operation.RoleDeletedHandler;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -165,6 +166,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         Set.of(
             new RoleCreateUpdateHandler(
                 indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+            new RoleDeletedHandler(indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
             new UserCreatedUpdatedHandler(
                 indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new UserDeletedHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
