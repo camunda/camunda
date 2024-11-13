@@ -50,6 +50,7 @@ public class UpgradeElasticsearchSchemaIT
     final Map<String, Map> newSettings = newDatabaseSchemaClient.getSettings();
     LOG.info("Actual settings size: {}, keys: {}", newSettings.size(), newSettings.keySet());
     assertThat(newSettings).isEqualTo(expectedSettings);
+    assertThat(newDatabaseSchemaClient.getMappings()).isEqualTo(expectedMappings);
   }
 
   @Override
