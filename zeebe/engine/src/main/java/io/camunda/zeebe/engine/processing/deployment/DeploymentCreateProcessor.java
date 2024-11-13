@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
+import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -70,6 +71,7 @@ public final class DeploymentCreateProcessor
       "Expected to create timer for start event, but encountered the following error: %s";
 
   private final DeploymentTransformer deploymentTransformer;
+  private final DeploymentState deploymentState;
   private final ProcessState processState;
   private final DecisionState decisionState;
   private final FormState formState;
@@ -94,6 +96,7 @@ public final class DeploymentCreateProcessor
       final EngineConfiguration config,
       final InstantSource clock,
       final AuthorizationCheckBehavior authCheckBehavior) {
+    deploymentState = processingState.getDeploymentState();
     processState = processingState.getProcessState();
     decisionState = processingState.getDecisionState();
     formState = processingState.getFormState();
@@ -140,6 +143,12 @@ public final class DeploymentCreateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<DeploymentRecord> command) {
+    if (deploymentState.getStoredDeploymentRecord(command.getKey()) != null) {
+      // we already processed this deployment, so we can ignore it
+      distributionBehavior.acknowledgeCommand(command);
+      return;
+    }
+
     processDistributedRecord(command);
     // manage the top-level start event subscriptions except for timers
     startEventSubscriptionManager.tryReOpenStartEventSubscription(command.getValue());
