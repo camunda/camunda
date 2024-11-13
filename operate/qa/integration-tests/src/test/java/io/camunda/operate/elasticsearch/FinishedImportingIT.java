@@ -36,8 +36,8 @@ import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class FinishedImportingIT extends OperateZeebeAbstractIT {
-  private static final ElasticsearchExporter exporter = new ElasticsearchExporter();
-  private static final ElasticsearchExporterConfiguration config =
+  private static final ElasticsearchExporter EXPORTER = new ElasticsearchExporter();
+  private static final ElasticsearchExporterConfiguration CONFIG =
       new ElasticsearchExporterConfiguration();
   @Autowired public SchemaManager schemaManager;
   @Autowired protected ZeebeImporter zeebeImporter;
@@ -47,36 +47,36 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
   @Before
   public void beforeEach() {
-    config.index.prefix = operateProperties.getZeebeElasticsearch().getPrefix();
-    config.index.setNumberOfShards(1);
-    config.index.setNumberOfReplicas(0);
-    config.index.createTemplate = true;
-    config.retention.setEnabled(false);
-    config.bulk.size = 1; // force flushing on the first record
+    CONFIG.index.prefix = operateProperties.getZeebeElasticsearch().getPrefix();
+    CONFIG.index.setNumberOfShards(1);
+    CONFIG.index.setNumberOfReplicas(0);
+    CONFIG.index.createTemplate = true;
+    CONFIG.retention.setEnabled(false);
+    CONFIG.bulk.size = 1; // force flushing on the first record
 
     // here enable all indexes that needed during the tests beforehand as they will be created once
     TestSupport.provideValueTypes()
-        .forEach(valueType -> TestSupport.setIndexingForValueType(config.index, valueType, true));
+        .forEach(valueType -> TestSupport.setIndexingForValueType(CONFIG.index, valueType, true));
 
     final var exporterTestContext =
         new ExporterTestContext()
-            .setConfiguration(new ExporterTestConfiguration<>("elastic", config));
-    exporter.configure(exporterTestContext);
-    exporter.open(new ExporterTestController());
+            .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
+    EXPORTER.configure(exporterTestContext);
+    EXPORTER.open(new ExporterTestController());
   }
 
   @Test
-  public void shouldMarkRecordReadersAsCompletedIf8_7_0RecordReceived() throws IOException {
+  public void shouldMarkRecordReadersAsCompletedIf870RecordReceived() throws IOException {
     // given
     final var record = generateProcessInstanceRecord("8.6.0", 1);
-    exporter.export(record);
+    EXPORTER.export(record);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
     zeebeImporter.performOneRoundOfImport();
 
     // when
     final var record2 = generateProcessInstanceRecord("8.7.0", 1);
-    exporter.export(record2);
+    EXPORTER.export(record2);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
     // receives 8.7 record and marks partition as finished importing
@@ -92,11 +92,11 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     final var completedRecordReaders = getRecordReadersCompletionStatus();
     Assertions.assertThat(completedRecordReaders.entrySet().stream())
         .filteredOn(e -> e.getKey().split("-")[1].equals("1"))
-        .allMatch(e -> Boolean.parseBoolean(e.getValue().toString()));
+        .allMatch(Entry::getValue);
 
     Assertions.assertThat(completedRecordReaders.entrySet().stream())
         .filteredOn(e -> e.getKey().split("-")[1].equals("2"))
-        .allMatch(e -> !Boolean.parseBoolean(e.getValue().toString()));
+        .allMatch(e -> !e.getValue());
   }
 
   private <T extends RecordValue> Record<T> generateProcessInstanceRecord(
