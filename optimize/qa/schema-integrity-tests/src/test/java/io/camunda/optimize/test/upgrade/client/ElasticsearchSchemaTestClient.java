@@ -12,7 +12,6 @@ import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMI
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.analysis.TokenChar;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
-import co.elastic.clients.elasticsearch.indices.DeleteIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.GetAliasRequest;
 import co.elastic.clients.elasticsearch.indices.GetMappingRequest;
