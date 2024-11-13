@@ -37,7 +37,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
 
   public ZeebePartitionHealth(
       final int partitionId, final PartitionTransition partitionTransition) {
-    name = "ZeebePartition-" + partitionId;
+    name = "ZeebePartitionHealth-" + partitionId;
     this.partitionTransition = partitionTransition;
   }
 
