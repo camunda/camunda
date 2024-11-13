@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior;
 import io.camunda.zeebe.engine.processing.common.ElementActivationBehavior.ActivatedElementKeys;
@@ -149,6 +150,7 @@ public final class ProcessInstanceModificationModifyProcessor
   private final CatchEventBehavior catchEventBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
   private final VariableBehavior variableBehavior;
+  private final BpmnUserTaskBehavior userTaskBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
 
   public ProcessInstanceModificationModifyProcessor(
@@ -167,6 +169,7 @@ public final class ProcessInstanceModificationModifyProcessor
     catchEventBehavior = bpmnBehaviors.catchEventBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     variableBehavior = bpmnBehaviors.variableBehavior();
+    userTaskBehavior = bpmnBehaviors.userTaskBehavior();
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -723,6 +726,7 @@ public final class ProcessInstanceModificationModifyProcessor
       elementInstancesToTerminate.push(currentElement);
 
       jobBehavior.cancelJob(currentElement);
+      userTaskBehavior.cancelUserTask(currentElement);
       incidentBehavior.resolveIncidents(elementInstanceKey);
       catchEventBehavior.unsubscribeFromEvents(elementInstanceKey);
 
