@@ -71,6 +71,12 @@ public class CamundaLicense {
   private void validateLicense(final String licenseStr) {
     try {
       final LicenseKey licenseKey = getLicenseKey(licenseStr);
+
+      isCommercial = licenseKey.isCommercial();
+      if (licenseKey.getValidUntil() != null) {
+        expiresAt = licenseKey.getValidUntil().toInstant().atOffset(ZoneOffset.UTC);
+      }
+
       licenseKey.validate(); // this method logs the license status
 
       licenseType = LicenseType.get(licenseKey.getProperties().get("licenseType"));
@@ -80,10 +86,6 @@ public class CamundaLicense {
             "Expected a valid licenseType property on the Camunda License, but none were found.");
         isValid = false;
       } else {
-        isCommercial = licenseKey.isCommercial();
-        if (licenseKey.getValidUntil() != null) {
-          expiresAt = licenseKey.getValidUntil().toInstant().atOffset(ZoneOffset.UTC);
-        }
         isValid = true;
       }
 
