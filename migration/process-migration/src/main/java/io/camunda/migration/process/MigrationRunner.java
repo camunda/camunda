@@ -12,14 +12,12 @@ import io.camunda.migration.api.Migrator;
 import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.process.adapter.os.OpensearchAdapter;
-import io.camunda.migration.process.util.XMLUtil;
+import io.camunda.migration.process.util.ProcessModelUtil;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -37,14 +35,14 @@ import org.springframework.stereotype.Component;
 @EnableConfigurationProperties(ProcessMigrationProperties.class)
 public class MigrationRunner implements Migrator {
 
-  private static final String ELASTICSEARCH = "elasticsearch";
   private static final Logger LOG = LoggerFactory.getLogger(MigrationRunner.class);
+
+  private static final String ELASTICSEARCH = "elasticsearch";
   private static final Long INITIAL_BACKOFF = 1000L;
   private static final int MAX_RETRIES = 3;
   final AtomicLong backoff = new AtomicLong(INITIAL_BACKOFF);
   final AtomicInteger retries = new AtomicInteger();
   private final Adapter adapter;
-  private final XMLUtil xmlParser;
 
   public MigrationRunner(final ProcessMigrationProperties properties) {
     adapter =
@@ -52,12 +50,6 @@ public class MigrationRunner implements Migrator {
             ? new ElasticsearchAdapter(
                 properties, new ElasticsearchConnector(properties.getConnect()))
             : new OpensearchAdapter(properties, new OpensearchConnector(properties.getConnect()));
-
-    try {
-      xmlParser = new XMLUtil();
-    } catch (final MigrationException e) {
-      throw new MigrationException("Failed to initialize XML parser", e);
-    }
   }
 
   @Override
@@ -118,16 +110,15 @@ public class MigrationRunner implements Migrator {
   private ProcessEntity map(final ProcessEntity entity) {
     final ProcessEntity processEntity = new ProcessEntity();
     processEntity.setId(entity.getId());
-    processEntity.setVersion(entity.getVersion());
+    processEntity.setBpmnProcessId(entity.getBpmnProcessId());
 
-    final Optional<ProcessEntity> diagramData =
-        xmlParser.extractDiagramData(
-            entity.getBpmnXml().getBytes(StandardCharsets.UTF_8), entity.getBpmnProcessId());
-    diagramData.ifPresent(
-        parsedEntity ->
-            processEntity
-                .setFormId(parsedEntity.getFormId())
-                .setIsPublic(parsedEntity.getIsPublic()));
+    ProcessModelUtil.processStartEvent(entity.getBpmnXml().getBytes(), entity.getBpmnProcessId())
+        .ifPresent(
+            e -> {
+              processEntity.setFormId(ProcessModelUtil.extractFormId(e).orElse(null));
+              processEntity.setIsPublic(ProcessModelUtil.extractIsPublic(e).orElse(false));
+              // processEntity.setFormKey(ProcessModelUtil.extractFormKey(e).orElse(null));
+            });
     return processEntity;
   }
 

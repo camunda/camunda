@@ -63,7 +63,6 @@ public class ElasticsearchMigrationRunnerIT {
     properties.setBatchSize(5);
     final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
     connectConfiguration.setUrl("http://localhost:" + ES_CONTAINER.getMappedPort(9200));
-    System.out.println(ES_CONTAINER.getMappedPort(9200));
     properties.setConnect(connectConfiguration);
     final var connector = new ElasticsearchConnector(properties.getConnect());
     esClient = connector.createClient();
@@ -103,8 +102,8 @@ public class ElasticsearchMigrationRunnerIT {
   public void singleMigrationRound() throws IOException {
     // when
     properties.setBatchSize(1);
-    final ProcessEntity entityToBeMigrated = TestData.processEntityWithForm(1L);
-    final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithForm(2L);
+    final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
+    final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithPublicFormId(2L);
     writeProcessToIndex(entityToBeMigrated);
     writeProcessToIndex(entityNotToBeMigrated);
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
@@ -137,7 +136,7 @@ public class ElasticsearchMigrationRunnerIT {
   @Test
   public void shouldMigrateSuccessfully() throws IOException {
     // when
-    writeProcessToIndex(TestData.processEntityWithForm(1L));
+    writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
     writeProcessToIndex(TestData.processEntityWithoutForm(2L));
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     // then
@@ -162,7 +161,7 @@ public class ElasticsearchMigrationRunnerIT {
   public void migrationShouldCompleteWithMultipleRounds() throws IOException {
     // when
     for (int i = 1; i <= 20; i++) {
-      writeProcessToIndex(TestData.processEntityWithForm((long) i));
+      writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     // then
@@ -183,7 +182,7 @@ public class ElasticsearchMigrationRunnerIT {
   public void migrationShouldPickUpFromStoredId() throws IOException {
     // when
     for (int i = 1; i <= 9; i++) {
-      writeProcessToIndex(TestData.processEntityWithForm((long) i));
+      writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     writeProcessorStepToIndex("5");
@@ -217,8 +216,8 @@ public class ElasticsearchMigrationRunnerIT {
   public void migrationShouldDoNothingWhenFinalStepIsPresent() throws IOException {
     // when
     properties.setBatchSize(1);
-    final ProcessEntity entityToBeMigrated = TestData.processEntityWithForm(1L);
-    final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithForm(2L);
+    final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
+    final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithPublicFormId(2L);
     writeProcessorStepToIndex("2");
     writeProcessToIndex(entityToBeMigrated);
     writeProcessToIndex(entityNotToBeMigrated);

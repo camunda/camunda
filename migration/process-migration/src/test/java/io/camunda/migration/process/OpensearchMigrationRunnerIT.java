@@ -101,7 +101,7 @@ public class OpensearchMigrationRunnerIT {
   @Test
   public void shouldMigrateSuccessfully() throws IOException {
     // when
-    writeProcessToIndex(TestData.processEntityWithForm(1L));
+    writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
     writeProcessToIndex(TestData.processEntityWithoutForm(2L));
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     // then
@@ -126,8 +126,8 @@ public class OpensearchMigrationRunnerIT {
   public void singleMigrationRound() throws IOException {
     // when
     properties.setBatchSize(1);
-    final ProcessEntity entityToBeMigrated = TestData.processEntityWithForm(1L);
-    final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithForm(2L);
+    final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
+    final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithPublicFormId(2L);
     writeProcessToIndex(entityToBeMigrated);
     writeProcessToIndex(entityNotToBeMigrated);
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
@@ -161,7 +161,7 @@ public class OpensearchMigrationRunnerIT {
   public void migrationShouldCompleteWithMultipleRounds() throws IOException {
     // when
     for (int i = 1; i <= 20; i++) {
-      writeProcessToIndex(TestData.processEntityWithForm((long) i));
+      writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     // then
@@ -183,8 +183,8 @@ public class OpensearchMigrationRunnerIT {
     // when
     properties.setBatchSize(1);
     writeProcessorStepToIndex("2");
-    writeProcessToIndex(TestData.processEntityWithForm(1L));
-    writeProcessToIndex(TestData.processEntityWithForm(2L));
+    writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
+    writeProcessToIndex(TestData.processEntityWithPublicFormId(2L));
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     // then
     migrator.run();
@@ -205,7 +205,7 @@ public class OpensearchMigrationRunnerIT {
   public void migrationShouldPickUpFromStoredId() throws IOException {
     // when
     for (int i = 1; i <= 9; i++) {
-      writeProcessToIndex(TestData.processEntityWithForm((long) i));
+      writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     writeProcessorStepToIndex("5");

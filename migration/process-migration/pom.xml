@@ -59,6 +59,10 @@
       <artifactId>camunda-xml-model</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+    </dependency>
+    <dependency>
       <groupId>io.camunda.migration</groupId>
       <artifactId>migration-api</artifactId>
     </dependency>
