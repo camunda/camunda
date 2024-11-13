@@ -92,4 +92,52 @@ public class AddPermissionAuthorizationTest {
         .hasRejectionReason(
             "Expected to find owner with key: '%d', but none was found".formatted(ownerKey));
   }
+
+  @Test
+  public void shouldRejectIfPermissionAlreadyExists() {
+    // given
+    final var ownerKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    engine
+        .authorization()
+        .permission()
+        .withOwnerKey(ownerKey)
+        .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+        .withPermission(PermissionType.CREATE, "foo")
+        .withPermission(PermissionType.DELETE, "bar", "baz")
+        .add()
+        .getValue();
+
+    // when
+    final var rejection =
+        engine
+            .authorization()
+            .permission()
+            .withOwnerKey(ownerKey)
+            .withResourceType(AuthorizationResourceType.DEPLOYMENT)
+            .withPermission(PermissionType.DELETE, "foo", "bar")
+            .expectRejection()
+            .add();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Permission already exists")
+        .hasRejectionType(RejectionType.ALREADY_EXISTS)
+        .hasRejectionReason(
+            "Expected to add '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' already exist. Existing resource ids are: '%s'"
+                .formatted(
+                    PermissionType.DELETE,
+                    AuthorizationResourceType.DEPLOYMENT,
+                    "[bar, foo]",
+                    ownerKey,
+                    "[bar]",
+                    "[bar, baz]"));
+  }
 }

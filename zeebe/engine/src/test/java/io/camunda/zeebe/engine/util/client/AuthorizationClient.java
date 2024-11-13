@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Set;
 import java.util.function.Function;
 
 public final class AuthorizationClient {
@@ -87,9 +88,9 @@ public final class AuthorizationClient {
     }
 
     public AuthorizationPermissionClient withPermission(
-        final PermissionType permissionType, final String resourceId) {
+        final PermissionType permissionType, final String... resourceIds) {
       authorizationCreationRecord.addPermission(
-          new Permission().setPermissionType(permissionType).addResourceId(resourceId));
+          new Permission().setPermissionType(permissionType).addResourceIds(Set.of(resourceIds)));
       return this;
     }
 

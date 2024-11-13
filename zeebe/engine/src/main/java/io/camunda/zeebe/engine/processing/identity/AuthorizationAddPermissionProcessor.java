@@ -49,6 +49,7 @@ public final class AuthorizationAddPermissionProcessor
     permissionsBehavior
         .isAuthorized(command)
         .flatMap(permissionsBehavior::ownerExists)
+        .flatMap(permissionsBehavior::permissionAlreadyExists)
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
