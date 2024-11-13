@@ -143,7 +143,7 @@ public final class DeploymentCreateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<DeploymentRecord> command) {
-    if (deploymentState.getStoredDeploymentRecord(command.getKey()) != null) {
+    if (deploymentState.hasStoredDeploymentRecord(command.getKey())) {
       // we already processed this deployment, so we can ignore it
       distributionBehavior.acknowledgeCommand(command);
       return;

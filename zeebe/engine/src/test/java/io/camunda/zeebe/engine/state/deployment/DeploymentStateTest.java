@@ -116,6 +116,30 @@ public class DeploymentStateTest {
   }
 
   @Test
+  public void shouldReturnFalseWhenCheckingIfNonExistingDeploymentExists() {
+    // given
+
+    // when
+    final var hasStoredDeploymentRecord = deploymentState.hasStoredDeploymentRecord(1);
+
+    // then
+    assertThat(hasStoredDeploymentRecord).isFalse();
+  }
+
+  @Test
+  public void shouldReturnTrueWhenCheckingIfExistingDeploymentExists() {
+    // given
+    final var deployment = createDeployment();
+    deploymentState.storeDeploymentRecord(1, deployment);
+
+    // when
+    final var hasStoredDeploymentRecord = deploymentState.hasStoredDeploymentRecord(1);
+
+    // then
+    assertThat(hasStoredDeploymentRecord).isTrue();
+  }
+
+  @Test
   public void shouldRemoveDeploymentIdempotent() {
     // given
 

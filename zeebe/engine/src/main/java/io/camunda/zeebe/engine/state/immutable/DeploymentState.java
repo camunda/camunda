@@ -30,6 +30,12 @@ public interface DeploymentState {
    */
   boolean hasPendingDeploymentDistribution(long deploymentKey, int partitionId);
 
+  /**
+   * Returns true when there is a deployment record stored for the given deployment key. Similar to
+   * {@link #getStoredDeploymentRecord(long)} but doesn't return the record.
+   */
+  boolean hasStoredDeploymentRecord(long deploymentKey);
+
   DeploymentRecord getStoredDeploymentRecord(long deploymentKey);
 
   void foreachPendingDeploymentDistribution(PendingDeploymentVisitor pendingDeploymentVisitor);
