@@ -60,8 +60,7 @@ public class UpgradeElasticsearchSchemaIT
         "Expected aliases size: {}, keys: {}", expectedAliases.size(), expectedAliases.keySet());
     final Map<String, IndexAliases> newAliases = newDatabaseSchemaClient.getAliases();
     LOG.info("Actual aliases size: {}, keys: {}", newAliases.size(), newAliases.keySet());
-    assertThat(newAliases)
-        .isEqualToComparingFieldByFieldRecursively(expectedAliases);
+    assertThat(newAliases).isEqualToComparingFieldByFieldRecursively(expectedAliases);
   }
 
   @Override
