@@ -77,6 +77,10 @@ public final class DecisionInstanceFilterTransformer
     return stringTerms(ID, ids);
   }
 
+  private SearchQuery getIdsQuery(final List<String> ids) {
+    return stringTerms("id", ids);
+  }
+
   private SearchQuery getStatesQuery(final List<DecisionInstanceState> states) {
     return stringTerms("state", states != null ? states.stream().map(Enum::name).toList() : null);
   }
