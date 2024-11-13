@@ -32,21 +32,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import javax.annotation.WillCloseWhenClosed;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
 public final class BackgroundTaskManager implements CloseableSilently {
-
   // TODO: consider making this configurable
   private static final int MAX_BACKGROUND_THREADS = 3;
+
   private final int partitionId;
   private final ArchiverRepository repository;
   private final Logger logger;
-  private final ScheduledExecutorService executor;
+  private final ScheduledThreadPoolExecutor executor;
   private final List<BackgroundTask> tasks;
   private final ArchiverConfiguration config;
 
@@ -57,7 +57,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
       final int partitionId,
       final @WillCloseWhenClosed ArchiverRepository repository,
       final Logger logger,
-      final @WillCloseWhenClosed ScheduledExecutorService executor,
+      final @WillCloseWhenClosed ScheduledThreadPoolExecutor executor,
       final List<BackgroundTask> tasks,
       final ArchiverConfiguration config) {
     this.partitionId = partitionId;
@@ -97,6 +97,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
         unsubmittedTasks,
         submittedTasks,
         tasks.size());
+    executor.setCorePoolSize(Math.min(tasks.size(), MAX_BACKGROUND_THREADS));
     for (; submittedTasks < tasks.size(); submittedTasks++) {
       final var task = tasks.get(submittedTasks);
       executor.submit(
@@ -127,7 +128,6 @@ public final class BackgroundTaskManager implements CloseableSilently {
       tasks.add(createBatchOperationJob(metrics, logger, resourceProvider, repository, executor));
     }
 
-    executor.setCorePoolSize(Math.min(tasks.size(), MAX_BACKGROUND_THREADS));
     return new BackgroundTaskManager(
         partitionId, repository, logger, executor, tasks, config.getArchiver());
   }
@@ -179,6 +179,8 @@ public final class BackgroundTaskManager implements CloseableSilently {
     executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     executor.setRemoveOnCancelPolicy(true);
+    executor.allowCoreThreadTimeOut(true);
+    executor.setKeepAliveTime(1, TimeUnit.MINUTES);
 
     return executor;
   }
