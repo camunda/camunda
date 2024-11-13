@@ -45,12 +45,15 @@ jobs:
           secret/data/products/optimize/ci/camunda-optimize AUTH0_USEREMAIL;
           secret/data/products/optimize/ci/camunda-optimize AUTH0_USERPASSWORD;
     - name: Setup Maven
-      uses: ./.github/actions/setup-maven
+      uses: ./.github/actions/setup-build
       with:
-          maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
-          java-version: 21
-          distribution: zulu
+        java-distribution: zulu
+        maven-cache-key-modifier: optimize-tests
+        maven-version: 3.8.6
+        time-zone: Europe/Berlin
+        vault-address: ${{ secrets.VAULT_ADDR }}
+        vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+        vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
     - name: Setup Chrome
       shell: bash
       run: |
@@ -73,18 +76,12 @@ jobs:
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
         ELASTIC_JVM_MEMORY: 1
         ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
-    - name: Setup NodeJS
-      uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4
+    - name: Build frontend
+      uses: ./.github/actions/build-frontend
       with:
-        node-version: ${{ steps.pom-info.outputs.x_version_node }}
-    - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-      with:
-        directory: optimize/client
-    - name: Install node dependencies
-      working-directory: ./optimize/client
-      run: yarn install
+        directory: ./optimize/client
     - name: 'build backend & frontend'
-      run: ./mvnw clean install -DskipTests -Dskip.docker -pl optimize/backend -am
+      run: ./mvnw clean install -DskipTests -Dskip.docker -pl optimize/backend -am -PskipFrontendBuild
     - name: 'start backend'
       working-directory: ./optimize/client
       run: |

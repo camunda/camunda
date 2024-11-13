@@ -45,11 +45,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
-
       - name: "Parse pom.xml for versions"
         id: "pom_info"
         uses: YunaBraska/java-info-action@main
@@ -57,10 +52,15 @@ jobs:
           work-dir: ./optimize
 
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+        uses: ./.github/actions/setup-build
         with:
+          harbor: true
           maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - name: Install firefox deps
         run: |
@@ -70,32 +70,10 @@ jobs:
       - name: Install firefox
         uses: browser-actions/setup-firefox@v1
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-
-      - name: Setup yarn
-        run: npm install -g yarn
-
-      - name: Setup NodeJS
-        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4
-        with:
-          node-version: ${{ steps.pom_info.outputs.x_version_node }}
-
-      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
-        with:
-          directory: optimize/client
-
-      - name: Install node dependencies
-        working-directory: ./optimize/client
-        shell: bash
-        run: yarn
-
       - name: Build frontend
-        working-directory: ./optimize/client
-        run: yarn build
-        shell: bash
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
 
       - name: Start frontend
         working-directory: ./optimize/client

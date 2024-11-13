@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -118,6 +119,7 @@ public final class EventAppliers implements EventApplier {
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
     registerRoleAppliers(state);
+    registerGroupAppliers(state);
     registerScalingAppliers(state);
     registerTenantAppliers(state);
     registerMappingAppliers(state);
@@ -400,6 +402,7 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.UPDATING, new UserTaskUpdatingApplier(state));
     register(UserTaskIntent.UPDATED, new UserTaskUpdatedApplier(state));
     register(UserTaskIntent.MIGRATED, new UserTaskMigratedApplier(state));
+    register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
   }
 
   private void registerCompensationSubscriptionApplier(
@@ -419,6 +422,10 @@ public final class EventAppliers implements EventApplier {
     register(
         CompensationSubscriptionIntent.DELETED,
         new CompensationSubscriptionDeletedApplier(
+            processingState.getCompensationSubscriptionState()));
+    register(
+        CompensationSubscriptionIntent.MIGRATED,
+        new CompensationSubscriptionMigratedApplier(
             processingState.getCompensationSubscriptionState()));
   }
 
@@ -449,6 +456,8 @@ public final class EventAppliers implements EventApplier {
 
   private void registerAuthorizationAppliers(final MutableProcessingState state) {
     register(AuthorizationIntent.PERMISSION_ADDED, new AuthorizationPermissionAddedApplier(state));
+    register(
+        AuthorizationIntent.PERMISSION_REMOVED, new AuthorizationPermissionRemovedApplier(state));
   }
 
   private void registerEscalationAppliers() {
@@ -479,6 +488,16 @@ public final class EventAppliers implements EventApplier {
             state.getRoleState(), state.getUserState(), state.getAuthorizationState()));
   }
 
+  private void registerGroupAppliers(final MutableProcessingState state) {
+    register(
+        GroupIntent.CREATED,
+        new GroupCreatedApplier(state.getGroupState(), state.getAuthorizationState()));
+    register(GroupIntent.UPDATED, new GroupUpdatedApplier(state.getGroupState()));
+    register(GroupIntent.ENTITY_ADDED, new GroupEntityAddedApplier(state));
+    register(GroupIntent.ENTITY_REMOVED, new GroupEntityRemovedApplier(state));
+    register(GroupIntent.DELETED, new GroupDeletedApplier(state));
+  }
+
   private void registerScalingAppliers(final MutableProcessingState state) {
     register(ScaleIntent.SCALING_UP, new ScalingUpApplier(state.getRoutingState()));
     register(ScaleIntent.SCALED_UP, new ScaledUpApplier(state.getRoutingState()));
@@ -490,9 +509,7 @@ public final class EventAppliers implements EventApplier {
         new TenantCreatedApplier(state.getTenantState(), state.getAuthorizationState()));
     register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
     register(TenantIntent.ENTITY_ADDED, new TenantEntityAddedApplier(state));
-    register(
-        TenantIntent.ENTITY_REMOVED,
-        new TenantEntityRemovedApplier(state.getTenantState(), state.getUserState()));
+    register(TenantIntent.ENTITY_REMOVED, new TenantEntityRemovedApplier(state));
     register(
         TenantIntent.DELETED,
         new TenantDeletedApplier(
@@ -503,6 +520,7 @@ public final class EventAppliers implements EventApplier {
     register(
         MappingIntent.CREATED,
         new MappingCreatedApplier(state.getMappingState(), state.getAuthorizationState()));
+    register(MappingIntent.DELETED, new MappingDeletedApplier(state));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

@@ -20,12 +20,19 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.DecisionDefinitionServices;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -66,7 +73,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
           .build();
 
   static final String DECISION_DEFINITIONS_SEARCH_URL = "/v2/decision-definitions/search";
-
+  static final String DECISION_DEFINITIONS_GET_URL = "/v2/decision-definitions/%d";
   static final String DECISION_DEFINITIONS_GET_XML_URL = "/v2/decision-definitions/%d/xml";
 
   @MockBean DecisionDefinitionServices decisionDefinitionServices;
@@ -484,5 +491,46 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()
         .json(expectedResponse);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getDecisionDecisionTestCasesParameters")
+  public void shouldReturn403ForForbiddenDecisionDefinition(
+      final Pair<String, BiFunction<DecisionDefinitionServices, Long, ?>> testParameters) {
+    // given
+    final var url = testParameters.getLeft();
+    final var service = testParameters.getRight();
+    final long decisionDefinitionKey = 1L;
+    when(service.apply(decisionDefinitionServices, decisionDefinitionKey))
+        .thenThrow(new ForbiddenException(Authorization.of(a -> a.decisionDefinition().read())));
+    // when / then
+    webClient
+        .get()
+        .uri(url.formatted(decisionDefinitionKey))
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectBody()
+        .json(
+            """
+                    {
+                      "type": "about:blank",
+                      "status": 403,
+                      "title": "io.camunda.service.exception.ForbiddenException",
+                      "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_DEFINITION'"
+                    }
+                """);
+
+    // Verify that the service was called with the invalid key
+    service.apply(verify(decisionDefinitionServices), decisionDefinitionKey);
+  }
+
+  private static Stream<Pair<String, BiFunction<DecisionDefinitionServices, Long, ?>>>
+      getDecisionDecisionTestCasesParameters() {
+    return Stream.of(
+        Pair.of(DECISION_DEFINITIONS_GET_URL, DecisionDefinitionServices::getByKey),
+        Pair.of(
+            DECISION_DEFINITIONS_GET_XML_URL,
+            DecisionDefinitionServices::getDecisionDefinitionXml));
   }
 }

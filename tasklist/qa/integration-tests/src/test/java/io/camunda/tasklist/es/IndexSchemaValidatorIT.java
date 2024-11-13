@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.es;
 
+import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatPrefixAndComponent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
@@ -178,6 +179,6 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
   }
 
   private String getFullIndexName() {
-    return schemaManager.getIndexPrefix() + "-" + INDEX_NAME;
+    return formatPrefixAndComponent(schemaManager.getIndexPrefix()) + "-" + INDEX_NAME;
   }
 }

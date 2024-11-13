@@ -26,44 +26,48 @@ public class JobCommandPreconditionChecker {
   private final List<JobState.State> validStates;
   private final JobState jobState;
   private final String intent;
+  private final List<JobCommandCheck> customChecks;
 
   public JobCommandPreconditionChecker(
       final JobState jobState, final String intent, final List<State> validStates) {
+    this(jobState, intent, validStates, List.of());
+  }
+
+  public JobCommandPreconditionChecker(
+      final JobState jobState,
+      final String intent,
+      final List<State> validStates,
+      final List<JobCommandCheck> customChecks) {
     this.jobState = jobState;
     this.intent = intent;
     this.validStates = validStates;
+    this.customChecks = customChecks;
   }
 
   protected Either<Rejection, JobRecord> check(
       final State state, final TypedRecord<JobRecord> command) {
+    final long jobKey = command.getKey();
+    final var storedJob = jobState.getJob(jobKey, command.getAuthorizations());
 
-    if (validStates.contains(state)) {
-      return getJob(command);
+    if (state == State.NOT_FOUND || storedJob == null) {
+      return Either.left(
+          new Rejection(RejectionType.NOT_FOUND, NO_JOB_FOUND_MESSAGE.formatted(intent, jobKey)));
     }
 
-    if (state == State.NOT_FOUND) {
+    if (!validStates.contains(state)) {
       return Either.left(
           new Rejection(
-              RejectionType.NOT_FOUND,
-              String.format(NO_JOB_FOUND_MESSAGE, intent, command.getKey())));
+              RejectionType.INVALID_STATE,
+              INVALID_JOB_STATE_MESSAGE.formatted(intent, jobKey, state)));
     }
 
-    return Either.left(
-        new Rejection(
-            RejectionType.INVALID_STATE,
-            String.format(INVALID_JOB_STATE_MESSAGE, intent, command.getKey(), state)));
-  }
-
-  private Either<Rejection, JobRecord> getJob(final TypedRecord<JobRecord> command) {
-    final var job = jobState.getJob(command.getKey(), command.getAuthorizations());
-
-    if (job == null) {
-      return Either.left(
-          new Rejection(
-              RejectionType.NOT_FOUND,
-              String.format(NO_JOB_FOUND_MESSAGE, intent, command.getKey())));
-    }
-
-    return Either.right(job);
+    // Evaluate custom checks on the job `command` and the `job` retrieved from `jobState`.
+    // Return the first `failure` encountered, or if all checks pass, return the `job` from
+    // `jobState` for further processing.
+    return customChecks.stream()
+        .map(check -> check.check(command, storedJob))
+        .filter(Either::isLeft)
+        .findFirst()
+        .orElse(Either.right(storedJob));
   }
 }

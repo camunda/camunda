@@ -8,8 +8,8 @@
 package io.camunda.optimize.service.db.os.report.service;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.gteLte;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.gteLte;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.report.interpreter.groupby.AbstractGroupByVariableInterpreterOS.FILTERED_FLOW_NODE_AGGREGATION;
 import static java.util.stream.Collectors.toMap;
 

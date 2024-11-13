@@ -8,5 +8,17 @@
 package io.camunda.zeebe.engine.state.mutable;
 
 import io.camunda.zeebe.engine.state.immutable.GroupState;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 
-public interface MutableGroupState extends GroupState {}
+public interface MutableGroupState extends GroupState {
+
+  void create(final long groupKey, final GroupRecord group);
+
+  void update(final long groupKey, final GroupRecord group);
+
+  void addEntity(final long groupKey, final GroupRecord group);
+
+  void removeEntity(final long groupKey, final long entityKey);
+
+  void delete(final long groupKey);
+}

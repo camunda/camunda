@@ -33,7 +33,7 @@ import io.camunda.zeebe.client.protocol.rest.DocumentReference;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -165,7 +165,7 @@ public class CreateDocumentCommandImpl
 
   @Override
   public CreateDocumentCommandStep2 timeToLive(final Duration timeToLive) {
-    final ZonedDateTime expiresAt = ZonedDateTime.now().plus(timeToLive);
+    final OffsetDateTime expiresAt = OffsetDateTime.now().plus(timeToLive);
     metadata.setExpiresAt(expiresAt.toString());
     return this;
   }

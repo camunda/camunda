@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.api.response;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 @ExperimentalApi("https://github.com/camunda/issues/issues/841")
@@ -30,7 +30,7 @@ public interface DocumentMetadata {
   /**
    * @return the document expiration date, if present in the metadata
    */
-  ZonedDateTime getExpiresAt();
+  OffsetDateTime getExpiresAt();
 
   /**
    * @return the document size, if present in the metadata

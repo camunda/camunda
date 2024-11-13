@@ -34,6 +34,7 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 
 public abstract class AbstractProcessDistributedByModelElementInterpreterOS
     extends AbstractProcessDistributedByInterpreterOS {
+
   private static final String MODEL_ELEMENT_ID_TERMS_AGGREGATION = "modelElement";
 
   protected abstract ConfigurationService getConfigurationService();
@@ -49,9 +50,7 @@ public abstract class AbstractProcessDistributedByModelElementInterpreterOS
     final TermsAggregation termsAggregation =
         new TermsAggregation.Builder()
             .size(
-                getConfigurationService()
-                    .getElasticSearchConfiguration()
-                    .getAggregationBucketLimit())
+                getConfigurationService().getOpenSearchConfiguration().getAggregationBucketLimit())
             .order(Map.of("_key", SortOrder.Asc))
             .field(getModelElementIdPath())
             .build();

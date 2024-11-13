@@ -23,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -66,7 +67,17 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertIncidentCreated() {
-    assertThat(RecordingExporter.incidentRecords(IncidentIntent.CREATED).exists()).isTrue();
+    assertIncidentCreated(ignore -> {});
+  }
+
+  public static long assertIncidentCreated(final Consumer<IncidentRecordValue> requirement) {
+    final var incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).findFirst();
+    assertThat(incidentRecord)
+        .describedAs("Expect incident to be created")
+        .hasValueSatisfying(incident -> requirement.accept(incident.getValue()));
+
+    return incidentRecord.map(Record::getKey).orElseThrow();
   }
 
   public static void assertProcessInstanceCompleted(

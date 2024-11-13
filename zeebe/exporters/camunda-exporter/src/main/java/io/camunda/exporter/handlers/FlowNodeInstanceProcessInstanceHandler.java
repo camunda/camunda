@@ -20,6 +20,7 @@ import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Instant;
@@ -33,9 +34,8 @@ import java.util.Set;
 public class FlowNodeInstanceProcessInstanceHandler
     implements ExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
 
-  private static final Set<String> AI_FINISH_STATES =
-      Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
-  private static final Set<String> AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
+  private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
+  private static final Set<Intent> AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
 
   private final String indexName;
 
@@ -56,11 +56,11 @@ public class FlowNodeInstanceProcessInstanceHandler
   @Override
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
     final var processInstanceRecordValue = record.getValue();
-    final var intent = record.getIntent().name();
+    final var intent = record.getIntent();
     return !isOfType(processInstanceRecordValue, BpmnElementType.PROCESS)
         && (AI_START_STATES.contains(intent)
             || AI_FINISH_STATES.contains(intent)
-            || ELEMENT_MIGRATED.name().equals(intent));
+            || ELEMENT_MIGRATED.equals(intent));
   }
 
   @Override
@@ -77,7 +77,7 @@ public class FlowNodeInstanceProcessInstanceHandler
   public void updateEntity(
       final Record<ProcessInstanceRecordValue> record, final FlowNodeInstanceEntity entity) {
     final var recordValue = record.getValue();
-    final var intentStr = record.getIntent().name();
+    final var intent = record.getIntent();
 
     entity.setKey(record.getKey());
     entity.setId(String.valueOf(record.getKey()));
@@ -96,8 +96,8 @@ public class FlowNodeInstanceProcessInstanceHandler
 
     final OffsetDateTime recordTime =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
-    if (AI_FINISH_STATES.contains(intentStr)) {
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
+    if (AI_FINISH_STATES.contains(intent)) {
+      if (intent.equals(ELEMENT_TERMINATED)) {
         entity.setState(FlowNodeState.TERMINATED);
       } else {
         entity.setState(FlowNodeState.COMPLETED);
@@ -105,7 +105,7 @@ public class FlowNodeInstanceProcessInstanceHandler
       entity.setEndDate(recordTime);
     } else {
       entity.setState(FlowNodeState.ACTIVE);
-      if (AI_START_STATES.contains(intentStr)) {
+      if (AI_START_STATES.contains(intent)) {
         entity.setStartDate(recordTime);
         entity.setPosition(record.getPosition());
       }

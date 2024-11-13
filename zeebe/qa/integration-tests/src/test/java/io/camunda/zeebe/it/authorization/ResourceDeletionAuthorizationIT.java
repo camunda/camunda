@@ -24,42 +24,23 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
-import java.time.Duration;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.UUID;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
 public class ResourceDeletionAuthorizationIT {
 
-  private static final DockerImageName ELASTIC_IMAGE =
-      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-          .withTag(RestClient.class.getPackage().getImplementationVersion());
-
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      new ElasticsearchContainer(ELASTIC_IMAGE)
-          // use JVM option files to avoid overwriting default options set by the ES container class
-          .withClasspathResourceMapping(
-              "elasticsearch-fast-startup.options",
-              "/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-fast-startup.options",
-              BindMode.READ_ONLY)
-          // can be slow in CI
-          .withStartupTimeout(Duration.ofMinutes(5))
-          .withEnv("action.auto_create_index", "true")
-          .withEnv("xpack.security.enabled", "false")
-          .withEnv("xpack.watcher.enabled", "false")
-          .withEnv("xpack.ml.enabled", "false")
-          .withEnv("action.destructive_requires_name", "false");
+      TestSearchContainers.createDefeaultElasticsearchContainer();
 
   @TestZeebe(autoStart = false)
   private static final TestStandaloneBroker BROKER =
@@ -122,7 +103,8 @@ public class ResourceDeletionAuthorizationIT {
   @Test
   void shouldBeUnAuthorizedToDeleteProcessDefinitionWithPermissions() {
     // given
-    final var processDefinitionKey = deployProcessDefinition(Strings.newRandomValidBpmnId());
+    final var processId = Strings.newRandomValidBpmnId();
+    final var processDefinitionKey = deployProcessDefinition(processId);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
@@ -137,7 +119,8 @@ public class ResourceDeletionAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'DELETE_PROCESS' on resource 'DEPLOYMENT'");
+              "Unauthorized to perform operation 'DELETE_PROCESS' on resource 'DEPLOYMENT' with id '%s'",
+              processId);
     }
   }
 
@@ -180,6 +163,7 @@ public class ResourceDeletionAuthorizationIT {
   @Test
   void shouldBeUnAuthorizedToDeleteDrdWithPermissions() {
     // given
+    final var drdId = "force_users";
     final var drdKey = deployDrd();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
@@ -195,7 +179,8 @@ public class ResourceDeletionAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'DELETE_DRD' on resource 'DEPLOYMENT'");
+              "Unauthorized to perform operation 'DELETE_DRD' on resource 'DEPLOYMENT' with id '%s'",
+              drdId);
     }
   }
 
@@ -236,6 +221,7 @@ public class ResourceDeletionAuthorizationIT {
   @Test
   void shouldBeUnAuthorizedToDeleteFormWithPermissions() {
     // given
+    final var formId = "Form_0w7r08e";
     final var formKey = deployForm();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
@@ -251,7 +237,8 @@ public class ResourceDeletionAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'DELETE_FORM' on resource 'DEPLOYMENT'");
+              "Unauthorized to perform operation 'DELETE_FORM' on resource 'DEPLOYMENT' with id '%s'",
+              formId);
     }
   }
 

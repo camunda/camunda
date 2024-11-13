@@ -9,10 +9,11 @@ package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
+import static java.util.Collections.emptyList;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public record VariableFilter(
-    Map<String, List<Operation<Object>>> variableOperations,
+    Map<String, List<UntypedOperation>> variableOperations,
     List<Operation<Long>> scopeKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<Long>> variableKeyOperations,
@@ -29,7 +30,7 @@ public record VariableFilter(
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
-    private Map<String, List<Operation<Object>>> variableOperations;
+    private Map<String, List<UntypedOperation>> variableOperations;
     private List<Operation<Long>> scopeKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<Long>> variableKeyOperations;
@@ -37,10 +38,15 @@ public record VariableFilter(
     private Boolean isTruncated;
 
     public Builder variableOperations(final String name, final List<Operation<Object>> operations) {
+      return variableUntypedOperations(
+          name,
+          ofNullable(operations).orElse(emptyList()).stream().map(UntypedOperation::of).toList());
+    }
+
+    private Builder variableUntypedOperations(
+        final String name, final List<UntypedOperation> operations) {
       variableOperations = Objects.requireNonNullElse(variableOperations, new HashMap<>());
-      final var values = variableOperations.getOrDefault(name, new ArrayList<>());
-      values.addAll(operations);
-      variableOperations.put(name, values);
+      variableOperations.compute(name, (k, list) -> addValuesToList(list, operations));
       return this;
     }
 
@@ -117,6 +123,15 @@ public record VariableFilter(
     public Builder isTruncated(final Boolean value) {
       isTruncated = value;
       return this;
+    }
+
+    public Builder copyFrom(final VariableFilter sourceFilter) {
+      sourceFilter.variableOperations().forEach(this::variableUntypedOperations);
+      return scopeKeyOperations(sourceFilter.scopeKeyOperations())
+          .processInstanceKeyOperations(sourceFilter.processInstanceKeyOperations())
+          .variableKeyOperations(sourceFilter.variableKeyOperations())
+          .tenantIds(sourceFilter.tenantIds())
+          .isTruncated(sourceFilter.isTruncated());
     }
 
     @Override

@@ -7,26 +7,27 @@
  */
 package io.camunda.exporter.cache;
 
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import java.util.HashMap;
 import java.util.Optional;
 
-public class TestProcessCache implements ProcessCache {
+public class TestProcessCache implements ExporterEntityCache<Long, CachedProcessEntity> {
 
   private final HashMap<Long, CachedProcessEntity> cache = new HashMap<>();
 
   @Override
-  public Optional<CachedProcessEntity> get(final long processDefinitionKey) {
-    return Optional.ofNullable(cache.get(processDefinitionKey));
+  public Optional<CachedProcessEntity> get(final Long entityKey) {
+    return Optional.ofNullable(cache.get(entityKey));
   }
 
   @Override
-  public void put(final long processDefinitionKey, final CachedProcessEntity processEntity) {
-    cache.put(processDefinitionKey, processEntity);
+  public void put(final Long entityKey, final CachedProcessEntity processEntity) {
+    cache.put(entityKey, processEntity);
   }
 
   @Override
-  public void remove(final long processDefinitionKey) {
-    cache.remove(processDefinitionKey);
+  public void remove(final Long entityKey) {
+    cache.remove(entityKey);
   }
 
   @Override

@@ -45,8 +45,18 @@ public final class OptimizeElasticsearchClientFactory {
     final ElasticsearchClient build =
         ElasticsearchClientBuilder.build(configurationService, OPTIMIZE_MAPPER, pluginRepository);
 
-    waitForElasticsearch(build, backoffCalculator, transportOptionsProvider.getTransportOptions());
-    LOG.info("Elasticsearch client has successfully been started");
+    final boolean clusterTaskCheckingEnabled =
+        configurationService
+            .getElasticSearchConfiguration()
+            .getConnection()
+            .isClusterTaskCheckingEnabled();
+    if (clusterTaskCheckingEnabled) {
+      waitForElasticsearch(
+          build, backoffCalculator, transportOptionsProvider.getTransportOptions());
+      LOG.info("Elasticsearch client has successfully been started");
+    } else {
+      LOG.info("Cluster task checking disabled, not waiting for Elasticsearch to start");
+    }
 
     final OptimizeElasticsearchClient prefixedClient =
         new OptimizeElasticsearchClient(
@@ -57,7 +67,15 @@ public final class OptimizeElasticsearchClientFactory {
             transportOptionsProvider);
 
     elasticSearchSchemaManager.validateDatabaseMetadata(prefixedClient);
-    elasticSearchSchemaManager.initializeSchema(prefixedClient);
+
+    final boolean initSchemaEnabled =
+        configurationService.getElasticSearchConfiguration().getConnection().isInitSchemaEnabled();
+    if (initSchemaEnabled) {
+      elasticSearchSchemaManager.initializeSchema(prefixedClient);
+    } else {
+      LOG.info("Schema initialization disabled, skipping");
+    }
+
     return prefixedClient;
   }
 

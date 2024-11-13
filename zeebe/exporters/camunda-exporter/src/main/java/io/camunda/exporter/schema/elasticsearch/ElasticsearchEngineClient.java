@@ -83,11 +83,25 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       client.indices().putIndexTemplate(request);
       LOG.debug("Template [{}] was successfully created", templateDescriptor.getTemplateName());
-    } catch (final IOException | ElasticsearchException e) {
+    } catch (final IOException e) {
       final var errMsg =
           String.format("Template [%s] was NOT created", templateDescriptor.getTemplateName());
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
+    } catch (final ElasticsearchException e) {
+      // Creation should only occur once during initialisation but multiple partitions with
+      // their own exporter will create race conditions where multiple exporters try to
+      // create the same template
+      final var errorReason = e.error().reason();
+      if (errorReason != null
+          && errorReason.equals(
+              "index template [" + templateDescriptor.getTemplateName() + "] already exists")) {
+        LOG.debug(errorReason);
+        return;
+      }
+
+      LOG.error(errorReason, e);
+      throw new ElasticsearchExporterException(errorReason, e);
     }
   }
 
@@ -196,7 +210,12 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
   private Map<String, TypeMapping> getCurrentMappings(
       final MappingSource mappingSource, final String namePattern) throws IOException {
     if (mappingSource == MappingSource.INDEX) {
-      return client.indices().getMapping(req -> req.index(namePattern)).result().entrySet().stream()
+      return client
+          .indices()
+          .getMapping(req -> req.index(namePattern).ignoreUnavailable(true))
+          .result()
+          .entrySet()
+          .stream()
           .collect(Collectors.toMap(Entry::getKey, e -> e.getValue().mappings()));
     } else if (mappingSource == MappingSource.INDEX_TEMPLATE) {
       return client

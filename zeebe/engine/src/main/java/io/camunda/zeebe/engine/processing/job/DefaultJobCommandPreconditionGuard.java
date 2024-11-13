@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -27,9 +27,8 @@ import java.util.List;
  * Default implementation to process JobCommands to reduce duplication in CommandProcessor
  * implementations.
  */
-final class DefaultJobCommandPreconditionGuard {
+public final class DefaultJobCommandPreconditionGuard {
 
-  private final String intent;
   private final JobState state;
   private final JobAcceptFunction acceptCommand;
   private final JobCommandPreconditionChecker preconditionChecker;
@@ -40,12 +39,20 @@ final class DefaultJobCommandPreconditionGuard {
       final JobState state,
       final JobAcceptFunction acceptCommand,
       final AuthorizationCheckBehavior authCheckBehavior) {
-    this.intent = intent;
+    this(intent, state, acceptCommand, authCheckBehavior, List.of());
+  }
+
+  public DefaultJobCommandPreconditionGuard(
+      final String intent,
+      final JobState state,
+      final JobAcceptFunction acceptCommand,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final List<JobCommandCheck> customChecks) {
     this.state = state;
     this.acceptCommand = acceptCommand;
     preconditionChecker =
         new JobCommandPreconditionChecker(
-            state, intent, List.of(State.ACTIVATABLE, State.ACTIVATED));
+            state, intent, List.of(State.ACTIVATABLE, State.ACTIVATED), customChecks);
     this.authCheckBehavior = authCheckBehavior;
   }
 
@@ -78,7 +85,9 @@ final class DefaultJobCommandPreconditionGuard {
     return Either.left(
         new Rejection(
             RejectionType.UNAUTHORIZED,
-            UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                request.getPermissionType(), request.getResourceType())));
+            UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                request.getPermissionType(),
+                request.getResourceType(),
+                "BPMN process id '%s'".formatted(job.getBpmnProcessId()))));
   }
 }

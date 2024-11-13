@@ -19,6 +19,8 @@ import io.camunda.zeebe.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.zeebe.client.impl.util.FilterUtil;
+import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
@@ -88,6 +90,13 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionDefinitionKey(final long decisionDefinitionKey) {
+    filter.setDecisionDefinitionKey(FilterUtil.basicLongFilterProperty(decisionDefinitionKey));
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionDefinitionKey(
+      final BasicLongFilterProperty decisionDefinitionKey) {
     filter.setDecisionDefinitionKey(decisionDefinitionKey);
     return this;
   }

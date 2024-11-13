@@ -112,6 +112,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-services</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <!-- rest api dependencies -->
     <dependency>
@@ -157,6 +162,11 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
     </dependency>
 
     <dependency>
@@ -394,6 +404,7 @@
               <generateModelTests>false</generateModelTests>
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
+              <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
               <configOptions>
                 <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>

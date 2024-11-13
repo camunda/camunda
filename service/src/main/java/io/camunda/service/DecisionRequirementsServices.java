@@ -8,15 +8,16 @@
 package io.camunda.service;
 
 import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
+import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionRequirementsEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
@@ -51,22 +52,40 @@ public final class DecisionRequirementsServices
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.decisionRequirementsDefinition().read())))
-        .searchDecisionRequirements(query);
+        .searchDecisionRequirements(
+            decisionRequirementsSearchQuery(
+                q ->
+                    q.filter(query.filter())
+                        .sort(query.sort())
+                        .page(query.page())
+                        .resultConfig(
+                            ofNullable(query.resultConfig())
+                                .orElseGet(this::defaultSearchResultConfig))));
+  }
+
+  /**
+   * Default search result configuration excluding XML field to reduce the size of the response
+   * fetched from the database.
+   */
+  private DecisionRequirementsQueryResultConfig defaultSearchResultConfig() {
+    return DecisionRequirementsQueryResultConfig.of(r -> r);
   }
 
   public DecisionRequirementsEntity getByKey(final Long key) {
-    final SearchQueryResult<DecisionRequirementsEntity> result =
-        search(
-            decisionRequirementsSearchQuery().filter(f -> f.decisionRequirementsKeys(key)).build());
-    if (result.total() < 1) {
-      throw new NotFoundException(
-          String.format("Decision requirements with decisionRequirementsKey=%d not found", key));
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          String.format("Found decision requirements with key %d more than once", key));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
+    final var result =
+        decisionRequirementSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchDecisionRequirements(
+                decisionRequirementsSearchQuery(
+                    q -> q.filter(f -> f.decisionRequirementsKeys(key))));
+    final var decisionRequirementsEntity =
+        getSingleResultOrThrow(result, key, "Decision requirements");
+    final var authorization = Authorization.of(a -> a.decisionRequirementsDefinition().read());
+    if (!securityContextProvider.isAuthorized(
+        decisionRequirementsEntity.decisionRequirementsId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
     }
+    return decisionRequirementsEntity;
   }
 
   public SearchQueryResult<DecisionRequirementsEntity> search(
@@ -76,18 +95,6 @@ public final class DecisionRequirementsServices
   }
 
   public String getDecisionRequirementsXml(final Long decisionRequirementsKey) {
-    final var decisionRequirementsQuery =
-        decisionRequirementsSearchQuery(
-            q ->
-                q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
-                    .resultConfig(r -> r.xml().include()));
-    return search(decisionRequirementsQuery).items().stream()
-        .findFirst()
-        .map(DecisionRequirementsEntity::xml)
-        .orElseThrow(
-            () ->
-                new NotFoundException(
-                    "Decision Requirements with decisionRequirementsKey=%d cannot be found"
-                        .formatted(decisionRequirementsKey)));
+    return getByKey(decisionRequirementsKey).xml();
   }
 }

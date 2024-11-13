@@ -20,13 +20,13 @@ import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 public class DbAuthorizationState implements AuthorizationState, MutableAuthorizationState {
-  private final PersistedAuthorization persistedAuthorization = new PersistedAuthorization();
 
   private final ResourceIdentifiers resourceIdentifiers = new ResourceIdentifiers();
 
@@ -91,7 +91,7 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
       final long ownerKey,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
-      final List<String> resourceIds) {
+      final Set<String> resourceIds) {
     this.ownerKey.wrapLong(ownerKey);
     this.resourceType.wrapString(resourceType.name());
     this.permissionType.wrapString(permissionType.name());
@@ -115,6 +115,37 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
   }
 
   @Override
+  public void removePermission(
+      final long ownerKey,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType,
+      final Set<String> resourceIds) {
+    this.ownerKey.wrapLong(ownerKey);
+    this.resourceType.wrapString(resourceType.name());
+    this.permissionType.wrapString(permissionType.name());
+
+    final var identifiers =
+        resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.get(
+            ownerKeyAndResourceTypeAndPermissionCompositeKey);
+
+    resourceIds.forEach(
+        resourceId -> {
+          this.resourceId.wrapString(resourceId);
+          authorizationKeyByResourceIdColumnFamily.deleteExisting(
+              resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey);
+        });
+
+    if (resourceIds.containsAll(identifiers.getResourceIdentifiers())) {
+      resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.deleteExisting(
+          ownerKeyAndResourceTypeAndPermissionCompositeKey);
+    } else {
+      identifiers.removeResourceIdentifiers(resourceIds);
+      resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.update(
+          ownerKeyAndResourceTypeAndPermissionCompositeKey, identifiers);
+    }
+  }
+
+  @Override
   public void insertOwnerTypeByKey(final long ownerKey, final AuthorizationOwnerType ownerType) {
     this.ownerKey.wrapLong(ownerKey);
     this.ownerType.wrapString(ownerType.name());
@@ -127,8 +158,21 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.whileEqualPrefix(
         this.ownerKey,
         (compositeKey, resourceIdentifiers) -> {
+          resourceType.wrapString(compositeKey.second().first().toString());
+          permissionType.wrapString(compositeKey.second().second().toString());
+
+          resourceIdentifiers
+              .getResourceIdentifiers()
+              .forEach(
+                  resourceId -> {
+                    this.resourceId.wrapString(resourceId);
+                    authorizationKeyByResourceIdColumnFamily.deleteExisting(
+                        resourceIdAndOwnerKeyAndResourceTypeAndPermissionTypeCompositeKey);
+                  });
+
           resourceIdsByOwnerKeyResourceTypeAndPermissionColumnFamily.deleteExisting(compositeKey);
         });
+    // TODO remove from other CFs
   }
 
   @Override
@@ -165,5 +209,20 @@ public class DbAuthorizationState implements AuthorizationState, MutableAuthoriz
     }
 
     return Optional.of(AuthorizationOwnerType.valueOf(ownerType.toString()));
+  }
+
+  @Override
+  public List<AuthorizationKey> getAuthorizationKeysByResourceId(final String resourceId) {
+    final var authorizationKeys = new ArrayList<AuthorizationKey>();
+    this.resourceId.wrapString(resourceId);
+    authorizationKeyByResourceIdColumnFamily.whileEqualPrefix(
+        this.resourceId,
+        (key, value) -> {
+          final var ownerKey = key.second().first().getValue();
+          final var resourceType = key.second().second().first().toString();
+          final var permissionType = key.second().second().second().toString();
+          authorizationKeys.add(new AuthorizationKey(ownerKey, resourceType, permissionType));
+        });
+    return authorizationKeys;
   }
 }

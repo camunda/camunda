@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 
 public final class ZeebeClientTestFactory implements AutoCloseable {
@@ -38,8 +37,9 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
     usersRegistry.put(DEFAULT_USER_USERNAME, User.DEFAULT);
   }
 
-  public void registerUsers(final User... users) {
-    Stream.of(users).forEach(user -> usersRegistry.put(user.username(), user));
+  public ZeebeClientTestFactory withUsers(final List<User> users) {
+    users.forEach(user -> usersRegistry.put(user.username(), user));
+    return this;
   }
 
   public ZeebeClient createZeebeClient(
@@ -137,7 +137,6 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
   @Override
   public void close() {
     cachedClients.values().forEach(ZeebeClient::close);
-    cachedClients.clear();
   }
 
   public record Permissions(
@@ -149,9 +148,9 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
   }
 
   /**
-   * Annotation to be passed along with {@link CamundaExporterITInvocationProvider}'s {@link
-   * org.junit.jupiter.api.TestTemplate}. When applied, this indicates that the ZeebeClient should
-   * be created with the provided user's credentials.
+   * Annotation to be passed along with {@link BrokerWithCamundaExporterITInvocationProvider}'s
+   * {@link org.junit.jupiter.api.TestTemplate}. When applied, this indicates that the ZeebeClient
+   * should be created with the provided user's credentials.
    */
   @Target(ElementType.PARAMETER)
   @Retention(RetentionPolicy.RUNTIME)

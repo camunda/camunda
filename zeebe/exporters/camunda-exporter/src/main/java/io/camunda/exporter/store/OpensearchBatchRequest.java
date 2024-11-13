@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.store;
 
-import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.utils.OpensearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
@@ -241,10 +240,7 @@ public class OpensearchBatchRequest implements BatchRequest {
                   responseItem.id(),
                   responseItem.error().reason()),
               "error on OpenSearch BulkRequest");
-          throw new PersistenceException(
-              "Operation failed: " + responseItem.error().reason(),
-              new OpensearchExporterException(responseItem.error().reason()),
-              Integer.valueOf(responseItem.id()));
+          throw new PersistenceException("Operation failed: " + responseItem.error().reason());
         }
       }
     } catch (final IOException | OpenSearchException ex) {

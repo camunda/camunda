@@ -10,12 +10,15 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.requireNoPendingMsgSubMigrationDistribution;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.ProcessInstanceMigrationPreconditionFailedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.state.compensation.CompensationSubscription;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
@@ -24,16 +27,19 @@ import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
+import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -45,6 +51,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
 
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final CatchEventBehavior catchEventBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
   private final TypedCommandWriter commandWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final DistributionState distributionState;
@@ -55,6 +62,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
   public ProcessInstanceMigrationCatchEventBehaviour(
       final ProcessMessageSubscriptionState processMessageSubscriptionState,
       final CatchEventBehavior catchEventBehavior,
+      final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour,
       final TypedCommandWriter commandWriter,
       final CommandDistributionBehavior commandDistributionBehavior,
       final DistributionState distributionState,
@@ -63,6 +71,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
       final RoutingInfo routingInfo) {
     this.processMessageSubscriptionState = processMessageSubscriptionState;
     this.catchEventBehavior = catchEventBehavior;
+    this.compensationSubscriptionBehaviour = compensationSubscriptionBehaviour;
     this.commandWriter = commandWriter;
     this.commandDistributionBehavior = commandDistributionBehavior;
     this.distributionState = distributionState;
@@ -80,6 +89,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
   public void handleCatchEvents(
       final ElementInstance elementInstance,
       final DeployedProcess targetProcessDefinition,
+      final DeployedProcess sourceProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
       final ProcessInstanceRecord elementInstanceRecord,
       final String targetElementId,
@@ -91,6 +101,14 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
         targetProcessDefinition
             .getProcess()
             .getElementById(targetElementId, ExecutableCatchEventSupplier.class);
+
+    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.PROCESS) {
+      handleCompensationCatchEvents(
+          targetProcessDefinition,
+          sourceProcessDefinition,
+          sourceElementIdToTargetElementId,
+          context);
+    }
 
     // UNSUBSCRIBE FROM CATCH EVENTS
     final List<ProcessMessageSubscription> processMessageSubscriptionsToMigrate =
@@ -123,6 +141,86 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
         targetProcessDefinition, sourceElementIdToTargetElementId, timerInstancesToMigrate);
     migrateSignalEvents(
         targetProcessDefinition, sourceElementIdToTargetElementId, signalSubscriptionsToMigrate);
+  }
+
+  private void handleCompensationCatchEvents(
+      final DeployedProcess targetProcessDefinition,
+      final DeployedProcess sourceProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final BpmnElementContextImpl context) {
+    final List<CompensationSubscription> compensationSubscriptionsToMigrate =
+        unsubscribeFromCompensationEvents(
+            sourceProcessDefinition, sourceElementIdToTargetElementId, context);
+    // DO NOT SUBSCRIBE TO UNMAPPED COMPENSATION EVENTS AS THEY ARE CREATED ON ELEMENT COMPLETION
+    migrateCompensationEvents(
+        targetProcessDefinition,
+        sourceElementIdToTargetElementId,
+        compensationSubscriptionsToMigrate);
+  }
+
+  private void migrateCompensationEvents(
+      final DeployedProcess targetProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final List<CompensationSubscription> compensationSubscriptionsToMigrate) {
+    compensationSubscriptionsToMigrate.forEach(
+        subscription -> {
+          final var sourceActivityId = subscription.getRecord().getCompensableActivityId();
+          final var targetActivityId = sourceElementIdToTargetElementId.get(sourceActivityId);
+
+          final var compensationSubscriptionRecord = subscription.getRecord();
+          final var recordCopy = new CompensationSubscriptionRecord();
+          recordCopy.wrap(compensationSubscriptionRecord);
+          recordCopy.setProcessDefinitionKey(targetProcessDefinition.getKey());
+          recordCopy.setCompensableActivityId(targetActivityId);
+
+          // set the compensation handler id if subscription belongs to an activity with a boundary
+          final ExecutableActivity targetElement =
+              targetProcessDefinition
+                  .getProcess()
+                  .getElementById(targetActivityId, ExecutableActivity.class);
+          compensationSubscriptionBehaviour
+              .getCompensationHandlerId(targetElement)
+              .ifPresent(recordCopy::setCompensationHandlerId);
+
+          stateWriter.appendFollowUpEvent(
+              subscription.getKey(), CompensationSubscriptionIntent.MIGRATED, recordCopy);
+        });
+  }
+
+  private List<CompensationSubscription> unsubscribeFromCompensationEvents(
+      final DeployedProcess sourceProcessDefinition,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final BpmnElementContextImpl context) {
+    final List<CompensationSubscription> compensationSubscriptionsToMigrate = new ArrayList<>();
+    compensationSubscriptionBehaviour.deleteSubscriptionsOfProcessInstanceFilter(
+        context,
+        compensationSubscription -> {
+          final String compensableActivityId =
+              compensationSubscription.getRecord().getCompensableActivityId();
+          final ExecutableActivity compensableActivity =
+              sourceProcessDefinition
+                  .getProcess()
+                  .getElementById(compensableActivityId, ExecutableActivity.class);
+
+          final boolean shouldBeMigrated =
+              sourceElementIdToTargetElementId.containsKey(
+                  BufferUtil.bufferAsString(compensableActivity.getId()));
+
+          if (shouldBeMigrated) {
+            // We will migrate this mapped catch event, so we don't want to unsubscribe from it.
+            // Avoid reusing the subscription directly as any access to the state (e.g. #get) will
+            // overwrite it
+            final var copy = new CompensationSubscription();
+            copy.copyFrom(compensationSubscription);
+            compensationSubscriptionsToMigrate.add(copy);
+
+            return false;
+          }
+
+          return true;
+        });
+
+    return compensationSubscriptionsToMigrate;
   }
 
   private void migrateSignalEvents(

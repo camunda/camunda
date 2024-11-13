@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -21,7 +20,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import jakarta.validation.ValidationException;
 import java.nio.charset.StandardCharsets;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -64,20 +62,8 @@ public class ProcessDefinitionQueryController {
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(result));
-    } catch (final ValidationException e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Validation failed for Process definition Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              e.getMessage(),
-              "Failed to execute Process definition Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+      return mapErrorToResponse(e);
     }
   }
 
@@ -92,12 +78,11 @@ public class ProcessDefinitionQueryController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessDefinition(
-                  processDefinitionServices.getByKey(processDefinitionKey)));
-    } catch (final Exception exc) {
-      // Error case: Return the right side with ProblemDetail
-      final var problemDetail =
-          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+                  processDefinitionServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(processDefinitionKey)));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
     }
   }
 
@@ -117,7 +102,6 @@ public class ProcessDefinitionQueryController {
                       .body(s))
           .orElseGet(() -> ResponseEntity.status(HttpStatus.NO_CONTENT).build());
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getProcessDefinitionXml.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -129,7 +113,9 @@ public class ProcessDefinitionQueryController {
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
       final ProcessDefinitionEntity processDefinition =
-          processDefinitionServices.getByKey(processDefinitionKey);
+          processDefinitionServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .getByKey(processDefinitionKey);
 
       if (processDefinition.formId() != null) {
         return ResponseEntity.ok()
@@ -139,10 +125,8 @@ public class ProcessDefinitionQueryController {
       } else {
         return ResponseEntity.noContent().build();
       }
-    } catch (final Exception exc) {
-      final var problemDetail =
-          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
     }
   }
 }

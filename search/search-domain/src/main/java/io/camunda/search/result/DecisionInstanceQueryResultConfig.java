@@ -8,46 +8,42 @@
 package io.camunda.search.result;
 
 import io.camunda.util.ObjectBuilder;
-import java.util.List;
 import java.util.function.Function;
 
-public record DecisionInstanceQueryResultConfig(List<FieldFilter> fieldFilters)
-    implements QueryResultConfig {
-  @Override
-  public List<FieldFilter> getFieldFilters() {
-    return fieldFilters;
-  }
+public record DecisionInstanceQueryResultConfig(
+    Boolean includeEvaluatedInputs, Boolean includeEvaluatedOutputs) implements QueryResultConfig {
 
   public static DecisionInstanceQueryResultConfig of(
       final Function<
               DecisionInstanceQueryResultConfig.Builder,
               ObjectBuilder<DecisionInstanceQueryResultConfig>>
           fn) {
-    return QueryResultConfigBuilders.decisionInstance(fn);
+    return fn.apply(new Builder()).build();
   }
 
-  public static final class Builder
-      extends AbstractBuilder<DecisionInstanceQueryResultConfig.Builder>
-      implements ObjectBuilder<DecisionInstanceQueryResultConfig> {
+  public static final class Builder implements ObjectBuilder<DecisionInstanceQueryResultConfig> {
 
-    public DecisionInstanceQueryResultConfig.Builder evaluatedInputs() {
-      currentFieldFilter = new FieldFilter("evaluatedInputs", null);
+    private static final Boolean DEFAULT_INCLUDE_EVALUATED_INPUTS = false;
+    private static final Boolean DEFAULT_INCLUDE_EVALUATED_OUTPUTS = false;
+
+    private Boolean includeEvaluatedInputs = DEFAULT_INCLUDE_EVALUATED_INPUTS;
+    private Boolean includeEvaluatedOutputs = DEFAULT_INCLUDE_EVALUATED_OUTPUTS;
+
+    public DecisionInstanceQueryResultConfig.Builder includeEvaluatedInputs(
+        final boolean includeEvaluatedInputs) {
+      this.includeEvaluatedInputs = includeEvaluatedInputs;
       return this;
     }
 
-    public DecisionInstanceQueryResultConfig.Builder evaluatedOutputs() {
-      currentFieldFilter = new FieldFilter("evaluatedOutputs", null);
-      return this;
-    }
-
-    @Override
-    protected DecisionInstanceQueryResultConfig.Builder self() {
+    public DecisionInstanceQueryResultConfig.Builder includeEvaluatedOutputs(
+        final boolean includeEvaluatedOutputs) {
+      this.includeEvaluatedOutputs = includeEvaluatedOutputs;
       return this;
     }
 
     @Override
     public DecisionInstanceQueryResultConfig build() {
-      return new DecisionInstanceQueryResultConfig(fieldFilters);
+      return new DecisionInstanceQueryResultConfig(includeEvaluatedInputs, includeEvaluatedOutputs);
     }
   }
 }

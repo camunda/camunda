@@ -40,7 +40,7 @@
     <version.awaitility>4.2.2</version.awaitility>
     <version.bouncycastle>1.78.1</version.bouncycastle>
     <version.camunda>7.22.0</version.camunda>
-    <version.camunda-license-check>2.9.0</version.camunda-license-check>
+    <version.camunda-license-check>2.10.0</version.camunda-license-check>
     <version.checkstyle>10.18.2</version.checkstyle>
     <version.commons-beanutils>1.9.4</version.commons-beanutils>
     <version.commons-lang>3.17.0</version.commons-lang>
@@ -921,6 +921,11 @@
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-security-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-security-services</artifactId>
         <version>${project.version}</version>
       </dependency>
 

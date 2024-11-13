@@ -12,8 +12,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.exporter.cache.CachedProcessEntity;
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -115,6 +115,7 @@ public class ProcessHandlerTest {
             .from(factory.generateObject(ImmutableProcess.class))
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
             .build();
 
@@ -154,6 +155,7 @@ public class ProcessHandlerTest {
             .from(factory.generateObject(ImmutableProcess.class))
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
             .build();
 
@@ -192,6 +194,7 @@ public class ProcessHandlerTest {
             .from(factory.generateObject(ImmutableProcess.class))
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
             .build();
 

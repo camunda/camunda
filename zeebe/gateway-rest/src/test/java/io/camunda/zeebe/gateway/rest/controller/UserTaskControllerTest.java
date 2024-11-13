@@ -22,8 +22,8 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
@@ -45,7 +45,7 @@ public class UserTaskControllerTest extends RestControllerTest {
   static final CompletableFuture<UserTaskRecord> BROKER_RESPONSE =
       CompletableFuture.completedFuture(new UserTaskRecord());
   static final String TEST_TIME =
-      ZonedDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneId.of("UTC")).toString();
+      OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z")).toString();
 
   @MockBean UserTaskServices userTaskServices;
 
@@ -77,6 +77,18 @@ public class UserTaskControllerTest extends RestControllerTest {
                         RejectionType.SBE_UNKNOWN,
                         RejectionType.NULL_VAL)
                     .flatMap(r -> Stream.of(Pair.of(r, url))));
+  }
+
+  static Stream<Pair<String, String>> validDateInputsAndUrls() {
+    return urls()
+        .flatMap(
+            url ->
+                Stream.of(
+                        "2023-11-11T10:10:10.1010Z",
+                        "2023-11-11T10:10:10Z",
+                        "2023-11-11T10:10:10.1010+01:00",
+                        "2023-11-11T10:10:10.101010101+01:00")
+                    .flatMap(date -> Stream.of(Pair.of(date, url))));
   }
 
   @BeforeEach
@@ -409,6 +421,43 @@ public class UserTaskControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
+  @MethodSource("validDateInputsAndUrls")
+  void shouldUpdateTaskWithDateChanges(final Pair<String, String> dateAndUrl) {
+    // given
+    Mockito.when(userTaskServices.updateUserTask(anyLong(), any(), anyString()))
+        .thenReturn(BROKER_RESPONSE);
+    final var request =
+        """
+            {
+              "changeset": {
+                "dueDate": "%s",
+                "followUpDate": "%s"
+              }
+            }"""
+            .formatted(dateAndUrl.getLeft(), dateAndUrl.getLeft());
+
+    // when / then
+    webClient
+        .patch()
+        .uri(dateAndUrl.getRight() + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent()
+        .expectBody()
+        .isEmpty();
+
+    final var argumentCaptor = ArgumentCaptor.forClass(UserTaskRecord.class);
+    Mockito.verify(userTaskServices).updateUserTask(eq(1L), argumentCaptor.capture(), eq(""));
+    Assertions.assertThat(argumentCaptor.getValue())
+        .hasChangedAttributes(UserTaskRecord.DUE_DATE, UserTaskRecord.FOLLOW_UP_DATE)
+        .hasDueDate(dateAndUrl.getLeft())
+        .hasFollowUpDate(dateAndUrl.getLeft());
+  }
+
+  @ParameterizedTest
   @MethodSource("urls")
   void shouldYieldBadRequestWhenUpdateTaskWithoutActionAndChanges(final String baseUrl) {
     // given
@@ -501,6 +550,51 @@ public class UserTaskControllerTest extends RestControllerTest {
               "status": 400,
               "title": "INVALID_ARGUMENT",
               "detail": "The provided follow-up date 'foo' cannot be parsed as a date according to RFC 3339, section 5.6.",
+              "instance": "%s"
+            }"""
+            .formatted(baseUrl + "/1");
+
+    // when / then
+    webClient
+        .patch()
+        .uri(baseUrl + "/1")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+
+    Mockito.verifyNoInteractions(userTaskServices);
+  }
+
+  @ParameterizedTest
+  @MethodSource("urls")
+  void shouldYieldBadRequestWhenUpdateTaskWithInvalidOffsetFollowUpDate(final String baseUrl) {
+    // given
+    final var request =
+        """
+            {
+              "changeset": {
+                "followUpDate": "2023-11-11T12:12:12.1234+0100",
+                "dueDate": "2023-11-11T10:10:10.1010+01:00[Europe/Paris]"
+              }
+            }""";
+
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "INVALID_ARGUMENT",
+              "detail": "The provided due date '2023-11-11T10:10:10.1010+01:00[Europe/Paris]' \
+            cannot be parsed as a date according to RFC 3339, section 5.6. The provided follow-up \
+            date '2023-11-11T12:12:12.1234+0100' cannot be parsed as a date according to RFC 3339, \
+            section 5.6.",
               "instance": "%s"
             }"""
             .formatted(baseUrl + "/1");

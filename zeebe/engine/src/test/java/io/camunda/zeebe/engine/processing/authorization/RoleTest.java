@@ -14,7 +14,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -97,20 +96,17 @@ public class RoleTest {
   public void shouldRejectIfRoleWithSameNameIsPresent() {
     // given
     final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
-    final var anotherName = UUID.randomUUID().toString();
-    engine.role().newRole(anotherName).create();
+    final var roleKey = engine.role().newRole(name).create().getKey();
 
     // when
     final var notPresentUpdateRecord =
-        engine.role().updateRole(roleKey).withName(anotherName).expectRejection().update();
+        engine.role().updateRole(roleKey).withName(name).expectRejection().update();
 
     assertThat(notPresentUpdateRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
-            "Expected to update role with name '"
-                + anotherName
-                + "', but a role with this name already exists");
+            "Expected to update role with name '%s', but a role with this name already exists."
+                .formatted(name));
   }
 
   @Test
@@ -280,7 +276,6 @@ public class RoleTest {
         .withOwnerKey(roleKey)
         .withOwnerType(AuthorizationOwnerType.ROLE)
         .withResourceType(AuthorizationResourceType.ROLE)
-        .withAction(PermissionAction.REMOVE)
         .add();
 
     // when

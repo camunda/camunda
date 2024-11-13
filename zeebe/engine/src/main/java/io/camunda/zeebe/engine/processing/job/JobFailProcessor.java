@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.processing.job;
 
 import static io.camunda.zeebe.engine.EngineConfiguration.DEFAULT_MAX_ERROR_MESSAGE_SIZE;
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.util.StringUtil.limitString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -213,7 +213,9 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     return Either.left(
         new Rejection(
             RejectionType.UNAUTHORIZED,
-            UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                request.getPermissionType(), request.getResourceType())));
+            UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                request.getPermissionType(),
+                request.getResourceType(),
+                "BPMN process id '%s'".formatted(job.getBpmnProcessId()))));
   }
 }

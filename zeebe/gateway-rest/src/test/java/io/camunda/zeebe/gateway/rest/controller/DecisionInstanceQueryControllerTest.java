@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.DecisionInstanceEntity;
@@ -16,6 +17,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceInputEn
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceOutputEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
@@ -23,6 +25,7 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.util.ObjectBuilder;
+import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -35,11 +38,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(
     value = DecisionInstanceQueryController.class,
     properties = "camunda.rest.query.enabled=true")
+@Import(JacksonConfig.class)
 public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
   static final String EXPECTED_SEARCH_RESPONSE =
@@ -49,7 +54,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                    {
                        "decisionInstanceKey": 123,
                        "state": "EVALUATED",
-                       "evaluationDate": "2024-06-05T08:29:15.027+0000",
+                       "evaluationDate": "2024-06-05T08:29:15.027Z",
                        "processDefinitionKey": 2251799813688736,
                        "processInstanceKey": 6755399441058457,
                        "decisionDefinitionKey": 123456,
@@ -77,7 +82,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   new DecisionInstanceEntity(
                       123L,
                       DecisionInstanceState.EVALUATED,
-                      "2024-06-05T08:29:15.027+0000",
+                      OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
                       null,
                       2251799813688736L,
                       6755399441058457L,
@@ -193,7 +198,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         new DecisionInstanceEntity(
             123L,
             DecisionInstanceState.EVALUATED,
-            "2024-06-05T08:29:15.027+0000",
+            OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
             null,
             2251799813688736L,
             6755399441058457L,
@@ -223,7 +228,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 {
                      "decisionInstanceKey": 123,
                      "state": "EVALUATED",
-                     "evaluationDate": "2024-06-05T08:29:15.027+0000",
+                     "evaluationDate": "2024-06-05T08:29:15.027Z",
                      "processDefinitionKey": 2251799813688736,
                      "processInstanceKey": 6755399441058457,
                      "decisionDefinitionKey": 123456,
@@ -323,6 +328,52 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "detail": "Unexpected error occurred during the request processing: Something bad happened.",
                   "instance": "/v2/decision-instances/123"
                 }""");
+  }
+
+  private static Stream<Arguments> provideAdvancedSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    basicLongOperationTestCases(
+        streamBuilder,
+        "decisionDefinitionKey",
+        ops -> new DecisionInstanceFilter.Builder().decisionDefinitionKeyOperations(ops).build());
+
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedSearchParameters")
+  void shouldSearchVariablesWithAdvancedFilter(
+      final String filterString, final DecisionInstanceFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+    System.out.println("request = " + request);
+    when(decisionInstanceServices.search(any(DecisionInstanceQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    final var decisionInstanceKey = 123L;
+
+    // when / then
+    webClient
+        .post()
+        .uri("/v2/decision-instances/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(decisionInstanceServices)
+        .search(new DecisionInstanceQuery.Builder().filter(filter).build());
   }
 
   private record TestArguments(

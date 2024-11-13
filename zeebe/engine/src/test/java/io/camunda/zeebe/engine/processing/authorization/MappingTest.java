@@ -61,4 +61,33 @@ public class MappingTest {
                 "Expected to create mapping with claimName '%s' and claimValue '%s', but a mapping with this claim already exists.",
                 claimName, claimValue));
   }
+
+  @Test
+  public void shouldDeleteMapping() {
+    // given
+    final var claimName = UUID.randomUUID().toString();
+    final var claimValue = UUID.randomUUID().toString();
+    final var mappingKey =
+        engine.mapping().newMapping(claimName).withClaimValue(claimValue).create().getKey();
+
+    // when
+    final var deletedMapping = engine.mapping().deleteMapping(mappingKey).delete().getValue();
+
+    // then
+    Assertions.assertThat(deletedMapping)
+        .isNotNull()
+        .hasFieldOrPropertyWithValue("mappingKey", mappingKey);
+  }
+
+  @Test
+  public void shouldRejectIfMappingIsNotPresent() {
+    // when
+    final var deletedMapping = engine.mapping().deleteMapping(1L).expectRejection().delete();
+
+    // then
+    assertThat(deletedMapping)
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to delete mapping with key '1', but a mapping with this key does not exist.");
+  }
 }

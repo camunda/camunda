@@ -25,6 +25,11 @@
       <artifactId>webapps-schema</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-common</artifactId>
+    </dependency>
+
     <!-- SPRING -->
 
     <dependency>

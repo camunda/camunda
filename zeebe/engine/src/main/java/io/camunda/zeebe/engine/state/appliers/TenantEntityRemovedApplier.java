@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
@@ -17,11 +19,12 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
 
   private final MutableTenantState tenantState;
   private final MutableUserState userState;
+  private final MutableMappingState mappingState;
 
-  public TenantEntityRemovedApplier(
-      final MutableTenantState tenantState, final MutableUserState userState) {
-    this.tenantState = tenantState;
-    this.userState = userState;
+  public TenantEntityRemovedApplier(final MutableProcessingState state) {
+    tenantState = state.getTenantState();
+    userState = state.getUserState();
+    mappingState = state.getMappingState();
   }
 
   @Override
@@ -29,6 +32,7 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
     tenantState.removeEntity(tenant.getTenantKey(), tenant.getEntityKey());
     switch (tenant.getEntityType()) {
       case USER -> userState.removeTenant(tenant.getEntityKey(), tenant.getTenantId());
+      case MAPPING -> mappingState.removeTenant(tenant.getEntityKey(), tenant.getTenantKey());
       default ->
           throw new UnsupportedOperationException(
               String.format(

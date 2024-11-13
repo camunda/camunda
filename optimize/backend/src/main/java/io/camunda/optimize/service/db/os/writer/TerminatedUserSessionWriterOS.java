@@ -11,7 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.TERMINATED_USER_S
 
 import io.camunda.optimize.dto.optimize.query.TerminatedUserSessionDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.schema.index.TerminatedUserSessionIndex;
 import io.camunda.optimize.service.db.writer.TerminatedUserSessionWriter;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;

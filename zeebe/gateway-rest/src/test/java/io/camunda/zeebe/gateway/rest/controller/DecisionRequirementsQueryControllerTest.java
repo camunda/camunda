@@ -21,12 +21,19 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.DecisionRequirementsServices;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -65,6 +72,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
           .build();
 
   static final String DECISION_REQUIREMENTS_SEARCH_URL = "/v2/decision-requirements/search";
+  static final String DECISION_REQUIREMENTS_GET_URL = "/v2/decision-requirements/%d";
   static final String DECISION_REQUIREMENTS_GET_XML_URL = "/v2/decision-requirements/%d/xml";
 
   private static final Long VALID_DECISION_REQUIREMENTS_KEY = 1L;
@@ -116,9 +124,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(decisionRequirementsServices)
-        .search(
-            new DecisionRequirementsQuery.Builder().resultConfig(b -> b.xml().exclude()).build());
+    verify(decisionRequirementsServices).search(new DecisionRequirementsQuery.Builder().build());
   }
 
   @Test
@@ -142,9 +148,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
 
-    verify(decisionRequirementsServices)
-        .search(
-            new DecisionRequirementsQuery.Builder().resultConfig(b -> b.xml().exclude()).build());
+    verify(decisionRequirementsServices).search(new DecisionRequirementsQuery.Builder().build());
   }
 
   @Test
@@ -190,7 +194,6 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                         .versions(1)
                         .decisionRequirementsIds("drId")
                         .build())
-                .resultConfig(b -> b.xml().exclude())
                 .build());
   }
 
@@ -256,7 +259,6 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                         .decisionRequirementsId()
                         .asc()
                         .build())
-                .resultConfig(b -> b.xml().exclude())
                 .build());
   }
 
@@ -340,6 +342,49 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
                 """);
 
     verify(decisionRequirementsServices, times(1)).getByKey(INVALID_DECISION_REQUIREMENTS_KEY);
+  }
+
+  @ParameterizedTest
+  @MethodSource("getDecisionRequirementsTestCasesParameters")
+  public void shouldReturn403ForForbiddenDecisionRequirements(
+      final Pair<String, BiFunction<DecisionRequirementsServices, Long, ?>> testParameters) {
+    // given
+    final var url = testParameters.getLeft();
+    final var service = testParameters.getRight();
+    final long decisionRequirementsKey = 1L;
+    when(service.apply(decisionRequirementsServices, decisionRequirementsKey))
+        .thenThrow(
+            new ForbiddenException(
+                Authorization.of(a -> a.decisionRequirementsDefinition().read())));
+    // when / then
+    webClient
+        .get()
+        .uri(url.formatted(decisionRequirementsKey))
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectBody()
+        .json(
+            """
+                    {
+                      "type": "about:blank",
+                      "status": 403,
+                      "title": "io.camunda.service.exception.ForbiddenException",
+                      "detail": "Unauthorized to perform operation 'READ' on resource 'DECISION_REQUIREMENTS_DEFINITION'"
+                    }
+                """);
+
+    // Verify that the service was called with the invalid key
+    service.apply(verify(decisionRequirementsServices), decisionRequirementsKey);
+  }
+
+  private static Stream<Pair<String, BiFunction<DecisionRequirementsServices, Long, ?>>>
+      getDecisionRequirementsTestCasesParameters() {
+    return Stream.of(
+        Pair.of(DECISION_REQUIREMENTS_GET_URL, DecisionRequirementsServices::getByKey),
+        Pair.of(
+            DECISION_REQUIREMENTS_GET_XML_URL,
+            DecisionRequirementsServices::getDecisionRequirementsXml));
   }
 
   @Test

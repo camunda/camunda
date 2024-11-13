@@ -28,6 +28,8 @@ import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.IndexPrefixHolder;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import java.util.HashSet;
@@ -260,6 +262,11 @@ public class IndexOldSchemaValidatorIT {
   }
 
   private String getFullQualifiedIndexName(final String indexNamePart, final String version) {
-    return String.format("%s-%s-%s_", operatePrefix, indexNamePart, version);
+    return String.format(
+        "%s%s-%s-%s_",
+        AbstractIndexDescriptor.formatIndexPrefix(operatePrefix),
+        ComponentNames.OPERATE,
+        indexNamePart,
+        version);
   }
 }

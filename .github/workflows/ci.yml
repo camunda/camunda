@@ -39,6 +39,7 @@ jobs:
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
+      openapi-changes: ${{ steps.filter.outputs.openapi-changes }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -80,13 +81,12 @@ jobs:
     runs-on: gcp-perf-core-8-default
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          docker: false
           maven-cache-key-modifier: java-checks
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -T1C -B -D skipTests -D skipOptimize -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
         if: always()
@@ -105,11 +105,6 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
-        with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:
@@ -143,11 +138,11 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
@@ -209,7 +204,7 @@ jobs:
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
             maven-build-threads: 2
             maven-test-fork-count: 7
-            runs-on: gcp-perf-core-8-default
+            runs-on: gcp-perf-core-8-longrunning
           - group: qa-integration
             name: "Zeebe QA - Integration Tests"
             maven-modules: "zeebe/qa/integration-tests"
@@ -231,12 +226,12 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -314,12 +309,12 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ./hadolint.sarif
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          docker-secret-path: secret/data/products/camunda/ci/github-actions
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
@@ -469,10 +464,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+        uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: optimize-tests
-          secrets: ${{ toJSON(secrets) }}
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Test
         uses: ./.github/actions/run-maven
         with:
@@ -547,6 +546,31 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  openapi-lint:
+    name: C8 REST OpenAPI linting
+    timeout-minutes: 2
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    if: |
+      needs.detect-changes.outputs.openapi-changes == 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Vacuum
+        run: curl -fsSL https://quobix.com/scripts/install_vacuum.sh | sh > /dev/null
+        shell: bash
+      - name: Run OpenAPI Linter
+        run: vacuum lint zeebe/gateway-protocol/src/main/proto/rest-api.yaml -r .github/vacuum-ruleset.yaml -d -e
+        shell: bash
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   check-results:
     # Used by the merge queue to check all tests, including the unit test matrix.
     # New test jobs must be added to the `needs` lists!
@@ -565,6 +589,7 @@ jobs:
       - optimize-frontend-unit-tests
       - optimize-backend-unit-tests
       - protobuf-checks
+      - openapi-lint
     steps:
       - uses: actions/checkout@v4
       - name: Check for aborted jobs
@@ -616,10 +641,22 @@ jobs:
         uses: ./.github/actions/setup-maven-cache
         with:
           maven-cache-key-modifier: snapshots
+      - uses: ./.github/actions/build-frontend
+        id: build-operate-fe
+        with:
+          directory: ./operate/client
+      - uses: ./.github/actions/build-frontend
+        id: build-tasklist-fe
+        with:
+          directory: ./tasklist/client
+      - uses: ./.github/actions/build-frontend
+        id: build-identity-fe
+        with:
+          directory: ./identity/client
       # compile and generate-sources to ensure that the Javadoc can be properly generated; compile is
       # necessary when using annotation preprocessors for code generation, as otherwise the symbols are
       # not resolve-able by the Javadoc generator
-      - run: ./mvnw -B -D skipTests -D skipChecks compile generate-sources source:jar javadoc:jar deploy
+      - run: ./mvnw -B -D skipTests -D skipChecks -PskipFrontendBuild compile generate-sources source:jar javadoc:jar deploy
         env:
           MAVEN_USERNAME: ${{ steps.secrets.outputs.ARTIFACTS_USR }}
           MAVEN_PASSWORD: ${{ steps.secrets.outputs.ARTIFACTS_PSW }}
@@ -643,13 +680,12 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          docker-token: REGISTRY_HUB_DOCKER_COM_PSW
-          docker-secret-path: secret/data/products/camunda/ci/github-actions
+          dockerhub: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-frontend
         id: build-operate-fe
         with:

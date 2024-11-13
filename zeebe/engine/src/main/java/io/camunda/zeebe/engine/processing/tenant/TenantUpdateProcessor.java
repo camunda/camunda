@@ -53,9 +53,6 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
 
   @Override
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
-    if (!isAuthorizedToUpdate(command)) {
-      return;
-    }
 
     final var record = command.getValue();
     final var tenantKey = record.getTenantKey();
@@ -67,6 +64,10 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
           RejectionType.NOT_FOUND,
           "Expected to update tenant with key '%s', but no tenant with this key exists."
               .formatted(tenantKey));
+      return;
+    }
+
+    if (!isAuthorizedToUpdate(command, persistedRecord.get())) {
       return;
     }
 
@@ -90,12 +91,14 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
-  private boolean isAuthorizedToUpdate(final TypedRecord<TenantRecord> command) {
+  private boolean isAuthorizedToUpdate(
+      final TypedRecord<TenantRecord> command, final TenantRecord persistedRecord) {
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(command.getValue().getTenantId());
+            .addResourceId(persistedRecord.getTenantId());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      rejectCommandWithUnauthorizedError(command, authorizationRequest);
+      rejectCommandWithUnauthorizedError(
+          command, authorizationRequest, persistedRecord.getTenantId());
       return false;
     }
     return true;
@@ -134,10 +137,14 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
   }
 
   private void rejectCommandWithUnauthorizedError(
-      final TypedRecord<TenantRecord> command, final AuthorizationRequest authorizationRequest) {
+      final TypedRecord<TenantRecord> command,
+      final AuthorizationRequest authorizationRequest,
+      final String tenantId) {
     final var errorMessage =
-        AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
-            authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+        AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+            authorizationRequest.getPermissionType(),
+            authorizationRequest.getResourceType(),
+            "tenant id '%s'".formatted(tenantId));
     rejectCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
   }
 

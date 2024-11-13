@@ -36,6 +36,7 @@ import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
@@ -1145,6 +1146,29 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   AddPermissionsCommandStep1 newAddPermissionsCommand(long ownerKey);
+
+  /**
+   * Command to remove permissions from an owner.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newRemovePermissionsCommand(ownerKey)
+   *  .resourceType(resourceType)
+   *  .permission(permissionType)
+   *  .resourceIds(resourceIds)
+   *  .permission(permissionType)
+   *  .resourceId(resourceId)
+   *  .resourceId(resourceId)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   * <br>
+   *
+   * @param ownerKey the key of the owner
+   * @return a builder for the command
+   */
+  RemovePermissionsCommandStep1 newRemovePermissionsCommand(long ownerKey);
 
   /*
    * Retrieves the XML representation of a decision requirements.

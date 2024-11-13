@@ -171,14 +171,43 @@ func main() {
 
         javaHome := os.Getenv("JAVA_HOME")
 	javaBinary := "java"
-        if javaHome != "" {
-	        javaBinary = filepath.Join(javaHome, "bin", "java")
+        javaHomeAfterSymlink, err := filepath.EvalSymlinks(javaHome)
+        if err != nil {
+                fmt.Println("Failed to check if filepath is a symlink")
+                os.Exit(1)
         }
+        javaHome = javaHomeAfterSymlink
+        if javaHome != "" {
+                filepath.Walk(javaHome, func(path string, info os.FileInfo, err error) error {
+                        _, filename := filepath.Split(path)
+                        if strings.Compare(filename, "java.exe") == 0 || strings.Compare(filename, "java") == 0 {
+                                javaBinary = path
+                                return filepath.SkipAll
+                        }
+                        return nil
+
+                })
+                // fallback to bin/java.exe
+                if javaBinary == "" {
+	                javaBinary = filepath.Join(javaHome, "bin", "java.exe")
+                }
+        } else {
+                path, err := exec.LookPath("java")
+                if err != nil {
+                        fmt.Println("Failed to find JAVA_HOME or java program.")
+                        os.Exit(1)
+                }
+
+                // go up 2 directories since it's not guaranteed that java is in a bin folder
+                javaHome = filepath.Dir(filepath.Dir(path))
+                javaBinary = path
+        }
+        os.Setenv("ES_JAVA_HOME", javaHome)
 
 	if baseCommand == "start" {
 		javaVersion := os.Getenv("JAVA_VERSION")
 		if javaVersion == "" {
-			javaVersionCmd := exec.Command("cmd", "/C", javaBinary + " --version")
+			javaVersionCmd := exec.Command(javaBinary, "--version")
 			var out strings.Builder
                         var stderr strings.Builder
 			javaVersionCmd.Stdout = &out
@@ -209,6 +238,8 @@ func main() {
 			os.Exit(1)
 		}
 
+
+
 		javaOpts := os.Getenv("JAVA_OPTS")
 		if javaOpts != "" {
 			fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
@@ -226,8 +257,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		elasticsearchCmdString := filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch.bat") + " -E xpack.ml.enabled=false -E xpack.security.enabled=false"
-		elasticsearchCmd := exec.Command("cmd", "/C", elasticsearchCmdString)
+		elasticsearchCmd := exec.Command(filepath.Join(parentDir, "elasticsearch-"+elasticsearchVersion, "bin", "elasticsearch.bat"), "-E", "xpack.ml.enabled=false", "-E", "xpack.security.enabled=false")
 
 		elasticsearchCmd.SysProcAttr = &syscall.SysProcAttr{
 			CreationFlags: 0x08000000 | 0x00000200, // CREATE_NO_WINDOW, CREATE_NEW_PROCESS_GROUP : https://learn.microsoft.com/en-us/windows/win32/procthread/process-creation-flags
@@ -247,8 +277,7 @@ func main() {
 		elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
 		queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 
-		connectorsCmdString := javaBinary + " -classpath " + parentDir + "\\*;" + parentDir + "\\custom_connectors\\*;" + parentDir + "\\camunda-zeebe-" + camundaVersion + "\\lib\\* io.camunda.connector.runtime.app.ConnectorRuntimeApplication --spring.config.location=" + parentDir + "\\connectors-application.properties"
-		connectorsCmd := exec.Command("cmd", "/C", connectorsCmdString)
+		connectorsCmd := exec.Command(javaBinary, "-classpath", parentDir + "\\*;" + parentDir + "\\custom_connectors\\*;" + parentDir + "\\camunda-zeebe-" + camundaVersion + "\\lib\\*", "io.camunda.connector.runtime.app.ConnectorRuntimeApplication", "--spring.config.location=" + parentDir + "\\connectors-application.properties")
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
 		connectorsLogFile, err := os.OpenFile(connectorsLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
@@ -276,9 +305,7 @@ func main() {
 		} else {
 			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
 		}
-		camundaCmdString := parentDir + "\\camunda-zeebe-" + camundaVersion + "\\bin\\camunda " + extraArgs
-		fmt.Println(camundaCmdString)
-		camundaCmd := exec.Command("cmd", "/C", camundaCmdString)
+		camundaCmd := exec.Command(".\\camunda-zeebe-" + camundaVersion + "\\bin\\camunda.bat", extraArgs)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {

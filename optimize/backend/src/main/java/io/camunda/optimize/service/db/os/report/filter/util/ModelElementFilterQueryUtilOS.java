@@ -9,12 +9,12 @@ package io.camunda.optimize.service.db.os.report.filter.util;
 
 import static io.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.nested;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.not;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.not;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.stringTerms;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.DurationScriptUtilOS.getDurationFilterScript;
 import static io.camunda.optimize.service.db.report.filter.util.ModelElementFilterQueryUtil.getViewLevelFiltersForInstanceMatch;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;
@@ -56,6 +56,7 @@ import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.security.util.LocalDateUtil;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,12 +66,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.commons.lang3.function.TriFunction;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.ChildScoreMode;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.ScriptQuery;
+import org.opensearch.client.util.TriFunction;
 
 public final class ModelElementFilterQueryUtilOS {
 
@@ -152,7 +153,7 @@ public final class ModelElementFilterQueryUtilOS {
     return Optional.empty();
   }
 
-  public static Query createModelElementAggregationFilter(
+  public static BoolQuery.Builder createModelElementAggregationFilter(
       final ProcessReportDataDto reportData,
       final FilterContext filterContext,
       final DefinitionService definitionService) {
@@ -181,7 +182,7 @@ public final class ModelElementFilterQueryUtilOS {
         filterBoolQueryBuilder,
         filterContext,
         filtersByDefinition.getOrDefault(APPLIED_TO_ALL_DEFINITIONS, List.of()));
-    return filterBoolQueryBuilder.build().toQuery();
+    return filterBoolQueryBuilder;
   }
 
   private static void addModelElementFilters(
@@ -203,6 +204,20 @@ public final class ModelElementFilterQueryUtilOS {
   public static BoolQuery.Builder createUserTaskFlowNodeTypeFilter() {
     return new BoolQuery.Builder()
         .must(term(nestedFieldReference(FLOW_NODE_TYPE), FLOW_NODE_TYPE_USER_TASK));
+  }
+
+  public static Query createInclusiveFlowNodeIdFilterQuery(
+      final ProcessReportDataDto reportDataDto,
+      final Set<String> flowNodeIds,
+      final FilterContext filterContext,
+      final DefinitionService definitionService) {
+    return createExecutedFlowNodeFilterQuery(
+            createModelElementAggregationFilter(reportDataDto, filterContext, definitionService),
+            nestedFieldReference(FLOW_NODE_ID),
+            new ArrayList<>(flowNodeIds),
+            IN)
+        .build()
+        .toQuery();
   }
 
   public static BoolQuery.Builder createExecutedFlowNodeFilterQuery(

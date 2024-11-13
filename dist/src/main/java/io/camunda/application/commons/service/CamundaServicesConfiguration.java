@@ -18,6 +18,7 @@ import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
+import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -38,6 +39,7 @@ import io.camunda.service.ProcessInstanceServices;
 import io.camunda.service.ResourceServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.SignalServices;
+import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserTaskServices;
 import io.camunda.service.VariableServices;
@@ -137,6 +139,14 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  public TenantServices tenantServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final TenantSearchClient tenantSearchClient) {
+    return new TenantServices(brokerClient, securityContextProvider, tenantSearchClient, null);
+  }
+
+  @Bean
   public UserServices userServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
@@ -148,8 +158,18 @@ public class CamundaServicesConfiguration {
   public UserTaskServices userTaskServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final UserTaskSearchClient userTaskSearchClient) {
-    return new UserTaskServices(brokerClient, securityContextProvider, userTaskSearchClient, null);
+      final UserTaskSearchClient userTaskSearchClient,
+      final FormSearchClient formSearchClient,
+      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
+      final VariableSearchClient variableSearchClient) {
+    return new UserTaskServices(
+        brokerClient,
+        securityContextProvider,
+        userTaskSearchClient,
+        formSearchClient,
+        flowNodeInstanceSearchClient,
+        variableSearchClient,
+        null);
   }
 
   @Bean

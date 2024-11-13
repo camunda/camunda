@@ -22,7 +22,6 @@ import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
 import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
-import io.camunda.exporter.archiver.Archiver;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
@@ -30,6 +29,7 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
+import io.camunda.exporter.tasks.BackgroundTaskManager;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -56,7 +56,7 @@ public class CamundaExporter implements Exporter {
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
   private Logger logger;
-  private Archiver archiver;
+  private BackgroundTaskManager taskManager;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -83,7 +83,7 @@ public class CamundaExporter implements Exporter {
     this.controller = controller;
     clientAdapter = ClientAdapter.of(configuration);
 
-    provider.init(configuration, clientAdapter::getProcessCacheLoader);
+    provider.init(configuration, clientAdapter.getExporterEntityCacheProvider());
 
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager =
@@ -92,20 +92,26 @@ public class CamundaExporter implements Exporter {
             provider.getIndexDescriptors(),
             provider.getIndexTemplateDescriptors(),
             configuration);
-    archiver =
-        Archiver.create(
-            context.getPartitionId(),
-            context.getConfiguration().getId().toLowerCase(),
-            configuration.getArchiver(),
-            provider,
-            metrics,
-            logger);
 
     schemaManager.startup();
 
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
+
+    // // start archiver after the schema has been created to avoid transient errors
+    if (configuration.getArchiver().isRolloverEnabled()) {
+      // make sure we create a new one in case open is being retried
+      CloseHelper.quietClose(taskManager);
+      taskManager =
+          BackgroundTaskManager.create(
+              context.getPartitionId(),
+              context.getConfiguration().getId().toLowerCase(),
+              configuration,
+              provider,
+              metrics,
+              logger);
+    }
 
     LOG.info("Exporter opened");
   }
@@ -129,7 +135,7 @@ public class CamundaExporter implements Exporter {
       }
     }
 
-    CloseHelper.close(error -> LOG.warn("Failed to close archiver", error), archiver);
+    CloseHelper.close(error -> LOG.warn("Failed to close background tasks", error), taskManager);
     LOG.info("Exporter closed");
   }
 

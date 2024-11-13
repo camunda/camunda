@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.DocumentMetadata;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 public class DocumentMetadataImpl implements DocumentMetadata {
@@ -34,13 +34,13 @@ public class DocumentMetadataImpl implements DocumentMetadata {
   }
 
   @Override
-  public ZonedDateTime getExpiresAt() {
+  public OffsetDateTime getExpiresAt() {
     final String expiresAt = response.getExpiresAt();
     if (expiresAt == null) {
       return null;
     }
     try {
-      return ZonedDateTime.parse(expiresAt);
+      return OffsetDateTime.parse(expiresAt);
     } catch (final Exception e) {
       throw new IllegalArgumentException(
           "Failed to parse expiresAt date: " + response.getExpiresAt(), e);

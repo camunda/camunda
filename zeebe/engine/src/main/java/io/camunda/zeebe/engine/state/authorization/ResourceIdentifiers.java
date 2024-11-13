@@ -12,7 +12,6 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -44,7 +43,13 @@ public class ResourceIdentifiers extends UnpackedObject implements DbValue {
     permissions.forEach(permission -> resourceIds.add().wrap(BufferUtil.wrapString(permission)));
   }
 
-  public void addResourceIdentifiers(final List<String> resourceIdentifiers) {
+  public void removeResourceIdentifiers(final Set<String> resourceIds) {
+    final var resourceIdentifiers = getResourceIdentifiers();
+    resourceIds.forEach(resourceIdentifiers::remove);
+    setResourceIdentifiers(resourceIdentifiers);
+  }
+
+  public void addResourceIdentifiers(final Set<String> resourceIdentifiers) {
     resourceIdentifiers.forEach(
         resourceIdentifier -> resourceIds.add().wrap(BufferUtil.wrapString(resourceIdentifier)));
   }

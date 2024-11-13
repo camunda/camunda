@@ -17,17 +17,17 @@ package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.DocumentLinkResponse;
 import io.camunda.zeebe.client.protocol.rest.DocumentLink;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 public class DocumentLinkResponseImpl implements DocumentLinkResponse {
 
   private final String url;
-  private final ZonedDateTime expiresAt;
+  private final OffsetDateTime expiresAt;
 
   public DocumentLinkResponseImpl(final DocumentLink documentLink) {
     url = documentLink.getUrl();
     if (documentLink.getExpiresAt() != null) {
-      expiresAt = ZonedDateTime.parse(documentLink.getExpiresAt());
+      expiresAt = OffsetDateTime.parse(documentLink.getExpiresAt());
     } else {
       expiresAt = null;
     }
@@ -39,7 +39,7 @@ public class DocumentLinkResponseImpl implements DocumentLinkResponse {
   }
 
   @Override
-  public ZonedDateTime getExpiresAt() {
+  public OffsetDateTime getExpiresAt() {
     return expiresAt;
   }
 }

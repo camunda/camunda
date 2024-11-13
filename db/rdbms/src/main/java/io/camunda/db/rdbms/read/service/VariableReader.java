@@ -8,9 +8,18 @@
 package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.sql.VariableMapper;
-import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.filter.VariableFilter.Builder;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.VariableQuery;
+import io.camunda.search.sort.VariableSort;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class VariableReader {
+
+  private static final Logger LOG = LoggerFactory.getLogger(VariableReader.class);
 
   private final VariableMapper variableMapper;
 
@@ -18,7 +27,22 @@ public class VariableReader {
     this.variableMapper = variableMapper;
   }
 
-  public VariableDbModel findOne(final Long key) {
-    return variableMapper.findOne(key);
+  public VariableEntity findOne(final Long key) {
+    return search(
+            new VariableQuery(
+                new Builder().variableKeys(key).build(),
+                VariableSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(1))))
+        .hits
+        .getFirst();
   }
+
+  public SearchResult search(final VariableQuery filter) {
+    LOG.trace("[RDBMS DB] Search for variables with filter {}", filter);
+    final var totalHits = variableMapper.count(filter);
+    final var hits = variableMapper.search(filter);
+    return new SearchResult(hits, totalHits.intValue());
+  }
+
+  public record SearchResult(List<VariableEntity> hits, Integer total) {}
 }

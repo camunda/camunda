@@ -45,7 +45,7 @@ public class DbTenantState implements MutableTenantState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     tenantsColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TENANTS, transactionContext, tenantKey, persistedTenant);
+            ZbColumnFamilies.TENANTS, transactionContext, tenantKey, new PersistedTenant());
 
     fkTenantKey = new DbForeignKey<>(tenantKey, ZbColumnFamilies.TENANTS);
 

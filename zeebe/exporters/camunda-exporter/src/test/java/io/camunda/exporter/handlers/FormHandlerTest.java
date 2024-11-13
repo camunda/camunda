@@ -12,6 +12,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.TestFormCache;
+import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -20,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableForm;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +30,8 @@ public class FormHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-form";
-  private final FormHandler underTest = new FormHandler(indexName);
+  private final TestFormCache formCache = new TestFormCache();
+  private final FormHandler underTest = new FormHandler(indexName, formCache);
 
   @Test
   void testGetHandledValueType() {
@@ -114,11 +118,13 @@ public class FormHandlerTest {
     // then
     assertThat(formEntity.getKey()).isEqualTo(formKey);
     assertThat(formEntity.getVersion()).isEqualTo(formValue.getVersion());
-    assertThat(formEntity.getBpmnId()).isEqualTo(formValue.getFormId());
+    assertThat(formEntity.getFormId()).isEqualTo(formValue.getFormId());
     assertThat(formEntity.getSchema())
         .isEqualTo(new String(formValue.getResource(), StandardCharsets.UTF_8));
     assertThat(formEntity.getTenantId()).isEqualTo(formValue.getTenantId());
     assertThat(formEntity.getIsDeleted()).isFalse();
+    assertThat(formEntity.getEmbedded()).isFalse();
+    assertThat(formEntity.getProcessDefinitionId()).isNull();
   }
 
   @Test
@@ -144,10 +150,41 @@ public class FormHandlerTest {
     assertThat(formEntity.getKey()).isEqualTo(formKey);
     assertThat(formEntity.getIsDeleted()).isTrue();
     assertThat(formEntity.getVersion()).isEqualTo(formValue.getVersion());
-    assertThat(formEntity.getBpmnId()).isEqualTo(formValue.getFormId());
+    assertThat(formEntity.getFormId()).isEqualTo(formValue.getFormId());
     assertThat(formEntity.getSchema())
         .isEqualTo(new String(formValue.getResource(), StandardCharsets.UTF_8));
     assertThat(formEntity.getTenantId()).isEqualTo(formValue.getTenantId());
+    assertThat(formEntity.getEmbedded()).isFalse();
+    assertThat(formEntity.getProcessDefinitionId()).isNull();
+  }
+
+  @Test
+  void shouldUpdateFormCache() throws IOException {
+    // given
+    final long formKey = 123L;
+    final ImmutableForm formValue =
+        ImmutableForm.builder()
+            .from(factory.generateObject(ImmutableForm.class))
+            .withResource(formJsonResource().getBytes(StandardCharsets.UTF_8))
+            .withFormKey(formKey)
+            .withFormId("form-id")
+            .withVersion(5)
+            .build();
+
+    final Record<Form> formRecord =
+        factory.generateRecord(
+            ValueType.FORM, r -> r.withIntent(FormIntent.CREATED).withValue(formValue));
+
+    // when
+    final var formEntity = new FormEntity().setId(String.valueOf(formKey));
+    underTest.updateEntity(formRecord, formEntity);
+
+    // then
+    assertThat(formCache.get(String.valueOf(formKey)))
+        .isPresent()
+        .get()
+        .extracting(CachedFormEntity::formId, CachedFormEntity::formVersion)
+        .containsExactly("form-id", 5L);
   }
 
   private String formJsonResource() {

@@ -9,10 +9,10 @@ package io.camunda.optimize.service.db.os.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.ALERT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.stringTerms;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.searchRequestBuilder;
 import static java.lang.String.format;
 
 import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;

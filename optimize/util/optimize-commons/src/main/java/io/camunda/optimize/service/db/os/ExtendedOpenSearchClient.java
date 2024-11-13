@@ -46,6 +46,7 @@ import org.opensearch.client.transport.endpoints.EndpointWithResponseMapperAttr;
 import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 
 public class ExtendedOpenSearchClient extends OpenSearchClient {
+
   private static final Pattern SEARCH_AFTER_PATTERN =
       Pattern.compile("(\"search_after\":\\[[^\\]]*\\])");
   private static final String DOCUMENT_ATTR =
@@ -92,10 +93,10 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
   private String fixSearchAfter(final String json) {
     final Matcher m = SEARCH_AFTER_PATTERN.matcher(json);
     if (m.find()) {
-      final var searchAfter = m.group(1); // Find "searchAfter" block in search request
+      final String searchAfter = m.group(1); // Find "searchAfter" block in search request
       // Replace all occurrences of minimum long value string representations with long
       // representations inside searchAfter
-      final var fixedSearchAfter =
+      final String fixedSearchAfter =
           searchAfter.replaceAll(format("\"%s\"", Long.MIN_VALUE), String.valueOf(Long.MIN_VALUE));
       return json.replace(searchAfter, fixedSearchAfter);
     } else {
@@ -106,7 +107,7 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
   public <TDocument> SearchResponse<TDocument> fixedSearch(
       final SearchRequest request, final Class<TDocument> tDocumentClass)
       throws IOException, OpenSearchException {
-    final var path = format("/%s/_search", join(",", request.index()));
+    final String path = format("/%s/_search", join(",", request.index()));
     JsonEndpoint<Map<String, Object>, SearchResponse<Object>, ErrorResponse> endpoint =
         arbitraryEndpoint("POST", path, SearchResponse._DESERIALIZER);
     endpoint =
@@ -145,11 +146,6 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
    * Standard opensearch GetSnapshotResponse builder considers fields "total" and "remaining" to be
    * mandatory in response. Hovever, OS server doesn't provide them, so workarounding the
    * getSnapshots request by setting them to 0.
-   *
-   * @param getSnapshotRequest
-   * @return
-   * @throws IOException
-   * @throws OpenSearchException
    */
   public GetSnapshotResponse getSnapshots(final GetSnapshotRequest getSnapshotRequest)
       throws IOException, OpenSearchException {

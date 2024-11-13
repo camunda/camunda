@@ -155,7 +155,10 @@ class BackupServiceImplTest {
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
 
     // then
-    assertThat(result).failsWithin(Duration.ofMillis(100));
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Expected");
     verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
@@ -169,7 +172,10 @@ class BackupServiceImplTest {
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
 
     // then
-    assertThat(result).failsWithin(Duration.ofMillis(100));
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Expected");
     verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
@@ -184,7 +190,10 @@ class BackupServiceImplTest {
     final var result = backupService.takeBackup(inProgressBackup, concurrencyControl);
 
     // then
-    assertThat(result).failsWithin(Duration.ofMillis(100));
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Expected");
     verifyInProgressBackupIsCleanedUpAfterFailure(inProgressBackup);
   }
 
@@ -273,7 +282,8 @@ class BackupServiceImplTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 List.of(inProgressStatus, notExistingStatus, completedStatus)));
-
+    when(backupStore.markFailed(any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
     // when
     backupService.failInProgressBackups(1, 10, concurrencyControl);
 
