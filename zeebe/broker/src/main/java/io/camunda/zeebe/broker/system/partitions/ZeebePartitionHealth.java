@@ -80,7 +80,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
   }
 
   @Override
-  public String getName() {
+  public String componentName() {
     return name;
   }
 

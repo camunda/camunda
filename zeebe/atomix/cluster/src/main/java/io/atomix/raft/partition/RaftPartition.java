@@ -152,13 +152,14 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   }
 
   @Override
-  public String getName(){
-    return name();
+  public String componentName() {
+    return String.format(PARTITION_COMPONENT_NAME_FORMAT, partitionId.id());
   }
 
   @Override
   public HealthReport getHealthReport() {
-    return server.getHealthReport();
+    // name must be overridden otherwise it equals to name()
+    return server.getHealthReport().withName(componentName());
   }
 
   @Override
@@ -169,10 +170,6 @@ public final class RaftPartition implements Partition, HealthMonitorable {
   @Override
   public void removeFailureListener(final FailureListener failureListener) {
     server.removeFailureListener(failureListener);
-  }
-
-  public String componentName() {
-    return String.format(PARTITION_COMPONENT_NAME_FORMAT, partitionId.id());
   }
 
   /** Closes the partition. */
