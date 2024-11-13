@@ -1,0 +1,19 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "groupKey": {
+        "type": "long"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "assignedMemberKeys": {
+        "type": "long"
+      }
+    }
+  }
+}

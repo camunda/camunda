@@ -28,6 +28,7 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
+import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
@@ -76,6 +77,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
@@ -131,27 +133,21 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 new BatchOperationTemplate(globalPrefix, isElasticsearch)));
 
     indexDescriptorsMap =
-        Map.of(
-            DecisionIndex.class,
-            new DecisionIndex(globalPrefix, isElasticsearch),
-            DecisionRequirementsIndex.class,
-            new DecisionRequirementsIndex(globalPrefix, isElasticsearch),
-            MetricIndex.class,
-            new MetricIndex(globalPrefix, isElasticsearch),
-            ProcessIndex.class,
-            new ProcessIndex(globalPrefix, isElasticsearch),
-            FormIndex.class,
-            new FormIndex(globalPrefix, isElasticsearch),
-            TasklistMetricIndex.class,
-            new TasklistMetricIndex(globalPrefix, isElasticsearch),
-            UserIndex.class,
-            new UserIndex(globalPrefix, isElasticsearch),
-            AuthorizationIndex.class,
-            new AuthorizationIndex(globalPrefix, isElasticsearch),
-            MappingIndex.class,
-            new MappingIndex(globalPrefix, isElasticsearch),
-            TenantIndex.class,
-            new TenantIndex(globalPrefix, isElasticsearch));
+        Map.ofEntries(
+            entry(DecisionIndex.class, new DecisionIndex(globalPrefix, isElasticsearch)),
+            entry(
+                DecisionRequirementsIndex.class,
+                new DecisionRequirementsIndex(globalPrefix, isElasticsearch)),
+            entry(MetricIndex.class, new MetricIndex(globalPrefix, isElasticsearch)),
+            entry(ProcessIndex.class, new ProcessIndex(globalPrefix, isElasticsearch)),
+            entry(FormIndex.class, new FormIndex(globalPrefix, isElasticsearch)),
+            entry(
+                TasklistMetricIndex.class, new TasklistMetricIndex(globalPrefix, isElasticsearch)),
+            entry(UserIndex.class, new UserIndex(globalPrefix, isElasticsearch)),
+            entry(AuthorizationIndex.class, new AuthorizationIndex(globalPrefix, isElasticsearch)),
+            entry(MappingIndex.class, new MappingIndex(globalPrefix, isElasticsearch)),
+            entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
+            entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)));
 
     final var processCache =
         new ExporterEntityCacheImpl<Long, CachedProcessEntity>(
@@ -174,6 +170,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),
             new TenantCreateUpdateHandler(
                 indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
+            new GroupCreatedUpdatedHandler(
+                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
             new ListViewProcessInstanceFromProcessInstanceHandler(
