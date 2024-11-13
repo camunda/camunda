@@ -23,7 +23,9 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.DecisionInstanceServices;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
@@ -326,6 +328,34 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "title": "java.lang.RuntimeException",
                   "status": 500,
                   "detail": "Unexpected error occurred during the request processing: Something bad happened.",
+                  "instance": "/v2/decision-instances/123"
+                }""");
+  }
+
+  @Test
+  void shouldReturn403ForUnauthorizedGetDecisionDefinitionByKey() {
+    // given
+    final var decisionInstanceKey = 123L;
+    when(decisionInstanceServices.getByKey(decisionInstanceKey))
+        .thenThrow(
+            new ForbiddenException(Authorization.of(a -> a.decisionDefinition().readInstance())));
+    // when
+    webClient
+        .get()
+        .uri("/v2/decision-instances/{decisionInstanceKey}", decisionInstanceKey)
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(
+            """
+                  {
+                  "type": "about:blank",
+                  "title": "io.camunda.service.exception.ForbiddenException",
+                  "status": 403,
+                  "detail": "Unauthorized to perform operation 'READ_INSTANCE' on resource 'DECISION_DEFINITION'",
                   "instance": "/v2/decision-instances/123"
                 }""");
   }
