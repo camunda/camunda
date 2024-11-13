@@ -67,8 +67,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
 
     final var authorizationRequest =
         new AuthorizationRequest(
-                command, AuthorizationResourceType.MAPPING_RULE, PermissionType.DELETE)
-            .addResourceId(persistedMapping.get().getClaimName());
+            command, AuthorizationResourceType.MAPPING_RULE, PermissionType.DELETE);
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(

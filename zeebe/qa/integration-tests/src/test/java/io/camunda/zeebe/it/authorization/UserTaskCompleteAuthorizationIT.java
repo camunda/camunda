@@ -137,7 +137,8 @@ public class UserTaskCompleteAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'UPDATE' on resource 'PROCESS_DEFINITION'");
+              "Unauthorized to perform operation 'UPDATE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
+              PROCESS_ID);
     }
   }
 

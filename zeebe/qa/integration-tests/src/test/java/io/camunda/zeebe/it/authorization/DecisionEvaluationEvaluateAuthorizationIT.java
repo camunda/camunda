@@ -134,7 +134,8 @@ public class DecisionEvaluationEvaluateAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'CREATE' on resource 'DECISION_DEFINITION'");
+              "Unauthorized to perform operation 'CREATE' on resource 'DECISION_DEFINITION' with decision id '%s'",
+              DECISION_ID);
     }
   }
 }

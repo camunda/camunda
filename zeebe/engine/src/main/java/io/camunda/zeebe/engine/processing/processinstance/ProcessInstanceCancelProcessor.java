@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -97,8 +97,10 @@ public final class ProcessInstanceCancelProcessor
             .addResourceId(elementInstance.getValue().getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(request)) {
       final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              request.getPermissionType(), request.getResourceType());
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              request.getPermissionType(),
+              request.getResourceType(),
+              "BPMN process id '%s'".formatted(elementInstance.getValue().getBpmnProcessId()));
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return false;

@@ -79,7 +79,9 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+              authorizationRequest.getPermissionType(),
+              authorizationRequest.getResourceType(),
+              "role name '%s'".formatted(persistedRecord.get().getName()));
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return;
