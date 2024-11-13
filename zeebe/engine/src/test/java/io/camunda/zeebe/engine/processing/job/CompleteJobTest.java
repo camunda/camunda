@@ -193,8 +193,7 @@ public final class CompleteJobTest {
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
 
-    Assertions.assertThat(completedRecord.getValue())
-            .hasResult(new JobResult().setDenied(false));
+    Assertions.assertThat(completedRecord.getValue()).hasResult(new JobResult().setDenied(false));
   }
 
   @Test
@@ -216,8 +215,7 @@ public final class CompleteJobTest {
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
 
-    Assertions.assertThat(completedRecord.getValue())
-            .hasResult(new JobResult().setDenied(true));
+    Assertions.assertThat(completedRecord.getValue()).hasResult(new JobResult().setDenied(true));
   }
 
   @Test
