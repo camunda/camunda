@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.List;
 
@@ -46,6 +47,14 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   UserTaskFilter assignee(final String assignee);
+
+  /**
+   * Filters user tasks by the specified assignee using {@link StringFilterProperty}.
+   *
+   * @param assignee the assignee {@link StringFilterProperty} of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter assignee(final StringFilterProperty assignee);
 
   /**
    * Filters user tasks by the specified priority.
@@ -80,12 +89,28 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter candidateGroup(final String candidateGroup);
 
   /**
+   * Filters user tasks by the specified candidate group using {@link StringFilterProperty}.
+   *
+   * @param candidateGroup the candidate group {@link StringFilterProperty} of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter candidateGroup(final StringFilterProperty candidateGroup);
+
+  /**
    * Filters user tasks by the specified candidate user.
    *
    * @param candidateUser the candidate user of the user task
    * @return the updated filter
    */
   UserTaskFilter candidateUser(final String candidateUser);
+
+  /**
+   * Filters user tasks by the specified candidate user using {@link StringFilterProperty}.
+   *
+   * @param candidateUser the candidate user {@link StringFilterProperty} of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter candidateUser(final StringFilterProperty candidateUser);
 
   /**
    * Filters user tasks by the specified process definition key.

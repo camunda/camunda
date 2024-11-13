@@ -13,6 +13,7 @@ import static io.camunda.util.CollectionUtil.withoutNull;
 import io.camunda.search.clients.query.SearchHasParentQuery.Builder;
 import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
 import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.search.filter.UntypedOperation;
@@ -462,21 +463,43 @@ public final class SearchQueryBuilders {
       final var searchQueries = new ArrayList<SearchQuery>();
       operations.forEach(
           op -> {
-            searchQueries.add(
+            // common operations
+            final var res =
                 switch (op.operator()) {
                   case EQUALS -> term(field, TypedValue.toTypedValue(op.value()));
                   case NOT_EQUALS -> mustNot(term(field, TypedValue.toTypedValue(op.value())));
                   case EXISTS -> exists(field);
                   case NOT_EXISTS -> mustNot(exists(field));
-                  case GREATER_THAN -> range(q -> q.field(field).gt(op.value())).toSearchQuery();
-                  case GREATER_THAN_EQUALS ->
-                      range(q -> q.field(field).gte(op.value())).toSearchQuery();
-                  case LOWER_THAN -> range(q -> q.field(field).lt(op.value())).toSearchQuery();
-                  case LOWER_THAN_EQUALS ->
-                      range(q -> q.field(field).lte(op.value())).toSearchQuery();
                   case IN -> objectTerms(field, op.values());
-                  default -> throw unexpectedOperation("Variable", op.operator());
-                });
+                  default -> null;
+                };
+            if (res != null) {
+              searchQueries.add(res);
+              return;
+            }
+
+            // type specific operations
+            final var type = op.type();
+            if (type.equals(ValueTypeEnum.LONG) || type.equals(ValueTypeEnum.DOUBLE)) {
+              searchQueries.add(
+                  switch (op.operator()) {
+                    case GREATER_THAN -> range(q -> q.field(field).gt(op.value())).toSearchQuery();
+                    case GREATER_THAN_EQUALS ->
+                        range(q -> q.field(field).gte(op.value())).toSearchQuery();
+                    case LOWER_THAN -> range(q -> q.field(field).lt(op.value())).toSearchQuery();
+                    case LOWER_THAN_EQUALS ->
+                        range(q -> q.field(field).lte(op.value())).toSearchQuery();
+                    default -> throw unexpectedOperation("Variable (numeric)", op.operator());
+                  });
+              return;
+            }
+            if (type.equals(ValueTypeEnum.STRING)) {
+              searchQueries.add(
+                  switch (op.operator()) {
+                    case LIKE -> wildcardQuery(field, (String) op.value());
+                    default -> throw unexpectedOperation("Variable (string)", op.operator());
+                  });
+            }
           });
       return searchQueries;
     }

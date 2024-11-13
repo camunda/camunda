@@ -96,7 +96,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   }
 
   @Test
-  void shouldSearchProcessInstanceByProcessInstanceKeyLongProperty() {
+  void shouldSearchProcessInstanceByProcessInstanceKeyLongFilter() {
     // when
     final LongFilterProperty filterProperty = new LongFilterProperty();
     filterProperty.$gt(1L);
@@ -116,6 +116,27 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(processInstanceKey).isNotNull();
     assertThat(processInstanceKey.get$Gt()).isEqualTo(1);
     assertThat(processInstanceKey.get$Lt()).isEqualTo(10);
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByProcessDefinitionIdStringFilter() {
+    // when
+    final StringFilterProperty filterProperty = new StringFilterProperty();
+    filterProperty.$like("string");
+    client
+        .newProcessInstanceQuery()
+        .filter(f -> f.processDefinitionId(filterProperty))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQueryRequest request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
+    final ProcessInstanceFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final StringFilterProperty processInstanceKey = filter.getProcessDefinitionId();
+    assertThat(processInstanceKey).isNotNull();
+    assertThat(processInstanceKey.get$Like()).isEqualTo("string");
   }
 
   @Test

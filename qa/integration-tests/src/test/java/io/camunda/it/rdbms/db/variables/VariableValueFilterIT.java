@@ -233,7 +233,7 @@ public class VariableValueFilterIT {
     final var variableFilter =
         new VariableFilter.Builder()
             .names(varName, "not there")
-            .values(randomizedVariable.value(), "no")
+            .values(randomizedVariable.value())
             .build();
 
     // when we search for it, we should find one
