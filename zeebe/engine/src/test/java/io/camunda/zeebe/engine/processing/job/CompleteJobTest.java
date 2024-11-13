@@ -10,8 +10,6 @@ package io.camunda.zeebe.engine.processing.job;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -71,9 +69,8 @@ public final class CompleteJobTest {
         .hasType(job.getType())
         .hasRetries(job.getRetries())
         .hasDeadline(job.getDeadline())
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-
-    assertFalse(recordValue.getResult().isDenied());
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .hasResult(new JobResult().setDenied(false));
   }
 
   @Test
@@ -195,7 +192,9 @@ public final class CompleteJobTest {
     Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
-    assertFalse(completedRecord.getValue().getResult().isDenied());
+
+    Assertions.assertThat(completedRecord.getValue())
+            .hasResult(new JobResult().setDenied(false));
   }
 
   @Test
@@ -216,7 +215,9 @@ public final class CompleteJobTest {
     Assertions.assertThat(completedRecord)
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
-    assertTrue(completedRecord.getValue().getResult().isDenied());
+
+    Assertions.assertThat(completedRecord.getValue())
+            .hasResult(new JobResult().setDenied(true));
   }
 
   @Test
