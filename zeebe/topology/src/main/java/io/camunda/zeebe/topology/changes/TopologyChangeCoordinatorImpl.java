@@ -103,7 +103,7 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
                         // the default coordinator
                         failFuture(
                             future,
-                            new InternalError(
+                            new TopologyRequestFailedException.InternalError(
                                 String.format(
                                     "Cannot process request to change the topology. The broker '%s' is not the coordinator.",
                                     localMemberId)));
