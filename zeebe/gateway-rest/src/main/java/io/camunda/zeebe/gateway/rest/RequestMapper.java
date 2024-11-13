@@ -81,6 +81,7 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
@@ -168,7 +169,10 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, UpdateUserRequest> toUserUpdateRequest(
       final UserUpdateRequest updateRequest, final long userKey) {
-    return Either.right(new UpdateUserRequest(userKey, updateRequest.getChangeset().getName()));
+    final UserChangeset changeset = updateRequest.getChangeset();
+    return Either.right(
+        new UpdateUserRequest(
+            userKey, changeset.getName(), changeset.getEmail(), changeset.getPassword()));
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
@@ -755,7 +759,7 @@ public class RequestMapper {
 
   public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
 
-  public record UpdateUserRequest(long userKey, String name) {}
+  public record UpdateUserRequest(long userKey, String name, String email, String password) {}
 
   public record AssignUserTaskRequest(
       long userTaskKey, String assignee, String action, boolean allowOverride) {}
