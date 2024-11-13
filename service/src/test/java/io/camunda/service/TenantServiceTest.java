@@ -24,6 +24,7 @@ import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -121,5 +122,22 @@ public class TenantServiceTest {
     final TenantRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
     assertThat(brokerRequestValue.getTenantId()).isEqualTo(tenantDTO.tenantId());
+  }
+
+  @Test
+  public void shouldUpdateTenantName() {
+    // given
+    final var tenantDTO = new TenantDTO(100L, "ignored", "UpdatedTenantId");
+
+    // when
+    services.updateTenant(tenantDTO);
+
+    // then
+    final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(TenantIntent.UPDATE);
+    assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
+    assertThat(request.getKey()).isEqualTo(tenantDTO.tenantKey());
+    final TenantRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
   }
 }
