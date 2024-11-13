@@ -119,7 +119,7 @@ public final class ClientProperties {
   public static final String CLOUD_CLIENT_SECRET = "zeebe.client.cloud.secret";
 
   /**
-   * @see
+   * @seed
    *     io.camunda.zeebe.client.ZeebeClientCloudBuilderStep1.ZeebeClientCloudBuilderStep2.ZeebeClientCloudBuilderStep3.ZeebeClientCloudBuilderStep4#withRegion(String)
    */
   public static final String CLOUD_REGION = "zeebe.client.cloud.region";
