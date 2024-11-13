@@ -42,6 +42,7 @@ import io.camunda.exporter.handlers.MappingDeletedHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
+import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
@@ -313,6 +314,15 @@ public class CamundaExporterHandlerIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     final var handler = getHandler(config, TaskCompletedMetricHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, defaultRecordGenerator(handler));
+  }
+
+  @TestTemplate
+  void shouldExportUsingRoleTaskVariableHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, RoleCreateUpdateHandler.class);
     basicAssertWhereHandlerCreatesDefaultEntity(
         handler, config, clientAdapter, defaultRecordGenerator(handler));
   }

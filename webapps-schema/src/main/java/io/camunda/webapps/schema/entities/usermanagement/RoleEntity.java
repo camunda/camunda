@@ -12,10 +12,9 @@ import java.util.Set;
 
 public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
 
-  public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
   private Long roleKey;
   private String name;
-  private Set<Long> assignedMemberKeys;
+  private Set<Long> assignedMemberKey;
 
   public Long getRoleKey() {
     return roleKey;
@@ -35,12 +34,12 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public Set<Long> getAssignMemberKeys() {
-    return assignedMemberKeys;
+  public Set<Long> getAssignMemberKey() {
+    return assignedMemberKey;
   }
 
-  public RoleEntity setAssignMemberKeys(final Set<Long> entityKey) {
-    assignedMemberKeys = entityKey;
+  public RoleEntity setAssignMemberKey(final Set<Long> entityKey) {
+    assignedMemberKey = entityKey;
     return this;
   }
 }

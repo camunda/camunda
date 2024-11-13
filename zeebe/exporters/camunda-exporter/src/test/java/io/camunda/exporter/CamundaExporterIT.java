@@ -30,7 +30,6 @@ import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -38,7 +37,6 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -191,32 +189,6 @@ final class CamundaExporterIT {
 
     // then
     verify(spiedController, times(2)).scheduleCancellableTask(eq(Duration.ofSeconds(2)), any());
-  }
-
-  @TestTemplate
-  void shouldExportRoleRecord(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws Exception {
-    // given
-    final var exporter = createExporter(Set.of(), Set.of(), config);
-
-    // when
-    final Record<RoleRecordValue> record = factory.generateRecord(ValueType.ROLE);
-    final String recordId = String.valueOf(record.getKey());
-    exporter.export(record);
-
-    // then
-    final var responseRoleEntity =
-        clientAdapter.get(
-            recordId, config.getIndex().getPrefix() + "-identity-role-8.7.0_", RoleEntity.class);
-
-    assertThat(responseRoleEntity)
-        .describedAs("Role entity is updated correctly from the role record")
-        .extracting(RoleEntity::getRoleKey, RoleEntity::getName, RoleEntity::getAssignMemberKeys)
-        .containsExactly(
-            record.getValue().getRoleKey(),
-            record.getValue().getName(),
-            String.valueOf(record.getKey()));
   }
 
   @TestTemplate

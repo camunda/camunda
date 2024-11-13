@@ -2,6 +2,9 @@
   "mappings": {
     "dynamic": "strict",
     "properties": {
+      "id": {
+        "type": "keyword"
+      },
       "roleKey": {
         "type": "long"
       },
