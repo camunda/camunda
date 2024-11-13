@@ -61,4 +61,9 @@ public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRe
       throws PersistenceException {
     batchRequest.add(indexName, entity);
   }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
 }
