@@ -146,6 +146,8 @@ public final class DeploymentCreateProcessor
     if (deploymentState.hasStoredDeploymentRecord(command.getKey())) {
       // we already processed this deployment, so we can ignore it
       distributionBehavior.acknowledgeCommand(command);
+      rejectionWriter.appendRejection(
+          command, RejectionType.ALREADY_EXISTS, "Deployment already exists");
       return;
     }
 
