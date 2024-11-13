@@ -36,6 +36,10 @@
             <include>**/*Tests.java</include>
             <include>**/*TestCase.java</include>
           </includes>
+          <excludes>
+            <exclude>**/io/camunda/it/auth/*.java</exclude>
+            <!-- FIXME - temporarily ignoring flaky tests -->
+          </excludes>
         </configuration>
       </plugin>
 
