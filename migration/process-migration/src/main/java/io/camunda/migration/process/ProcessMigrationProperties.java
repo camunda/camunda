@@ -14,6 +14,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class ProcessMigrationProperties {
 
   private int batchSize = 20;
+  private int maxRetries = 3;
+  private int backoffInSeconds = 1;
   private ConnectConfiguration connect = new ConnectConfiguration();
 
   public ConnectConfiguration getConnect() {
@@ -30,5 +32,21 @@ public class ProcessMigrationProperties {
 
   public void setBatchSize(final int batchSize) {
     this.batchSize = batchSize;
+  }
+
+  public int getMaxRetries() {
+    return maxRetries;
+  }
+
+  public void setMaxRetries(final int maxRetries) {
+    this.maxRetries = maxRetries;
+  }
+
+  public int getBackoffInSeconds() {
+    return backoffInSeconds;
+  }
+
+  public void setBackoffInSeconds(final int backoffInSeconds) {
+    this.backoffInSeconds = backoffInSeconds;
   }
 }

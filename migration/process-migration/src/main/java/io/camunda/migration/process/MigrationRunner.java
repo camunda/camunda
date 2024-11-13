@@ -38,18 +38,19 @@ public class MigrationRunner implements Migrator {
   private static final Logger LOG = LoggerFactory.getLogger(MigrationRunner.class);
 
   private static final String ELASTICSEARCH = "elasticsearch";
-  private static final Long INITIAL_BACKOFF = 1000L;
-  private static final int MAX_RETRIES = 3;
-  final AtomicLong backoff = new AtomicLong(INITIAL_BACKOFF);
-  final AtomicInteger retries = new AtomicInteger();
+  final AtomicLong backoff = new AtomicLong();
+  final AtomicInteger retries = new AtomicInteger(0);
   private final Adapter adapter;
+  private final ProcessMigrationProperties properties;
 
   public MigrationRunner(final ProcessMigrationProperties properties) {
+    this.properties = properties;
     adapter =
         properties.getConnect().getType().equals(ELASTICSEARCH)
             ? new ElasticsearchAdapter(
                 properties, new ElasticsearchConnector(properties.getConnect()))
             : new OpensearchAdapter(properties, new OpensearchConnector(properties.getConnect()));
+    backoff.set(properties.getBackoffInSeconds() * 1000L);
   }
 
   @Override
@@ -64,7 +65,7 @@ public class MigrationRunner implements Migrator {
       lastMigratedProcessDefinitionKey = migrateBatch(items);
       final boolean retry = lastMigratedProcessDefinitionKey == null;
       scheduleNextBatch(scheduler, retry);
-      if (retries.get() >= MAX_RETRIES) {
+      if (retries.get() >= properties.getMaxRetries()) {
         break;
       }
       items = retry ? items : adapter.nextBatch(lastMigratedProcessDefinitionKey);
@@ -99,7 +100,7 @@ public class MigrationRunner implements Migrator {
   }
 
   private void resetBackoff() {
-    backoff.set(INITIAL_BACKOFF);
+    backoff.set(properties.getBackoffInSeconds());
     retries.set(0);
   }
 
@@ -117,6 +118,7 @@ public class MigrationRunner implements Migrator {
             e -> {
               processEntity.setFormId(ProcessModelUtil.extractFormId(e).orElse(null));
               processEntity.setIsPublic(ProcessModelUtil.extractIsPublic(e).orElse(false));
+              // Placeholder for embedded forms
               // processEntity.setFormKey(ProcessModelUtil.extractFormKey(e).orElse(null));
             });
     return processEntity;
@@ -130,7 +132,7 @@ public class MigrationRunner implements Migrator {
       LOG.error("Failed to close adapter", e);
     }
 
-    if (retries.get() >= MAX_RETRIES) {
+    if (retries.get() >= properties.getMaxRetries()) {
       throw new MigrationException("Process migration failed, retries exceeded");
     }
   }
