@@ -80,7 +80,7 @@ public class UserController {
                 .updateUser(
                     new UserDTO(
                         request.userKey(),
-                        request.username(),
+                        "",
                         request.name(),
                         request.email(),
                         request.password())));
