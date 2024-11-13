@@ -22,6 +22,9 @@ import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class GroupCreatedUpdatedHandlerTest {
 
@@ -52,11 +55,15 @@ public class GroupCreatedUpdatedHandlerTest {
     assertThat(underTest.handlesRecord(groupUpdatedRecord)).isTrue();
   }
 
-  @Test
-  void shouldGenerateIds() {
+  @ParameterizedTest
+  @EnumSource(
+      value = GroupIntent.class,
+      names = {"CREATED", "UPDATED"},
+      mode = Mode.INCLUDE)
+  void shouldGenerateIds(final GroupIntent intent) {
     // given
     final Record<GroupRecordValue> groupRecord =
-        factory.generateRecordWithIntent(ValueType.GROUP, GroupIntent.CREATED);
+        factory.generateRecordWithIntent(ValueType.GROUP, intent);
 
     // when
     final var idList = underTest.generateIds(groupRecord);

@@ -405,12 +405,21 @@ public class CamundaExporterHandlerIT {
   }
 
   @TestTemplate
-  void shouldExportUsingGroupCreateUpdateHandler(
+  void shouldExportGroupCreatedUsingGroupCreateUpdateHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     final var handler = getHandler(config, GroupCreatedUpdatedHandler.class);
     basicAssertWhereHandlerCreatesDefaultEntity(
         handler, config, clientAdapter, groupRecordGenerator(handler, GroupIntent.CREATED));
+  }
+
+  @TestTemplate
+  void shouldExportGroupUpdatedUsingGroupCreateUpdateHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, GroupCreatedUpdatedHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, groupRecordGenerator(handler, GroupIntent.UPDATED));
   }
 
   @SuppressWarnings("unchecked")
