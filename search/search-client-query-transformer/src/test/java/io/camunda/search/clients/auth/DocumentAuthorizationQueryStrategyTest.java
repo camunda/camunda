@@ -31,6 +31,7 @@ import io.camunda.search.query.SearchQueryBase;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.entity.Permission;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -102,8 +103,8 @@ class DocumentAuthorizationQueryStrategyTest {
                     null,
                     null,
                     List.of(
-                        new Permission(READ, List.of("foo", "*")),
-                        new Permission(CREATE, List.of("bar"))))));
+                        new Permission(READ, Set.of("foo", "*")),
+                        new Permission(CREATE, Set.of("bar"))))));
 
     // when
     final SearchQueryRequest result =
@@ -155,8 +156,8 @@ class DocumentAuthorizationQueryStrategyTest {
                     null,
                     null,
                     List.of(
-                        new Permission(READ, List.of("foo")),
-                        new Permission(CREATE, List.of("bar"))))));
+                        new Permission(READ, Set.of("foo")),
+                        new Permission(CREATE, Set.of("bar"))))));
 
     // when
     final SearchQueryRequest result =

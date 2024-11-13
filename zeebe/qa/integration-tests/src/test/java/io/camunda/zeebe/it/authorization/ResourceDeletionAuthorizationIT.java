@@ -103,7 +103,8 @@ public class ResourceDeletionAuthorizationIT {
   @Test
   void shouldBeUnAuthorizedToDeleteProcessDefinitionWithPermissions() {
     // given
-    final var processDefinitionKey = deployProcessDefinition(Strings.newRandomValidBpmnId());
+    final var processId = Strings.newRandomValidBpmnId();
+    final var processDefinitionKey = deployProcessDefinition(processId);
     final var username = UUID.randomUUID().toString();
     final var password = "password";
     authUtil.createUser(username, password);
@@ -118,7 +119,8 @@ public class ResourceDeletionAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'DELETE_PROCESS' on resource 'DEPLOYMENT'");
+              "Unauthorized to perform operation 'DELETE_PROCESS' on resource 'DEPLOYMENT' with id '%s'",
+              processId);
     }
   }
 
@@ -161,6 +163,7 @@ public class ResourceDeletionAuthorizationIT {
   @Test
   void shouldBeUnAuthorizedToDeleteDrdWithPermissions() {
     // given
+    final var drdId = "force_users";
     final var drdKey = deployDrd();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
@@ -176,7 +179,8 @@ public class ResourceDeletionAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'DELETE_DRD' on resource 'DEPLOYMENT'");
+              "Unauthorized to perform operation 'DELETE_DRD' on resource 'DEPLOYMENT' with id '%s'",
+              drdId);
     }
   }
 
@@ -217,6 +221,7 @@ public class ResourceDeletionAuthorizationIT {
   @Test
   void shouldBeUnAuthorizedToDeleteFormWithPermissions() {
     // given
+    final var formId = "Form_0w7r08e";
     final var formKey = deployForm();
     final var username = UUID.randomUUID().toString();
     final var password = "password";
@@ -232,7 +237,8 @@ public class ResourceDeletionAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'DELETE_FORM' on resource 'DEPLOYMENT'");
+              "Unauthorized to perform operation 'DELETE_FORM' on resource 'DEPLOYMENT' with id '%s'",
+              formId);
     }
   }
 

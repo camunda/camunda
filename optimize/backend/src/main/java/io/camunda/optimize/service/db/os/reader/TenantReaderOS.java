@@ -12,9 +12,9 @@ import static io.camunda.optimize.service.db.DatabaseConstants.TENANT_INDEX_NAME
 
 import io.camunda.optimize.dto.optimize.TenantDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL;
-import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.RequestDSL;
+import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.reader.TenantReader;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;

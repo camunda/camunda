@@ -21,6 +21,7 @@ import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
+import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -34,6 +35,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -48,6 +50,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -69,7 +72,8 @@ public class RdbmsSearchClient
         UserTaskSearchClient,
         UserSearchClient,
         VariableSearchClient,
-        RoleSearchClient {
+        RoleSearchClient,
+        TenantSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -162,12 +166,21 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
-    return null;
+  public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for variables: {}", query);
+
+    final var searchResult = rdbmsService.getVariableReader().search(query);
+
+    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
   }
 
   @Override
   public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
     return null;
   }
 

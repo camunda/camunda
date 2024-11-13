@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -54,7 +53,6 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     engine
         .authorization()
         .permission()
-        .withAction(PermissionAction.ADD)
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
@@ -64,7 +62,13 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
+                .filter(
+                    record ->
+                        record.getValueType() == ValueType.AUTHORIZATION
+                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
+                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
+                                    == AuthorizationIntent.ADD_PERMISSION)))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
@@ -116,7 +120,6 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     engine
         .authorization()
         .permission()
-        .withAction(PermissionAction.ADD)
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
@@ -125,7 +128,7 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
@@ -152,7 +155,6 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     engine
         .authorization()
         .permission()
-        .withAction(PermissionAction.ADD)
         .withOwnerKey(ownerKey)
         .withResourceType(AuthorizationResourceType.DEPLOYMENT)
         .withPermission(PermissionType.CREATE, "foo")
@@ -164,10 +166,11 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(2))
+                .limit(3))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.USER, UserIntent.CREATE),
+            tuple(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION),
             tuple(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION));
   }
 

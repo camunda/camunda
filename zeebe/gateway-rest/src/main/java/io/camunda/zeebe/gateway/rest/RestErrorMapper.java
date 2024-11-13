@@ -18,6 +18,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.NotFoundException;
 import io.camunda.service.DocumentServices.DocumentException;
 import io.camunda.service.exception.CamundaBrokerException;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
 import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
@@ -94,6 +95,9 @@ public class RestErrorMapper {
             "Expected to handle REST request, but resource was not found", nfe);
         yield createProblemDetail(
             HttpStatus.NOT_FOUND, nfe.getMessage(), RejectionType.NOT_FOUND.name());
+      case final ForbiddenException fe:
+        REST_GATEWAY_LOGGER.trace("Expected to handle REST request, but was forbidden", fe);
+        yield createProblemDetail(HttpStatus.FORBIDDEN, fe.getMessage(), fe.getClass().getName());
       case final CamundaSearchException cse:
         REST_GATEWAY_LOGGER.debug(
             "Expected to handle REST request, but search request failed", cse);

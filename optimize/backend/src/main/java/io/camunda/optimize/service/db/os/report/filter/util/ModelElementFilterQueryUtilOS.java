@@ -9,12 +9,12 @@ package io.camunda.optimize.service.db.os.report.filter.util;
 
 import static io.camunda.optimize.dto.optimize.ReportConstants.APPLIED_TO_ALL_DEFINITIONS;
 import static io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.MembershipFilterOperator.IN;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.nested;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.not;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.not;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.stringTerms;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.DurationScriptUtilOS.getDurationFilterScript;
 import static io.camunda.optimize.service.db.report.filter.util.ModelElementFilterQueryUtil.getViewLevelFiltersForInstanceMatch;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;

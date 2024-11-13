@@ -22,9 +22,9 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
   private final MutableMappingState mappingState;
 
   public TenantEntityRemovedApplier(final MutableProcessingState state) {
-    this.tenantState = state.getTenantState();
-    this.userState = state.getUserState();
-    this.mappingState = state.getMappingState();
+    tenantState = state.getTenantState();
+    userState = state.getUserState();
+    mappingState = state.getMappingState();
   }
 
   @Override
@@ -32,7 +32,7 @@ public class TenantEntityRemovedApplier implements TypedEventApplier<TenantInten
     tenantState.removeEntity(tenant.getTenantKey(), tenant.getEntityKey());
     switch (tenant.getEntityType()) {
       case USER -> userState.removeTenant(tenant.getEntityKey(), tenant.getTenantId());
-      case MAPPING -> mappingState.removeTenant(tenant.getEntityKey(), tenant.getTenantId());
+      case MAPPING -> mappingState.removeTenant(tenant.getEntityKey(), tenant.getTenantKey());
       default ->
           throw new UnsupportedOperationException(
               String.format(

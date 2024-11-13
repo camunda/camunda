@@ -19,6 +19,7 @@ import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -126,19 +127,25 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
-  void shouldFailIndexTemplateUpdateIfCreateTrue() {
+  void shouldNotThrowIfCreatingExistingTemplate() {
     // given
-    final var template =
+    final var indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
-            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "/mappings.json");
-    opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), false);
+            "index_name",
+            "test*",
+            "alias",
+            Collections.emptyList(),
+            "template_name",
+            "/mappings.json");
 
-    // when
-    // then
-    assertThatThrownBy(
-            () -> opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), true))
-        .isInstanceOf(OpensearchExporterException.class)
-        .hasMessageContaining("Cannot update template [template_name] as create = true");
+    final var settings = new IndexSettings();
+    opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true);
+
+    // when, then
+    assertThatNoException()
+        .describedAs("Creating an already existing template should not throw")
+        .isThrownBy(
+            () -> opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true));
   }
 
   @Test

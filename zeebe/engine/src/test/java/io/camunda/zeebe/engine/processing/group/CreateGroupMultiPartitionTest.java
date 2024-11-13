@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -97,11 +98,12 @@ public class CreateGroupMultiPartitionTest {
 
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
-    // given the group creation distribution is intercepted
+    // given the role creation distribution is intercepted
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
-      interceptGroupCommandForPartition(partitionId, GroupIntent.CREATE);
+      interceptGroupCommandForPartition(partitionId, RoleIntent.CREATE);
     }
-    engine.group().newGroup(UUID.randomUUID().toString()).create();
+
+    engine.role().newRole(UUID.randomUUID().toString()).create();
 
     // when
     final var name = UUID.randomUUID().toString();
@@ -116,11 +118,11 @@ public class CreateGroupMultiPartitionTest {
                 .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
-            tuple(ValueType.GROUP, GroupIntent.CREATE), tuple(ValueType.GROUP, GroupIntent.CREATE));
+            tuple(ValueType.ROLE, RoleIntent.CREATE), tuple(ValueType.GROUP, GroupIntent.CREATE));
   }
 
   private void interceptGroupCommandForPartition(
-      final int partitionId, final GroupIntent groupIntent) {
+      final int partitionId, final RoleIntent roleIntent) {
     final var hasInterceptedPartition = new AtomicBoolean(false);
     engine.interceptInterPartitionCommands(
         (receiverPartitionId, valueType, intent, recordKey, command) -> {
@@ -128,7 +130,7 @@ public class CreateGroupMultiPartitionTest {
             return true;
           }
           hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == groupIntent);
+          return !(receiverPartitionId == partitionId && intent == roleIntent);
         });
   }
 }

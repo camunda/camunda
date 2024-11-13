@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.filter;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.or;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.or;
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.MultipleVariableFilterDataDto;
 import io.camunda.optimize.service.db.filter.FilterContext;

@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.repository.os;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.lt;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.lt;
 import static io.camunda.optimize.service.util.InstanceIndexUtil.getDecisionInstanceIndexAliasName;
 
 import io.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;

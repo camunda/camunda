@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.message;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -165,6 +165,7 @@ public final class MessageCorrelationCorrelateProcessor
       final TypedRecord<MessageCorrelationRecord> command,
       final Subscriptions correlatingSubscriptions) {
     final AtomicReference<AuthorizationRequest> request = new AtomicReference<>();
+    final AtomicReference<String> processId = new AtomicReference<>();
 
     final var isAuthorized =
         correlatingSubscriptions.visitSubscriptions(
@@ -178,7 +179,9 @@ public final class MessageCorrelationCorrelateProcessor
                   new AuthorizationRequest(
                       command, AuthorizationResourceType.PROCESS_DEFINITION, permissionType));
 
-              request.get().addResourceId(bufferAsString(subscription.getBpmnProcessId()));
+              final var processIdString = bufferAsString(subscription.getBpmnProcessId());
+              request.get().addResourceId(processIdString);
+              processId.set(processIdString);
               return authCheckBehavior.isAuthorized(request.get());
             },
             true);
@@ -186,8 +189,10 @@ public final class MessageCorrelationCorrelateProcessor
     if (!isAuthorized) {
       final var authorizationRequest = request.get();
       final var error =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authorizationRequest.getPermissionType(),
+              authorizationRequest.getResourceType(),
+              "BPMN process id '%s'".formatted(processId.get()));
       return Optional.of(new Rejection(RejectionType.UNAUTHORIZED, error));
     }
 

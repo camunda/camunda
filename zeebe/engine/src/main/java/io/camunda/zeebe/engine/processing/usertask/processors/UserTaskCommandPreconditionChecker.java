@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -87,8 +87,10 @@ public class UserTaskCommandPreconditionChecker {
       return Either.left(
           Tuple.of(
               RejectionType.UNAUTHORIZED,
-              UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                  authRequest.getPermissionType(), authRequest.getResourceType())));
+              UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                  authRequest.getPermissionType(),
+                  authRequest.getResourceType(),
+                  "BPMN process id '%s'".formatted(persistedRecord.getBpmnProcessId()))));
     }
 
     final LifecycleState lifecycleState = userTaskState.getLifecycleState(userTaskKey);

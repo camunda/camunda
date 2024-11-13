@@ -8,7 +8,7 @@
 package io.camunda.optimize.service.db.os.report.interpreter.view.decision;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.FREQUENCY_AGGREGATION;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
 import static io.camunda.optimize.service.db.report.plan.decision.DecisionView.DECISION_VIEW_INSTANCE_FREQUENCY;
 
 import io.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.*;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
 
@@ -100,6 +100,7 @@ public class ProcessInstanceMigrationMigrateProcessor
         new ProcessInstanceMigrationCatchEventBehaviour(
             processingState.getProcessMessageSubscriptionState(),
             bpmnBehaviors.catchEventBehavior(),
+            bpmnBehaviors.compensationSubscriptionBehaviour(),
             writers.command(),
             commandDistributionBehavior,
             processingState.getDistributionState(),
@@ -124,8 +125,10 @@ public class ProcessInstanceMigrationMigrateProcessor
             .addResourceId(processInstance.getValue().getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authorizationRequest.getPermissionType(),
+              authorizationRequest.getResourceType(),
+              "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()));
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return;
@@ -228,24 +231,42 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceProcessDefinition,
         elementInstanceRecord,
         EnumSet.of(
-            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
+            BpmnEventType.MESSAGE,
+            BpmnEventType.TIMER,
+            BpmnEventType.SIGNAL,
+            BpmnEventType.ERROR,
+            BpmnEventType.ESCALATION));
     requireNoEventSubprocessInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
         EnumSet.of(
-            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
+            BpmnEventType.MESSAGE,
+            BpmnEventType.TIMER,
+            BpmnEventType.SIGNAL,
+            BpmnEventType.ERROR,
+            BpmnEventType.ESCALATION));
     requireNoBoundaryEventInSource(
         sourceProcessDefinition,
         elementInstanceRecord,
         EnumSet.of(
-            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
+            BpmnEventType.MESSAGE,
+            BpmnEventType.TIMER,
+            BpmnEventType.SIGNAL,
+            BpmnEventType.ERROR,
+            BpmnEventType.ESCALATION,
+            BpmnEventType.COMPENSATION));
     requireNoBoundaryEventInTarget(
         targetProcessDefinition,
         targetElementId,
         elementInstanceRecord,
         EnumSet.of(
-            BpmnEventType.MESSAGE, BpmnEventType.TIMER, BpmnEventType.SIGNAL, BpmnEventType.ERROR));
+            BpmnEventType.MESSAGE,
+            BpmnEventType.TIMER,
+            BpmnEventType.SIGNAL,
+            BpmnEventType.ERROR,
+            BpmnEventType.ESCALATION,
+            BpmnEventType.COMPENSATION));
     requireMappedCatchEventsToStayAttachedToSameElement(
         processInstanceKey,
         sourceProcessDefinition,
@@ -356,6 +377,7 @@ public class ProcessInstanceMigrationMigrateProcessor
       migrationCatchEventBehaviour.handleCatchEvents(
           elementInstance,
           targetProcessDefinition,
+          sourceProcessDefinition,
           sourceElementIdToTargetElementId,
           elementInstanceRecord,
           targetElementId,

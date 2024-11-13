@@ -74,20 +74,6 @@ public class ConfigValidatorTest {
   }
 
   @Test
-  void shouldAssureRolloverDateFormatToBeValid() {
-    // given
-    // Should be a valid format for DateTimeFormatter. A valid date format should be for example
-    // "yyyy-MM-dd" or "dd-MM-yyyy".
-    config.getArchiver().setRolloverDateFormat("month-day-year");
-
-    // when - then
-    assertThatCode(() -> ConfigValidator.validate(config))
-        .isInstanceOf(ExporterException.class)
-        .hasMessageContaining(
-            "CamundaExporter rolloverDateFormat month-day-yearis not a valid DateTimeFormatter pattern: java.lang.IllegalArgumentException:");
-  }
-
-  @Test
   void shouldAssureRolloverIntervalToBeValid() {
     // given
     // Rollover interval must match pattern '%d{timeunit}', where timeunit is one of 'd', 'h',

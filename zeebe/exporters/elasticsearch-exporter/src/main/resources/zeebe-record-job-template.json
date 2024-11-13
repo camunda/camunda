@@ -81,6 +81,13 @@
             },
             "changedAttributes": {
               "type": "text"
+            },
+            "result": {
+              "properties": {
+                "denied": {
+                  "type": "boolean"
+                }
+              }
             }
           }
         }

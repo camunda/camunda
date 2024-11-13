@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.operate;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +21,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   private String bpmnXml;
   private String resourceName;
   private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
+  @JsonIgnore private List<String> callActivityIds = new ArrayList<>();
   private String formId;
   private Boolean isPublic;
   private String tenantId = DEFAULT_TENANT_ID;
@@ -51,6 +53,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         bpmnXml,
         resourceName,
         flowNodes,
+        callActivityIds,
         tenantId,
         formId,
         isPublic);
@@ -75,6 +78,7 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         && Objects.equals(bpmnXml, that.bpmnXml)
         && Objects.equals(resourceName, that.resourceName)
         && Objects.equals(flowNodes, that.flowNodes)
+        && Objects.equals(callActivityIds, that.callActivityIds)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(formId, that.formId)
         && Objects.equals(isPublic, that.isPublic);
@@ -102,6 +106,8 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         + '\''
         + ", flowNodes="
         + flowNodes
+        + ", callActivityIds="
+        + callActivityIds
         + ", formId="
         + formId
         + ", isPublic="
@@ -167,6 +173,15 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
 
   public ProcessEntity setFlowNodes(final List<ProcessFlowNodeEntity> flowNodes) {
     this.flowNodes = flowNodes;
+    return this;
+  }
+
+  public List<String> getCallActivityIds() {
+    return callActivityIds;
+  }
+
+  public ProcessEntity setCallActivityIds(final List<String> callActivityIds) {
+    this.callActivityIds = callActivityIds;
     return this;
   }
 

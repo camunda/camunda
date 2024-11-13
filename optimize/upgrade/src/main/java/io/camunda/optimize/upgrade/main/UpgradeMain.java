@@ -13,6 +13,7 @@ import static io.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependen
 
 import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
@@ -50,6 +51,23 @@ public class UpgradeMain {
                   .orElse(ELASTICSEARCH_DATABASE_PROPERTY));
       LOG.info("Identified {} Database configuration", databaseType.getId());
 
+      final boolean initSchemaEnabled =
+          ConfigurationServiceBuilder.createDefaultConfiguration()
+              .getElasticSearchConfiguration()
+              .getConnection()
+              .isInitSchemaEnabled();
+
+      final boolean clusterTaskCheckingEnabled =
+          ConfigurationServiceBuilder.createDefaultConfiguration()
+              .getElasticSearchConfiguration()
+              .getConnection()
+              .isClusterTaskCheckingEnabled();
+      if (databaseType == DatabaseType.ELASTICSEARCH
+          && (!initSchemaEnabled || !clusterTaskCheckingEnabled)) {
+        throw new UpgradeRuntimeException(
+            "Upgrade cannot be performed without cluster checking and schema initialization enabled");
+      }
+
       final UpgradeExecutionDependencies upgradeDependencies =
           createUpgradeDependencies(databaseType);
       final UpgradeProcedure upgradeProcedure = UpgradeProcedureFactory.create(upgradeDependencies);
@@ -82,6 +100,7 @@ public class UpgradeMain {
       for (final UpgradePlan upgradePlan : upgradePlans) {
         upgradeProcedure.performUpgrade(upgradePlan);
       }
+
       upgradeProcedure.schemaUpgradeClient.initializeSchema();
 
       LOG.info("Update finished successfully.");

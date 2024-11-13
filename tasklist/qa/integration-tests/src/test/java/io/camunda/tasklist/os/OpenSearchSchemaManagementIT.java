@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.os;
 
+import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatPrefixAndComponent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -189,7 +190,7 @@ public class OpenSearchSchemaManagementIT extends TasklistZeebeIntegrationTest {
   }
 
   private String getFullIndexName() {
-    return schemaManager.getIndexPrefix() + "-" + INDEX_NAME;
+    return formatPrefixAndComponent(schemaManager.getIndexPrefix()) + "-" + INDEX_NAME;
   }
 
   private void updateSchemaContent(final String content) throws Exception {

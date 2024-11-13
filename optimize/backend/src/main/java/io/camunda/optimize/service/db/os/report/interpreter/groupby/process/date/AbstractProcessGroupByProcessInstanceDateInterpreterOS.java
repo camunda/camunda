@@ -7,9 +7,9 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.date;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.withSubaggregations;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.withSubaggregations;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.unwrapFilterLimitedAggregations;
 
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;

@@ -16,8 +16,8 @@ import static io.camunda.optimize.service.util.DefinitionQueryUtilOS.createDefin
 
 import io.camunda.optimize.service.db.os.OpenSearchCompositeAggregationScroller;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.AggregationDSL;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.reader.AssigneeAndCandidateGroupsReader;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.ArrayList;

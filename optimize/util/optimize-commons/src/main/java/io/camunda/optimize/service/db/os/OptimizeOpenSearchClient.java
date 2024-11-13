@@ -9,8 +9,8 @@ package io.camunda.optimize.service.db.os;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.GB_UNIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.getRequestBuilder;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.RequestDSL.scrollRequest;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.getRequestBuilder;
+import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.scrollRequest;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
@@ -23,8 +23,8 @@ import io.camunda.optimize.dto.optimize.ImportRequestDto;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.es.schema.TransportOptionsProvider;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
-import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
 import io.camunda.optimize.service.db.schema.ScriptData;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -260,7 +260,7 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final String id,
       final Class<T> responseClass,
       final String errorMessage) {
-    final var requestBuilder = getRequestBuilder(index).id(id);
+    final GetRequest.Builder requestBuilder = getRequestBuilder(index).id(id);
     return get(requestBuilder, responseClass, errorMessage);
   }
 

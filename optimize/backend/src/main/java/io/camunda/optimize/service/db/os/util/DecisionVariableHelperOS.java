@@ -7,10 +7,10 @@
  */
 package io.camunda.optimize.service.db.os.util;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.not;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.not;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableTypeField;
 import static io.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;

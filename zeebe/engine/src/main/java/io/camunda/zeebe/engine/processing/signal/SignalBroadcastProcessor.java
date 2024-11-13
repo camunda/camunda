@@ -131,7 +131,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             .addResourceId(subscriptionRecord.getBpmnProcessId());
 
     if (!authCheckBehavior.isAuthorized(authRequest)) {
-      throw new UnauthorizedException(authRequest);
+      throw new UnauthorizedException(
+          authRequest, "BPMN process id '%s'".formatted(subscriptionRecord.getBpmnProcessId()));
     }
   }
 

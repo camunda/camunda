@@ -8,6 +8,10 @@
 package io.camunda.tasklist.schema.indices;
 
 import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.ALL_VERSIONS_INDEX_NAME_PATTERN;
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.FULL_QUALIFIED_INDEX_NAME_PATTERN;
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,11 +33,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getFullQualifiedName() {
-    final String indexPrefix =
-        ELASTIC_SEARCH.equals(tasklistProperties.getDatabase())
-            ? tasklistProperties.getElasticsearch().getIndexPrefix()
-            : tasklistProperties.getOpenSearch().getIndexPrefix();
-    return String.format("%s-%s-%s_", indexPrefix, getIndexName(), getVersion());
+    return formatFullQualifiedIndexName(getIndexPrefix(), getIndexName(), getVersion());
   }
 
   @Override
@@ -47,6 +47,36 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
 
   @Override
   public String getAllVersionsIndexNameRegexPattern() {
-    return String.format("%s-%s-\\d.*", tasklistProperties.getIndexPrefix(), getIndexName());
+    return formatAllVersionsIndexNameRegexPattern(getIndexPrefix(), getIndexName());
+  }
+
+  public static String formatFullQualifiedIndexName(
+      final String indexPrefix, final String indexName, final String version) {
+    return String.format(
+        FULL_QUALIFIED_INDEX_NAME_PATTERN,
+        formatIndexPrefix(indexPrefix),
+        TASK_LIST,
+        indexName,
+        version);
+  }
+
+  public static String formatTasklistIndexPattern(final String indexPrefix) {
+    return formatPrefixAndComponent(indexPrefix) + "*";
+  }
+
+  public static String formatPrefixAndComponent(final String indexPrefix) {
+    return formatIndexPrefix(indexPrefix) + TASK_LIST;
+  }
+
+  public static String formatAllVersionsIndexNameRegexPattern(
+      final String prefix, final String index) {
+    return String.format(
+        ALL_VERSIONS_INDEX_NAME_PATTERN, formatIndexPrefix(prefix), TASK_LIST, index);
+  }
+
+  private String getIndexPrefix() {
+    return ELASTIC_SEARCH.equals(tasklistProperties.getDatabase())
+        ? tasklistProperties.getElasticsearch().getIndexPrefix()
+        : tasklistProperties.getOpenSearch().getIndexPrefix();
   }
 }

@@ -85,7 +85,11 @@ public final class DecisionInstanceFilterTransformer
       final List<Operation<Long>> decisionDefinitionKeyOperations) {
     final var stringOperations =
         decisionDefinitionKeyOperations.stream()
-            .map(op -> new Operation<>(op.operator(), String.valueOf(op.value())))
+            .map(
+                op -> {
+                  final var values = op.values().stream().map(String::valueOf).toList();
+                  return new Operation<>(op.operator(), values);
+                })
             .toList();
     return stringOperations("decisionDefinitionId", stringOperations);
   }

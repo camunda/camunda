@@ -65,15 +65,18 @@ public class DecisionEvaluationEvaluteProcessor
 
     if (decisionOrFailure.isRight()) {
       final var decision = decisionOrFailure.get();
+      final var decisionId = bufferAsString(decision.getDecisionId());
       final var authRequest =
           new AuthorizationRequest(
                   command, AuthorizationResourceType.DECISION_DEFINITION, PermissionType.CREATE)
-              .addResourceId(bufferAsString(decision.getDecisionId()));
+              .addResourceId(decisionId);
 
       if (!authCheckBehavior.isAuthorized(authRequest)) {
         final var reason =
-            AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE.formatted(
-                authRequest.getPermissionType(), authRequest.getResourceType());
+            AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                authRequest.getPermissionType(),
+                authRequest.getResourceType(),
+                "decision id '%s'".formatted(decisionId));
         responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, reason);
         rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, reason);
         return;

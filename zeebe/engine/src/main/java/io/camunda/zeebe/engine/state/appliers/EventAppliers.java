@@ -402,6 +402,7 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.UPDATING, new UserTaskUpdatingApplier(state));
     register(UserTaskIntent.UPDATED, new UserTaskUpdatedApplier(state));
     register(UserTaskIntent.MIGRATED, new UserTaskMigratedApplier(state));
+    register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
   }
 
   private void registerCompensationSubscriptionApplier(
@@ -421,6 +422,10 @@ public final class EventAppliers implements EventApplier {
     register(
         CompensationSubscriptionIntent.DELETED,
         new CompensationSubscriptionDeletedApplier(
+            processingState.getCompensationSubscriptionState()));
+    register(
+        CompensationSubscriptionIntent.MIGRATED,
+        new CompensationSubscriptionMigratedApplier(
             processingState.getCompensationSubscriptionState()));
   }
 
@@ -451,6 +456,8 @@ public final class EventAppliers implements EventApplier {
 
   private void registerAuthorizationAppliers(final MutableProcessingState state) {
     register(AuthorizationIntent.PERMISSION_ADDED, new AuthorizationPermissionAddedApplier(state));
+    register(
+        AuthorizationIntent.PERMISSION_REMOVED, new AuthorizationPermissionRemovedApplier(state));
   }
 
   private void registerEscalationAppliers() {
@@ -513,6 +520,7 @@ public final class EventAppliers implements EventApplier {
     register(
         MappingIntent.CREATED,
         new MappingCreatedApplier(state.getMappingState(), state.getAuthorizationState()));
+    register(MappingIntent.DELETED, new MappingDeletedApplier(state));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

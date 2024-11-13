@@ -70,7 +70,11 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
   }
 
   private SearchSourceConfig toSearchSourceConfig(final QueryResultConfig resultConfig) {
-    final var resultConfigTransformer = getResultConfigTransformer();
+    if (resultConfig == null) {
+      return null;
+    }
+
+    final var resultConfigTransformer = getResultConfigTransformer(resultConfig.getClass());
     return resultConfigTransformer.apply(resultConfig);
   }
 
@@ -101,9 +105,10 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
     return (FieldSortingTransformer) transformer;
   }
 
-  private ResultConfigTransformer getResultConfigTransformer() {
+  private <T extends QueryResultConfig>
+      ResultConfigTransformer<QueryResultConfig> getResultConfigTransformer(final Class<T> clazz) {
     final ServiceTransformer<QueryResultConfig, SearchSourceConfig> transformer =
-        transformers.getTransformer(QueryResultConfig.class);
+        transformers.getTransformer(clazz);
     return (ResultConfigTransformer) transformer;
   }
 }

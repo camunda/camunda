@@ -8,9 +8,9 @@
 package io.camunda.optimize.service.db.os.report.interpreter.view.decision;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.transformSortOrder;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.UnitDSL.seconds;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.transformSortOrder;
+import static io.camunda.optimize.service.db.os.client.dsl.UnitDSL.seconds;
 import static io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.INPUTS;
 import static io.camunda.optimize.service.db.schema.index.DecisionInstanceIndex.OUTPUTS;
 import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;

@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
 import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -70,8 +70,10 @@ public final class VariableDocumentUpdateProcessor
             .addResourceId(scope.getValue().getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(authRequest)) {
       final var reason =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType());
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authRequest.getPermissionType(),
+              authRequest.getResourceType(),
+              "BPMN process id '%s'".formatted(scope.getValue().getBpmnProcessId()));
       writers.rejection().appendRejection(record, RejectionType.UNAUTHORIZED, reason);
       writers.response().writeRejectionOnCommand(record, RejectionType.UNAUTHORIZED, reason);
       return;

@@ -78,7 +78,9 @@ public class ProcessDefinitionQueryController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessDefinition(
-                  processDefinitionServices.getByKey(processDefinitionKey)));
+                  processDefinitionServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(processDefinitionKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -111,7 +113,9 @@ public class ProcessDefinitionQueryController {
       @PathVariable("processDefinitionKey") final long processDefinitionKey) {
     try {
       final ProcessDefinitionEntity processDefinition =
-          processDefinitionServices.getByKey(processDefinitionKey);
+          processDefinitionServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .getByKey(processDefinitionKey);
 
       if (processDefinition.formId() != null) {
         return ResponseEntity.ok()

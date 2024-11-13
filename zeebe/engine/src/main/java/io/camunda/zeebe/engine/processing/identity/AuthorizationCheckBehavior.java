@@ -27,6 +27,8 @@ public final class AuthorizationCheckBehavior {
 
   public static final String UNAUTHORIZED_ERROR_MESSAGE =
       "Unauthorized to perform operation '%s' on resource '%s'";
+  public static final String UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE =
+      UNAUTHORIZED_ERROR_MESSAGE + " with %s";
   public static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
   private final UserState userState;
@@ -178,10 +180,11 @@ public final class AuthorizationCheckBehavior {
 
   public static class UnauthorizedException extends RuntimeException {
 
-    public UnauthorizedException(final AuthorizationRequest authRequest) {
+    public UnauthorizedException(
+        final AuthorizationRequest authRequest, final String resourceMessage) {
       super(
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType()));
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authRequest.getPermissionType(), authRequest.getResourceType(), resourceMessage));
     }
   }
 }

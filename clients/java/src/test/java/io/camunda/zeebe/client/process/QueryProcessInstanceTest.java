@@ -79,20 +79,43 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
     final ProcessInstanceFilterRequest filter = request.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getProcessInstanceKey()).isEqualTo(123L);
+    assertThat(filter.getProcessInstanceKey().get$Eq()).isEqualTo(123L);
     assertThat(filter.getProcessDefinitionId()).isEqualTo("bpmnProcessId");
     assertThat(filter.getProcessDefinitionName()).isEqualTo("Demo process");
-    assertThat(filter.getProcessDefinitionVersion()).isEqualTo(7);
+    assertThat(filter.getProcessDefinitionVersion().get$Eq()).isEqualTo(7);
     assertThat(filter.getProcessDefinitionVersionTag()).isEqualTo("v7");
-    assertThat(filter.getProcessDefinitionKey()).isEqualTo(15L);
-    assertThat(filter.getParentProcessInstanceKey()).isEqualTo(25L);
-    assertThat(filter.getParentFlowNodeInstanceKey()).isEqualTo(30L);
+    assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo(15L);
+    assertThat(filter.getParentProcessInstanceKey().get$Eq()).isEqualTo(25L);
+    assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo(30L);
     assertThat(filter.getTreePath()).isEqualTo("PI_1");
     assertThat(filter.getStartDate()).isEqualTo("startDate");
     assertThat(filter.getEndDate()).isEqualTo("endDate");
     assertThat(filter.getState()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId()).isEqualTo("tenant");
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByProcessInstanceKeyLongProperty() {
+    // when
+    final LongFilterProperty filterProperty = new LongFilterProperty();
+    filterProperty.$gt(1L);
+    filterProperty.$lt(10L);
+    client
+        .newProcessInstanceQuery()
+        .filter(f -> f.processInstanceKey(filterProperty))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQueryRequest request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
+    final ProcessInstanceFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final LongFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    assertThat(processInstanceKey).isNotNull();
+    assertThat(processInstanceKey.get$Gt()).isEqualTo(1);
+    assertThat(processInstanceKey.get$Lt()).isEqualTo(10);
   }
 
   @Test
