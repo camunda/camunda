@@ -6,9 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {createContext, ComponentType, ReactNode, useEffect, useState} from 'react';
+import {createContext, ComponentType, ReactNode} from 'react';
 
-import {getDocsVersion} from 'config';
 import {useDocs} from 'hooks';
 
 export interface WithDocsProps {
@@ -25,19 +24,7 @@ export const DocsContext = createContext<WithDocsProps>({
 });
 
 export function DocsProvider({children}: {children: ReactNode}): JSX.Element {
-  const [optimizeVersion, setOptimizeVersion] = useState('');
-
-  useEffect(() => {
-    (async () => {
-      const version = (await getDocsVersion()).split('.');
-      version.length = 2;
-      setOptimizeVersion(version.join('.') + '.0');
-    })();
-  }, []);
-
-  const optimizeVersionWithSlash = optimizeVersion ? optimizeVersion + '/' : '';
-  const docsLink = OPTIMIZE_DOCS_URL + optimizeVersionWithSlash;
-  const generateDocsLink = (path: string) => docsLink + path;
+  const generateDocsLink = (path: string) => OPTIMIZE_DOCS_URL + path;
   const getBaseDocsUrl = () => DOCS_BASE_URL;
 
   return (
