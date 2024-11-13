@@ -27,8 +27,8 @@ import io.camunda.exporter.handlers.EventFromJobHandler;
 import io.camunda.exporter.handlers.EventFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.EventFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
-import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
@@ -193,7 +193,7 @@ public class CamundaExporterHandlerIT {
   void shouldExportUsingFlowNodeInstanceIncidentHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
-    final var handler = getHandler(config, FlowNodeInstanceIncidentHandler.class);
+    final var handler = getHandler(config, FlowNodeInstanceFromIncidentHandler.class);
     basicAssertWhereHandlerCreatesDefaultEntity(
         handler, config, clientAdapter, defaultRecordGenerator(handler));
   }
@@ -202,7 +202,7 @@ public class CamundaExporterHandlerIT {
   void shouldExportUsingFlowNodeInstanceProcessInstanceHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
-    final var handler = getHandler(config, FlowNodeInstanceProcessInstanceHandler.class);
+    final var handler = getHandler(config, FlowNodeInstanceFromProcessInstanceHandler.class);
     basicAssertWhereHandlerCreatesDefaultEntity(
         handler, config, clientAdapter, defaultRecordGenerator(handler));
   }
