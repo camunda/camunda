@@ -50,7 +50,8 @@ public class UpgradeElasticsearchSchemaIT
     final Map<String, Map> newSettings = newDatabaseSchemaClient.getSettings();
     LOG.info("Actual settings size: {}, keys: {}", newSettings.size(), newSettings.keySet());
     assertThat(newSettings).isEqualTo(expectedSettings);
-    assertThat(newDatabaseSchemaClient.getMappings()).isEqualTo(expectedMappings);
+    assertThat(newDatabaseSchemaClient.getMappings())
+        .isEqualToComparingFieldByFieldRecursively(expectedMappings);
   }
 
   @Override
@@ -59,7 +60,8 @@ public class UpgradeElasticsearchSchemaIT
         "Expected aliases size: {}, keys: {}", expectedAliases.size(), expectedAliases.keySet());
     final Map<String, IndexAliases> newAliases = newDatabaseSchemaClient.getAliases();
     LOG.info("Actual aliases size: {}, keys: {}", newAliases.size(), newAliases.keySet());
-    assertThat(newAliases).isEqualTo(expectedAliases);
+    assertThat(newAliases)
+        .isEqualToComparingFieldByFieldRecursively(expectedAliases);
   }
 
   @Override
