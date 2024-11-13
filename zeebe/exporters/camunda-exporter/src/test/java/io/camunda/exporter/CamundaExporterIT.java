@@ -45,6 +45,7 @@ import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
