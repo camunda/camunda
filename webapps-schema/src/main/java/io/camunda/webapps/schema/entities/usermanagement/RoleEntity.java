@@ -34,11 +34,11 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public Set<Long> getAssignMemberKeys() {
+  public Set<Long> getAssignedMemberKeys() {
     return assignedMemberKeys;
   }
 
-  public RoleEntity setAssignMemberKeys(final Set<Long> entityKey) {
+  public RoleEntity setAssignedMemberKeys(final Set<Long> entityKey) {
     assignedMemberKeys = entityKey;
     return this;
   }

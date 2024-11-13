@@ -68,6 +68,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
@@ -78,9 +79,11 @@ import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableMappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -324,7 +327,7 @@ public class CamundaExporterHandlerIT {
       throws IOException {
     final var handler = getHandler(config, RoleCreateUpdateHandler.class);
     basicAssertWhereHandlerCreatesDefaultEntity(
-        handler, config, clientAdapter, defaultRecordGenerator(handler));
+        handler, config, clientAdapter, roleRecordGenerator(handler, RoleIntent.CREATED));
   }
 
   @TestTemplate
@@ -638,6 +641,24 @@ public class CamundaExporterHandlerIT {
               ValueType.GROUP,
               r ->
                   r.withValue((T) groupRecordValue)
+                      .withIntent(intent)
+                      .withTimestamp(System.currentTimeMillis()));
+        });
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> roleRecordGenerator(
+      final ExportHandler<S, T> handler, final RoleIntent intent) {
+    return recordGenerator(
+        handler,
+        () -> {
+          final var roleRecordValue =
+              ImmutableRoleRecordValue.builder()
+                  .from(factory.generateObject(RoleRecordValue.class))
+                  .build();
+          return factory.generateRecord(
+              ValueType.ROLE,
+              r ->
+                  r.withValue((T) roleRecordValue)
                       .withIntent(intent)
                       .withTimestamp(System.currentTimeMillis()));
         });
