@@ -24,8 +24,9 @@ public class RequestMapperTest {
         {
           "result": {
             "denied: true
+          }
         }
-      }""";
+      """;
 
   // BigInteger larger than 2^64-1
   private static final String BIG_INTEGER =

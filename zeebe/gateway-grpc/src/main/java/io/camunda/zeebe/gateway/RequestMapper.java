@@ -163,8 +163,8 @@ public final class RequestMapper extends RequestUtil {
   }
 
   private static JobResult getJobResultOrDefault(final CompleteJobRequest request) {
-    if (request == null) {
-      return new JobResult();
+    if (!request.hasResult()) {
+      return null;
     }
     return new JobResult().setDenied(request.getResult().getDenied());
   }

@@ -4235,11 +4235,12 @@ components:
     JobResult:
       type: object
       nullable: true
-      description: The result of a completed job
+      description: The result of the completed job as determined by the worker.
       properties:
         denied:
           type: boolean
-          description: Indicates if worker has denied the reason for the work. Defaults to false.
+          description: Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. For example, a Task Listener can deny the completion of a task by setting this flag to true. In this example, the completion of a task is represented by a job that the worker can complete as denied. As a result, the completion request is rejected and the task remains active.
+            Defaults to false.
           nullable: true
     JobUpdateRequest:
       type: object

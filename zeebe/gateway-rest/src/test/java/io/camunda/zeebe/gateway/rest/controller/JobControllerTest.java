@@ -325,8 +325,9 @@ public class JobControllerTest extends RestControllerTest {
           {
             "result": {
               "denied": true
+            }
           }
-        }""";
+        """;
 
     // when/then
     webClient
@@ -357,8 +358,9 @@ public class JobControllerTest extends RestControllerTest {
           {
             "result": {
               "denied": false
+            }
           }
-        }""";
+        """;
 
     // when/then
     webClient
@@ -389,8 +391,9 @@ public class JobControllerTest extends RestControllerTest {
           {
             "result": {
               "unknownField": true
+            }
           }
-        }""";
+        """;
 
     // when/then
     webClient
@@ -418,11 +421,12 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-            {
-              "variables": {
-                "foo": "bar"
-              }
-            }""";
+          {
+            "variables": {
+              "foo": "bar"
+            }
+          }
+        """;
 
     // when/then
     webClient
@@ -446,12 +450,13 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-            {
-              "changeset": {
-                "retries": 5,
-                "timeout": 1000
-              }
-            }""";
+          {
+            "changeset": {
+              "retries": 5,
+              "timeout": 1000
+            }
+          }
+        """;
     // when/then
     webClient
         .patch()
@@ -474,11 +479,12 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-            {
-              "changeset": {
-                "retries": 5
-              }
-            }""";
+          {
+            "changeset": {
+              "retries": 5
+            }
+          }
+        """;
     // when/then
     webClient
         .patch()
@@ -525,9 +531,10 @@ public class JobControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-            {
-              "changeset": {}
-            }""";
+          {
+            "changeset": {}
+          }
+        """;
 
     final var expectedBody =
         """
