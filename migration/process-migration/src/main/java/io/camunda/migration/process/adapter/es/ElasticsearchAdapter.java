@@ -10,7 +10,6 @@ package io.camunda.migration.process.adapter.es;
 import static java.util.stream.Collectors.toList;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
@@ -56,19 +55,14 @@ public class ElasticsearchAdapter implements Adapter {
 
   @Override
   public String migrate(final List<ProcessEntity> entities) throws MigrationException {
-    try {
-      final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
-      entities.forEach(entity -> migrateEntity(entity, bulkRequest));
-      final BulkResponse response = client.bulk(bulkRequest.build());
-      return lastUpdatedProcessDefinition(response.items());
-
-    } catch (final IOException | ElasticsearchException e) {
-      throw new MigrationException("Process migration step failed", e);
-    }
+    final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
+    entities.forEach(entity -> migrateEntity(entity, bulkRequest));
+    final BulkResponse response = doWithRetry(properties, () -> client.bulk(bulkRequest.build()));
+    return lastUpdatedProcessDefinition(response.items());
   }
 
   @Override
-  public List<ProcessEntity> nextBatch(final String lastMigratedEntity) {
+  public List<ProcessEntity> nextBatch(final String lastMigratedEntity) throws MigrationException {
     final SearchRequest searchRequest =
         new SearchRequest.Builder()
             .index(processIndex.getFullQualifiedName())
@@ -84,12 +78,8 @@ public class ElasticsearchAdapter implements Adapter {
                                         lastMigratedEntity == null ? "" : lastMigratedEntity))))
             .build();
     final SearchResponse<ProcessEntity> searchResponse;
-    try {
-      searchResponse = client.search(searchRequest, ProcessEntity.class);
-    } catch (final IOException | ElasticsearchException e) {
-      LOG.error("Failed to acquire new migration batch", e);
-      return List.of();
-    }
+    searchResponse =
+        doWithRetry(properties, () -> client.search(searchRequest, ProcessEntity.class));
 
     return searchResponse.hits().hits().stream().map(Hit::source).collect(toList());
   }
@@ -118,17 +108,14 @@ public class ElasticsearchAdapter implements Adapter {
                                                     .value(PROCESSOR_STEP_ID)))))
             .build();
     final SearchResponse<ProcessorStep> searchResponse;
-    try {
-      searchResponse = client.search(searchRequest, ProcessorStep.class);
-      return searchResponse.hits().hits().stream()
-          .map(Hit::source)
-          .filter(Objects::nonNull)
-          .map(AbstractStep::getContent)
-          .findFirst()
-          .orElse(null);
-    } catch (final IOException | ElasticsearchException e) {
-      throw new MigrationException("Failed to fetch next batch", e);
-    }
+    searchResponse =
+        doWithRetry(properties, () -> client.search(searchRequest, ProcessorStep.class));
+    return searchResponse.hits().hits().stream()
+        .map(Hit::source)
+        .filter(Objects::nonNull)
+        .map(AbstractStep::getContent)
+        .findFirst()
+        .orElse(null);
   }
 
   @Override
@@ -142,11 +129,7 @@ public class ElasticsearchAdapter implements Adapter {
             .refresh(Refresh.True)
             .upsert(upsertProcessorStep(processDefinitionKey))
             .build();
-    try {
-      client.update(updateRequest, ProcessorStep.class);
-    } catch (final IOException e) {
-      throw new MigrationException("Failed to write last migrated entity", e);
-    }
+    doWithRetry(properties, () -> client.update(updateRequest, ProcessorStep.class));
   }
 
   @Override

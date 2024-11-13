@@ -8,6 +8,7 @@
 package io.camunda.migration.process.adapter;
 
 import io.camunda.migration.api.MigrationException;
+import io.camunda.migration.process.ProcessMigrationProperties;
 import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -16,6 +17,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 public interface Adapter {
 
@@ -26,7 +28,7 @@ public interface Adapter {
 
   String migrate(List<ProcessEntity> records) throws MigrationException;
 
-  List<ProcessEntity> nextBatch(final String processDefinitionKey);
+  List<ProcessEntity> nextBatch(final String processDefinitionKey) throws MigrationException;
 
   String readLastMigratedEntity() throws MigrationException;
 
@@ -52,5 +54,28 @@ public interface Adapter {
     step.setDescription(STEP_DESCRIPTION);
     step.setVersion(VersionUtil.getVersion());
     return step;
+  }
+
+  default <T> T doWithRetry(final ProcessMigrationProperties properties, final Callable<T> callable)
+      throws MigrationException {
+    long backoff = properties.getBackoffInSeconds() * 1000L;
+    for (int attempt = 1; attempt <= properties.getMaxRetries(); attempt++) {
+      try {
+        return callable.call();
+      } catch (final Exception e) {
+        if (attempt == properties.getMaxRetries()) {
+          throw new MigrationException(
+              "Operation failed after " + properties.getMaxRetries() + " attempts", e);
+        }
+        try {
+          Thread.sleep(backoff);
+        } catch (final InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw new MigrationException("Retry interrupted", ie);
+        }
+        backoff *= 2;
+      }
+    }
+    throw new MigrationException("Operation failed");
   }
 }

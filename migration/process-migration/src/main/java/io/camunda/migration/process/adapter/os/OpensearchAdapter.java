@@ -23,7 +23,6 @@ import java.util.Objects;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
@@ -57,12 +56,8 @@ public class OpensearchAdapter implements Adapter {
     final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
     entities.forEach(e -> migrateEntity(e, bulkRequest));
 
-    try {
-      final BulkResponse response = client.bulk(bulkRequest.build());
-      return lastUpdatedProcessDefinition(response.items());
-    } catch (final IOException e) {
-      throw new MigrationException("Process migration step failed", e);
-    }
+    final BulkResponse response = doWithRetry(properties, () -> client.bulk(bulkRequest.build()));
+    return lastUpdatedProcessDefinition(response.items());
   }
 
   @Override
@@ -83,12 +78,8 @@ public class OpensearchAdapter implements Adapter {
             .build();
 
     final SearchResponse<ProcessEntity> searchResponse;
-    try {
-      searchResponse = client.search(request, ProcessEntity.class);
-      return searchResponse.hits().hits().stream().map(Hit::source).toList();
-    } catch (final IOException | OpenSearchException e) {
-      throw new MigrationException("Failed to fetch next batch", e);
-    }
+    searchResponse = doWithRetry(properties, () -> client.search(request, ProcessEntity.class));
+    return searchResponse.hits().hits().stream().map(Hit::source).toList();
   }
 
   @Override
@@ -116,17 +107,13 @@ public class OpensearchAdapter implements Adapter {
             .build();
 
     final SearchResponse<ProcessorStep> searchResponse;
-    try {
-      searchResponse = client.search(request, ProcessorStep.class);
-      return searchResponse.hits().hits().stream()
-          .map(Hit::source)
-          .filter(Objects::nonNull)
-          .map(AbstractStep::getContent)
-          .findFirst()
-          .orElse(null);
-    } catch (final IOException | OpenSearchException e) {
-      throw new MigrationException("Failed to fetch next batch", e);
-    }
+    searchResponse = doWithRetry(properties, () -> client.search(request, ProcessorStep.class));
+    return searchResponse.hits().hits().stream()
+        .map(Hit::source)
+        .filter(Objects::nonNull)
+        .map(AbstractStep::getContent)
+        .findFirst()
+        .orElse(null);
   }
 
   @Override
@@ -139,11 +126,7 @@ public class OpensearchAdapter implements Adapter {
             .doc(upsertProcessorStep(processDefinitionKey))
             .build();
 
-    try {
-      client.update(updateRequest, ProcessorStep.class);
-    } catch (final IOException e) {
-      throw new MigrationException("Failed to write last migrated entity", e);
-    }
+    doWithRetry(properties, () -> client.update(updateRequest, ProcessorStep.class));
   }
 
   @Override
