@@ -15,7 +15,7 @@ import {
   pathBuilder,
 } from "src/utility/api/request";
 
-const path = pathBuilder("/v2/roles");
+const path = pathBuilder("/roles");
 
 export type Role = {
   id: string;
@@ -24,7 +24,7 @@ export type Role = {
   permissions: string[];
 };
 
-export const getRoles: ApiDefinition<Role[]> = () => apiGet(path());
+export const getRoles: ApiDefinition<Role[]> = () => apiPost(path('search'), {});
 
 type GetRoleParams = {
   id: string;
