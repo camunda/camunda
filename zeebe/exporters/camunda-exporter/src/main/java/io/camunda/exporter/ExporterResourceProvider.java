@@ -45,5 +45,5 @@ public interface ExporterResourceProvider {
   /**
    * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter
    */
-  Set<ExportHandler> getExportHandlers();
+  Set<ExportHandler<?, ?>> getExportHandlers();
 }

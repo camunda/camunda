@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
 
-  private Context context;
   private Controller controller;
   private ExporterConfiguration configuration;
   private ClientAdapter clientAdapter;
@@ -69,7 +68,6 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    this.context = context;
     logger = context.getLogger();
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
@@ -167,7 +165,7 @@ public class CamundaExporter implements Exporter {
 
   private ExporterBatchWriter createBatchWriter() {
     final var builder = ExporterBatchWriter.Builder.begin();
-    provider.getExportHandlers().stream().forEach(builder::withHandler);
+    provider.getExportHandlers().forEach(builder::withHandler);
     return builder.build();
   }
 
