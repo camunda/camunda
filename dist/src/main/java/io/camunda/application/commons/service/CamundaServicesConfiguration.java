@@ -158,8 +158,18 @@ public class CamundaServicesConfiguration {
   public UserTaskServices userTaskServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final UserTaskSearchClient userTaskSearchClient) {
-    return new UserTaskServices(brokerClient, securityContextProvider, userTaskSearchClient, null);
+      final UserTaskSearchClient userTaskSearchClient,
+      final FormSearchClient formSearchClient,
+      final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
+      final VariableSearchClient variableSearchClient) {
+    return new UserTaskServices(
+        brokerClient,
+        securityContextProvider,
+        userTaskSearchClient,
+        formSearchClient,
+        flowNodeInstanceSearchClient,
+        variableSearchClient,
+        null);
   }
 
   @Bean

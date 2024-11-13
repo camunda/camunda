@@ -9,12 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.search.entities.FormEntity;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.service.FlowNodeInstanceServices;
-import io.camunda.service.FormServices;
 import io.camunda.service.UserTaskServices;
-import io.camunda.service.VariableServices;
+import io.camunda.zeebe.gateway.protocol.rest.FormItem;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
@@ -22,12 +22,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import jakarta.validation.ValidationException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-import org.springframework.http.HttpStatus;
+import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,19 +36,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskQueryController {
 
   private final UserTaskServices userTaskServices;
-  private final VariableServices variableServices;
-  private final FlowNodeInstanceServices flowNodeInstanceServices;
-  private final FormServices formServices;
 
-  public UserTaskQueryController(
-      final UserTaskServices userTaskServices,
-      final FormServices formServices,
-      final VariableServices variableServices,
-      final FlowNodeInstanceServices flowNodeInstanceServices) {
+  public UserTaskQueryController(final UserTaskServices userTaskServices) {
     this.userTaskServices = userTaskServices;
-    this.formServices = formServices;
-    this.variableServices = variableServices;
-    this.flowNodeInstanceServices = flowNodeInstanceServices;
   }
 
   @PostMapping(
@@ -71,13 +56,6 @@ public class UserTaskQueryController {
       final var result =
           userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
-    } catch (final ValidationException e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Validation failed for UserTask Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -86,11 +64,15 @@ public class UserTaskQueryController {
   @GetMapping(
       path = "/{userTaskKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<Object> getByKey(@PathVariable("userTaskKey") final Long userTaskKey) {
+  public ResponseEntity<UserTaskItem> getByKey(
+      @PathVariable("userTaskKey") final Long userTaskKey) {
     try {
-      // Success case: Return the left side with the UserTaskItem wrapped in ResponseEntity
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toUserTask(userTaskServices.getByKey(userTaskKey)));
+          .body(
+              SearchQueryResponseMapper.toUserTask(
+                  userTaskServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(userTaskKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -99,17 +81,16 @@ public class UserTaskQueryController {
   @GetMapping(
       path = "/{userTaskKey}/form",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<Object> getFormByUserTaskKey(
-      @PathVariable("userTaskKey") final Long userTaskKey) {
+  public ResponseEntity<FormItem> getFormByUserTaskKey(
+      @PathVariable("userTaskKey") final long userTaskKey) {
     try {
-      final Long formKey = userTaskServices.getByKey(userTaskKey).formKey();
-
-      if (formKey == null) {
-        return ResponseEntity.noContent().build();
-      }
-
-      return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toFormItem(formServices.getByKey(formKey)));
+      final Optional<FormEntity> form =
+          userTaskServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .getUserTaskForm(userTaskKey);
+      return form.map(SearchQueryResponseMapper::toFormItem)
+          .map(ResponseEntity::ok)
+          .orElseGet(() -> ResponseEntity.noContent().build());
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -120,32 +101,22 @@ public class UserTaskQueryController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<VariableSearchQueryResponse> searchVariables(
-      @PathVariable("userTaskKey") final Long userTaskKey,
+      @PathVariable("userTaskKey") final long userTaskKey,
       @RequestBody(required = false)
           final UserTaskVariableSearchQueryRequest userTaskVariablesSearchQueryRequest) {
-    // Retrieve user tak data
-    final var userTask = userTaskServices.getByKey(userTaskKey);
-
-    // Retrieve treePath for flowNodeInstanceId
-    final var flowNodeInstance = flowNodeInstanceServices.getByKey(userTask.flowNodeInstanceId());
-
-    final var treePath = flowNodeInstance.treePath();
-    final List<Long> treePathList =
-        (treePath != null && !treePath.isEmpty())
-            ? Arrays.stream(treePath.split("/")).map(Long::valueOf).collect(Collectors.toList())
-            : Collections.emptyList();
-
-    return SearchQueryRequestMapper.toUserTaskVariableQuery(
-            userTaskVariablesSearchQueryRequest, treePathList)
-        .fold(RestErrorMapper::mapProblemToResponse, this::searchUserTaskVariableQuery);
+    return SearchQueryRequestMapper.toUserTaskVariableQuery(userTaskVariablesSearchQueryRequest)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            query -> searchUserTaskVariableQuery(userTaskKey, query));
   }
 
   private ResponseEntity<VariableSearchQueryResponse> searchUserTaskVariableQuery(
-      final VariableQuery query) {
+      final long userTaskKey, final VariableQuery query) {
     try {
       final var result =
-          variableServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
-
+          userTaskServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .searchUserTaskVariables(userTaskKey, query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toVariableSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
