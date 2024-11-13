@@ -14,7 +14,7 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
 
   private Long roleKey;
   private String name;
-  private Set<Long> assignedMemberKey;
+  private Set<Long> assignedMemberKeys;
 
   public Long getRoleKey() {
     return roleKey;
@@ -34,12 +34,12 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public Set<Long> getAssignMemberKey() {
-    return assignedMemberKey;
+  public Set<Long> getAssignMemberKeys() {
+    return assignedMemberKeys;
   }
 
-  public RoleEntity setAssignMemberKey(final Set<Long> entityKey) {
-    assignedMemberKey = entityKey;
+  public RoleEntity setAssignMemberKeys(final Set<Long> entityKey) {
+    assignedMemberKeys = entityKey;
     return this;
   }
 }
