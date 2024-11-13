@@ -208,9 +208,12 @@ public final class ElasticsearchRepository implements ArchiverRepository {
   }
 
   private ArchiveBatch createArchiveBatch(final SubmitResponse<?> search) {
-    final List<DateHistogramBucket> buckets =
-        search.response().aggregations().get(DATES_AGG).dateHistogram().buckets().array();
+    final var aggregate = search.response().aggregations().get(DATES_AGG);
+    if (aggregate == null) {
+      return null;
+    }
 
+    final List<DateHistogramBucket> buckets = aggregate.dateHistogram().buckets().array();
     if (buckets.isEmpty()) {
       return null;
     }
