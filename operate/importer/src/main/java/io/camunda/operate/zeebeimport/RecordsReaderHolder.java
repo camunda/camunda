@@ -13,8 +13,10 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,8 @@ public class RecordsReaderHolder {
 
   @Autowired private OperateProperties operateProperties;
 
+  private final Map<Integer, Boolean> partitionCompletedImporting = new HashMap<>();
+
   public Set<RecordsReader> getAllRecordsReaders() {
     if (CollectionUtil.isNotEmpty(recordsReaders)) {
       return recordsReaders;
@@ -49,6 +53,7 @@ public class RecordsReaderHolder {
     final List<Integer> partitionIds = partitionHolder.getPartitionIds();
     LOGGER.info("Starting import for partitions: {}", partitionIds);
     for (final Integer partitionId : partitionIds) {
+      partitionCompletedImporting.put(partitionId, false);
       // TODO what if it's not the final list of partitions
       for (final ImportValueType importValueType : IMPORT_VALUE_TYPES) {
         recordsReaders.add(
@@ -56,6 +61,14 @@ public class RecordsReaderHolder {
       }
     }
     return recordsReaders;
+  }
+
+  public void setPartitionCompletedImporting(final int partitionId) {
+    partitionCompletedImporting.put(partitionId, true);
+  }
+
+  public boolean getPartitionCompletedImporting(final int partitionId) {
+    return partitionCompletedImporting.get(partitionId);
   }
 
   public RecordsReader getRecordsReader(

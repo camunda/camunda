@@ -15,6 +15,7 @@ import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.migration.SemanticVersion;
 import io.camunda.operate.store.ZeebeStore;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -152,6 +153,13 @@ public class ImportJob implements Callable<Boolean> {
       final ImportBatchProcessor importBatchProcessor =
           importBatchProcessorFactory.getImportBatchProcessor(version);
       importBatchProcessor.performImport(subBatch);
+
+      final var batchVersion = SemanticVersion.fromVersion(version);
+
+      if (batchVersion.getMajor() == 8 && batchVersion.getMinor() == 7) {
+        recordsReaderHolder.setPartitionCompletedImporting(subBatch.getPartitionId());
+      }
+
       return true;
     } catch (final Exception ex) {
       LOGGER.error(ex.getMessage(), ex);
