@@ -82,8 +82,8 @@ public class CriticalComponentsHealthMonitorTest {
   @Test
   public void shouldMonitorComponent() {
     // given
-    final ControllableComponent component = new ControllableComponent();
-    monitor.registerComponent("test", component);
+    final ControllableComponent component = new ControllableComponent("test");
+    monitor.registerComponent(component);
 
     // when
     waitUntilAllDone();
@@ -105,7 +105,7 @@ public class CriticalComponentsHealthMonitorTest {
   public void shouldRecover() {
     // given
     final ControllableComponent component = new ControllableComponent("test");
-    monitor.registerComponent("test", component);
+    monitor.registerComponent(component);
     waitUntilAllDone();
     component.setUnhealthy();
     waitUntilAllDone();
@@ -122,11 +122,11 @@ public class CriticalComponentsHealthMonitorTest {
   @Test
   public void shouldMonitorMultipleComponent() {
     // given
-    final ControllableComponent component1 = new ControllableComponent();
-    final ControllableComponent component2 = new ControllableComponent();
+    final ControllableComponent component1 = new ControllableComponent("test1");
+    final ControllableComponent component2 = new ControllableComponent("test2");
 
-    monitor.registerComponent("test1", component1);
-    monitor.registerComponent("test2", component2);
+    monitor.registerComponent(component1);
+    monitor.registerComponent(component2);
 
     waitUntilAllDone();
     Awaitility.await("component is healthy")
@@ -162,12 +162,12 @@ public class CriticalComponentsHealthMonitorTest {
   @Test
   public void shouldRemoveComponent() {
     // given
-    final ControllableComponent component = new ControllableComponent();
-    monitor.registerComponent("test", component);
+    final ControllableComponent component = new ControllableComponent("test");
+    monitor.registerComponent(component);
     Awaitility.await().until(() -> monitor.getHealthReport().getStatus() == HealthStatus.HEALTHY);
 
     // when
-    monitor.removeComponent("test");
+    monitor.removeComponent(component);
     waitUntilAllDone();
     component.setUnhealthy();
     waitUntilAllDone();
@@ -179,11 +179,11 @@ public class CriticalComponentsHealthMonitorTest {
   @Test
   public void shouldMonitorComponentDeath() {
     // given
-    final ControllableComponent component1 = new ControllableComponent();
-    final ControllableComponent component2 = new ControllableComponent();
+    final ControllableComponent component1 = new ControllableComponent("comp1");
+    final ControllableComponent component2 = new ControllableComponent("comp2");
 
-    monitor.registerComponent("comp1", component1);
-    monitor.registerComponent("comp2", component2);
+    monitor.registerComponent(component1);
+    monitor.registerComponent(component2);
     waitUntilAllDone();
 
     // when/then
@@ -239,8 +239,8 @@ public class CriticalComponentsHealthMonitorTest {
   public void shouldTrackRootIssue() {
     // given
     final var issue = HealthIssue.of(new IllegalStateException(), Instant.ofEpochMilli(19201293L));
-    final ControllableComponent component = new ControllableComponent();
-    monitor.registerComponent("component", component);
+    final ControllableComponent component = new ControllableComponent("component");
+    monitor.registerComponent(component);
     waitUntilAllDone();
 
     // when
@@ -271,13 +271,13 @@ public class CriticalComponentsHealthMonitorTest {
 
       parentComponents[i] = parentComponent;
       if (i > 0) {
-        parentComponents[i - 1].registerComponent(parentComponent.getName(), parentComponent);
+        parentComponents[i - 1].registerComponent(parentComponent);
       }
 
       for (int j = 0; j < components[i].length; j++) {
         final var component = new ControllableComponent("child-at-%d-%d".formatted(i, j));
         components[i][j] = component;
-        parentComponents[i].registerComponent(component.getName(), component);
+        parentComponents[i].registerComponent(component);
       }
       waitUntilAllDone();
     }
@@ -287,10 +287,6 @@ public class CriticalComponentsHealthMonitorTest {
     private final Set<FailureListener> failureListeners = new HashSet<>();
     private volatile HealthReport healthReport;
     private final String name;
-
-    public ControllableComponent() {
-      this(null);
-    }
 
     public ControllableComponent(final String name) {
       this.name = name;

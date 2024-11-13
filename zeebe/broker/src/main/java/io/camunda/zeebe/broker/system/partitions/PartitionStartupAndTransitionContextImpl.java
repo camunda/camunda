@@ -110,7 +110,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final MeterRegistry brokerMeterRegistry;
   private MeterRegistry partitionMeterRegistry;
   private ControllableStreamClock clock;
-  private final HealthTreeMetrics healthGraphMetrics;
+  private final HealthTreeMetrics componentTreeListener;
   private final BrokerHealthCheckService brokerHealthCheckService;
 
   public PartitionStartupAndTransitionContextImpl(
@@ -156,7 +156,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.topologyManager = topologyManager;
     this.brokerMeterRegistry = new CompositeMeterRegistry().add(brokerMeterRegistry);
     this.brokerMeterRegistry.config().commonTags(Tags.of("partition", String.valueOf(partitionId)));
-    healthGraphMetrics = new HealthTreeMetrics(this.brokerMeterRegistry);
+    componentTreeListener = new HealthTreeMetrics(this.brokerMeterRegistry);
     this.brokerHealthCheckService = brokerHealthCheckService;
   }
 
@@ -454,7 +454,7 @@ public class PartitionStartupAndTransitionContextImpl
   }
 
   public ComponentTreeListener getComponentTreeListener() {
-    return healthGraphMetrics;
+    return componentTreeListener;
   }
 
   @Override
