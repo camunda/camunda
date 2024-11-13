@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.PartitionRaftListener;
+import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -94,7 +95,6 @@ import org.slf4j.Logger;
  */
 public final class BrokerHealthCheckService extends Actor implements PartitionRaftListener {
 
-  private static final String PARTITION_COMPONENT_NAME_FORMAT = "Partition-%d";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private Map<Integer, Boolean> partitionInstallStatus;
   /* set to true when all partitions are installed. Once set to true, it is never
@@ -114,8 +114,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
         partitions.stream().collect(Collectors.toMap(metadata -> metadata.id().id(), p -> false));
     partitions.forEach(
         metadata ->
-            healthMonitor.monitorComponent(
-                String.format(PARTITION_COMPONENT_NAME_FORMAT, metadata.id().id())));
+            healthMonitor.monitorComponent(ZeebePartition.buildActorName(metadata.id().id())));
   }
 
   public boolean isBrokerReady() {
@@ -164,22 +163,20 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
     healthMonitor.startMonitoring();
   }
 
-  private void registerComponent(final String componentName, final HealthMonitorable component) {
-    actor.run(() -> healthMonitor.registerComponent(componentName, component));
+  private void registerComponent(final HealthMonitorable component) {
+    actor.run(() -> healthMonitor.registerComponent(component));
   }
 
   public void registerMonitoredPartition(final int partitionId, final HealthMonitorable partition) {
-    final String componentName = String.format(PARTITION_COMPONENT_NAME_FORMAT, partitionId);
-    registerComponent(componentName, partition);
+    registerComponent(partition);
   }
 
-  public void removeMonitoredPartition(final int partitionId) {
-    final String componentName = String.format(PARTITION_COMPONENT_NAME_FORMAT, partitionId);
-    removeComponent(componentName);
+  public void removeMonitoredPartition(final HealthMonitorable partition) {
+    removeComponent(partition);
   }
 
-  private void removeComponent(final String componentName) {
-    actor.run(() -> healthMonitor.removeComponent(componentName));
+  private void removeComponent(final HealthMonitorable component) {
+    actor.run(() -> healthMonitor.removeComponent(component));
   }
 
   public boolean isBrokerHealthy() {

@@ -43,6 +43,7 @@ public final class ZeebePartition extends Actor
         DiskSpaceUsageListener,
         SnapshotReplicationListener {
 
+  public static final String ACTOR_NAME_PREFIX = "Partition";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final StartupProcess<PartitionStartupContext> startupProcess;
@@ -82,15 +83,19 @@ public final class ZeebePartition extends Actor
 
     transition.setConcurrencyControl(actor);
 
-    actorName = buildActorName("ZeebePartition", transitionContext.getPartitionId());
+    actorName = buildActorName(transitionContext.getPartitionId());
     transitionContext.setComponentHealthMonitor(
         new CriticalComponentsHealthMonitor(
-            "Partition-" + transitionContext.getPartitionId(), actor, LOG));
+            ZeebePartition.buildActorName(transitionContext.getPartitionId()), actor, LOG));
     zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId(), transition);
     healthMetrics = new HealthMetrics(transitionContext.getPartitionId());
     healthMetrics.setUnhealthy();
     failureListeners = new ArrayList<>();
     roleMetrics = new RoleMetrics(transitionContext.getPartitionId());
+  }
+
+  public static String buildActorName(final int partitionId) {
+    return buildActorName(ACTOR_NAME_PREFIX, partitionId);
   }
 
   public PartitionAdminAccess getAdminAccess() {
@@ -139,15 +144,11 @@ public final class ZeebePartition extends Actor
   @Override
   protected void onActorStarted() {
     context.getComponentHealthMonitor().startMonitoring();
-    context
-        .getComponentHealthMonitor()
-        .registerComponent(context.getRaftPartition().name(), context.getRaftPartition());
+    context.getComponentHealthMonitor().registerComponent(context.getRaftPartition());
     // Add a component that keep track of health of ZeebePartition. This way
     // criticalComponentsHealthMonitor can monitor the health of ZeebePartition similar to other
     // components.
-    context
-        .getComponentHealthMonitor()
-        .registerComponent(zeebePartitionHealth.getName(), zeebePartitionHealth);
+    context.getComponentHealthMonitor().registerComponent(zeebePartitionHealth);
   }
 
   @Override
@@ -179,8 +180,8 @@ public final class ZeebePartition extends Actor
           closing = true;
 
           removeListeners();
-          context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth.getName());
-          context.getComponentHealthMonitor().removeComponent(context.getRaftPartition().name());
+          context.getComponentHealthMonitor().removeComponent(zeebePartitionHealth);
+          context.getComponentHealthMonitor().removeComponent(context.getRaftPartition());
 
           final var inactiveTransitionFuture = transitionToInactive();
 

@@ -67,9 +67,10 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   }
 
   @Override
-  public void removeComponent(final String componentName) {
+  public void removeComponent(final HealthMonitorable component) {
     actor.run(
         () -> {
+          final var componentName = component.getName();
           final var monitoredComponent = monitoredComponents.remove(componentName);
           if (monitoredComponent != null) {
             componentHealth.remove(componentName);
@@ -79,9 +80,10 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   }
 
   @Override
-  public void registerComponent(final String componentName, final HealthMonitorable component) {
+  public void registerComponent(final HealthMonitorable component) {
     actor.run(
         () -> {
+          final var componentName = component.getName();
           final var monitoredComponent = new MonitoredComponent(componentName, component);
           monitoredComponents.put(componentName, monitoredComponent);
           componentHealth.put(componentName, component.getHealthReport());

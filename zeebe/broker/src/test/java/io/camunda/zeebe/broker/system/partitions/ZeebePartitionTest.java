@@ -414,7 +414,7 @@ public class ZeebePartitionTest {
 
     // then
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
-    verify(healthMonitor).registerComponent(any(), captor.capture());
+    verify(healthMonitor).registerComponent(captor.capture());
     final var healthReport = captor.getValue().getHealthReport();
     assertThat(healthReport.getStatus()).isEqualTo(HealthStatus.UNHEALTHY);
     assertThat(healthReport.getIssue().message())
@@ -431,7 +431,7 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // then
-    verify(healthMonitor).registerComponent(any(), captor.capture());
+    verify(healthMonitor).registerComponent(captor.capture());
 
     final var zeebePartitionHealth = captor.getValue();
     final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
@@ -450,7 +450,7 @@ public class ZeebePartitionTest {
     doNothing().when(failureListener).onFailure(any());
 
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
-    verify(healthMonitor).registerComponent(any(), captor.capture());
+    verify(healthMonitor).registerComponent(captor.capture());
     final var zeebePartitionHealth = captor.getValue();
     zeebePartitionHealth.addFailureListener(failureListener);
 
@@ -478,7 +478,7 @@ public class ZeebePartitionTest {
     doNothing().when(failureListener).onFailure(any());
 
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
-    verify(healthMonitor).registerComponent(any(), captor.capture());
+    verify(healthMonitor).registerComponent(captor.capture());
     final var zeebePartitionHealth = captor.getValue();
     zeebePartitionHealth.addFailureListener(failureListener);
 
@@ -510,7 +510,7 @@ public class ZeebePartitionTest {
     doNothing().when(failureListener).onRecovered(any());
 
     final var captor = ArgumentCaptor.forClass(ZeebePartitionHealth.class);
-    verify(healthMonitor).registerComponent(any(), captor.capture());
+    verify(healthMonitor).registerComponent(captor.capture());
     final var zeebePartitionHealth = captor.getValue();
     zeebePartitionHealth.addFailureListener(failureListener);
 
@@ -539,7 +539,7 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // then
-    verify(healthMonitor).registerComponent(any(), captor.capture());
+    verify(healthMonitor).registerComponent(captor.capture());
 
     final var zeebePartitionHealth = captor.getValue();
     final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
@@ -559,7 +559,7 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // then
-    verify(healthMonitor).registerComponent(any(), captor.capture());
+    verify(healthMonitor).registerComponent(captor.capture());
 
     final var zeebePartitionHealth = captor.getValue();
     final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
@@ -581,7 +581,7 @@ public class ZeebePartitionTest {
     schedulerRule.workUntilDone();
 
     // then
-    verify(healthMonitor).registerComponent(any(), captor.capture());
+    verify(healthMonitor).registerComponent(captor.capture());
 
     final var zeebePartitionHealth = captor.getValue();
     final HealthReport healthReport = zeebePartitionHealth.getHealthReport();
