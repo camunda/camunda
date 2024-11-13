@@ -10,15 +10,16 @@ package io.camunda.migration.app;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Profile;
 
-@SpringBootApplication(scanBasePackages = {"io.camunda.migration"})
 @Profile("!test")
-public class MigrationApp implements CommandLineRunner {
+@SpringBootApplication(scanBasePackages = {"io.camunda.migration"})
+public class MigrationApp implements ApplicationRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(MigrationApp.class);
   @Autowired private RuntimeContainer runtimeContainer;
@@ -28,14 +29,15 @@ public class MigrationApp implements CommandLineRunner {
     final SpringApplication springApplication = new SpringApplication(MigrationApp.class);
     springApplication.setWebApplicationType(WebApplicationType.NONE);
     springApplication.setAddCommandLineProperties(true);
+    springApplication.setHeadless(true);
 
     springApplication.run(args);
   }
 
   @Override
-  public void run(final String... args) {
+  public void run(final ApplicationArguments args) {
     try {
-      runtimeContainer.start();
+      runtimeContainer.start(args);
     } catch (final InterruptedException e) {
       LOG.error("Migration failed", e);
       System.exit(1);

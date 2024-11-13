@@ -15,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.ApplicationArguments;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -29,14 +30,14 @@ public class RuntimeContainer {
     executor = (ThreadPoolExecutor) Executors.newFixedThreadPool(migrators.size());
   }
 
-  public void start() throws InterruptedException {
+  public void start(final ApplicationArguments args) throws InterruptedException {
     final CountDownLatch latch = new CountDownLatch(migrators.size());
     migrators.forEach(
         m ->
             executor.submit(
                 () -> {
                   try {
-                    m.run();
+                    m.run(args);
                   } catch (final MigrationException ex) {
                     LOG.error(ex.getMessage());
                   } finally {
