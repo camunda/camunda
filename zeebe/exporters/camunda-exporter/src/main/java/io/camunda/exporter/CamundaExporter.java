@@ -73,6 +73,9 @@ public class CamundaExporter implements Exporter {
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
+    clientAdapter = ClientAdapter.of(configuration);
+    provider.init(configuration, clientAdapter.getExporterEntityCacheProvider());
+
     taskManager =
         BackgroundTaskManager.create(
             context.getPartitionId(),
@@ -87,10 +90,6 @@ public class CamundaExporter implements Exporter {
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    clientAdapter = ClientAdapter.of(configuration);
-
-    provider.init(configuration, clientAdapter.getExporterEntityCacheProvider());
-
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager =
         new SchemaManager(
