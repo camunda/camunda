@@ -168,7 +168,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
         Set.of(
             new RoleCreateUpdateHandler(
                 indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
-            new UserHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new UserCreatedUpdatedHandler(
                 indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new UserDeletedHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
