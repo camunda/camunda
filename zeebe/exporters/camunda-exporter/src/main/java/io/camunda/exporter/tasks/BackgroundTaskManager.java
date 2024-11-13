@@ -14,7 +14,6 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.tasks.archiver.ArchiverJob;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchRepository;
@@ -30,6 +29,7 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,21 +40,32 @@ import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
 public final class BackgroundTaskManager implements CloseableSilently {
+
+  // TODO: consider making this configurable
+  private static final int MAX_BACKGROUND_THREADS = 3;
   private final int partitionId;
   private final ArchiverRepository repository;
   private final Logger logger;
   private final ScheduledExecutorService executor;
+  private final List<BackgroundTask> tasks;
+  private final ArchiverConfiguration config;
+
+  private int submittedTasks = 0;
 
   @VisibleForTesting
   BackgroundTaskManager(
       final int partitionId,
       final @WillCloseWhenClosed ArchiverRepository repository,
       final Logger logger,
-      final @WillCloseWhenClosed ScheduledExecutorService executor) {
+      final @WillCloseWhenClosed ScheduledExecutorService executor,
+      final List<BackgroundTask> tasks,
+      final ArchiverConfiguration config) {
     this.partitionId = partitionId;
     this.repository = Objects.requireNonNull(repository, "must specify a repository");
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
     this.executor = Objects.requireNonNull(executor, "must specify an executor");
+    this.tasks = Objects.requireNonNull(tasks, "must specify tasks");
+    this.config = Objects.requireNonNull(config, "must specify a config");
   }
 
   @Override
@@ -73,12 +84,24 @@ public final class BackgroundTaskManager implements CloseableSilently {
         repository);
   }
 
-  private void start(final ArchiverConfiguration config, final ArchiverJob... jobs) {
-    logger.debug("Starting {} archiver jobs", jobs.length);
-    for (final ArchiverJob job : jobs) {
+  public void start() {
+    // make sure this is retry-able, as this is called in the exporter's open phase, which can be
+    // retried; in this case, we don't want to resubmit previously submitted tasks
+    final var unsubmittedTasks = tasks.size() - submittedTasks;
+    if (unsubmittedTasks == 0) {
+      return;
+    }
+
+    logger.debug(
+        "Starting {} background tasks (with {} previously submitted tasks out of {} tasks)",
+        unsubmittedTasks,
+        submittedTasks,
+        tasks.size());
+    for (; submittedTasks < tasks.size(); submittedTasks++) {
+      final var task = tasks.get(submittedTasks);
       executor.submit(
           new ReschedulingTask(
-              job, config.getRolloverBatchSize(), config.getDelayBetweenRuns(), executor, logger));
+              task, config.getRolloverBatchSize(), config.getDelayBetweenRuns(), executor, logger));
     }
   }
 
@@ -94,21 +117,19 @@ public final class BackgroundTaskManager implements CloseableSilently {
             .name("exporter-" + exporterId + "-p" + partitionId + "-tasks-", 0)
             .uncaughtExceptionHandler(FatalErrorHandler.uncaughtExceptionHandler(logger))
             .factory();
-    final var executor = defaultExecutor(threadFactory, partitionId);
+    final var executor = defaultExecutor(threadFactory);
     final var repository =
         createRepository(config, resourceProvider, partitionId, executor, metrics, logger);
-    final var archiver = new BackgroundTaskManager(partitionId, repository, logger, executor);
-    final var processInstanceJob =
-        createProcessInstanceJob(metrics, logger, resourceProvider, repository, executor);
+    final List<BackgroundTask> tasks = new ArrayList<>();
+
+    tasks.add(createProcessInstanceJob(metrics, logger, resourceProvider, repository, executor));
     if (partitionId == START_PARTITION_ID) {
-      final var batchOperationJob =
-          createBatchOperationJob(metrics, logger, resourceProvider, repository, executor);
-      archiver.start(config.getArchiver(), processInstanceJob, batchOperationJob);
-    } else {
-      archiver.start(config.getArchiver(), processInstanceJob);
+      tasks.add(createBatchOperationJob(metrics, logger, resourceProvider, repository, executor));
     }
 
-    return archiver;
+    executor.setCorePoolSize(Math.min(tasks.size(), MAX_BACKGROUND_THREADS));
+    return new BackgroundTaskManager(
+        partitionId, repository, logger, executor, tasks, config.getArchiver());
   }
 
   private static ProcessInstancesArchiverJob createProcessInstanceJob(
@@ -153,11 +174,8 @@ public final class BackgroundTaskManager implements CloseableSilently {
         executor);
   }
 
-  private static ScheduledThreadPoolExecutor defaultExecutor(
-      final ThreadFactory threadFactory, final int partitionId) {
-    // if we are present on partition 1, we need to have 2 threads to handle both jobs
-    final var executor =
-        new ScheduledThreadPoolExecutor(partitionId == START_PARTITION_ID ? 2 : 1, threadFactory);
+  private static ScheduledThreadPoolExecutor defaultExecutor(final ThreadFactory threadFactory) {
+    final var executor = new ScheduledThreadPoolExecutor(0, threadFactory);
     executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     executor.setRemoveOnCancelPolicy(true);

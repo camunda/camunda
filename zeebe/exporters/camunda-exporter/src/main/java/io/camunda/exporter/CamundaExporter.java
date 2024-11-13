@@ -75,6 +75,14 @@ public class CamundaExporter implements Exporter {
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
+    taskManager =
+        BackgroundTaskManager.create(
+            context.getPartitionId(),
+            context.getConfiguration().getId().toLowerCase(),
+            configuration,
+            provider,
+            metrics,
+            logger);
     LOG.debug("Exporter configured with {}", configuration);
   }
 
@@ -101,16 +109,7 @@ public class CamundaExporter implements Exporter {
 
     // // start archiver after the schema has been created to avoid transient errors
     if (configuration.getArchiver().isRolloverEnabled()) {
-      // make sure we create a new one in case open is being retried
-      CloseHelper.quietClose(taskManager);
-      taskManager =
-          BackgroundTaskManager.create(
-              context.getPartitionId(),
-              context.getConfiguration().getId().toLowerCase(),
-              configuration,
-              provider,
-              metrics,
-              logger);
+      taskManager.start();
     }
 
     LOG.info("Exporter opened");
