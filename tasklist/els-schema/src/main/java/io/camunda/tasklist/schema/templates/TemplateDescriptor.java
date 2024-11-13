@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.schema.templates;
 
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public interface TemplateDescriptor extends IndexDescriptor {
 

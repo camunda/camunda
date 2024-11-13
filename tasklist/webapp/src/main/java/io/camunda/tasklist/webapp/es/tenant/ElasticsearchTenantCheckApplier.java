@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.es.tenant;
 
-import static io.camunda.tasklist.schema.indices.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -41,7 +41,7 @@ public class ElasticsearchTenantCheckApplier implements TenantCheckApplier<Searc
   }
 
   @Override
-  public void apply(SearchRequest searchRequest, Collection<String> tenantIds) {
+  public void apply(final SearchRequest searchRequest, final Collection<String> tenantIds) {
     final var tenants = tenantService.getAuthenticatedTenants();
     final var tenantCheckQueryType = tenants.getTenantAccessType();
     final var authorizedTenantIds = Set.copyOf(tenants.getTenantIds());
@@ -52,9 +52,9 @@ public class ElasticsearchTenantCheckApplier implements TenantCheckApplier<Searc
   }
 
   private static void applyTenantCheckOnQuery(
-      SearchRequest searchRequest,
-      TenantService.TenantAccessType tenantCheckQueryType,
-      Collection<String> searchByTenantIds) {
+      final SearchRequest searchRequest,
+      final TenantService.TenantAccessType tenantCheckQueryType,
+      final Collection<String> searchByTenantIds) {
     final var actualQuery = searchRequest.source().query();
 
     switch (tenantCheckQueryType) {

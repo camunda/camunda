@@ -37,11 +37,6 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   }
 
   @Override
-  public String getAlias() {
-    return getFullQualifiedName() + "alias";
-  }
-
-  @Override
   public String getMappingsClasspathFilename() {
     return isElasticsearch
         ? String.format(SCHEMA_CREATE_INDEX_JSON_ELASTICSEARCH, getComponentName(), getIndexName())

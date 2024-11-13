@@ -14,6 +14,7 @@ import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.form
 import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +38,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
   }
 
   @Override
-  public String getSchemaClasspathFilename() {
+  public String getMappingsClasspathFilename() {
     if (ELASTIC_SEARCH.equals(tasklistProperties.getDatabase())) {
       return String.format(SCHEMA_CREATE_INDEX_JSON_ELASTICSEARCH, getIndexName());
     } else {

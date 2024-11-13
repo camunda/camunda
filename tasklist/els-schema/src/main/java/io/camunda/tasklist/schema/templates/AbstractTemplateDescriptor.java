@@ -33,7 +33,7 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
   }
 
   @Override
-  public String getSchemaClasspathFilename() {
+  public String getMappingsClasspathFilename() {
     if (ELASTIC_SEARCH.equals(tasklistProperties.getDatabase())) {
       return String.format(SCHEMA_CREATE_TEMPLATE_JSON_ELASTICSEARCH, getIndexName());
     } else {

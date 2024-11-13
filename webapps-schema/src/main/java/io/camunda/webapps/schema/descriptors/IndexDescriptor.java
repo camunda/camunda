@@ -13,7 +13,9 @@ public interface IndexDescriptor {
 
   String getFullQualifiedName();
 
-  String getAlias();
+  default String getAlias() {
+    return getFullQualifiedName() + "alias";
+  }
 
   String getIndexName();
 
