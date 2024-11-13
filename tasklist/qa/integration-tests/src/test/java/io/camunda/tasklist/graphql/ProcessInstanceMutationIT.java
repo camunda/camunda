@@ -11,11 +11,11 @@ import static io.camunda.tasklist.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
-import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
-import io.camunda.tasklist.schema.indices.VariableIndex;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
+import io.camunda.tasklist.schema.v86.indices.FlowNodeInstanceIndex;
+import io.camunda.tasklist.schema.v86.indices.ProcessInstanceDependant;
+import io.camunda.tasklist.schema.v86.indices.VariableIndex;
+import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
+import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;

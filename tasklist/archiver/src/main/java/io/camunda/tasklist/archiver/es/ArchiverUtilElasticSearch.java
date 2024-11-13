@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.archiver.es;
 
-import static io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager.INDEX_LIFECYCLE_NAME;
-import static io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES;
+import static io.camunda.tasklist.schema.v86.manager.ElasticsearchSchemaManager.INDEX_LIFECYCLE_NAME;
+import static io.camunda.tasklist.schema.v86.manager.ElasticsearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES;
 import static io.camunda.tasklist.util.ElasticsearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;

@@ -9,7 +9,7 @@ package io.camunda.tasklist.qa.backup.generator;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
 import java.io.IOException;
 import java.util.Collections;
 import org.elasticsearch.ElasticsearchException;

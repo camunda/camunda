@@ -16,7 +16,7 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.ImportPositionIndex;
+import io.camunda.tasklist.schema.v86.indices.ImportPositionIndex;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;

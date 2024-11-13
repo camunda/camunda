@@ -7,9 +7,9 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.tasklist.schema.indices.VariableIndex.ID;
-import static io.camunda.tasklist.schema.indices.VariableIndex.NAME;
-import static io.camunda.tasklist.schema.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
+import static io.camunda.tasklist.schema.v86.indices.VariableIndex.ID;
+import static io.camunda.tasklist.schema.v86.indices.VariableIndex.NAME;
+import static io.camunda.tasklist.schema.v86.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.createSearchRequest;
@@ -26,9 +26,9 @@ import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
-import io.camunda.tasklist.schema.indices.VariableIndex;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
+import io.camunda.tasklist.schema.v86.indices.FlowNodeInstanceIndex;
+import io.camunda.tasklist.schema.v86.indices.VariableIndex;
+import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;

@@ -7,9 +7,9 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT;
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT_TIME;
-import static io.camunda.tasklist.schema.indices.MetricIndex.VALUE;
+import static io.camunda.tasklist.schema.v86.indices.MetricIndex.EVENT;
+import static io.camunda.tasklist.schema.v86.indices.MetricIndex.EVENT_TIME;
+import static io.camunda.tasklist.schema.v86.indices.MetricIndex.VALUE;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.ASSIGNEE;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.EVENT_TASK_COMPLETED_BY_ASSIGNEE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,7 +27,7 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.entities.MetricEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.MetricIndex;
+import io.camunda.tasklist.schema.v86.indices.MetricIndex;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;

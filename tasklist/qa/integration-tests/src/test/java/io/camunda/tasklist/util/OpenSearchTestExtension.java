@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistOpenSearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.schema.v86.manager.SchemaManager;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.RecordsReader;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;

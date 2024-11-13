@@ -9,9 +9,9 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.FormIndex;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.schema.v86.indices.FormIndex;
+import io.camunda.tasklist.schema.v86.indices.ProcessIndex;
+import io.camunda.tasklist.schema.v86.manager.SchemaManager;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.se.SearchEngineUserDetailsService;

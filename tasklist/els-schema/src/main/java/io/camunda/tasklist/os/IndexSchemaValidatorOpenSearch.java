@@ -7,18 +7,18 @@
  */
 package io.camunda.tasklist.os;
 
-import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatAllVersionsIndexNameRegexPattern;
-import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatTasklistIndexPattern;
+import static io.camunda.tasklist.schema.v86.indices.AbstractIndexDescriptor.formatAllVersionsIndexNameRegexPattern;
+import static io.camunda.tasklist.schema.v86.indices.AbstractIndexDescriptor.formatTasklistIndexPattern;
 import static io.camunda.tasklist.util.CollectionUtil.map;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.IndexSchemaValidator;
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.schema.v86.IndexMapping.IndexMappingProperty;
+import io.camunda.tasklist.schema.v86.IndexSchemaValidator;
+import io.camunda.tasklist.schema.v86.manager.SchemaManager;
 import io.camunda.tasklist.util.IndexSchemaValidatorUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;

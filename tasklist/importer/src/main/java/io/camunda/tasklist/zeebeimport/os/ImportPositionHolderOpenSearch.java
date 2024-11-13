@@ -10,7 +10,7 @@ package io.camunda.tasklist.zeebeimport.os;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
-import io.camunda.tasklist.schema.indices.ImportPositionIndex;
+import io.camunda.tasklist.schema.v86.indices.ImportPositionIndex;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;

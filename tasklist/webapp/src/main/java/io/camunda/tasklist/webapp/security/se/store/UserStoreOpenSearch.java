@@ -15,7 +15,7 @@ import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.UserIndex;
+import io.camunda.tasklist.schema.v86.indices.UserIndex;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.io.IOException;

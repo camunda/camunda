@@ -8,7 +8,7 @@
 package io.camunda.tasklist.qa.util;
 
 import io.camunda.tasklist.exceptions.MigrationException;
-import io.camunda.tasklist.schema.SchemaStartup;
+import io.camunda.tasklist.schema.v86.SchemaStartup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Profile;

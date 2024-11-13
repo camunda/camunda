@@ -13,7 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.indices.FormIndex;
+import io.camunda.tasklist.schema.v86.indices.FormIndex;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.zeebeimport.v860.record.value.deployment.FormRecordImpl;
 import io.camunda.zeebe.protocol.record.Record;

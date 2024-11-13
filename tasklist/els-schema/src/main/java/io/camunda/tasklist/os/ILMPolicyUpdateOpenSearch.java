@@ -10,7 +10,7 @@ package io.camunda.tasklist.os;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
+import io.camunda.tasklist.schema.v86.manager.OpenSearchSchemaManager;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;

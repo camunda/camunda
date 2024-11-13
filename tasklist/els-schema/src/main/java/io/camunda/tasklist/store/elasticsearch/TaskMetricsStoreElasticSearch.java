@@ -7,9 +7,9 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT;
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT_TIME;
-import static io.camunda.tasklist.schema.indices.MetricIndex.VALUE;
+import static io.camunda.tasklist.schema.v86.indices.MetricIndex.EVENT;
+import static io.camunda.tasklist.schema.v86.indices.MetricIndex.EVENT_TIME;
+import static io.camunda.tasklist.schema.v86.indices.MetricIndex.VALUE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +17,7 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.MetricEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.MetricIndex;
+import io.camunda.tasklist.schema.v86.indices.MetricIndex;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import java.io.IOException;
 import java.time.OffsetDateTime;

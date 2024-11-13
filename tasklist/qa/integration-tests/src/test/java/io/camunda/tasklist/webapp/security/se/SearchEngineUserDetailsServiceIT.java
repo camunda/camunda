@@ -14,7 +14,7 @@ import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
-import io.camunda.tasklist.schema.indices.UserIndex;
+import io.camunda.tasklist.schema.v86.indices.UserIndex;
 import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;

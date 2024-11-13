@@ -10,7 +10,7 @@ package io.camunda.tasklist.zeebeimport.v860.processors.os;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.indices.FormIndex;
+import io.camunda.tasklist.schema.v86.indices.FormIndex;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.deployment.FormRecordImpl;

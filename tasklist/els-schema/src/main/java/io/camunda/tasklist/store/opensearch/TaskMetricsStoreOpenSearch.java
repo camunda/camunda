@@ -7,15 +7,15 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT;
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT_TIME;
-import static io.camunda.tasklist.schema.indices.MetricIndex.VALUE;
+import static io.camunda.tasklist.schema.v86.indices.MetricIndex.EVENT;
+import static io.camunda.tasklist.schema.v86.indices.MetricIndex.EVENT_TIME;
+import static io.camunda.tasklist.schema.v86.indices.MetricIndex.VALUE;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.MetricEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.MetricIndex;
+import io.camunda.tasklist.schema.v86.indices.MetricIndex;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;

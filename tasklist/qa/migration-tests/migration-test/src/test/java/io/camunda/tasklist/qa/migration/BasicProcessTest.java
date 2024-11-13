@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.qa.migration;
 
-import static io.camunda.tasklist.schema.templates.TaskTemplate.BPMN_PROCESS_ID;
+import static io.camunda.tasklist.schema.v86.templates.TaskTemplate.BPMN_PROCESS_ID;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -17,7 +17,7 @@ import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
 import io.camunda.tasklist.qa.migration.v810.BasicProcessDataGenerator;
-import io.camunda.tasklist.schema.indices.UserIndex;
+import io.camunda.tasklist.schema.v86.indices.UserIndex;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;

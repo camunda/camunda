@@ -14,7 +14,7 @@ import io.camunda.tasklist.archiver.ArchiverUtilAbstract;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.ArchiverException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.manager.OpenSearchSchemaManager;
+import io.camunda.tasklist.schema.v86.manager.OpenSearchSchemaManager;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.micrometer.core.instrument.Timer;

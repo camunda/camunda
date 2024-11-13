@@ -10,7 +10,7 @@ package io.camunda.tasklist.es;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.management.ILMPolicyUpdate;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
+import io.camunda.tasklist.schema.v86.manager.ElasticsearchSchemaManager;
 import java.io.IOException;
 import java.util.Set;
 import java.util.regex.Pattern;

@@ -15,7 +15,7 @@ import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
+import io.camunda.tasklist.schema.v86.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.store.ListViewStore;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import java.io.IOException;

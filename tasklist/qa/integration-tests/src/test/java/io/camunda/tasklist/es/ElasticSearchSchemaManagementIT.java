@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.es;
 
-import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatPrefixAndComponent;
+import static io.camunda.tasklist.schema.v86.indices.AbstractIndexDescriptor.formatPrefixAndComponent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -15,14 +15,14 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.IndexMapping;
-import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.IndexSchemaValidator;
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.manager.SchemaManager;
-import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.tasklist.schema.v86.IndexMapping;
+import io.camunda.tasklist.schema.v86.IndexMapping.IndexMappingProperty;
+import io.camunda.tasklist.schema.v86.IndexSchemaValidator;
+import io.camunda.tasklist.schema.v86.manager.SchemaManager;
+import io.camunda.tasklist.schema.v86.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
@@ -173,23 +173,33 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
   private IndexDescriptor createIndexDescriptor() {
     return new IndexDescriptor() {
       @Override
-      public String getIndexName() {
-        return INDEX_NAME;
-      }
-
-      @Override
       public String getFullQualifiedName() {
         return getFullIndexName();
       }
 
       @Override
-      public String getSchemaClasspathFilename() {
+      public String getAlias() {
+        return getFullQualifiedName() + "alias";
+      }
+
+      @Override
+      public String getIndexName() {
+        return INDEX_NAME;
+      }
+
+      @Override
+      public String getMappingsClasspathFilename() {
         return ORIGINAL_SCHEMA_PATH;
       }
 
       @Override
       public String getAllVersionsIndexNameRegexPattern() {
         return getFullIndexName() + "*";
+      }
+
+      @Override
+      public String getVersion() {
+        return "1.0.0";
       }
     };
   }

@@ -7,9 +7,9 @@
  */
 package io.camunda.tasklist.zeebeimport.common;
 
-import io.camunda.tasklist.schema.indices.FormIndex;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.schema.templates.DraftTaskVariableTemplate;
+import io.camunda.tasklist.schema.v86.indices.FormIndex;
+import io.camunda.tasklist.schema.v86.indices.ProcessIndex;
+import io.camunda.tasklist.schema.v86.templates.DraftTaskVariableTemplate;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.TaskStore;

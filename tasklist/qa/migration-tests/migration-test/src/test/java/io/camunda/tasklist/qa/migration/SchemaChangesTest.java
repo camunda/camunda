@@ -10,9 +10,9 @@ package io.camunda.tasklist.qa.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
-import io.camunda.tasklist.schema.IndexMapping;
-import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.manager.SchemaManager;
+import io.camunda.tasklist.schema.v86.IndexMapping;
+import io.camunda.tasklist.schema.v86.IndexMapping.IndexMappingProperty;
+import io.camunda.tasklist.schema.v86.manager.SchemaManager;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;

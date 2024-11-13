@@ -12,7 +12,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
-import io.camunda.tasklist.schema.indices.ImportPositionIndex;
+import io.camunda.tasklist.schema.v86.indices.ImportPositionIndex;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;

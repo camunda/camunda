@@ -23,7 +23,7 @@ import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskQuery;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.io.IOException;

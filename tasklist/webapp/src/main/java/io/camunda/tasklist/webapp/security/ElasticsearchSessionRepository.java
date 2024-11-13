@@ -7,16 +7,16 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.ATTRIBUTES;
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.CREATION_TIME;
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.ID;
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.LAST_ACCESSED_TIME;
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.MAX_INACTIVE_INTERVAL_IN_SECONDS;
+import static io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex.ATTRIBUTES;
+import static io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex.CREATION_TIME;
+import static io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex.ID;
+import static io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex.LAST_ACCESSED_TIME;
+import static io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex.MAX_INACTIVE_INTERVAL_IN_SECONDS;
 import static org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
-import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
+import io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;

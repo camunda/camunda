@@ -9,7 +9,7 @@ package io.camunda.tasklist.qa.migration.util;
 
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.migration.TestFixture;
-import io.camunda.tasklist.schema.migration.SchemaMigration;
+import io.camunda.tasklist.schema.v86.migration.SchemaMigration;
 import jakarta.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.List;

@@ -7,17 +7,17 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
+import static io.camunda.tasklist.schema.v86.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.os.RetryOpenSearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
-import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.templates.DraftTaskVariableTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
+import io.camunda.tasklist.schema.v86.indices.ProcessInstanceDependant;
+import io.camunda.tasklist.schema.v86.indices.ProcessInstanceIndex;
+import io.camunda.tasklist.schema.v86.templates.DraftTaskVariableTemplate;
+import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.ProcessInstanceStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;

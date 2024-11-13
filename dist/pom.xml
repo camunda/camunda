@@ -694,7 +694,7 @@
             </program>
             <program>
               <id>tasklist-migrate</id>
-              <mainClass>io.camunda.tasklist.schema.migration.SchemaMigration</mainClass>
+              <mainClass>io.camunda.tasklist.schema.v86.migration.SchemaMigration</mainClass>
             </program>
             <program>
               <id>camunda</id>

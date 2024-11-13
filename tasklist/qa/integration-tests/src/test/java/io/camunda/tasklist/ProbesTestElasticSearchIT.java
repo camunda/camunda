@@ -16,7 +16,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
 import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.IndexSchemaValidator;
+import io.camunda.tasklist.schema.v86.IndexSchemaValidator;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;

@@ -8,7 +8,7 @@
 package io.camunda.qa.util.cluster;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
+import io.camunda.tasklist.schema.v86.manager.ElasticsearchSchemaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Conditional;

@@ -7,7 +7,7 @@
  */
 package io.camunda.qa.util.cluster;
 
-import io.camunda.tasklist.schema.SchemaStartup;
+import io.camunda.tasklist.schema.v86.SchemaStartup;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 

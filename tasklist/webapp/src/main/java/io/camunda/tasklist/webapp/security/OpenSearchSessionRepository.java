@@ -7,14 +7,18 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import static io.camunda.tasklist.schema.indices.TasklistWebSessionIndex.*;
+import static io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex.ATTRIBUTES;
+import static io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex.CREATION_TIME;
+import static io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex.ID;
+import static io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex.LAST_ACCESSED_TIME;
+import static io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex.MAX_INACTIVE_INTERVAL_IN_SECONDS;
 import static org.springframework.security.web.context.HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.os.RetryOpenSearchClient;
-import io.camunda.tasklist.schema.indices.TasklistWebSessionIndex;
+import io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
@@ -134,7 +138,7 @@ public class OpenSearchSessionRepository
   }
 
   @Override
-  public void save(OpenSearchSession session) {
+  public void save(final OpenSearchSession session) {
     LOGGER.debug("Save session {}", session);
     if (shouldDeleteSession(session)) {
       deleteById(session.getId());
@@ -157,7 +161,7 @@ public class OpenSearchSessionRepository
     try {
       document =
           retryOpenSearchClient.getDocument(tasklistWebSessionIndex.getFullQualifiedName(), id);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       document = null;
     }
     if (document == null) {
@@ -181,7 +185,7 @@ public class OpenSearchSessionRepository
   }
 
   @Override
-  public void deleteById(String id) {
+  public void deleteById(final String id) {
     LOGGER.debug("Delete session {}", id);
     executeAsyncOpenSearchRequest(
         () ->
@@ -189,18 +193,18 @@ public class OpenSearchSessionRepository
                 tasklistWebSessionIndex.getFullQualifiedName(), id));
   }
 
-  private byte[] serialize(Object object) {
+  private byte[] serialize(final Object object) {
     return (byte[])
         conversionService.convert(
             object, TypeDescriptor.valueOf(Object.class), TypeDescriptor.valueOf(byte[].class));
   }
 
-  private Object deserialize(byte[] bytes) {
+  private Object deserialize(final byte[] bytes) {
     return conversionService.convert(
         bytes, TypeDescriptor.valueOf(byte[].class), TypeDescriptor.valueOf(Object.class));
   }
 
-  private Map<String, Object> sessionToDocument(OpenSearchSession session) {
+  private Map<String, Object> sessionToDocument(final OpenSearchSession session) {
     final Map<String, byte[]> attributes = new HashMap<>();
     session
         .getAttributeNames()
@@ -242,7 +246,7 @@ public class OpenSearchSessionRepository
     return null;
   }
 
-  private Optional<OpenSearchSession> documentToSession(Map<String, Object> document) {
+  private Optional<OpenSearchSession> documentToSession(final Map<String, Object> document) {
     try {
       final String sessionId = getSessionIdFrom(document);
       final OpenSearchSession session = new OpenSearchSession(sessionId);
@@ -253,7 +257,7 @@ public class OpenSearchSessionRepository
             && (!request.getHeader(POLLING_HEADER).equals(true))) {
           session.setPolling(true);
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.debug(
             "Expected Exception: is not possible to access request as currently this is not on a request context");
       }
@@ -273,13 +277,13 @@ public class OpenSearchSessionRepository
                         name, deserialize(Base64.getDecoder().decode(attributes.get(name)))));
       }
       return Optional.of(session);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error("Could not restore session.", e);
       return Optional.empty();
     }
   }
 
-  private void executeAsyncOpenSearchRequest(Runnable requestRunnable) {
+  private void executeAsyncOpenSearchRequest(final Runnable requestRunnable) {
     taskScheduler.execute(requestRunnable);
   }
 
@@ -291,7 +295,7 @@ public class OpenSearchSessionRepository
 
     private boolean polling;
 
-    public OpenSearchSession(String id) {
+    public OpenSearchSession(final String id) {
       delegate = new MapSession(id);
       polling = false;
     }
@@ -304,6 +308,7 @@ public class OpenSearchSessionRepository
       changed = false;
     }
 
+    @Override
     public String getId() {
       return delegate.getId();
     }
@@ -315,26 +320,24 @@ public class OpenSearchSessionRepository
       return newId;
     }
 
-    public OpenSearchSession setId(String id) {
-      delegate.setId(id);
-      return this;
-    }
-
-    public <T> T getAttribute(String attributeName) {
+    @Override
+    public <T> T getAttribute(final String attributeName) {
       return delegate.getAttribute(attributeName);
     }
 
+    @Override
     public Set<String> getAttributeNames() {
       return delegate.getAttributeNames();
     }
 
-    public void setAttribute(String attributeName, Object attributeValue) {
+    @Override
+    public void setAttribute(final String attributeName, final Object attributeValue) {
       delegate.setAttribute(attributeName, attributeValue);
       changed = true;
     }
 
     @Override
-    public void removeAttribute(String attributeName) {
+    public void removeAttribute(final String attributeName) {
       delegate.removeAttribute(attributeName);
       changed = true;
     }
@@ -344,9 +347,14 @@ public class OpenSearchSessionRepository
       return delegate.getCreationTime();
     }
 
-    public void setCreationTime(Instant creationTime) {
+    public void setCreationTime(final Instant creationTime) {
       delegate.setCreationTime(creationTime);
       changed = true;
+    }
+
+    public OpenSearchSession setId(final String id) {
+      delegate.setId(id);
+      return this;
     }
 
     @Override
@@ -355,15 +363,7 @@ public class OpenSearchSessionRepository
     }
 
     @Override
-    public void setLastAccessedTime(Instant lastAccessedTime) {
-      if (!polling) {
-        delegate.setLastAccessedTime(lastAccessedTime);
-        changed = true;
-      }
-    }
-
-    @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }
@@ -375,29 +375,16 @@ public class OpenSearchSessionRepository
     }
 
     @Override
-    public Instant getLastAccessedTime() {
-      return delegate.getLastAccessedTime();
-    }
-
-    @Override
-    public void setMaxInactiveInterval(final Duration interval) {
-      delegate.setMaxInactiveInterval(interval);
-      changed = true;
-    }
-
-    @Override
-    public Duration getMaxInactiveInterval() {
-      return delegate.getMaxInactiveInterval();
-    }
-
-    @Override
     public String toString() {
       return String.format("OpenSearchSession: %s ", getId());
     }
 
     @Override
-    public boolean isExpired() {
-      return delegate.isExpired();
+    public void setLastAccessedTime(final Instant lastAccessedTime) {
+      if (!polling) {
+        delegate.setLastAccessedTime(lastAccessedTime);
+        changed = true;
+      }
     }
 
     public boolean containsAuthentication() {
@@ -408,7 +395,7 @@ public class OpenSearchSessionRepository
       final var authentication = getAuthentication();
       try {
         return authentication != null && authentication.isAuthenticated();
-      } catch (InsufficientAuthenticationException ex) {
+      } catch (final InsufficientAuthenticationException ex) {
         // TODO consider not throwing exceptions in authentication.isAuthenticated()
         return false;
       }
@@ -428,13 +415,34 @@ public class OpenSearchSessionRepository
       return authentication;
     }
 
+    @Override
+    public Instant getLastAccessedTime() {
+      return delegate.getLastAccessedTime();
+    }
+
     public boolean isPolling() {
       return polling;
     }
 
-    public OpenSearchSession setPolling(boolean polling) {
+    public OpenSearchSession setPolling(final boolean polling) {
       this.polling = polling;
       return this;
+    }
+
+    @Override
+    public void setMaxInactiveInterval(final Duration interval) {
+      delegate.setMaxInactiveInterval(interval);
+      changed = true;
+    }
+
+    @Override
+    public Duration getMaxInactiveInterval() {
+      return delegate.getMaxInactiveInterval();
+    }
+
+    @Override
+    public boolean isExpired() {
+      return delegate.isExpired();
     }
   }
 }

@@ -16,7 +16,7 @@ import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.util.OpenSearchUtil;
