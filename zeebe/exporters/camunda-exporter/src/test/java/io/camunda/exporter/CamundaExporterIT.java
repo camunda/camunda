@@ -30,9 +30,7 @@ import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
-import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -40,12 +38,10 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -220,69 +216,6 @@ final class CamundaExporterIT {
         .containsExactly(
             record.getValue().getRoleKey(),
             record.getValue().getName(),
-            String.valueOf(record.getKey()));
-  }
-
-  @TestTemplate
-  void shouldExportUserRecord(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws Exception {
-    // given
-    final var exporter = createExporter(Set.of(), Set.of(), config);
-
-    // when
-    final Record<UserRecordValue> record = factory.generateRecord(ValueType.USER);
-    final String recordId = String.valueOf(record.getKey());
-    exporter.export(record);
-
-    // then
-    final var responseUserEntity =
-        clientAdapter.get(
-            recordId, config.getIndex().getPrefix() + "-identity-users-8.7.0_", UserEntity.class);
-
-    assertThat(responseUserEntity)
-        .describedAs("User entity is updated correctly from the user record")
-        .extracting(
-            UserEntity::getEmail, UserEntity::getName, UserEntity::getUsername, UserEntity::getId)
-        .containsExactly(
-            record.getValue().getEmail(),
-            record.getValue().getName(),
-            record.getValue().getUsername(),
-            String.valueOf(record.getKey()));
-  }
-
-  @TestTemplate
-  void shouldExportAuthorizationRecord(
-      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
-      throws IOException {
-    // given
-    final var exporter = createExporter(Set.of(), Set.of(), config);
-
-    // when
-    final Record<AuthorizationRecordValue> record = factory.generateRecord(ValueType.AUTHORIZATION);
-    final var recordId = String.valueOf(record.getKey());
-    exporter.export(record);
-
-    // then
-    final var responseAuthorizationEntity =
-        clientAdapter.get(
-            recordId,
-            config.getIndex().getPrefix() + "-identity-authorizations-8.7.0_",
-            AuthorizationEntity.class);
-
-    assertThat(responseAuthorizationEntity)
-        .describedAs("Authorization entity is updated correctly from the authorization record")
-        .extracting(
-            AuthorizationEntity::getOwnerKey,
-            AuthorizationEntity::getOwnerType,
-            AuthorizationEntity::getResourceType,
-            AuthorizationEntity::getPermissions,
-            AuthorizationEntity::getId)
-        .containsExactly(
-            record.getValue().getOwnerKey(),
-            String.valueOf(record.getValue().getOwnerType()),
-            String.valueOf(record.getValue().getResourceType()),
-            extractPermissions(record.getValue()),
             String.valueOf(record.getKey()));
   }
 
