@@ -35,11 +35,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 
-public class FlowNodeInstanceProcessInstanceHandlerTest {
+public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
-  private final FlowNodeInstanceProcessInstanceHandler underTest =
-      new FlowNodeInstanceProcessInstanceHandler(indexName);
+  private final FlowNodeInstanceFromProcessInstanceHandler underTest =
+      new FlowNodeInstanceFromProcessInstanceHandler(indexName);
 
   @Test
   public void testGetHandledValueType() {

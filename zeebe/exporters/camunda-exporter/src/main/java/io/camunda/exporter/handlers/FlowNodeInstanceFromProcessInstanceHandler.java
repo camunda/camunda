@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-public class FlowNodeInstanceProcessInstanceHandler
+public class FlowNodeInstanceFromProcessInstanceHandler
     implements ExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
 
   private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
@@ -39,7 +39,7 @@ public class FlowNodeInstanceProcessInstanceHandler
 
   private final String indexName;
 
-  public FlowNodeInstanceProcessInstanceHandler(final String indexName) {
+  public FlowNodeInstanceFromProcessInstanceHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -88,11 +88,11 @@ public class FlowNodeInstanceProcessInstanceHandler
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
-    // Parent tree path is intentionally not calculated here, we set the value as if the instance is
-    // on the 1st level
-    // will be changed within https://github.com/camunda/camunda/issues/18378
-    entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
-    entity.setLevel(1);
+    if (intent.equals(ELEMENT_ACTIVATING)) {
+      // we set the default value here, which may be updated later within incident export
+      entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
+      entity.setLevel(1);
+    }
 
     final OffsetDateTime recordTime =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
