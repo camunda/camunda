@@ -81,7 +81,7 @@ export default function DurationChart({data, colors, isLogharitmic}: DurationCha
                 )} ${duration(label)}`;
               },
             },
-            filter: (tooltipItem) => +tooltipItem.formattedValue > 0,
+            filter: (tooltipItem) => parseInt(tooltipItem.formattedValue) > 0,
           },
         },
         scales: {
