@@ -51,9 +51,13 @@ public class FlowNodeInstanceFromIncidentHandler
   public List<String> generateIds(final Record<IncidentRecordValue> record) {
     // in case of incident we update tree path in all flow node instances in call hierarchy
     final IncidentRecordValue recordValue = record.getValue();
-    final List<Long> callHierarchy = recordValue.getElementInstancePath().getLast();
-    // we skip the 1st element, as it contains process instance key
-    return callHierarchy.stream().skip(1).map(String::valueOf).toList();
+    if (!recordValue.getElementInstancePath().isEmpty()) {
+      final List<Long> callHierarchy = recordValue.getElementInstancePath().getLast();
+      // we skip the 1st element, as it contains process instance key
+      return callHierarchy.stream().skip(1).map(String::valueOf).toList();
+    } else {
+      return List.of(String.valueOf(recordValue.getElementInstanceKey()));
+    }
   }
 
   @Override
@@ -89,11 +93,14 @@ public class FlowNodeInstanceFromIncidentHandler
           "No elementInstancePath was provided in the incident. Tree path for process instance {} will be default.",
           recordValue.getProcessInstanceKey());
     }
-    final var intent = record.getIntent();
-    if (intent.equals(IncidentIntent.CREATED) || intent.equals(IncidentIntent.MIGRATED)) {
-      entity.setIncidentKey(record.getKey());
-    } else if (intent.equals(IncidentIntent.RESOLVED)) {
-      entity.setIncidentKey(null);
+    // we update incidentKey only for the leaf flow node instance, same way it was before
+    if (entity.getId().equals(String.valueOf(recordValue.getElementInstanceKey()))) {
+      final var intent = record.getIntent();
+      if (intent.equals(IncidentIntent.CREATED) || intent.equals(IncidentIntent.MIGRATED)) {
+        entity.setIncidentKey(record.getKey());
+      } else if (intent.equals(IncidentIntent.RESOLVED)) {
+        entity.setIncidentKey(null);
+      }
     }
   }
 

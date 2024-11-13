@@ -149,11 +149,20 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
   @Test
   public void shouldUpdateEntityForResolvedIncident() {
     // given
+    final long elementInstanceKey = 123;
+    final IncidentRecordValue incidentRecordValue =
+        factory
+            .generateObject(ImmutableIncidentRecordValue.Builder.class)
+            .withElementInstanceKey(elementInstanceKey)
+            .build();
     final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.RESOLVED));
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(IncidentIntent.RESOLVED).withValue(incidentRecordValue));
 
     // when
-    final FlowNodeInstanceEntity flowNodeInstanceEntity = new FlowNodeInstanceEntity();
+    final FlowNodeInstanceEntity flowNodeInstanceEntity =
+        new FlowNodeInstanceEntity().setId(String.valueOf(elementInstanceKey));
     underTest.updateEntity(incidentRecord, flowNodeInstanceEntity);
 
     // then
