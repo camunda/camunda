@@ -24,15 +24,15 @@ public interface HealthMonitor extends HealthMonitorable {
    * component is registered using {@link #registerComponent(HealthMonitorable)}.
    *
    * <p>The component name must be consistent with the value returned by the method {@link
-   * HealthMonitorable#getName()}
+   * HealthMonitorable#componentName()} ()}
    */
   void monitorComponent(String componentName);
 
   /**
    * Register the component to be monitored.
    *
-   * <p>The implementation must use the {@link HealthMonitorable#getName()} field to identify a
-   * component
+   * <p>The implementation must use the {@link HealthMonitorable#componentName()} field to identify
+   * a component
    *
    * @param component to register
    */
@@ -41,8 +41,8 @@ public interface HealthMonitor extends HealthMonitorable {
   /**
    * Stop monitoring the component.
    *
-   * <p>The implementation must use the {@link HealthMonitorable#getName()} field to identify a
-   * component
+   * <p>The implementation must use the {@link HealthMonitorable#componentName()} field to identify
+   * a component
    *
    * @param component to be removed
    */

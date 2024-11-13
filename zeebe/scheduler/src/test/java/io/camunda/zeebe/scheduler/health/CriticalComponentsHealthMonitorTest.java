@@ -267,8 +267,8 @@ public class CriticalComponentsHealthMonitorTest {
     }
 
     @Override
-    public String getName() {
-      return (name != null) ? name : HealthMonitorable.super.getName();
+    public String componentName() {
+      return name;
     }
 
     @Override
