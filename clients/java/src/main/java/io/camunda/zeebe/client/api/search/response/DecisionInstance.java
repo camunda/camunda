@@ -27,6 +27,11 @@ public interface DecisionInstance {
   long getDecisionInstanceKey();
 
   /**
+   * @return the id of the decision instance
+   */
+  String getDecisionInstanceId();
+
+  /**
    * @return the state of the decision instance
    */
   DecisionInstanceState getState();

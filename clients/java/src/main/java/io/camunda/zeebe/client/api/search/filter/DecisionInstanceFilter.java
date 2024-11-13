@@ -27,6 +27,9 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by decisionInstanceKey */
   DecisionInstanceFilter decisionInstanceKey(long decisionInstanceKey);
 
+  /** Filter by decisionInstanceId */
+  DecisionInstanceFilter decisionInstanceId(String decisionInstanceId);
+
   /** Filter by state */
   DecisionInstanceFilter state(DecisionInstanceState state);
 

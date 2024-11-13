@@ -673,8 +673,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public DecisionInstanceGetRequest newDecisionInstanceGetRequest(final long decisionInstanceKey) {
-    return new DecisionInstanceGetRequestImpl(httpClient, jsonMapper, decisionInstanceKey);
+  public DecisionInstanceGetRequest newDecisionInstanceGetRequest(final String decisionInstanceId) {
+    return new DecisionInstanceGetRequestImpl(httpClient, jsonMapper, decisionInstanceId);
   }
 
   @Override

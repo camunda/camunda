@@ -31,6 +31,7 @@ public final class DecisionInstanceFilterTransformer
   public SearchQuery toSearchQuery(final DecisionInstanceFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
     ofNullable(getKeysQuery(filter.decisionInstanceKeys())).ifPresent(queries::add);
+    ofNullable(getIdsQuery(filter.decisionInstanceIds())).ifPresent(queries::add);
     ofNullable(getStatesQuery(filter.states())).ifPresent(queries::add);
     ofNullable(getEvaluationDateQuery(filter.evaluationDateOperations()))
         .ifPresent(queries::addAll);
@@ -58,6 +59,10 @@ public final class DecisionInstanceFilterTransformer
 
   private SearchQuery getKeysQuery(final List<Long> keys) {
     return longTerms("key", keys);
+  }
+
+  private SearchQuery getIdsQuery(final List<String> ids) {
+    return stringTerms("id", ids);
   }
 
   private SearchQuery getStatesQuery(final List<DecisionInstanceState> states) {

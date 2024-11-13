@@ -69,23 +69,22 @@ public final class DecisionInstanceServices
   }
 
   /**
-   * Get a Decision Instance by its key.
+   * Get a Decision Instance by its id.
    *
-   * @param decisionInstanceKey the key of the Decision Instance
+   * @param decisionInstanceId the id of the Decision Instance
    * @return the Decision Instance
-   * @throws NotFoundException if the Decision Instance with the given key does not exist
-   * @throws CamundaSearchException if the Decision Instance with the given key exists more than
-   *     once
+   * @throws NotFoundException if the Decision Instance with the given id does not exist
+   * @throws CamundaSearchException if the Decision Instance with the given id exists more than once
    */
-  public DecisionInstanceEntity getByKey(final long decisionInstanceKey) {
+  public DecisionInstanceEntity getById(final String decisionInstanceId) {
     final var result =
         decisionInstanceSearchClient
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
             .searchDecisionInstances(
                 decisionInstanceSearchQuery(
-                    q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))));
+                    q -> q.filter(f -> f.decisionInstanceIds(decisionInstanceId))));
     final var decisionInstanceEntity =
-        getSingleResultOrThrow(result, decisionInstanceKey, "Decision instance");
+        getSingleResultOrThrow(result, decisionInstanceId, "Decision instance");
     final var authorization = Authorization.of(a -> a.decisionDefinition().readInstance());
     if (!securityContextProvider.isAuthorized(
         decisionInstanceEntity.decisionId(), authentication, authorization)) {

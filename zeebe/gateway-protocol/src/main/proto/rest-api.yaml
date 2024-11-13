@@ -1702,7 +1702,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /decision-instances/{decisionInstanceKey}:
+  /decision-instances/{decisionInstanceId}:
     get:
       tags:
         - Decision instance
@@ -1717,13 +1717,12 @@ paths:
         This endpoint is an alpha feature and may be subject to change
         in future releases.
       parameters:
-        - name: decisionInstanceKey
+        - name: decisionInstanceId
           in: path
           required: true
-          description: The assigned key of the decision instance, which acts as a unique identifier for this decision instance.
+          description: The assigned id of the decision instance, which acts as a unique identifier for this decision instance.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "200":
           description: >
@@ -1742,7 +1741,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
           description: >
-            The decision instance with the given key was not found.
+            The decision instance with the given id was not found.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -4844,6 +4843,9 @@ components:
           type: integer
           format: int64
           description: The key of the decision instance.
+        decisionInstanceId:
+          type: string
+          description: The ID of the decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationFailure:
@@ -4897,6 +4899,9 @@ components:
           type: integer
           format: int64
           description: The key of the decision instance.
+        decisionInstanceId:
+          type: string
+          description: The ID of the decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationDate:

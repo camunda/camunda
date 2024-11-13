@@ -56,6 +56,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                "items": [
                    {
                        "decisionInstanceKey": 123,
+                       "decisionInstanceId": "123-1",
                        "state": "EVALUATED",
                        "evaluationDate": "2024-06-05T08:29:15.027Z",
                        "processDefinitionKey": 2251799813688736,
@@ -84,6 +85,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
               List.of(
                   new DecisionInstanceEntity(
                       123L,
+                      "123-1",
                       DecisionInstanceState.EVALUATED,
                       OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
                       null,
@@ -196,10 +198,11 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldReturnDecisionInstanceByKey() {
     // given
-    final var decisionInstanceKey = 123L;
+    final var decisionInstanceId = "123-1";
     final var decisionInstanceInDB =
         new DecisionInstanceEntity(
             123L,
+            "123-1",
             DecisionInstanceState.EVALUATED,
             OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
             null,
@@ -217,11 +220,11 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 new DecisionInstanceOutputEntity("1", "name1", "value1", "ruleId1", 1),
                 new DecisionInstanceOutputEntity("2", "name2", "value2", "ruleId1", 1),
                 new DecisionInstanceOutputEntity("3", "name3", "value3", "ruleId2", 2)));
-    when(decisionInstanceServices.getByKey(decisionInstanceKey)).thenReturn(decisionInstanceInDB);
+    when(decisionInstanceServices.getById(decisionInstanceId)).thenReturn(decisionInstanceInDB);
     // when
     webClient
         .get()
-        .uri("/v2/decision-instances/{decisionInstanceKey}", decisionInstanceKey)
+        .uri("/v2/decision-instances/{decisionInstanceId}", decisionInstanceId)
         .exchange()
         .expectStatus()
         .isOk()
@@ -282,13 +285,13 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldReturn404WhenDecisionInstanceNotFound() {
     // given
-    final var decisionInstanceKey = 123L;
-    when(decisionInstanceServices.getByKey(decisionInstanceKey))
-        .thenThrow(new NotFoundException("Decision Instance with key 1 was not found."));
+    final var decisionInstanceId = "123-1";
+    when(decisionInstanceServices.getById(decisionInstanceId))
+        .thenThrow(new NotFoundException("Decision Instance with key 123-1 was not found."));
     // when
     webClient
         .get()
-        .uri("/v2/decision-instances/{decisionInstanceKey}", decisionInstanceKey)
+        .uri("/v2/decision-instances/{decisionInstanceId}", decisionInstanceId)
         .exchange()
         .expectStatus()
         .isNotFound()
@@ -301,21 +304,21 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                           "type": "about:blank",
                           "title": "NOT_FOUND",
                           "status": 404,
-                          "detail": "Decision Instance with key 1 was not found.",
-                          "instance": "/v2/decision-instances/123"
+                          "detail": "Decision Instance with key 123-1 was not found.",
+                          "instance": "/v2/decision-instances/123-1"
                         }""");
   }
 
   @Test
   void shouldReturn500ForInternalErrorGetDecisionDefinitionByKey() {
     // given
-    final var decisionInstanceKey = 123L;
-    when(decisionInstanceServices.getByKey(decisionInstanceKey))
+    final var decisionInstanceId = "123-1";
+    when(decisionInstanceServices.getById(decisionInstanceId))
         .thenThrow(new RuntimeException("Something bad happened."));
     // when
     webClient
         .get()
-        .uri("/v2/decision-instances/{decisionInstanceKey}", decisionInstanceKey)
+        .uri("/v2/decision-instances/{decisionInstanceId}", decisionInstanceId)
         .exchange()
         .expectStatus()
         .is5xxServerError()
@@ -329,21 +332,21 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "title": "java.lang.RuntimeException",
                   "status": 500,
                   "detail": "Unexpected error occurred during the request processing: Something bad happened.",
-                  "instance": "/v2/decision-instances/123"
+                  "instance": "/v2/decision-instances/123-1"
                 }""");
   }
 
   @Test
   void shouldReturn403ForUnauthorizedGetDecisionDefinitionByKey() {
     // given
-    final var decisionInstanceKey = 123L;
-    when(decisionInstanceServices.getByKey(decisionInstanceKey))
+    final var decisionInstanceId = "123-1";
+    when(decisionInstanceServices.getById(decisionInstanceId))
         .thenThrow(
             new ForbiddenException(Authorization.of(a -> a.decisionDefinition().readInstance())));
     // when
     webClient
         .get()
-        .uri("/v2/decision-instances/{decisionInstanceKey}", decisionInstanceKey)
+        .uri("/v2/decision-instances/{decisionInstanceId}", decisionInstanceId)
         .exchange()
         .expectStatus()
         .isForbidden()
@@ -357,7 +360,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "title": "io.camunda.service.exception.ForbiddenException",
                   "status": 403,
                   "detail": "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'DECISION_DEFINITION'",
-                  "instance": "/v2/decision-instances/123"
+                  "instance": "/v2/decision-instances/123-1"
                 }""");
   }
 
