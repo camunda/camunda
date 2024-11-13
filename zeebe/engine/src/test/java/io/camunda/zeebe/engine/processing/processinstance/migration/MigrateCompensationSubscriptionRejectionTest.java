@@ -19,13 +19,14 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
 
 public class MigrateCompensationSubscriptionRejectionTest {
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
@@ -37,7 +38,7 @@ public class MigrateCompensationSubscriptionRejectionTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -74,9 +75,9 @@ public class MigrateCompensationSubscriptionRejectionTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
 
     RecordingExporter.compensationSubscriptionRecords()
         .withProcessInstanceKey(processInstanceKey)
@@ -84,7 +85,7 @@ public class MigrateCompensationSubscriptionRejectionTest {
         .await();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -118,7 +119,7 @@ public class MigrateCompensationSubscriptionRejectionTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -149,9 +150,9 @@ public class MigrateCompensationSubscriptionRejectionTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
 
     RecordingExporter.compensationSubscriptionRecords()
         .withProcessInstanceKey(processInstanceKey)
@@ -159,7 +160,7 @@ public class MigrateCompensationSubscriptionRejectionTest {
         .await();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -192,7 +193,7 @@ public class MigrateCompensationSubscriptionRejectionTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -246,9 +247,9 @@ public class MigrateCompensationSubscriptionRejectionTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
 
     RecordingExporter.compensationSubscriptionRecords()
         .withProcessInstanceKey(processInstanceKey)
@@ -256,7 +257,7 @@ public class MigrateCompensationSubscriptionRejectionTest {
         .await();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
@@ -290,7 +291,7 @@ public class MigrateCompensationSubscriptionRejectionTest {
     final String targetProcessId = helper.getBpmnProcessId() + "2";
 
     final var deployment =
-        engine
+        ENGINE
             .deployment()
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
@@ -344,9 +345,9 @@ public class MigrateCompensationSubscriptionRejectionTest {
     final long targetProcessDefinitionKey =
         extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
 
-    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(processId).create();
 
-    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
 
     RecordingExporter.compensationSubscriptionRecords()
         .withProcessInstanceKey(processInstanceKey)
@@ -354,7 +355,7 @@ public class MigrateCompensationSubscriptionRejectionTest {
         .await();
 
     // when
-    engine
+    ENGINE
         .processInstance()
         .withInstanceKey(processInstanceKey)
         .migration()
