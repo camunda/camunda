@@ -43,7 +43,6 @@ public final class ZeebePartition extends Actor
         DiskSpaceUsageListener,
         SnapshotReplicationListener {
 
-  public static final String ACTOR_NAME_PREFIX = "Partition";
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private final StartupProcess<PartitionStartupContext> startupProcess;
@@ -83,10 +82,10 @@ public final class ZeebePartition extends Actor
 
     transition.setConcurrencyControl(actor);
 
-    actorName = buildActorName(transitionContext.getPartitionId());
+    final var partitionId = context.getPartitionId();
+    actorName = buildActorName("ZeebePartition", partitionId);
     transitionContext.setComponentHealthMonitor(
-        new CriticalComponentsHealthMonitor(
-            ZeebePartition.buildActorName(transitionContext.getPartitionId()), actor, LOG));
+        new CriticalComponentsHealthMonitor(componentName(partitionId), actor, LOG));
     zeebePartitionHealth = new ZeebePartitionHealth(transitionContext.getPartitionId(), transition);
     healthMetrics = new HealthMetrics(transitionContext.getPartitionId());
     healthMetrics.setUnhealthy();
@@ -94,8 +93,8 @@ public final class ZeebePartition extends Actor
     roleMetrics = new RoleMetrics(transitionContext.getPartitionId());
   }
 
-  public static String buildActorName(final int partitionId) {
-    return buildActorName(ACTOR_NAME_PREFIX, partitionId);
+  public static String componentName(final int partitionId) {
+    return String.format("Partition-%s", partitionId);
   }
 
   public PartitionAdminAccess getAdminAccess() {
@@ -199,6 +198,34 @@ public final class ZeebePartition extends Actor
     // Most probably exception happened in the middle of installing leader or follower services
     // because this actor is not doing anything else
     onInstallFailure(failure);
+  }
+
+  @Override
+  public String componentName() {
+    return String.format("Partition-%d", getPartitionId());
+  }
+
+  @Override
+  public HealthReport getHealthReport() {
+    return context.getComponentHealthMonitor().getHealthReport();
+  }
+
+  @Override
+  public void addFailureListener(final FailureListener failureListener) {
+    actor.run(
+        () -> {
+          failureListeners.add(failureListener);
+          if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
+            failureListener.onRecovered(getHealthReport());
+          } else {
+            failureListener.onFailure(getHealthReport());
+          }
+        });
+  }
+
+  @Override
+  public void removeFailureListener(final FailureListener failureListener) {
+    actor.run(() -> failureListeners.remove(failureListener));
   }
 
   /**
@@ -409,29 +436,6 @@ public final class ZeebePartition extends Actor
 
   private void onRecoveredInternal() {
     zeebePartitionHealth.setServicesInstalled(true);
-  }
-
-  @Override
-  public HealthReport getHealthReport() {
-    return context.getComponentHealthMonitor().getHealthReport();
-  }
-
-  @Override
-  public void addFailureListener(final FailureListener failureListener) {
-    actor.run(
-        () -> {
-          failureListeners.add(failureListener);
-          if (getHealthReport().getStatus() == HealthStatus.HEALTHY) {
-            failureListener.onRecovered(getHealthReport());
-          } else {
-            failureListener.onFailure(getHealthReport());
-          }
-        });
-  }
-
-  @Override
-  public void removeFailureListener(final FailureListener failureListener) {
-    actor.run(() -> failureListeners.remove(failureListener));
   }
 
   @Override

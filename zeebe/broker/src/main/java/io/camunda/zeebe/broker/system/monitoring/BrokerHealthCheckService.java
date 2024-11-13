@@ -114,7 +114,7 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
         partitions.stream().collect(Collectors.toMap(metadata -> metadata.id().id(), p -> false));
     partitions.forEach(
         metadata ->
-            healthMonitor.monitorComponent(ZeebePartition.buildActorName(metadata.id().id())));
+            healthMonitor.monitorComponent(ZeebePartition.componentName(metadata.id().id())));
   }
 
   public boolean isBrokerReady() {

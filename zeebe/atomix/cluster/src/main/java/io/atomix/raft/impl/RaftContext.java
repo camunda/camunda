@@ -1000,8 +1000,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    *
    * @return The server name.
    */
-  @Override
   public String getName() {
+    return name;
+  }
+
+  @Override
+  public String componentName() {
     return name;
   }
 

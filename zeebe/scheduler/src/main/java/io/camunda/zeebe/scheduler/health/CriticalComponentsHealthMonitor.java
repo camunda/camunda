@@ -67,23 +67,10 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   }
 
   @Override
-  public void removeComponent(final HealthMonitorable component) {
-    actor.run(
-        () -> {
-          final var componentName = component.getName();
-          final var monitoredComponent = monitoredComponents.remove(componentName);
-          if (monitoredComponent != null) {
-            componentHealth.remove(componentName);
-            monitoredComponent.component.removeFailureListener(monitoredComponent);
-          }
-        });
-  }
-
-  @Override
   public void registerComponent(final HealthMonitorable component) {
     actor.run(
         () -> {
-          final var componentName = component.getName();
+          final var componentName = component.componentName();
           final var monitoredComponent = new MonitoredComponent(componentName, component);
           monitoredComponents.put(componentName, monitoredComponent);
           componentHealth.put(componentName, component.getHealthReport());
@@ -94,7 +81,20 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   }
 
   @Override
-  public String getName() {
+  public void removeComponent(final HealthMonitorable component) {
+    actor.run(
+        () -> {
+          final var componentName = component.componentName();
+          final var monitoredComponent = monitoredComponents.remove(componentName);
+          if (monitoredComponent != null) {
+            componentHealth.remove(componentName);
+            monitoredComponent.component.removeFailureListener(monitoredComponent);
+          }
+        });
+  }
+
+  @Override
+  public String componentName() {
     return name;
   }
 

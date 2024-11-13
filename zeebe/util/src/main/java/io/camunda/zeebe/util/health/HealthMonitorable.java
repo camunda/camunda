@@ -12,14 +12,11 @@ public interface HealthMonitorable {
 
   /**
    * Used by a HealthMonitor to get the name of this component. Most `HealthMonitorable`s override
-   * this method to return their actor name. If they don't override the method, the name of the
-   * class is returned.
+   * this method to return their actor name.
    *
    * @return the name of this component
    */
-  default String getName() {
-    return getClass().getSimpleName();
-  }
+  String componentName();
 
   /**
    * Used by a HealthMonitor to get the health status of this component, typically invoked

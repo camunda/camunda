@@ -193,6 +193,11 @@ public class RaftPartitionServer implements HealthMonitorable {
   }
 
   @Override
+  public String componentName() {
+    return getClass().getSimpleName();
+  }
+
+  @Override
   public HealthReport getHealthReport() {
     return server.getContext().getHealthReport();
   }
