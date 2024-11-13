@@ -4227,9 +4227,6 @@ components:
         name:
           type: string
           description: The new name of the user.
-        username:
-          type: string
-          description: The new username of the user.
         email:
           type: string
           description: The new email of the user.
