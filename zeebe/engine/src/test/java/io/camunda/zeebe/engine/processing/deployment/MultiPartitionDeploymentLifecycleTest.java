@@ -219,6 +219,59 @@ public class MultiPartitionDeploymentLifecycleTest {
   }
 
   @Test
+  public void shouldRejectDeploymentDistributionWhenAlreadyCreated() {
+    // given
+    engine.pauseProcessing(2);
+    engine.pauseProcessing(3);
+
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("shouldReDistributeAfterRecovery")
+                .startEvent()
+                .endEvent()
+                .done())
+        .expectCreated()
+        .deploy();
+
+    RecordingExporter.records()
+        .withPartitionId(2)
+        .withValueType(ValueType.DEPLOYMENT)
+        .withIntent(DeploymentIntent.CREATE)
+        .await();
+
+    // first one is skipped
+    engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // continue to add time to the clock until the deployment is re-distributed
+              engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+              // todo: could benefit from RecordingExporter without
+              assertThat(
+                      RecordingExporter.records()
+                          .withPartitionId(2)
+                          .withValueType(ValueType.DEPLOYMENT)
+                          .withIntent(DeploymentIntent.CREATE)
+                          .limit(2))
+                  .hasSize(2);
+            });
+
+    // when
+    engine.resumeProcessing(2);
+    engine.resumeProcessing(3);
+
+    // then
+    assertThat(RecordingExporter.records().withPartitionId(2).onlyCommandRejections().limit(1))
+        .describedAs("Expect deployment distribution on partition 2 to be rejected")
+        .isNotEmpty();
+
+    assertThat(RecordingExporter.records().withPartitionId(3).onlyCommandRejections().limit(1))
+        .describedAs("Expect deployment distribution on partition 3 to be rejected")
+        .isNotEmpty();
+  }
+
+  @Test
   public void shouldDeployIfResourceIsLargeButNotTooMuch() {
     // when
     final Record<DeploymentRecordValue> deployment =
