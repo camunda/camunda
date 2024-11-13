@@ -5,20 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.distribution;
+package io.camunda.zeebe.engine.scaling.redistribution;
 
-public enum DistributionQueue {
-  IDENTITY("IDENTITY"),
-  DEPLOYMENT("DEPLOYMENT"),
-  REDISTRIBUTION("REDISTRIBUTION");
+import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionProgress;
 
-  private final String queueId;
+public interface RedistributionState {
 
-  DistributionQueue(final String queueId) {
-    this.queueId = queueId;
-  }
+  RedistributionStage getStage();
 
-  public String getQueueId() {
-    return queueId;
-  }
+  RedistributionProgress getProgress();
 }

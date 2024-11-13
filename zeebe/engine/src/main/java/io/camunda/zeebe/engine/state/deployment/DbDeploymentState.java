@@ -151,4 +151,23 @@ public final class DbDeploymentState implements MutableDeploymentState {
           pendingDeploymentVisitor.visit(deploymentKey, partitionId, lastDeployment.get());
         });
   }
+
+  @Override
+  public DeploymentRecord nextDeployment(final long previousDeploymentKey) {
+    final var nextRawDeployment = new MutableReference<DeploymentRaw>();
+    deploymentKey.wrapLong(previousDeploymentKey + 1);
+    deploymentRawColumnFamily.whileTrue(
+        deploymentKey,
+        (deploymentKey, rawDeployment) -> {
+          nextRawDeployment.set(rawDeployment);
+          return false;
+        });
+    if (nextRawDeployment.get() == null) {
+      return null;
+    }
+
+    final var copy = new DeploymentRecord();
+    copy.copyFrom(nextRawDeployment.get().getDeploymentRecord());
+    return copy;
+  }
 }

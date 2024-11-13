@@ -5,20 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.distribution;
+package io.camunda.zeebe.engine.scaling.redistribution;
 
-public enum DistributionQueue {
-  IDENTITY("IDENTITY"),
-  DEPLOYMENT("DEPLOYMENT"),
-  REDISTRIBUTION("REDISTRIBUTION");
-
-  private final String queueId;
-
-  DistributionQueue(final String queueId) {
-    this.queueId = queueId;
-  }
-
-  public String getQueueId() {
-    return queueId;
-  }
+public sealed interface RedistributableResource {
+  record Deployment(long key) implements RedistributableResource {}
 }

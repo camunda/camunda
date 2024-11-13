@@ -34,6 +34,12 @@ public interface DeploymentState {
 
   void foreachPendingDeploymentDistribution(PendingDeploymentVisitor pendingDeploymentVisitor);
 
+  /**
+   * Returns a copy of the first deployment that has a higher key than the provided one or null if
+   * no such deployment exists.
+   */
+  DeploymentRecord nextDeployment(long previousDeploymentKey);
+
   @FunctionalInterface
   interface PendingDeploymentVisitor {
     void visit(final long deploymentKey, final int partitionId, final DirectBuffer directBuffer);
