@@ -3,7 +3,7 @@
   <bpmn:process id="Process_11hxie4" name="Process With Form" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:extensionElements>
-        <zeebe:formDefinition formKey="test" />
+        <zeebe:formDefinition formId="test" />
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0a17qbl</bpmn:outgoing>
     </bpmn:startEvent>

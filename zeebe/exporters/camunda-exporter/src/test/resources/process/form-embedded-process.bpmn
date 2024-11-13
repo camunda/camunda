@@ -6,7 +6,7 @@
     </bpmn:extensionElements>
     <bpmn:startEvent id="startEvent" name="start">
       <bpmn:extensionElements>
-        <zeebe:formDefinition formKey="testForm" />
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:testForm" />
         <zeebe:properties>
           <zeebe:property name="publicAccess" value="true" />
         </zeebe:properties>
