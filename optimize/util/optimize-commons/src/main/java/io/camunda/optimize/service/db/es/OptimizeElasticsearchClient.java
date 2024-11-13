@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
+import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED;
 import static java.util.stream.Collectors.groupingBy;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
@@ -238,7 +239,9 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
         b -> {
           try {
             return b.withJson(
-                new StringReader(OPTIMIZE_MAPPER.writeValueAsString(responseContentAsMap)));
+                new StringReader(
+                    OPTIMIZE_MAPPER_UNKNOWN_FAIL_DISABLED.writeValueAsString(
+                        responseContentAsMap)));
           } catch (final JsonProcessingException e) {
             throw new RuntimeException(e);
           }
