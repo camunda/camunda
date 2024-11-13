@@ -431,6 +431,7 @@ public class CamundaExporterHandlerIT {
     return provider.getExportHandlers().stream()
         .filter(handler -> handler.getClass().equals(handlerClass))
         .findFirst()
+        .map(handler -> (ExportHandler<S, T>) handler)
         .orElseThrow();
   }
 

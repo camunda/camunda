@@ -11,8 +11,6 @@ import static java.util.Map.entry;
 
 import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
-import io.camunda.exporter.cache.form.CachedFormEntity;
-import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.AuthorizationHandler;
@@ -96,15 +94,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   private Map<Class<? extends IndexTemplateDescriptor>, IndexTemplateDescriptor>
       templateDescriptorsMap;
 
-  private Set<ExportHandler> exportHandlers;
-  private boolean isElasticsearch;
+  private Set<ExportHandler<?, ?>> exportHandlers;
 
   @Override
   public void init(
       final ExporterConfiguration configuration,
       final ExporterEntityCacheProvider entityCacheProvider) {
     final var globalPrefix = configuration.getIndex().getPrefix();
-    isElasticsearch =
+    final var isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
             .equals(ConnectionTypes.ELASTICSEARCH);
 
@@ -150,13 +147,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)));
 
     final var processCache =
-        new ExporterEntityCacheImpl<Long, CachedProcessEntity>(
+        new ExporterEntityCacheImpl<>(
             10000,
             entityCacheProvider.getProcessCacheLoader(
                 indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()));
 
     final var formCache =
-        new ExporterEntityCacheImpl<String, CachedFormEntity>(
+        new ExporterEntityCacheImpl<>(
             10000,
             entityCacheProvider.getFormCacheLoader(
                 indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()));
@@ -269,7 +266,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
-  public Set<ExportHandler> getExportHandlers() {
+  public Set<ExportHandler<?, ?>> getExportHandlers() {
     // Register all handlers here
     return exportHandlers;
   }

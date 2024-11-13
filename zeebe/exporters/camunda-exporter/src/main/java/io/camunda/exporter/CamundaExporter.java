@@ -47,7 +47,6 @@ import org.slf4j.LoggerFactory;
 public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
 
-  private Context context;
   private Controller controller;
   private ExporterConfiguration configuration;
   private ClientAdapter clientAdapter;
@@ -69,22 +68,28 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    this.context = context;
     logger = context.getLogger();
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
+    clientAdapter = ClientAdapter.of(configuration);
+    provider.init(configuration, clientAdapter.getExporterEntityCacheProvider());
+
+    taskManager =
+        BackgroundTaskManager.create(
+            context.getPartitionId(),
+            context.getConfiguration().getId().toLowerCase(),
+            configuration,
+            provider,
+            metrics,
+            logger);
     LOG.debug("Exporter configured with {}", configuration);
   }
 
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    clientAdapter = ClientAdapter.of(configuration);
-
-    provider.init(configuration, clientAdapter.getExporterEntityCacheProvider());
-
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager =
         new SchemaManager(
@@ -101,16 +106,7 @@ public class CamundaExporter implements Exporter {
 
     // // start archiver after the schema has been created to avoid transient errors
     if (configuration.getArchiver().isRolloverEnabled()) {
-      // make sure we create a new one in case open is being retried
-      CloseHelper.quietClose(taskManager);
-      taskManager =
-          BackgroundTaskManager.create(
-              context.getPartitionId(),
-              context.getConfiguration().getId().toLowerCase(),
-              configuration,
-              provider,
-              metrics,
-              logger);
+      taskManager.start();
     }
 
     LOG.info("Exporter opened");
@@ -168,7 +164,7 @@ public class CamundaExporter implements Exporter {
 
   private ExporterBatchWriter createBatchWriter() {
     final var builder = ExporterBatchWriter.Builder.begin();
-    provider.getExportHandlers().stream().forEach(builder::withHandler);
+    provider.getExportHandlers().forEach(builder::withHandler);
     return builder.build();
   }
 
