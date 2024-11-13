@@ -12,6 +12,7 @@ import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstance
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCatchEventSupplier;
@@ -194,12 +195,8 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
           recordCopy.setCompensableActivityId(targetActivityId);
 
           // set the compensation handler id if subscription belongs to an activity with a boundary
-          final ExecutableActivity targetElement =
-              targetProcessDefinition
-                  .getProcess()
-                  .getElementById(targetActivityId, ExecutableActivity.class);
-          compensationSubscriptionBehaviour
-              .getCompensationHandlerId(targetElement)
+          getCompensableActivity(targetProcessDefinition, targetActivityId)
+              .flatMap(compensationSubscriptionBehaviour::getCompensationHandlerId)
               .ifPresent(recordCopy::setCompensationHandlerId);
 
           stateWriter.appendFollowUpEvent(
@@ -509,7 +506,7 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
         compensationSubscriptionBehaviour.getSubscriptionsByProcessInstanceKey(context);
 
     return subscriptions.stream()
-        .map(s -> getCompensableActivity(sourceProcessDefinition, s))
+        .flatMap(s -> getCompensableActivity(sourceProcessDefinition, s).stream())
         // we filter for tasks to get mapping from bottom to top flow scope (from tasks with
         // compensation boundary event attached to root process scope)
         .filter(activity -> activity.getElementType() != BpmnElementType.SUB_PROCESS) // only tasks
@@ -645,11 +642,8 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
       final DeployedProcess processDefinition,
       final Map<String, String> sourceElementIdToTargetElementId) {
     final var compensableTaskId = BufferUtil.bufferAsString(activitiy.getId());
-    return processDefinition
-        .getProcess()
-        .getElementById(compensableTaskId, ExecutableActivity.class)
-        .getBoundaryEvents()
-        .stream()
+    return getCompensableActivity(processDefinition, compensableTaskId).stream()
+        .flatMap(a -> a.getBoundaryEvents().stream())
         .filter(b -> b.getEventType() == BpmnEventType.COMPENSATION)
         .filter(
             boundary ->
@@ -658,11 +652,23 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
         .findFirst();
   }
 
-  private ExecutableActivity getCompensableActivity(
-      final DeployedProcess sourceProcessDefinition, final CompensationSubscription record) {
-    return sourceProcessDefinition
-        .getProcess()
-        .getElementById(record.getRecord().getCompensableActivityId(), ExecutableActivity.class);
+  private static Optional<ExecutableActivity> getCompensableActivity(
+      final DeployedProcess processDefinition, final CompensationSubscription record) {
+    return getCompensableActivity(processDefinition, record.getRecord().getCompensableActivityId());
+  }
+
+  private static Optional<ExecutableActivity> getCompensableActivity(
+      final DeployedProcess processDefinition, final String elementId) {
+    final AbstractFlowElement compensableElement =
+        processDefinition.getProcess().getElementById(elementId);
+    // We had to do manual casting because of MULTI_INSTANCE_BODY.
+    // If we call getElementById with the expected type, it will return the inner instance of the
+    // multi-instance body, which is wrong.
+    if (compensableElement instanceof final ExecutableActivity compensableActivity) {
+      return Optional.of(compensableActivity);
+    }
+
+    return Optional.empty();
   }
 
   private record CompensableElementMapping(
