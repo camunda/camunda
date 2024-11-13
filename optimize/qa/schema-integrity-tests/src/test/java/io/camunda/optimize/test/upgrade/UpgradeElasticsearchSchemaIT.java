@@ -71,8 +71,7 @@ public class UpgradeElasticsearchSchemaIT
         expectedTemplates.keySet());
     final Map<String, TemplateMapping> newTemplates = newDatabaseSchemaClient.getTemplates();
     LOG.info("Actual templates size: {}, names: {}", newTemplates.size(), newTemplates.keySet());
-    assertThat(newTemplates)
-        .isEqualToComparingFieldByFieldRecursively(expectedTemplates);
+    assertThat(newTemplates).isEqualToComparingFieldByFieldRecursively(expectedTemplates);
   }
 
   @Override
