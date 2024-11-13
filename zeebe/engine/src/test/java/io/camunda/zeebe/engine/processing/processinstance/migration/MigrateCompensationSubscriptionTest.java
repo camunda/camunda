@@ -14,15 +14,18 @@ import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AbstractThrowEventBuilder;
+import io.camunda.zeebe.model.bpmn.builder.BoundaryEventBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.function.Consumer;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatcher;
@@ -230,6 +233,231 @@ public class MigrateCompensationSubscriptionTest {
         .containsExactlyInAnyOrder(
             tuple(targetProcessDefinitionKey, "C", "undoC"),
             tuple(targetProcessDefinitionKey, "subProcess2", ""));
+  }
+
+  @Test
+  public void shouldWriteCompensationMigratedEventAndContinueInDifferentCompensationHandler() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent(
+                        "boundary1",
+                        b ->
+                            b.compensation(
+                                c -> c.serviceTask("undoA", t -> t.zeebeJobType("undoA"))))
+                    .moveToActivity("A")
+                    .serviceTask("B", t -> t.zeebeJobType("B"))
+                    .intermediateThrowEvent(
+                        "boundary_throw", ic -> ic.compensateEventDefinition().activityRef("A"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask("C", t -> t.zeebeJobType("C"))
+                    .boundaryEvent(
+                        "boundary2",
+                        b ->
+                            b.compensation(
+                                c ->
+                                    c.subProcess("undoC")
+                                        .embeddedSubProcess()
+                                        .startEvent()
+                                        .serviceTask("F", t -> t.zeebeJobType("F"))
+                                        .endEvent()))
+                    .moveToActivity("C")
+                    .serviceTask("D", t -> t.zeebeJobType("D"))
+                    .intermediateThrowEvent(
+                        "boundary_throw", ic -> ic.compensateEventDefinition().activityRef("C"))
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    engine.job().ofInstance(processInstanceKey).withType("A").complete();
+
+    RecordingExporter.compensationSubscriptionRecords()
+        .withProcessInstanceKey(processInstanceKey)
+        .withIntent(CompensationSubscriptionIntent.CREATED)
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("B", "D")
+        .addMappingInstruction("boundary1", "boundary2")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withIntent(CompensationSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the compensable activity is updated")
+        .hasCompensableActivityId("C")
+        .describedAs("Expect that the compensation handler id is unchanged")
+        .hasCompensationHandlerId("undoC");
+
+    engine.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withIntent(CompensationSubscriptionIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the compensation subscription can be triggered after migration")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasCompensableActivityId("C")
+        .hasCompensationHandlerId("undoC");
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementType(BpmnElementType.SERVICE_TASK)
+                .withElementId("F")
+                .getFirst())
+        .describedAs("Expect that the updated compensation handler is activated")
+        .isNotNull();
+  }
+
+  @Test
+  public void shouldMigrateMultiInstanceCompensationHandler() {
+    // given
+    final String processId = helper.getBpmnProcessId();
+    final String targetProcessId = helper.getBpmnProcessId() + "2";
+
+    final Consumer<BoundaryEventBuilder> sourceCompensationHandler =
+        compensation ->
+            compensation
+                .serviceTask("undoA")
+                .zeebeJobType("undoA")
+                .multiInstance()
+                .zeebeInputCollectionExpression("[1,2,3]");
+
+    final Consumer<BoundaryEventBuilder> targetCompensationHandler =
+        compensation ->
+            compensation
+                .serviceTask("undoC")
+                .zeebeJobType("undoC")
+                .multiInstance()
+                .zeebeInputCollectionExpression("[1,2,3]");
+
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .serviceTask(
+                        "A",
+                        t ->
+                            t.zeebeJobType("A")
+                                .multiInstance(
+                                    b ->
+                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                            .zeebeInputElement("index"))
+                                .boundaryEvent("boundary1")
+                                .compensation(sourceCompensationHandler))
+                    .serviceTask("B", t -> t.zeebeJobType("B"))
+                    .intermediateThrowEvent(
+                        "boundary_throw", ic -> ic.compensateEventDefinition().activityRef("A"))
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .serviceTask(
+                        "C",
+                        t ->
+                            t.zeebeJobType("C")
+                                .multiInstance(
+                                    b ->
+                                        b.zeebeInputCollectionExpression("[1,2,3]")
+                                            .zeebeInputElement("index"))
+                                .boundaryEvent("boundary2")
+                                .compensation(targetCompensationHandler))
+                    .serviceTask("D", t -> t.zeebeJobType("D"))
+                    .intermediateThrowEvent(
+                        "boundary_throw", ic -> ic.compensateEventDefinition().activityRef("C"))
+                    .endEvent("multi_instance_target_process_end")
+                    .done())
+            .deploy();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
+
+    final var jobs =
+        RecordingExporter.jobRecords(JobIntent.CREATED)
+            .withType("A")
+            .withProcessInstanceKey(processInstanceKey)
+            .limit(3)
+            .toList();
+
+    jobs.forEach(job -> engine.job().withKey(job.getKey()).complete());
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementType(BpmnElementType.SERVICE_TASK)
+        .withElementId("B")
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("B", "D")
+        .addMappingInstruction("boundary1", "boundary2")
+        .migrate();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withIntent(CompensationSubscriptionIntent.MIGRATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the process definition is updated")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .describedAs("Expect that the compensable activity is updated")
+        .hasCompensableActivityId("C")
+        .describedAs("Expect that the compensation handler id is unchanged")
+        .hasCompensationHandlerId("undoC");
+
+    engine.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    Assertions.assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withIntent(CompensationSubscriptionIntent.TRIGGERED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect that the compensation subscription can be triggered after migration")
+        .hasProcessDefinitionKey(targetProcessDefinitionKey)
+        .hasCompensableActivityId("C")
+        .hasCompensationHandlerId("undoC");
   }
 
   @Test
