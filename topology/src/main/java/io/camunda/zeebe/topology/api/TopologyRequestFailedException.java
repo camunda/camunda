@@ -37,5 +37,9 @@ public sealed interface TopologyRequestFailedException {
     public InternalError(final Throwable cause) {
       super(cause);
     }
+
+    public InternalError(final String message) {
+      super(message);
+    }
   }
 }

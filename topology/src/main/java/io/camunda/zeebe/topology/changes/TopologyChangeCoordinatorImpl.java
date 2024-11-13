@@ -94,6 +94,20 @@ public class TopologyChangeCoordinatorImpl implements TopologyChangeCoordinator 
                         failFuture(future, errorOnGettingTopology);
                         return;
                       }
+<<<<<<< HEAD:topology/src/main/java/io/camunda/zeebe/topology/changes/TopologyChangeCoordinatorImpl.java
+=======
+                      if (!request.isForced() && !isCoordinator(currentClusterTopology)) {
+                        // if request is forced, it can be processed by a broker which is not
+                        // the default coordinator
+                        failFuture(
+                            future,
+                            new ClusterConfigurationRequestFailedException.InternalError(
+                                String.format(
+                                    "Cannot process request to change the configuration. The broker '%s' is not the coordinator.",
+                                    localMemberId)));
+                        return;
+                      }
+>>>>>>> b5d6ffdc (fix: throw correct error instead of InternalError):zeebe/dynamic-config/src/main/java/io/camunda/zeebe/dynamic/config/changes/ConfigurationChangeCoordinatorImpl.java
                       final var generatedOperations = request.operations(currentClusterTopology);
                       if (generatedOperations.isLeft()) {
                         failFuture(future, generatedOperations.getLeft());
