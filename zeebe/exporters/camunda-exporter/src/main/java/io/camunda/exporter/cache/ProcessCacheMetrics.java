@@ -17,24 +17,20 @@ import java.util.concurrent.TimeUnit;
 
 public class ProcessCacheMetrics implements StatsCounter {
 
+  public static final String TAG_TYPE = "type";
   private static final String NAMESPACE = "zeebe.camunda.exporter.processcache";
-
-  private final Counter hitCount;
-  private final Counter missCount;
   private final Timer loadSuccessDuration;
   private final Timer loadFailureDuration;
   private final Counter evictionCount;
+  private final MeterRegistry meterRegistry;
 
   public ProcessCacheMetrics(final MeterRegistry meterRegistry) {
-    hitCount =
-        Counter.builder(meterName("hits"))
-            .description("Number of cache hits")
-            .register(meterRegistry);
+    this.meterRegistry = meterRegistry;
 
-    missCount =
-        Counter.builder(meterName("misses"))
-            .description("Number of cache misses")
-            .register(meterRegistry);
+    Counter.builder(meterName("result"))
+        .description("Number of cache access results by type")
+        .tag(TAG_TYPE, "")
+        .register(meterRegistry);
 
     evictionCount =
         Counter.builder(meterName("evictions"))
@@ -57,12 +53,12 @@ public class ProcessCacheMetrics implements StatsCounter {
 
   @Override
   public void recordHits(final int count) {
-    hitCount.increment(count);
+    meterRegistry.counter(meterName("result"), TAG_TYPE, CacheResult.HIT.name()).increment(count);
   }
 
   @Override
   public void recordMisses(final int count) {
-    missCount.increment(count);
+    meterRegistry.counter(meterName("result"), TAG_TYPE, CacheResult.MISS.name()).increment(count);
   }
 
   @Override
@@ -88,5 +84,12 @@ public class ProcessCacheMetrics implements StatsCounter {
 
   private String meterName(final String name) {
     return NAMESPACE + "." + name;
+  }
+
+  enum CacheResult {
+    /** Entry was found in the cache */
+    HIT,
+    /** Entry was not found in the cache */
+    MISS
   }
 }
