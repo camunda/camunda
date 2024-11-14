@@ -31,11 +31,11 @@ import io.camunda.tasklist.store.opensearch.ProcessStoreOpenSearch;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
-import io.camunda.tasklist.v86.entities.ProcessEntity;
-import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -65,7 +65,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ProcessStoreOpenSearchTest {
-  @Mock private TasklistProcessIndex processIndex;
+  @Mock private ProcessIndex processIndex;
   @Mock private TenantAwareOpenSearchClient tenantAwareClient;
   @InjectMocks private ProcessStoreOpenSearch processStore;
   @InjectMocks private IdentityAuthorizationServiceImpl identityService;

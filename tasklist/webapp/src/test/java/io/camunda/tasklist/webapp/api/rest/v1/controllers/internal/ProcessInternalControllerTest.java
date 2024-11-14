@@ -23,7 +23,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.ProcessInstanceStore;
 import io.camunda.tasklist.store.ProcessStore;
-import io.camunda.tasklist.v86.entities.ProcessEntity;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
@@ -38,6 +37,7 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -267,7 +267,7 @@ class ProcessInternalControllerTest {
               .setBpmnProcessId("registerCarForRent")
               .setVersion(1)
               .setFormKey("camunda-forms:bpmn:userTaskForm_111")
-              .setStartedByForm(true);
+              .setIsPublic(true);
 
       final var expectedProcessResponse =
           new ProcessResponse()
@@ -320,7 +320,7 @@ class ProcessInternalControllerTest {
               .setBpmnProcessId("publicProcess")
               .setVersion(1)
               .setName("publicProcess")
-              .setStartedByForm(true);
+              .setIsPublic(true);
 
       final var expectedEndpointsResponse =
           new ProcessPublicEndpointsResponse()
@@ -366,7 +366,7 @@ class ProcessInternalControllerTest {
               .setBpmnProcessId("publicProcess")
               .setVersion(1)
               .setName("publicProcess")
-              .setStartedByForm(true);
+              .setIsPublic(true);
 
       final var expectedEndpointsResponse =
           new ProcessPublicEndpointsResponse()
@@ -446,7 +446,7 @@ class ProcessInternalControllerTest {
               .setVersion(1)
               .setFormKey("camunda-forms:bpmn:userTaskForm_111")
               .setBpmnXml("<abc></abc>")
-              .setStartedByForm(true)
+              .setIsPublic(true)
               .setIsFormEmbedded(false)
               .setTenantId(DEFAULT_TENANT_IDENTIFIER);
 

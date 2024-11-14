@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import io.camunda.tasklist.v86.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import java.util.Objects;

@@ -16,8 +16,8 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
-import io.camunda.tasklist.v86.entities.ProcessEntity;
-import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,7 +62,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   private static final String MAX_VERSION_DOCUMENTS_AGG_NAME = "max_version_docs";
   private static final String STARTED_BY_FORM_FILTERED_DOCS = "started_by_form_docs";
 
-  @Autowired private TasklistProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -74,16 +74,15 @@ public class ProcessStoreElasticSearch implements ProcessStore {
 
   @Override
   public ProcessEntity getProcessByProcessDefinitionKey(final String processDefinitionKey) {
-    final QueryBuilder qb = QueryBuilders.termQuery(TasklistProcessIndex.KEY, processDefinitionKey);
+    final QueryBuilder qb = QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey);
 
     final SearchRequest searchRequest =
         new SearchRequest(processIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
                     .query(qb)
-                    .collapse(new CollapseBuilder(TasklistProcessIndex.KEY))
-                    .sort(
-                        SortBuilders.fieldSort(TasklistProcessIndex.VERSION).order(SortOrder.DESC))
+                    .collapse(new CollapseBuilder(ProcessIndex.KEY))
+                    .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
                     .size(1));
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
@@ -113,10 +112,10 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       qb =
           ElasticsearchUtil.joinWithAnd(
-              QueryBuilders.termQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID, bpmnProcessId),
-              QueryBuilders.termQuery(TasklistProcessIndex.TENANT_ID, tenantId));
+              QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, bpmnProcessId),
+              QueryBuilders.termQuery(ProcessIndex.TENANT_ID, tenantId));
     } else {
-      qb = QueryBuilders.termQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID, bpmnProcessId);
+      qb = QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, bpmnProcessId);
     }
 
     final SearchRequest searchRequest =
@@ -124,9 +123,8 @@ public class ProcessStoreElasticSearch implements ProcessStore {
             .source(
                 new SearchSourceBuilder()
                     .query(qb)
-                    .collapse(new CollapseBuilder(TasklistProcessIndex.PROCESS_DEFINITION_ID))
-                    .sort(
-                        SortBuilders.fieldSort(TasklistProcessIndex.VERSION).order(SortOrder.DESC))
+                    .collapse(new CollapseBuilder(ProcessIndex.BPMN_PROCESS_ID))
+                    .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
                     .size(1));
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
@@ -151,7 +149,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         new SearchRequest(processIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(QueryBuilders.termQuery(TasklistProcessIndex.KEY, processId)));
+                    .query(QueryBuilders.termQuery(ProcessIndex.KEY, processId)));
 
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);
@@ -184,24 +182,22 @@ public class ProcessStoreElasticSearch implements ProcessStore {
       if (processDefinitions.contains(IdentityProperties.ALL_RESOURCES)) {
         qb =
             QueryBuilders.boolQuery()
-                .must(QueryBuilders.existsQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID))
-                .mustNot(QueryBuilders.termQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID, ""));
+                .must(QueryBuilders.existsQuery(ProcessIndex.BPMN_PROCESS_ID))
+                .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
       } else {
 
         qb =
             QueryBuilders.boolQuery()
-                .must(
-                    QueryBuilders.termsQuery(
-                        TasklistProcessIndex.PROCESS_DEFINITION_ID, processDefinitions))
-                .must(QueryBuilders.existsQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID))
-                .mustNot(QueryBuilders.termQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID, ""));
+                .must(QueryBuilders.termsQuery(ProcessIndex.BPMN_PROCESS_ID, processDefinitions))
+                .must(QueryBuilders.existsQuery(ProcessIndex.BPMN_PROCESS_ID))
+                .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
       }
 
     } else {
       qb =
           QueryBuilders.boolQuery()
-              .must(QueryBuilders.existsQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID))
-              .mustNot(QueryBuilders.termQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID, ""));
+              .must(QueryBuilders.existsQuery(ProcessIndex.BPMN_PROCESS_ID))
+              .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
     }
 
     final QueryBuilder finalQuery = enhanceQueryByTenantIdCheck(qb, tenantId);
@@ -222,15 +218,15 @@ public class ProcessStoreElasticSearch implements ProcessStore {
     final String regexSearch = String.format(".*%s.*", search);
     BoolQueryBuilder qb =
         QueryBuilders.boolQuery()
-            .should(QueryBuilders.termQuery(TasklistProcessIndex.ID, search))
+            .should(QueryBuilders.termQuery(ProcessIndex.ID, search))
             .should(
-                QueryBuilders.regexpQuery(TasklistProcessIndex.NAME, regexSearch)
+                QueryBuilders.regexpQuery(ProcessIndex.NAME, regexSearch)
                     .caseInsensitive(CASE_INSENSITIVE))
             .should(
-                QueryBuilders.regexpQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID, regexSearch)
+                QueryBuilders.regexpQuery(ProcessIndex.BPMN_PROCESS_ID, regexSearch)
                     .caseInsensitive(CASE_INSENSITIVE))
-            .must(QueryBuilders.existsQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID))
-            .mustNot(QueryBuilders.termQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID, ""))
+            .must(QueryBuilders.existsQuery(ProcessIndex.BPMN_PROCESS_ID))
+            .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""))
             .minimumShouldMatch(1);
 
     if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
@@ -238,10 +234,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         return new ArrayList<>();
       }
       if (!processDefinitions.contains(IdentityProperties.ALL_RESOURCES)) {
-        qb =
-            qb.must(
-                QueryBuilders.termsQuery(
-                    TasklistProcessIndex.PROCESS_DEFINITION_ID, processDefinitions));
+        qb = qb.must(QueryBuilders.termsQuery(ProcessIndex.BPMN_PROCESS_ID, processDefinitions));
       }
     }
     final QueryBuilder finalQuery = enhanceQueryByTenantIdCheck(qb, tenantId);
@@ -254,8 +247,8 @@ public class ProcessStoreElasticSearch implements ProcessStore {
 
     qb =
         QueryBuilders.boolQuery()
-            .must(QueryBuilders.existsQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID))
-            .mustNot(QueryBuilders.termQuery(TasklistProcessIndex.PROCESS_DEFINITION_ID, ""));
+            .must(QueryBuilders.existsQuery(ProcessIndex.BPMN_PROCESS_ID))
+            .mustNot(QueryBuilders.termQuery(ProcessIndex.BPMN_PROCESS_ID, ""));
 
     return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(qb, true);
   }
@@ -267,7 +260,7 @@ public class ProcessStoreElasticSearch implements ProcessStore {
   private QueryBuilder enhanceQueryByTenantIdCheck(final QueryBuilder qb, final String tenantId) {
     if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       return ElasticsearchUtil.joinWithAnd(
-          QueryBuilders.termQuery(TasklistProcessIndex.TENANT_ID, tenantId), qb);
+          QueryBuilders.termQuery(ProcessIndex.TENANT_ID, tenantId), qb);
     }
 
     return qb;
@@ -281,20 +274,20 @@ public class ProcessStoreElasticSearch implements ProcessStore {
                 BPMN_PROCESS_ID_TENANT_ID_AGG_NAME,
                 List.of(
                     new TermsValuesSourceBuilder(DEFINITION_ID_TERMS_SOURCE_NAME)
-                        .field(TasklistProcessIndex.PROCESS_DEFINITION_ID),
+                        .field(ProcessIndex.BPMN_PROCESS_ID),
                     new TermsValuesSourceBuilder(TENANT_ID_TERMS_SOURCE_NAME)
-                        .field(TasklistProcessIndex.TENANT_ID)))
+                        .field(ProcessIndex.TENANT_ID)))
             .size(ElasticsearchUtil.QUERY_MAX_SIZE);
 
     final AggregationBuilder maxVersionDocsAggregate =
         AggregationBuilders.terms(MAX_VERSION_DOCUMENTS_AGG_NAME)
-            .field(TasklistProcessIndex.VERSION)
+            .field(ProcessIndex.VERSION)
             .order(BucketOrder.key(false))
             .size(1);
 
     final AggregationBuilder topHitsAggregate =
         AggregationBuilders.topHits(TOP_HITS_AGG_NAME)
-            .sort(SortBuilders.fieldSort(TasklistProcessIndex.VERSION).order(SortOrder.DESC))
+            .sort(SortBuilders.fieldSort(ProcessIndex.VERSION).order(SortOrder.DESC))
             .size(1);
 
     final SearchSourceBuilder sourceBuilder = new SearchSourceBuilder().query(qb).size(0);
@@ -340,14 +333,14 @@ public class ProcessStoreElasticSearch implements ProcessStore {
         ? AggregationBuilders.filter(
             STARTED_BY_FORM_FILTERED_DOCS,
             QueryBuilders.boolQuery()
-                .should(QueryBuilders.existsQuery(TasklistProcessIndex.FORM_KEY))
-                .should(QueryBuilders.existsQuery(TasklistProcessIndex.FORM_ID))
+                .should(QueryBuilders.existsQuery(ProcessIndex.FORM_KEY))
+                .should(QueryBuilders.existsQuery(ProcessIndex.FORM_ID))
                 .minimumShouldMatch(1))
         : AggregationBuilders.filter(
             STARTED_BY_FORM_FILTERED_DOCS,
             QueryBuilders.boolQuery()
-                .mustNot(QueryBuilders.existsQuery(TasklistProcessIndex.FORM_KEY))
-                .mustNot(QueryBuilders.existsQuery(TasklistProcessIndex.FORM_ID))
+                .mustNot(QueryBuilders.existsQuery(ProcessIndex.FORM_KEY))
+                .mustNot(QueryBuilders.existsQuery(ProcessIndex.FORM_ID))
                 .minimumShouldMatch(1));
   }
 

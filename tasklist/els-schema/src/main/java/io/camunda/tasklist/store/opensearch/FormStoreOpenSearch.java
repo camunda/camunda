@@ -16,8 +16,8 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
-import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
@@ -43,7 +43,7 @@ public class FormStoreOpenSearch implements FormStore {
 
   @Autowired private TasklistTaskTemplate taskTemplate;
 
-  @Autowired private TasklistProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
@@ -190,18 +190,17 @@ public class FormStoreOpenSearch implements FormStore {
                                       q ->
                                           q.match(
                                               m ->
-                                                  m.field(TasklistProcessIndex.FORM_ID)
+                                                  m.field(ProcessIndex.FORM_ID)
                                                       .query(FieldValue.of(formId))))
                                   .must(
                                       q ->
                                           q.match(
                                               m ->
-                                                  m.field(TasklistProcessIndex.ID)
+                                                  m.field(ProcessIndex.ID)
                                                       .query(
                                                           FieldValue.of(processDefinitionId))))));
 
-      final var searchResponse =
-          tenantAwareClient.search(searchRequest, TasklistProcessIndex.class);
+      final var searchResponse = tenantAwareClient.search(searchRequest, ProcessIndex.class);
 
       return searchResponse.hits().total().value() > 0;
     } catch (final IOException e) {

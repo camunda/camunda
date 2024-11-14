@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
-import io.camunda.tasklist.v86.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import org.assertj.core.groups.Tuple;

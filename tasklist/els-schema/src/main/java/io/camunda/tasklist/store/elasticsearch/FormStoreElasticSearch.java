@@ -19,8 +19,8 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
-import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
@@ -52,7 +52,7 @@ public class FormStoreElasticSearch implements FormStore {
 
   @Autowired private TasklistTaskTemplate taskTemplate;
 
-  @Autowired private TasklistProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
@@ -225,8 +225,8 @@ public class FormStoreElasticSearch implements FormStore {
     try {
       final BoolQueryBuilder boolQuery =
           QueryBuilders.boolQuery()
-              .must(QueryBuilders.matchQuery(TasklistProcessIndex.FORM_ID, formId))
-              .must(QueryBuilders.matchQuery(TasklistProcessIndex.ID, processDefinitionId));
+              .must(QueryBuilders.matchQuery(ProcessIndex.FORM_ID, formId))
+              .must(QueryBuilders.matchQuery(ProcessIndex.ID, processDefinitionId));
 
       final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
       searchSourceBuilder.query(boolQuery);

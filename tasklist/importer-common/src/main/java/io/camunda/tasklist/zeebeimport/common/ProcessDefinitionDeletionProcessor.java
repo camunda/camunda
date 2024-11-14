@@ -11,8 +11,8 @@ import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
-import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistDraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,7 +40,7 @@ public class ProcessDefinitionDeletionProcessor {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessDefinitionDeletionProcessor.class);
 
-  @Autowired private TasklistProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private FormIndex formIndex;
 

@@ -13,8 +13,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.tasklist.store.ProcessStore;
-import io.camunda.tasklist.v86.entities.ProcessEntity;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.PublicProcessController;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

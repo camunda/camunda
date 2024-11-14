@@ -11,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.util.ConversionUtils;
-import io.camunda.tasklist.v86.entities.ProcessEntity;
+import io.camunda.tasklist.v86.entities.TasklistProcessEntity;
 import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
@@ -99,7 +99,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
       final List<BulkOperation> operations,
       final BiConsumer<String, String> userTaskFormCollector) {
 
-    final ProcessEntity processEntity = createEntity(process, userTaskFormCollector);
+    final TasklistProcessEntity processEntity = createEntity(process, userTaskFormCollector);
     LOGGER.debug("Process: key {}", processEntity.getKey());
 
     operations.add(
@@ -113,10 +113,10 @@ public class ProcessZeebeRecordProcessorOpenSearch {
             .build());
   }
 
-  private ProcessEntity createEntity(
+  private TasklistProcessEntity createEntity(
       final Process process, final BiConsumer<String, String> userTaskFormCollector) {
-    final ProcessEntity processEntity =
-        new ProcessEntity()
+    final TasklistProcessEntity processEntity =
+        new TasklistProcessEntity()
             .setId(String.valueOf(process.getProcessDefinitionKey()))
             .setKey(process.getProcessDefinitionKey())
             .setBpmnProcessId(process.getBpmnProcessId())

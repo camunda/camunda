@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.webapp.es.cache;
 
-import io.camunda.tasklist.v86.entities.ProcessEntity;
-import io.camunda.tasklist.v86.entities.ProcessFlowNodeEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessFlowNodeEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -24,7 +24,7 @@ public class ProcessCacheEntity {
     return name;
   }
 
-  public ProcessCacheEntity setName(String name) {
+  public ProcessCacheEntity setName(final String name) {
     this.name = name;
     return this;
   }
@@ -33,12 +33,12 @@ public class ProcessCacheEntity {
     return flowNodeNames;
   }
 
-  public ProcessCacheEntity setFlowNodeNames(Map<String, String> flowNodeNames) {
+  public ProcessCacheEntity setFlowNodeNames(final Map<String, String> flowNodeNames) {
     this.flowNodeNames = flowNodeNames;
     return this;
   }
 
-  public static ProcessCacheEntity createFrom(ProcessEntity processEntity) {
+  public static ProcessCacheEntity createFrom(final ProcessEntity processEntity) {
     return new ProcessCacheEntity()
         .setName(processEntity.getName())
         .setFlowNodeNames(
@@ -46,6 +46,11 @@ public class ProcessCacheEntity {
                 .collect(
                     Collectors.toMap(
                         ProcessFlowNodeEntity::getId, ProcessFlowNodeEntity::getName)));
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, flowNodeNames);
   }
 
   @Override
@@ -65,10 +70,5 @@ public class ProcessCacheEntity {
     return flowNodeNames != null
         ? flowNodeNames.equals(that.flowNodeNames)
         : that.flowNodeNames == null;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, flowNodeNames);
   }
 }

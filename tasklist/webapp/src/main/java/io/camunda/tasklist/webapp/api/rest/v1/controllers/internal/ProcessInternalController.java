@@ -15,7 +15,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.ProcessInstanceStore;
 import io.camunda.tasklist.store.ProcessStore;
-import io.camunda.tasklist.v86.entities.ProcessEntity;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessResponse;
@@ -28,6 +27,7 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -310,7 +310,7 @@ public class ProcessInternalController extends ApiErrorController {
     }
 
     final var process = processStore.getProcessByBpmnProcessId(bpmnProcessId, tenantId);
-    if (!process.isStartedByForm()) {
+    if (!process.getIsPublic()) {
       throw new NotFoundApiException(
           String.format("The public endpoint for bpmnProcessId: '%s' is not found", bpmnProcessId));
     }

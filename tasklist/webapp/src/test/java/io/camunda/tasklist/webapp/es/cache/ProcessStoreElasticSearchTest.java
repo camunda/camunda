@@ -29,11 +29,11 @@ import io.camunda.tasklist.store.elasticsearch.ProcessStoreElasticSearch;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.util.SpringContextHolder;
-import io.camunda.tasklist.v86.entities.ProcessEntity;
-import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthentication;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorization;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationServiceImpl;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -63,7 +63,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ProcessStoreElasticSearchTest {
-  @Mock private TasklistProcessIndex processIndex;
+  @Mock private ProcessIndex processIndex;
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
   @InjectMocks private ProcessStoreElasticSearch processStore;
   @InjectMocks private IdentityAuthorizationServiceImpl identityService;

@@ -12,7 +12,6 @@ import static java.util.Objects.requireNonNullElse;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.ProcessStore;
-import io.camunda.tasklist.v86.entities.ProcessEntity;
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.StartProcessRequest;
@@ -23,6 +22,7 @@ import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -81,7 +81,7 @@ public class ProcessExternalController extends ApiErrorController {
   public ResponseEntity<FormResponse> getFormFromProcess(@PathVariable final String bpmnProcessId) {
     try {
       final ProcessEntity process = processStore.getProcessByBpmnProcessId(bpmnProcessId);
-      if (!process.isStartedByForm()) {
+      if (!process.getIsPublic()) {
         throw new NotFoundApiException(
             String.format("The process with bpmnProcessId: '%s' is not found", bpmnProcessId));
       } else {
@@ -142,7 +142,7 @@ public class ProcessExternalController extends ApiErrorController {
     }
 
     final ProcessEntity process = processStore.getProcessByBpmnProcessId(bpmnProcessId, tenantId);
-    if (!process.isStartedByForm()) {
+    if (!process.getIsPublic()) {
       throw new NotFoundApiException(
           String.format("The process with processDefinitionKey: '%s' is not found", bpmnProcessId));
     } else {
