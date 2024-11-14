@@ -37,9 +37,9 @@ import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.camunda.zeebe.protocol.impl.record.value.job.JobCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -695,7 +695,7 @@ final class JsonSerializableToJsonTest {
                   new JobResult()
                       .setDenied(true)
                       .setCorrections(
-                          new JobCorrections()
+                          new JobResultCorrections()
                               .setAssignee("frodo")
                               .setDueDate("today")
                               .setFollowUpDate("tomorrow")
@@ -839,7 +839,7 @@ final class JsonSerializableToJsonTest {
                   new JobResult()
                       .setDenied(true)
                       .setCorrections(
-                          new JobCorrections()
+                          new JobResultCorrections()
                               .setAssignee("frodo")
                               .setDueDate("today")
                               .setFollowUpDate("tomorrow")

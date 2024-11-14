@@ -29,8 +29,8 @@ public class JobResult extends UnpackedObject implements JobResultValue {
   private final BooleanProperty deniedProp = new BooleanProperty("denied", false);
   private final ArrayProperty<StringValue> correctedAttributesProp =
       new ArrayProperty<>("correctedAttributes", StringValue::new);
-  private final ObjectProperty<JobCorrections> correctionsProp =
-      new ObjectProperty<>("corrections", new JobCorrections());
+  private final ObjectProperty<JobResultCorrections> correctionsProp =
+      new ObjectProperty<>("corrections", new JobResultCorrections());
 
   public JobResult() {
     super(3);
@@ -72,11 +72,11 @@ public class JobResult extends UnpackedObject implements JobResultValue {
   }
 
   @Override
-  public JobCorrections getCorrections() {
+  public JobResultCorrections getCorrections() {
     return correctionsProp.getValue();
   }
 
-  public JobResult setCorrections(final JobCorrections corrections) {
+  public JobResult setCorrections(final JobResultCorrections corrections) {
     correctionsProp.getValue().wrap(corrections);
     return this;
   }

@@ -141,13 +141,13 @@ public interface JobRecordValue
     boolean isDenied();
 
     /**
-     * May only contain the attribute names of {@link JobCorrectionsValue} as entries. Those
+     * May only contain the attribute names of {@link JobResultCorrectionsValue} as entries. Those
      * attributes that are contained in this list are the ones that were corrected by the worker.
      * Others are considered not corrected.
      *
      * @return the list of attributes that the worker corrected when handling the job
      * @apiNote only attributes in this list should be considered when accessing {@link
-     *     JobCorrectionsValue} as unset fields receive default values
+     *     JobResultCorrectionsValue} as unset fields receive default values
      */
     List<String> getCorrectedAttributes();
 
@@ -156,7 +156,7 @@ public interface JobRecordValue
      * @apiNote contains defaults for fields that were not set, use {@link
      *     JobResultValue#getCorrectedAttributes()} to determine which fields are set
      */
-    JobCorrectionsValue getCorrections();
+    JobResultCorrectionsValue getCorrections();
   }
 
   /**
@@ -166,8 +166,8 @@ public interface JobRecordValue
    *     JobResultValue#getCorrectedAttributes()} to determine which fields are set.
    */
   @Value.Immutable
-  @ImmutableProtocol(builder = ImmutableJobCorrectionsValue.Builder.class)
-  interface JobCorrectionsValue {
+  @ImmutableProtocol(builder = ImmutableJobResultCorrectionsValue.Builder.class)
+  interface JobResultCorrectionsValue {
 
     /**
      * @return the corrected assignee value

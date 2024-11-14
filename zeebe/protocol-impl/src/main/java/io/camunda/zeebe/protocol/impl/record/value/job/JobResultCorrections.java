@@ -14,19 +14,20 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
-import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobCorrectionsValue;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue.JobResultCorrectionsValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
 @JsonIgnoreProperties({
-    /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
-    "empty",
-    "encodedLength",
-    "length"
+  /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+  "empty",
+  "encodedLength",
+  "length"
 })
-public final class JobCorrections extends UnpackedObject implements JobCorrectionsValue {
+public final class JobResultCorrections extends UnpackedObject
+    implements JobResultCorrectionsValue {
 
   private final StringProperty assigneeProp = new StringProperty("assignee", "");
   private final StringProperty dueDateProp = new StringProperty("dueDate", "");
@@ -37,7 +38,7 @@ public final class JobCorrections extends UnpackedObject implements JobCorrectio
       new ArrayProperty<>("candidateGroups", StringValue::new);
   private final IntegerProperty priorityProp = new IntegerProperty("priority", -1);
 
-  public JobCorrections() {
+  public JobResultCorrections() {
     super(6);
     declareProperty(assigneeProp)
         .declareProperty(dueDateProp)
@@ -47,7 +48,7 @@ public final class JobCorrections extends UnpackedObject implements JobCorrectio
         .declareProperty(priorityProp);
   }
 
-  public void wrap(final JobCorrections other) {
+  public void wrap(final JobResultCorrections other) {
     setAssignee(other.getAssignee());
     setDueDate(other.getDueDate());
     setFollowUpDate(other.getFollowUpDate());
@@ -67,7 +68,7 @@ public final class JobCorrections extends UnpackedObject implements JobCorrectio
     return BufferUtil.bufferAsString(buffer);
   }
 
-  public JobCorrections setAssignee(final String assignee) {
+  public JobResultCorrections setAssignee(final String assignee) {
     assigneeProp.setValue(assignee);
     return this;
   }
@@ -78,7 +79,7 @@ public final class JobCorrections extends UnpackedObject implements JobCorrectio
     return BufferUtil.bufferAsString(buffer);
   }
 
-  public JobCorrections setDueDate(final String dueDate) {
+  public JobResultCorrections setDueDate(final String dueDate) {
     dueDateProp.setValue(dueDate);
     return this;
   }
@@ -89,7 +90,7 @@ public final class JobCorrections extends UnpackedObject implements JobCorrectio
     return BufferUtil.bufferAsString(buffer);
   }
 
-  public JobCorrections setFollowUpDate(final String followUpDate) {
+  public JobResultCorrections setFollowUpDate(final String followUpDate) {
     followUpDateProp.setValue(followUpDate);
     return this;
   }
@@ -102,7 +103,7 @@ public final class JobCorrections extends UnpackedObject implements JobCorrectio
         .toList();
   }
 
-  public JobCorrections setCandidateGroups(final List<String> candidateGroups) {
+  public JobResultCorrections setCandidateGroups(final List<String> candidateGroups) {
     candidateGroupsProp.reset();
     candidateGroups.forEach(
         candidateGroup -> candidateGroupsProp.add().wrap(BufferUtil.wrapString(candidateGroup)));
@@ -117,7 +118,7 @@ public final class JobCorrections extends UnpackedObject implements JobCorrectio
         .toList();
   }
 
-  public JobCorrections setCandidateUsers(final List<String> candidateUsers) {
+  public JobResultCorrections setCandidateUsers(final List<String> candidateUsers) {
     candidateUsersProp.reset();
     candidateUsers.forEach(
         candidateUser -> candidateUsersProp.add().wrap(BufferUtil.wrapString(candidateUser)));
@@ -129,7 +130,7 @@ public final class JobCorrections extends UnpackedObject implements JobCorrectio
     return priorityProp.getValue();
   }
 
-  public JobCorrections setPriority(final int priority) {
+  public JobResultCorrections setPriority(final int priority) {
     priorityProp.setValue(priority);
     return this;
   }
