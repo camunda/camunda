@@ -183,13 +183,17 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       }
       Integer nextRunDelay = null;
       if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().isEmpty()) {
-        if (recordsReaderHolder.incrementEmptyRuns(partitionId, importValueType)
-                == MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER
-            && recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
-          final ImportPositionEntity currentLatestPosition =
-              importPositionHolder.getLatestScheduledPosition(
-                  importValueType.getAliasTemplate(), partitionId);
-          importPositionHolder.recordLatestLoadedPosition(currentLatestPosition.setCompleted(true));
+        if (recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
+          final var emptyBatchesAfterPartitionCompletion =
+              recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
+
+          if (emptyBatchesAfterPartitionCompletion == MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER) {
+            final ImportPositionEntity currentLatestPosition =
+                importPositionHolder.getLatestScheduledPosition(
+                    importValueType.getAliasTemplate(), partitionId);
+            importPositionHolder.recordLatestLoadedPosition(
+                currentLatestPosition.setCompleted(true));
+          }
         }
         nextRunDelay = readerBackoff;
       } else {

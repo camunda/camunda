@@ -43,7 +43,7 @@ public class RecordsReaderHolder {
 
   private final Set<Integer> partitionsCompletedImporting = new HashSet<>();
 
-  private final Map<RecordsReader, Integer> countEmptyRunsAfterImportingDone = new HashMap<>();
+  private final Map<RecordsReader, Integer> countEmptyBatchesAfterImportingDone = new HashMap<>();
 
   public Set<RecordsReader> getAllRecordsReaders() {
     if (CollectionUtil.isNotEmpty(recordsReaders)) {
@@ -60,7 +60,7 @@ public class RecordsReaderHolder {
         final var recordReader =
             beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize);
         recordsReaders.add(recordReader);
-        countEmptyRunsAfterImportingDone.put(recordReader, 0);
+        countEmptyBatchesAfterImportingDone.put(recordReader, 0);
       }
     }
     return recordsReaders;
@@ -74,9 +74,9 @@ public class RecordsReaderHolder {
     return partitionsCompletedImporting.contains(partitionId);
   }
 
-  public int incrementEmptyRuns(final int partitionId, final ImportValueType importValueType) {
+  public int incrementEmptyBatches(final int partitionId, final ImportValueType importValueType) {
     final var reader = getRecordsReader(partitionId, importValueType);
-    return countEmptyRunsAfterImportingDone.merge(reader, 1, Integer::sum);
+    return countEmptyBatchesAfterImportingDone.merge(reader, 1, Integer::sum);
   }
 
   public RecordsReader getRecordsReader(
