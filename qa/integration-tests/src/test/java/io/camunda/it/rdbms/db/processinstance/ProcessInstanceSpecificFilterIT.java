@@ -61,9 +61,9 @@ public class ProcessInstanceSpecificFilterIT {
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.processDefinitionKey(1337L)
-                    .processDefinitionId("test-process")
-                    .name("Test Process")
+                b.processDefinitionKey(987654321L)
+                    .processDefinitionId("test-process-987654321")
+                    .name("Test Process 987654321")
                     .versionTag("Version 1")));
     createAndSaveRandomProcessInstances(rdbmsWriter);
     createAndSaveProcessInstance(
@@ -71,8 +71,8 @@ public class ProcessInstanceSpecificFilterIT {
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processInstanceKey(42L)
-                    .processDefinitionId("test-process")
-                    .processDefinitionKey(1337L)
+                    .processDefinitionId("test-process-987654321")
+                    .processDefinitionKey(987654321L)
                     .state(ProcessInstanceState.ACTIVE)
                     .startDate(NOW)
                     .endDate(NOW)
@@ -92,12 +92,14 @@ public class ProcessInstanceSpecificFilterIT {
   static List<ProcessInstanceFilter> shouldFindProcessInstanceWithSpecificFilterParameters() {
     return List.of(
         new ProcessInstanceFilter.Builder().processInstanceKeys(42L).build(),
-        new ProcessInstanceFilter.Builder().processDefinitionIds("test-process").build(),
-        new ProcessInstanceFilter.Builder().processDefinitionKeys(1337L).build(),
+        new ProcessInstanceFilter.Builder().processDefinitionIds("test-process-987654321").build(),
+        new ProcessInstanceFilter.Builder().processDefinitionKeys(987654321L).build(),
         new ProcessInstanceFilter.Builder().states(ProcessInstanceState.ACTIVE.name()).build(),
         new ProcessInstanceFilter.Builder().parentProcessInstanceKeys(-1L).build(),
         new ProcessInstanceFilter.Builder().parentFlowNodeInstanceKeys(-1L).build(),
-        new ProcessInstanceFilter.Builder().processDefinitionNames("Test Process").build(),
+        new ProcessInstanceFilter.Builder()
+            .processDefinitionNames("Test Process 987654321")
+            .build(),
         new ProcessInstanceFilter.Builder().processDefinitionVersionTags("Version 1").build());
   }
 }

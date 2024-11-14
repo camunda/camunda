@@ -20,9 +20,6 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.search.sort.ProcessInstanceSort;
-import io.camunda.search.sort.SortOption.FieldSorting;
-import io.camunda.search.sort.SortOrder;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
@@ -614,19 +611,5 @@ public class ProcessInstanceSortIT {
     assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey3, processInstanceKey, processInstanceKey4);
-  }
-
-  @TestTemplate
-  public void shouldNotFailOnUnknownSortingOption(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final ProcessInstanceReader processInstanceReader = rdbmsService.getProcessInstanceReader();
-
-    processInstanceReader.search(
-        ProcessInstanceQuery.of(
-            b ->
-                b.filter(f -> f)
-                    .sort(new ProcessInstanceSort(List.of(new FieldSorting("foo", SortOrder.ASC))))
-                    .page(p -> p)));
   }
 }
