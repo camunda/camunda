@@ -44,12 +44,12 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void getRoleShouldReturnOk() {
     // given
     final var role = new RoleEntity(100L, "Role Name", Set.of());
-    when(roleServices.getRole(role.roleKey())).thenReturn(role);
+    when(roleServices.getRole(role.key())).thenReturn(role);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(ROLE_BASE_URL, role.roleKey()))
+        .uri("%s/%s".formatted(ROLE_BASE_URL, role.key()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -59,11 +59,11 @@ public class RoleQueryControllerTest extends RestControllerTest {
             """
             {
               "name": "Role Name",
-              "roleKey": 100
+              "key": 100
             }""");
 
     // then
-    verify(roleServices, times(1)).getRole(role.roleKey());
+    verify(roleServices, times(1)).getRole(role.key());
   }
 
   @Test
@@ -130,17 +130,17 @@ public class RoleQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "roleKey": 100,
+                 "key": 100,
                  "name": "Role 1",
                  "assignedMemberKeys": []
                },
                {
-                 "roleKey": 200,
+                 "key": 200,
                  "name": "Role 2",
                  "assignedMemberKeys": [1, 2]
                },
                {
-                 "roleKey": 300,
+                 "key": 300,
                  "name": "Role 12",
                  "assignedMemberKeys": [3]
                }

@@ -11,4 +11,4 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record RoleEntity(Long roleKey, String name, Set<Long> assignedMemberKeys) {}
+public record RoleEntity(Long key, String name, Set<Long> assignedMemberKeys) {}
