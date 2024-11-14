@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.27.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
   <bpmn:process id="orderProcess" name="Order process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Order received">
       <bpmn:outgoing>SequenceFlow_0j6tsnn</bpmn:outgoing>
@@ -340,6 +340,16 @@
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="Flow_0wcd3tb" sourceRef="Gateway_1fr6z3f" targetRef="MultiInstanceSubProcess" />
     <bpmn:sequenceFlow id="Flow_1strf32" sourceRef="MultiInstanceSubProcess" targetRef="Gateway_0wzi4n5" />
+    <bpmn:subProcess id="EscalationEventSubProcess" name="Escalation event sub process" triggeredByEvent="true">
+      <bpmn:startEvent id="EscalationStartEvent" name="Escalation start event">
+        <bpmn:outgoing>Flow_02u1eyw</bpmn:outgoing>
+        <bpmn:escalationEventDefinition id="EscalationEventDefinition_0ur13n4" />
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_02u1eyw" sourceRef="EscalationStartEvent" targetRef="Event_1lsv96y" />
+      <bpmn:endEvent id="Event_1lsv96y">
+        <bpmn:incoming>Flow_02u1eyw</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
   </bpmn:process>
   <bpmn:message id="Message_0so1os3" name="Message_1">
     <bpmn:extensionElements>
@@ -613,6 +623,23 @@
       <bpmndi:BPMNEdge id="Flow_11iclr2_di" bpmnElement="Flow_11iclr2">
         <di:waypoint x="1310" y="1170" />
         <di:waypoint x="1372" y="1170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Activity_0vik5yl_di" bpmnElement="EscalationEventSubProcess" isExpanded="true">
+        <dc:Bounds x="610" y="1280" width="350" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_05cw0n0_di" bpmnElement="EscalationStartEvent">
+        <dc:Bounds x="650" y="1362" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="630" y="1405" width="76" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1lsv96y_di" bpmnElement="Event_1lsv96y">
+        <dc:Bounds x="862" y="1362" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_02u1eyw_di" bpmnElement="Flow_02u1eyw">
+        <di:waypoint x="686" y="1380" />
+        <di:waypoint x="862" y="1380" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_0ztghtl_di" bpmnElement="SignalBoundaryEvent">
         <dc:Bounds x="1772" y="642" width="36" height="36" />
