@@ -13,7 +13,7 @@ public class RoleIndex extends RoleIndexDescriptor {
   public static final String INDEX_NAME = "role";
   public static final String INDEX_VERSION = "8.7.0";
 
-  public static final String ROLEKEY = "roleKey";
+  public static final String KEY = "key";
   public static final String NAME = "name";
   public static final String ASSIGNEDMEMBERKEYS = "assignedMemberKeys";
 

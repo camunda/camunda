@@ -234,9 +234,12 @@ public final class SearchQueryResponseMapper {
 
   private static RoleItem toRole(final RoleEntity roleEntity) {
     return new RoleItem()
-        .roleKey(roleEntity.roleKey())
+        .key(roleEntity.key())
         .name(roleEntity.name())
-        .assignedMemberKeys(roleEntity.assignedMemberKeys().stream().sorted().toList());
+        .assignedMemberKeys(
+            roleEntity.assignedMemberKeys() == null
+                ? null
+                : roleEntity.assignedMemberKeys().stream().sorted().toList());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(

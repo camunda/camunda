@@ -16,12 +16,12 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
   private String name;
   private Set<Long> assignedMemberKeys;
 
-  public Long getRoleKey() {
+  public Long getKey() {
     return roleKey;
   }
 
-  public RoleEntity setRoleKey(final Long roleKey) {
-    this.roleKey = roleKey;
+  public RoleEntity setKey(final Long key) {
+    roleKey = key;
     return this;
   }
 

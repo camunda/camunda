@@ -3953,7 +3953,7 @@ components:
       description: Role search response item.
       type: object
       properties:
-        roleKey:
+        key:
           type: integer
           description: The role key.
           format: int64

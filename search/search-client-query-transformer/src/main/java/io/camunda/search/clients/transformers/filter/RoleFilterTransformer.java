@@ -20,7 +20,7 @@ public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
   public SearchQuery toSearchQuery(final RoleFilter filter) {
 
     return and(
-        filter.roleKey() == null ? null : term("roleKey", filter.roleKey()),
+        filter.roleKey() == null ? null : term("key", filter.roleKey()),
         filter.name() == null ? null : term("name", filter.name()));
   }
 

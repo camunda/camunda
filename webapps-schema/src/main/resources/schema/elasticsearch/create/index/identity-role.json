@@ -5,7 +5,7 @@
       "id": {
         "type": "keyword"
       },
-      "roleKey": {
+      "key": {
         "type": "long"
       },
       "name": {
