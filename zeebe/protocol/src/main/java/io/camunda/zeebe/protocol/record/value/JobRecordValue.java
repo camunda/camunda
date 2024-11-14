@@ -139,6 +139,24 @@ public interface JobRecordValue
      * @return true if the operation was rejected by Task Listener
      */
     boolean isDenied();
+
+    /**
+     * May only contain the attribute names of {@link JobCorrectionsValue} as entries. Those
+     * attributes that are contained in this list are the ones that were corrected by the worker.
+     * Others are considered not corrected.
+     *
+     * @return the list of attributes that the worker corrected when handling the job
+     * @apiNote only attributes in this list should be considered when accessing {@link
+     *     JobCorrectionsValue} as unset fields receive default values
+     */
+    List<String> getCorrectedAttributes();
+
+    /**
+     * @return the corrections the worker made as a result of completing the job
+     * @apiNote contains defaults for fields that were not set, use {@link
+     *     JobResultValue#getCorrectedAttributes()} to determine which fields are set
+     */
+    JobCorrectionsValue getCorrections();
   }
 
   /**
