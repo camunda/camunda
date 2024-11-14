@@ -19,10 +19,10 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
-import io.camunda.tasklist.v86.entities.FormEntity;
-import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
 import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +48,7 @@ public class FormStoreElasticSearch implements FormStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FormStoreElasticSearch.class);
 
-  @Autowired private TasklistFormIndex formIndex;
+  @Autowired private FormIndex formIndex;
 
   @Autowired private TasklistTaskTemplate taskTemplate;
 
@@ -90,8 +90,8 @@ public class FormStoreElasticSearch implements FormStore {
         new SearchRequest(formIndex.getFullQualifiedName())
             .source(
                 SearchSourceBuilder.searchSource()
-                    .query(termQuery(TasklistFormIndex.PROCESS_DEFINITION_ID, processDefinitionId))
-                    .fetchField(TasklistFormIndex.ID));
+                    .query(termQuery(FormIndex.PROCESS_DEFINITION_ID, processDefinitionId))
+                    .fetchField(FormIndex.ID));
     try {
       return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
     } catch (final IOException e) {
@@ -104,14 +104,10 @@ public class FormStoreElasticSearch implements FormStore {
 
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
-            .query(QueryBuilders.termQuery(TasklistFormIndex.ID, formKey))
-            .sort(TasklistFormIndex.VERSION, SortOrder.DESC)
+            .query(QueryBuilders.termQuery(FormIndex.ID, formKey))
+            .sort(FormIndex.VERSION, SortOrder.DESC)
             .size(1)
-            .fetchSource(
-                new String[] {
-                  TasklistFormIndex.ID, TasklistFormIndex.BPMN_ID, TasklistFormIndex.VERSION
-                },
-                null);
+            .fetchSource(new String[] {FormIndex.ID, FormIndex.BPMN_ID, FormIndex.VERSION}, null);
 
     final SearchRequest searchRequest =
         new SearchRequest(formIndex.getFullQualifiedName()).source(searchSourceBuilder);
@@ -125,9 +121,9 @@ public class FormStoreElasticSearch implements FormStore {
             searchResponse.getHits().getHits()[0].getSourceAsMap();
         return Optional.of(
             new FormIdView(
-                (String) sourceAsMap.get(TasklistFormIndex.ID),
-                (String) sourceAsMap.get(TasklistFormIndex.BPMN_ID),
-                ((Number) sourceAsMap.get(TasklistFormIndex.VERSION)).longValue()));
+                (String) sourceAsMap.get(FormIndex.ID),
+                (String) sourceAsMap.get(FormIndex.BPMN_ID),
+                ((Number) sourceAsMap.get(FormIndex.VERSION)).longValue()));
       }
     } catch (final IOException e) {
       throw new TasklistRuntimeException(
@@ -155,17 +151,17 @@ public class FormStoreElasticSearch implements FormStore {
     final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
     boolQuery.must(
         QueryBuilders.boolQuery()
-            .should(QueryBuilders.termQuery(TasklistFormIndex.BPMN_ID, formId))
-            .should(QueryBuilders.termQuery(TasklistFormIndex.ID, formId))
+            .should(QueryBuilders.termQuery(FormIndex.BPMN_ID, formId))
+            .should(QueryBuilders.termQuery(FormIndex.ID, formId))
             .minimumShouldMatch(1));
     if (formVersion != null) {
       // with the version set, you can return the form that was deleted, because of backward
       // compatibility
-      boolQuery.must(QueryBuilders.termQuery(TasklistFormIndex.VERSION, formVersion));
+      boolQuery.must(QueryBuilders.termQuery(FormIndex.VERSION, formVersion));
     } else {
       // get the latest version where isDeleted is false (highest active version)
-      boolQuery.must(QueryBuilders.termQuery(TasklistFormIndex.IS_DELETED, false));
-      searchSourceBuilder.sort(TasklistFormIndex.VERSION, SortOrder.DESC);
+      boolQuery.must(QueryBuilders.termQuery(FormIndex.IS_DELETED, false));
+      searchSourceBuilder.sort(FormIndex.VERSION, SortOrder.DESC);
       searchSourceBuilder.size(1);
     }
 
@@ -179,12 +175,12 @@ public class FormStoreElasticSearch implements FormStore {
         final Map<String, Object> sourceAsMap =
             searchResponse.getHits().getHits()[0].getSourceAsMap();
         final FormEntity formEntity = new FormEntity();
-        formEntity.setBpmnId((String) sourceAsMap.get(TasklistFormIndex.BPMN_ID));
-        formEntity.setVersion(((Number) sourceAsMap.get(TasklistFormIndex.VERSION)).longValue());
-        formEntity.setEmbedded((Boolean) sourceAsMap.get(TasklistFormIndex.EMBEDDED));
-        formEntity.setSchema((String) sourceAsMap.get(TasklistFormIndex.SCHEMA));
-        formEntity.setTenantId((String) sourceAsMap.get(TasklistFormIndex.TENANT_ID));
-        formEntity.setIsDeleted((Boolean) sourceAsMap.get(TasklistFormIndex.IS_DELETED));
+        formEntity.setFormId((String) sourceAsMap.get(FormIndex.BPMN_ID));
+        formEntity.setVersion(((Number) sourceAsMap.get(FormIndex.VERSION)).longValue());
+        formEntity.setEmbedded((Boolean) sourceAsMap.get(FormIndex.EMBEDDED));
+        formEntity.setSchema((String) sourceAsMap.get(FormIndex.SCHEMA));
+        formEntity.setTenantId((String) sourceAsMap.get(FormIndex.TENANT_ID));
+        formEntity.setIsDeleted((Boolean) sourceAsMap.get(FormIndex.IS_DELETED));
         return formEntity;
       }
     } catch (final IOException e) {

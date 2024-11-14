@@ -13,9 +13,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.util.ConversionUtils;
-import io.camunda.tasklist.v86.entities.FormEntity;
-import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
 import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.FormRecordImpl;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import java.nio.charset.StandardCharsets;
@@ -40,7 +40,7 @@ public class FormZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private TasklistFormIndex formIndex;
+  @Autowired private FormIndex formIndex;
 
   public void processFormRecord(final Record record, final BulkRequest bulkRequest)
       throws PersistenceException {
@@ -80,7 +80,15 @@ public class FormZeebeRecordProcessorElasticSearch {
       final BulkRequest bulkRequest)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(null, formId, schema, version, tenantId, formKey, false, false);
+        new FormEntity()
+            .setId(String.valueOf(formKey))
+            .setVersion(version)
+            .setKey(formKey)
+            .setFormId(formId)
+            .setSchema(schema)
+            .setTenantId(tenantId)
+            .setEmbedded(false)
+            .setIsDeleted(isDelete);
 
     try {
       if (isDelete) {
@@ -90,7 +98,7 @@ public class FormZeebeRecordProcessorElasticSearch {
                 .index(formIndex.getFullQualifiedName())
                 .id(formEntity.getId())
                 .upsert(objectMapper.writeValueAsString(formEntity), XContentType.JSON)
-                .doc(Map.of(TasklistFormIndex.IS_DELETED, true))
+                .doc(Map.of(FormIndex.IS_DELETED, true))
                 .retryOnConflict(UPDATE_RETRY_COUNT));
       } else {
         // Create operation

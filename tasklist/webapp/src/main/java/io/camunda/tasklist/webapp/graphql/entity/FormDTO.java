@@ -9,7 +9,7 @@ package io.camunda.tasklist.webapp.graphql.entity;
 
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-import io.camunda.tasklist.v86.entities.FormEntity;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.util.Objects;
 
 public class FormDTO {
@@ -58,12 +58,17 @@ public class FormDTO {
     return this;
   }
 
-  public static FormDTO createFrom(FormEntity formEntity) {
+  public static FormDTO createFrom(final FormEntity formEntity) {
     return new FormDTO()
-        .setId(formEntity.getBpmnId())
+        .setId(formEntity.getFormId())
         .setProcessDefinitionId(formEntity.getProcessDefinitionId())
         .setSchema(formEntity.getSchema())
         .setIsDeleted(formEntity.getIsDeleted());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, processDefinitionId, schema, isDeleted);
   }
 
   @Override
@@ -79,10 +84,5 @@ public class FormDTO {
         && Objects.equals(processDefinitionId, formDTO.processDefinitionId)
         && Objects.equals(schema, formDTO.schema)
         && Objects.equals(isDeleted, formDTO.isDeleted);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, processDefinitionId, schema, isDeleted);
   }
 }

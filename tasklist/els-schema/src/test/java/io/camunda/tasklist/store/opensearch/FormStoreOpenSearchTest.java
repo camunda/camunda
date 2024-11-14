@@ -17,10 +17,10 @@ import static org.mockito.Mockito.when;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
-import io.camunda.tasklist.v86.entities.FormEntity;
-import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
 import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -39,7 +39,7 @@ import org.opensearch.client.opensearch.core.search.TotalHits;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class FormStoreOpenSearchTest {
-  @Mock private TasklistFormIndex formIndex = new TasklistFormIndex();
+  @Mock private FormIndex formIndex = new FormIndex("test", false);
 
   @Mock private TasklistTaskTemplate taskTemplate = new TasklistTaskTemplate();
 
@@ -51,7 +51,7 @@ class FormStoreOpenSearchTest {
 
   @Test
   void getFormWhenFormNotFound() throws IOException {
-    when(formIndex.getIndexName()).thenReturn(TasklistFormIndex.INDEX_NAME);
+    when(formIndex.getIndexName()).thenReturn(FormIndex.INDEX_NAME);
 
     final var formSearchResponse = mock(SearchResponse.class);
     when(taskTemplate.getFullQualifiedName()).thenReturn("tasklist-task-x.0.0");
@@ -89,7 +89,7 @@ class FormStoreOpenSearchTest {
         new FormEntity()
             .setId("id1")
             .setProcessDefinitionId("processDefId1")
-            .setBpmnId("bpmnId1")
+            .setFormId("bpmnId1")
             .setSchema("");
     final var formSearchResponse = mock(SearchResponse.class);
     when(tenantAwareClient.search(any(SearchRequest.Builder.class), eq(FormEntity.class)))

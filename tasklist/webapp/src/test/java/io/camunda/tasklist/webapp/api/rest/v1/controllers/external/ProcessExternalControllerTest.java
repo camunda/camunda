@@ -19,7 +19,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.ProcessStore;
-import io.camunda.tasklist.v86.entities.FormEntity;
 import io.camunda.tasklist.v86.entities.ProcessEntity;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
@@ -32,6 +31,7 @@ import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -96,7 +96,7 @@ public class ProcessExternalControllerTest {
     final var formEntity =
         new FormEntity()
             .setId("2251799813686367_testForm")
-            .setBpmnId("testForm")
+            .setFormId("testForm")
             .setEmbedded(true)
             .setIsDeleted(false)
             .setProcessDefinitionId("2251799813686367")
@@ -150,7 +150,7 @@ public class ProcessExternalControllerTest {
     final var formEntity =
         new FormEntity()
             .setId("2251799813686367")
-            .setBpmnId("testForm")
+            .setFormId("testForm")
             .setEmbedded(true)
             .setProcessDefinitionId(null)
             .setSchema("formSchema")

@@ -18,10 +18,10 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
-import io.camunda.tasklist.v86.entities.FormEntity;
-import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
 import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.get.GetRequest;
@@ -44,7 +44,7 @@ import org.mockito.quality.Strictness;
 class FormStoreElasticSearchTest {
 
   private static final String FORM_INDEX_NAME = "tasklist-form-x.0.0";
-  @Mock private TasklistFormIndex formIndex = new TasklistFormIndex();
+  @Mock private FormIndex formIndex = new FormIndex("test", true);
   @Mock private TasklistTaskTemplate taskTemplate = new TasklistTaskTemplate();
   @Mock private TasklistProcessIndex processIndex = new TasklistProcessIndex();
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
@@ -59,7 +59,7 @@ class FormStoreElasticSearchTest {
   @Test
   void getFormWhenFormNotFound() throws IOException {
     // given
-    when(formIndex.getIndexName()).thenReturn(TasklistFormIndex.INDEX_NAME);
+    when(formIndex.getIndexName()).thenReturn(FormIndex.INDEX_NAME);
     final var response = mock(SearchResponse.class);
     when(taskTemplate.getAlias()).thenReturn("tasklist-task-x.0.0");
     when(processIndex.getAlias()).thenReturn("tasklist-task-x.0.0");
@@ -95,7 +95,7 @@ class FormStoreElasticSearchTest {
         new FormEntity()
             .setId("id3")
             .setProcessDefinitionId("processDefId3")
-            .setBpmnId("bpmnId3")
+            .setFormId("bpmnId3")
             .setSchema("");
 
     final var responseAsstring = objectMapper.writeValueAsString(providedFormEntity);

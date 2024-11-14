@@ -143,7 +143,7 @@ public class ProcessInternalController extends ApiErrorController {
       if (process.getFormId() != null) {
         try {
           final var form = formStore.getForm(process.getFormId(), process.getId(), null);
-          return form.getBpmnId();
+          return form.getFormId();
         } catch (final NotFoundException e) {
           // Form not found, but maintain the Form ID in order to threat not found in front-end
           return process.getFormId();
@@ -154,7 +154,7 @@ public class ProcessInternalController extends ApiErrorController {
       if (process.getFormKey() != null) {
         final String formId = StringUtils.substringAfterLast(process.getFormKey(), ":");
         final var form = formStore.getForm(formId, process.getId(), null);
-        return form.getBpmnId();
+        return form.getFormId();
       }
     }
     return null;

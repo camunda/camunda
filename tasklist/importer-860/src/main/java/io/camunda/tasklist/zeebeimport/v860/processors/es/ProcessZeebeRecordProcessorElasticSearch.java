@@ -12,13 +12,13 @@ import static io.camunda.tasklist.util.ConversionUtils.toStringOrNull;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.v86.entities.FormEntity;
 import io.camunda.tasklist.v86.entities.ProcessEntity;
-import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
 import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.deployment.DeployedProcessImpl;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
@@ -54,7 +54,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
 
   @Autowired private TasklistProcessIndex processIndex;
 
-  @Autowired private TasklistFormIndex formIndex;
+  @Autowired private FormIndex formIndex;
 
   @Autowired private XMLUtil xmlUtil;
 
@@ -154,7 +154,16 @@ public class ProcessZeebeRecordProcessorElasticSearch {
       final BulkRequest bulkRequest,
       final String tenantId)
       throws PersistenceException {
-    final FormEntity formEntity = new FormEntity(processDefinitionKey, formKey, schema, tenantId);
+    final var formEntityId = String.format("%s_%s", processDefinitionKey, formKey);
+    final FormEntity formEntity =
+        new FormEntity()
+            .setId(formEntityId)
+            .setFormId(formKey)
+            .setSchema(schema)
+            .setTenantId(tenantId)
+            .setProcessDefinitionId(processDefinitionKey)
+            .setEmbedded(true)
+            .setIsDeleted(false);
     LOGGER.debug("Form: key {}", formKey);
     try {
       bulkRequest.add(

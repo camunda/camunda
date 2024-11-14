@@ -14,9 +14,9 @@ import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
-import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
 import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistDraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +34,7 @@ class ProcessDefinitionDeletionProcessorTest {
 
   @Mock private TasklistProcessIndex processIndex;
 
-  @Mock private TasklistFormIndex formIndex;
+  @Mock private FormIndex formIndex;
 
   @Mock private FormStore formStore;
 

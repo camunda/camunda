@@ -16,12 +16,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import io.camunda.tasklist.store.FormStore;
-import io.camunda.tasklist.v86.entities.FormEntity;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.FormResponse;
 import io.camunda.tasklist.webapp.rest.exception.Error;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -57,7 +57,7 @@ class FormControllerTest {
       final var formEntity =
           new FormEntity()
               .setId(processDefinitionKey.concat("_").concat(formId))
-              .setBpmnId(formId)
+              .setFormId(formId)
               .setProcessDefinitionId(processDefinitionKey)
               .setSchema("{}")
               .setTenantId(DEFAULT_TENANT_IDENTIFIER);
@@ -119,7 +119,7 @@ class FormControllerTest {
       final var formEntity =
           new FormEntity()
               .setId(formKey)
-              .setBpmnId(formId)
+              .setFormId(formId)
               .setProcessDefinitionId(null)
               .setEmbedded(false)
               .setVersion(version)
@@ -162,7 +162,7 @@ class FormControllerTest {
       final var formEntity =
           new FormEntity()
               .setId(formKey)
-              .setBpmnId(formId)
+              .setFormId(formId)
               .setProcessDefinitionId(null)
               .setEmbedded(false)
               .setVersion(version)

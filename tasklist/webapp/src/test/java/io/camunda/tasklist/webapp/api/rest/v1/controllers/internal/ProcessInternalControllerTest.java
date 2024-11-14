@@ -23,7 +23,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.ProcessInstanceStore;
 import io.camunda.tasklist.store.ProcessStore;
-import io.camunda.tasklist.v86.entities.FormEntity;
 import io.camunda.tasklist.v86.entities.ProcessEntity;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.ProcessPublicEndpointsResponse;
@@ -39,6 +38,7 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -286,7 +286,7 @@ class ProcessInternalControllerTest {
               null))
           .thenReturn(List.of(providedProcessEntity));
       when(formStore.getForm("userTaskForm_111", "2251799813685257", null))
-          .thenReturn(new FormEntity().setId("task").setBpmnId("task"));
+          .thenReturn(new FormEntity().setId("task").setFormId("task"));
 
       // when
       final var responseAsString =

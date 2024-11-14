@@ -13,7 +13,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.util.ZeebeTestUtil;
 import io.camunda.tasklist.v86.entities.UserEntity;
-import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
 import io.camunda.tasklist.v86.schema.indices.TasklistUserIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -44,8 +43,6 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
   @Autowired private ZeebeClient zeebeClient;
-
-  @Autowired private TasklistFormIndex formIndex;
 
   @Autowired private TasklistTaskTemplate taskTemplate;
 

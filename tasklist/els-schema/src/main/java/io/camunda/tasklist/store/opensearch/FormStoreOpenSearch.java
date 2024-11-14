@@ -16,10 +16,10 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
-import io.camunda.tasklist.v86.entities.FormEntity;
-import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
 import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +39,7 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class FormStoreOpenSearch implements FormStore {
 
-  @Autowired private TasklistFormIndex formIndex;
+  @Autowired private FormIndex formIndex;
 
   @Autowired private TasklistTaskTemplate taskTemplate;
 
@@ -79,7 +79,7 @@ public class FormStoreOpenSearch implements FormStore {
                 q ->
                     q.term(
                         term ->
-                            term.field(TasklistFormIndex.PROCESS_DEFINITION_ID)
+                            term.field(FormIndex.PROCESS_DEFINITION_ID)
                                 .value(FieldValue.of(processDefinitionId))))
             .fields(f -> f.field(TasklistTaskTemplate.ID));
     try {
@@ -96,29 +96,21 @@ public class FormStoreOpenSearch implements FormStore {
           osClient.search(
               b ->
                   b.index(formIndex.getFullQualifiedName())
-                      .query(
-                          q ->
-                              q.term(
-                                  t -> t.field(TasklistFormIndex.ID).value(FieldValue.of(formKey))))
-                      .sort(
-                          s ->
-                              s.field(
-                                  f -> f.field(TasklistFormIndex.VERSION).order(SortOrder.Desc)))
+                      .query(q -> q.term(t -> t.field(FormIndex.ID).value(FieldValue.of(formKey))))
+                      .sort(s -> s.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc)))
                       .source(
                           s ->
                               s.filter(
                                   f ->
                                       f.includes(
                                           List.of(
-                                              TasklistFormIndex.ID,
-                                              TasklistFormIndex.BPMN_ID,
-                                              TasklistFormIndex.VERSION))))
+                                              FormIndex.ID, FormIndex.BPMN_ID, FormIndex.VERSION))))
                       .size(1),
               FormEntity.class);
       if (formEntityResponse.hits().total().value() == 1L) {
         final FormEntity formEntity = formEntityResponse.hits().hits().get(0).source();
         return Optional.of(
-            new FormIdView(formEntity.getId(), formEntity.getBpmnId(), formEntity.getVersion()));
+            new FormIdView(formEntity.getId(), formEntity.getFormId(), formEntity.getVersion()));
       } else {
         return Optional.empty();
       }
@@ -239,7 +231,7 @@ public class FormStoreOpenSearch implements FormStore {
                           q1.terms(
                               terms ->
                                   terms
-                                      .field(TasklistFormIndex.BPMN_ID)
+                                      .field(FormIndex.BPMN_ID)
                                       .terms(
                                           t ->
                                               t.value(
@@ -250,7 +242,7 @@ public class FormStoreOpenSearch implements FormStore {
                           q2.terms(
                               terms ->
                                   terms
-                                      .field(TasklistFormIndex.ID)
+                                      .field(FormIndex.ID)
                                       .terms(
                                           t ->
                                               t.value(
@@ -264,11 +256,10 @@ public class FormStoreOpenSearch implements FormStore {
         isDeleteQ.terms(
             terms ->
                 terms
-                    .field(TasklistFormIndex.IS_DELETED)
+                    .field(FormIndex.IS_DELETED)
                     .terms(t -> t.value(Collections.singletonList(FieldValue.of(false)))));
         boolQuery = OpenSearchUtil.joinWithAnd(bpmnIdProcessQ, isDeleteQ);
-        searchRequest.sort(
-            s -> s.field(f -> f.field(TasklistFormIndex.VERSION).order(SortOrder.Desc)));
+        searchRequest.sort(s -> s.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc)));
       } else {
         // with the version set, you can return the form that was deleted, because of backward
         // compatibility
@@ -276,7 +267,7 @@ public class FormStoreOpenSearch implements FormStore {
         isVersionQ.terms(
             terms ->
                 terms
-                    .field(TasklistFormIndex.VERSION)
+                    .field(FormIndex.VERSION)
                     .terms(t -> t.value(Collections.singletonList(FieldValue.of(formVersion)))));
         boolQuery = OpenSearchUtil.joinWithAnd(bpmnIdProcessQ, isVersionQ);
       }
