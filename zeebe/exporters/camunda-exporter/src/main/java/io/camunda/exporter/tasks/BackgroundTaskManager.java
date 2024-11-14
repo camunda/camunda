@@ -124,7 +124,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
         createProcessInstanceTask(
             metrics, logger, resourceProvider, repository, executor, config.getArchiver()));
     if (partitionId == START_PARTITION_ID) {
-      threadCount++;
+      threadCount = 2;
       tasks.add(
           createBatchOperationTask(
               metrics, logger, resourceProvider, repository, executor, config.getArchiver()));
