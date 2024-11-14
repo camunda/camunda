@@ -44,13 +44,13 @@ public class BatchOperationArchiverJob implements ArchiverJob {
   public CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch) {
 
     if (archiveBatch != null) {
-      logger.debug("Following batch operations are found for archiving: {}", archiveBatch);
+      logger.trace("Following batch operations are found for archiving: {}", archiveBatch);
 
       return moveBatch(archiveBatch.finishDate(), archiveBatch.ids())
           .thenApplyAsync(FunctionUtil.peek(metrics::batchOperationsArchived), executor);
     }
 
-    logger.debug("Nothing to archive");
+    logger.trace("Nothing to archive");
     return CompletableFuture.completedFuture(0);
   }
 
