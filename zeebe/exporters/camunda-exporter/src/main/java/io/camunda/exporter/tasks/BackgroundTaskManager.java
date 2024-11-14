@@ -179,8 +179,6 @@ public final class BackgroundTaskManager implements CloseableSilently {
     executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     executor.setRemoveOnCancelPolicy(true);
-    executor.allowCoreThreadTimeOut(true);
-    executor.setKeepAliveTime(1, TimeUnit.MINUTES);
 
     return executor;
   }
