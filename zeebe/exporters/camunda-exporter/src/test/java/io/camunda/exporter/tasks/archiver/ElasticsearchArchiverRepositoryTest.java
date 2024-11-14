@@ -15,6 +15,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import org.apache.http.HttpHost;
@@ -67,6 +68,7 @@ final class ElasticsearchArchiverRepositoryTest {
         1,
         new ArchiverConfiguration(),
         retention,
+        new ConnectConfiguration(),
         "instance",
         "batch",
         client,
