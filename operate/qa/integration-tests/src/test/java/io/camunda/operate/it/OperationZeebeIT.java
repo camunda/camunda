@@ -91,6 +91,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private ListViewReader listViewReader;
 
+  @Autowired private UserTaskReader userTaskReader;
+
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
@@ -111,6 +113,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
     tester.deployProcess("demoProcess_v_2.bpmn");
     tester.deployProcess("execution-listener.bpmn");
+    tester.deployProcess("task-listener.bpmn");
   }
 
   @Override
@@ -378,7 +381,17 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
             .waitUntil()
             .flowNodeIsActive("script-task")
             .getProcessInstanceKey();
-    failTaskWithNoRetriesLeft("listener1", processInstanceKey, "Some error");
+    final long executionListenerJobId =
+        failTaskWithNoRetriesLeft("listener1", processInstanceKey, "Some execution listener error");
+
+    // assert that incident exists
+    List<IncidentDto> incidents =
+        incidentReader
+            .getIncidentsByProcessInstanceId(String.valueOf(processInstanceKey))
+            .getIncidents();
+    assertThat(incidents).isNotEmpty();
+    assertThat(Long.valueOf(incidents.getFirst().getJobId()))
+        .isEqualTo(Long.valueOf(executionListenerJobId));
 
     // we call RESOLVE_INCIDENT operation on instance
     postOperationWithOKResponse(
@@ -392,7 +405,55 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     // process all Zeebe records
     searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
-    final List<IncidentDto> incidents =
+    incidents =
+        incidentReader
+            .getIncidentsByProcessInstanceId(String.valueOf(processInstanceKey))
+            .getIncidents();
+    // the incident has been resolved
+    assertThat(incidents).isEmpty();
+  }
+
+  @Test
+  public void testResolveIncidentForTaskListener() throws Exception {
+
+    // given
+    final Long processInstanceKey =
+        tester
+            .startProcessInstance("task-listener-process")
+            .waitUntil()
+            .flowNodeIsActive("fill-form")
+            .getProcessInstanceKey();
+    // wait for user task to be imported to operate and get key
+    searchTestRule.processAllRecordsAndWait(userTasksAreCreated, 1);
+    final long userTaskKey = userTaskReader.getUserTasks().getFirst().getUserTaskKey();
+    // send user task complete command. don't wait for response (listener blocks completion)
+    completeUserTask(userTaskKey);
+    final long taskListenerJobId =
+        failTaskWithNoRetriesLeft(
+            "complete_listener", processInstanceKey, "Some task listener error");
+
+    // assert that incident exists
+    List<IncidentDto> incidents =
+        incidentReader
+            .getIncidentsByProcessInstanceId(String.valueOf(processInstanceKey))
+            .getIncidents();
+    assertThat(incidents).isNotEmpty();
+    assertThat(Long.valueOf(incidents.getFirst().getJobId()))
+        .isEqualTo(Long.valueOf(taskListenerJobId));
+
+    // we call RESOLVE_INCIDENT operation on instance
+    postOperationWithOKResponse(
+        processInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
+
+    // when
+    // we execute the operation
+    executeOneBatch();
+
+    // then
+    // process all Zeebe records
+    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+
+    incidents =
         incidentReader
             .getIncidentsByProcessInstanceId(String.valueOf(processInstanceKey))
             .getIncidents();
