@@ -94,6 +94,12 @@ public final class DbDeploymentState implements MutableDeploymentState {
   }
 
   @Override
+  public void markALlDeploymentsAsStored() {
+    deploymentsRecreatedKey.wrapString(DEPLOYMENTS_RECREATED_KEY);
+    deploymentsRecreatedColumnFamily.insert(deploymentsRecreatedKey, DbNil.INSTANCE);
+  }
+
+  @Override
   public boolean hasPendingDeploymentDistribution(final long deploymentKey) {
     this.deploymentKey.wrapLong(deploymentKey);
 
