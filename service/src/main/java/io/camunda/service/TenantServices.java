@@ -57,19 +57,18 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public CompletableFuture<TenantRecord> updateTenant(final TenantDTO request) {
-    return sendBrokerRequest(
-        new BrokerTenantUpdateRequest(request.tenantKey()).setName(request.name()));
+    return sendBrokerRequest(new BrokerTenantUpdateRequest(request.key()).setName(request.name()));
   }
 
-  public TenantEntity getByTenantKey(final Long tenantKey) {
+  public TenantEntity getByKey(final Long key) {
     final SearchQueryResult<TenantEntity> result =
-        search(SearchQueryBuilders.tenantSearchQuery().filter(f -> f.tenantKey(tenantKey)).build());
+        search(SearchQueryBuilders.tenantSearchQuery().filter(f -> f.key(key)).build());
     if (result.total() < 1) {
-      throw new NotFoundException(String.format("Tenant with tenantKey %d not found", tenantKey));
+      throw new NotFoundException(String.format("Tenant with key %d not found", key));
     } else {
       return result.items().stream().findFirst().orElseThrow();
     }
   }
 
-  public record TenantDTO(long tenantKey, String tenantId, String name) {}
+  public record TenantDTO(long key, String tenantId, String name) {}
 }

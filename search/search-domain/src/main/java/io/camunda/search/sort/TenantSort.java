@@ -25,8 +25,8 @@ public record TenantSort(List<FieldSorting> orderings) implements SortOption {
   public static final class Builder extends AbstractBuilder<Builder>
       implements ObjectBuilder<TenantSort> {
 
-    public Builder tenantKey() {
-      currentOrdering = new FieldSorting("tenantKey", null);
+    public Builder key() {
+      currentOrdering = new FieldSorting("key", null);
       return this;
     }
 

@@ -104,7 +104,7 @@ public class TenantServiceTest {
     // when / then
     final var exception =
         assertThrowsExactly(NotFoundException.class, () -> services.getByTenantKey(key));
-    assertThat(exception.getMessage()).isEqualTo("Tenant with tenantKey 100 not found");
+    assertThat(exception.getMessage()).isEqualTo("Tenant with key 100 not found");
   }
 
   @Test
@@ -136,7 +136,7 @@ public class TenantServiceTest {
     final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(TenantIntent.UPDATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
-    assertThat(request.getKey()).isEqualTo(tenantDTO.tenantKey());
+    assertThat(request.getKey()).isEqualTo(tenantDTO.key());
     final TenantRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
   }

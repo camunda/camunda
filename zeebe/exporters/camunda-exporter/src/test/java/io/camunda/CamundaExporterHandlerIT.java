@@ -671,6 +671,24 @@ public class CamundaExporterHandlerIT {
         });
   }
 
+  private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> tenantRecordGenerator(
+      final ExportHandler<S, T> handler, final TenantIntent intent) {
+    return recordGenerator(
+        handler,
+        () -> {
+          final var tenantRecordValue =
+              ImmutableTenantRecordValue.builder()
+                  .from(factory.generateObject(TenantRecordValue.class))
+                  .build();
+          return factory.generateRecord(
+              ValueType.TENANT,
+              r ->
+                  r.withValue((T) tenantRecordValue)
+                      .withIntent(intent)
+                      .withTimestamp(System.currentTimeMillis()));
+        });
+  }
+
   private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> defaultRecordGenerator(
       final ExportHandler<S, T> handler) {
     return recordGenerator(
