@@ -41,7 +41,7 @@ public class RecordsReaderHolder {
 
   @Autowired private OperateProperties operateProperties;
 
-  private final Map<Integer, Boolean> partitionCompletedImporting = new HashMap<>();
+  private final Set<Integer> partitionsCompletedImporting = new HashSet<>();
 
   private final Map<RecordsReader, Integer> countEmptyRunsAfterImportingDone = new HashMap<>();
 
@@ -55,7 +55,6 @@ public class RecordsReaderHolder {
     final List<Integer> partitionIds = partitionHolder.getPartitionIds();
     LOGGER.info("Starting import for partitions: {}", partitionIds);
     for (final Integer partitionId : partitionIds) {
-      partitionCompletedImporting.put(partitionId, false);
       // TODO what if it's not the final list of partitions
       for (final ImportValueType importValueType : IMPORT_VALUE_TYPES) {
         final var recordReader =
@@ -67,12 +66,12 @@ public class RecordsReaderHolder {
     return recordsReaders;
   }
 
-  public void setPartitionCompletedImporting(final int partitionId) {
-    partitionCompletedImporting.put(partitionId, true);
+  public void setPartitionsCompletedImporting(final int partitionId) {
+    partitionsCompletedImporting.add(partitionId);
   }
 
   public boolean getPartitionCompletedImporting(final int partitionId) {
-    return partitionCompletedImporting.get(partitionId);
+    return partitionsCompletedImporting.contains(partitionId);
   }
 
   public int incrementEmptyRuns(final int partitionId, final ImportValueType importValueType) {

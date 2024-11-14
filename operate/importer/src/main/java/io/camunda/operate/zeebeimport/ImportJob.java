@@ -157,7 +157,7 @@ public class ImportJob implements Callable<Boolean> {
       final var batchVersion = SemanticVersion.fromVersion(version);
 
       if (batchVersion.getMajor() == 8 && batchVersion.getMinor() == 7) {
-        recordsReaderHolder.setPartitionCompletedImporting(subBatch.getPartitionId());
+        recordsReaderHolder.setPartitionsCompletedImporting(subBatch.getPartitionId());
       }
 
       return true;
