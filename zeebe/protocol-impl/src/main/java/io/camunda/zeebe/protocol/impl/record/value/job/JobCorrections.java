@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.job;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
@@ -18,6 +20,12 @@ import java.util.List;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 
+@JsonIgnoreProperties({
+    /* These fields are inherited from ObjectValue; there have no purpose in exported JSON records*/
+    "empty",
+    "encodedLength",
+    "length"
+})
 public final class JobCorrections extends UnpackedObject implements JobCorrectionsValue {
 
   private final StringProperty assigneeProp = new StringProperty("assignee", "");
@@ -48,6 +56,7 @@ public final class JobCorrections extends UnpackedObject implements JobCorrectio
     setPriority(other.getPriority());
   }
 
+  @JsonIgnore
   public DirectBuffer getAssigneeBuffer() {
     return assigneeProp.getValue();
   }
@@ -125,10 +134,12 @@ public final class JobCorrections extends UnpackedObject implements JobCorrectio
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getDueDateBuffer() {
     return dueDateProp.getValue();
   }
 
+  @JsonIgnore
   public DirectBuffer getFollowUpDateBuffer() {
     return followUpDateProp.getValue();
   }
