@@ -241,14 +241,6 @@
       "id": "Field_0nl093o"
     }
   ],
-  "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.4.0",
-  "exporter": {
-    "name": "Camunda Modeler",
-    "version": "5.21.0"
-  },
-  "schemaVersion": 15,
   "id": "Form_Invoice",
-  "generated": true,
   "type": "default"
 }
