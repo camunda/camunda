@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.immutables.value.Value;
@@ -138,5 +139,46 @@ public interface JobRecordValue
      * @return true if the operation was rejected by Task Listener
      */
     boolean isDenied();
+  }
+
+  /**
+   * Represents the corrections that can be part of a {@link JobResultValue}.
+   *
+   * @apiNote the fields are all optional, but receive a default value if not set. Use {@link
+   *     JobResultValue#getCorrectedAttributes()} to determine which fields are set.
+   */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableJobCorrectionsValue.Builder.class)
+  interface JobCorrectionsValue {
+
+    /**
+     * @return the corrected assignee value
+     */
+    String getAssignee();
+
+    /**
+     * @return the corrected due date value
+     */
+    String getDueDate();
+
+    /**
+     * @return the corrected follow-up date value
+     */
+    String getFollowUpDate();
+
+    /**
+     * @return the corrected candidate users
+     */
+    List<String> getCandidateGroups();
+
+    /**
+     * @return the corrected candidate groups
+     */
+    List<String> getCandidateUsers();
+
+    /**
+     * @return the corrected priority
+     */
+    int getPriority();
   }
 }
