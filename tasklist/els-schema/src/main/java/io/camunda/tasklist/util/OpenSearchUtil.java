@@ -16,7 +16,6 @@ import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
-import io.camunda.tasklist.v86.entities.TasklistEntity;
 import io.camunda.tasklist.v86.schema.templates.TasklistTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
@@ -427,7 +426,7 @@ public abstract class OpenSearchUtil {
     return builder;
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       final SearchRequest.Builder searchRequest,
       final Class<T> clazz,
       final OpenSearchClient osClient)
@@ -435,7 +434,7 @@ public abstract class OpenSearchUtil {
     return scroll(searchRequest, clazz, osClient, null);
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       final SearchRequest.Builder searchRequest,
       final Class<T> clazz,
       final OpenSearchClient osClient,

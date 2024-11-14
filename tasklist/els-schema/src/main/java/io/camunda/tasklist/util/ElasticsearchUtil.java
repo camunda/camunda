@@ -19,7 +19,6 @@ import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
-import io.camunda.tasklist.v86.entities.TasklistEntity;
 import io.camunda.tasklist.v86.schema.templates.TasklistTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
@@ -356,7 +355,7 @@ public abstract class ElasticsearchUtil {
     return entity;
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       final SearchRequest searchRequest,
       final Class<T> clazz,
       final ObjectMapper objectMapper,
@@ -365,7 +364,7 @@ public abstract class ElasticsearchUtil {
     return scroll(searchRequest, clazz, objectMapper, esClient, null, null);
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       final SearchRequest searchRequest,
       final Class<T> clazz,
       final ObjectMapper objectMapper,
