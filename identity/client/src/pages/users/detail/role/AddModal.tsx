@@ -5,7 +5,7 @@ import { AddFormModal, UseEntityModalCustomProps } from "src/components/modal";
 import { useApi, useApiCall } from "src/utility/api/hooks";
 import { User } from "src/utility/api/users";
 import { assignUserRole } from "src/utility/api/users/roles";
-import { getRoles, Role } from "src/utility/api/roles";
+import { searchRoles, Role } from "src/utility/api/roles";
 import { useNavigate } from "react-router";
 import {
   TranslatedErrorInlineNotification,
@@ -31,7 +31,7 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
     loading: loadingRoles,
     reload: reloadRoles,
     success: getRolesSuccess,
-  } = useApi(getRoles);
+  } = useApi(searchRoles);
 
   const [callAssignRole, { loading: loadingAssignRole }] =
     useApiCall(assignUserRole);
