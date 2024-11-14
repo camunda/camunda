@@ -31,6 +31,14 @@ public interface DeploymentState {
   boolean hasPendingDeploymentDistribution(long deploymentKey, int partitionId);
 
   /**
+   * Returns true if all deployments are available to be read via {@link
+   * #getStoredDeploymentRecord(long)}. Since we used to not store deployments, there may be brief
+   * periods where we have not reconstructed all deployments yet. This method can be used to check
+   * if all deployments are available.
+   */
+  boolean hasStoredAllDeployments();
+
+  /**
    * Returns true when there is a deployment record stored for the given deployment key. Similar to
    * {@link #getStoredDeploymentRecord(long)} but doesn't return the record.
    */

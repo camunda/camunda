@@ -302,6 +302,17 @@ public class DeploymentStateTest {
     assertThat(nextDeployment).isNull();
   }
 
+  @Test
+  public void shouldInitiallyReturnFalseWhenCheckingIfAllDeploymentsAreStored() {
+    // given
+
+    // when
+    final var hasStoredAllDeployments = deploymentState.hasStoredAllDeployments();
+
+    // then
+    assertThat(hasStoredAllDeployments).isFalse();
+  }
+
   private DeploymentRecord createDeployment() {
     final var modelInstance =
         Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
