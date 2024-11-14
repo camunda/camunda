@@ -151,6 +151,9 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     countEmptyRunsAfterImportingDone = 0;
     errorStrategy =
         new BackoffIdleStrategy(operateProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
+    if (!recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
+      updateRecordReaderStatus(false);
+    }
   }
 
   @Override
@@ -181,10 +184,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     final int readerBackoff = operateProperties.getImporter().getReaderBackoff();
     final boolean useOnlyPosition = operateProperties.getImporter().isUseOnlyPosition();
     try {
-
-      if (!recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
-        updateRecordReaderStatus(false);
-      }
       metrics.registerGaugeQueueSize(
           GAUGE_IMPORT_QUEUE_SIZE,
           importJobs,
