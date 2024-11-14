@@ -40,8 +40,6 @@ import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
 public final class BackgroundTaskManager implements CloseableSilently {
-  // TODO: consider making this configurable
-  private static final int MAX_BACKGROUND_THREADS = 3;
 
   private final int partitionId;
   private final ArchiverRepository repository;
@@ -121,13 +119,16 @@ public final class BackgroundTaskManager implements CloseableSilently {
     final var executor = defaultExecutor(threadFactory);
     final var repository =
         createRepository(config, resourceProvider, partitionId, executor, metrics, logger);
-    final List<BackgroundTask> tasks = new ArrayList<>();
+    final List<Runnable> tasks = new ArrayList<>();
+    int threadCount = 1;
 
     tasks.add(createProcessInstanceJob(metrics, logger, resourceProvider, repository, executor));
     if (partitionId == START_PARTITION_ID) {
       tasks.add(createBatchOperationJob(metrics, logger, resourceProvider, repository, executor));
+      threadCount++;
     }
 
+    executor.setCorePoolSize(threadCount);
     return new BackgroundTaskManager(
         partitionId, repository, logger, executor, tasks, config.getArchiver());
   }
