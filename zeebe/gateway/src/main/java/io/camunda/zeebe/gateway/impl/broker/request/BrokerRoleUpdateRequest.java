@@ -21,6 +21,7 @@ public class BrokerRoleUpdateRequest extends BrokerExecuteCommand<RoleRecord> {
     super(ValueType.ROLE, RoleIntent.UPDATE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
     request.setKey(key);
+    roleDto.setRoleKey(key);
   }
 
   public BrokerRoleUpdateRequest setName(final String name) {
