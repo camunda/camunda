@@ -18,7 +18,6 @@ import io.camunda.optimize.service.db.os.report.interpreter.distributedby.proces
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.ProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
-import io.camunda.optimize.service.db.os.util.AggregateHelperOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy;
@@ -28,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
@@ -95,16 +93,23 @@ public class ProcessIncidentGroupByNoneInterpreterOS extends AbstractProcessGrou
     getNestedIncidentsAggregation(response)
         .ifPresent(
             nestedIncidents -> {
-              final Map<String, Aggregate> fixedAggregations =
-                  AggregateHelperOS.withNullValues(
-                      nestedIncidents.docCount(), nestedIncidents.aggregations());
               final List<CompositeCommandResult.DistributedByResult> distributions =
                   getDistributedByInterpreter()
-                      .retrieveResult(response, fixedAggregations, context);
+                      .retrieveResult(response, nestedIncidents.aggregations(), context);
               final CompositeCommandResult.GroupByResult groupByResult =
                   CompositeCommandResult.GroupByResult.createGroupByNone(distributions);
               compositeCommandResult.setGroup(groupByResult);
             });
+  }
+
+  @Override
+  public ProcessDistributedByInterpreterFacadeOS getDistributedByInterpreter() {
+    return distributedByInterpreter;
+  }
+
+  @Override
+  public ProcessViewInterpreterFacadeOS getViewInterpreter() {
+    return viewInterpreter;
   }
 
   private Optional<FilterAggregate> getNestedIncidentsAggregation(
@@ -118,13 +123,5 @@ public class ProcessIncidentGroupByNoneInterpreterOS extends AbstractProcessGrou
       final SearchResponse<RawResult> response) {
     return Optional.ofNullable(response.aggregations())
         .map(aggs -> aggs.get(NESTED_INCIDENT_AGGREGATION).nested());
-  }
-
-  public ProcessViewInterpreterFacadeOS getViewInterpreter() {
-    return this.viewInterpreter;
-  }
-
-  public ProcessDistributedByInterpreterFacadeOS getDistributedByInterpreter() {
-    return this.distributedByInterpreter;
   }
 }

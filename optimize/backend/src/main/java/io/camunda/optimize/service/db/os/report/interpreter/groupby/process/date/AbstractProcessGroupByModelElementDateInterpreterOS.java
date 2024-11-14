@@ -20,7 +20,6 @@ import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.service.DateAggregationServiceOS;
 import io.camunda.optimize.service.db.os.report.service.MinMaxStatsServiceOS;
-import io.camunda.optimize.service.db.os.util.AggregateHelperOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
@@ -155,15 +154,14 @@ public abstract class AbstractProcessGroupByModelElementDateInterpreterOS
   private List<GroupByResult> processAggregations(
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Map<String, Aggregate> fixedAggregations =
-        AggregateHelperOS.withNullValues(response.hits().total().value(), response.aggregations());
+    final Map<String, Aggregate> aggregations = response.aggregations();
 
-    if (fixedAggregations == null || fixedAggregations.isEmpty()) {
+    if (aggregations == null || aggregations.isEmpty()) {
       // aggregations are null when there are no instances in the report
       return Collections.emptyList();
     }
 
-    final NestedAggregate flowNodes = fixedAggregations.get(ELEMENT_AGGREGATION).nested();
+    final NestedAggregate flowNodes = aggregations.get(ELEMENT_AGGREGATION).nested();
     final FilterAggregate filteredFlowNodesByType =
         flowNodes.aggregations().get(MODEL_ELEMENT_TYPE_FILTER_AGGREGATION).filter();
     final FilterAggregate filteredFlowNodes =

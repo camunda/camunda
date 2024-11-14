@@ -7,28 +7,34 @@
  */
 package io.camunda.optimize.service.db.os;
 
+import static io.camunda.optimize.service.util.mapper.ObjectMapperFactory.OPTIMIZE_MAPPER;
 import static java.lang.String.format;
 import static java.lang.String.join;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.optimize.service.util.WorkaroundUtil;
 import jakarta.json.stream.JsonGenerator;
 import jakarta.json.stream.JsonParser;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.apache.http.client.methods.HttpPost;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.json.ObjectBuilderDeserializer;
+import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorResponse;
@@ -104,6 +110,49 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
     }
   }
 
+  public <TDocument> SearchResponse<TDocument> searchWithFixedAggregations(
+      final SearchRequest request, final Class<TDocument> tDocumentClass) throws IOException {
+    String path = "/" + String.join(",", request.index()) + "/_search?typed_keys=true";
+    if (request.scroll() != null) {
+      path = path + "&scroll=" + request.scroll().time();
+    }
+    final Map<String, Object> map =
+        arbitraryRequest(HttpPost.METHOD_NAME, path, extractQuery(request));
+    WorkaroundUtil.replaceNullWithNanInAggregations(map);
+    final String json = objectMapper().writeValueAsString(map);
+    return deserializeSearchResponse(json, tDocumentClass);
+  }
+
+  private <TDocument> SearchResponse<TDocument> deserializeSearchResponse(
+      final String json, final Class<TDocument> tDocumentClass) {
+    JsonEndpoint<SearchRequest, SearchResponse<TDocument>, ErrorResponse> endpoint =
+        (JsonEndpoint<SearchRequest, SearchResponse<TDocument>, ErrorResponse>)
+            SearchRequest._ENDPOINT;
+    endpoint =
+        new EndpointWithResponseMapperAttr<>(
+            endpoint, DOCUMENT_ATTR, getDeserializer(tDocumentClass));
+    final JsonpDeserializer<SearchResponse<TDocument>> responseParser =
+        endpoint.responseDeserializer();
+    final InputStream is = new ByteArrayInputStream(json.getBytes());
+    try (final JsonParser parser = transport.jsonpMapper().jsonProvider().createParser(is)) {
+      return responseParser.deserialize(parser, transport.jsonpMapper());
+    }
+  }
+
+  private String extractQuery(final SearchRequest searchRequest) {
+    try {
+      final JsonpMapper jsonpMapper = new JacksonJsonpMapper(OPTIMIZE_MAPPER);
+      final StringWriter writer = new StringWriter();
+      final JacksonJsonpGenerator generator =
+          new JacksonJsonpGenerator(new JsonFactory().createGenerator(writer));
+      searchRequest.serialize(generator, jsonpMapper);
+      generator.flush();
+      return writer.toString();
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public <TDocument> SearchResponse<TDocument> fixedSearch(
       final SearchRequest request, final Class<TDocument> tDocumentClass)
       throws IOException, OpenSearchException {
@@ -162,10 +211,18 @@ public class ExtendedOpenSearchClient extends OpenSearchClient {
     final String json =
         arbitraryRequestAsString(
             "GET", format("/_snapshot/%s/%s", getSnapshotRequest.repository(), snapshots), "{}");
-    final InputStream is = new ByteArrayInputStream(json.getBytes());
-    try (final JsonParser parser = jsonpMapper.jsonProvider().createParser(is)) {
-      return deserializer.deserialize(parser, jsonpMapper);
+    return deserialize(json, deserializer);
+  }
+
+  private <R> R deserialize(final String json, final JsonpDeserializer<R> deserializer) {
+    try (final JsonParser parser = parser(json)) {
+      return deserializer.deserialize(parser, transport.jsonpMapper());
     }
+  }
+
+  private JsonParser parser(final String json) {
+    final InputStream is = new ByteArrayInputStream(json.getBytes());
+    return transport.jsonpMapper().jsonProvider().createParser(is);
   }
 
   private <R> R arbitraryRequest(

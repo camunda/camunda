@@ -36,4 +36,20 @@ public class ExceptionHelper {
       throw new OptimizeRuntimeException(message, e);
     }
   }
+
+  public static <R> R safeOS(
+      final ExceptionSupplier<R> supplier,
+      final Function<Exception, String> errorMessage,
+      final Logger log) {
+    try {
+      return supplier.get();
+    } catch (final OpenSearchException e) {
+      // OpenSearch exceptions shall only get re-thrown since they will be logged elsewhere
+      throw e;
+    } catch (final Exception e) {
+      final String message = errorMessage.apply(e);
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
 }
