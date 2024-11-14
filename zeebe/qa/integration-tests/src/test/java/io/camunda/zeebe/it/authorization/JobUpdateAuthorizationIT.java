@@ -24,6 +24,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
@@ -45,7 +46,7 @@ public class JobUpdateAuthorizationIT {
 
   private static final String PROCESS_ID = "processId";
   private static AuthorizationsUtil authUtil;
-  private static ZeebeClient defaultUserClient;
+  @AutoCloseResource private static ZeebeClient defaultUserClient;
   private static long jobKey;
 
   @TestZeebe(autoStart = false)

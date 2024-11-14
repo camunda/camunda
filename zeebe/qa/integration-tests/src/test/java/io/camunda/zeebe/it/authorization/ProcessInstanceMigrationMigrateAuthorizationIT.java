@@ -23,6 +23,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.UUID;
@@ -47,7 +48,7 @@ public class ProcessInstanceMigrationMigrateAuthorizationIT {
   private static final String PROCESS_ID = "processId";
   private static final String TARGET_PROCESS_ID = "targetProcessId";
   private static AuthorizationsUtil authUtil;
-  private static ZeebeClient defaultUserClient;
+  @AutoCloseResource private static ZeebeClient defaultUserClient;
   private static long targetProcDefKey;
 
   @TestZeebe(autoStart = false)

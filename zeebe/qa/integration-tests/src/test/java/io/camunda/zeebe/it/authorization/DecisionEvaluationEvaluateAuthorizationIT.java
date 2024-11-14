@@ -22,6 +22,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public class DecisionEvaluationEvaluateAuthorizationIT {
 
   private static final String DECISION_ID = "jedi_or_sith";
   private static AuthorizationsUtil authUtil;
-  private static ZeebeClient defaultUserClient;
+  @AutoCloseResource private static ZeebeClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
   private TestStandaloneBroker broker =
