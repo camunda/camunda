@@ -90,18 +90,24 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private void processCompleteTaskListener(final TypedRecord<UserTaskRecord> command) {
     final var lifecycleState = userTaskState.getLifecycleState(command.getKey());
-    final var userTaskIntent = mapLifecycleStateToIntent(lifecycleState);
-    final var commandProcessor = commandProcessors.getCommandProcessor(userTaskIntent);
+    final var listenerEventType = mapLifecycleStateToEventType(lifecycleState);
     final var persistedRecord = userTaskState.getUserTask(command.getKey());
     final var userTaskElement = getUserTaskElement(persistedRecord);
     final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
-    final var listenerEventType = mapLifecycleStateToEventType(lifecycleState);
     final var context = buildContext(userTaskElementInstance);
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
         .ifPresentOrElse(
             listener -> createTaskListenerJob(listener, context, persistedRecord),
-            () -> commandProcessor.onFinalizeCommand(command, persistedRecord));
+            () -> finalizeCommand(command, lifecycleState, persistedRecord));
+  }
+
+  private void finalizeCommand(
+      final TypedRecord<UserTaskRecord> command,
+      final LifecycleState lifecycleState,
+      final UserTaskRecord userTaskRecord) {
+    final var commandProcessor = determineProcessorFromUserTaskLifecycleState(lifecycleState);
+    commandProcessor.onFinalizeCommand(command, userTaskRecord);
   }
 
   private void processDenyTaskListener(final TypedRecord<UserTaskRecord> command) {
@@ -261,19 +267,24 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     };
   }
 
-  private UserTaskIntent mapLifecycleStateToIntent(final LifecycleState lifecycleState) {
-    return switch (lifecycleState) {
-      case ASSIGNING -> UserTaskIntent.ASSIGN;
-      case UPDATING -> UserTaskIntent.UPDATE;
-      case COMPLETING -> UserTaskIntent.COMPLETE;
-      case CREATING, CANCELING ->
-          throw new UnsupportedOperationException(
-              "Conversion from '%s' user task lifecycle state to a user task command is not yet supported"
-                  .formatted(lifecycleState));
-      default ->
-          throw new IllegalArgumentException(
-              "Unexpected user task lifecycle state: '%s'".formatted(lifecycleState));
-    };
+  private UserTaskCommandProcessor determineProcessorFromUserTaskLifecycleState(
+      final LifecycleState lifecycleState) {
+
+    final var userTaskIntent =
+        switch (lifecycleState) {
+          case ASSIGNING -> UserTaskIntent.ASSIGN;
+          case UPDATING -> UserTaskIntent.UPDATE;
+          case COMPLETING -> UserTaskIntent.COMPLETE;
+          case CREATING, CANCELING ->
+              throw new UnsupportedOperationException(
+                  "Conversion from '%s' user task lifecycle state to a user task command is not yet supported"
+                      .formatted(lifecycleState));
+          default ->
+              throw new IllegalArgumentException(
+                  "Unexpected user task lifecycle state: '%s'".formatted(lifecycleState));
+        };
+
+    return commandProcessors.getCommandProcessor(userTaskIntent);
   }
 
   private ElementInstance getUserTaskElementInstance(final UserTaskRecord userTaskRecord) {
