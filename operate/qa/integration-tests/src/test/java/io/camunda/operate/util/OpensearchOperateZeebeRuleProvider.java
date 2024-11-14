@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.Topology;
 import io.zeebe.containers.ZeebeContainer;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -127,7 +128,11 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
     client =
         ZeebeClient.newClientBuilder()
-            .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+            .grpcAddress(URI.create("http://" + zeebeContainer.getExternalGatewayAddress()))
+            .restAddress(
+                URI.create(
+                    "http://"
+                        + zeebeContainer.getExternalAddress(TestContainerUtil.ZEEBE_REST_PORT)))
             .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();

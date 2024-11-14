@@ -34,6 +34,8 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.response.CompleteUserTaskResponse;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -310,6 +312,10 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
       searchTestRule.processAllRecordsAndWait(
           flowNodeIsCompletedCheck, processInstanceKey, activityId);
     }
+  }
+
+  protected ZeebeFuture<CompleteUserTaskResponse> completeUserTask(final long userTaskKey) {
+    return ZeebeTestUtil.completeUserTask(getClient(), userTaskKey);
   }
 
   protected void postUpdateVariableOperation(

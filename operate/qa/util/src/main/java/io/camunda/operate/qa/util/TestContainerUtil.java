@@ -65,6 +65,7 @@ public class TestContainerUtil {
   public static final int POSTGRES_PORT = 5432;
   public static final Integer KEYCLOAK_PORT = 8080;
   public static final Integer IDENTITY_PORT = 8080;
+  public static final int ZEEBE_REST_PORT = 8080;
   public static final String IDENTITY_NETWORK_ALIAS = "identity";
   public static final String POSTGRES_NETWORK_ALIAS = "postgres";
   public static final String KEYCLOAK_NETWORK_ALIAS = "keycloak";
@@ -550,6 +551,8 @@ public class TestContainerUtil {
                   IdentityTester.testContext.getInternalIdentityBaseUrl());
         }
       }
+      broker.addExposedPort(ZEEBE_REST_PORT);
+      testContext.setInternalZeebeHttpPort(ZEEBE_REST_PORT);
       broker.start();
 
       LOGGER.info(
