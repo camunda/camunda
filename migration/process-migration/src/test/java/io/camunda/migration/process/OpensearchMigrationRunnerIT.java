@@ -13,7 +13,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
-import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;

@@ -9,11 +9,13 @@ package io.camunda.migration.process.adapter;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.process.ProcessMigrationProperties;
-import io.camunda.operate.schema.migration.ProcessorStep;
+import io.camunda.migration.process.ProcessorStep;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,6 +59,7 @@ public interface Adapter {
     step.setIndexName(ProcessIndex.INDEX_NAME);
     step.setDescription(STEP_DESCRIPTION);
     step.setVersion(VersionUtil.getVersion());
+    step.setAppliedDate(OffsetDateTime.now(ZoneId.systemDefault()));
     return step;
   }
 

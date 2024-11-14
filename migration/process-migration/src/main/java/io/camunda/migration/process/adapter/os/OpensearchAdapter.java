@@ -10,9 +10,8 @@ package io.camunda.migration.process.adapter.os;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.process.MigrationRepositoryIndex;
 import io.camunda.migration.process.ProcessMigrationProperties;
+import io.camunda.migration.process.ProcessorStep;
 import io.camunda.migration.process.adapter.Adapter;
-import io.camunda.operate.schema.migration.AbstractStep;
-import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -111,7 +110,7 @@ public class OpensearchAdapter implements Adapter {
     return searchResponse.hits().hits().stream()
         .map(Hit::source)
         .filter(Objects::nonNull)
-        .map(AbstractStep::getContent)
+        .map(ProcessorStep::getContent)
         .findFirst()
         .orElse(null);
   }
