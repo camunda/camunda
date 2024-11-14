@@ -157,7 +157,7 @@ class ProcessCacheImplIT {
         new ExporterEntityCacheImpl(
             10,
             new ElasticSearchProcessCacheLoader(elsClient, indexName, new XMLUtil()),
-            new ExporterCacheMetrics(new SimpleMeterRegistry())),
+            new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInElasticSearch);
   }
 
@@ -166,7 +166,7 @@ class ProcessCacheImplIT {
         new ExporterEntityCacheImpl(
             10,
             new OpenSearchProcessCacheLoader(osClient, indexName, new XMLUtil()),
-            new ExporterCacheMetrics(new SimpleMeterRegistry())),
+            new ExporterCacheMetrics("OS", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInOpenSearch);
   }
 
