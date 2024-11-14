@@ -40,7 +40,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -302,7 +302,7 @@ final class CamundaExporterIT {
       final Set<IndexTemplateDescriptor> templateDescriptors,
       final ExporterConfiguration config) {
     final var provider = mock(DefaultExporterResourceProvider.class, CALLS_REAL_METHODS);
-    provider.init(config, mock(ExporterEntityCacheProvider.class), mock(MeterRegistry.class));
+    provider.init(config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
 
     when(provider.getIndexDescriptors()).thenReturn(indexDescriptors);
     when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
