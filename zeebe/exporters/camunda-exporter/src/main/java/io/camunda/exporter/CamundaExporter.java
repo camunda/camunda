@@ -24,6 +24,7 @@ import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.archiver.Archiver;
 import io.camunda.exporter.archiver.ArchiverRepository.NoopArchiverRepository;
+import io.camunda.exporter.cache.ProcessCacheImpl;
 import io.camunda.exporter.cache.ProcessCacheMetrics;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -32,6 +33,8 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -60,6 +63,7 @@ public class CamundaExporter implements Exporter {
   private int partitionId;
   private Archiver archiver;
   private ProcessCacheMetrics processCacheMetrics;
+  private ProcessCacheImpl processCache;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -87,7 +91,13 @@ public class CamundaExporter implements Exporter {
     this.controller = controller;
     clientAdapter = ClientAdapter.of(configuration);
 
-    provider.init(configuration, clientAdapter::getProcessCacheLoader, processCacheMetrics);
+    processCache =
+        new ProcessCacheImpl(
+            10000,
+            (lastPosition) -> {
+              return clientAdapter.get(processIndexName, String.valueOf(lastPosition), ProcessEntity.class)
+            }, metrics);
+    provider.init(configuration, processCache);
 
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager =

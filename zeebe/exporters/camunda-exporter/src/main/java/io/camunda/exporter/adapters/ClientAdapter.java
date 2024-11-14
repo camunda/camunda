@@ -7,8 +7,6 @@
  */
 package io.camunda.exporter.adapters;
 
-import com.github.benmanes.caffeine.cache.CacheLoader;
-import io.camunda.exporter.cache.CachedProcessEntity;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
@@ -28,7 +26,7 @@ public interface ClientAdapter {
 
   BatchRequest createBatchRequest();
 
-  CacheLoader<Long, CachedProcessEntity> getProcessCacheLoader(String processIndexName);
+  <T> T get(String index, String id, Class<T> clazz) throws IOException;
 
   void close() throws IOException;
 }
