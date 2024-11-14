@@ -213,6 +213,7 @@ public class ElasticsearchImportStore implements ImportStore {
       updateFields.put(ImportPositionIndex.POSITION, position.getPosition());
       updateFields.put(ImportPositionIndex.FIELD_INDEX_NAME, position.getIndexName());
       updateFields.put(ImportPositionIndex.SEQUENCE, position.getSequence());
+      updateFields.put(ImportPositionIndex.COMPLETED, position.getCompleted());
 
       final UpdateRequest updateRequest =
           new UpdateRequest()

@@ -9,6 +9,7 @@ package io.camunda.operate.elasticsearch;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
+import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestSupport;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
@@ -23,14 +24,14 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-import org.assertj.core.api.Assertions;
+import java.time.Duration;
+import java.util.Arrays;
+import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.SearchHit;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,10 +44,12 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Autowired protected ZeebeImporter zeebeImporter;
   @Autowired private RestHighLevelClient esClient;
   @Autowired private OperateProperties operateProperties;
+  @Autowired private ImportPositionIndex importPositionType;
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @Before
   public void beforeEach() {
+    operateProperties.getImporter().setImportPositionUpdateInterval(1000);
     CONFIG.index.prefix = operateProperties.getZeebeElasticsearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
     CONFIG.index.setNumberOfReplicas(0);
@@ -92,14 +95,31 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
       zeebeImporter.performOneRoundOfImport();
     }
 
-    final var completedRecordReaders = getRecordReadersCompletionStatus();
-    Assertions.assertThat(completedRecordReaders.entrySet().stream())
-        .filteredOn(e -> e.getKey().split("-")[1].equals("1"))
-        .allMatch(Entry::getValue);
-
-    Assertions.assertThat(completedRecordReaders.entrySet().stream())
-        .filteredOn(e -> e.getKey().split("-")[1].equals("2"))
-        .allMatch(e -> !e.getValue());
+    // the import position for
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              final var hits =
+                  Arrays.stream(
+                          esClient
+                              .search(
+                                  new SearchRequest(importPositionType.getFullQualifiedName()),
+                                  RequestOptions.DEFAULT)
+                              .getHits()
+                              .getHits())
+                      .map(SearchHit::getSourceAsMap)
+                      .toList();
+              if (hits.isEmpty()) {
+                return false;
+              }
+              return (Boolean)
+                  hits.stream()
+                      .filter(hit -> hit.get(ImportPositionIndex.ID).equals("1-process-instance"))
+                      .findFirst()
+                      .orElseThrow()
+                      .get(ImportPositionIndex.COMPLETED);
+            });
   }
 
   private <T extends RecordValue> Record<T> generateProcessInstanceRecord(
@@ -110,19 +130,5 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
             r.withBrokerVersion(brokerVersion)
                 .withPartitionId(partitionId)
                 .withTimestamp(System.currentTimeMillis()));
-  }
-
-  private Map<String, Boolean> getRecordReadersCompletionStatus() throws IOException {
-    return esClient
-        .get(
-            new GetRequest(ElasticsearchRecordsReader.COMPLETED_RECORD_READER_INDEX)
-                .id(ElasticsearchRecordsReader.COMPLETED_RECORD_READER_DOCUMENT_ID)
-                .refresh(true),
-            RequestOptions.DEFAULT)
-        .getSource()
-        .entrySet()
-        .stream()
-        .collect(
-            Collectors.toMap(Entry::getKey, e -> Boolean.parseBoolean(e.getValue().toString())));
   }
 }

@@ -98,7 +98,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   private long maxPossibleSequence;
 
   private int countEmptyRuns;
-  private int countEmptyRunsAfterImportingDone;
 
   private BackoffIdleStrategy errorStrategy;
 
@@ -143,7 +142,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     // 1st sequence of next partition - 1
     maxPossibleSequence = sequence(partitionId + 1, 0) - 1;
     countEmptyRuns = 0;
-    countEmptyRunsAfterImportingDone = 0;
     errorStrategy =
         new BackoffIdleStrategy(operateProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
   }
@@ -185,6 +183,14 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       }
       Integer nextRunDelay = null;
       if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().isEmpty()) {
+        if (recordsReaderHolder.incrementEmptyRuns(partitionId, importValueType)
+                == MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER
+            && recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
+          final ImportPositionEntity currentLatestPosition =
+              importPositionHolder.getLatestScheduledPosition(
+                  importValueType.getAliasTemplate(), partitionId);
+          importPositionHolder.recordLatestLoadedPosition(currentLatestPosition.setCompleted(true));
+        }
         nextRunDelay = readerBackoff;
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);

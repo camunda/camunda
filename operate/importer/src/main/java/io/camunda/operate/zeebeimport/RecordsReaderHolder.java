@@ -43,6 +43,8 @@ public class RecordsReaderHolder {
 
   private final Map<Integer, Boolean> partitionCompletedImporting = new HashMap<>();
 
+  private final Map<RecordsReader, Integer> countEmptyRunsAfterImportingDone = new HashMap<>();
+
   public Set<RecordsReader> getAllRecordsReaders() {
     if (CollectionUtil.isNotEmpty(recordsReaders)) {
       return recordsReaders;
@@ -56,8 +58,10 @@ public class RecordsReaderHolder {
       partitionCompletedImporting.put(partitionId, false);
       // TODO what if it's not the final list of partitions
       for (final ImportValueType importValueType : IMPORT_VALUE_TYPES) {
-        recordsReaders.add(
-            beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
+        final var recordReader =
+            beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize);
+        recordsReaders.add(recordReader);
+        countEmptyRunsAfterImportingDone.put(recordReader, 0);
       }
     }
     return recordsReaders;
@@ -69,6 +73,11 @@ public class RecordsReaderHolder {
 
   public boolean getPartitionCompletedImporting(final int partitionId) {
     return partitionCompletedImporting.get(partitionId);
+  }
+
+  public int incrementEmptyRuns(final int partitionId, final ImportValueType importValueType) {
+    final var reader = getRecordsReader(partitionId, importValueType);
+    return countEmptyRunsAfterImportingDone.merge(reader, 1, Integer::sum);
   }
 
   public RecordsReader getRecordsReader(
