@@ -54,8 +54,9 @@ public final class DateUtil {
       case final Instant instant -> toOffsetDateTime(instant);
       case final Long l -> toOffsetDateTime(Instant.ofEpochMilli(l));
       case final String s -> toOffsetDateTime(s);
-      default -> throw new IllegalArgumentException(
-          "Could not convert " + object.getClass() + " to OffsetDateTime");
+      default ->
+          throw new IllegalArgumentException(
+              "Could not convert " + object.getClass() + " to OffsetDateTime");
     };
   }
 }

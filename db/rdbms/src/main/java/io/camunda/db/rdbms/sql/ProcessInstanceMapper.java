@@ -30,9 +30,7 @@ public interface ProcessInstanceMapper {
   record EndProcessInstanceDto(
       long processInstanceKey,
       ProcessInstanceEntity.ProcessInstanceState state,
-      OffsetDateTime endDate) {
-
-  }
+      OffsetDateTime endDate) {}
 
   enum ProcessInstanceSearchColumn implements SearchColumn<ProcessInstanceEntity> {
     PROCESS_INSTANCE_KEY("key", ProcessInstanceEntity::key),

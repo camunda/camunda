@@ -16,11 +16,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-<<<<<<< HEAD
 import io.camunda.zeebe.util.DateUtil;
-import java.time.Instant;
-=======
->>>>>>> e843db1f956 (feat: to be squashed)
 import java.util.Set;
 
 public class FlowNodeExportHandler implements RdbmsExportHandler<ProcessInstanceRecordValue> {
