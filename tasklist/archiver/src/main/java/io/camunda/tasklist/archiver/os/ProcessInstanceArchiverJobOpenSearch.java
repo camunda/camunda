@@ -15,12 +15,12 @@ import io.camunda.tasklist.archiver.ProcessInstanceArchiverJob;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.indices.FlowNodeInstanceIndex;
-import io.camunda.tasklist.schema.v86.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.v86.indices.VariableIndex;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.v86.schema.indices.TasklistFlowNodeInstanceIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.Map;
@@ -57,11 +57,11 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessInstanceArchiverJobOpenSearch.class);
 
-  @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
+  @Autowired private TasklistFlowNodeInstanceIndex flowNodeInstanceIndex;
 
-  @Autowired private VariableIndex variableIndex;
+  @Autowired private TasklistVariableIndex variableIndex;
 
-  @Autowired private ProcessInstanceIndex processInstanceIndex;
+  @Autowired private TasklistProcessInstanceIndex processInstanceIndex;
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -76,7 +76,8 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
   }
 
   @Override
-  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(ArchiveBatch archiveBatch) {
+  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(
+      final ArchiveBatch archiveBatch) {
     final CompletableFuture<Map.Entry<String, Integer>> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
@@ -85,19 +86,19 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
       final var deleteVariablesFuture =
           archiverUtil.deleteDocuments(
               variableIndex.getFullQualifiedName(),
-              VariableIndex.PROCESS_INSTANCE_ID,
+              TasklistVariableIndex.PROCESS_INSTANCE_ID,
               archiveBatch.getIds());
 
       final var deleteFlowNodesFuture =
           archiverUtil.deleteDocuments(
               flowNodeInstanceIndex.getFullQualifiedName(),
-              FlowNodeInstanceIndex.PROCESS_INSTANCE_ID,
+              TasklistFlowNodeInstanceIndex.PROCESS_INSTANCE_ID,
               archiveBatch.getIds());
 
       final var deleteProcessInstanceFuture =
           archiverUtil.deleteDocuments(
               processInstanceIndex.getFullQualifiedName(),
-              ProcessInstanceIndex.ID,
+              TasklistProcessInstanceIndex.ID,
               archiveBatch.getIds());
 
       CompletableFuture.allOf(
@@ -169,12 +170,12 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
     final Query.Builder endDateQ = new Query.Builder();
     endDateQ.range(
         r ->
-            r.field(ProcessInstanceIndex.END_DATE)
+            r.field(TasklistProcessInstanceIndex.END_DATE)
                 .lte(JsonData.of(tasklistProperties.getArchiver().getArchivingTimepoint())));
 
     final Query.Builder partitionQ = new Query.Builder();
     partitionQ.terms(
-        t -> t.field(TaskTemplate.PARTITION_ID).terms(terms -> terms.value(partitions)));
+        t -> t.field(TasklistTaskTemplate.PARTITION_ID).terms(terms -> terms.value(partitions)));
 
     final Query q =
         new Query.Builder()
@@ -185,7 +186,10 @@ public class ProcessInstanceArchiverJobOpenSearch extends AbstractArchiverJobOpe
         new SearchRequest.Builder()
             .query(q)
             .size(tasklistProperties.getArchiver().getRolloverBatchSize())
-            .sort(s -> s.field(f -> f.field(ProcessInstanceIndex.END_DATE).order(SortOrder.Asc)))
+            .sort(
+                s ->
+                    s.field(
+                        f -> f.field(TasklistProcessInstanceIndex.END_DATE).order(SortOrder.Asc)))
             .requestCache(false)
             .scroll(Time.of(t -> t.time(SCROLL_KEEP_ALIVE_MS)))
             .build();

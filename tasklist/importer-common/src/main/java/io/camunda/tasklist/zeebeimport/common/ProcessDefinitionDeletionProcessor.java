@@ -7,13 +7,13 @@
  */
 package io.camunda.tasklist.zeebeimport.common;
 
-import io.camunda.tasklist.schema.v86.indices.FormIndex;
-import io.camunda.tasklist.schema.v86.indices.ProcessIndex;
-import io.camunda.tasklist.schema.v86.templates.DraftTaskVariableTemplate;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistDraftTaskVariableTemplate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -40,9 +40,9 @@ public class ProcessDefinitionDeletionProcessor {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessDefinitionDeletionProcessor.class);
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired private TasklistProcessIndex processIndex;
 
-  @Autowired private FormIndex formIndex;
+  @Autowired private TasklistFormIndex formIndex;
 
   @Autowired private FormStore formStore;
 
@@ -50,13 +50,13 @@ public class ProcessDefinitionDeletionProcessor {
 
   @Autowired private VariableStore variableStore;
 
-  @Autowired private DraftTaskVariableTemplate draftTaskVariableTemplate;
+  @Autowired private TasklistDraftTaskVariableTemplate draftTaskVariableTemplate;
 
   @Autowired private DraftVariableStore draftVariableStore;
 
   public <T> List<T> createProcessDefinitionDeleteRequests(
-      String processDefinitionId,
-      BiFunction<String, String, T>
+      final String processDefinitionId,
+      final BiFunction<String, String, T>
           deleteRequestBuilder // (indexName, documentId) to DeleteRequest mapper
       ) {
     final Map<String, String> taskIdsToIndex =
@@ -96,14 +96,17 @@ public class ProcessDefinitionDeletionProcessor {
   }
 
   private <T> List<T> createDeleteRequestList(
-      List<String> ids, String indexName, BiFunction<String, String, T> deleteRequestBuilder) {
+      final List<String> ids,
+      final String indexName,
+      final BiFunction<String, String, T> deleteRequestBuilder) {
     return ids.stream()
         .map(id -> deleteRequestBuilder.apply(indexName, id))
         .collect(Collectors.toList());
   }
 
   private <T> List<T> createDeleteRequestList(
-      Map<String, String> idsToIndex, BiFunction<String, String, T> deleteRequestBuilder) {
+      final Map<String, String> idsToIndex,
+      final BiFunction<String, String, T> deleteRequestBuilder) {
     return idsToIndex.entrySet().stream()
         .map(entry -> deleteRequestBuilder.apply(entry.getValue(), entry.getKey()))
         .collect(Collectors.toList());

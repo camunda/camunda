@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.util.Either;
+import io.camunda.tasklist.v86.entities.meta.ImportPositionEntity;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

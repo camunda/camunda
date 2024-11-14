@@ -10,7 +10,7 @@ package io.camunda.tasklist.webapp.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import io.camunda.tasklist.entities.TaskState;
+import io.camunda.tasklist.v86.entities.TaskState;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;

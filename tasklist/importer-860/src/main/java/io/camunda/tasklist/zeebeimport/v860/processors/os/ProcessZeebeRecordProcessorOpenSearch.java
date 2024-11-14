@@ -9,12 +9,12 @@ package io.camunda.tasklist.zeebeimport.v860.processors.os;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.FormEntity;
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.v86.indices.FormIndex;
-import io.camunda.tasklist.schema.v86.indices.ProcessIndex;
 import io.camunda.tasklist.util.ConversionUtils;
+import io.camunda.tasklist.v86.entities.FormEntity;
+import io.camunda.tasklist.v86.entities.ProcessEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.deployment.DeployedProcessImpl;
@@ -51,9 +51,9 @@ public class ProcessZeebeRecordProcessorOpenSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired private TasklistProcessIndex processIndex;
 
-  @Autowired private FormIndex formIndex;
+  @Autowired private TasklistFormIndex formIndex;
 
   @Autowired private XMLUtil xmlUtil;
 

@@ -11,15 +11,15 @@ import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.v86.indices.FormIndex;
-import io.camunda.tasklist.schema.v86.indices.ProcessIndex;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.v86.entities.FormEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -39,11 +39,11 @@ import org.springframework.stereotype.Component;
 @Conditional(OpenSearchCondition.class)
 public class FormStoreOpenSearch implements FormStore {
 
-  @Autowired private FormIndex formIndex;
+  @Autowired private TasklistFormIndex formIndex;
 
-  @Autowired private TaskTemplate taskTemplate;
+  @Autowired private TasklistTaskTemplate taskTemplate;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired private TasklistProcessIndex processIndex;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
@@ -51,6 +51,7 @@ public class FormStoreOpenSearch implements FormStore {
   @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
+  @Override
   public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {
     final FormEntity formEmbedded =
         version == null ? getFormEmbedded(id, processDefinitionId) : null;
@@ -68,6 +69,62 @@ public class FormStoreOpenSearch implements FormStore {
       }
     }
     throw new NotFoundException(String.format("form with id %s was not found", id));
+  }
+
+  @Override
+  public List<String> getFormIdsByProcessDefinitionId(final String processDefinitionId) {
+    final SearchRequest.Builder searchRequest =
+        OpenSearchUtil.createSearchRequest(formIndex, ONLY_RUNTIME)
+            .query(
+                q ->
+                    q.term(
+                        term ->
+                            term.field(TasklistFormIndex.PROCESS_DEFINITION_ID)
+                                .value(FieldValue.of(processDefinitionId))))
+            .fields(f -> f.field(TasklistTaskTemplate.ID));
+    try {
+      return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
+  @Override
+  public Optional<FormIdView> getHighestVersionFormByKey(final String formKey) {
+    try {
+      final var formEntityResponse =
+          osClient.search(
+              b ->
+                  b.index(formIndex.getFullQualifiedName())
+                      .query(
+                          q ->
+                              q.term(
+                                  t -> t.field(TasklistFormIndex.ID).value(FieldValue.of(formKey))))
+                      .sort(
+                          s ->
+                              s.field(
+                                  f -> f.field(TasklistFormIndex.VERSION).order(SortOrder.Desc)))
+                      .source(
+                          s ->
+                              s.filter(
+                                  f ->
+                                      f.includes(
+                                          List.of(
+                                              TasklistFormIndex.ID,
+                                              TasklistFormIndex.BPMN_ID,
+                                              TasklistFormIndex.VERSION))))
+                      .size(1),
+              FormEntity.class);
+      if (formEntityResponse.hits().total().value() == 1L) {
+        final FormEntity formEntity = formEntityResponse.hits().hits().get(0).source();
+        return Optional.of(
+            new FormIdView(formEntity.getId(), formEntity.getBpmnId(), formEntity.getVersion()));
+      } else {
+        return Optional.empty();
+      }
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e);
+    }
   }
 
   private Boolean isFormAssociatedToTask(final String formId, final String processDefinitionId) {
@@ -88,7 +145,9 @@ public class FormStoreOpenSearch implements FormStore {
                                                           q1 ->
                                                               q1.match(
                                                                   m ->
-                                                                      m.field(TaskTemplate.FORM_ID)
+                                                                      m.field(
+                                                                              TasklistTaskTemplate
+                                                                                  .FORM_ID)
                                                                           .query(
                                                                               FieldValue.of(
                                                                                   formId))))
@@ -96,7 +155,9 @@ public class FormStoreOpenSearch implements FormStore {
                                                           q2 ->
                                                               q2.match(
                                                                   m ->
-                                                                      m.field(TaskTemplate.FORM_KEY)
+                                                                      m.field(
+                                                                              TasklistTaskTemplate
+                                                                                  .FORM_KEY)
                                                                           .query(
                                                                               FieldValue.of(
                                                                                   formId))))
@@ -105,14 +166,17 @@ public class FormStoreOpenSearch implements FormStore {
                                       q ->
                                           q.match(
                                               m ->
-                                                  m.field(TaskTemplate.PROCESS_DEFINITION_ID)
+                                                  m.field(
+                                                          TasklistTaskTemplate
+                                                              .PROCESS_DEFINITION_ID)
                                                       .query(
                                                           FieldValue.of(processDefinitionId))))));
 
-      final var searchResponse = tenantAwareClient.search(searchRequest, TaskTemplate.class);
+      final var searchResponse =
+          tenantAwareClient.search(searchRequest, TasklistTaskTemplate.class);
 
       return searchResponse.hits().total().value() > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format(
               "Error retrieving the association for the formId: [%s] and processDefinitionId: [%s]",
@@ -134,20 +198,21 @@ public class FormStoreOpenSearch implements FormStore {
                                       q ->
                                           q.match(
                                               m ->
-                                                  m.field(ProcessIndex.FORM_ID)
+                                                  m.field(TasklistProcessIndex.FORM_ID)
                                                       .query(FieldValue.of(formId))))
                                   .must(
                                       q ->
                                           q.match(
                                               m ->
-                                                  m.field(ProcessIndex.ID)
+                                                  m.field(TasklistProcessIndex.ID)
                                                       .query(
                                                           FieldValue.of(processDefinitionId))))));
 
-      final var searchResponse = tenantAwareClient.search(searchRequest, ProcessIndex.class);
+      final var searchResponse =
+          tenantAwareClient.search(searchRequest, TasklistProcessIndex.class);
 
       return searchResponse.hits().total().value() > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format(
               "Error retrieving the association for the formId: [%s] and processDefinitionId: [%s]",
@@ -174,7 +239,7 @@ public class FormStoreOpenSearch implements FormStore {
                           q1.terms(
                               terms ->
                                   terms
-                                      .field(FormIndex.BPMN_ID)
+                                      .field(TasklistFormIndex.BPMN_ID)
                                       .terms(
                                           t ->
                                               t.value(
@@ -185,7 +250,7 @@ public class FormStoreOpenSearch implements FormStore {
                           q2.terms(
                               terms ->
                                   terms
-                                      .field(FormIndex.ID)
+                                      .field(TasklistFormIndex.ID)
                                       .terms(
                                           t ->
                                               t.value(
@@ -199,10 +264,11 @@ public class FormStoreOpenSearch implements FormStore {
         isDeleteQ.terms(
             terms ->
                 terms
-                    .field(FormIndex.IS_DELETED)
+                    .field(TasklistFormIndex.IS_DELETED)
                     .terms(t -> t.value(Collections.singletonList(FieldValue.of(false)))));
         boolQuery = OpenSearchUtil.joinWithAnd(bpmnIdProcessQ, isDeleteQ);
-        searchRequest.sort(s -> s.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc)));
+        searchRequest.sort(
+            s -> s.field(f -> f.field(TasklistFormIndex.VERSION).order(SortOrder.Desc)));
       } else {
         // with the version set, you can return the form that was deleted, because of backward
         // compatibility
@@ -210,7 +276,7 @@ public class FormStoreOpenSearch implements FormStore {
         isVersionQ.terms(
             terms ->
                 terms
-                    .field(FormIndex.VERSION)
+                    .field(TasklistFormIndex.VERSION)
                     .terms(t -> t.value(Collections.singletonList(FieldValue.of(formVersion)))));
         boolQuery = OpenSearchUtil.joinWithAnd(bpmnIdProcessQ, isVersionQ);
       }
@@ -223,7 +289,7 @@ public class FormStoreOpenSearch implements FormStore {
       } else {
         return null;
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
       throw new TasklistRuntimeException(formIdNotFoundMessage);
@@ -235,58 +301,10 @@ public class FormStoreOpenSearch implements FormStore {
       final String formId = String.format("%s_%s", processDefinitionId, id);
       return getRawResponseWithTenantCheck(
           formId, formIndex, ONLY_RUNTIME, tenantAwareClient, FormEntity.class);
-    } catch (IOException | OpenSearchException e) {
+    } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
-    } catch (NotFoundException e) {
+    } catch (final NotFoundException e) {
       return null;
-    }
-  }
-
-  @Override
-  public List<String> getFormIdsByProcessDefinitionId(String processDefinitionId) {
-    final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(formIndex, ONLY_RUNTIME)
-            .query(
-                q ->
-                    q.term(
-                        term ->
-                            term.field(FormIndex.PROCESS_DEFINITION_ID)
-                                .value(FieldValue.of(processDefinitionId))))
-            .fields(f -> f.field(TaskTemplate.ID));
-    try {
-      return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e.getMessage(), e);
-    }
-  }
-
-  @Override
-  public Optional<FormIdView> getHighestVersionFormByKey(String formKey) {
-    try {
-      final var formEntityResponse =
-          osClient.search(
-              b ->
-                  b.index(formIndex.getFullQualifiedName())
-                      .query(q -> q.term(t -> t.field(FormIndex.ID).value(FieldValue.of(formKey))))
-                      .sort(s -> s.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc)))
-                      .source(
-                          s ->
-                              s.filter(
-                                  f ->
-                                      f.includes(
-                                          List.of(
-                                              FormIndex.ID, FormIndex.BPMN_ID, FormIndex.VERSION))))
-                      .size(1),
-              FormEntity.class);
-      if (formEntityResponse.hits().total().value() == 1L) {
-        final FormEntity formEntity = formEntityResponse.hits().hits().get(0).source();
-        return Optional.of(
-            new FormIdView(formEntity.getId(), formEntity.getBpmnId(), formEntity.getVersion()));
-      } else {
-        return Optional.empty();
-      }
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(e);
     }
   }
 }

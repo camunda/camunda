@@ -19,12 +19,12 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.TaskImplementation;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskQuery;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.tasklist.v86.entities.TaskImplementation;
+import io.camunda.tasklist.v86.entities.TaskState;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.io.IOException;
 import java.util.List;
@@ -53,7 +53,7 @@ class TaskStoreElasticSearchTest {
 
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Spy private TaskTemplate taskTemplate = new TaskTemplate();
+  @Spy private TasklistTaskTemplate taskTemplate = new TasklistTaskTemplate();
 
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
 
@@ -71,7 +71,7 @@ class TaskStoreElasticSearchTest {
     "CANCELED,tasklist-task-,_alias"
   })
   void getTasksForDifferentStates(
-      TaskState taskState, String expectedIndexPrefix, String expectedIndexSuffix)
+      final TaskState taskState, final String expectedIndexPrefix, final String expectedIndexSuffix)
       throws Exception {
     // Given
     final TaskQuery taskQuery = new TaskQuery().setPageSize(50).setState(taskState);
@@ -131,7 +131,7 @@ class TaskStoreElasticSearchTest {
     assertThat(result).hasSize(1);
   }
 
-  private static String getTaskExampleAsString(TaskState taskState) {
+  private static String getTaskExampleAsString(final TaskState taskState) {
     return "{\n"
         + "  \"id\": \"123456789\",\n"
         + "  \"key\": 123456789,\n"

@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
+import io.camunda.tasklist.v86.entities.meta.ImportPositionEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.Callable;

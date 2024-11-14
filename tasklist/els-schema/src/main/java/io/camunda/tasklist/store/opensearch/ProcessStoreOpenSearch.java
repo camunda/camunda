@@ -9,15 +9,15 @@ package io.camunda.tasklist.store.opensearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.indices.ProcessIndex;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.v86.entities.ProcessEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,7 +63,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   private static final String MAX_VERSION_DOCUMENTS_AGG_NAME = "max_version_docs";
   private static final String STARTED_BY_FORM_FILTERED_DOCS = "started_by_form_docs";
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired private TasklistProcessIndex processIndex;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
@@ -76,10 +76,11 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   @Override
   public ProcessEntity getProcessByProcessDefinitionKey(final String processDefinitionKey) {
     try {
-      final FieldCollapse keyCollapse = new FieldCollapse.Builder().field(ProcessIndex.KEY).build();
+      final FieldCollapse keyCollapse =
+          new FieldCollapse.Builder().field(TasklistProcessIndex.KEY).build();
       final SortOptions sortOptions =
           new SortOptions.Builder()
-              .field(FieldSort.of(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc)))
+              .field(FieldSort.of(f -> f.field(TasklistProcessIndex.VERSION).order(SortOrder.Desc)))
               .build();
 
       final var searchRequestBuilder =
@@ -89,7 +90,8 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                   q ->
                       q.term(
                           t ->
-                              t.field(ProcessIndex.KEY).value(FieldValue.of(processDefinitionKey))))
+                              t.field(TasklistProcessIndex.KEY)
+                                  .value(FieldValue.of(processDefinitionKey))))
               .collapse(keyCollapse)
               .sort(sortOptions)
               .size(1);
@@ -116,10 +118,10 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   public ProcessEntity getProcessByBpmnProcessId(
       final String bpmnProcessId, final String tenantId) {
     final FieldCollapse keyCollapse =
-        new FieldCollapse.Builder().field(ProcessIndex.PROCESS_DEFINITION_ID).build();
+        new FieldCollapse.Builder().field(TasklistProcessIndex.PROCESS_DEFINITION_ID).build();
     final SortOptions sortOptions =
         new SortOptions.Builder()
-            .field(FieldSort.of(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc)))
+            .field(FieldSort.of(f -> f.field(TasklistProcessIndex.VERSION).order(SortOrder.Desc)))
             .build();
 
     final Query qb;
@@ -127,14 +129,16 @@ public class ProcessStoreOpenSearch implements ProcessStore {
         new Query.Builder()
             .term(
                 term ->
-                    term.field(ProcessIndex.PROCESS_DEFINITION_ID)
+                    term.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)
                         .value(FieldValue.of(bpmnProcessId)))
             .build();
     if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       qb =
           OpenSearchUtil.joinWithAnd(
               new Query.Builder()
-                  .term(term -> term.field(ProcessIndex.TENANT_ID).value(FieldValue.of(tenantId)))
+                  .term(
+                      term ->
+                          term.field(TasklistProcessIndex.TENANT_ID).value(FieldValue.of(tenantId)))
                   .build(),
               functionQuery);
     } else {
@@ -172,7 +176,10 @@ public class ProcessStoreOpenSearch implements ProcessStore {
       final var searchRequestBuilder =
           new SearchRequest.Builder()
               .index(List.of(processIndex.getAlias()))
-              .query(q -> q.term(t -> t.field(ProcessIndex.KEY).value(FieldValue.of(processId))));
+              .query(
+                  q ->
+                      q.term(
+                          t -> t.field(TasklistProcessIndex.KEY).value(FieldValue.of(processId))));
       response = tenantAwareClient.search(searchRequestBuilder, ProcessEntity.class);
 
       final long totalHits = response.hits().total().value();
@@ -207,12 +214,12 @@ public class ProcessStoreOpenSearch implements ProcessStore {
       if (processDefinitions.contains(IdentityProperties.ALL_RESOURCES)) {
         q =
             QueryBuilders.bool()
-                .must(t -> t.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
+                .must(t -> t.exists(e -> e.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)))
                 .mustNot(
                     mn ->
                         mn.term(
                             t ->
-                                t.field(ProcessIndex.PROCESS_DEFINITION_ID)
+                                t.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)
                                     .value(FieldValue.of(""))))
                 .build()
                 .toQuery();
@@ -224,19 +231,19 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                         m.terms(
                             terms ->
                                 terms
-                                    .field(ProcessIndex.PROCESS_DEFINITION_ID)
+                                    .field(TasklistProcessIndex.PROCESS_DEFINITION_ID)
                                     .terms(
                                         v ->
                                             v.value(
                                                 processDefinitions.stream()
                                                     .map(FieldValue::of)
                                                     .collect(Collectors.toList())))))
-                .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
+                .must(m -> m.exists(e -> e.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)))
                 .mustNot(
                     mn ->
                         mn.term(
                             t ->
-                                t.field(ProcessIndex.PROCESS_DEFINITION_ID)
+                                t.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)
                                     .value(FieldValue.of(""))))
                 .build()
                 .toQuery();
@@ -244,12 +251,13 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     } else {
       q =
           QueryBuilders.bool()
-              .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
+              .must(m -> m.exists(e -> e.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)))
               .mustNot(
                   mn ->
                       mn.term(
                           t ->
-                              t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
+                              t.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)
+                                  .value(FieldValue.of(""))))
               .build()
               .toQuery();
     }
@@ -274,13 +282,13 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     final String regexSearch = String.format(".*%s.*", search);
     final BoolQuery.Builder query =
         QueryBuilders.bool()
-            .should(s -> s.term(t -> t.field(ProcessIndex.ID).value(FieldValue.of(search))))
+            .should(s -> s.term(t -> t.field(TasklistProcessIndex.ID).value(FieldValue.of(search))))
             .should(
                 s ->
                     s.regexp(
                         regex ->
                             regex
-                                .field(ProcessIndex.NAME)
+                                .field(TasklistProcessIndex.NAME)
                                 .caseInsensitive(CASE_INSENSITIVE)
                                 .value(regexSearch)))
             .should(
@@ -288,14 +296,16 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                     s.regexp(
                         regex ->
                             regex
-                                .field(ProcessIndex.PROCESS_DEFINITION_ID)
+                                .field(TasklistProcessIndex.PROCESS_DEFINITION_ID)
                                 .caseInsensitive(CASE_INSENSITIVE)
                                 .value(regexSearch)))
-            .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
+            .must(m -> m.exists(e -> e.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)))
             .mustNot(
                 mn ->
                     mn.term(
-                        t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
+                        t ->
+                            t.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)
+                                .value(FieldValue.of(""))))
             .minimumShouldMatch("1");
 
     if (tasklistProperties.getIdentity().isResourcePermissionsEnabled()) {
@@ -308,7 +318,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                 m.terms(
                     terms ->
                         terms
-                            .field(ProcessIndex.PROCESS_DEFINITION_ID)
+                            .field(TasklistProcessIndex.PROCESS_DEFINITION_ID)
                             .terms(
                                 v ->
                                     v.value(
@@ -328,11 +338,13 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   public List<ProcessEntity> getProcessesStartedByForm() {
     final Query query =
         QueryBuilders.bool()
-            .must(m -> m.exists(e -> e.field(ProcessIndex.PROCESS_DEFINITION_ID)))
+            .must(m -> m.exists(e -> e.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)))
             .mustNot(
                 mn ->
                     mn.term(
-                        t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID).value(FieldValue.of(""))))
+                        t ->
+                            t.field(TasklistProcessIndex.PROCESS_DEFINITION_ID)
+                                .value(FieldValue.of(""))))
             .build()
             .toQuery();
     return getProcessEntityUniqueByProcessDefinitionIdAndTenantId(query, true);
@@ -342,7 +354,8 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     if (tasklistProperties.getMultiTenancy().isEnabled() && StringUtils.isNotBlank(tenantId)) {
       final Query tenantQuery =
           new Query.Builder()
-              .term(term -> term.field(ProcessIndex.TENANT_ID).value(FieldValue.of(tenantId)))
+              .term(
+                  term -> term.field(TasklistProcessIndex.TENANT_ID).value(FieldValue.of(tenantId)))
               .build();
       return OpenSearchUtil.joinWithAnd(tenantQuery, query);
     }
@@ -359,18 +372,18 @@ public class ProcessStoreOpenSearch implements ProcessStore {
                     Map.of(
                         DEFINITION_ID_TERMS_SOURCE_NAME,
                         new CompositeAggregationSource.Builder()
-                            .terms(t -> t.field(ProcessIndex.PROCESS_DEFINITION_ID))
+                            .terms(t -> t.field(TasklistProcessIndex.PROCESS_DEFINITION_ID))
                             .build()),
                     Map.of(
                         TENANT_ID_TERMS_SOURCE_NAME,
                         new CompositeAggregationSource.Builder()
-                            .terms(t -> t.field(ProcessIndex.TENANT_ID))
+                            .terms(t -> t.field(TasklistProcessIndex.TENANT_ID))
                             .build())))
             .size(OpenSearchUtil.QUERY_MAX_SIZE);
 
     final TermsAggregation maxVersionDocTerm =
         new TermsAggregation.Builder()
-            .field(ProcessIndex.VERSION)
+            .field(TasklistProcessIndex.VERSION)
             .order(Map.of("_key", SortOrder.Desc))
             .size(1)
             .build();
@@ -379,7 +392,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
         AggregationBuilders.topHits()
             .sort(
                 SortOptions.of(
-                    s -> s.field(f -> f.field(ProcessIndex.VERSION).order(SortOrder.Desc))))
+                    s -> s.field(f -> f.field(TasklistProcessIndex.VERSION).order(SortOrder.Desc))))
             .size(1)
             .build()
             ._toAggregation();
@@ -486,13 +499,13 @@ public class ProcessStoreOpenSearch implements ProcessStore {
     final BoolQuery.Builder boolQueryBuilder = QueryBuilders.bool();
     if (isStartedByForm) {
       boolQueryBuilder
-          .should(QueryBuilders.exists().field(ProcessIndex.FORM_KEY).build().toQuery())
-          .should(QueryBuilders.exists().field(ProcessIndex.FORM_ID).build().toQuery())
+          .should(QueryBuilders.exists().field(TasklistProcessIndex.FORM_KEY).build().toQuery())
+          .should(QueryBuilders.exists().field(TasklistProcessIndex.FORM_ID).build().toQuery())
           .minimumShouldMatch("1");
     } else {
       boolQueryBuilder
-          .mustNot(QueryBuilders.exists().field(ProcessIndex.FORM_KEY).build().toQuery())
-          .mustNot(QueryBuilders.exists().field(ProcessIndex.FORM_ID).build().toQuery())
+          .mustNot(QueryBuilders.exists().field(TasklistProcessIndex.FORM_KEY).build().toQuery())
+          .mustNot(QueryBuilders.exists().field(TasklistProcessIndex.FORM_ID).build().toQuery())
           .minimumShouldMatch("1");
     }
     return boolQueryBuilder.build().toQuery();

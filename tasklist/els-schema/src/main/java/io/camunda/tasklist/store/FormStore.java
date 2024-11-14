@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.store;
 
-import io.camunda.tasklist.entities.FormEntity;
+import io.camunda.tasklist.v86.entities.FormEntity;
 import java.util.List;
 import java.util.Optional;
 

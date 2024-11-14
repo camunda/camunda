@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.store;
 
-import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.TaskEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 

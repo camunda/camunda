@@ -7,9 +7,9 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.store.ProcessStore;
+import io.camunda.tasklist.v86.entities.ProcessEntity;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;

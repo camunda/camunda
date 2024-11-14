@@ -11,13 +11,13 @@ import static io.camunda.tasklist.util.ConversionUtils.toStringOrNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.FormEntity;
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.v86.indices.FormIndex;
-import io.camunda.tasklist.schema.v86.indices.ProcessIndex;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.v86.entities.FormEntity;
+import io.camunda.tasklist.v86.entities.ProcessEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import java.io.IOException;
 import java.util.HashMap;
@@ -53,9 +53,9 @@ public class CUSTOMCopyProcessesFromOptimize {
 
   @Autowired private XMLUtil xmlUtil;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired private TasklistProcessIndex processIndex;
 
-  @Autowired private FormIndex formIndex;
+  @Autowired private TasklistFormIndex formIndex;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -77,7 +77,7 @@ public class CUSTOMCopyProcessesFromOptimize {
       while (searchResponse.getHits().getHits().length > 0) {
         final BulkRequest bulkRequest = new BulkRequest();
 
-        for (SearchHit hit : searchResponse.getHits().getHits()) {
+        for (final SearchHit hit : searchResponse.getHits().getHits()) {
 
           final Map<String, Object> processFromOptimize = hit.getSourceAsMap();
 
@@ -108,11 +108,11 @@ public class CUSTOMCopyProcessesFromOptimize {
                         if (!formExists(formEntity.getId(), esClient)) {
                           persistForm(formEntity, bulkRequest);
                         }
-                      } catch (Exception ex) {
+                      } catch (final Exception ex) {
                         LOGGER.warn("Unable to copy forms from Optimize: " + ex.getMessage(), ex);
                       }
                     });
-              } catch (JsonProcessingException e) {
+              } catch (final JsonProcessingException e) {
                 throw new RuntimeException(e.getMessage(), e);
               }
             }
@@ -131,7 +131,7 @@ public class CUSTOMCopyProcessesFromOptimize {
 
         LOGGER.info("Processes were successfully copied from Optimize.");
       }
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       LOGGER.warn("Unable to copy processes from Optimize: " + ex.getMessage(), ex);
     } finally {
       if (scrollId != null) {
@@ -141,7 +141,8 @@ public class CUSTOMCopyProcessesFromOptimize {
   }
 
   private ProcessEntity createEntity(
-      Map<String, Object> processFromOptimize, BiConsumer<String, String> userTaskFormCollector) {
+      final Map<String, Object> processFromOptimize,
+      final BiConsumer<String, String> userTaskFormCollector) {
     final ProcessEntity processEntity = new ProcessEntity();
     processEntity.setId(String.valueOf(processFromOptimize.get("id")));
     processEntity.setTenantId("<default>");
@@ -178,7 +179,7 @@ public class CUSTOMCopyProcessesFromOptimize {
         new GetRequest(formIndex.getFullQualifiedName(), formId), RequestOptions.DEFAULT);
   }
 
-  private void persistForm(FormEntity formEntity, BulkRequest bulkRequest)
+  private void persistForm(final FormEntity formEntity, final BulkRequest bulkRequest)
       throws PersistenceException {
 
     LOGGER.debug("Form: key {}", formEntity.getId());
@@ -189,7 +190,7 @@ public class CUSTOMCopyProcessesFromOptimize {
               .id(ConversionUtils.toStringOrNull(formEntity.getId()))
               .source(objectMapper.writeValueAsString(formEntity), XContentType.JSON));
 
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new PersistenceException(
           String.format("Error preparing the query to insert task form [%s]", formEntity.getId()),
           e);

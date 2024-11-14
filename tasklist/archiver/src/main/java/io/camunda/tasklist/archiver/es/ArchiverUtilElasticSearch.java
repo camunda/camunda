@@ -7,10 +7,10 @@
  */
 package io.camunda.tasklist.archiver.es;
 
-import static io.camunda.tasklist.schema.v86.manager.ElasticsearchSchemaManager.INDEX_LIFECYCLE_NAME;
-import static io.camunda.tasklist.schema.v86.manager.ElasticsearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES;
 import static io.camunda.tasklist.util.ElasticsearchUtil.INTERNAL_SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+import static io.camunda.tasklist.v86.schema.manager.ElasticsearchSchemaManager.INDEX_LIFECYCLE_NAME;
+import static io.camunda.tasklist.v86.schema.manager.ElasticsearchSchemaManager.TASKLIST_DELETE_ARCHIVED_INDICES;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.index.reindex.AbstractBulkByScrollRequest.AUTO_SLICES;
 
@@ -50,28 +50,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
-  public void setIndexLifeCycle(final String destinationIndexName) {
-    try {
-      if (tasklistProperties.getArchiver().isIlmEnabled()) {
-        esClient
-            .indices()
-            .putSettings(
-                new UpdateSettingsRequest(destinationIndexName)
-                    .settings(
-                        Settings.builder()
-                            .put(INDEX_LIFECYCLE_NAME, TASKLIST_DELETE_ARCHIVED_INDICES)
-                            .build()),
-                RequestOptions.DEFAULT);
-      }
-    } catch (Exception e) {
-      LOGGER.warn(
-          "Could not set ILM policy {} for index {}: {}",
-          TASKLIST_DELETE_ARCHIVED_INDICES,
-          destinationIndexName,
-          e.getMessage());
-    }
-  }
-
+  @Override
   public CompletableFuture<Long> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
@@ -95,6 +74,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
     return deleteFuture;
   }
 
+  @Override
   public CompletableFuture<Long> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
@@ -121,6 +101,29 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
     return reindexFuture;
   }
 
+  @Override
+  public void setIndexLifeCycle(final String destinationIndexName) {
+    try {
+      if (tasklistProperties.getArchiver().isIlmEnabled()) {
+        esClient
+            .indices()
+            .putSettings(
+                new UpdateSettingsRequest(destinationIndexName)
+                    .settings(
+                        Settings.builder()
+                            .put(INDEX_LIFECYCLE_NAME, TASKLIST_DELETE_ARCHIVED_INDICES)
+                            .build()),
+                RequestOptions.DEFAULT);
+      }
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Could not set ILM policy {} for index {}: {}",
+          TASKLIST_DELETE_ARCHIVED_INDICES,
+          destinationIndexName,
+          e.getMessage());
+    }
+  }
+
   private CompletableFuture<BulkByScrollResponse> sendReindexRequest(
       final ReindexRequest reindexRequest) {
     return ElasticsearchUtil.reindexAsync(reindexRequest, archiverExecutor, esClient);
@@ -141,7 +144,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
     return ElasticsearchUtil.deleteByQueryAsync(deleteRequest, archiverExecutor, esClient);
   }
 
-  private <T extends AbstractBulkByScrollRequest<T>> T applyDefaultSettings(T request) {
+  private <T extends AbstractBulkByScrollRequest<T>> T applyDefaultSettings(final T request) {
     return request
         .setScroll(TimeValue.timeValueMillis(INTERNAL_SCROLL_KEEP_ALIVE_MS))
         .setAbortOnVersionConflict(false)

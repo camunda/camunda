@@ -10,13 +10,13 @@ package io.camunda.tasklist.zeebeimport.common;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
-import io.camunda.tasklist.schema.v86.indices.FormIndex;
-import io.camunda.tasklist.schema.v86.indices.ProcessIndex;
-import io.camunda.tasklist.schema.v86.templates.DraftTaskVariableTemplate;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
+import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistDraftTaskVariableTemplate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +32,9 @@ class ProcessDefinitionDeletionProcessorTest {
 
   @InjectMocks private ProcessDefinitionDeletionProcessor processDefinitionDeletionProcessor;
 
-  @Mock private ProcessIndex processIndex;
+  @Mock private TasklistProcessIndex processIndex;
 
-  @Mock private FormIndex formIndex;
+  @Mock private TasklistFormIndex formIndex;
 
   @Mock private FormStore formStore;
 
@@ -42,7 +42,7 @@ class ProcessDefinitionDeletionProcessorTest {
 
   @Mock private VariableStore variableStore;
 
-  @Mock private DraftTaskVariableTemplate draftTaskVariableTemplate;
+  @Mock private TasklistDraftTaskVariableTemplate draftTaskVariableTemplate;
 
   @Mock private DraftVariableStore draftVariableStore;
 

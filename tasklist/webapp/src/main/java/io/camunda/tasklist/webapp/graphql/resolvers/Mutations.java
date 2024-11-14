@@ -13,10 +13,10 @@ import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.kickstart.annotations.GraphQLMutationResolver;
-import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.ProcessInstanceStore;
+import io.camunda.tasklist.v86.entities.TaskImplementation;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;

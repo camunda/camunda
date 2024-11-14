@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import io.camunda.tasklist.entities.ProcessEntity;
+import io.camunda.tasklist.v86.entities.ProcessEntity;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.swagger.v3.oas.annotations.media.Schema;

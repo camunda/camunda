@@ -7,12 +7,12 @@
  */
 package io.camunda.tasklist.webapp.security;
 
-import static io.camunda.tasklist.schema.v86.indices.MetricIndex.VALUE;
+import static io.camunda.tasklist.v86.schema.indices.TasklistMetricIndex.VALUE;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.indices.MetricIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistMetricIndex;
 import java.io.IOException;
 import java.util.Collections;
 import org.elasticsearch.client.RequestOptions;
@@ -42,7 +42,7 @@ public class AssigneeMigratorElasticSearch implements AssigneeMigrator {
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
-  @Autowired private MetricIndex metricIndex;
+  @Autowired private TasklistMetricIndex metricIndex;
   @Autowired private TasklistProperties tasklistProperties;
 
   @Override

@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.util;
 
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
-import io.camunda.tasklist.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.ProcessInstanceEntity;
+import io.camunda.tasklist.v86.entities.TaskEntity;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.List;

@@ -10,8 +10,8 @@ package io.camunda.tasklist.zeebeimport.os;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.v86.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.ImportJobAbstract;
 import java.time.OffsetDateTime;
@@ -38,12 +38,23 @@ public class ImportJobOpenSearch extends ImportJobAbstract {
   @Qualifier("tasklistZeebeOsClient")
   private OpenSearchClient zeebeOsClient;
 
-  public ImportJobOpenSearch(ImportBatch importBatch, ImportPositionEntity previousPosition) {
+  public ImportJobOpenSearch(
+      final ImportBatch importBatch, final ImportPositionEntity previousPosition) {
     this.importBatch = importBatch;
     this.previousPosition = previousPosition;
-    this.creationTime = OffsetDateTime.now();
+    creationTime = OffsetDateTime.now();
   }
 
+  @Override
+  public void refreshZeebeIndices() {
+    final String indexPattern =
+        importBatch
+            .getImportValueType()
+            .getIndicesPattern(tasklistProperties.getZeebeElasticsearch().getPrefix());
+    OpenSearchUtil.refreshIndicesFor(zeebeOsClient, indexPattern);
+  }
+
+  @Override
   public List<ImportBatch> createSubBatchesPerIndexName() {
     final List<ImportBatch> subBatches = new ArrayList<>();
     if (importBatch.getHits().size() <= 1) {
@@ -53,7 +64,7 @@ public class ImportJobOpenSearch extends ImportJobAbstract {
       String previousIndexName = null;
       List<Hit> subBatchHits = new ArrayList<>();
       final List<Hit> importResult = importBatch.getHits();
-      for (Hit hit : importResult) {
+      for (final Hit hit : importResult) {
         final String indexName = hit.index();
         if (previousIndexName != null && !indexName.equals(previousIndexName)) {
           // start new sub-batch
@@ -76,13 +87,5 @@ public class ImportJobOpenSearch extends ImportJobAbstract {
               previousIndexName));
       return subBatches;
     }
-  }
-
-  public void refreshZeebeIndices() {
-    final String indexPattern =
-        importBatch
-            .getImportValueType()
-            .getIndicesPattern(tasklistProperties.getZeebeElasticsearch().getPrefix());
-    OpenSearchUtil.refreshIndicesFor(zeebeOsClient, indexPattern);
   }
 }

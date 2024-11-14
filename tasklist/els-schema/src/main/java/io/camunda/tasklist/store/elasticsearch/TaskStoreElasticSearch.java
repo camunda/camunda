@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.v86.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ALL;
@@ -16,14 +15,13 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.tasklist.util.ElasticsearchUtil.mapSearchHits;
+import static io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static java.util.stream.Collectors.toList;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.queries.Sort;
@@ -31,14 +29,16 @@ import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.queries.TaskSortFields;
-import io.camunda.tasklist.schema.v86.indices.VariableIndex;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.v86.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.TaskState;
+import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -87,9 +87,9 @@ public class TaskStoreElasticSearch implements TaskStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskStoreElasticSearch.class);
   private static final Map<TaskState, String> SORT_FIELD_PER_STATE =
       Map.of(
-          TaskState.CREATED, TaskTemplate.CREATION_TIME,
-          TaskState.COMPLETED, TaskTemplate.COMPLETION_TIME,
-          TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
+          TaskState.CREATED, TasklistTaskTemplate.CREATION_TIME,
+          TaskState.COMPLETED, TasklistTaskTemplate.COMPLETION_TIME,
+          TaskState.CANCELED, TasklistTaskTemplate.COMPLETION_TIME);
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -99,11 +99,11 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Autowired private TaskVariableSearchUtil taskVariableSearchUtil;
 
-  @Autowired private TaskTemplate taskTemplate;
+  @Autowired private TasklistTaskTemplate taskTemplate;
 
   @Autowired private VariableStore variableStoreElasticSearch;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -127,7 +127,7 @@ public class TaskStoreElasticSearch implements TaskStore {
             .source(
                 SearchSourceBuilder.searchSource()
                     .query(termQuery(PROCESS_INSTANCE_ID, processInstanceId))
-                    .fetchField(TaskTemplate.ID));
+                    .fetchField(TasklistTaskTemplate.ID));
     try {
       return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
     } catch (final IOException e) {
@@ -142,8 +142,9 @@ public class TaskStoreElasticSearch implements TaskStore {
         ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(
                 SearchSourceBuilder.searchSource()
-                    .query(termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId))
-                    .fetchField(TaskTemplate.ID));
+                    .query(
+                        termQuery(TasklistTaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId))
+                    .fetchField(TasklistTaskTemplate.ID));
     try {
       return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
     } catch (final IOException e) {
@@ -188,8 +189,8 @@ public class TaskStoreElasticSearch implements TaskStore {
     try {
       // update task with optimistic locking
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, completedTask.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
+      updateFields.put(TasklistTaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TasklistTaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
 
       // format date fields properly
       final Map<String, Object> jsonMap =
@@ -225,8 +226,8 @@ public class TaskStoreElasticSearch implements TaskStore {
     try {
       // update task with optimistic locking
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, completedTask.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, null);
+      updateFields.put(TasklistTaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TasklistTaskTemplate.COMPLETION_TIME, null);
 
       // format date fields properly
       final Map<String, Object> jsonMap =
@@ -249,14 +250,14 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Override
   public TaskEntity persistTaskClaim(final TaskEntity taskBefore, final String assignee) {
 
-    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
+    updateTask(taskBefore.getId(), asMap(TasklistTaskTemplate.ASSIGNEE, assignee));
 
     return taskBefore.makeCopy().setAssignee(assignee);
   }
 
   @Override
   public TaskEntity persistTaskUnclaim(final TaskEntity task) {
-    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
+    updateTask(task.getId(), asMap(TasklistTaskTemplate.ASSIGNEE, null));
     return task.makeCopy().setAssignee(null);
   }
 
@@ -429,26 +430,27 @@ public class TaskStoreElasticSearch implements TaskStore {
   }
 
   private QueryBuilder buildQuery(final TaskQuery query, final List<String> taskIds) {
-    QueryBuilder stateQ = boolQuery().mustNot(termQuery(TaskTemplate.STATE, TaskState.CANCELED));
+    QueryBuilder stateQ =
+        boolQuery().mustNot(termQuery(TasklistTaskTemplate.STATE, TaskState.CANCELED));
     if (query.getState() != null) {
-      stateQ = termQuery(TaskTemplate.STATE, query.getState());
+      stateQ = termQuery(TasklistTaskTemplate.STATE, query.getState());
     }
     QueryBuilder assignedQ = null;
     QueryBuilder assigneeQ = null;
     if (query.getAssigned() != null) {
       if (query.getAssigned()) {
-        assignedQ = existsQuery(TaskTemplate.ASSIGNEE);
+        assignedQ = existsQuery(TasklistTaskTemplate.ASSIGNEE);
       } else {
-        assignedQ = boolQuery().mustNot(existsQuery(TaskTemplate.ASSIGNEE));
+        assignedQ = boolQuery().mustNot(existsQuery(TasklistTaskTemplate.ASSIGNEE));
       }
     }
     if (query.getAssignee() != null) {
-      assigneeQ = termQuery(TaskTemplate.ASSIGNEE, query.getAssignee());
+      assigneeQ = termQuery(TasklistTaskTemplate.ASSIGNEE, query.getAssignee());
     }
 
     QueryBuilder assigneesQ = null;
     if (query.getAssignees() != null) {
-      assigneesQ = termsQuery(TaskTemplate.ASSIGNEE, query.getAssignees());
+      assigneesQ = termsQuery(TasklistTaskTemplate.ASSIGNEE, query.getAssignees());
     }
 
     IdsQueryBuilder idsQuery = null;
@@ -458,27 +460,29 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     QueryBuilder taskDefinitionQ = null;
     if (query.getTaskDefinitionId() != null) {
-      taskDefinitionQ = termQuery(TaskTemplate.FLOW_NODE_BPMN_ID, query.getTaskDefinitionId());
+      taskDefinitionQ =
+          termQuery(TasklistTaskTemplate.FLOW_NODE_BPMN_ID, query.getTaskDefinitionId());
     }
 
     QueryBuilder candidateGroupQ = null;
     if (query.getCandidateGroup() != null) {
-      candidateGroupQ = termQuery(TaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroup());
+      candidateGroupQ = termQuery(TasklistTaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroup());
     }
 
     QueryBuilder candidateGroupsQ = null;
     if (query.getCandidateGroups() != null) {
-      candidateGroupsQ = termsQuery(TaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroups());
+      candidateGroupsQ =
+          termsQuery(TasklistTaskTemplate.CANDIDATE_GROUPS, query.getCandidateGroups());
     }
 
     QueryBuilder candidateUserQ = null;
     if (query.getCandidateUser() != null) {
-      candidateUserQ = termQuery(TaskTemplate.CANDIDATE_USERS, query.getCandidateUser());
+      candidateUserQ = termQuery(TasklistTaskTemplate.CANDIDATE_USERS, query.getCandidateUser());
     }
 
     QueryBuilder candidateUsersQ = null;
     if (query.getCandidateUsers() != null) {
-      candidateUsersQ = termsQuery(TaskTemplate.CANDIDATE_USERS, query.getCandidateUsers());
+      candidateUsersQ = termsQuery(TasklistTaskTemplate.CANDIDATE_USERS, query.getCandidateUsers());
     }
 
     QueryBuilder candidateGroupsAndUserByCurrentUserQ = null;
@@ -497,13 +501,13 @@ public class TaskStoreElasticSearch implements TaskStore {
     QueryBuilder processDefinitionIdQ = null;
     if (query.getProcessDefinitionId() != null) {
       processDefinitionIdQ =
-          termQuery(TaskTemplate.PROCESS_DEFINITION_ID, query.getProcessDefinitionId());
+          termQuery(TasklistTaskTemplate.PROCESS_DEFINITION_ID, query.getProcessDefinitionId());
     }
 
     QueryBuilder followUpQ = null;
     if (query.getFollowUpDate() != null) {
       followUpQ =
-          rangeQuery(TaskTemplate.FOLLOW_UP_DATE)
+          rangeQuery(TasklistTaskTemplate.FOLLOW_UP_DATE)
               .from(query.getFollowUpDate().getFrom())
               .to(query.getFollowUpDate().getTo());
     }
@@ -511,13 +515,13 @@ public class TaskStoreElasticSearch implements TaskStore {
     QueryBuilder dueDateQ = null;
     if (query.getDueDate() != null) {
       dueDateQ =
-          rangeQuery(TaskTemplate.DUE_DATE)
+          rangeQuery(TasklistTaskTemplate.DUE_DATE)
               .from(query.getDueDate().getFrom())
               .to(query.getDueDate().getTo());
     }
     QueryBuilder implementationQ = null;
     if (query.getImplementation() != null) {
-      implementationQ = termQuery(TaskTemplate.IMPLEMENTATION, query.getImplementation());
+      implementationQ = termQuery(TasklistTaskTemplate.IMPLEMENTATION, query.getImplementation());
     }
 
     final QueryBuilder priorityQ = buildPriorityQuery(query);
@@ -570,7 +574,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     final SortBuilder sort2;
     Object[] querySearchAfter = null; // may be null
     if (directSorting) { // this sorting is also the default one for 1st page
-      sort2 = SortBuilders.fieldSort(TaskTemplate.KEY).order(SortOrder.ASC);
+      sort2 = SortBuilders.fieldSort(TasklistTaskTemplate.KEY).order(SortOrder.ASC);
       if (query.getSearchAfter() != null) {
         querySearchAfter = query.getSearchAfter();
       } else if (query.getSearchAfterOrEqual() != null) {
@@ -578,7 +582,7 @@ public class TaskStoreElasticSearch implements TaskStore {
       }
     } else { // searchBefore != null
       // reverse sorting
-      sort2 = SortBuilders.fieldSort(TaskTemplate.KEY).order(SortOrder.DESC);
+      sort2 = SortBuilders.fieldSort(TasklistTaskTemplate.KEY).order(SortOrder.DESC);
       if (query.getSearchBefore() != null) {
         querySearchAfter = query.getSearchBefore();
       } else if (query.getSearchBeforeOrEqual() != null) {
@@ -600,7 +604,10 @@ public class TaskStoreElasticSearch implements TaskStore {
         } else {
           searchSourceBuilder.sort(
               mapNullInSort(
-                  TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.NUMBER));
+                  TasklistTaskTemplate.PRIORITY,
+                  DEFAULT_PRIORITY,
+                  sortOrder,
+                  ScriptSortType.NUMBER));
         }
       }
     } else {
@@ -703,13 +710,13 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     for (int i = 0; i < varNames.size(); i++) {
       final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-      boolQuery.must(QueryBuilders.termQuery(VariableIndex.NAME, varNames.get(i)));
-      boolQuery.must(QueryBuilders.termQuery(VariableIndex.VALUE, varValues.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(TasklistVariableIndex.NAME, varNames.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(TasklistVariableIndex.VALUE, varValues.get(i)));
 
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
               .query(boolQuery)
-              .fetchSource(TaskVariableTemplate.TASK_ID, null);
+              .fetchSource(TasklistTaskVariableTemplate.TASK_ID, null);
 
       final SearchRequest searchRequest =
           new SearchRequest(taskVariableTemplate.getAlias()).source(searchSourceBuilder);
@@ -723,7 +730,7 @@ public class TaskStoreElasticSearch implements TaskStore {
 
         List<String> scrollTaskIds =
             Arrays.stream(searchResponse.getHits().getHits())
-                .map(hit -> (String) hit.getSourceAsMap().get(TaskVariableTemplate.TASK_ID))
+                .map(hit -> (String) hit.getSourceAsMap().get(TasklistTaskVariableTemplate.TASK_ID))
                 .collect(Collectors.toList());
 
         taskIds.addAll(scrollTaskIds);
@@ -736,7 +743,9 @@ public class TaskStoreElasticSearch implements TaskStore {
           scrollId = searchResponse.getScrollId();
           scrollTaskIds =
               Arrays.stream(searchResponse.getHits().getHits())
-                  .map(hit -> (String) hit.getSourceAsMap().get(TaskVariableTemplate.TASK_ID))
+                  .map(
+                      hit ->
+                          (String) hit.getSourceAsMap().get(TasklistTaskVariableTemplate.TASK_ID))
                   .toList();
           taskIds.addAll(scrollTaskIds);
         }
@@ -774,18 +783,20 @@ public class TaskStoreElasticSearch implements TaskStore {
     final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
 
     // Additional clause for TaskTemplate.ASSIGNEE
-    boolQuery.should(QueryBuilders.termQuery(TaskTemplate.ASSIGNEE, userName));
+    boolQuery.should(QueryBuilders.termQuery(TasklistTaskTemplate.ASSIGNEE, userName));
 
     userGroups.forEach(
-        group -> boolQuery.should(QueryBuilders.termsQuery(TaskTemplate.CANDIDATE_GROUPS, group)));
+        group ->
+            boolQuery.should(
+                QueryBuilders.termsQuery(TasklistTaskTemplate.CANDIDATE_GROUPS, group)));
 
-    boolQuery.should(QueryBuilders.termQuery(TaskTemplate.CANDIDATE_USERS, userName));
+    boolQuery.should(QueryBuilders.termQuery(TasklistTaskTemplate.CANDIDATE_USERS, userName));
 
     // Consider the tasks that have no candidate users and groups
     boolQuery.should(
         QueryBuilders.boolQuery()
-            .mustNot(QueryBuilders.existsQuery(TaskTemplate.CANDIDATE_USERS))
-            .mustNot(QueryBuilders.existsQuery(TaskTemplate.CANDIDATE_GROUPS)));
+            .mustNot(QueryBuilders.existsQuery(TasklistTaskTemplate.CANDIDATE_USERS))
+            .mustNot(QueryBuilders.existsQuery(TasklistTaskTemplate.CANDIDATE_GROUPS)));
 
     return boolQuery;
   }
@@ -822,9 +833,9 @@ public class TaskStoreElasticSearch implements TaskStore {
     if (query.getPriority() != null) {
       final var priority = query.getPriority();
       if (priority.getEq() != null) {
-        return QueryBuilders.termQuery(TaskTemplate.PRIORITY, priority.getEq());
+        return QueryBuilders.termQuery(TasklistTaskTemplate.PRIORITY, priority.getEq());
       } else {
-        RangeQueryBuilder rangeBuilder = QueryBuilders.rangeQuery(TaskTemplate.PRIORITY);
+        RangeQueryBuilder rangeBuilder = QueryBuilders.rangeQuery(TasklistTaskTemplate.PRIORITY);
         if (priority.getGt() != null) {
           rangeBuilder = rangeBuilder.gt(priority.getGt());
         }

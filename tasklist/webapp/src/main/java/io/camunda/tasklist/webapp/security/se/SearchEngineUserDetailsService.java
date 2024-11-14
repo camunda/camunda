@@ -12,8 +12,8 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTIT
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 
 import io.camunda.authentication.entity.CamundaUser;
-import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.v86.entities.UserEntity;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.se.store.UserStore;
 import java.util.List;

@@ -7,17 +7,17 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.schema.v86.indices.AbstractIndexDescriptor.formatTasklistIndexPattern;
+import static io.camunda.tasklist.v86.schema.indices.TasklistAbstractIndexDescriptor.formatTasklistIndexPattern;
 
 import com.google.common.collect.Maps;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.IndexMapping;
-import io.camunda.tasklist.schema.v86.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.v86.IndexMappingDifference;
-import io.camunda.tasklist.schema.v86.IndexMappingDifference.PropertyDifference;
-import io.camunda.tasklist.schema.v86.SemanticVersion;
-import io.camunda.tasklist.schema.v86.manager.SchemaManager;
+import io.camunda.tasklist.v86.schema.IndexMapping;
+import io.camunda.tasklist.v86.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.tasklist.v86.schema.IndexMappingDifference;
+import io.camunda.tasklist.v86.schema.IndexMappingDifference.PropertyDifference;
+import io.camunda.tasklist.v86.schema.SemanticVersion;
+import io.camunda.tasklist.v86.schema.manager.SchemaManager;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.HashMap;

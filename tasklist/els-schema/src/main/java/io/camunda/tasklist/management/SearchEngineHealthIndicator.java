@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.management;
 
-import io.camunda.tasklist.schema.v86.IndexSchemaValidator;
+import io.camunda.tasklist.v86.schema.IndexSchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

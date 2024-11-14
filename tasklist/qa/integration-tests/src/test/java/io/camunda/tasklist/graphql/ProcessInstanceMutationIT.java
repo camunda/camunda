@@ -11,13 +11,13 @@ import static io.camunda.tasklist.util.CollectionUtil.map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.tasklist.schema.v86.indices.FlowNodeInstanceIndex;
-import io.camunda.tasklist.schema.v86.indices.ProcessInstanceDependant;
-import io.camunda.tasklist.schema.v86.indices.VariableIndex;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.v86.schema.indices.TasklistFlowNodeInstanceIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceDependant;
+import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,11 +27,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
 
   private static final List<Class<?>> SHOULD_PROCESS_INSTANCE_DEPENDANTS =
-      List.of(FlowNodeInstanceIndex.class, VariableIndex.class, TaskTemplate.class);
+      List.of(
+          TasklistFlowNodeInstanceIndex.class,
+          TasklistVariableIndex.class,
+          TasklistTaskTemplate.class);
 
-  @Autowired private List<ProcessInstanceDependant> processInstanceDependants;
+  @Autowired private List<TasklistProcessInstanceDependant> processInstanceDependants;
 
-  @Autowired private TaskVariableTemplate taskVariableIndex;
+  @Autowired private TasklistTaskVariableTemplate taskVariableIndex;
 
   @Autowired private NoSqlHelper noSqlHelper;
 
@@ -103,7 +106,7 @@ public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
     assertThat(deleted).isFalse();
   }
 
-  protected void assertThatProcessDependantsAreDeleted(String processInstanceId) {
+  protected void assertThatProcessDependantsAreDeleted(final String processInstanceId) {
     assertThrows(
         NotFoundApiException.class,
         () -> {

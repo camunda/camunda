@@ -12,18 +12,18 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.FlowNodeType;
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
-import io.camunda.tasklist.entities.ProcessInstanceState;
-import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
-import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.v86.indices.FlowNodeInstanceIndex;
-import io.camunda.tasklist.schema.v86.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.v86.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.DateUtil;
+import io.camunda.tasklist.v86.entities.FlowNodeInstanceEntity;
+import io.camunda.tasklist.v86.entities.FlowNodeType;
+import io.camunda.tasklist.v86.entities.ProcessInstanceEntity;
+import io.camunda.tasklist.v86.entities.ProcessInstanceState;
+import io.camunda.tasklist.v86.entities.listview.ListViewJoinRelation;
+import io.camunda.tasklist.v86.entities.listview.ProcessInstanceListViewEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistFlowNodeInstanceIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.zeebeimport.v870.record.value.ProcessInstanceRecordValueImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -73,9 +73,9 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
+  @Autowired private TasklistFlowNodeInstanceIndex flowNodeInstanceIndex;
 
-  @Autowired private ProcessInstanceIndex processInstanceIndex;
+  @Autowired private TasklistProcessInstanceIndex processInstanceIndex;
   @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processProcessInstanceRecord(final Record record, final BulkRequest bulkRequest)

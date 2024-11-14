@@ -9,13 +9,13 @@ package io.camunda.tasklist.data;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.UserEntity;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.indices.FormIndex;
-import io.camunda.tasklist.schema.v86.indices.UserIndex;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
 import io.camunda.tasklist.util.PayloadUtil;
 import io.camunda.tasklist.util.ZeebeTestUtil;
+import io.camunda.tasklist.v86.entities.UserEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistUserIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import io.camunda.zeebe.client.ZeebeClient;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -40,14 +40,14 @@ public abstract class DevDataGeneratorAbstract implements DataGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(DevDataGeneratorAbstract.class);
 
   @Autowired protected TasklistProperties tasklistProperties;
-  @Autowired protected UserIndex userIndex;
+  @Autowired protected TasklistUserIndex userIndex;
   protected PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
   @Autowired private ZeebeClient zeebeClient;
 
-  @Autowired private FormIndex formIndex;
+  @Autowired private TasklistFormIndex formIndex;
 
-  @Autowired private TaskTemplate taskTemplate;
+  @Autowired private TasklistTaskTemplate taskTemplate;
 
   @Autowired private PayloadUtil payloadUtil;
 

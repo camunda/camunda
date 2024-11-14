@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.store;
 
-import io.camunda.tasklist.entities.listview.VariableListViewEntity;
+import io.camunda.tasklist.v86.entities.listview.VariableListViewEntity;
 import java.util.Collection;
 import java.util.List;
 

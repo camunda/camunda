@@ -14,10 +14,10 @@ import io.camunda.tasklist.archiver.TaskArchiverJob;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.HashMap;
 import java.util.List;
@@ -55,9 +55,9 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
 
-  @Autowired private TaskTemplate taskTemplate;
+  @Autowired private TasklistTaskTemplate taskTemplate;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -72,7 +72,8 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
   }
 
   @Override
-  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(ArchiveBatch archiveBatch) {
+  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(
+      final ArchiveBatch archiveBatch) {
     final CompletableFuture<Map.Entry<String, Integer>> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
@@ -82,7 +83,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
       final var moveVariableDocuments =
           archiverUtil.moveDocuments(
               taskVariableTemplate.getFullQualifiedName(),
-              TaskVariableTemplate.TASK_ID,
+              TasklistTaskVariableTemplate.TASK_ID,
               archiveBatch.getFinishDate(),
               archiveBatch.getIds());
 
@@ -90,7 +91,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
       final var moveTaskDocuments =
           archiverUtil.moveDocuments(
               taskTemplate.getFullQualifiedName(),
-              TaskTemplate.ID,
+              TasklistTaskTemplate.ID,
               archiveBatch.getFinishDate(),
               archiveBatch.getIds());
 
@@ -147,7 +148,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
     return Either.right(batch);
   }
 
-  private SearchRequest createFinishedTasksSearchRequest(Aggregation agg) {
+  private SearchRequest createFinishedTasksSearchRequest(final Aggregation agg) {
     final List<FieldValue> partitions =
         getPartitionIds().stream().map(m -> FieldValue.of(m)).collect(Collectors.toList());
     final SearchRequest.Builder builder = new SearchRequest.Builder();
@@ -155,12 +156,15 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
     final Query.Builder endDateQ = new Query.Builder();
     endDateQ.range(
         r ->
-            r.field(TaskTemplate.COMPLETION_TIME)
+            r.field(TasklistTaskTemplate.COMPLETION_TIME)
                 .lte(JsonData.of(tasklistProperties.getArchiver().getArchivingTimepoint())));
 
     final Query.Builder partitionQ = new Query.Builder();
     partitionQ.terms(
-        terms -> terms.field(TaskTemplate.PARTITION_ID).terms(values -> values.value(partitions)));
+        terms ->
+            terms
+                .field(TasklistTaskTemplate.PARTITION_ID)
+                .terms(values -> values.value(partitions)));
 
     final Query q =
         new Query.Builder()
@@ -173,7 +177,8 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
         .sort(
             s ->
                 s.field(
-                    FieldSort.of(f -> f.field(TaskTemplate.COMPLETION_TIME).order(SortOrder.Asc))))
+                    FieldSort.of(
+                        f -> f.field(TasklistTaskTemplate.COMPLETION_TIME).order(SortOrder.Asc))))
         .aggregations(DATES_AGG, agg)
         .size(0)
         .requestCache(false);
@@ -186,13 +191,14 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
     return builder.build();
   }
 
-  private Aggregation createFinishedTasksAggregation(String datesAggName, String instancesAggName) {
+  private Aggregation createFinishedTasksAggregation(
+      final String datesAggName, final String instancesAggName) {
 
     final Aggregation dateHistogram =
         new Aggregation.Builder()
             .dateHistogram(
                 d ->
-                    d.field(TaskTemplate.COMPLETION_TIME)
+                    d.field(TasklistTaskTemplate.COMPLETION_TIME)
                         .calendarInterval(
                             CalendarInterval.valueOf(
                                 Optional.ofNullable(
@@ -218,8 +224,14 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
                             th.size(tasklistProperties.getArchiver().getRolloverBatchSize())
                                 .sort(
                                     s ->
-                                        s.field(f -> f.field(TaskTemplate.ID).order(SortOrder.Asc)))
-                                .source(s -> s.filter(sf -> sf.includes(List.of(TaskTemplate.ID)))))
+                                        s.field(
+                                            f ->
+                                                f.field(TasklistTaskTemplate.ID)
+                                                    .order(SortOrder.Asc)))
+                                .source(
+                                    s ->
+                                        s.filter(
+                                            sf -> sf.includes(List.of(TasklistTaskTemplate.ID)))))
                     .build())
             .build();
 
@@ -234,7 +246,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
 
     if (bucket.size() > 0) {
       final Set<Map.Entry<String, DateHistogramBucket>> bucketEntrySet = bucket.entrySet();
-      for (Map.Entry<String, DateHistogramBucket> bucketItem : bucketEntrySet) {
+      for (final Map.Entry<String, DateHistogramBucket> bucketItem : bucketEntrySet) {
         final String finishDate = bucketItem.getKey();
         final HitsMetadata hits =
             bucketItem.getValue().aggregations().get(INSTANCES_AGG).topHits().hits();

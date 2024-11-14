@@ -12,7 +12,7 @@ import static java.util.Arrays.asList;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.DevDataGeneratorAbstract;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.UserEntity;
+import io.camunda.tasklist.v86.entities.UserEntity;
 import java.io.IOException;
 import java.util.List;
 import org.opensearch.client.opensearch.OpenSearchClient;

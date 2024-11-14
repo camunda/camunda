@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.store;
 
-import io.camunda.tasklist.entities.ProcessEntity;
+import io.camunda.tasklist.v86.entities.ProcessEntity;
 import java.util.List;
 
 public interface ProcessStore {

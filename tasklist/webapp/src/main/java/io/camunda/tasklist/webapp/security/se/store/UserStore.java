@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.security.se.store;
 
-import io.camunda.tasklist.entities.UserEntity;
+import io.camunda.tasklist.v86.entities.UserEntity;
 import java.util.List;
 
 public interface UserStore {

@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.zeebeimport.util;
 
-import io.camunda.tasklist.entities.ProcessFlowNodeEntity;
+import io.camunda.tasklist.v86.entities.ProcessFlowNodeEntity;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;

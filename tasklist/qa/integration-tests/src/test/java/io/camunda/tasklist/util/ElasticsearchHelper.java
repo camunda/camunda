@@ -12,13 +12,13 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
-import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.v86.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.v86.indices.VariableIndex;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
+import io.camunda.tasklist.v86.entities.ProcessInstanceEntity;
+import io.camunda.tasklist.v86.entities.TaskEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
@@ -55,13 +55,13 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   private static final Integer QUERY_SIZE = 100;
 
-  @Autowired private TaskTemplate taskTemplate;
+  @Autowired private TasklistTaskTemplate taskTemplate;
 
-  @Autowired private ProcessInstanceIndex processInstanceIndex;
+  @Autowired private TasklistProcessInstanceIndex processInstanceIndex;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
 
-  @Autowired private VariableIndex variableIndex;
+  @Autowired private TasklistVariableIndex variableIndex;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -129,7 +129,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
   public List<TaskEntity> getTask(final String processInstanceId, final String flowNodeBpmnId) {
     TermQueryBuilder piId = null;
     if (processInstanceId != null) {
-      piId = termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId);
+      piId = termQuery(TasklistTaskTemplate.PROCESS_INSTANCE_ID, processInstanceId);
     }
     final SearchRequest searchRequest =
         new SearchRequest(taskTemplate.getAlias())
@@ -137,8 +137,9 @@ public class ElasticsearchHelper implements NoSqlHelper {
                 new SearchSourceBuilder()
                     .query(
                         joinWithAnd(
-                            piId, termQuery(TaskTemplate.FLOW_NODE_BPMN_ID, flowNodeBpmnId)))
-                    .sort(TaskTemplate.CREATION_TIME, SortOrder.DESC));
+                            piId,
+                            termQuery(TasklistTaskTemplate.FLOW_NODE_BPMN_ID, flowNodeBpmnId)))
+                    .sort(TasklistTaskTemplate.CREATION_TIME, SortOrder.DESC));
 
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -159,8 +160,8 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   @Override
   public boolean checkVariableExists(final String taskId, final String varName) {
-    final TermQueryBuilder taskIdQ = termQuery(TaskVariableTemplate.TASK_ID, taskId);
-    final TermQueryBuilder varNameQ = termQuery(TaskVariableTemplate.NAME, varName);
+    final TermQueryBuilder taskIdQ = termQuery(TasklistTaskVariableTemplate.TASK_ID, taskId);
+    final TermQueryBuilder varNameQ = termQuery(TasklistTaskVariableTemplate.NAME, varName);
     final SearchRequest searchRequest =
         new SearchRequest(taskVariableTemplate.getAlias())
             .source(
@@ -182,7 +183,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
         new SearchRequest(variableIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(constantScoreQuery(termsQuery(VariableIndex.NAME, varNames))));
+                    .query(constantScoreQuery(termsQuery(TasklistVariableIndex.NAME, varNames))));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value == varNames.length;
@@ -212,7 +213,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
   @Override
   public List<TaskEntity> getTasksFromIdAndIndex(final String index, final List<String> ids) {
     final TermsQueryBuilder q =
-        termsQuery(TaskTemplate.ID, CollectionUtil.toSafeArrayOfStrings(ids));
+        termsQuery(TasklistTaskTemplate.ID, CollectionUtil.toSafeArrayOfStrings(ids));
     final SearchRequest searchRequest =
         new SearchRequest(index).source(new SearchSourceBuilder().query(q).size(QUERY_SIZE));
     try {

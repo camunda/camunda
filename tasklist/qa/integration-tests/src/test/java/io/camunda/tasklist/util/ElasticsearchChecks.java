@@ -11,12 +11,16 @@ import static io.camunda.tasklist.util.TestCheck.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.*;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.ProcessStore;
+import io.camunda.tasklist.v86.entities.ProcessEntity;
+import io.camunda.tasklist.v86.entities.ProcessInstanceEntity;
+import io.camunda.tasklist.v86.entities.ProcessInstanceState;
+import io.camunda.tasklist.v86.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.TaskState;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import java.util.List;
 import java.util.function.Predicate;
@@ -44,7 +48,7 @@ public class ElasticsearchChecks {
 
   @Autowired private ProcessStore processStore;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
 
   /** Checks whether the process of given args[0] processId (Long) is deployed. */
   @Bean(name = PROCESS_IS_DEPLOYED_CHECK)
@@ -63,7 +67,7 @@ public class ElasticsearchChecks {
         try {
           final ProcessEntity process = processStore.getProcess(processId);
           return process != null;
-        } catch (TasklistRuntimeException ex) {
+        } catch (final TasklistRuntimeException ex) {
           return false;
         }
       }
@@ -86,9 +90,9 @@ public class ElasticsearchChecks {
         try {
           processStore.getProcess(processId);
           return false;
-        } catch (NotFoundException nfe) {
+        } catch (final NotFoundException nfe) {
           return true;
-        } catch (TasklistRuntimeException ex) {
+        } catch (final TasklistRuntimeException ex) {
           return false;
         }
       }
@@ -112,7 +116,7 @@ public class ElasticsearchChecks {
         try {
           final TaskEntity taskEntity = elasticsearchHelper.getTask(taskId);
           return TaskState.CREATED.equals(taskEntity.getState());
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -136,7 +140,7 @@ public class ElasticsearchChecks {
         try {
           final TaskEntity taskEntity = elasticsearchHelper.getTask(taskId);
           return taskEntity.getAssignee() != null;
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -169,7 +173,7 @@ public class ElasticsearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.CREATED);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -196,7 +200,7 @@ public class ElasticsearchChecks {
               elasticsearchHelper.getTask(processInstanceKey, flowNodeBpmnId);
           return taskEntity.stream().map(TaskEntity::getCandidateUsers).anyMatch(e -> e != null);
 
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -229,7 +233,7 @@ public class ElasticsearchChecks {
                   .map(TaskEntity::getState)
                   .collect(Collectors.toList())
                   .contains(TaskState.CREATED));
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -262,7 +266,7 @@ public class ElasticsearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.CANCELED);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -295,7 +299,7 @@ public class ElasticsearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.COMPLETED);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -322,7 +326,7 @@ public class ElasticsearchChecks {
           final ProcessInstanceEntity wfiEntity =
               elasticsearchHelper.getProcessInstance(processInstanceId);
           return ProcessInstanceState.COMPLETED.equals(wfiEntity.getState());
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -349,7 +353,7 @@ public class ElasticsearchChecks {
           final ProcessInstanceEntity wfiEntity =
               elasticsearchHelper.getProcessInstance(processInstanceId);
           return ProcessInstanceState.CANCELED.equals(wfiEntity.getState());
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -374,7 +378,7 @@ public class ElasticsearchChecks {
         final String varName = (String) objects[1];
         try {
           return elasticsearchHelper.checkVariableExists(taskId, varName);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }
@@ -395,7 +399,7 @@ public class ElasticsearchChecks {
         final String[] varNames = (String[]) objects;
         try {
           return elasticsearchHelper.checkVariablesExist(varNames);
-        } catch (NotFoundApiException ex) {
+        } catch (final NotFoundApiException ex) {
           return false;
         }
       }

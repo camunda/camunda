@@ -7,20 +7,17 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.tasklist.schema.v86.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithAnd;
+import static io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.queries.Sort;
@@ -28,13 +25,16 @@ import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.queries.TaskSortFields;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.v86.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.TaskState;
+import io.camunda.tasklist.v86.entities.TaskVariableEntity;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -81,9 +81,9 @@ public class TaskStoreOpenSearch implements TaskStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskStoreOpenSearch.class);
   private static final Map<TaskState, String> SORT_FIELD_PER_STATE =
       Map.of(
-          TaskState.CREATED, TaskTemplate.CREATION_TIME,
-          TaskState.COMPLETED, TaskTemplate.COMPLETION_TIME,
-          TaskState.CANCELED, TaskTemplate.COMPLETION_TIME);
+          TaskState.CREATED, TasklistTaskTemplate.CREATION_TIME,
+          TaskState.COMPLETED, TasklistTaskTemplate.COMPLETION_TIME,
+          TaskState.CANCELED, TasklistTaskTemplate.COMPLETION_TIME);
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -91,7 +91,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
-  @Autowired private TaskTemplate taskTemplate;
+  @Autowired private TasklistTaskTemplate taskTemplate;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -99,7 +99,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   @Autowired private VariableStore variableStoreElasticSearch;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TaskVariableSearchUtil taskVariableSearchUtil;
 
@@ -123,7 +123,7 @@ public class TaskStoreOpenSearch implements TaskStore {
                         term ->
                             term.field(PROCESS_INSTANCE_ID)
                                 .value(FieldValue.of(processInstanceId))))
-            .fields(f -> f.field(TaskTemplate.ID));
+            .fields(f -> f.field(TasklistTaskTemplate.ID));
 
     try {
       return OpenSearchUtil.scrollIdsToList(searchRequest, osClient);
@@ -141,9 +141,9 @@ public class TaskStoreOpenSearch implements TaskStore {
                 q ->
                     q.term(
                         term ->
-                            term.field(TaskTemplate.PROCESS_DEFINITION_ID)
+                            term.field(TasklistTaskTemplate.PROCESS_DEFINITION_ID)
                                 .value(FieldValue.of(processDefinitionId))))
-            .fields(f -> f.field(TaskTemplate.ID));
+            .fields(f -> f.field(TasklistTaskTemplate.ID));
 
     try {
       return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
@@ -188,8 +188,8 @@ public class TaskStoreOpenSearch implements TaskStore {
     try {
       // update task with optimistic locking
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, completedTask.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
+      updateFields.put(TasklistTaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TasklistTaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
 
       // format date fields properly
       final Map<String, Object> jsonMap =
@@ -224,8 +224,8 @@ public class TaskStoreOpenSearch implements TaskStore {
     try {
       // update task with optimistic locking
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, completedTask.getState());
-      updateFields.put(TaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
+      updateFields.put(TasklistTaskTemplate.STATE, completedTask.getState());
+      updateFields.put(TasklistTaskTemplate.COMPLETION_TIME, completedTask.getCompletionTime());
 
       // format date fields properly
       final Map<String, Object> jsonMap =
@@ -249,14 +249,14 @@ public class TaskStoreOpenSearch implements TaskStore {
   @Override
   public TaskEntity persistTaskClaim(final TaskEntity taskBefore, final String assignee) {
 
-    updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
+    updateTask(taskBefore.getId(), asMap(TasklistTaskTemplate.ASSIGNEE, assignee));
 
     return taskBefore.makeCopy().setAssignee(assignee);
   }
 
   @Override
   public TaskEntity persistTaskUnclaim(final TaskEntity task) {
-    updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
+    updateTask(task.getId(), asMap(TasklistTaskTemplate.ASSIGNEE, null));
     return task.makeCopy().setAssignee(null);
   }
 
@@ -439,24 +439,27 @@ public class TaskStoreOpenSearch implements TaskStore {
                 mn ->
                     mn.term(
                         t ->
-                            t.field(TaskTemplate.STATE)
+                            t.field(TasklistTaskTemplate.STATE)
                                 .value(FieldValue.of(TaskState.CANCELED.name())))));
     if (query.getState() != null) {
-      stateQ.term(t -> t.field(TaskTemplate.STATE).value(FieldValue.of(query.getState().name())));
+      stateQ.term(
+          t -> t.field(TasklistTaskTemplate.STATE).value(FieldValue.of(query.getState().name())));
     }
     Query.Builder assignedQ = null;
     Query.Builder assigneeQ = null;
     if (query.getAssigned() != null) {
       assignedQ = new Query.Builder();
       if (query.getAssigned()) {
-        assignedQ.exists(e -> e.field(TaskTemplate.ASSIGNEE));
+        assignedQ.exists(e -> e.field(TasklistTaskTemplate.ASSIGNEE));
       } else {
-        assignedQ.bool(b -> b.mustNot(mn -> mn.exists(e -> e.field(TaskTemplate.ASSIGNEE))));
+        assignedQ.bool(
+            b -> b.mustNot(mn -> mn.exists(e -> e.field(TasklistTaskTemplate.ASSIGNEE))));
       }
     }
     if (query.getAssignee() != null) {
       assigneeQ = new Query.Builder();
-      assigneeQ.term(t -> t.field(TaskTemplate.ASSIGNEE).value(FieldValue.of(query.getAssignee())));
+      assigneeQ.term(
+          t -> t.field(TasklistTaskTemplate.ASSIGNEE).value(FieldValue.of(query.getAssignee())));
     }
 
     Query.Builder assigneesQ = null;
@@ -464,7 +467,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       assigneesQ = new Query.Builder();
       assigneesQ.terms(
           t ->
-              t.field(TaskTemplate.ASSIGNEE)
+              t.field(TasklistTaskTemplate.ASSIGNEE)
                   .terms(
                       terms ->
                           terms.value(
@@ -484,7 +487,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       taskDefinitionQ = new Query.Builder();
       taskDefinitionQ.term(
           t ->
-              t.field(TaskTemplate.FLOW_NODE_BPMN_ID)
+              t.field(TasklistTaskTemplate.FLOW_NODE_BPMN_ID)
                   .value(FieldValue.of(query.getTaskDefinitionId())));
     }
 
@@ -493,7 +496,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       candidateGroupQ = new Query.Builder();
       candidateGroupQ.term(
           t ->
-              t.field(TaskTemplate.CANDIDATE_GROUPS)
+              t.field(TasklistTaskTemplate.CANDIDATE_GROUPS)
                   .value(FieldValue.of(query.getCandidateGroup())));
     }
 
@@ -502,7 +505,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       candidateGroupsQ = new Query.Builder();
       candidateGroupsQ.terms(
           t ->
-              t.field(TaskTemplate.CANDIDATE_GROUPS)
+              t.field(TasklistTaskTemplate.CANDIDATE_GROUPS)
                   .terms(
                       terms ->
                           terms.value(
@@ -516,7 +519,8 @@ public class TaskStoreOpenSearch implements TaskStore {
       candidateUserQ = new Query.Builder();
       candidateUserQ.term(
           t ->
-              t.field(TaskTemplate.CANDIDATE_USERS).value(FieldValue.of(query.getCandidateUser())));
+              t.field(TasklistTaskTemplate.CANDIDATE_USERS)
+                  .value(FieldValue.of(query.getCandidateUser())));
     }
 
     Query.Builder candidateUsersQ = null;
@@ -524,7 +528,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       candidateUsersQ = new Query.Builder();
       candidateUsersQ.terms(
           t ->
-              t.field(TaskTemplate.CANDIDATE_USERS)
+              t.field(TasklistTaskTemplate.CANDIDATE_USERS)
                   .terms(
                       terms ->
                           terms.value(
@@ -553,7 +557,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       processDefinitionIdQ = new Query.Builder();
       processDefinitionIdQ.term(
           t ->
-              t.field(TaskTemplate.PROCESS_DEFINITION_ID)
+              t.field(TasklistTaskTemplate.PROCESS_DEFINITION_ID)
                   .value(FieldValue.of(query.getProcessDefinitionId())));
     }
 
@@ -562,7 +566,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       followUpQ = new Query.Builder();
       followUpQ.range(
           r ->
-              r.field(TaskTemplate.FOLLOW_UP_DATE)
+              r.field(TasklistTaskTemplate.FOLLOW_UP_DATE)
                   .from(JsonData.of(query.getFollowUpDate().getFrom()))
                   .to(JsonData.of(query.getFollowUpDate().getTo())));
     }
@@ -572,7 +576,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       dueDateQ = new Query.Builder();
       dueDateQ.range(
           r ->
-              r.field(TaskTemplate.DUE_DATE)
+              r.field(TasklistTaskTemplate.DUE_DATE)
                   .from(JsonData.of(query.getDueDate().getFrom()))
                   .to(JsonData.of(query.getDueDate().getTo())));
     }
@@ -582,7 +586,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       implementationQ = new Query.Builder();
       implementationQ.term(
           t ->
-              t.field(TaskTemplate.IMPLEMENTATION)
+              t.field(TasklistTaskTemplate.IMPLEMENTATION)
                   .value(FieldValue.of(query.getImplementation().name())));
     }
 
@@ -619,17 +623,18 @@ public class TaskStoreOpenSearch implements TaskStore {
   private Query.Builder returnUserGroupBoolQuery(
       final List<String> userGroups, final String userName) {
     final Query.Builder userNameAssigneeQ = new Query.Builder();
-    userNameAssigneeQ.term(t -> t.field(TaskTemplate.ASSIGNEE).value(FieldValue.of(userName)));
+    userNameAssigneeQ.term(
+        t -> t.field(TasklistTaskTemplate.ASSIGNEE).value(FieldValue.of(userName)));
 
     final Query.Builder userNameCandidateUserQ = new Query.Builder();
     userNameCandidateUserQ.term(
-        t -> t.field(TaskTemplate.CANDIDATE_USERS).value(FieldValue.of(userName)));
+        t -> t.field(TasklistTaskTemplate.CANDIDATE_USERS).value(FieldValue.of(userName)));
 
     Query.Builder userNameCandidateGroupsQ = null;
     for (final String group : userGroups) {
       final Query.Builder singleUserNameCandidateGroupQ = new Query.Builder();
       singleUserNameCandidateGroupQ.term(
-          t -> t.field(TaskTemplate.CANDIDATE_GROUPS).value(FieldValue.of(group)));
+          t -> t.field(TasklistTaskTemplate.CANDIDATE_GROUPS).value(FieldValue.of(group)));
 
       if (userNameCandidateGroupsQ == null) {
         userNameCandidateGroupsQ = singleUserNameCandidateGroupQ;
@@ -642,11 +647,11 @@ public class TaskStoreOpenSearch implements TaskStore {
 
     final Query.Builder shouldNotContainCandidateUserQ = new Query.Builder();
     shouldNotContainCandidateUserQ.bool(
-        b -> b.mustNot(mn -> mn.exists(e -> e.field(TaskTemplate.CANDIDATE_USERS))));
+        b -> b.mustNot(mn -> mn.exists(e -> e.field(TasklistTaskTemplate.CANDIDATE_USERS))));
 
     final Query.Builder shouldNotContainCandidateGroupQ = new Query.Builder();
     shouldNotContainCandidateGroupQ.bool(
-        b -> b.mustNot(mn -> mn.exists(e -> e.field(TaskTemplate.CANDIDATE_GROUPS))));
+        b -> b.mustNot(mn -> mn.exists(e -> e.field(TasklistTaskTemplate.CANDIDATE_GROUPS))));
 
     final Query.Builder shouldNotContainCandidateUserAndGroupQ =
         OpenSearchUtil.joinQueryBuilderWithAnd(
@@ -685,7 +690,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     if (directSorting) { // this sorting is also the default one for 1st page
       sort2 =
           new SortOptions.Builder()
-              .field(f -> f.field(TaskTemplate.KEY).order(SortOrder.Asc))
+              .field(f -> f.field(TasklistTaskTemplate.KEY).order(SortOrder.Asc))
               .build();
       if (query.getSearchAfter() != null) {
         querySearchAfter = query.getSearchAfter();
@@ -696,7 +701,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       // reverse sorting
       sort2 =
           new SortOptions.Builder()
-              .field(f -> f.field(TaskTemplate.KEY).order(SortOrder.Desc))
+              .field(f -> f.field(TasklistTaskTemplate.KEY).order(SortOrder.Desc))
               .build();
       if (query.getSearchBefore() != null) {
         querySearchAfter = query.getSearchBefore();
@@ -719,7 +724,10 @@ public class TaskStoreOpenSearch implements TaskStore {
         } else {
           searchRequestBuilder.sort(
               mapNullInSort(
-                  TaskTemplate.PRIORITY, DEFAULT_PRIORITY, sortOrder, ScriptSortType.Number));
+                  TasklistTaskTemplate.PRIORITY,
+                  DEFAULT_PRIORITY,
+                  sortOrder,
+                  ScriptSortType.Number));
         }
       }
 
@@ -855,7 +863,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       nameQ.terms(
           terms ->
               terms
-                  .field(TaskVariableTemplate.NAME)
+                  .field(TasklistTaskVariableTemplate.NAME)
                   .terms(
                       t ->
                           t.value(Collections.singletonList(FieldValue.of(varNames.get(finalI))))));
@@ -864,7 +872,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       valueQ.terms(
           terms ->
               terms
-                  .field(TaskVariableTemplate.VALUE)
+                  .field(TasklistTaskVariableTemplate.VALUE)
                   .terms(
                       t ->
                           t.value(
@@ -967,7 +975,7 @@ public class TaskStoreOpenSearch implements TaskStore {
         return new Query.Builder()
                 .term(
                     t ->
-                        t.field(TaskTemplate.PRIORITY)
+                        t.field(TasklistTaskTemplate.PRIORITY)
                             .value(FieldValue.of(((Integer) priority.getEq()))))
                 .build()
                 .toBuilder();
@@ -975,7 +983,7 @@ public class TaskStoreOpenSearch implements TaskStore {
         return new Query.Builder()
                 .range(
                     r -> {
-                      r = r.field(TaskTemplate.PRIORITY);
+                      r = r.field(TasklistTaskTemplate.PRIORITY);
                       if (priority.getGt() != null) {
                         r = r.gt(JsonData.of(priority.getGt()));
                       }

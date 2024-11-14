@@ -14,16 +14,16 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.MultiTenancyProperties;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.indices.ProcessInstanceDependant;
-import io.camunda.tasklist.schema.v86.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
+import io.camunda.tasklist.v86.entities.ProcessInstanceEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceDependant;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -40,10 +40,16 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 @ExtendWith(MockitoExtension.class)
 class ProcessInstanceStoreOpenSearchTest {
 
-  @Mock private ProcessInstanceIndex processInstanceIndex;
+  @Mock private TasklistProcessInstanceIndex processInstanceIndex;
   @Mock private TaskStore taskStore;
-  @Spy private List<ProcessInstanceDependant> processInstanceDependants = Collections.emptyList();
-  @Spy private TaskVariableTemplate taskVariableTemplate = new TaskVariableTemplate();
+
+  @Spy
+  private List<TasklistProcessInstanceDependant> processInstanceDependants =
+      Collections.emptyList();
+
+  @Spy
+  private TasklistTaskVariableTemplate taskVariableTemplate = new TasklistTaskVariableTemplate();
+
   @Mock private RetryElasticsearchClient retryElasticsearchClient;
   @Mock private TenantAwareOpenSearchClient tenantAwareClient;
   @Mock private TasklistProperties tasklistProperties;

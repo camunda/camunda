@@ -10,10 +10,10 @@ package io.camunda.tasklist.zeebeimport;
 import static io.camunda.tasklist.util.ElasticsearchUtil.ZEEBE_INDEX_DELIMITER;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.v86.entities.meta.ImportPositionEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.slf4j.Logger;
@@ -55,7 +55,7 @@ public abstract class ImportJobAbstract implements ImportJob {
     // separate importbatch in sub-batches per index
     final List<ImportBatch> subBatches = createSubBatchesPerIndexName();
 
-    for (ImportBatch subBatch : subBatches) {
+    for (final ImportBatch subBatch : subBatches) {
       final boolean success = processOneIndexBatch(subBatch);
       if (!success) {
         notifyImportListenersAsFailed(importBatch);
@@ -63,13 +63,13 @@ public abstract class ImportJobAbstract implements ImportJob {
       } // else continue
     }
     importPositionHolder.recordLatestLoadedPosition(getLastProcessedPosition());
-    for (ImportBatch subBatch : subBatches) {
+    for (final ImportBatch subBatch : subBatches) {
       notifyImportListenersAsFinished(subBatch);
     }
     return true;
   }
 
-  private String extractZeebeVersionFromIndexName(String indexName) {
+  private String extractZeebeVersionFromIndexName(final String indexName) {
     final String[] split = indexName.split(ZEEBE_INDEX_DELIMITER);
     final String zeebeVersion;
     if (split.length >= 3) {
@@ -81,24 +81,26 @@ public abstract class ImportJobAbstract implements ImportJob {
     return zeebeVersion;
   }
 
-  private boolean processOneIndexBatch(ImportBatch subBatch) {
+  private boolean processOneIndexBatch(final ImportBatch subBatch) {
     try {
       final String version = extractZeebeVersionFromIndexName(subBatch.getLastRecordIndexName());
       final ImportBatchProcessor importBatchProcessor =
           importBatchProcessorFactory.getImportBatchProcessor(version);
       importBatchProcessor.performImport(subBatch);
       return true;
-    } catch (Exception ex) {
+    } catch (final Exception ex) {
       LOGGER.error(ex.getMessage(), ex);
       return false;
     }
   }
 
+  @Override
   public void recordLatestScheduledPosition() {
     importPositionHolder.recordLatestScheduledPosition(
         importBatch.getAliasName(), importBatch.getPartitionId(), getLastProcessedPosition());
   }
 
+  @Override
   public ImportPositionEntity getLastProcessedPosition() {
     if (lastProcessedPosition == null) {
       final long lastRecordPosition = importBatch.getLastProcessedPosition(objectMapper);
@@ -117,6 +119,7 @@ public abstract class ImportJobAbstract implements ImportJob {
     return lastProcessedPosition;
   }
 
+  @Override
   public boolean indexChange() {
     if (importBatch.getLastRecordIndexName() != null
         && previousPosition != null
@@ -127,26 +130,12 @@ public abstract class ImportJobAbstract implements ImportJob {
     }
   }
 
-  protected void notifyImportListenersAsFinished(ImportBatch importBatch) {
-    if (importListeners != null) {
-      for (ImportListener importListener : importListeners) {
-        importListener.finished(importBatch);
-      }
-    }
-  }
-
-  protected void notifyImportListenersAsFailed(ImportBatch importBatch) {
-    if (importListeners != null) {
-      for (ImportListener importListener : importListeners) {
-        importListener.failed(importBatch);
-      }
-    }
-  }
-
+  @Override
   public OffsetDateTime getCreationTime() {
     return creationTime;
   }
 
+  @Override
   public void processPossibleIndexChange() {
     // if there was index change, comparing with previous batch, or there are more than one indices
     // in current batch, refresh Zeebe indices
@@ -200,8 +189,24 @@ public abstract class ImportJobAbstract implements ImportJob {
           }
         }
         importBatch = newImportBatch;
-      } catch (NoSuchIndexException ex) {
+      } catch (final NoSuchIndexException ex) {
         LOGGER.warn("Indices are not found" + importBatch.toString());
+      }
+    }
+  }
+
+  protected void notifyImportListenersAsFinished(final ImportBatch importBatch) {
+    if (importListeners != null) {
+      for (final ImportListener importListener : importListeners) {
+        importListener.finished(importBatch);
+      }
+    }
+  }
+
+  protected void notifyImportListenersAsFailed(final ImportBatch importBatch) {
+    if (importListeners != null) {
+      for (final ImportListener importListener : importListeners) {
+        importListener.failed(importBatch);
       }
     }
   }

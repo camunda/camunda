@@ -9,7 +9,7 @@ package io.camunda.tasklist.webapp.graphql.entity;
 
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
-import io.camunda.tasklist.entities.FormEntity;
+import io.camunda.tasklist.v86.entities.FormEntity;
 import java.util.Objects;
 
 public class FormDTO {

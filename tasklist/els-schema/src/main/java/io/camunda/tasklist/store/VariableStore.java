@@ -7,7 +7,11 @@
  */
 package io.camunda.tasklist.store;
 
-import io.camunda.tasklist.entities.*;
+import io.camunda.tasklist.v86.entities.FlowNodeInstanceEntity;
+import io.camunda.tasklist.v86.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.TaskState;
+import io.camunda.tasklist.v86.entities.TaskVariableEntity;
+import io.camunda.tasklist.v86.entities.VariableEntity;
 import io.camunda.tasklist.views.TaskSearchView;
 import java.util.*;
 

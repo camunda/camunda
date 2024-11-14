@@ -9,7 +9,7 @@ package io.camunda.tasklist.qa.backup.generator;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import java.io.IOException;
 import java.util.Collections;
 import org.elasticsearch.ElasticsearchException;
@@ -53,7 +53,7 @@ public class BackupRestoreDataGeneratorElasticSearch extends AbstractBackupResto
   @Override
   protected void claimAllTasks() {
     final UpdateByQueryRequest updateRequest =
-        new UpdateByQueryRequest(getMainIndexNameFor(TaskTemplate.INDEX_NAME))
+        new UpdateByQueryRequest(getMainIndexNameFor(TasklistTaskTemplate.INDEX_NAME))
             .setQuery(QueryBuilders.matchAllQuery())
             .setScript(
                 new Script(

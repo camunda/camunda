@@ -7,11 +7,6 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.v86.indices.VariableIndex.ID;
-import static io.camunda.tasklist.schema.v86.indices.VariableIndex.NAME;
-import static io.camunda.tasklist.schema.v86.indices.VariableIndex.PROCESS_INSTANCE_ID;
-import static io.camunda.tasklist.schema.v86.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
-import static io.camunda.tasklist.schema.v86.indices.VariableIndex.VALUE;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
 import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
@@ -19,6 +14,11 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.tasklist.util.ElasticsearchUtil.scroll;
+import static io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex.ID;
+import static io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex.NAME;
+import static io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex.PROCESS_INSTANCE_ID;
+import static io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex.SCOPE_FLOW_NODE_ID;
+import static io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex.VALUE;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
@@ -28,19 +28,19 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.indices.FlowNodeInstanceIndex;
-import io.camunda.tasklist.schema.v86.indices.VariableIndex;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.v86.entities.FlowNodeInstanceEntity;
+import io.camunda.tasklist.v86.entities.TaskVariableEntity;
+import io.camunda.tasklist.v86.entities.VariableEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistFlowNodeInstanceIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,22 +87,25 @@ public class VariableStoreElasticSearch implements VariableStore {
   private RestHighLevelClient esClient;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-  @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
-  @Autowired private VariableIndex variableIndex;
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private TasklistFlowNodeInstanceIndex flowNodeInstanceIndex;
+  @Autowired private TasklistVariableIndex variableIndex;
+  @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
+  @Override
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
-      List<String> flowNodeInstanceIds, List<String> varNames, final Set<String> fieldNames) {
+      final List<String> flowNodeInstanceIds,
+      final List<String> varNames,
+      final Set<String> fieldNames) {
     final TermsQueryBuilder flowNodeInstanceKeyQ =
         termsQuery(SCOPE_FLOW_NODE_ID, flowNodeInstanceIds);
     TermsQueryBuilder varNamesQ = null;
     if (isNotEmpty(varNames)) {
-      varNamesQ = termsQuery(VariableIndex.NAME, varNames);
+      varNamesQ = termsQuery(TasklistVariableIndex.NAME, varNames);
     }
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
@@ -113,13 +116,14 @@ public class VariableStoreElasticSearch implements VariableStore {
         new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
     try {
       return scroll(searchRequest, VariableEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
+  @Override
   public Map<String, List<TaskVariableEntity>> getTaskVariablesPerTaskId(
       final List<GetVariablesRequest> requests) {
 
@@ -129,7 +133,7 @@ public class VariableStoreElasticSearch implements VariableStore {
 
     final TermsQueryBuilder taskIdsQ =
         termsQuery(
-            TaskVariableTemplate.TASK_ID,
+            TasklistTaskVariableTemplate.TASK_ID,
             requests.stream().map(GetVariablesRequest::getTaskId).collect(toList()));
     final List<String> varNames =
         requests.stream()
@@ -140,7 +144,7 @@ public class VariableStoreElasticSearch implements VariableStore {
             .collect(toList());
     TermsQueryBuilder varNamesQ = null;
     if (isNotEmpty(varNames)) {
-      varNamesQ = termsQuery(VariableIndex.NAME, varNames);
+      varNamesQ = termsQuery(TasklistVariableIndex.NAME, varNames);
     }
 
     final SearchSourceBuilder searchSourceBuilder =
@@ -159,87 +163,64 @@ public class VariableStoreElasticSearch implements VariableStore {
       return entities.stream()
           .collect(
               groupingBy(TaskVariableEntity::getTaskId, mapping(Function.identity(), toList())));
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
+  @Override
   public Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(final List<String> taskIds) {
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(taskVariableTemplate)
             .source(
                 SearchSourceBuilder.searchSource()
-                    .query(termsQuery(TaskVariableTemplate.TASK_ID, taskIds))
-                    .fetchField(TaskVariableTemplate.ID));
+                    .query(termsQuery(TasklistTaskVariableTemplate.TASK_ID, taskIds))
+                    .fetchField(TasklistTaskVariableTemplate.ID));
     try {
       return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 
+  @Override
   public void persistTaskVariables(final Collection<TaskVariableEntity> finalVariables) {
     final BulkRequest bulkRequest = new BulkRequest();
-    for (TaskVariableEntity variableEntity : finalVariables) {
+    for (final TaskVariableEntity variableEntity : finalVariables) {
       bulkRequest.add(createUpsertRequest(variableEntity));
     }
     try {
       ElasticsearchUtil.processBulkRequest(
           esClient, bulkRequest, WriteRequest.RefreshPolicy.WAIT_UNTIL);
-    } catch (PersistenceException ex) {
+    } catch (final PersistenceException ex) {
       throw new TasklistRuntimeException(ex);
     }
   }
 
-  private UpdateRequest createUpsertRequest(TaskVariableEntity variableEntity) {
-    try {
-      final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskVariableTemplate.TASK_ID, variableEntity.getTaskId());
-      updateFields.put(TaskVariableTemplate.NAME, variableEntity.getName());
-      updateFields.put(TaskVariableTemplate.VALUE, variableEntity.getValue());
-
-      // format date fields properly
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-
-      return new UpdateRequest()
-          .index(taskVariableTemplate.getFullQualifiedName())
-          .id(variableEntity.getId())
-          .upsert(objectMapper.writeValueAsString(variableEntity), XContentType.JSON)
-          .doc(jsonMap)
-          .retryOnConflict(UPDATE_RETRY_COUNT);
-
-    } catch (IOException e) {
-      throw new TasklistRuntimeException(
-          String.format(
-              "Error preparing the query to upsert task variable instance [%s]",
-              variableEntity.getId()),
-          e);
-    }
-  }
-
+  @Override
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
     final TermsQueryBuilder processInstanceKeyQuery =
-        termsQuery(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds);
+        termsQuery(TasklistFlowNodeInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds);
     final SearchRequest searchRequest =
         new SearchRequest(flowNodeInstanceIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
                     .query(constantScoreQuery(processInstanceKeyQuery))
-                    .sort(FlowNodeInstanceIndex.POSITION, SortOrder.ASC)
+                    .sort(TasklistFlowNodeInstanceIndex.POSITION, SortOrder.ASC)
                     .size(tasklistProperties.getElasticsearch().getBatchSize()));
     try {
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all flow nodes: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  public VariableEntity getRuntimeVariable(final String variableId, Set<String> fieldNames) {
+  @Override
+  public VariableEntity getRuntimeVariable(final String variableId, final Set<String> fieldNames) {
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(idsQuery().addIds(variableId));
     applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
@@ -258,14 +239,15 @@ public class VariableStoreElasticSearch implements VariableStore {
       } else {
         throw new NotFoundException(String.format("Variable with id %s was not found", variableId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  public TaskVariableEntity getTaskVariable(final String variableId, Set<String> fieldNames) {
+  @Override
+  public TaskVariableEntity getTaskVariable(final String variableId, final Set<String> fieldNames) {
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(idsQuery().addIds(variableId));
     applyFetchSourceForTaskVariableTemplate(searchSourceBuilder, fieldNames);
@@ -285,42 +267,16 @@ public class VariableStoreElasticSearch implements VariableStore {
         throw new NotFoundException(
             String.format("Task variable with id %s was not found", variableId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining task variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  private void applyFetchSourceForVariableIndex(
-      SearchSourceBuilder searchSourceBuilder, final Set<String> fieldNames) {
-    final String[] includesFields;
-    if (isNotEmpty(fieldNames)) {
-      final Set<String> elsFieldNames = VariableIndex.getElsFieldsByGraphqlFields(fieldNames);
-      elsFieldNames.add(ID);
-      elsFieldNames.add(NAME);
-      elsFieldNames.add(SCOPE_FLOW_NODE_ID);
-      includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
-      searchSourceBuilder.fetchSource(includesFields, null);
-    }
-  }
-
-  private void applyFetchSourceForTaskVariableTemplate(
-      SearchSourceBuilder searchSourceBuilder, final Set<String> fieldNames) {
-    final String[] includesFields;
-    if (isNotEmpty(fieldNames)) {
-      final Set<String> elsFieldNames =
-          TaskVariableTemplate.getElsFieldsByGraphqlFields(fieldNames);
-      elsFieldNames.add(TaskVariableTemplate.ID);
-      elsFieldNames.add(TaskVariableTemplate.NAME);
-      elsFieldNames.add(TaskVariableTemplate.TASK_ID);
-      includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
-      searchSourceBuilder.fetchSource(includesFields, null);
-    }
-  }
-
+  @Override
   public List<String> getProcessInstanceIdsWithMatchingVars(
-      List<String> varNames, List<String> varValues) {
+      final List<String> varNames, final List<String> varValues) {
 
     final List<Set<String>> listProcessIdsMatchingVars = new ArrayList<>();
 
@@ -368,7 +324,7 @@ public class VariableStoreElasticSearch implements VariableStore {
 
         listProcessIdsMatchingVars.add(processInstanceIds);
 
-      } catch (IOException e) {
+      } catch (final IOException e) {
         final String message =
             String.format(
                 "Exception occurred while obtaining flowNodeInstanceIds for variable %s: %s",
@@ -386,5 +342,60 @@ public class VariableStoreElasticSearch implements VariableStore {
                   return set1;
                 })
             .orElse(Collections.emptySet()));
+  }
+
+  private UpdateRequest createUpsertRequest(final TaskVariableEntity variableEntity) {
+    try {
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TasklistTaskVariableTemplate.TASK_ID, variableEntity.getTaskId());
+      updateFields.put(TasklistTaskVariableTemplate.NAME, variableEntity.getName());
+      updateFields.put(TasklistTaskVariableTemplate.VALUE, variableEntity.getValue());
+
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+
+      return new UpdateRequest()
+          .index(taskVariableTemplate.getFullQualifiedName())
+          .id(variableEntity.getId())
+          .upsert(objectMapper.writeValueAsString(variableEntity), XContentType.JSON)
+          .doc(jsonMap)
+          .retryOnConflict(UPDATE_RETRY_COUNT);
+
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(
+          String.format(
+              "Error preparing the query to upsert task variable instance [%s]",
+              variableEntity.getId()),
+          e);
+    }
+  }
+
+  private void applyFetchSourceForVariableIndex(
+      final SearchSourceBuilder searchSourceBuilder, final Set<String> fieldNames) {
+    final String[] includesFields;
+    if (isNotEmpty(fieldNames)) {
+      final Set<String> elsFieldNames =
+          TasklistVariableIndex.getElsFieldsByGraphqlFields(fieldNames);
+      elsFieldNames.add(ID);
+      elsFieldNames.add(NAME);
+      elsFieldNames.add(SCOPE_FLOW_NODE_ID);
+      includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
+      searchSourceBuilder.fetchSource(includesFields, null);
+    }
+  }
+
+  private void applyFetchSourceForTaskVariableTemplate(
+      final SearchSourceBuilder searchSourceBuilder, final Set<String> fieldNames) {
+    final String[] includesFields;
+    if (isNotEmpty(fieldNames)) {
+      final Set<String> elsFieldNames =
+          TasklistTaskVariableTemplate.getElsFieldsByGraphqlFields(fieldNames);
+      elsFieldNames.add(TasklistTaskVariableTemplate.ID);
+      elsFieldNames.add(TasklistTaskVariableTemplate.NAME);
+      elsFieldNames.add(TasklistTaskVariableTemplate.TASK_ID);
+      includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
+      searchSourceBuilder.fetchSource(includesFields, null);
+    }
   }
 }

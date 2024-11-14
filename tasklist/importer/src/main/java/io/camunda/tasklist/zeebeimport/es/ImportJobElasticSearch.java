@@ -10,8 +10,8 @@ package io.camunda.tasklist.zeebeimport.es;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.v86.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.ImportJobAbstract;
 import java.time.OffsetDateTime;
@@ -39,12 +39,23 @@ public class ImportJobElasticSearch extends ImportJobAbstract {
   @Qualifier("tasklistZeebeEsClient")
   private RestHighLevelClient zeebeEsClient;
 
-  public ImportJobElasticSearch(ImportBatch importBatch, ImportPositionEntity previousPosition) {
+  public ImportJobElasticSearch(
+      final ImportBatch importBatch, final ImportPositionEntity previousPosition) {
     this.importBatch = importBatch;
     this.previousPosition = previousPosition;
-    this.creationTime = OffsetDateTime.now();
+    creationTime = OffsetDateTime.now();
   }
 
+  @Override
+  public void refreshZeebeIndices() {
+    final String indexPattern =
+        importBatch
+            .getImportValueType()
+            .getIndicesPattern(tasklistProperties.getZeebeElasticsearch().getPrefix());
+    ElasticsearchUtil.refreshIndicesFor(zeebeEsClient, indexPattern);
+  }
+
+  @Override
   public List<ImportBatch> createSubBatchesPerIndexName() {
     final List<ImportBatch> subBatches = new ArrayList<>();
     if (importBatch.getHits().size() <= 1) {
@@ -54,7 +65,7 @@ public class ImportJobElasticSearch extends ImportJobAbstract {
       String previousIndexName = null;
       List<SearchHit> subBatchHits = new ArrayList<>();
       final List<SearchHit> importResult = importBatch.getHits();
-      for (SearchHit hit : importResult) {
+      for (final SearchHit hit : importResult) {
         final String indexName = hit.getIndex();
         if (previousIndexName != null && !indexName.equals(previousIndexName)) {
           // start new sub-batch
@@ -77,13 +88,5 @@ public class ImportJobElasticSearch extends ImportJobAbstract {
               previousIndexName));
       return subBatches;
     }
-  }
-
-  public void refreshZeebeIndices() {
-    final String indexPattern =
-        importBatch
-            .getImportValueType()
-            .getIndicesPattern(tasklistProperties.getZeebeElasticsearch().getPrefix());
-    ElasticsearchUtil.refreshIndicesFor(zeebeEsClient, indexPattern);
   }
 }

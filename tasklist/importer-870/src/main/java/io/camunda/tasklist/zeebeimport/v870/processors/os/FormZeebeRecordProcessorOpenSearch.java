@@ -8,11 +8,11 @@
 package io.camunda.tasklist.zeebeimport.v870.processors.os;
 
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.v86.indices.FormIndex;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.v86.entities.FormEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistFormIndex;
 import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.FormRecordImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
@@ -31,7 +31,7 @@ public class FormZeebeRecordProcessorOpenSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(FormZeebeRecordProcessorOpenSearch.class);
 
-  @Autowired private FormIndex formIndex;
+  @Autowired private TasklistFormIndex formIndex;
 
   public void processFormRecord(final Record record, final List<BulkOperation> operations)
       throws PersistenceException {

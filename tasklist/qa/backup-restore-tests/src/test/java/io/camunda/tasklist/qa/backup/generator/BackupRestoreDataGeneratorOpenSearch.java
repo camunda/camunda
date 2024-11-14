@@ -9,7 +9,7 @@ package io.camunda.tasklist.qa.backup.generator;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.qa.backup.BackupRestoreTestContext;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import java.io.IOException;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -48,7 +48,7 @@ public class BackupRestoreDataGeneratorOpenSearch extends AbstractBackupRestoreD
     try {
       openSearchClient.updateByQuery(
           qr ->
-              qr.index(getMainIndexNameFor(TaskTemplate.INDEX_NAME))
+              qr.index(getMainIndexNameFor(TasklistTaskTemplate.INDEX_NAME))
                   .query(new MatchAllQuery.Builder().build()._toQuery())
                   .script(
                       s ->

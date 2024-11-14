@@ -15,8 +15,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.v86.migration.es.ReindexPlanElasticSearch;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.v86.schema.migration.es.ReindexPlanElasticSearch;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;

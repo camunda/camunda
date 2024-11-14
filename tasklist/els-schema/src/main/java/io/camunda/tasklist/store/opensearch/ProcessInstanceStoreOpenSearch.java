@@ -7,21 +7,21 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.tasklist.schema.v86.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
+import static io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceDependant.PROCESS_INSTANCE_ID;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.os.RetryOpenSearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.indices.ProcessInstanceDependant;
-import io.camunda.tasklist.schema.v86.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.v86.templates.DraftTaskVariableTemplate;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.ProcessInstanceStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.v86.entities.ProcessInstanceEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceDependant;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistDraftTaskVariableTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -44,13 +44,13 @@ public class ProcessInstanceStoreOpenSearch implements ProcessInstanceStore {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessInstanceStoreOpenSearch.class);
 
-  @Autowired ProcessInstanceIndex processInstanceIndex;
+  @Autowired TasklistProcessInstanceIndex processInstanceIndex;
 
   @Autowired TaskStore taskStore;
 
-  @Autowired List<ProcessInstanceDependant> processInstanceDependants;
+  @Autowired List<TasklistProcessInstanceDependant> processInstanceDependants;
 
-  @Autowired TaskVariableTemplate taskVariableTemplate;
+  @Autowired TasklistTaskVariableTemplate taskVariableTemplate;
 
   @Autowired RetryOpenSearchClient retryOpenSearchClient;
 
@@ -77,10 +77,10 @@ public class ProcessInstanceStoreOpenSearch implements ProcessInstanceStore {
     }
   }
 
-  private DeletionStatus deleteProcessInstanceDependantsFor(String processInstanceId) {
+  private DeletionStatus deleteProcessInstanceDependantsFor(final String processInstanceId) {
     final List<String> dependantTaskIds = getDependantTasksIdsFor(processInstanceId);
     boolean deleted = false;
-    for (ProcessInstanceDependant dependant : processInstanceDependants) {
+    for (final TasklistProcessInstanceDependant dependant : processInstanceDependants) {
       deleted =
           retryOpenSearchClient.deleteDocumentsByQuery(
                   dependant.getAllIndicesPattern(),
@@ -110,7 +110,7 @@ public class ProcessInstanceStoreOpenSearch implements ProcessInstanceStore {
             .terms(
                 terms ->
                     terms
-                        .field(TaskVariableTemplate.TASK_ID)
+                        .field(TasklistTaskVariableTemplate.TASK_ID)
                         .terms(
                             v ->
                                 v.value(
@@ -120,7 +120,7 @@ public class ProcessInstanceStoreOpenSearch implements ProcessInstanceStore {
             .build());
   }
 
-  private Optional<ProcessInstanceEntity> getById(String variableId) {
+  private Optional<ProcessInstanceEntity> getById(final String variableId) {
     try {
       final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
       searchRequest.index(processInstanceIndex.getFullQualifiedName());
@@ -128,7 +128,8 @@ public class ProcessInstanceStoreOpenSearch implements ProcessInstanceStore {
           q ->
               q.term(
                   term ->
-                      term.field(DraftTaskVariableTemplate.ID).value(FieldValue.of(variableId))));
+                      term.field(TasklistDraftTaskVariableTemplate.ID)
+                          .value(FieldValue.of(variableId))));
 
       final SearchResponse<ProcessInstanceEntity> searchResponse =
           tenantAwareClient.search(searchRequest, ProcessInstanceEntity.class);
@@ -140,7 +141,7 @@ public class ProcessInstanceStoreOpenSearch implements ProcessInstanceStore {
 
       final Hit<ProcessInstanceEntity> hit = hits.get(0);
       return Optional.of(hit.source());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOGGER.error(String.format("Error retrieving processInstance with ID [%s]", variableId), e);
       return Optional.empty();
     }

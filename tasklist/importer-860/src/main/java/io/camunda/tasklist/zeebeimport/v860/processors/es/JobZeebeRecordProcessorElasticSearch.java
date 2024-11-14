@@ -13,13 +13,13 @@ import static io.camunda.zeebe.protocol.Protocol.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskImplementation;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.util.DateUtil;
+import io.camunda.tasklist.v86.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.TaskImplementation;
+import io.camunda.tasklist.v86.entities.TaskState;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import io.camunda.tasklist.zeebeimport.v860.record.Intent;
 import io.camunda.tasklist.zeebeimport.v860.record.value.JobRecordValueImpl;
 import io.camunda.zeebe.protocol.Protocol;
@@ -54,7 +54,7 @@ public class JobZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private TaskTemplate taskTemplate;
+  @Autowired private TasklistTaskTemplate taskTemplate;
 
   @Autowired private FormStore formStore;
 
@@ -201,14 +201,15 @@ public class JobZeebeRecordProcessorElasticSearch {
       final Map<String, Object> updateFields = new HashMap<>();
       LOGGER.debug("Task instance: id {}", entity.getId());
       if (intent == Intent.MIGRATED) {
-        updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
-        updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
-        updateFields.put(TaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
+        updateFields.put(TasklistTaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
+        updateFields.put(TasklistTaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+        updateFields.put(
+            TasklistTaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
       } else {
         if (entity.getState() != null) {
-          updateFields.put(TaskTemplate.STATE, entity.getState());
+          updateFields.put(TasklistTaskTemplate.STATE, entity.getState());
         }
-        updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
+        updateFields.put(TasklistTaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
       }
       // format date fields properly
       final Map<String, Object> jsonMap =

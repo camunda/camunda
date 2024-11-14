@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.es;
 
-import static io.camunda.tasklist.schema.v86.indices.AbstractIndexDescriptor.formatPrefixAndComponent;
+import static io.camunda.tasklist.v86.schema.indices.TasklistAbstractIndexDescriptor.formatPrefixAndComponent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -15,13 +15,13 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.v86.IndexMapping;
-import io.camunda.tasklist.schema.v86.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.v86.IndexSchemaValidator;
-import io.camunda.tasklist.schema.v86.manager.SchemaManager;
-import io.camunda.tasklist.schema.v86.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.v86.schema.IndexMapping;
+import io.camunda.tasklist.v86.schema.IndexMapping.IndexMappingProperty;
+import io.camunda.tasklist.v86.schema.IndexSchemaValidator;
+import io.camunda.tasklist.v86.schema.manager.SchemaManager;
+import io.camunda.tasklist.v86.schema.templates.TasklistTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -45,7 +45,7 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
   private static final String INDEX_NAME = "test";
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;
-  @Autowired private List<TemplateDescriptor> templateDescriptors;
+  @Autowired private List<TasklistTemplateDescriptor> templateDescriptors;
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @Autowired private NoSqlHelper noSqlHelper;

@@ -13,12 +13,12 @@ import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.es.ElasticsearchInternalTask;
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.qa.util.TestContext;
-import io.camunda.tasklist.schema.v86.indices.ImportPositionIndex;
-import io.camunda.tasklist.schema.v86.indices.ProcessIndex;
-import io.camunda.tasklist.schema.v86.indices.UserIndex;
-import io.camunda.tasklist.schema.v86.indices.VariableIndex;
-import io.camunda.tasklist.schema.v86.manager.ElasticsearchSchemaManager;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
+import io.camunda.tasklist.v86.schema.indices.TasklistImportPositionIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistUserIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
+import io.camunda.tasklist.v86.schema.manager.ElasticsearchSchemaManager;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,11 +43,11 @@ public abstract class AbstractMigrationTest {
 
   @Autowired protected EntityReader entityReader;
 
-  @Autowired protected TaskTemplate taskTemplate;
+  @Autowired protected TasklistTaskTemplate taskTemplate;
 
-  @Autowired protected VariableIndex variableIndex;
+  @Autowired protected TasklistVariableIndex variableIndex;
 
-  @Autowired protected ProcessIndex processIndex;
+  @Autowired protected TasklistProcessIndex processIndex;
 
   @Autowired protected TestContext testContext;
 
@@ -55,9 +55,9 @@ public abstract class AbstractMigrationTest {
 
   @Autowired protected RetryElasticsearchClient retryElasticsearchClient;
 
-  @Autowired protected ImportPositionIndex importPositionIndex;
+  @Autowired protected TasklistImportPositionIndex importPositionIndex;
 
-  @Autowired protected UserIndex userIndex;
+  @Autowired protected TasklistUserIndex userIndex;
 
   protected void assumeThatProcessIsUnderTest(final String bpmnProcessId) {
     assumeTrue(testContext.getProcessesToAssert().contains(bpmnProcessId));

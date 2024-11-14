@@ -10,14 +10,14 @@ package io.camunda.tasklist.zeebeimport.v870.processors.common;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskImplementation;
-import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
-import io.camunda.tasklist.schema.v86.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.util.DateUtil;
+import io.camunda.tasklist.v86.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.TaskImplementation;
+import io.camunda.tasklist.v86.entities.TaskState;
+import io.camunda.tasklist.v86.entities.listview.UserTaskListViewEntity;
+import io.camunda.tasklist.v86.schema.templates.TasklistListViewTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import io.camunda.tasklist.zeebeimport.v870.record.Intent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -166,20 +166,21 @@ public class UserTaskRecordToTaskEntityMapper {
     final Map<String, Object> updateFields = new HashMap<>();
     final Intent intent = (Intent) record.getIntent();
     if (entity.getState() != null) {
-      updateFields.put(TaskTemplate.STATE, entity.getState());
+      updateFields.put(TasklistTaskTemplate.STATE, entity.getState());
     }
     switch (intent) {
       case MIGRATED -> {
-        updateFields.put(TaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
-        updateFields.put(TaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
-        updateFields.put(TaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
+        updateFields.put(TasklistTaskTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
+        updateFields.put(TasklistTaskTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+        updateFields.put(
+            TasklistTaskTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
       }
       case COMPLETED, CANCELED -> {
-        updateFields.put(TaskTemplate.STATE, entity.getState());
-        updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
+        updateFields.put(TasklistTaskTemplate.STATE, entity.getState());
+        updateFields.put(TasklistTaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
       }
       case ASSIGNED -> {
-        updateFields.put(TaskTemplate.ASSIGNEE, entity.getAssignee());
+        updateFields.put(TasklistTaskTemplate.ASSIGNEE, entity.getAssignee());
       }
       case UPDATED -> {
         final UserTaskRecordValue recordValue = record.getValue();
@@ -187,13 +188,15 @@ public class UserTaskRecordToTaskEntityMapper {
         for (final String attribute : changedAttributes) {
           switch (attribute) {
             case "candidateGroupsList" ->
-                updateFields.put(TaskTemplate.CANDIDATE_GROUPS, entity.getCandidateGroups());
+                updateFields.put(
+                    TasklistTaskTemplate.CANDIDATE_GROUPS, entity.getCandidateGroups());
             case "candidateUsersList" ->
-                updateFields.put(TaskTemplate.CANDIDATE_USERS, entity.getCandidateUsers());
-            case "dueDate" -> updateFields.put(TaskTemplate.DUE_DATE, entity.getDueDate());
+                updateFields.put(TasklistTaskTemplate.CANDIDATE_USERS, entity.getCandidateUsers());
+            case "dueDate" -> updateFields.put(TasklistTaskTemplate.DUE_DATE, entity.getDueDate());
             case "followUpDate" ->
-                updateFields.put(TaskTemplate.FOLLOW_UP_DATE, entity.getFollowUpDate());
-            case "priority" -> updateFields.put(TaskTemplate.PRIORITY, entity.getPriority());
+                updateFields.put(TasklistTaskTemplate.FOLLOW_UP_DATE, entity.getFollowUpDate());
+            case "priority" ->
+                updateFields.put(TasklistTaskTemplate.PRIORITY, entity.getPriority());
             default -> {
               LOGGER.warn(
                   "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}", attribute);

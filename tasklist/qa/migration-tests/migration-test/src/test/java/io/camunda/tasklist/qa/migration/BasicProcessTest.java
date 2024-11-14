@@ -7,18 +7,18 @@
  */
 package io.camunda.tasklist.qa.migration;
 
-import static io.camunda.tasklist.schema.v86.templates.TaskTemplate.BPMN_PROCESS_ID;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
+import static io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate.BPMN_PROCESS_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.UserEntity;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
 import io.camunda.tasklist.qa.migration.v810.BasicProcessDataGenerator;
-import io.camunda.tasklist.schema.v86.indices.UserIndex;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.v86.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.UserEntity;
+import io.camunda.tasklist.v86.entities.meta.ImportPositionEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistUserIndex;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -75,6 +75,6 @@ public class BasicProcessTest extends AbstractMigrationTest {
     final List<UserEntity> users =
         entityReader.getEntitiesFor(userIndex.getAlias(), UserEntity.class);
     assertThat(users.size()).isEqualTo(3);
-    assertThat(users).extracting(UserIndex.USER_ID).contains("demo", "act", "view");
+    assertThat(users).extracting(TasklistUserIndex.USER_ID).contains("demo", "act", "view");
   }
 }

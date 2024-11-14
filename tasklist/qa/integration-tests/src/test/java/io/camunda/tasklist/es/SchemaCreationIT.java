@@ -12,13 +12,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.v86.IndexSchemaValidator;
-import io.camunda.tasklist.schema.v86.indices.MigrationRepositoryIndex;
-import io.camunda.tasklist.schema.v86.indices.TasklistWebSessionIndex;
-import io.camunda.tasklist.schema.v86.migration.ProcessorStep;
 import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.v86.schema.IndexSchemaValidator;
+import io.camunda.tasklist.v86.schema.indices.TasklistMigrationRepositoryIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistWebSessionIndex;
+import io.camunda.tasklist.v86.schema.migration.ProcessorStep;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.List;
@@ -55,7 +55,7 @@ public class SchemaCreationIT extends TasklistIntegrationTest {
   @Test // ZTL-1007
   public void testMigrationStepsRepositoryFields() throws IOException {
     final IndexDescriptor migrationStepsIndexDescriptor =
-        getIndexDescriptorBy(MigrationRepositoryIndex.INDEX_NAME);
+        getIndexDescriptorBy(TasklistMigrationRepositoryIndex.INDEX_NAME);
     assertThat(migrationStepsIndexDescriptor.getVersion()).isEqualTo("1.1.0");
     assertThat(getFieldDescriptions(migrationStepsIndexDescriptor).keySet())
         .containsExactlyInAnyOrder(

@@ -11,14 +11,14 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
-import io.camunda.tasklist.schema.v86.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.v86.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.TaskVariableEntity;
+import io.camunda.tasklist.v86.entities.listview.UserTaskListViewEntity;
+import io.camunda.tasklist.v86.schema.templates.TasklistListViewTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v860.processors.common.UserTaskRecordToVariableEntityMapper;
 import io.camunda.zeebe.protocol.record.Record;
@@ -49,11 +49,11 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private TaskTemplate taskTemplate;
+  @Autowired private TasklistTaskTemplate taskTemplate;
 
   @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
 
-  @Autowired private TaskVariableTemplate variableIndex;
+  @Autowired private TasklistTaskVariableTemplate variableIndex;
 
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
   @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
@@ -107,9 +107,9 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     try {
       LOGGER.debug("Variable instance for list view: id {}", variable.getId());
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskVariableTemplate.VALUE, variable.getValue());
-      updateFields.put(TaskVariableTemplate.FULL_VALUE, variable.getFullValue());
-      updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
+      updateFields.put(TasklistTaskVariableTemplate.VALUE, variable.getValue());
+      updateFields.put(TasklistTaskVariableTemplate.FULL_VALUE, variable.getFullValue());
+      updateFields.put(TasklistTaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
       return new UpdateRequest()
           .index(variableIndex.getFullQualifiedName())

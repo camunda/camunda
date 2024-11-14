@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.qa.util;
 
-import io.camunda.tasklist.schema.v86.manager.SchemaManager;
+import io.camunda.tasklist.v86.schema.manager.SchemaManager;
 
 public interface TestSchemaManager extends SchemaManager {
 

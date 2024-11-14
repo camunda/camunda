@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.es;
 
-import static io.camunda.tasklist.schema.v86.IndexMapping.IndexMappingProperty.createIndexMappingProperty;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
+import static io.camunda.tasklist.v86.schema.IndexMapping.IndexMappingProperty.createIndexMappingProperty;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -16,9 +16,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.IndexMapping;
 import io.camunda.tasklist.store.elasticsearch.dao.response.TaskResponse;
 import io.camunda.tasklist.util.CollectionUtil;
+import io.camunda.tasklist.v86.schema.IndexMapping;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;

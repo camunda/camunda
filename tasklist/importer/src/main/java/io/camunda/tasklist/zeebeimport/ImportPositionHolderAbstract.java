@@ -9,9 +9,9 @@ package io.camunda.tasklist.zeebeimport;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.indices.ImportPositionIndex;
+import io.camunda.tasklist.v86.entities.meta.ImportPositionEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistImportPositionIndex;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -39,7 +39,7 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
   protected ScheduledFuture<?> scheduledTask;
   protected ReentrantLock inflightImportPositionLock = new ReentrantLock();
 
-  @Autowired protected ImportPositionIndex importPositionType;
+  @Autowired protected TasklistImportPositionIndex importPositionType;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -59,6 +59,7 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
     scheduleImportPositionUpdateTask();
   }
 
+  @Override
   public void scheduleImportPositionUpdateTask() {
     final var interval = tasklistProperties.getImporter().getImportPositionUpdateInterval();
     scheduledTask =
@@ -67,6 +68,7 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
             OffsetDateTime.now().plus(interval, ChronoUnit.MILLIS).toInstant());
   }
 
+  @Override
   public CompletableFuture<Void> cancelScheduledImportPositionUpdateTask() {
     final var future = new CompletableFuture<Void>();
     importPositionUpdateExecutor.submit(
@@ -81,8 +83,9 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
     return future;
   }
 
-  public ImportPositionEntity getLatestScheduledPosition(String aliasTemplate, int partitionId)
-      throws IOException {
+  @Override
+  public ImportPositionEntity getLatestScheduledPosition(
+      final String aliasTemplate, final int partitionId) throws IOException {
     final String key = getKey(aliasTemplate, partitionId);
     if (lastScheduledPositions.containsKey(key)) {
       return lastScheduledPositions.get(key);
@@ -94,16 +97,16 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
     }
   }
 
-  private String getKey(String aliasTemplate, int partitionId) {
-    return String.format("%s-%d", aliasTemplate, partitionId);
-  }
-
+  @Override
   public void recordLatestScheduledPosition(
-      String aliasName, int partitionId, ImportPositionEntity importPositionEntity) {
+      final String aliasName,
+      final int partitionId,
+      final ImportPositionEntity importPositionEntity) {
     lastScheduledPositions.put(getKey(aliasName, partitionId), importPositionEntity);
   }
 
-  public void recordLatestLoadedPosition(ImportPositionEntity lastProcessedPosition) {
+  @Override
+  public void recordLatestLoadedPosition(final ImportPositionEntity lastProcessedPosition) {
     withInflightImportPositionLock(
         () -> {
           final var aliasName = lastProcessedPosition.getAliasName();
@@ -112,25 +115,14 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
         });
   }
 
+  @Override
   public void clearCache() {
     lastScheduledPositions.clear();
     pendingProcessedPositions.clear();
     withInflightImportPositionLock(() -> inflightProcessedPositions.clear());
   }
 
-  protected void withImportPositionTimer(final Callable<Void> action) throws Exception {
-    metrics.getTimer(Metrics.TIMER_NAME_IMPORT_POSITION_UPDATE).recordCallable(action);
-  }
-
-  protected void withInflightImportPositionLock(final Runnable action) {
-    try {
-      inflightImportPositionLock.lock();
-      action.run();
-    } finally {
-      inflightImportPositionLock.unlock();
-    }
-  }
-
+  @Override
   public void updateImportPositions() {
     withInflightImportPositionLock(
         () -> {
@@ -148,5 +140,22 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
 
     // self scheduling just for the case the interval is set too short
     scheduleImportPositionUpdateTask();
+  }
+
+  private String getKey(final String aliasTemplate, final int partitionId) {
+    return String.format("%s-%d", aliasTemplate, partitionId);
+  }
+
+  protected void withImportPositionTimer(final Callable<Void> action) throws Exception {
+    metrics.getTimer(Metrics.TIMER_NAME_IMPORT_POSITION_UPDATE).recordCallable(action);
+  }
+
+  protected void withInflightImportPositionLock(final Runnable action) {
+    try {
+      inflightImportPositionLock.lock();
+      action.run();
+    } finally {
+      inflightImportPositionLock.unlock();
+    }
   }
 }

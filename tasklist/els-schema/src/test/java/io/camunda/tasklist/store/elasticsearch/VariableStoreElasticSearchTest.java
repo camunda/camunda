@@ -17,11 +17,11 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.indices.FlowNodeInstanceIndex;
-import io.camunda.tasklist.schema.v86.indices.VariableIndex;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
+import io.camunda.tasklist.v86.entities.FlowNodeInstanceEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistFlowNodeInstanceIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -46,9 +46,15 @@ class VariableStoreElasticSearchTest {
 
   @Captor private ArgumentCaptor<SearchRequest> searchRequestCaptor;
   @Mock private RestHighLevelClient esClient;
-  @Spy private FlowNodeInstanceIndex flowNodeInstanceIndex = new FlowNodeInstanceIndex();
-  @Spy private VariableIndex variableIndex = new VariableIndex();
-  @Spy private TaskVariableTemplate taskVariableTemplate = new TaskVariableTemplate();
+
+  @Spy
+  private TasklistFlowNodeInstanceIndex flowNodeInstanceIndex = new TasklistFlowNodeInstanceIndex();
+
+  @Spy private TasklistVariableIndex variableIndex = new TasklistVariableIndex();
+
+  @Spy
+  private TasklistTaskVariableTemplate taskVariableTemplate = new TasklistTaskVariableTemplate();
+
   @Spy private TasklistProperties tasklistProperties = new TasklistProperties();
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
   @InjectMocks private VariableStoreElasticSearch instance;
@@ -82,7 +88,8 @@ class VariableStoreElasticSearchTest {
 
     final SearchRequest capturedSearchRequest = searchRequestCaptor.getValue();
     final String expectedAlias =
-        String.format("tasklist-flownode-instance-%s_alias", FlowNodeInstanceIndex.INDEX_VERSION);
+        String.format(
+            "tasklist-flownode-instance-%s_alias", TasklistFlowNodeInstanceIndex.INDEX_VERSION);
     assertThat(capturedSearchRequest.indices()).containsExactly(expectedAlias);
     assertThat(capturedSearchRequest.source().size()).isEqualTo(200);
     assertThat(result).isEmpty();

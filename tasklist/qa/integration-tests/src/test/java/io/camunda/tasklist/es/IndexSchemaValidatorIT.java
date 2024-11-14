@@ -7,17 +7,17 @@
  */
 package io.camunda.tasklist.es;
 
-import static io.camunda.tasklist.schema.v86.indices.AbstractIndexDescriptor.formatPrefixAndComponent;
+import static io.camunda.tasklist.v86.schema.indices.TasklistAbstractIndexDescriptor.formatPrefixAndComponent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.v86.IndexSchemaValidator;
-import io.camunda.tasklist.schema.v86.manager.ElasticsearchSchemaManager;
-import io.camunda.tasklist.schema.v86.manager.SchemaManager;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
+import io.camunda.tasklist.v86.schema.IndexSchemaValidator;
+import io.camunda.tasklist.v86.schema.manager.ElasticsearchSchemaManager;
+import io.camunda.tasklist.v86.schema.manager.SchemaManager;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.lang.reflect.Field;
 import java.nio.file.Files;

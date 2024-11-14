@@ -15,8 +15,8 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.v86.indices.ImportPositionIndex;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.v86.schema.indices.TasklistImportPositionIndex;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
@@ -205,13 +205,15 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
                 s ->
                     s.field(
                         FieldSort.of(
-                            f -> f.field(ImportPositionIndex.SEQUENCE).order(SortOrder.Asc))))
+                            f ->
+                                f.field(TasklistImportPositionIndex.SEQUENCE)
+                                    .order(SortOrder.Asc))))
             .query(
                 q ->
                     q.range(
                         range ->
                             range
-                                .field(ImportPositionIndex.SEQUENCE)
+                                .field(TasklistImportPositionIndex.SEQUENCE)
                                 .gt(JsonData.of(fromSequence))
                                 .lte(JsonData.of(lessThanEqualsSequence))))
             .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits)
@@ -253,7 +255,7 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
   private SearchRequest createSearchQuery(
       final String aliasName, final Long positionFrom, final Long positionTo) {
     final RangeQuery.Builder rangeQuery = new RangeQuery.Builder();
-    rangeQuery.field(ImportPositionIndex.POSITION).gt(JsonData.of(positionFrom));
+    rangeQuery.field(TasklistImportPositionIndex.POSITION).gt(JsonData.of(positionFrom));
     if (positionTo != null) {
       rangeQuery.lte(JsonData.of(positionTo));
     }
@@ -269,7 +271,8 @@ public class RecordsReaderOpenSearch extends RecordsReaderAbstract {
     searchRequestBuilder
         .query(query)
         .index(aliasName)
-        .sort(s -> s.field(f -> f.field(ImportPositionIndex.POSITION).order(SortOrder.Asc)));
+        .sort(
+            s -> s.field(f -> f.field(TasklistImportPositionIndex.POSITION).order(SortOrder.Asc)));
 
     if (positionTo == null) {
       searchRequestBuilder.size(tasklistProperties.getZeebeOpenSearch().getBatchSize());

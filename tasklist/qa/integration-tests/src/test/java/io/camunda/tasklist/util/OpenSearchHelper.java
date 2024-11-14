@@ -9,15 +9,15 @@ package io.camunda.tasklist.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
-import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.v86.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.v86.indices.VariableIndex;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
+import io.camunda.tasklist.v86.entities.ProcessInstanceEntity;
+import io.camunda.tasklist.v86.entities.TaskEntity;
+import io.camunda.tasklist.v86.entities.TaskVariableEntity;
+import io.camunda.tasklist.v86.entities.VariableEntity;
+import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
@@ -47,13 +47,13 @@ public class OpenSearchHelper implements NoSqlHelper {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchHelper.class);
 
-  @Autowired private TaskTemplate taskTemplate;
+  @Autowired private TasklistTaskTemplate taskTemplate;
 
-  @Autowired private ProcessInstanceIndex processInstanceIndex;
+  @Autowired private TasklistProcessInstanceIndex processInstanceIndex;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
 
-  @Autowired private VariableIndex variableIndex;
+  @Autowired private TasklistVariableIndex variableIndex;
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -124,11 +124,14 @@ public class OpenSearchHelper implements NoSqlHelper {
     final Query.Builder piId = new Query.Builder();
     if (processInstanceId != null) {
       piId.term(
-          t -> t.field(TaskTemplate.PROCESS_INSTANCE_ID).value(FieldValue.of(processInstanceId)));
+          t ->
+              t.field(TasklistTaskTemplate.PROCESS_INSTANCE_ID)
+                  .value(FieldValue.of(processInstanceId)));
     }
 
     final Query.Builder flowQ = new Query.Builder();
-    flowQ.term(t -> t.field(TaskTemplate.FLOW_NODE_BPMN_ID).value(FieldValue.of(flowNodeBpmnId)));
+    flowQ.term(
+        t -> t.field(TasklistTaskTemplate.FLOW_NODE_BPMN_ID).value(FieldValue.of(flowNodeBpmnId)));
 
     try {
       final Query query;
@@ -148,7 +151,7 @@ public class OpenSearchHelper implements NoSqlHelper {
                               sort.field(
                                   field ->
                                       field
-                                          .field(TaskTemplate.CREATION_TIME)
+                                          .field(TasklistTaskTemplate.CREATION_TIME)
                                           .order(SortOrder.Desc))),
               TaskEntity.class);
 
@@ -170,10 +173,12 @@ public class OpenSearchHelper implements NoSqlHelper {
   @Override
   public boolean checkVariableExists(final String taskId, final String varName) {
     final Query.Builder taskIdQ = new Query.Builder();
-    taskIdQ.term(term -> term.field(TaskVariableTemplate.TASK_ID).value(FieldValue.of(taskId)));
+    taskIdQ.term(
+        term -> term.field(TasklistTaskVariableTemplate.TASK_ID).value(FieldValue.of(taskId)));
 
     final Query.Builder varNameQ = new Query.Builder();
-    varNameQ.term(term -> term.field(TaskVariableTemplate.NAME).value(FieldValue.of(varName)));
+    varNameQ.term(
+        term -> term.field(TasklistTaskVariableTemplate.NAME).value(FieldValue.of(varName)));
 
     try {
       final SearchResponse<TaskVariableEntity> response =
@@ -203,7 +208,7 @@ public class OpenSearchHelper implements NoSqlHelper {
                                           filter.terms(
                                               terms ->
                                                   terms
-                                                      .field(VariableIndex.NAME)
+                                                      .field(TasklistVariableIndex.NAME)
                                                       .terms(
                                                           tv ->
                                                               tv.value(

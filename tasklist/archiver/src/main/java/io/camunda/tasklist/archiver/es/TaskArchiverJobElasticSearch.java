@@ -19,9 +19,9 @@ import io.camunda.tasklist.archiver.TaskArchiverJob;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.v86.templates.TaskTemplate;
-import io.camunda.tasklist.schema.v86.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.Either;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,9 +61,9 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
 
-  @Autowired private TaskTemplate taskTemplate;
+  @Autowired private TasklistTaskTemplate taskTemplate;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -78,7 +78,8 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
   }
 
   @Override
-  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(ArchiveBatch archiveBatch) {
+  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(
+      final ArchiveBatch archiveBatch) {
     final CompletableFuture<Map.Entry<String, Integer>> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
@@ -88,7 +89,7 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
       final var moveVariableDocuments =
           archiverUtil.moveDocuments(
               taskVariableTemplate.getFullQualifiedName(),
-              TaskVariableTemplate.TASK_ID,
+              TasklistTaskVariableTemplate.TASK_ID,
               archiveBatch.getFinishDate(),
               archiveBatch.getIds());
 
@@ -96,7 +97,7 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
       final var moveTaskDocuments =
           archiverUtil.moveDocuments(
               taskTemplate.getFullQualifiedName(),
-              TaskTemplate.ID,
+              TasklistTaskTemplate.ID,
               archiveBatch.getFinishDate(),
               archiveBatch.getIds());
 
@@ -153,11 +154,12 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
     return Either.right(batch);
   }
 
-  private SearchRequest createFinishedTasksSearchRequest(AggregationBuilder agg) {
+  private SearchRequest createFinishedTasksSearchRequest(final AggregationBuilder agg) {
     final QueryBuilder endDateQ =
-        rangeQuery(TaskTemplate.COMPLETION_TIME)
+        rangeQuery(TasklistTaskTemplate.COMPLETION_TIME)
             .lte(tasklistProperties.getArchiver().getArchivingTimepoint());
-    final TermsQueryBuilder partitionQ = termsQuery(TaskTemplate.PARTITION_ID, getPartitionIds());
+    final TermsQueryBuilder partitionQ =
+        termsQuery(TasklistTaskTemplate.PARTITION_ID, getPartitionIds());
     final ConstantScoreQueryBuilder q = constantScoreQuery(joinWithAnd(endDateQ, partitionQ));
 
     final SearchRequest searchRequest =
@@ -168,7 +170,7 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
                     .aggregation(agg)
                     .fetchSource(false)
                     .size(0)
-                    .sort(TaskTemplate.COMPLETION_TIME, SortOrder.ASC))
+                    .sort(TasklistTaskTemplate.COMPLETION_TIME, SortOrder.ASC))
             .requestCache(false); // we don't need to cache this, as each time we need new data
 
     LOGGER.debug(
@@ -179,9 +181,9 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
   }
 
   private AggregationBuilder createFinishedTasksAggregation(
-      String datesAggName, String instancesAggName) {
+      final String datesAggName, final String instancesAggName) {
     return dateHistogram(datesAggName)
-        .field(TaskTemplate.COMPLETION_TIME)
+        .field(TasklistTaskTemplate.COMPLETION_TIME)
         .calendarInterval(
             new DateHistogramInterval(
                 Optional.ofNullable(tasklistProperties.getArchiver().getRolloverInterval())
@@ -195,8 +197,8 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
         .subAggregation(
             topHits(instancesAggName)
                 .size(tasklistProperties.getArchiver().getRolloverBatchSize())
-                .sort(TaskTemplate.ID, SortOrder.ASC)
-                .fetchSource(TaskTemplate.ID, null));
+                .sort(TasklistTaskTemplate.ID, SortOrder.ASC)
+                .fetchSource(TasklistTaskTemplate.ID, null));
   }
 
   protected ArchiveBatch createArchiveBatch(final SearchResponse searchResponse) {

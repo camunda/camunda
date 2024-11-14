@@ -16,7 +16,7 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.v86.indices.ImportPositionIndex;
+import io.camunda.tasklist.v86.schema.indices.TasklistImportPositionIndex;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
@@ -202,9 +202,9 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
 
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
-            .sort(ImportPositionIndex.SEQUENCE, SortOrder.ASC)
+            .sort(TasklistImportPositionIndex.SEQUENCE, SortOrder.ASC)
             .query(
-                rangeQuery(ImportPositionIndex.SEQUENCE)
+                rangeQuery(TasklistImportPositionIndex.SEQUENCE)
                     .gt(fromSequence)
                     .lte(lessThanEqualsSequence))
             .size(maxNumberOfHits >= QUERY_MAX_SIZE ? QUERY_MAX_SIZE : maxNumberOfHits);
@@ -248,7 +248,7 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
 
   private SearchRequest createSearchQuery(
       final String aliasName, final long positionFrom, final Long positionTo) {
-    RangeQueryBuilder positionQ = rangeQuery(ImportPositionIndex.POSITION).gt(positionFrom);
+    RangeQueryBuilder positionQ = rangeQuery(TasklistImportPositionIndex.POSITION).gt(positionFrom);
     if (positionTo != null) {
       positionQ = positionQ.lte(positionTo);
     }
@@ -258,7 +258,7 @@ public class RecordsReaderElasticSearch extends RecordsReaderAbstract {
     SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
             .query(queryBuilder)
-            .sort(ImportPositionIndex.POSITION, SortOrder.ASC);
+            .sort(TasklistImportPositionIndex.POSITION, SortOrder.ASC);
     if (positionTo == null) {
       searchSourceBuilder =
           searchSourceBuilder.size(tasklistProperties.getZeebeElasticsearch().getBatchSize());

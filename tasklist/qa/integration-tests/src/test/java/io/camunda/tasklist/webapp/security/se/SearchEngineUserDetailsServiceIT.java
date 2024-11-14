@@ -14,11 +14,11 @@ import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.management.SearchEngineHealthIndicator;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestElasticsearchSchemaManager;
-import io.camunda.tasklist.schema.v86.indices.UserIndex;
 import io.camunda.tasklist.util.DatabaseTestExtension;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
+import io.camunda.tasklist.v86.schema.indices.TasklistUserIndex;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
 import java.io.IOException;
@@ -66,7 +66,7 @@ public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
 
   @Autowired private SearchEngineUserDetailsService userDetailsService;
 
-  @Autowired private UserIndex userIndex;
+  @Autowired private TasklistUserIndex userIndex;
 
   @Autowired private PasswordEncoder passwordEncoder;
 
@@ -106,7 +106,8 @@ public class SearchEngineUserDetailsServiceIT extends TasklistIntegrationTest {
   private void updateUserRealName() {
     try {
       final Map<String, Object> jsonMap = new HashMap<>();
-      jsonMap.put(UserIndex.DISPLAY_NAME, String.format("%s %s", TEST_FIRSTNAME, TEST_LASTNAME));
+      jsonMap.put(
+          TasklistUserIndex.DISPLAY_NAME, String.format("%s %s", TEST_FIRSTNAME, TEST_LASTNAME));
       noSqlHelper.update(userIndex.getFullQualifiedName(), TEST_USERNAME, jsonMap);
       databaseTestExtension.refreshTasklistIndices();
     } catch (final IOException e) {

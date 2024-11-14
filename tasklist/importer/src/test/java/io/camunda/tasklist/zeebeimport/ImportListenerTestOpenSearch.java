@@ -16,11 +16,11 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.NoBeansTest;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
+import io.camunda.tasklist.v86.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.os.ImportBatchOpenSearch;
 import io.camunda.tasklist.zeebeimport.os.ImportJobOpenSearch;
@@ -83,7 +83,7 @@ public class ImportListenerTestOpenSearch extends NoBeansTest {
       when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
           .thenReturn(importBatchProcessor);
       doNothing().when(importBatchProcessor).performImport(importBatchOpenSearch);
-    } catch (PersistenceException e) {
+    } catch (final PersistenceException e) {
       // ignore
     }
 
@@ -109,7 +109,7 @@ public class ImportListenerTestOpenSearch extends NoBeansTest {
       doThrow(new PersistenceException())
           .when(importBatchProcessor)
           .performImport(importBatchElasticSearch);
-    } catch (PersistenceException e) {
+    } catch (final PersistenceException e) {
       // ignore
     }
 
@@ -130,13 +130,13 @@ public class ImportListenerTestOpenSearch extends NoBeansTest {
     private ImportBatch importBatchElasticSearch;
 
     @Override
-    public void finished(ImportBatch importBatchElasticSearch) {
+    public void finished(final ImportBatch importBatchElasticSearch) {
       finishedCalled = true;
       this.importBatchElasticSearch = importBatchElasticSearch;
     }
 
     @Override
-    public void failed(ImportBatch importBatchElasticSearch) {
+    public void failed(final ImportBatch importBatchElasticSearch) {
       failedCalled = true;
       this.importBatchElasticSearch = importBatchElasticSearch;
     }
