@@ -24,12 +24,13 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -50,8 +51,11 @@ public class JobBatchActivateAuthorizationIT {
   private static final ElasticsearchContainer CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
+  private static AuthorizationsUtil authUtil;
+  @AutoCloseResource private static ZeebeClient defaultUserClient;
+
   @TestZeebe(autoStart = false)
-  private static final TestStandaloneBroker BROKER =
+  private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withBrokerConfig(
@@ -59,17 +63,14 @@ public class JobBatchActivateAuthorizationIT {
           .withGatewayConfig(c -> c.getLongPolling().setEnabled(false))
           .withAdditionalProfile(Profile.AUTH_BASIC);
 
-  private static AuthorizationsUtil authUtil;
-  private static ZeebeClient defaultUserClient;
-
-  @BeforeAll
-  static void beforeAll() {
-    BROKER.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    BROKER.start();
+  @BeforeEach
+  void beforeEach() {
+    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    broker.start();
 
     final var defaultUsername = "demo";
-    defaultUserClient = createClient(BROKER, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(BROKER, defaultUserClient, CONTAINER.getHttpHostAddress());
+    defaultUserClient = createClient(broker, defaultUsername, "demo");
+    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
   }
