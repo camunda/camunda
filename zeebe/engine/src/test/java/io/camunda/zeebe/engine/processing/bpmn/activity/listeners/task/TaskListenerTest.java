@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
@@ -39,6 +40,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -46,6 +48,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -70,7 +73,7 @@ public class TaskListenerTest {
       new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldCompleteProcessWhenAllCompleteTaskListenersAreExecuted() {
+  public void shouldCompleteUserTaskAfterAllCompleteTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
         createProcessInstance(
@@ -87,46 +90,76 @@ public class TaskListenerTest {
     completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
 
     // then
-    assertThat(
-            RecordingExporter.jobRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withJobKind(JobKind.TASK_LISTENER)
-                .withJobListenerEventType(JobListenerEventType.COMPLETE)
-                .withIntent(JobIntent.COMPLETED)
-                .limit(3))
-        .extracting(Record::getValue)
-        .extracting(JobRecordValue::getType)
-        .describedAs("Verify that all task listeners were completed in the correct sequence")
-        .containsExactly(LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.COMPLETE,
+        LISTENER_TYPE,
+        LISTENER_TYPE + "_2",
+        LISTENER_TYPE + "_3");
 
-    assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
-        .extracting(Record::getIntent)
-        .describedAs(
-            "Ensure that `COMPLETE_TASK_LISTENER` events were triggered between user task `COMPLETING` and `COMPLETED` events")
-        .containsSubsequence(
-            UserTaskIntent.COMPLETING,
-            UserTaskIntent.COMPLETE_TASK_LISTENER,
-            UserTaskIntent.COMPLETE_TASK_LISTENER,
-            UserTaskIntent.COMPLETE_TASK_LISTENER,
-            UserTaskIntent.COMPLETED);
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `COMPLETING` and `COMPLETED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETE,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETED);
 
-    assertThat(
-            RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
-                .withProcessInstanceKey(processInstanceKey)
-                .getFirst())
-        .extracting(Record::getValue)
-        .describedAs(
-            "Check that the completed user task contains the correct `action` and `variables` provided with `COMPLETE` command")
-        .satisfies(
-            recordValue -> {
-              assertThat(recordValue.getAction()).isEqualTo("my_custom_action");
-              assertThat(recordValue.getVariables()).containsExactly(entry("foo_var", "bar"));
-            });
-
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.COMPLETED,
+        userTask ->
+            Assertions.assertThat(userTask)
+                .hasAction("my_custom_action")
+                .hasVariables(Map.of("foo_var", "bar")));
     assertThatProcessInstanceCompleted(processInstanceKey);
+  }
+
+  @Test
+  public void shouldAssignUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.assignment,
+                LISTENER_TYPE,
+                LISTENER_TYPE + "_2",
+                LISTENER_TYPE + "_3"));
+
+    // when
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withAssignee("me")
+        .withAction("my_assign_action")
+        .assign();
+    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.ASSIGNMENT,
+        LISTENER_TYPE,
+        LISTENER_TYPE + "_2",
+        LISTENER_TYPE + "_3");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `ASSIGNING` and `ASSIGNED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.ASSIGN,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.ASSIGNED);
+
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.ASSIGNED,
+        userTask ->
+            Assertions.assertThat(userTask).hasAssignee("me").hasAction("my_assign_action"));
   }
 
   @Test
@@ -586,19 +619,12 @@ public class TaskListenerTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    // then
-    assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETION_DENIED))
-        .extracting(Record::getIntent)
-        .describedAs(
-            "Ensure that `REJECT_TASK_LISTENER` and `COMPLETION_DENIED` are written "
-                + "after `COMPLETING` event")
-        .containsSubsequence(
-            UserTaskIntent.COMPLETING,
-            UserTaskIntent.DENY_TASK_LISTENER,
-            UserTaskIntent.COMPLETION_DENIED);
+    // then: ensure that `REJECT_TASK_LISTENER` and `COMPLETION_DENIED`
+    // are written after `COMPLETING` event
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED);
   }
 
   @Test
@@ -619,22 +645,16 @@ public class TaskListenerTest {
 
     completeRecreatedJobWithType(ENGINE, processInstanceKey, LISTENER_TYPE);
 
-    // then
-    assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
-        .extracting(Record::getIntent)
-        .describedAs(
-            "Ensure that `COMPLETING` `COMPLETE_TASK_LISTENER` and `COMPLETED"
-                + "` events are present after `REJECT_TASK_LISTENER` and `COMPLETION_DENIED` events")
-        .containsSubsequence(
-            UserTaskIntent.COMPLETING,
-            UserTaskIntent.DENY_TASK_LISTENER,
-            UserTaskIntent.COMPLETION_DENIED,
-            UserTaskIntent.COMPLETING,
-            UserTaskIntent.COMPLETE_TASK_LISTENER,
-            UserTaskIntent.COMPLETED);
+    // then: ensure that `COMPLETING` `COMPLETE_TASK_LISTENER` and `COMPLETED events
+    // are present after `REJECT_TASK_LISTENER` and `COMPLETION_DENIED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED,
+        UserTaskIntent.COMPLETE,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETED);
   }
 
   @Test
@@ -657,24 +677,18 @@ public class TaskListenerTest {
     completeRecreatedJobWithType(ENGINE, processInstanceKey, LISTENER_TYPE);
     completeJobs(processInstanceKey, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
 
-    // then
-    assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
-        .extracting(Record::getIntent)
-        .describedAs(
-            "Ensure that all three `COMPLETE_TASK_LISTENER` events were triggered after the "
-                + "rejection from the first Task Listener")
-        .containsSubsequence(
-            UserTaskIntent.COMPLETING,
-            UserTaskIntent.DENY_TASK_LISTENER,
-            UserTaskIntent.COMPLETION_DENIED,
-            UserTaskIntent.COMPLETING,
-            UserTaskIntent.COMPLETE_TASK_LISTENER,
-            UserTaskIntent.COMPLETE_TASK_LISTENER,
-            UserTaskIntent.COMPLETE_TASK_LISTENER,
-            UserTaskIntent.COMPLETED);
+    // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered after the
+    // rejection from the first Task Listener
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED,
+        UserTaskIntent.COMPLETE,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETED);
   }
 
   @Test
@@ -696,25 +710,21 @@ public class TaskListenerTest {
 
     completeRecreatedJobWithType(ENGINE, processInstanceKey, LISTENER_TYPE);
 
-    // then
-    assertThat(
-            RecordingExporter.userTaskRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
-        .extracting(Record::getIntent)
-        .describedAs(
-            "Ensure that user task could be assigned after completion was rejected from the"
-                + " `COMPLETE` Task Listener. Ensure that user task could be completed after assignment"
-                + " and `COMPLETE_TASK_LISTENER` event was triggered successfully")
-        .containsSubsequence(
-            UserTaskIntent.COMPLETING,
-            UserTaskIntent.DENY_TASK_LISTENER,
-            UserTaskIntent.COMPLETION_DENIED,
-            UserTaskIntent.ASSIGNING,
-            UserTaskIntent.ASSIGNED,
-            UserTaskIntent.COMPLETING,
-            UserTaskIntent.COMPLETE_TASK_LISTENER,
-            UserTaskIntent.COMPLETED);
+    // then: ensure that user task could be assigned after completion was rejected from the
+    // `COMPLETE` Task Listener. Ensure that user task could be completed after assignment
+    // and `COMPLETE_TASK_LISTENER` event was triggered successfully
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETE,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED,
+        UserTaskIntent.ASSIGN,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.ASSIGNED,
+        UserTaskIntent.COMPLETE,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETED);
   }
 
   private static void completeRecreatedJobWithType(
@@ -758,10 +768,16 @@ public class TaskListenerTest {
   }
 
   private BpmnModelInstance createProcessWithCompleteTaskListeners(final String... listenerTypes) {
+    return createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.complete, listenerTypes);
+  }
+
+  private BpmnModelInstance createUserTaskWithTaskListeners(
+      final ZeebeTaskListenerEventType listenerType, final String... listenerTypes) {
     return createProcessWithZeebeUserTask(
         taskBuilder -> {
           Stream.of(listenerTypes)
-              .forEach(type -> taskBuilder.zeebeTaskListener(l -> l.complete().type(type)));
+              .forEach(
+                  type -> taskBuilder.zeebeTaskListener(l -> l.eventType(listenerType).type(type)));
           return taskBuilder;
         });
   }
@@ -804,5 +820,45 @@ public class TaskListenerTest {
     final var formMetadata = deploymentEvent.getValue().getFormMetadata();
     assertThat(formMetadata).hasSize(1);
     return formMetadata.getFirst();
+  }
+
+  private void assertTaskListenerJobsCompletionSequence(
+      final long processInstanceKey,
+      final JobListenerEventType eventType,
+      final String... listenerTypes) {
+    assertThat(
+            RecordingExporter.jobRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withJobKind(JobKind.TASK_LISTENER)
+                .withJobListenerEventType(eventType)
+                .withIntent(JobIntent.COMPLETED)
+                .limit(listenerTypes.length))
+        .extracting(Record::getValue)
+        .extracting(JobRecordValue::getType)
+        .describedAs("Verify that all task listeners were completed in the correct sequence")
+        .containsExactly(listenerTypes);
+  }
+
+  private void assertUserTaskIntentsSequence(final UserTaskIntent... intents) {
+    assertThat(intents).describedAs("Expected intents not to be empty").isNotEmpty();
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .limit(r -> r.getIntent() == intents[intents.length - 1]))
+        .extracting(Record::getIntent)
+        .describedAs("Verify the expected sequence of User Task intents")
+        .containsSequence(intents);
+  }
+
+  private static void assertUserTaskRecordWithIntent(
+      final long processInstanceKey,
+      final UserTaskIntent intent,
+      final Consumer<UserTaskRecordValue> consumer) {
+    assertThat(
+            RecordingExporter.userTaskRecords(intent)
+                .withProcessInstanceKey(processInstanceKey)
+                .findFirst()
+                .map(Record::getValue))
+        .describedAs("Expected to have User Task record with '%s' intent", intent)
+        .hasValueSatisfying(consumer);
   }
 }
