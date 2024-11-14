@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
 import io.camunda.zeebe.journal.JournalReader;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.snapshots.CRC32CChecksumProvider;
 import io.camunda.zeebe.snapshots.RestorableSnapshotStore;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.exception.Rethrow;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.DirectoryNotEmptyException;
@@ -73,7 +75,12 @@ public class PartitionRestoreService {
         .thenApply(this::moveFilesToDataDirectory)
         .thenApply(
             backup -> {
-              resetLogToCheckpointPosition(backup.descriptor().checkpointPosition(), rootDirectory);
+              try {
+                resetLogToCheckpointPosition(
+                    backup.descriptor().checkpointPosition(), rootDirectory);
+              } catch (final CheckedJournalException e) {
+                Rethrow.rethrowUnchecked(e);
+              }
               return backup.descriptor();
             })
         .toCompletableFuture();
@@ -106,8 +113,8 @@ public class PartitionRestoreService {
   // While taking the backup, we add all log segments. But the backup must only have entries upto
   // the checkpoint position. So after restoring, we truncate the journal until the
   // checkpointPosition.
-  private void resetLogToCheckpointPosition(
-      final long checkpointPosition, final Path dataDirectory) {
+  private void resetLogToCheckpointPosition(final long checkpointPosition, final Path dataDirectory)
+      throws CheckedJournalException {
 
     try (final var journal =
         SegmentedJournal.builder()
@@ -120,7 +127,8 @@ public class PartitionRestoreService {
     }
   }
 
-  private void resetJournal(final long checkpointPosition, final SegmentedJournal journal) {
+  private void resetJournal(final long checkpointPosition, final SegmentedJournal journal)
+      throws CheckedJournalException {
     try (final var reader = journal.openReader()) {
       reader.seekToAsqn(checkpointPosition);
       if (reader.hasNext()) {

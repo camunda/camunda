@@ -23,6 +23,7 @@ import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.broker.utils.InlineThreadContext;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStoreImpl;
 import io.camunda.zeebe.test.DynamicAutoCloseable;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.camunda.zeebe.util.exception.Rethrow;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -74,7 +76,7 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
   private final RaftServiceMetrics raftMetrics = new RaftServiceMetrics("1");
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws CheckedJournalException {
     actorScheduler = manage(ActorScheduler.newActorScheduler().build());
     actorScheduler.start();
     backupStore = manage(new InMemoryMockBackupStore());
@@ -187,7 +189,11 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
   }
 
   private void appendRecord(final long asqn, final String data) {
-    journal.append(asqn, new DirectBufferWriter().wrap(new UnsafeBuffer(data.getBytes())));
+    try {
+      journal.append(asqn, new DirectBufferWriter().wrap(new UnsafeBuffer(data.getBytes())));
+    } catch (final CheckedJournalException e) {
+      Rethrow.rethrowUnchecked(e);
+    }
   }
 
   private PersistedSnapshot takeSnapshot(final long index, final long lastWrittenPosition) {

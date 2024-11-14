@@ -74,10 +74,12 @@ import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
 import io.camunda.zeebe.util.CheckedRunnable;
+import io.camunda.zeebe.util.exception.Rethrow;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -235,7 +237,13 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
         getCurrentSnapshotIndex(),
         raftLog.getFirstIndex(),
         raftLog.isEmpty(),
-        raftLog::reset,
+        idx -> {
+          try {
+            raftLog.reset(idx);
+          } catch (final CheckedJournalException e) {
+            Rethrow.rethrowUnchecked(e);
+          }
+        },
         log);
 
     logCompactor =

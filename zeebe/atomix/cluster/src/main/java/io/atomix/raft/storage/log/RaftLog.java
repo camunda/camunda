@@ -24,6 +24,7 @@ import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalRecord;
@@ -88,7 +89,7 @@ public final class RaftLog implements Closeable {
    * @param index The index up to which to compact the journal.
    * @return true if anything was deleted, false otherwise
    */
-  public boolean deleteUntil(final long index) {
+  public boolean deleteUntil(final long index) throws CheckedJournalException {
     return journal.deleteUntil(index);
   }
 
@@ -143,7 +144,7 @@ public final class RaftLog implements Closeable {
     return journal.isEmpty();
   }
 
-  public IndexedRaftLogEntry append(final RaftLogEntry entry) {
+  public IndexedRaftLogEntry append(final RaftLogEntry entry) throws CheckedJournalException {
     final JournalRecord journalRecord =
         journal.append(
             entry.getLowestAsqn().orElse(ASQN_IGNORE),
@@ -153,7 +154,8 @@ public final class RaftLog implements Closeable {
     return lastAppendedEntry;
   }
 
-  public IndexedRaftLogEntry append(final PersistedRaftRecord entry) {
+  public IndexedRaftLogEntry append(final PersistedRaftRecord entry)
+      throws CheckedJournalException {
     journal.append(entry);
 
     final RaftLogEntry raftEntry = serializer.readRaftLogEntry(entry.data());
@@ -161,7 +163,8 @@ public final class RaftLog implements Closeable {
     return lastAppendedEntry;
   }
 
-  public IndexedRaftLogEntry append(final ReplicatableJournalRecord entry) {
+  public IndexedRaftLogEntry append(final ReplicatableJournalRecord entry)
+      throws CheckedJournalException {
     final var writtenRecord = journal.append(entry.checksum(), entry.serializedJournalRecord());
 
     final RaftLogEntry raftEntry = serializer.readRaftLogEntry(writtenRecord.data());
@@ -169,7 +172,7 @@ public final class RaftLog implements Closeable {
     return lastAppendedEntry;
   }
 
-  public void reset(final long index) {
+  public void reset(final long index) throws CheckedJournalException {
     if (index < commitIndex) {
       throw new IllegalStateException(
           String.format(
@@ -184,7 +187,7 @@ public final class RaftLog implements Closeable {
     lastAppendedEntry = null;
   }
 
-  public void deleteAfter(final long index) throws FlushException {
+  public void deleteAfter(final long index) throws CheckedJournalException {
     if (index < commitIndex) {
       throw new IllegalStateException(
           String.format(

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.util.PosixPathAssert;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,7 +22,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 final class SegmentLoaderTest {
   @Test
   void shouldPreallocateNewFileIfUnusedSegmentAlreadyExists(final @TempDir Path tmpDir)
-      throws IOException {
+      throws IOException, CheckedJournalException {
     // given
     final var segmentSize = 4 * 1024 * 1024;
     final var descriptor =

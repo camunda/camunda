@@ -18,6 +18,7 @@ import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.management.BackupService;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalMetaStore;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.snapshots.SnapshotException.CorruptedSnapshotException;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotStore;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.camunda.zeebe.util.exception.Rethrow;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -249,7 +251,11 @@ class PartitionRestoreServiceTest {
   }
 
   private void appendRecord(final long asqn, final String data) {
-    journal.append(asqn, new DirectBufferWriter().wrap(new UnsafeBuffer(data.getBytes())));
+    try {
+      journal.append(asqn, new DirectBufferWriter().wrap(new UnsafeBuffer(data.getBytes())));
+    } catch (final CheckedJournalException e) {
+      Rethrow.rethrowUnchecked(e);
+    }
   }
 
   private PersistedSnapshot takeSnapshot(final long index, final long lastWrittenPosition) {

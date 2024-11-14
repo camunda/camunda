@@ -19,7 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalMetaStore.InMemory;
+import io.camunda.zeebe.util.exception.Rethrow;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -149,7 +151,11 @@ class RaftLogCommittedReaderTest {
     for (int i = 0; i < count; i++) {
       final var applicationEntry = new SerializedApplicationEntry(i + 1, i + 1, data);
       final var entry = new RaftLogEntry(1, applicationEntry);
-      raftlog.append(entry);
+      try {
+        raftlog.append(entry);
+      } catch (final CheckedJournalException e) {
+        Rethrow.rethrowUnchecked(e);
+      }
     }
   }
 }

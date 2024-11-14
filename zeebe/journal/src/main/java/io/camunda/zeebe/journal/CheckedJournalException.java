@@ -19,5 +19,21 @@ public sealed class CheckedJournalException extends Exception {
     public FlushException(final IOException cause) {
       super("Error when flushing", cause);
     }
+
+    public FlushException(final String message, final IOException cause) {
+      super(message, cause);
+    }
+  }
+
+  public static final class CreationFileException extends CheckedJournalException {
+    public CreationFileException(final String message, final IOException cause) {
+      super(message, cause);
+    }
+  }
+
+  public static final class DeletionFileException extends CheckedJournalException {
+    public DeletionFileException(final String message, final IOException cause) {
+      super(message, cause);
+    }
   }
 }

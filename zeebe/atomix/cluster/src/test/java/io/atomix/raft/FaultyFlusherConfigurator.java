@@ -13,6 +13,7 @@ import io.atomix.raft.RaftServer.Builder;
 import io.atomix.raft.partition.RaftElectionConfig;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogFlusher;
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import java.io.IOException;
@@ -41,7 +42,11 @@ public record FaultyFlusherConfigurator(
             if (faultyWhen.get()) {
               notifyFaultyFlush.run();
               if (withDataLoss) {
-                journal.deleteAfter(journal.getLastIndex() - 1);
+                try {
+                  journal.deleteAfter(journal.getLastIndex() - 1);
+                } catch (final CheckedJournalException e) {
+                  throw new FlushException(e.getMessage(), new IOException(e.getCause()));
+                }
               }
               throw new FlushException(new IOException("Failed sync"));
             } else {
