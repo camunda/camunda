@@ -463,6 +463,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable, LogReco
   }
 
   @Override
+  public String componentName() {
+    return actorName;
+  }
+
+  @Override
   public HealthReport getHealthReport() {
     final var instant =
         ActorClock.current() != null ? ActorClock.current().instant() : Instant.now();
