@@ -132,7 +132,6 @@ public class TaskListenerTest {
     ENGINE
         .userTask()
         .ofInstance(processInstanceKey)
-        .withVariable("ignored", "variables")
         .withAssignee("me")
         .withAction("my_assign_action")
         .assign();
@@ -160,12 +159,7 @@ public class TaskListenerTest {
         processInstanceKey,
         UserTaskIntent.ASSIGNED,
         userTask ->
-            Assertions.assertThat(userTask)
-                .hasAssignee("me")
-                .hasAction("my_assign_action")
-                .describedAs(
-                    "Expected all variables provided during UserTask assignment to be ignored")
-                .hasVariables(Collections.emptyMap()));
+            Assertions.assertThat(userTask).hasAssignee("me").hasAction("my_assign_action"));
   }
 
   @Test
