@@ -15,6 +15,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
+import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -69,11 +70,14 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
   private ZeebeClient createDefaultUserClient(final TestGateway<?> gateway) {
     final ZeebeClient defaultClient =
         createAuthenticatedClient(gateway, DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD);
-    // check in case the default user is not created yet
+    // block until the default user is created
     Awaitility.await()
-        .atMost(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(20))
         .ignoreExceptions()
-        .until(() -> defaultClient.newTopologyRequest().send().join().getBrokers().size() > 0);
+        .untilAsserted(
+            () ->
+                TopologyAssert.assertThat(defaultClient.newTopologyRequest().send().join())
+                    .isHealthy());
     return defaultClient;
   }
 
