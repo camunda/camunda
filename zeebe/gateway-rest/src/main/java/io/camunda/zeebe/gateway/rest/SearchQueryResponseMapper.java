@@ -23,6 +23,7 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -55,6 +56,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.RoleItem;
+import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
@@ -91,6 +94,15 @@ public final class SearchQueryResponseMapper {
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toProcessInstances)
                 .orElseGet(Collections::emptyList));
+  }
+
+  public static RoleSearchQueryResponse toRoleSearchQueryResponse(
+      final SearchQueryResult<RoleEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new RoleSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
   }
 
   public static DecisionDefinitionSearchQueryResponse toDecisionDefinitionSearchQueryResponse(
@@ -214,6 +226,17 @@ public final class SearchQueryResponseMapper {
         .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
         .hasIncident(p.incident())
         .tenantId(p.tenantId());
+  }
+
+  private static List<RoleItem> toRoles(final List<RoleEntity> roles) {
+    return roles.stream().map(SearchQueryResponseMapper::toRole).toList();
+  }
+
+  private static RoleItem toRole(final RoleEntity roleEntity) {
+    return new RoleItem()
+        .roleKey(roleEntity.roleKey())
+        .name(roleEntity.name())
+        .assignedMemberKeys(roleEntity.assignedMemberKeys().stream().sorted().toList());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(
