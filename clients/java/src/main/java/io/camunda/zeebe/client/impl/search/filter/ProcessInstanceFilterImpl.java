@@ -18,12 +18,14 @@ package io.camunda.zeebe.client.impl.search.filter;
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.util.FilterUtil;
+import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
+import java.time.OffsetDateTime;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceFilterRequest>
@@ -152,13 +154,25 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter startDate(final String startDate) {
+  public ProcessInstanceFilter startDate(final OffsetDateTime startDate) {
+    filter.setStartDate(FilterUtil.dateTimeFilterProperty(startDate));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter startDate(final DateTimeFilterProperty startDate) {
     filter.setStartDate(startDate);
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter endDate(final String endDate) {
+  public ProcessInstanceFilter endDate(final OffsetDateTime endDate) {
+    filter.setEndDate(FilterUtil.dateTimeFilterProperty(endDate));
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter endDate(final DateTimeFilterProperty endDate) {
     filter.setEndDate(endDate);
     return this;
   }

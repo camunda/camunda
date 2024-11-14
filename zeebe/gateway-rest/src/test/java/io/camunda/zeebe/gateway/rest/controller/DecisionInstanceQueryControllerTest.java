@@ -367,6 +367,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "decisionDefinitionKey",
         ops -> new DecisionInstanceFilter.Builder().decisionDefinitionKeyOperations(ops).build());
+    dateTimeOperationTestCases(
+        streamBuilder,
+        "evaluationDate",
+        ops -> new DecisionInstanceFilter.Builder().evaluationDateOperations(ops).build());
 
     return streamBuilder.build();
   }

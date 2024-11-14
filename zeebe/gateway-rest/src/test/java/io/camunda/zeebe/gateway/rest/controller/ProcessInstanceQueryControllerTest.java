@@ -499,6 +499,14 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "tenantId",
         ops -> new ProcessInstanceFilter.Builder().tenantIdOperations(ops).build());
+    dateTimeOperationTestCases(
+        streamBuilder,
+        "startDate",
+        ops -> new ProcessInstanceFilter.Builder().startDateOperations(ops).build());
+    dateTimeOperationTestCases(
+        streamBuilder,
+        "endDate",
+        ops -> new ProcessInstanceFilter.Builder().endDateOperations(ops).build());
 
     return streamBuilder.build();
   }

@@ -11,6 +11,7 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -34,6 +35,8 @@ public class AdvancedSearchFilterUtil {
     if (!tClass.isInstance(value)) {
       if (tClass == String.class) {
         return (T) value.toString();
+      } else if (tClass == OffsetDateTime.class) {
+        return (T) OffsetDateTime.parse((String) value);
       }
     }
 

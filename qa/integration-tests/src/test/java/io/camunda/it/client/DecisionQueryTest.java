@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.api.search.response.DecisionInstance;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
 import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
@@ -30,7 +31,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -598,12 +598,10 @@ class DecisionQueryTest {
     final var di = allResult.items().getFirst();
 
     // when
-    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
-    final var offsetDateTime = OffsetDateTime.parse(di.getEvaluationDate(), formatter);
     final var result =
         zeebeClient
             .newDecisionInstanceQuery()
-            .filter(f -> f.evaluationDate(offsetDateTime.toString()))
+            .filter(f -> f.evaluationDate(OffsetDateTime.parse(di.getEvaluationDate())))
             .send()
             .join();
 
@@ -611,6 +609,64 @@ class DecisionQueryTest {
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getDecisionInstanceKey())
         .isEqualTo(di.getDecisionInstanceKey());
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByEvaluationDateFilterGt() {
+    // given
+    final var allResult =
+        zeebeClient
+            .newDecisionInstanceQuery()
+            .sort(s -> s.evaluationDate().asc())
+            .page(p -> p.limit(1))
+            .send()
+            .join();
+    final var di = allResult.items().getFirst();
+    final DateTimeFilterProperty filter = new DateTimeFilterProperty();
+    filter.set$Gt(di.getEvaluationDate());
+
+    // when
+    final var result =
+        zeebeClient.newDecisionInstanceQuery().filter(f -> f.evaluationDate(filter)).send().join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    final var requestDate = OffsetDateTime.parse(di.getEvaluationDate());
+    assertThat(result.items())
+        .extracting("evaluationDate", String.class)
+        .allMatch(date -> requestDate.isBefore(OffsetDateTime.parse(date)));
+    assertThat(result.items())
+        .extracting("decisionInstanceKey", Long.class)
+        .noneMatch(key -> di.getDecisionInstanceKey() == key);
+  }
+
+  @Test
+  public void shouldRetrieveDecisionInstanceByEvaluationDateFilterGte() {
+    // given
+    final var allResult =
+        zeebeClient
+            .newDecisionInstanceQuery()
+            .sort(s -> s.evaluationDate().asc())
+            .page(p -> p.limit(1))
+            .send()
+            .join();
+    final var di = allResult.items().getFirst();
+    final DateTimeFilterProperty filter = new DateTimeFilterProperty();
+    filter.set$Gte(di.getEvaluationDate());
+
+    // when
+    final var result =
+        zeebeClient.newDecisionInstanceQuery().filter(f -> f.evaluationDate(filter)).send().join();
+
+    // then
+    assertThat(result.items()).hasSize(3);
+    final var requestDate = OffsetDateTime.parse(di.getEvaluationDate());
+    assertThat(result.items())
+        .extracting("evaluationDate", String.class)
+        .allMatch(date -> !OffsetDateTime.parse(date).isBefore(requestDate));
+    assertThat(result.items())
+        .extracting("decisionInstanceKey", Long.class)
+        .anyMatch(key -> di.getDecisionInstanceKey() == key);
   }
 
   @Test

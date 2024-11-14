@@ -25,12 +25,15 @@ import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
+import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -341,6 +344,58 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(result.items())
         .extracting("processInstanceKey")
         .containsExactlyInAnyOrder(processInstanceKeys.toArray());
+  }
+
+  @Test
+  void shouldRetrieveProcessInstancesByStartDateFilterGtLt() {
+    // given
+    final var pi =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .page(p -> p.limit(1))
+            .send()
+            .join()
+            .items()
+            .getFirst();
+    final var filter = new DateTimeFilterProperty();
+    final var startDate = OffsetDateTime.parse(pi.getStartDate());
+    filter.set$Gt(startDate.minus(1, ChronoUnit.MILLIS).toString());
+    filter.set$Lt(startDate.plus(1, ChronoUnit.MILLIS).toString());
+
+    // when
+    final var result =
+        zeebeClient.newProcessInstanceQuery().filter(f -> f.startDate(filter)).send().join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey())
+        .isEqualTo(pi.getProcessInstanceKey());
+  }
+
+  @Test
+  void shouldRetrieveProcessInstancesByEndDateFilterGteLte() {
+    // given
+    final var pi =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .page(p -> p.limit(1))
+            .send()
+            .join()
+            .items()
+            .getFirst();
+    final var filter = new DateTimeFilterProperty();
+    final var startDate = OffsetDateTime.parse(pi.getStartDate());
+    filter.set$Gte(startDate.toString());
+    filter.set$Lte(startDate.toString());
+
+    // when
+    final var result =
+        zeebeClient.newProcessInstanceQuery().filter(f -> f.startDate(filter)).send().join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey())
+        .isEqualTo(pi.getProcessInstanceKey());
   }
 
   @Test

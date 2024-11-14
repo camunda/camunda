@@ -3206,6 +3206,43 @@ components:
             Checks if the property matches the provided like value.
             Supported wildcard characters depend on the configured search client.
           type: string
+    AdvancedDateTimeFilter:
+      description: Advanced date-time filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: string
+          format: date-time
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: string
+          format: date-time
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: string
+          format: date-time
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: string
+          format: date-time
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: string
+          format: date-time
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: string
+          format: date-time
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: string
+            format: date-time
     BasicLongFilterProperty:
       description: Long property with basic advanced search capabilities.
       type: object
@@ -3232,6 +3269,13 @@ components:
       oneOf:
         - $ref: "#/components/schemas/ProcessInstanceStateEnum"
         - $ref: "#/components/schemas/AdvancedProcessInstanceStateFilter"
+    DateTimeFilterProperty:
+      description: Date-time property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          format: date-time
+        - $ref: "#/components/schemas/AdvancedDateTimeFilter"
     ProcessInstanceFilterRequest:
       description: Process instance search filter.
       type: object
@@ -3273,13 +3317,13 @@ components:
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
         startDate:
-          type: string
           description: The start date.
-          format: date-time
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         endDate:
-          type: string
           description: The end date.
-          format: date-time
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         state:
           description: The process instance state.
           allOf:
@@ -4806,9 +4850,9 @@ components:
           type: string
           description: The evaluation failure of the decision instance.
         evaluationDate:
-          type: string
           description: The evaluation date of the decision instance.
-          format: date-time
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         processDefinitionKey:
           type: integer
           format: int64

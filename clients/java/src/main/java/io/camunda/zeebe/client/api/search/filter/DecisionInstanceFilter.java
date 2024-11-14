@@ -19,6 +19,8 @@ import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRe
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
+import java.time.OffsetDateTime;
 
 public interface DecisionInstanceFilter extends SearchRequestFilter {
 
@@ -32,7 +34,10 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   DecisionInstanceFilter evaluationFailure(String evaluationFailure);
 
   /** Filter by evaluationDate */
-  DecisionInstanceFilter evaluationDate(String evaluationDate);
+  DecisionInstanceFilter evaluationDate(OffsetDateTime evaluationDate);
+
+  /** Filter by evaluationDate using {@link DateTimeFilterProperty} */
+  DecisionInstanceFilter evaluationDate(DateTimeFilterProperty evaluationDate);
 
   /** Filter by processDefinitionKey */
   DecisionInstanceFilter processDefinitionKey(long processDefinitionKey);

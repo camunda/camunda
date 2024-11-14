@@ -10,11 +10,13 @@ package io.camunda.zeebe.gateway.rest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.zeebe.gateway.protocol.rest.BasicLongFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.rest.deserializer.BasicLongFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.DateTimeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.LongFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
@@ -35,6 +37,7 @@ public class JacksonConfig {
         BasicLongFilterProperty.class, new BasicLongFilterPropertyDeserializer());
     module.addDeserializer(IntegerFilterProperty.class, new IntegerFilterPropertyDeserializer());
     module.addDeserializer(StringFilterProperty.class, new StringFilterPropertyDeserializer());
+    module.addDeserializer(DateTimeFilterProperty.class, new DateTimeFilterPropertyDeserializer());
     module.addDeserializer(
         ProcessInstanceStateFilterProperty.class,
         new ProcessInstanceStateFilterPropertyDeserializer());

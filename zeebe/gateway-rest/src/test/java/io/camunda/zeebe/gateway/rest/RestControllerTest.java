@@ -10,6 +10,8 @@ package io.camunda.zeebe.gateway.rest;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import io.camunda.security.auth.Authentication;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -51,6 +53,22 @@ public abstract class RestControllerTest {
           List.of(Operation.in("this", "that")),
           List.of(Operation.like("th%")),
           List.of(Operation.in("this", "that"), Operation.like("th%")));
+  protected static final List<List<Operation<OffsetDateTime>>> DATE_TIME_OPERATIONS =
+      List.of(
+          List.of(Operation.eq(OffsetDateTime.now())),
+          List.of(Operation.neq(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.of("Z")))),
+          List.of(Operation.exists(true)),
+          List.of(Operation.exists(false)),
+          List.of(Operation.gt(OffsetDateTime.now().minusHours(1))),
+          List.of(Operation.gte(OffsetDateTime.now().minusHours(1))),
+          List.of(Operation.lt(OffsetDateTime.now().minusHours(1))),
+          List.of(Operation.lte(OffsetDateTime.now().minusHours(1))),
+          List.of(
+              Operation.gt(OffsetDateTime.now().minusHours(1)), Operation.lt(OffsetDateTime.now())),
+          List.of(
+              Operation.gte(OffsetDateTime.now().minusHours(1)),
+              Operation.lte(OffsetDateTime.now())),
+          List.of(Operation.in(OffsetDateTime.now(), OffsetDateTime.now().minusDays(1))));
   @Autowired protected WebTestClient webClient;
 
   public ResponseSpec withMultiTenancy(
@@ -118,6 +136,15 @@ public abstract class RestControllerTest {
       final String filterKey,
       final Function<List<Operation<String>>, Object> builderMethod) {
     STRING_OPERATIONS.stream()
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, true))
+        .forEach(streamBuilder::add);
+  }
+
+  public static void dateTimeOperationTestCases(
+      final Stream.Builder<Arguments> streamBuilder,
+      final String filterKey,
+      final Function<List<Operation<OffsetDateTime>>, Object> builderMethod) {
+    DATE_TIME_OPERATIONS.stream()
         .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, true))
         .forEach(streamBuilder::add);
   }
