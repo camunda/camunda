@@ -45,6 +45,7 @@ import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
+import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
 import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
@@ -69,6 +70,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
@@ -80,10 +82,12 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableMappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -330,6 +334,15 @@ public class CamundaExporterHandlerIT {
     final var handler = getHandler(config, RoleCreateUpdateHandler.class);
     basicAssertWhereHandlerCreatesDefaultEntity(
         handler, config, clientAdapter, roleRecordGenerator(handler, RoleIntent.CREATED));
+  }
+
+  @TestTemplate
+  void shouldExportUsingTenantCreateUpdateHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, TenantCreateUpdateHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, tenantRecordGenerator(handler, TenantIntent.CREATED));
   }
 
   @TestTemplate
@@ -666,6 +679,24 @@ public class CamundaExporterHandlerIT {
               ValueType.ROLE,
               r ->
                   r.withValue((T) roleRecordValue)
+                      .withIntent(intent)
+                      .withTimestamp(System.currentTimeMillis()));
+        });
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> tenantRecordGenerator(
+      final ExportHandler<S, T> handler, final TenantIntent intent) {
+    return recordGenerator(
+        handler,
+        () -> {
+          final var tenantRecordValue =
+              ImmutableTenantRecordValue.builder()
+                  .from(factory.generateObject(TenantRecordValue.class))
+                  .build();
+          return factory.generateRecord(
+              ValueType.TENANT,
+              r ->
+                  r.withValue((T) tenantRecordValue)
                       .withIntent(intent)
                       .withTimestamp(System.currentTimeMillis()));
         });

@@ -20,7 +20,7 @@ public class TenantFilterTransformer implements FilterTransformer<TenantFilter> 
   public SearchQuery toSearchQuery(final TenantFilter filter) {
 
     return and(
-        filter.tenantKey() == null ? null : term("tenantKey", filter.tenantKey()),
+        filter.key() == null ? null : term("key", filter.key()),
         filter.tenantId() == null ? null : term("tenantId", filter.tenantId()),
         filter.name() == null ? null : term("name", filter.name()));
   }
