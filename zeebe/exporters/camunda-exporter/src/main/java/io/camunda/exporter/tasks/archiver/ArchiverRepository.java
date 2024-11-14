@@ -19,6 +19,8 @@ public interface ArchiverRepository extends AutoCloseable {
 
   CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName);
 
+  CompletableFuture<Void> setLifeCycleToAllIndexes();
+
   CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
@@ -55,6 +57,11 @@ public interface ArchiverRepository extends AutoCloseable {
 
     @Override
     public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Void> setLifeCycleToAllIndexes() {
       return CompletableFuture.completedFuture(null);
     }
 

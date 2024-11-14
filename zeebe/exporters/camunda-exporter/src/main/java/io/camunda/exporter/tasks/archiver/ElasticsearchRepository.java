@@ -134,6 +134,11 @@ public final class ElasticsearchRepository implements ArchiverRepository {
   }
 
   @Override
+  public CompletableFuture<Void> setLifeCycleToAllIndexes() {
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
   public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
