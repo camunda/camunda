@@ -28,18 +28,23 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.GetIndexRequest.Builder;
+import co.elastic.clients.elasticsearch.indices.IndexState;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.regex.Pattern;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -47,6 +52,8 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
+  private static final String ALL_INDICES = "*";
+
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
@@ -54,6 +61,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
   private final int partitionId;
   private final ArchiverConfiguration config;
   private final RetentionConfiguration retention;
+  private final ConnectConfiguration connectConfiguration;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
   private final ElasticsearchAsyncClient client;
@@ -67,6 +75,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
       final int partitionId,
       final ArchiverConfiguration config,
       final RetentionConfiguration retention,
+      final ConnectConfiguration connectConfiguration,
       final String processInstanceIndex,
       final String batchOperationIndex,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
@@ -76,6 +85,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
+    this.connectConfiguration = connectConfiguration;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.client = client;
@@ -118,22 +128,27 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
       return CompletableFuture.completedFuture(null);
     }
 
-    final var settingsRequest =
-        new PutIndicesSettingsRequest.Builder()
-            .settings(
-                settings ->
-                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
-            .index(destinationIndexName)
-            .allowNoIndices(true)
-            .ignoreUnavailable(true)
-            .build();
-
-    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
+    return setIndexLifeCycleToMatchingIndices(List.of(destinationIndexName));
   }
 
   @Override
   public CompletableFuture<Void> setLifeCycleToAllIndexes() {
-    return CompletableFuture.completedFuture(null);
+    if (!retention.isEnabled()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    final String IndexWildCard =
+        "^" + connectConfiguration.getIndexPrefix() + "-.*-\\d+\\.\\d+\\.\\d+_.+$";
+
+    final Map<String, IndexState> result =
+        client.indices().get(new Builder().index(ALL_INDICES).build()).join().result();
+
+    final Pattern indexNamePattern = Pattern.compile(IndexWildCard);
+    final List<String> indexNames =
+        result.keySet().stream()
+            .filter(indexName -> indexNamePattern.matcher(indexName).matches())
+            .toList();
+
+    return setIndexLifeCycleToMatchingIndices(indexNames);
   }
 
   @Override
@@ -183,6 +198,21 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
         .reindex(request)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
         .thenApplyAsync(ignored -> null, executor);
+  }
+
+  public CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
+      final List<String> destinationIndexNames) {
+    final var settingsRequest =
+        new PutIndicesSettingsRequest.Builder()
+            .settings(
+                settings ->
+                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
+            .index(destinationIndexNames)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
   }
 
   @Override
