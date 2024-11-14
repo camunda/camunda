@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.v86.entities;
 
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.util.Objects;
 
 /** Represents variable with its value at the moment when task was completed. */
@@ -20,7 +21,7 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
 
   public TaskVariableEntity() {}
 
-  public static String getIdBy(String taskId, String name) {
+  public static String getIdBy(final String taskId, final String name) {
     return String.format("%s-%s", taskId, name);
   }
 
@@ -70,7 +71,7 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
   }
 
   public static TaskVariableEntity createFrom(
-      String tenantId, String taskId, String name, String value, int variableSizeThreshold) {
+      final String tenantId, final String taskId, final String name, final String value, final int variableSizeThreshold) {
     final TaskVariableEntity entity =
         new TaskVariableEntity().setId(getIdBy(taskId, name)).setTaskId(taskId).setName(name);
     if (value.length() > variableSizeThreshold) {
@@ -85,7 +86,7 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
     return entity;
   }
 
-  public static TaskVariableEntity createFrom(String taskId, VariableEntity variableEntity) {
+  public static TaskVariableEntity createFrom(final String taskId, final VariableEntity variableEntity) {
     return new TaskVariableEntity()
         .setId(getIdBy(taskId, variableEntity.getName()))
         .setTaskId(taskId)
@@ -97,7 +98,7 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
   }
 
   public static TaskVariableEntity createFrom(
-      String taskId, DraftTaskVariableEntity draftTaskVariableEntity) {
+      final String taskId, final DraftTaskVariableEntity draftTaskVariableEntity) {
     return new TaskVariableEntity()
         .setId(getIdBy(taskId, draftTaskVariableEntity.getName()))
         .setTaskId(taskId)
@@ -106,6 +107,11 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
         .setIsPreview(draftTaskVariableEntity.getIsPreview())
         .setFullValue(draftTaskVariableEntity.getFullValue())
         .setTenantId(draftTaskVariableEntity.getTenantId());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), taskId, name, value, fullValue, isPreview);
   }
 
   @Override
@@ -125,10 +131,5 @@ public class TaskVariableEntity extends TasklistZeebeEntity<TaskVariableEntity> 
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
         && Objects.equals(fullValue, that.fullValue);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), taskId, name, value, fullValue, isPreview);
   }
 }

@@ -36,10 +36,10 @@ import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.v86.entities.TaskEntity;
 import io.camunda.tasklist.v86.entities.TaskState;
-import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -710,8 +710,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     for (int i = 0; i < varNames.size(); i++) {
       final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-      boolQuery.must(QueryBuilders.termQuery(TasklistVariableIndex.NAME, varNames.get(i)));
-      boolQuery.must(QueryBuilders.termQuery(TasklistVariableIndex.VALUE, varValues.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(VariableTemplate.NAME, varNames.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(VariableTemplate.VALUE, varValues.get(i)));
 
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()

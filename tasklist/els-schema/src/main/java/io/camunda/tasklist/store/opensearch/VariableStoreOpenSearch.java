@@ -10,9 +10,9 @@ package io.camunda.tasklist.store.opensearch;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.createSearchRequest;
-import static io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex.ID;
-import static io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex.NAME;
-import static io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex.SCOPE_FLOW_NODE_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.NAME;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.SCOPE_KEY;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
@@ -28,10 +28,10 @@ import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.v86.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.v86.entities.TaskVariableEntity;
-import io.camunda.tasklist.v86.entities.VariableEntity;
 import io.camunda.tasklist.v86.schema.indices.TasklistFlowNodeInstanceIndex;
-import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -73,7 +73,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
   @Autowired private TasklistFlowNodeInstanceIndex flowNodeInstanceIndex;
-  @Autowired private TasklistVariableIndex variableIndex;
+  @Autowired private VariableTemplate variableIndex;
   @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -87,7 +87,7 @@ public class VariableStoreOpenSearch implements VariableStore {
     flowNodeInstanceKeyQ.terms(
         terms ->
             terms
-                .field(SCOPE_FLOW_NODE_ID)
+                .field(SCOPE_KEY)
                 .terms(
                     t ->
                         t.value(
@@ -101,7 +101,7 @@ public class VariableStoreOpenSearch implements VariableStore {
       varNamesQ.terms(
           terms ->
               terms
-                  .field(TasklistVariableIndex.NAME)
+                  .field(VariableTemplate.NAME)
                   .terms(
                       t ->
                           t.value(varNames.stream().map(m -> FieldValue.of(m)).collect(toList()))));
@@ -323,7 +323,7 @@ public class VariableStoreOpenSearch implements VariableStore {
       nameQ.terms(
           terms ->
               terms
-                  .field(TasklistVariableIndex.NAME)
+                  .field(VariableTemplate.NAME)
                   .terms(
                       t ->
                           t.value(Collections.singletonList(FieldValue.of(varNames.get(finalI))))));
@@ -332,7 +332,7 @@ public class VariableStoreOpenSearch implements VariableStore {
       valueQ.terms(
           terms ->
               terms
-                  .field(TasklistVariableIndex.VALUE)
+                  .field(VariableTemplate.VALUE)
                   .terms(
                       t ->
                           t.value(
@@ -352,7 +352,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
         List<String> scrollProcessIds =
             response.hits().hits().stream()
-                .map(hit -> hit.source().getProcessInstanceId())
+                .map(hit -> String.valueOf(hit.source().getProcessInstanceKey()))
                 .collect(Collectors.toList());
 
         processInstanceIds.addAll(scrollProcessIds);
@@ -370,7 +370,7 @@ public class VariableStoreOpenSearch implements VariableStore {
           response = osClient.scroll(scrollRequest, VariableEntity.class);
           scrollProcessIds =
               response.hits().hits().stream()
-                  .map(hit -> hit.source().getProcessInstanceId())
+                  .map(hit -> String.valueOf(hit.source().getProcessInstanceKey()))
                   .collect(Collectors.toList());
 
           processInstanceIds.addAll(scrollProcessIds);
@@ -415,11 +415,10 @@ public class VariableStoreOpenSearch implements VariableStore {
       final SearchRequest.Builder searchSourceBuilder, final Set<String> fieldNames) {
     final String[] includesFields;
     if (isNotEmpty(fieldNames)) {
-      final Set<String> elsFieldNames =
-          TasklistVariableIndex.getElsFieldsByGraphqlFields(fieldNames);
+      final Set<String> elsFieldNames = VariableStore.getElsFieldsByGraphqlFields(fieldNames);
       elsFieldNames.add(ID);
       elsFieldNames.add(NAME);
-      elsFieldNames.add(SCOPE_FLOW_NODE_ID);
+      elsFieldNames.add(SCOPE_KEY);
       includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
       searchSourceBuilder.source(s -> s.filter(f -> f.includes(Arrays.asList(includesFields))));
     }

@@ -9,7 +9,7 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import io.camunda.tasklist.v86.entities.DraftTaskVariableEntity;
 import io.camunda.tasklist.v86.entities.TaskVariableEntity;
-import io.camunda.tasklist.v86.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -35,7 +35,7 @@ public class VariableResponse {
     return id;
   }
 
-  public VariableResponse setId(String id) {
+  public VariableResponse setId(final String id) {
     this.id = id;
     return this;
   }
@@ -44,7 +44,7 @@ public class VariableResponse {
     return name;
   }
 
-  public VariableResponse setName(String name) {
+  public VariableResponse setName(final String name) {
     this.name = name;
     return this;
   }
@@ -53,7 +53,7 @@ public class VariableResponse {
     return value;
   }
 
-  public VariableResponse setValue(String value) {
+  public VariableResponse setValue(final String value) {
     this.value = value;
     return this;
   }
@@ -62,13 +62,13 @@ public class VariableResponse {
     return draft;
   }
 
-  public VariableResponse setDraft(DraftVariableValue draft) {
+  public VariableResponse setDraft(final DraftVariableValue draft) {
     this.draft = draft;
     return this;
   }
 
-  public VariableResponse addDraft(DraftTaskVariableEntity draftTaskVariable) {
-    this.draft =
+  public VariableResponse addDraft(final DraftTaskVariableEntity draftTaskVariable) {
+    draft =
         new VariableResponse.DraftVariableValue().setValue(draftTaskVariable.getFullValue());
     return this;
   }
@@ -77,12 +77,12 @@ public class VariableResponse {
     return tenantId;
   }
 
-  public VariableResponse setTenantId(String tenantId) {
+  public VariableResponse setTenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
 
-  public static VariableResponse createFrom(VariableEntity variableEntity) {
+  public static VariableResponse createFrom(final VariableEntity variableEntity) {
     return new VariableResponse()
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())
@@ -90,7 +90,7 @@ public class VariableResponse {
         .setTenantId(variableEntity.getTenantId());
   }
 
-  public static VariableResponse createFrom(DraftTaskVariableEntity draftTaskVariable) {
+  public static VariableResponse createFrom(final DraftTaskVariableEntity draftTaskVariable) {
     return new VariableResponse()
         .setId(draftTaskVariable.getId())
         .setName(draftTaskVariable.getName())
@@ -99,7 +99,7 @@ public class VariableResponse {
             new VariableResponse.DraftVariableValue().setValue(draftTaskVariable.getFullValue()));
   }
 
-  public static VariableResponse createFrom(TaskVariableEntity variableEntity) {
+  public static VariableResponse createFrom(final TaskVariableEntity variableEntity) {
     return new VariableResponse()
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())
@@ -108,7 +108,12 @@ public class VariableResponse {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(id, name, value, draft, tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -121,11 +126,6 @@ public class VariableResponse {
         && Objects.equals(value, that.value)
         && Objects.equals(draft, that.draft)
         && Objects.equals(tenantId, that.tenantId);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, name, value, draft, tenantId);
   }
 
   @Override
@@ -155,13 +155,18 @@ public class VariableResponse {
       return value;
     }
 
-    public DraftVariableValue setValue(String value) {
+    public DraftVariableValue setValue(final String value) {
       this.value = value;
       return this;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public int hashCode() {
+      return Objects.hash(value);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
       if (this == o) {
         return true;
       }
@@ -170,11 +175,6 @@ public class VariableResponse {
       }
       final DraftVariableValue that = (DraftVariableValue) o;
       return Objects.equals(value, that.value);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(value);
     }
 
     @Override

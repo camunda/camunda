@@ -11,6 +11,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.identity.sdk.Identity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.DraftVariableStore;
@@ -25,7 +26,6 @@ import io.camunda.tasklist.v86.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.v86.entities.TaskEntity;
 import io.camunda.tasklist.v86.entities.TaskState;
 import io.camunda.tasklist.v86.entities.TaskVariableEntity;
-import io.camunda.tasklist.v86.entities.VariableEntity;
 import io.camunda.tasklist.v86.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.v86.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
@@ -35,6 +35,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -72,6 +73,8 @@ public class VariableService {
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
+
+  @Autowired private Identity identity;
 
   public void persistDraftTaskVariables(
       final String taskId, final List<VariableInputDTO> draftTaskVariables) {
@@ -350,7 +353,7 @@ public class VariableService {
         variableStore.getVariablesByFlowNodeInstanceIds(flowNodeInstanceIds, varNames, fieldNames);
 
     return variables.stream()
-        .collect(groupingBy(VariableEntity::getScopeFlowNodeId, getVariableMapCollector()));
+        .collect(groupingBy(i -> String.valueOf(i.getScopeKey()), getVariableMapCollector()));
   }
 
   @NotNull

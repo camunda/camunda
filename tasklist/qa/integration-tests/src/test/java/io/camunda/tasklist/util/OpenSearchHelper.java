@@ -13,13 +13,13 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.v86.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.v86.entities.TaskEntity;
 import io.camunda.tasklist.v86.entities.TaskVariableEntity;
-import io.camunda.tasklist.v86.entities.VariableEntity;
 import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceIndex;
-import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,7 +53,7 @@ public class OpenSearchHelper implements NoSqlHelper {
 
   @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
 
-  @Autowired private TasklistVariableIndex variableIndex;
+  @Autowired private VariableTemplate variableIndex;
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -208,7 +208,7 @@ public class OpenSearchHelper implements NoSqlHelper {
                                           filter.terms(
                                               terms ->
                                                   terms
-                                                      .field(TasklistVariableIndex.NAME)
+                                                      .field(VariableTemplate.NAME)
                                                       .terms(
                                                           tv ->
                                                               tv.value(

@@ -13,7 +13,7 @@ import static java.util.stream.Collectors.toList;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.v86.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.v86.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,7 +115,7 @@ public class TaskVariableSearchUtil {
         variableStore.getVariablesByFlowNodeInstanceIds(flowNodeInstanceIds, varNames, fieldNames);
 
     return variables.stream()
-        .collect(groupingBy(VariableEntity::getScopeFlowNodeId, getVariableMapCollector()));
+        .collect(groupingBy(i -> String.valueOf(i.getScopeKey()), getVariableMapCollector()));
   }
 
   private Collector<VariableEntity, VariableStore.VariableMap, VariableStore.VariableMap>

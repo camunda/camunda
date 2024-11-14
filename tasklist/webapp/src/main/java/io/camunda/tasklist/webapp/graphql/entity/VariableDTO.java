@@ -12,7 +12,7 @@ import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLType;
 import io.camunda.tasklist.v86.entities.TaskVariableEntity;
-import io.camunda.tasklist.v86.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -72,7 +72,7 @@ public class VariableDTO {
     return this;
   }
 
-  public static VariableDTO createFrom(TaskVariableEntity variableEntity) {
+  public static VariableDTO createFrom(final TaskVariableEntity variableEntity) {
     final VariableDTO variableDTO =
         new VariableDTO().setId(variableEntity.getId()).setName(variableEntity.getName());
     variableDTO
@@ -82,7 +82,7 @@ public class VariableDTO {
     return variableDTO;
   }
 
-  public static VariableDTO createFrom(VariableEntity variableEntity) {
+  public static VariableDTO createFrom(final VariableEntity variableEntity) {
     final VariableDTO variableDTO =
         new VariableDTO().setId(variableEntity.getId()).setName(variableEntity.getName());
     variableDTO
@@ -92,10 +92,10 @@ public class VariableDTO {
     return variableDTO;
   }
 
-  public static List<VariableDTO> createFrom(List<VariableEntity> variableEntities) {
+  public static List<VariableDTO> createFrom(final List<VariableEntity> variableEntities) {
     final List<VariableDTO> result = new ArrayList<>();
     if (variableEntities != null) {
-      for (VariableEntity variableEntity : variableEntities) {
+      for (final VariableEntity variableEntity : variableEntities) {
         if (variableEntity != null) {
           result.add(createFrom(variableEntity));
         }
@@ -105,8 +105,13 @@ public class VariableDTO {
   }
 
   public static List<VariableDTO> createFromTaskVariables(
-      List<TaskVariableEntity> taskVariableEntities) {
+      final List<TaskVariableEntity> taskVariableEntities) {
     return taskVariableEntities.stream().map(VariableDTO::createFrom).collect(Collectors.toList());
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, name, value, isValueTruncated, previewValue);
   }
 
   @Override
@@ -123,10 +128,5 @@ public class VariableDTO {
         && Objects.equals(name, that.name)
         && Objects.equals(value, that.value)
         && Objects.equals(previewValue, that.previewValue);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id, name, value, isValueTruncated, previewValue);
   }
 }

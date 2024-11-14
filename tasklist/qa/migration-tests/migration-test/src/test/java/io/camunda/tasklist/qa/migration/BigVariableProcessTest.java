@@ -11,8 +11,8 @@ import static io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenera
 import static io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenerator.SMALL_VAR_NAME;
 import static io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenerator.SMALL_VAR_VALUE;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
-import static io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.PROCESS_INSTANCE_KEY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -22,7 +22,7 @@ import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
 import io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenerator;
 import io.camunda.tasklist.qa.util.VariablesUtil;
 import io.camunda.tasklist.util.ElasticsearchUtil;
-import io.camunda.tasklist.v86.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -70,7 +70,7 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
       searchRequest.source().query(termQuery(BPMN_PROCESS_ID, bpmnProcessId));
       try {
         processInstanceIds =
-            ElasticsearchUtil.scrollFieldToList(searchRequest, PROCESS_INSTANCE_ID, esClient);
+            ElasticsearchUtil.scrollFieldToList(searchRequest, PROCESS_INSTANCE_KEY, esClient);
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
@@ -83,7 +83,7 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
         new SearchRequest(taskTemplate.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(termsQuery(PROCESS_INSTANCE_ID, processInstanceIds)));
+                    .query(termsQuery(PROCESS_INSTANCE_KEY, processInstanceIds)));
     final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     assertThat(searchResponse.getHits().getTotalHits().value).isEqualTo(1);
   }
@@ -95,7 +95,7 @@ public class BigVariableProcessTest extends AbstractMigrationTest {
             new SearchRequest(variableIndex.getAlias())
                 .source(
                     new SearchSourceBuilder()
-                        .query(termsQuery(PROCESS_INSTANCE_ID, processInstanceIds))),
+                        .query(termsQuery(PROCESS_INSTANCE_KEY, processInstanceIds))),
             VariableEntity.class);
     assertThat(vars.size()).isEqualTo(2);
     boolean found = false;

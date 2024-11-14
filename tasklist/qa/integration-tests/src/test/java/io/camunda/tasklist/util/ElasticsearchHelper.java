@@ -16,11 +16,11 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.v86.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.v86.entities.TaskEntity;
 import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceIndex;
-import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +61,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   @Autowired private TasklistTaskVariableTemplate taskVariableTemplate;
 
-  @Autowired private TasklistVariableIndex variableIndex;
+  @Autowired private VariableTemplate variableIndex;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -183,7 +183,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
         new SearchRequest(variableIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(constantScoreQuery(termsQuery(TasklistVariableIndex.NAME, varNames))));
+                    .query(constantScoreQuery(termsQuery(VariableTemplate.NAME, varNames))));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value == varNames.length;

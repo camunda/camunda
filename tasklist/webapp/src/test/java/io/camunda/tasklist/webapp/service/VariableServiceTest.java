@@ -34,7 +34,6 @@ import io.camunda.tasklist.v86.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.v86.entities.TaskEntity;
 import io.camunda.tasklist.v86.entities.TaskState;
 import io.camunda.tasklist.v86.entities.TaskVariableEntity;
-import io.camunda.tasklist.v86.entities.VariableEntity;
 import io.camunda.tasklist.webapp.CommonUtils;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
@@ -43,6 +42,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -78,7 +78,7 @@ class VariableServiceTest {
   void persistDraftTaskVariablesWhenValidInputShouldPersistVariables() {
     // given
     final String taskId = "taskId_123";
-    final String flowNodeInstanceId = "flowNodeInstanceId_456";
+    final Long flowNodeInstanceId = 156L;
     final List<VariableInputDTO> draftTaskVariables =
         List.of(
             new VariableInputDTO().setName("varA").setValue("\"valueA\""),
@@ -92,7 +92,7 @@ class VariableServiceTest {
     final TaskEntity task =
         new TaskEntity()
             .setId(taskId)
-            .setFlowNodeInstanceId(flowNodeInstanceId)
+            .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
             .setTenantId("tenant_a");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
@@ -186,11 +186,11 @@ class VariableServiceTest {
   void getVariableSearchResponsesForCreatedTask() {
     // given
     final String taskId = "taskId_557";
-    final String flowNodeInstanceId = "flowNodeInstanceId_557";
+    final Long flowNodeInstanceId = 456L;
     final TaskEntity task =
         new TaskEntity()
             .setId(taskId)
-            .setFlowNodeInstanceId(flowNodeInstanceId)
+            .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
             .setState(TaskState.CREATED);
     when(taskStore.getTask(taskId)).thenReturn(task);
     final int variableSizeThreshold = 100;
@@ -224,7 +224,7 @@ class VariableServiceTest {
     assertThat(result)
         .containsExactly(
             new VariableSearchResponse()
-                .setId(VariableEntity.getIdBy(flowNodeInstanceId, "A_numVar"))
+                .setId(String.format("%s-%s", flowNodeInstanceId, "A_numVar"))
                 .setName("A_numVar")
                 .setValue("123")
                 .setPreviewValue("123")
@@ -240,7 +240,7 @@ class VariableServiceTest {
                         .setPreviewValue("\"strVarValue\"")
                         .setValue("\"strVarValue\"")),
             new VariableSearchResponse()
-                .setId(VariableEntity.getIdBy(flowNodeInstanceId, "C_objVar"))
+                .setId(String.format("%s-%s", flowNodeInstanceId, "C_objVar"))
                 .setName("C_objVar")
                 .setValue("{\"propA\":1,\"propB\":\"strVal\"}")
                 .setPreviewValue("{\"propA\":1,\"propB\":\"strVal\"}"));
@@ -249,7 +249,7 @@ class VariableServiceTest {
   @Test
   void getVariablesPerTaskIdForCreatedTask() {
     final String taskId = "taskId_557";
-    final String flowNodeInstanceId = "flowNodeInstanceId_557";
+    final Long flowNodeInstanceId = 456L;
     final int variableSizeThreshold = 100;
     mockReturnOriginalVariables(
         List.of(
@@ -268,7 +268,7 @@ class VariableServiceTest {
             List.of(
                 new VariableStore.GetVariablesRequest()
                     .setTaskId(taskId)
-                    .setFlowNodeInstanceId(flowNodeInstanceId)
+                    .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
                     .setState(TaskState.CREATED)
                     .setVarNames(List.of("A_numVar", "C_objVar"))));
 
@@ -277,12 +277,12 @@ class VariableServiceTest {
     assertThat(result.get(taskId))
         .containsExactly(
             new VariableDTO()
-                .setId(VariableEntity.getIdBy(flowNodeInstanceId, "A_numVar"))
+                .setId(String.format("%s-%s", flowNodeInstanceId, "A_numVar"))
                 .setName("A_numVar")
                 .setValue("123")
                 .setPreviewValue("123"),
             new VariableDTO()
-                .setId(VariableEntity.getIdBy(flowNodeInstanceId, "C_objVar"))
+                .setId(String.format("%s-%s", flowNodeInstanceId, "C_objVar"))
                 .setName("C_objVar")
                 .setValue("{\"propA\":1,\"propB\":\"strVal\"}")
                 .setIsValueTruncated(false)
@@ -340,7 +340,7 @@ class VariableServiceTest {
     // given
     final String variableId = "id123-varA";
     when(variableStore.getRuntimeVariable(variableId, emptySet()))
-        .thenReturn(createVariableEntity("id123", "varA", "123", 100));
+        .thenReturn(createVariableEntity(123L, "varA", "123", 100));
     when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
 
     // when
@@ -363,7 +363,7 @@ class VariableServiceTest {
     // given
     final String variableId = "id123-varB";
     when(variableStore.getRuntimeVariable(variableId, emptySet()))
-        .thenReturn(createVariableEntity("id123", "varB", "123", 100));
+        .thenReturn(createVariableEntity(123L, "varB", "123", 100));
     when(draftVariableStore.getById(variableId))
         .thenReturn(
             Optional.of(
@@ -479,11 +479,11 @@ class VariableServiceTest {
   void persistTaskVariablesWithoutDraftVariables() {
     // given
     final String taskId = "taskId_557";
-    final String flowNodeInstanceId = "456";
+    final Long flowNodeInstanceId = 456L;
     final TaskEntity task =
         new TaskEntity()
             .setId(taskId)
-            .setFlowNodeInstanceId(flowNodeInstanceId)
+            .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
             .setTenantId("tenant_b");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
@@ -522,11 +522,11 @@ class VariableServiceTest {
   void persistTaskVariablesWithDraftVariables() {
     // given
     final String taskId = "taskId_557";
-    final String flowNodeInstanceId = "456";
+    final Long flowNodeInstanceId = 456L;
     final TaskEntity task =
         new TaskEntity()
             .setId(taskId)
-            .setFlowNodeInstanceId(flowNodeInstanceId)
+            .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
             .setTenantId("tenant_c");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
@@ -595,16 +595,16 @@ class VariableServiceTest {
   }
 
   private static VariableEntity createVariableEntity(
-      final String flowNodeInstanceId,
+      final Long flowNodeInstanceId,
       final String name,
       final String value,
       final int variableSizeThreshold,
       final String tenantId) {
     final VariableEntity entity =
         new VariableEntity()
-            .setId(VariableEntity.getIdBy(flowNodeInstanceId, name))
+            .setId(String.format("%s-%s", flowNodeInstanceId, name))
             .setName(name)
-            .setScopeFlowNodeId(flowNodeInstanceId);
+            .setScopeKey(flowNodeInstanceId);
 
     if (value.length() > variableSizeThreshold) {
       // store preview
@@ -619,7 +619,7 @@ class VariableServiceTest {
   }
 
   private static VariableEntity createVariableEntity(
-      final String flowNodeInstanceId,
+      final Long flowNodeInstanceId,
       final String name,
       final String value,
       final int variableSizeThreshold) {

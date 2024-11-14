@@ -21,8 +21,8 @@ import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.v86.schema.indices.TasklistFlowNodeInstanceIndex;
 import io.camunda.tasklist.v86.schema.indices.TasklistProcessInstanceIndex;
-import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.Arrays;
 import java.util.List;
@@ -61,7 +61,7 @@ public class ProcessInstanceArchiverJobElasticSearch extends AbstractArchiverJob
 
   @Autowired private TasklistFlowNodeInstanceIndex flowNodeInstanceIndex;
 
-  @Autowired private TasklistVariableIndex variableIndex;
+  @Autowired private VariableTemplate variableIndex;
 
   @Autowired private TasklistProcessInstanceIndex processInstanceIndex;
 
@@ -88,7 +88,7 @@ public class ProcessInstanceArchiverJobElasticSearch extends AbstractArchiverJob
       final var deleteVariablesFuture =
           archiverUtil.deleteDocuments(
               variableIndex.getFullQualifiedName(),
-              TasklistVariableIndex.PROCESS_INSTANCE_ID,
+              VariableTemplate.PROCESS_INSTANCE_KEY,
               archiveBatch.getIds());
 
       final var deleteFlowNodesFuture =

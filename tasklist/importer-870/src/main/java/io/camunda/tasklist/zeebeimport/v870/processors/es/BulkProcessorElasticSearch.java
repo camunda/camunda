@@ -46,8 +46,6 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
   @Autowired
   private ProcessInstanceZeebeRecordProcessorElasticSearch processInstanceZeebeRecordProcessor;
 
-  @Autowired private VariableZeebeRecordProcessorElasticSearch variableZeebeRecordProcessor;
-
   @Autowired private JobZeebeRecordProcessorElasticSearch jobZeebeRecordProcessor;
 
   @Autowired private ProcessZeebeRecordProcessorElasticSearch processZeebeRecordProcessor;
@@ -85,9 +83,6 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
       switch (importValueType) {
         case PROCESS_INSTANCE:
           processInstanceZeebeRecordProcessor.processProcessInstanceRecord(record, bulkRequest);
-          break;
-        case VARIABLE:
-          variableZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
           break;
         case JOB:
           jobZeebeRecordProcessor.processJobRecord(record, bulkRequest);

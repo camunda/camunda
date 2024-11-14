@@ -46,8 +46,6 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
   @Autowired
   private ProcessInstanceZeebeRecordProcessorOpenSearch processInstanceZeebeRecordProcessor;
 
-  @Autowired private VariableZeebeRecordProcessorOpenSearch variableZeebeRecordProcessor;
-
   @Autowired private JobZeebeRecordProcessorOpenSearch jobZeebeRecordProcessor;
 
   @Autowired private ProcessZeebeRecordProcessorOpenSearch processZeebeRecordProcessor;
@@ -83,9 +81,6 @@ public class OpenSearchBulkProcessor extends AbstractImportBatchProcessorOpenSea
       switch (importValueType) {
         case PROCESS_INSTANCE:
           processInstanceZeebeRecordProcessor.processProcessInstanceRecord(record, operations);
-          break;
-        case VARIABLE:
-          variableZeebeRecordProcessor.processVariableRecord(record, operations);
           break;
         case JOB:
           jobZeebeRecordProcessor.processJobRecord(record, operations);

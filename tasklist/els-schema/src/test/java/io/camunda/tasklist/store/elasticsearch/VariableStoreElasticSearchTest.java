@@ -20,8 +20,8 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.v86.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.v86.schema.indices.TasklistFlowNodeInstanceIndex;
-import io.camunda.tasklist.v86.schema.indices.TasklistVariableIndex;
 import io.camunda.tasklist.v86.schema.templates.TasklistTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import java.util.List;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -50,7 +50,7 @@ class VariableStoreElasticSearchTest {
   @Spy
   private TasklistFlowNodeInstanceIndex flowNodeInstanceIndex = new TasklistFlowNodeInstanceIndex();
 
-  @Spy private TasklistVariableIndex variableIndex = new TasklistVariableIndex();
+  @Spy private VariableTemplate variableIndex = new VariableTemplate("test", true);
 
   @Spy
   private TasklistTaskVariableTemplate taskVariableTemplate = new TasklistTaskVariableTemplate();
