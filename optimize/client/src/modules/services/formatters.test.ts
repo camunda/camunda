@@ -37,7 +37,7 @@ describe('getHighlightedText', () => {
   it('Should wrap the highlighted text in a span and give it textBold class', () => {
     const results = getHighlightedText('test text', 'text') as JSX.Element[];
     expect(results[1]?.props.children).toBe('text');
-    expect(results[1]?.props.className).toBe('textBold');
+    expect(results[1]?.props.style.fontWeight).toBe('bold');
   });
 
   it('Should return the same text as string if the highlight is empty', () => {
@@ -50,13 +50,13 @@ describe('getHighlightedText', () => {
     expect(notMatch.length).toBe(1);
     const results = getHighlightedText('test text', 'test', true) as JSX.Element[];
     expect(results[1]?.props.children).toBe('test');
-    expect(results[1]?.props.className).toBe('textBold');
+    expect(results[1]?.props.style.fontWeight).toBe('bold');
   });
 
   it('should work with special characters', () => {
     const results = getHighlightedText('test)', ')') as JSX.Element[];
     expect(results[1]?.props.children).toBe(')');
-    expect(results[1]?.props.className).toBe('textBold');
+    expect(results[1]?.props.style.fontWeight).toBe('bold');
   });
 });
 

@@ -7,7 +7,7 @@
  */
 
 import React from 'react';
-import {Button} from '@carbon/react';
+import {Button, Stack} from '@carbon/react';
 
 import {withErrorHandling} from 'HOC';
 import {Modal, Loading} from 'components';
@@ -106,32 +106,34 @@ export default withErrorHandling(
         <Modal open onClose={this.close} className="Deleter">
           <Modal.Header title={deleteText || t('common.deleteEntity', {entity: translatedType})} />
           <Modal.Content>
-            {loading ? (
-              <Loading />
-            ) : (
-              <>
-                <p>
-                  {descriptionText ||
-                    t('common.deleter.permanent', {
-                      name: getName(entity),
-                      type: translatedType,
-                    })}
-                </p>
-                {Object.keys(conflicts)
-                  .sort((a, b) => sectionOrder.indexOf(a) - sectionOrder.indexOf(b))
-                  .map((conflictType) => (
-                    <div key={conflictType}>
-                      {t(`common.deleter.affectedMessage.${type}.${conflictType}`)}
-                      <ul>
-                        {conflicts[conflictType].map(({id, name}) => (
-                          <li key={id}>'{name || id}'</li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                <p>{!this.props.isReversableAction && <b>{t('common.deleter.noUndo')}</b>}</p>
-              </>
-            )}
+            <Stack gap={4}>
+              {loading ? (
+                <Loading />
+              ) : (
+                <>
+                  <p>
+                    {descriptionText ||
+                      t('common.deleter.permanent', {
+                        name: getName(entity),
+                        type: translatedType,
+                      })}
+                  </p>
+                  {Object.keys(conflicts)
+                    .sort((a, b) => sectionOrder.indexOf(a) - sectionOrder.indexOf(b))
+                    .map((conflictType) => (
+                      <div key={conflictType}>
+                        {t(`common.deleter.affectedMessage.${type}.${conflictType}`)}
+                        <ul>
+                          {conflicts[conflictType].map(({id, name}) => (
+                            <li key={id}>'{name || id}'</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  <p>{!this.props.isReversableAction && <b>{t('common.deleter.noUndo')}</b>}</p>
+                </>
+              )}
+            </Stack>
           </Modal.Content>
           <Modal.Footer>
             <Button
