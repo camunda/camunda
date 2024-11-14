@@ -163,6 +163,43 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldClaimUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(
+                ZeebeTaskListenerEventType.assignment, LISTENER_TYPE, LISTENER_TYPE + "_2"));
+
+    // when
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withAssignee("test_user")
+        .withAction("claim_action")
+        .claim();
+    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2");
+
+    // then
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey, JobListenerEventType.ASSIGNMENT, LISTENER_TYPE, LISTENER_TYPE + "_2");
+
+    // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
+    // `ASSIGNING` and `ASSIGNED` events
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CLAIM,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.ASSIGNED);
+
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.ASSIGNED,
+        userTask ->
+            Assertions.assertThat(userTask).hasAssignee("test_user").hasAction("claim_action"));
+  }
+
+  @Test
   public void shouldRetryTaskListenerWhenListenerJobFailed() {
     // given
     final long processInstanceKey =
