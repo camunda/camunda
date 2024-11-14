@@ -28,6 +28,7 @@ public class ImportPositionIndex extends OperateIndexDescriptor implements Prio1
   public static final String SEQUENCE = "sequence";
   public static final String POST_IMPORTER_POSITION = "postImporterPosition";
   public static final String FIELD_INDEX_NAME = "indexName";
+  public static final String COMPLETED = "completed";
 
   @Autowired private OperateProperties properties;
 
