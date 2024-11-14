@@ -24,6 +24,7 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -132,15 +133,19 @@ class FormCacheIT {
 
   static FormCacheArgument getESFormCache(final String indexName) {
     return new FormCacheArgument(
-        new ExporterEntityCacheImpl<String, CachedFormEntity>(
-            10, new ElasticSearchFormCacheLoader(elsClient, indexName)),
+        new ExporterEntityCacheImpl<>(
+            10,
+            new ElasticSearchFormCacheLoader(elsClient, indexName),
+            new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
         FormCacheIT::indexInElasticSearch);
   }
 
   static FormCacheArgument getOSFormCache(final String indexName) {
     return new FormCacheArgument(
-        new ExporterEntityCacheImpl<String, CachedFormEntity>(
-            10, new OpenSearchFormCacheLoader(osClient, indexName)),
+        new ExporterEntityCacheImpl<>(
+            10,
+            new OpenSearchFormCacheLoader(osClient, indexName),
+            new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
         FormCacheIT::indexInOpenSearch);
   }
 

@@ -85,6 +85,8 @@ import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -439,7 +441,10 @@ public class CamundaExporterHandlerIT {
   private <S extends ExporterEntity<S>, T extends RecordValue> ExportHandler<S, T> getHandler(
       final ExporterConfiguration config, final Class<?> handlerClass) {
     final var provider = new DefaultExporterResourceProvider();
-    provider.init(config, ClientAdapter.of(config).getExporterEntityCacheProvider());
+    provider.init(
+        config,
+        ClientAdapter.of(config).getExporterEntityCacheProvider(),
+        new SimpleMeterRegistry());
 
     return provider.getExportHandlers().stream()
         .filter(handler -> handler.getClass().equals(handlerClass))
@@ -456,7 +461,8 @@ public class CamundaExporterHandlerIT {
   private CamundaExporter getExporter(
       final ExporterConfiguration config, final ExportHandler<?, ?> handler) {
     final var provider = spy(new DefaultExporterResourceProvider());
-    provider.init(config, ClientAdapter.of(config).getExporterEntityCacheProvider());
+    provider.init(
+        config, ClientAdapter.of(config).getExporterEntityCacheProvider(), Metrics.globalRegistry);
 
     doReturn(Set.of(handler)).when(provider).getExportHandlers();
 
