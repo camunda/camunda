@@ -106,7 +106,8 @@ public final class TestSupport {
             ValueType.ROLE,
             ValueType.TENANT,
             ValueType.GROUP,
-            ValueType.MAPPING);
+            ValueType.MAPPING,
+            ValueType.REDISTRIBUTION);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }
