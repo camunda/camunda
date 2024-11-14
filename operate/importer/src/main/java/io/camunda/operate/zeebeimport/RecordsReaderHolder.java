@@ -66,11 +66,11 @@ public class RecordsReaderHolder {
     return recordsReaders;
   }
 
-  public void setPartitionsCompletedImporting(final int partitionId) {
+  public void addPartitionCompletedImporting(final int partitionId) {
     partitionsCompletedImporting.add(partitionId);
   }
 
-  public boolean getPartitionCompletedImporting(final int partitionId) {
+  public boolean hasPartitionCompletedImporting(final int partitionId) {
     return partitionsCompletedImporting.contains(partitionId);
   }
 

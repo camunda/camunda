@@ -18,7 +18,6 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.HitEntity;
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
@@ -27,6 +26,7 @@ import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.util.NumberThrottleable;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.*;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.Duration;
@@ -183,7 +183,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       }
       Integer nextRunDelay = null;
       if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().isEmpty()) {
-        if (recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
+        if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
           final var emptyBatchesAfterPartitionCompletion =
               recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
 

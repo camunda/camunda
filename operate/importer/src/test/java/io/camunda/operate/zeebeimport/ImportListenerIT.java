@@ -16,7 +16,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.indices.ImportPositionIndex;
@@ -28,6 +27,7 @@ import io.camunda.operate.util.NoBeansIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.processors.ImportBulkProcessor;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.util.ArrayList;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.Before;
