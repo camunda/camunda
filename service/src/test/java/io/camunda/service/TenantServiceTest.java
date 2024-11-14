@@ -75,7 +75,7 @@ public class TenantServiceTest {
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getByTenantKey(1L);
+    final var searchQueryResult = services.getByKey(1L);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -89,7 +89,7 @@ public class TenantServiceTest {
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getByTenantKey(1L);
+    final var searchQueryResult = services.getByKey(1L);
 
     // then
     assertThat(searchQueryResult).isEqualTo(entity);
@@ -103,7 +103,7 @@ public class TenantServiceTest {
 
     // when / then
     final var exception =
-        assertThrowsExactly(NotFoundException.class, () -> services.getByTenantKey(key));
+        assertThrowsExactly(NotFoundException.class, () -> services.getByKey(key));
     assertThat(exception.getMessage()).isEqualTo("Tenant with key 100 not found");
   }
 
