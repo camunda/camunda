@@ -61,6 +61,15 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
   }
 
+  /*
+   Note: This method finalizes the `ASSIGN` command by default but also handles finalization
+   for the `CLAIM` command when `assignment` listeners are defined for the user task.
+
+   This occurs because both `CLAIM` and `ASSIGN` commands transition the user task to the
+   `ASSIGNING` lifecycle state, making it indistinguishable which command initially led to this state.
+   Therefore, `UserTaskAssignProcessor` is selected to finalize the command after all task listeners
+   are processed when the user task is in the `ASSIGNING` state.
+  */
   @Override
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {

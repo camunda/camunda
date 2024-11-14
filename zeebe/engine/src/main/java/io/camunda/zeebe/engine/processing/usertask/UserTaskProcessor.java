@@ -272,6 +272,15 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     final var userTaskIntent =
         switch (lifecycleState) {
+          /*
+           Note: After receiving either `ASSIGN` or `CLAIM` commands, the user task transitions
+           to the `ASSIGNING` lifecycle state, making it indistinguishable which command initially
+           led to this state.
+
+           Therefore, the `ASSIGNING` state is mapped to the `ASSIGN` intent, and `UserTaskAssignProcessor`
+           is selected to finalize the command after all task listeners are processed.
+           This approach is acceptable as long as both commands share identical finalization logic.
+          */
           case ASSIGNING -> UserTaskIntent.ASSIGN;
           case UPDATING -> UserTaskIntent.UPDATE;
           case COMPLETING -> UserTaskIntent.COMPLETE;
