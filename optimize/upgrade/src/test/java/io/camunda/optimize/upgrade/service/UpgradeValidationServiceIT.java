@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import java.util.stream.Stream;
-import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
