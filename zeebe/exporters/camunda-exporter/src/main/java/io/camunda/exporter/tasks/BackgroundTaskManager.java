@@ -14,6 +14,7 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchRepository;
@@ -34,7 +35,6 @@ import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import javax.annotation.WillCloseWhenClosed;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
@@ -45,7 +45,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
   private final ArchiverRepository repository;
   private final Logger logger;
   private final ScheduledThreadPoolExecutor executor;
-  private final List<BackgroundTask> tasks;
+  private final List<Runnable> tasks;
   private final ArchiverConfiguration config;
 
   private int submittedTasks = 0;
@@ -56,7 +56,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
       final @WillCloseWhenClosed ArchiverRepository repository,
       final Logger logger,
       final @WillCloseWhenClosed ScheduledThreadPoolExecutor executor,
-      final List<BackgroundTask> tasks,
+      final List<Runnable> tasks,
       final ArchiverConfiguration config) {
     this.partitionId = partitionId;
     this.repository = Objects.requireNonNull(repository, "must specify a repository");
@@ -95,12 +95,10 @@ public final class BackgroundTaskManager implements CloseableSilently {
         unsubmittedTasks,
         submittedTasks,
         tasks.size());
-    executor.setCorePoolSize(Math.min(tasks.size(), MAX_BACKGROUND_THREADS));
+
     for (; submittedTasks < tasks.size(); submittedTasks++) {
       final var task = tasks.get(submittedTasks);
-      executor.submit(
-          new ReschedulingTask(
-              task, config.getRolloverBatchSize(), config.getDelayBetweenRuns(), executor, logger));
+      executor.submit(task);
     }
   }
 
@@ -122,10 +120,15 @@ public final class BackgroundTaskManager implements CloseableSilently {
     final List<Runnable> tasks = new ArrayList<>();
     int threadCount = 1;
 
-    tasks.add(createProcessInstanceJob(metrics, logger, resourceProvider, repository, executor));
+    tasks.add(
+        createProcessInstanceTask(
+            metrics, logger, resourceProvider, repository, executor, config.getArchiver()));
     if (partitionId == START_PARTITION_ID) {
-      tasks.add(createBatchOperationJob(metrics, logger, resourceProvider, repository, executor));
       threadCount++;
+      tasks.add(
+          createBatchOperationTask(
+              metrics, logger, resourceProvider, repository, executor, config.getArchiver()));
+      tasks.add(createApplyRolloverPeriodTask(metrics, logger, repository));
     }
 
     executor.setCorePoolSize(threadCount);
@@ -133,12 +136,13 @@ public final class BackgroundTaskManager implements CloseableSilently {
         partitionId, repository, logger, executor, tasks, config.getArchiver());
   }
 
-  private static ProcessInstancesArchiverJob createProcessInstanceJob(
+  private static ReschedulingTask createProcessInstanceTask(
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository,
-      final ScheduledThreadPoolExecutor executor) {
+      final ScheduledThreadPoolExecutor executor,
+      final ArchiverConfiguration config) {
     final var dependantTemplates = new ArrayList<ProcessInstanceDependant>();
     resourceProvider.getIndexTemplateDescriptors().stream()
         .filter(ProcessInstanceDependant.class::isInstance)
@@ -151,28 +155,47 @@ public final class BackgroundTaskManager implements CloseableSilently {
     dependantTemplates.add(
         new ProcessInstanceDependantAdapter(taskTemplate.getFullQualifiedName(), TaskTemplate.ID));
 
-    return new ProcessInstancesArchiverJob(
-        repository,
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
-        dependantTemplates,
-        metrics,
-        logger,
-        executor);
+    return new ReschedulingTask(
+        new ProcessInstancesArchiverJob(
+            repository,
+            resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
+            dependantTemplates,
+            metrics,
+            logger,
+            executor),
+        config.getRolloverBatchSize(),
+        config.getDelayBetweenRuns(),
+        executor,
+        logger);
   }
 
-  private static BatchOperationArchiverJob createBatchOperationJob(
+  private static ApplyRolloverPeriodJob createApplyRolloverPeriodTask(
+      final CamundaExporterMetrics metrics,
+      final Logger logger,
+      final ArchiverRepository repository) {
+
+    return new ApplyRolloverPeriodJob(repository, metrics, logger);
+  }
+
+  private static ReschedulingTask createBatchOperationTask(
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final ExporterResourceProvider resourceProvider,
       final ArchiverRepository repository,
-      final ScheduledThreadPoolExecutor executor) {
+      final ScheduledThreadPoolExecutor executor,
+      final ArchiverConfiguration config) {
 
-    return new BatchOperationArchiverJob(
-        repository,
-        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class),
-        metrics,
-        logger,
-        executor);
+    return new ReschedulingTask(
+        new BatchOperationArchiverJob(
+            repository,
+            resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class),
+            metrics,
+            logger,
+            executor),
+        config.getRolloverBatchSize(),
+        config.getDelayBetweenRuns(),
+        executor,
+        logger);
   }
 
   private static ScheduledThreadPoolExecutor defaultExecutor(final ThreadFactory threadFactory) {
