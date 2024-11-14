@@ -18,6 +18,7 @@
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery"
     resultMap="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchResultMap">
+    SELECT * FROM (
     SELECT PROCESS_DEFINITION_KEY,
     PROCESS_DEFINITION_ID,
     RESOURCE_NAME,
@@ -29,14 +30,10 @@
     FORM_ID
     FROM PROCESS_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
-    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
-      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        <include
-          refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.processDefinitionSortMapper"/>
-        ${item.order}
-      </foreach>
-    </if>
-    ${paging.after}
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
   <sql id="searchFilter">
@@ -83,32 +80,6 @@
         #{value}
       </foreach>
     </if>
-  </sql>
-
-  <sql id="processDefinitionSortMapper">
-    <choose>
-      <when test='item.field == "key"'>
-        PROCESS_DEFINITION_KEY
-      </when>
-      <when test='item.field == "resourceName"'>
-        RESOURCE_NAME
-      </when>
-      <when test='item.field == "name"'>
-        NAME
-      </when>
-      <when test='item.field == "version"'>
-        VERSION
-      </when>
-      <when test='item.field == "versionTag"'>
-        VERSION_TAG
-      </when>
-      <when test='item.field == "bpmnProcessId"'>
-        PROCESS_DEFINITION_ID
-      </when>
-      <when test='item.field == "tenantId"'>
-        TENANT_ID
-      </when>
-    </choose>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.ProcessDefinitionEntity">

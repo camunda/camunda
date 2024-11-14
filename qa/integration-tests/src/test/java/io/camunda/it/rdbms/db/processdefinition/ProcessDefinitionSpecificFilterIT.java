@@ -13,13 +13,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,14 +68,14 @@ public class ProcessDefinitionSpecificFilterIT {
 
     final var searchResult =
         processDefinitionReader.search(
-            new ProcessDefinitionDbQuery(
+            new ProcessDefinitionQuery(
                 filter,
                 ProcessDefinitionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(1337L);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(1337L);
   }
 
   static List<ProcessDefinitionFilter> shouldFindProcessDefinitionWithSpecificFilterParameters() {

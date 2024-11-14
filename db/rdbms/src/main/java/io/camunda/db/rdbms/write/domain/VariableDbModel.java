@@ -23,6 +23,7 @@ public record VariableDbModel(
     boolean isPreview,
     Long scopeKey,
     Long processInstanceKey,
+    String processDefinitionId,
     String tenantId) {
 
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191; // TODO make configurable
@@ -34,6 +35,7 @@ public record VariableDbModel(
     private String value;
     private Long scopeKey;
     private Long processInstanceKey;
+    private String processDefinitionId;
     private String tenantId;
 
     // Public constructor to initialize the builder
@@ -62,6 +64,11 @@ public record VariableDbModel(
 
     public VariableDbModelBuilder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
+      return this;
+    }
+
+    public VariableDbModelBuilder processDefinitionId(final String processDefinitionId) {
+      this.processDefinitionId = processDefinitionId;
       return this;
     }
 
@@ -96,6 +103,7 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          processDefinitionId,
           tenantId);
     }
 
@@ -111,6 +119,7 @@ public record VariableDbModel(
           true,
           scopeKey,
           processInstanceKey,
+          processDefinitionId,
           tenantId);
     }
 
@@ -126,6 +135,7 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          processDefinitionId,
           tenantId);
     }
 
@@ -141,6 +151,7 @@ public record VariableDbModel(
           false,
           scopeKey,
           processInstanceKey,
+          processDefinitionId,
           tenantId);
     }
   }

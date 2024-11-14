@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.rdbms.db;
+package io.camunda.it.rdbms.db.processinstance;
 
 import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.createAndSaveProcessDefinition;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstance;
@@ -14,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
@@ -22,8 +21,7 @@ import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.sort.ProcessInstanceSort;
+import io.camunda.search.query.ProcessInstanceQuery;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,9 +61,9 @@ public class ProcessInstanceSpecificFilterIT {
         rdbmsWriter,
         ProcessDefinitionFixtures.createRandomized(
             b ->
-                b.processDefinitionKey(1337L)
-                    .processDefinitionId("test-process")
-                    .name("Test Process")
+                b.processDefinitionKey(987654321L)
+                    .processDefinitionId("test-process-987654321")
+                    .name("Test Process 987654321")
                     .versionTag("Version 1")));
     createAndSaveRandomProcessInstances(rdbmsWriter);
     createAndSaveProcessInstance(
@@ -73,36 +71,35 @@ public class ProcessInstanceSpecificFilterIT {
         ProcessInstanceFixtures.createRandomized(
             b ->
                 b.processInstanceKey(42L)
-                    .processDefinitionId("test-process")
-                    .processDefinitionKey(1337L)
+                    .processDefinitionId("test-process-987654321")
+                    .processDefinitionKey(987654321L)
                     .state(ProcessInstanceState.ACTIVE)
                     .startDate(NOW)
                     .endDate(NOW)
                     .parentProcessInstanceKey(-1L)
                     .parentElementInstanceKey(-1L)
                     .version(1)));
-
     final var searchResult =
         processInstanceReader.search(
-            new ProcessInstanceDbQuery(
-                filter,
-                ProcessInstanceSort.of(b -> b),
-                SearchQueryPage.of(b -> b.from(0).size(5))));
+            ProcessInstanceQuery.of(
+                b -> b.filter(filter).sort(s -> s).page(p -> p.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(42L);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(42L);
   }
 
   static List<ProcessInstanceFilter> shouldFindProcessInstanceWithSpecificFilterParameters() {
     return List.of(
         new ProcessInstanceFilter.Builder().processInstanceKeys(42L).build(),
-        new ProcessInstanceFilter.Builder().processDefinitionIds("test-process").build(),
-        new ProcessInstanceFilter.Builder().processDefinitionKeys(1337L).build(),
+        new ProcessInstanceFilter.Builder().processDefinitionIds("test-process-987654321").build(),
+        new ProcessInstanceFilter.Builder().processDefinitionKeys(987654321L).build(),
         new ProcessInstanceFilter.Builder().states(ProcessInstanceState.ACTIVE.name()).build(),
         new ProcessInstanceFilter.Builder().parentProcessInstanceKeys(-1L).build(),
         new ProcessInstanceFilter.Builder().parentFlowNodeInstanceKeys(-1L).build(),
-        new ProcessInstanceFilter.Builder().processDefinitionNames("Test Process").build(),
+        new ProcessInstanceFilter.Builder()
+            .processDefinitionNames("Test Process 987654321")
+            .build(),
         new ProcessInstanceFilter.Builder().processDefinitionVersionTags("Version 1").build());
   }
 }

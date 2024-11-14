@@ -52,6 +52,15 @@ public final class ProcessDefinitionFixtures extends CommonFixtures {
     rdbmsWriter.flush();
   }
 
+  public static ProcessDefinitionDbModel createAndSaveProcessDefinition(
+      final RdbmsWriter rdbmsWriter,
+      final Function<ProcessDefinitionDbModelBuilder, ProcessDefinitionDbModelBuilder>
+          builderFunction) {
+    final var definition = createRandomized(builderFunction);
+    createAndSaveProcessDefinitions(rdbmsWriter, List.of(definition));
+    return definition;
+  }
+
   public static void createAndSaveProcessDefinition(
       final RdbmsWriter rdbmsWriter, final ProcessDefinitionDbModel processDefinition) {
     createAndSaveProcessDefinitions(rdbmsWriter, List.of(processDefinition));
