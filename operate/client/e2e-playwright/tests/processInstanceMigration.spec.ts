@@ -191,7 +191,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(42);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(45);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -799,14 +799,37 @@ test.describe.serial('Process Instance Migration', () => {
     /**
      * Expect that the escalation boundary event has been migrated.
      * In v1 and v2 of the process the escalation boundary event has a different escalation code (123).
-     * Since the escalation code is static, it is expected that the code in the target process (456) is used.
+     * Since the escalation code is static, it is expected that the code in the target process (234) is used.
      *
-     * To test this, an escalation throw event with escalation code (456) is triggered. When the escalation
+     * To test this, an escalation throw event with escalation code (234) is triggered. When the escalation
      * boundary event becomes selectable, it means it has caught the escalation correctly.
      */
     await expect(
-      await processInstancePage.diagram.getLabeledElement('Escalation event'),
+      await processInstancePage.diagram.getLabeledElement(
+        'Escalation boundary event',
+      ),
     ).toHaveClass(/op-selectable/, {timeout: 20000});
+
+    /**
+     * Escalation event task
+     */
+    await processInstancePage.diagram.clickFlowNode('Escalation event task');
+    await processInstancePage.diagram.showMetaData();
+
+    /**
+     * Expect that escalation event task has been migrated and is active
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText('endDate'),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText('"endDate": "null"'),
+    ).not.toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+    await processInstancePage.diagram.clickFlowNode('Escalation event task'); // deselect
   });
 
   test('Migrated message events', async ({
