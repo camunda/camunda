@@ -35,9 +35,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -46,7 +44,6 @@ import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
@@ -76,8 +73,6 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchRecordsReader implements RecordsReader {
 
-  public static final String COMPLETED_RECORD_READER_INDEX = "completed-record-readers";
-  public static final String COMPLETED_RECORD_READER_DOCUMENT_ID = "1";
   public static final Integer MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 5;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchRecordsReader.class);
@@ -151,9 +146,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
     countEmptyRunsAfterImportingDone = 0;
     errorStrategy =
         new BackoffIdleStrategy(operateProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
-    if (!recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
-      updateRecordReaderStatus(false);
-    }
   }
 
   @Override
@@ -163,20 +155,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
 
   private void readAndScheduleNextBatch() {
     readAndScheduleNextBatch(true);
-  }
-
-  private void updateRecordReaderStatus(final boolean completed) {
-    final UpdateRequest request =
-        new UpdateRequest(COMPLETED_RECORD_READER_INDEX, COMPLETED_RECORD_READER_DOCUMENT_ID);
-    final Map<String, Object> document = new HashMap<>();
-    document.put(importValueType.toString() + "-" + partitionId, completed);
-    request.upsert(document);
-    request.doc(document);
-    try {
-      zeebeEsClient.update(request, RequestOptions.DEFAULT);
-    } catch (final IOException e) {
-      LOGGER.error("Failed to update completed record readers", e);
-    }
   }
 
   @Override
@@ -208,11 +186,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       Integer nextRunDelay = null;
       if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().isEmpty()) {
         nextRunDelay = readerBackoff;
-        if (recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
-          if (++countEmptyRunsAfterImportingDone >= MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER) {
-            updateRecordReaderStatus(true);
-          }
-        }
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);
         if (!scheduleImportJob(importJob, !autoContinue)) {
@@ -230,11 +203,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         rescheduleReader(nextRunDelay);
       }
     } catch (final NoSuchIndexException ex) {
-      if (recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
-        if (++countEmptyRunsAfterImportingDone >= MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER) {
-          updateRecordReaderStatus(true);
-        }
-      }
       // if no index found, we back off current reader
       if (autoContinue) {
         rescheduleReader(readerBackoff);
