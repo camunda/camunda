@@ -158,7 +158,8 @@ public abstract class AbstractExecutionPlanInterpreterOS<
             .search(searchRequestBuilder.scroll(seconds(timeout)), Object.class, errorMsg);
       }
     } else {
-      return getOsClient().search(searchRequestBuilder, Object.class, errorMsg);
+      return getOsClient()
+          .searchWithFixedAggregations(searchRequestBuilder, Object.class, errorMsg);
     }
   }
 

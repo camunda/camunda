@@ -14,6 +14,7 @@ import static io.camunda.optimize.service.db.os.client.dsl.RequestDSL.scrollRequ
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DATA_SOURCE;
 import static io.camunda.optimize.service.db.schema.index.AbstractDefinitionIndex.DEFINITION_DELETED;
 import static io.camunda.optimize.service.exceptions.ExceptionHelper.safe;
+import static io.camunda.optimize.service.exceptions.ExceptionHelper.safeOS;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static java.lang.String.format;
 
@@ -127,6 +128,14 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
   private RichOpenSearchClient richOpenSearchClient;
   private RestClient restClient;
   private TransportOptionsProvider transportOptionsProvider;
+  private IndexNameServiceOS indexNameServiceOS;
+
+  public OptimizeOpenSearchClient(
+      final ExtendedOpenSearchClient openSearchClient,
+      final OpenSearchAsyncClient openSearchAsyncClient,
+      final OptimizeIndexNameService indexNameService) {
+    this(openSearchClient, openSearchAsyncClient, indexNameService, new TransportOptionsProvider());
+  }
 
   public OptimizeOpenSearchClient(
       final RestClient restClient,
@@ -141,17 +150,21 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     this.restClient = restClient;
+    indexNameServiceOS = new IndexNameServiceOS(indexNameService);
   }
 
   public OptimizeOpenSearchClient(
       final ExtendedOpenSearchClient openSearchClient,
       final OpenSearchAsyncClient openSearchAsyncClient,
-      final OptimizeIndexNameService indexNameService) {
+      final OptimizeIndexNameService indexNameService,
+      final TransportOptionsProvider transportOptionsProvider) {
     this.openSearchClient = openSearchClient;
     this.indexNameService = indexNameService;
+    this.transportOptionsProvider = transportOptionsProvider;
     this.openSearchAsyncClient = openSearchAsyncClient;
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
+    indexNameServiceOS = new IndexNameServiceOS(indexNameService);
   }
 
   public RestClient getRestClient() {
@@ -246,6 +259,9 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
     richOpenSearchClient =
         new RichOpenSearchClient(openSearchClient, openSearchAsyncClient, indexNameService);
     indexNameService = context.getBean(OptimizeIndexNameService.class);
+    restClient = OpenSearchClientBuilder.restClient(configurationService);
+    transportOptionsProvider = new TransportOptionsProvider(configurationService);
+    indexNameServiceOS = new IndexNameServiceOS(indexNameService);
   }
 
   public final <T> GetResponse<T> get(
@@ -688,6 +704,17 @@ public class OptimizeOpenSearchClient extends DatabaseClient {
       final Class<T> responseType,
       final String errorMessage) {
     return richOpenSearchClient.doc().search(requestBuilder, responseType, e -> errorMessage);
+  }
+
+  public <T> SearchResponse<T> searchWithFixedAggregations(
+      final SearchRequest.Builder requestBuilder,
+      final Class<T> responseType,
+      final String errorMessage) {
+    final SearchRequest searchRequest = indexNameServiceOS.applyIndexPrefix(requestBuilder).build();
+    return safeOS(
+        () -> openSearchClient.searchWithFixedAggregations(searchRequest, responseType),
+        e -> errorMessage,
+        LOG);
   }
 
   public <T> SearchResponse<T> searchUnsafe(

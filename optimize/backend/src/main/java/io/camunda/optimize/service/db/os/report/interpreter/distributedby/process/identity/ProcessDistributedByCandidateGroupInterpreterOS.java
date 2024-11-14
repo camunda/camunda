@@ -5,33 +5,33 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.identity;
+package io.camunda.optimize.service.db.os.report.interpreter.distributedby.process.identity;
 
 import static io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy.PROCESS_DISTRIBUTED_BY_CANDIDATE_GROUP;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_CANDIDATE_GROUPS;
 
 import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
+import io.camunda.optimize.service.db.os.report.interpreter.view.process.ProcessViewInterpreterFacadeOS;
 import io.camunda.optimize.service.db.report.interpreter.distributedby.process.identity.ProcessDistributedByIdentityInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
-import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
+import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;
 import java.util.Set;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
-@Conditional(ElasticSearchCondition.class)
-public class ProcessDistributedByCandidateGroupInterpreterES
-    extends AbstractProcessDistributedByIdentityInterpreterES {
-  private final ProcessViewInterpreterFacadeES viewInterpreter;
+@Conditional(OpenSearchCondition.class)
+public class ProcessDistributedByCandidateGroupInterpreterOS
+    extends AbstractProcessDistributedByIdentityInterpreterOS {
+  private final ProcessViewInterpreterFacadeOS viewInterpreter;
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
   private final ProcessDistributedByIdentityInterpreterHelper helper;
 
-  public ProcessDistributedByCandidateGroupInterpreterES(
-      final ProcessViewInterpreterFacadeES viewInterpreter,
+  public ProcessDistributedByCandidateGroupInterpreterOS(
+      final ProcessViewInterpreterFacadeOS viewInterpreter,
       final ConfigurationService configurationService,
       final DefinitionService definitionService,
       final ProcessDistributedByIdentityInterpreterHelper helper) {
@@ -43,7 +43,7 @@ public class ProcessDistributedByCandidateGroupInterpreterES
   }
 
   @Override
-  protected ProcessViewInterpreterFacadeES getViewInterpreter() {
+  protected ProcessViewInterpreterFacadeOS getViewInterpreter() {
     return viewInterpreter;
   }
 
