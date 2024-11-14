@@ -24,11 +24,14 @@ export async function loadEntitiesNames(entitiesIds: {
   return await res.json();
 }
 
-export function getEntityId(type: 'collection' | 'report' | 'dashboard', path: string) {
+export function getEntityId(
+  type: 'collection' | 'report' | 'dashboard',
+  path: string
+): string | null {
   const entityMatchMatch = new RegExp(`/${type}/([^/]+)`, 'g').exec(path);
   const entityId = entityMatchMatch?.[1];
 
-  if (entityId === 'new') {
+  if (!entityId || entityId === 'new') {
     return null;
   }
 

@@ -36,13 +36,13 @@ describe('getEntityId', () => {
   it('should return undefined if the type is not in the path', () => {
     const path = '/other/12345';
     const result = getEntityId('collection', path);
-    expect(result).toBeUndefined();
+    expect(result).toBeNull();
   });
 
   it('should return undefined if path has a type but no ID', () => {
     const path = '/dashboard/';
     const result = getEntityId('dashboard', path);
-    expect(result).toBeUndefined();
+    expect(result).toBeNull();
   });
 
   it('should handle complex paths and extracts the correct ID', () => {
@@ -54,5 +54,12 @@ describe('getEntityId', () => {
     expect(resultCollection).toBe('12345');
     expect(resultDashboard).toBe('67890');
     expect(resultReport).toBe('abcde');
+  });
+
+  it('should return null for complex paths when the entity id is "new"', () => {
+    const path = '/collection/12345/dashboard/67890/report/new';
+    const resultReport = getEntityId('report', path);
+
+    expect(resultReport).toBe(null);
   });
 });

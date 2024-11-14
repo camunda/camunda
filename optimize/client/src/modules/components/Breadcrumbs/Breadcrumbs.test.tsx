@@ -38,7 +38,7 @@ beforeEach(() => {
   jest.clearAllMocks();
 });
 
-it('should render BreadcrumbSkeleton while entityNames is not set', () => {
+it('should render skeleton', () => {
   mockUseLocation.mockReturnValue({pathname: '/collection/123'});
   mockGetEntityId.mockImplementation((type) => (type === 'collection' ? '123' : null));
 
@@ -48,7 +48,7 @@ it('should render BreadcrumbSkeleton while entityNames is not set', () => {
   expect(node.find(BreadcrumbSkeleton).exists()).toBe(true);
 });
 
-it('should render homePageBreadcrumb with "collections" link if not instant dashboard or process overview', async () => {
+it('should render home breadcrumb with "collections" link if not instant dashboard or process overview', async () => {
   mockUseLocation.mockReturnValue({pathname: '/collection/123'});
   mockGetEntityId.mockImplementation((type) => (type === 'collection' ? '123' : null));
   const entityNames = {collectionName: 'Collection 123', dashboardName: null, reportName: null};
@@ -61,13 +61,14 @@ it('should render homePageBreadcrumb with "collections" link if not instant dash
   expect(node.find(Link).at(0).prop('to')).toEqual('/collections');
 });
 
-it('should render homePageBreadcrumb with "dashboards" link for process overview route', () => {
+it('should render home breadcrumb with "dashboards" link for process overview route', () => {
   mockUseLocation.mockReturnValue({pathname: '/processes/123'});
   mockGetEntityId.mockImplementation(() => null);
 
   const node = shallow(<Breadcrumbs />);
   runLastEffect();
 
+  expect(node.find(BreadcrumbItem).length).toBe(1);
   expect(node.find(Link).at(0).prop('to')).toEqual('/');
 });
 
@@ -115,7 +116,7 @@ it('should render dashboard breadcrumb link when report, dashboard and collectio
 });
 
 it('should not render a dashboard breadcrumb if dashboard is "instant"', () => {
-  mockUseLocation.mockReturnValue({pathname: '/dashboard/instant'});
+  mockUseLocation.mockReturnValue({pathname: '/dashboard/instant/report/1234'});
   mockGetEntityId.mockImplementation((type) => (type === 'dashboard' ? 'instant' : null));
 
   const node = shallow(<Breadcrumbs />);

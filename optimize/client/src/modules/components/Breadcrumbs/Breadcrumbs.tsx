@@ -44,37 +44,36 @@ export default function Breadcrumbs() {
     }
   }, [collection, dashboard, isInstantDashboard, mightFail]);
 
-  const homePageBreadcrumb =
-    isProcessOverviewReport || isInstantDashboard ? (
-      <BreadcrumbItem>
-        <Link to="/">{t('navigation.dashboards')}</Link>
-      </BreadcrumbItem>
-    ) : (
-      <BreadcrumbItem>
-        <Link to="/collections">{t('navigation.collections')}</Link>
-      </BreadcrumbItem>
-    );
-
   return entityNames ? (
     <Breadcrumb className="Breadcrumbs">
-      {homePageBreadcrumb}
-      {collection && (
+      {isProcessOverviewReport || isInstantDashboard ? (
         <BreadcrumbItem>
-          <Link to={`/collection/${collection}/`}>{entityNames.collectionName}</Link>
+          <Link to="/">{t('navigation.dashboards')}</Link>
         </BreadcrumbItem>
-      )}
-      {report && dashboard && (
-        <BreadcrumbItem>
-          <Link
-            to={
-              collection
-                ? `/collection/${collection}/dashboard/${dashboard}/`
-                : `/dashboard/${dashboard}/`
-            }
-          >
-            {entityNames.dashboardName}
-          </Link>
-        </BreadcrumbItem>
+      ) : (
+        <>
+          <BreadcrumbItem>
+            <Link to="/collections">{t('navigation.collections')}</Link>
+          </BreadcrumbItem>
+          {collection && (
+            <BreadcrumbItem>
+              <Link to={`/collection/${collection}/`}>{entityNames.collectionName}</Link>
+            </BreadcrumbItem>
+          )}
+          {report && dashboard && (
+            <BreadcrumbItem>
+              <Link
+                to={
+                  collection
+                    ? `/collection/${collection}/dashboard/${dashboard}/`
+                    : `/dashboard/${dashboard}/`
+                }
+              >
+                {entityNames.dashboardName}
+              </Link>
+            </BreadcrumbItem>
+          )}
+        </>
       )}
     </Breadcrumb>
   ) : (
