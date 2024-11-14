@@ -17,6 +17,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.JOB;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
+import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
@@ -207,6 +208,7 @@ public class CamundaExporter implements Exporter {
         Set.of(
             USER,
             AUTHORIZATION,
+            TENANT,
             DECISION,
             DECISION_REQUIREMENTS,
             PROCESS_INSTANCE,
