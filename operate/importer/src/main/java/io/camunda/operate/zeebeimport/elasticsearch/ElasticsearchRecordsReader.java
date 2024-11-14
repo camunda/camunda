@@ -78,6 +78,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
 
   public static final String COMPLETED_RECORD_READER_INDEX = "completed-record-readers";
   public static final String COMPLETED_RECORD_READER_DOCUMENT_ID = "1";
+  public static final Integer MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 5;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchRecordsReader.class);
 
@@ -209,7 +210,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().isEmpty()) {
         nextRunDelay = readerBackoff;
         if (recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
-          if (++countEmptyRunsAfterImportingDone >= 2) {
+          if (++countEmptyRunsAfterImportingDone >= MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER) {
             updateRecordReaderStatus(true);
           }
         }
@@ -231,7 +232,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       }
     } catch (final NoSuchIndexException ex) {
       if (recordsReaderHolder.getPartitionCompletedImporting(partitionId)) {
-        if (++countEmptyRunsAfterImportingDone >= 2) {
+        if (++countEmptyRunsAfterImportingDone >= MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER) {
           updateRecordReaderStatus(true);
         }
       }

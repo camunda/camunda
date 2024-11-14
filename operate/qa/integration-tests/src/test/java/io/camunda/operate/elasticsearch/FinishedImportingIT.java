@@ -83,11 +83,14 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     zeebeImporter.performOneRoundOfImport();
 
     // then
-    // require two checks to avoid race condition. If records are written to zeebe indices and
+    // require multiple checks to avoid race condition. If records are written to zeebe indices and
     // before a refresh, the record reader pulls the import batch is empty so it then says that the
     // record reader is done when it is not.
-    zeebeImporter.performOneRoundOfImport();
-    zeebeImporter.performOneRoundOfImport();
+    for (int i = 0;
+        i < ElasticsearchRecordsReader.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
+        i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
 
     final var completedRecordReaders = getRecordReadersCompletionStatus();
     Assertions.assertThat(completedRecordReaders.entrySet().stream())
