@@ -11,11 +11,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -34,6 +36,7 @@ import org.opensearch.client.opensearch._types.aggregations.DateHistogramBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
+import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 import org.opensearch.client.opensearch.core.ReindexRequest;
@@ -51,10 +54,12 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
+  private static final String INDEX_WILDCARD = "-.*-\\d+\\.\\d+\\.\\d+_.+$";
 
   private final int partitionId;
   private final ArchiverConfiguration config;
   private final RetentionConfiguration retention;
+  private final ConnectConfiguration connectConfiguration;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
   private final OpenSearchAsyncClient client;
@@ -68,6 +73,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
       final int partitionId,
       final ArchiverConfiguration config,
       final RetentionConfiguration retention,
+      final ConnectConfiguration connectConfiguration,
       final String processInstanceIndex,
       final String batchOperationIndex,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
@@ -77,6 +83,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
+    this.connectConfiguration = connectConfiguration;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.client = client;
@@ -117,35 +124,37 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-
-    final AddPolicyRequestBody value = new AddPolicyRequestBody(retention.getPolicyName());
-    final var request =
-        Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + destinationIndexName);
-
-    return sendRequestAsync(
-            () ->
-                genericClient.executeAsync(
-                    request.json(value, genericClient._transport().jsonpMapper()).build()))
-        .thenComposeAsync(
-            response -> {
-              if (response.getStatus() >= 400) {
-                return CompletableFuture.failedFuture(
-                    new ExporterException(
-                        "Failed to set index lifecycle policy for index: "
-                            + destinationIndexName
-                            + ".\n"
-                            + "Status: "
-                            + response.getStatus()
-                            + ", Reason: "
-                            + response.getReason()));
-              }
-              return CompletableFuture.completedFuture(null);
-            });
+    return applyPolicyToIndex(destinationIndexName);
   }
 
   @Override
   public CompletableFuture<Void> setLifeCycleToAllIndexes() {
-    return CompletableFuture.completedFuture(null);
+    if (!retention.isEnabled()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    final String IndexWildCard = "^" + connectConfiguration.getIndexPrefix() + INDEX_WILDCARD;
+    final List<String> indices = new ArrayList<>();
+
+    try {
+      client
+          .cat()
+          .indices()
+          .thenAccept(
+              response ->
+                  response.valueBody().stream()
+                      .map(IndicesRecord::index)
+                      .filter(index -> index.matches(IndexWildCard))
+                      .forEach(indices::add))
+          .join();
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
+    }
+
+    final ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
+    for (final String index : indices) {
+      futures.add(applyPolicyToIndex(index));
+    }
+    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
   }
 
   @Override
@@ -193,6 +202,30 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
     return sendRequestAsync(() -> client.reindex(request))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
         .thenApplyAsync(ignored -> null, executor);
+  }
+
+  private CompletableFuture<Void> applyPolicyToIndex(final String index) {
+    final AddPolicyRequestBody value = new AddPolicyRequestBody(retention.getPolicyName());
+    final var request = Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + index);
+    return sendRequestAsync(
+            () ->
+                genericClient.executeAsync(
+                    request.json(value, genericClient._transport().jsonpMapper()).build()))
+        .thenComposeAsync(
+            response -> {
+              if (response.getStatus() >= 400) {
+                return CompletableFuture.failedFuture(
+                    new ExporterException(
+                        "Failed to set index lifecycle policy for index: "
+                            + index
+                            + ".\n"
+                            + "Status: "
+                            + response.getStatus()
+                            + ", Reason: "
+                            + response.getReason()));
+              }
+              return CompletableFuture.completedFuture(null);
+            });
   }
 
   @Override
