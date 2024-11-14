@@ -20,6 +20,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -71,5 +72,9 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         .items()
         .stream()
         .findFirst();
+  }
+
+  public CompletableFuture<RoleRecord> deleteRole(final long roleKey) {
+    return sendBrokerRequest(new BrokerRoleDeleteRequest(roleKey));
   }
 }

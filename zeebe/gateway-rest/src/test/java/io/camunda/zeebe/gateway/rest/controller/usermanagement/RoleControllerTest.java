@@ -181,4 +181,27 @@ public class RoleControllerTest extends RestControllerTest {
 
     verify(roleServices, times(1)).updateRole(roleKey, roleName);
   }
+
+  @Test
+  void deleteRoleShouldReturnNoContent() {
+    // given
+    final long roleKey = 100L;
+
+    final var roleRecord = new RoleRecord().setRoleKey(roleKey);
+
+    when(roleServices.deleteRole(roleKey))
+        .thenReturn(CompletableFuture.completedFuture(roleRecord));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s".formatted(ROLE_BASE_URL, roleKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(roleServices, times(1)).deleteRole(roleKey);
+  }
 }
