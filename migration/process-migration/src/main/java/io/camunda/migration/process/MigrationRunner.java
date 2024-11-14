@@ -118,8 +118,9 @@ public class MigrationRunner implements Migrator {
             e -> {
               processEntity.setFormId(ProcessModelUtil.extractFormId(e).orElse(null));
               processEntity.setIsPublic(ProcessModelUtil.extractIsPublic(e).orElse(false));
-              // Placeholder for embedded forms
-              // processEntity.setFormKey(ProcessModelUtil.extractFormKey(e).orElse(null));
+              final String formKey = ProcessModelUtil.extractFormKey(e).orElse(null);
+              processEntity.setFormKey(formKey);
+              processEntity.setIsFormEmbedded(formKey != null);
             });
     return processEntity;
   }

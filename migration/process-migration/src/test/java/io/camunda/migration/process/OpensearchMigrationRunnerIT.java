@@ -69,7 +69,6 @@ public class OpensearchMigrationRunnerIT {
   }
 
   private static void createIndices() {
-
     final OpensearchEngineClient es = new OpensearchEngineClient(osClient);
     processIndex = new ProcessIndex(properties.getConnect().getIndexPrefix(), false);
     migrationRepositoryIndex =
@@ -99,30 +98,6 @@ public class OpensearchMigrationRunnerIT {
   }
 
   @Test
-  public void shouldMigrateSuccessfully() throws IOException {
-    // when
-    writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
-    writeProcessToIndex(TestData.processEntityWithoutForm(2L));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
-    // then
-    migrator.run();
-    osClient.indices().refresh();
-    // verify
-    assertProcessorStepContentIsStored("2");
-
-    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
-    assertThat(records.size()).isEqualTo(2);
-    assertThat(records.stream().filter(r -> r.getId().equals("1")).findFirst().get().getIsPublic())
-        .isTrue();
-    assertThat(records.stream().filter(r -> r.getId().equals("1")).findFirst().get().getFormId())
-        .isEqualTo("testForm");
-    assertThat(records.stream().filter(r -> r.getId().equals("2")).findFirst().get().getIsPublic())
-        .isFalse();
-    assertThat(records.stream().filter(r -> r.getId().equals("2")).findFirst().get().getFormId())
-        .isNull();
-  }
-
-  @Test
   public void singleMigrationRound() throws IOException {
     // when
     properties.setBatchSize(1);
@@ -147,14 +122,78 @@ public class OpensearchMigrationRunnerIT {
     final var processRecords =
         readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
     assertThat(processRecords.size()).isEqualTo(2);
+
     assertThat(processRecords.stream().filter(r -> r.getKey() == 1).findFirst().get().getIsPublic())
         .isTrue();
     assertThat(processRecords.stream().filter(r -> r.getKey() == 1).findFirst().get().getFormId())
         .isEqualTo("testForm");
+    assertThat(processRecords.stream().filter(r -> r.getKey() == 1).findFirst().get().getFormKey())
+        .isNull();
+    assertThat(
+            processRecords.stream()
+                .filter(r -> r.getKey() == 1)
+                .findFirst()
+                .get()
+                .getIsFormEmbedded())
+        .isFalse();
+
     assertThat(processRecords.stream().filter(r -> r.getKey() == 2).findFirst().get().getIsPublic())
         .isNull();
     assertThat(processRecords.stream().filter(r -> r.getKey() == 2).findFirst().get().getFormId())
         .isNull();
+    assertThat(processRecords.stream().filter(r -> r.getKey() == 2).findFirst().get().getFormKey())
+        .isNull();
+    assertThat(
+            processRecords.stream()
+                .filter(r -> r.getKey() == 2)
+                .findFirst()
+                .get()
+                .getIsFormEmbedded())
+        .isNull();
+  }
+
+  @Test
+  public void shouldMigrateSuccessfully() throws IOException {
+    // when
+    writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
+    writeProcessToIndex(TestData.processEntityWithoutForm(2L));
+    writeProcessToIndex(TestData.processEntityWithPublicFormKey(3L));
+    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
+    // then
+    migrator.run();
+    osClient.indices().refresh();
+    // verify
+    assertProcessorStepContentIsStored("3");
+
+    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    assertThat(records.size()).isEqualTo(3);
+    /* Assertions for Process with FormId reference */
+    assertThat(records.stream().filter(r -> r.getKey() == 1).findFirst().get().getIsPublic())
+        .isTrue();
+    assertThat(records.stream().filter(r -> r.getKey() == 1).findFirst().get().getFormId())
+        .isEqualTo("testForm");
+    assertThat(records.stream().filter(r -> r.getKey() == 1).findFirst().get().getFormKey())
+        .isNull();
+    assertThat(records.stream().filter(r -> r.getKey() == 1).findFirst().get().getIsFormEmbedded())
+        .isFalse();
+    /* Assertions for Process with no Form references */
+    assertThat(records.stream().filter(r -> r.getKey() == 2).findFirst().get().getIsPublic())
+        .isFalse();
+    assertThat(records.stream().filter(r -> r.getKey() == 2).findFirst().get().getFormId())
+        .isNull();
+    assertThat(records.stream().filter(r -> r.getKey() == 2).findFirst().get().getFormKey())
+        .isNull();
+    assertThat(records.stream().filter(r -> r.getKey() == 2).findFirst().get().getIsFormEmbedded())
+        .isFalse();
+    /* Assertions for Process with FormKey reference */
+    assertThat(records.stream().filter(r -> r.getKey() == 3).findFirst().get().getIsPublic())
+        .isTrue();
+    assertThat(records.stream().filter(r -> r.getKey() == 3).findFirst().get().getFormKey())
+        .isEqualTo("camunda-forms:bpmn:testForm");
+    assertThat(records.stream().filter(r -> r.getKey() == 3).findFirst().get().getFormId())
+        .isNull();
+    assertThat(records.stream().filter(r -> r.getKey() == 3).findFirst().get().getIsFormEmbedded())
+        .isTrue();
   }
 
   @Test
@@ -176,29 +215,8 @@ public class OpensearchMigrationRunnerIT {
     assertThat(records.size()).isEqualTo(20);
     assertThat(records.stream().noneMatch(r -> r.getIsPublic().equals(Boolean.FALSE))).isTrue();
     assertThat(records.stream().noneMatch(r -> r.getFormId() == null)).isTrue();
-  }
-
-  @Test
-  public void migrationShouldDoNothingWhenFinalStepIsPresent() throws IOException {
-    // when
-    properties.setBatchSize(1);
-    writeProcessorStepToIndex("2");
-    writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
-    writeProcessToIndex(TestData.processEntityWithPublicFormId(2L));
-    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
-    // then
-    migrator.run();
-    osClient.indices().refresh();
-
-    // verify
-    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
-    final var stepRecords =
-        readRecords(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
-    assertThat(records.size()).isEqualTo(2);
-    assertThat(records.stream().allMatch(r -> r.getIsPublic() == null)).isTrue();
-    assertThat(records.stream().allMatch(r -> r.getFormId() == null)).isTrue();
-    assertThat(stepRecords.size()).isEqualTo(1);
-    assertThat(stepRecords.getFirst().getContent()).isEqualTo("2");
+    assertThat(records.stream().allMatch(r -> r.getFormKey() == null)).isTrue();
+    assertThat(records.stream().noneMatch(ProcessEntity::getIsFormEmbedded)).isTrue();
   }
 
   @Test
@@ -223,6 +241,14 @@ public class OpensearchMigrationRunnerIT {
         .isTrue();
     assertThat(records.stream().filter(r -> r.getKey() <= 5).allMatch(r -> r.getFormId() == null))
         .isTrue();
+    assertThat(records.stream().filter(r -> r.getKey() <= 5).allMatch(r -> r.getFormKey() == null))
+        .isTrue();
+    assertThat(
+            records.stream()
+                .filter(r -> r.getKey() <= 5)
+                .allMatch(r -> r.getIsFormEmbedded() == null))
+        .isTrue();
+
     assertThat(
             records.stream()
                 .filter(r -> r.getKey() > 5)
@@ -233,6 +259,36 @@ public class OpensearchMigrationRunnerIT {
                 .filter(r -> r.getKey() > 5)
                 .allMatch(r -> r.getFormId().equals("testForm")))
         .isTrue();
+    assertThat(records.stream().filter(r -> r.getKey() > 5).allMatch(r -> r.getFormKey() == null))
+        .isTrue();
+    assertThat(
+            records.stream()
+                .filter(r -> r.getKey() > 5)
+                .allMatch(r -> r.getIsFormEmbedded().equals(Boolean.FALSE)))
+        .isTrue();
+  }
+
+  @Test
+  public void migrationShouldDoNothingWhenFinalStepIsPresent() throws IOException {
+    // when
+    properties.setBatchSize(1);
+    writeProcessorStepToIndex("2");
+    writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
+    writeProcessToIndex(TestData.processEntityWithPublicFormId(2L));
+    awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
+    // then
+    migrator.run();
+    osClient.indices().refresh();
+
+    // verify
+    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    final var stepRecords =
+        readRecords(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
+    assertThat(records.size()).isEqualTo(2);
+    assertThat(records.stream().allMatch(r -> r.getIsPublic() == null)).isTrue();
+    assertThat(records.stream().allMatch(r -> r.getFormId() == null)).isTrue();
+    assertThat(stepRecords.size()).isEqualTo(1);
+    assertThat(stepRecords.getFirst().getContent()).isEqualTo("2");
   }
 
   private void writeProcessToIndex(final ProcessEntity entity) throws IOException {

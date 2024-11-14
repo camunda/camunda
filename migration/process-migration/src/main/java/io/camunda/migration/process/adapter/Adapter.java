@@ -39,9 +39,13 @@ public interface Adapter {
   default Map<String, Object> getUpdateMap(final ProcessEntity entity) {
     final Map<String, Object> updateMap = new HashMap<>();
     updateMap.put(ProcessIndex.IS_PUBLIC, entity.getIsPublic());
+    updateMap.put(ProcessIndex.IS_FORM_EMBEDDED, entity.getIsFormEmbedded());
 
     if (entity.getFormId() != null) {
       updateMap.put(ProcessIndex.FORM_ID, entity.getFormId());
+    }
+    if (entity.getFormKey() != null) {
+      updateMap.put(ProcessIndex.FORM_KEY, entity.getFormKey());
     }
     return updateMap;
   }

@@ -63,7 +63,7 @@ public class ProcessModelUtilTest {
   }
 
   @Test
-  void shouldNotExtractData() {
+  void extractedDataShouldBeEmpty() {
     final var entity = TestData.processEntityWithoutForm(1L);
 
     final var startEvent =

@@ -25,6 +25,8 @@ public class ProcessIndex extends OperateIndexDescriptor implements Prio4Backup 
   public static final String FLOWNODE_ID = "id";
   public static final String FLOWNODE_NAME = "name";
   public static final String FORM_ID = "formId";
+  public static final String FORM_KEY = "formKey";
+  public static final String IS_FORM_EMBEDDED = "isFormEmbedded";
   public static final String IS_PUBLIC = "isPublic";
 
   public ProcessIndex(final String indexPrefix, final boolean isElasticsearch) {
