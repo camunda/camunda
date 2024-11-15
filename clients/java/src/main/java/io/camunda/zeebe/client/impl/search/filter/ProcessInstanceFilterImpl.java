@@ -16,15 +16,19 @@
 package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.DateTimePropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.IntegerPropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.LongPropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.ProcessInstanceStatePropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.StringPropertyBuilderCallback;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.impl.util.FilterUtil;
-import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.impl.search.filter.builder.DateTimePropertyBuilderImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.IntegerPropertyBuilderImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.LongPropertyBuilderImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.ProcessInstanceStatePropertyBuilderImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyBuilderImpl;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import java.time.OffsetDateTime;
 
 public class ProcessInstanceFilterImpl
@@ -39,160 +43,150 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processInstanceKey(final Long processInstanceKey) {
-    filter.setProcessInstanceKey(FilterUtil.longFilterProperty(processInstanceKey));
+    processInstanceKey(b -> b.eq(processInstanceKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processInstanceKey(
-      final LongFilterProperty processInstanceKeyFilter) {
-    filter.setProcessInstanceKey(processInstanceKeyFilter);
+  public ProcessInstanceFilter processInstanceKey(final LongPropertyBuilderCallback callback) {
+    filter.setProcessInstanceKey(callback.apply(new LongPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionId(final String processDefinitionId) {
-    filter.processDefinitionId(FilterUtil.stringFilterProperty(processDefinitionId));
+    processDefinitionId(b -> b.eq(processDefinitionId));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionId(final StringFilterProperty processDefinitionId) {
-    filter.processDefinitionId(processDefinitionId);
+  public ProcessInstanceFilter processDefinitionId(
+      final StringPropertyBuilderCallback propertyBuilder) {
+    filter.processDefinitionId(propertyBuilder.apply(new StringPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionName(final String processDefinitionName) {
-    filter.setProcessDefinitionName(FilterUtil.stringFilterProperty(processDefinitionName));
+    processDefinitionName(b -> b.eq(processDefinitionName));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionName(
-      final StringFilterProperty processDefinitionName) {
-    filter.setProcessDefinitionName(processDefinitionName);
+  public ProcessInstanceFilter processDefinitionName(final StringPropertyBuilderCallback callback) {
+    filter.setProcessDefinitionName(callback.apply(new StringPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion) {
-    filter.setProcessDefinitionVersion(FilterUtil.integerFilterProperty(processDefinitionVersion));
+    processDefinitionVersion(b -> b.eq(processDefinitionVersion));
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionVersion(
-      final IntegerFilterProperty processDefinitionVersion) {
-    filter.setProcessDefinitionVersion(processDefinitionVersion);
+      final IntegerPropertyBuilderCallback callback) {
+    filter.setProcessDefinitionVersion(callback.apply(new IntegerPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionVersionTag(
       final String processDefinitionVersionTag) {
-    filter.setProcessDefinitionVersionTag(
-        FilterUtil.stringFilterProperty(processDefinitionVersionTag));
+    processDefinitionVersionTag(b -> b.eq(processDefinitionVersionTag));
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionVersionTag(
-      final StringFilterProperty processDefinitionVersionTag) {
-    filter.setProcessDefinitionVersionTag(processDefinitionVersionTag);
+      final StringPropertyBuilderCallback callback) {
+    filter.setProcessDefinitionVersionTag(callback.apply(new StringPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey) {
-    filter.setProcessDefinitionKey(FilterUtil.longFilterProperty(processDefinitionKey));
+    processDefinitionKey(b -> b.eq(processDefinitionKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionKey(final LongFilterProperty processDefinitionKey) {
-    filter.setProcessDefinitionKey(processDefinitionKey);
+  public ProcessInstanceFilter processDefinitionKey(final LongPropertyBuilderCallback callback) {
+    filter.setProcessDefinitionKey(callback.apply(new LongPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey) {
-    filter.setParentProcessInstanceKey(FilterUtil.longFilterProperty(parentProcessInstanceKey));
+    parentProcessInstanceKey(b -> b.eq(parentProcessInstanceKey));
     return this;
   }
 
   @Override
   public ProcessInstanceFilter parentProcessInstanceKey(
-      final LongFilterProperty parentProcessInstanceKey) {
-    filter.setParentProcessInstanceKey(parentProcessInstanceKey);
+      final LongPropertyBuilderCallback callback) {
+    filter.setParentProcessInstanceKey(callback.apply(new LongPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey) {
-    filter.setParentFlowNodeInstanceKey(FilterUtil.longFilterProperty(parentFlowNodeInstanceKey));
+    parentFlowNodeInstanceKey(b -> b.eq(parentFlowNodeInstanceKey));
     return this;
   }
 
   @Override
   public ProcessInstanceFilter parentFlowNodeInstanceKey(
-      final LongFilterProperty parentFlowNodeInstanceKey) {
-    filter.setParentFlowNodeInstanceKey(parentFlowNodeInstanceKey);
+      final LongPropertyBuilderCallback callback) {
+    filter.setParentFlowNodeInstanceKey(callback.apply(new LongPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter treePath(final String treePath) {
-    filter.setTreePath(FilterUtil.stringFilterProperty(treePath));
+    treePath(b -> b.eq(treePath));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter treePath(final StringFilterProperty treePath) {
-    filter.setTreePath(treePath);
+  public ProcessInstanceFilter treePath(final StringPropertyBuilderCallback callback) {
+    filter.setTreePath(callback.apply(new StringPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter startDate(final OffsetDateTime startDate) {
-    filter.setStartDate(FilterUtil.dateTimeFilterProperty(startDate));
+    startDate(b -> b.eq(startDate));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter startDate(final DateTimeFilterProperty startDate) {
-    filter.setStartDate(startDate);
+  public ProcessInstanceFilter startDate(final DateTimePropertyBuilderCallback callback) {
+    filter.setStartDate(callback.apply(new DateTimePropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter endDate(final OffsetDateTime endDate) {
-    filter.setEndDate(FilterUtil.dateTimeFilterProperty(endDate));
+    endDate(b -> b.eq(endDate));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter endDate(final DateTimeFilterProperty endDate) {
-    filter.setEndDate(endDate);
+  public ProcessInstanceFilter endDate(final DateTimePropertyBuilderCallback callback) {
+    filter.setEndDate(callback.apply(new DateTimePropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter state(final String state) {
-    if (state != null) {
-      final ProcessInstanceStateFilterProperty stateFilter =
-          new ProcessInstanceStateFilterProperty();
-      stateFilter.$eq(ProcessInstanceStateEnum.fromValue(state));
-      filter.setState(stateFilter);
-    } else {
-      filter.setState(null);
-    }
-    return this;
+    return state(b -> b.eq(ProcessInstanceStateEnum.fromValue(state)));
   }
 
   @Override
-  public ProcessInstanceFilter state(final ProcessInstanceStateFilterProperty state) {
-    filter.setState(state);
+  public ProcessInstanceFilter state(final ProcessInstanceStatePropertyBuilderCallback callback) {
+    filter.setState(callback.apply(new ProcessInstanceStatePropertyBuilderImpl()).build());
     return this;
   }
 
@@ -204,13 +198,13 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter tenantId(final String tenantId) {
-    filter.setTenantId(FilterUtil.stringFilterProperty(tenantId));
+    tenantId(b -> b.eq(tenantId));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter tenantId(final StringFilterProperty tenantId) {
-    filter.setTenantId(tenantId);
+  public ProcessInstanceFilter tenantId(final StringPropertyBuilderCallback callback) {
+    filter.setTenantId(callback.apply(new StringPropertyBuilderImpl()).build());
     return this;
   }
 

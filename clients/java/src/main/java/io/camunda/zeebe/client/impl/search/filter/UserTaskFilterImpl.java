@@ -16,10 +16,11 @@
 package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.IntegerPropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.StringPropertyBuilderCallback;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.impl.util.FilterUtil;
-import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
+import io.camunda.zeebe.client.impl.search.filter.builder.IntegerPropertyBuilderImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyBuilderImpl;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.List;
@@ -28,10 +29,6 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
     implements UserTaskFilter {
 
   private final UserTaskFilterRequest filter;
-
-  public UserTaskFilterImpl(final UserTaskFilterRequest filter) {
-    this.filter = new UserTaskFilterRequest();
-  }
 
   public UserTaskFilterImpl() {
     filter = new UserTaskFilterRequest();
@@ -51,25 +48,25 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter assignee(final String assignee) {
-    filter.setAssignee(FilterUtil.stringFilterProperty(assignee));
+    assignee(b -> b.eq(assignee));
     return this;
   }
 
   @Override
-  public UserTaskFilter assignee(final StringFilterProperty assignee) {
-    filter.setAssignee(assignee);
+  public UserTaskFilter assignee(final StringPropertyBuilderCallback callback) {
+    filter.setAssignee(callback.apply(new StringPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public UserTaskFilter priority(final Integer priority) {
-    filter.setPriority(FilterUtil.integerFilterProperty(priority));
+    priority(b -> b.eq(priority));
     return this;
   }
 
   @Override
-  public UserTaskFilter priority(final IntegerFilterProperty priority) {
-    filter.setPriority(priority);
+  public UserTaskFilter priority(final IntegerPropertyBuilderCallback callback) {
+    filter.setPriority(callback.apply(new IntegerPropertyBuilderImpl()).build());
     return this;
   }
 
@@ -81,25 +78,25 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter candidateGroup(final String candidateGroup) {
-    filter.setCandidateGroup(FilterUtil.stringFilterProperty(candidateGroup));
+    candidateGroup(b -> b.eq(candidateGroup));
     return this;
   }
 
   @Override
-  public UserTaskFilter candidateGroup(final StringFilterProperty candidateGroup) {
-    filter.setCandidateGroup(candidateGroup);
+  public UserTaskFilter candidateGroup(final StringPropertyBuilderCallback callback) {
+    filter.setCandidateGroup(callback.apply(new StringPropertyBuilderImpl()).build());
     return this;
   }
 
   @Override
   public UserTaskFilter candidateUser(final String candidateUser) {
-    filter.setCandidateUser(FilterUtil.stringFilterProperty(candidateUser));
+    candidateUser(b -> b.eq(candidateUser));
     return this;
   }
 
   @Override
-  public UserTaskFilter candidateUser(final StringFilterProperty candidateUser) {
-    filter.setCandidateUser(candidateUser);
+  public UserTaskFilter candidateUser(final StringPropertyBuilderCallback callback) {
+    filter.setCandidateUser(callback.apply(new StringPropertyBuilderImpl()).build());
     return this;
   }
 

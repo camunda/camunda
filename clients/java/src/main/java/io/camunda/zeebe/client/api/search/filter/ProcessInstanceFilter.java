@@ -15,12 +15,12 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.DateTimePropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.IntegerPropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.LongPropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.ProcessInstanceStatePropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.StringPropertyBuilderCallback;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import java.time.OffsetDateTime;
 
 public interface ProcessInstanceFilter extends SearchRequestFilter {
@@ -28,77 +28,74 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by processInstanceKey */
   ProcessInstanceFilter processInstanceKey(final Long processInstanceKey);
 
-  /** Filter by processInstanceKey using {@link LongFilterProperty} */
-  ProcessInstanceFilter processInstanceKey(final LongFilterProperty processInstanceKeyFilter);
+  /** Filter by processInstanceKey using {@link LongPropertyBuilderCallback} */
+  ProcessInstanceFilter processInstanceKey(final LongPropertyBuilderCallback callback);
 
   /** Filter by processDefinitionId */
   ProcessInstanceFilter processDefinitionId(final String processDefinitionId);
 
-  /** Filter by processDefinitionId using {@link StringFilterProperty} */
-  ProcessInstanceFilter processDefinitionId(final StringFilterProperty processDefinitionId);
+  /** Filter by processDefinitionId using {@link StringPropertyBuilderCallback} */
+  ProcessInstanceFilter processDefinitionId(final StringPropertyBuilderCallback callback);
 
   /** Filter by processDefinitionName */
   ProcessInstanceFilter processDefinitionName(final String processDefinitionName);
 
-  /** Filter by processDefinitionName using {@link StringFilterProperty} */
-  ProcessInstanceFilter processDefinitionName(final StringFilterProperty processDefinitionName);
+  /** Filter by processDefinitionName using {@link StringPropertyBuilderCallback} */
+  ProcessInstanceFilter processDefinitionName(final StringPropertyBuilderCallback callback);
 
   /** Filter by processDefinitionVersion */
   ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion);
 
-  /** Filter by processDefinitionVersion using {@link IntegerFilterProperty} */
-  ProcessInstanceFilter processDefinitionVersion(
-      final IntegerFilterProperty processDefinitionVersion);
+  /** Filter by processDefinitionVersion using {@link IntegerPropertyBuilderCallback} */
+  ProcessInstanceFilter processDefinitionVersion(final IntegerPropertyBuilderCallback callback);
 
   /** Filter by processDefinitionVersionTag */
   ProcessInstanceFilter processDefinitionVersionTag(final String processDefinitionVersionTag);
 
-  /** Filter by processDefinitionVersionTag using {@link StringFilterProperty} */
-  ProcessInstanceFilter processDefinitionVersionTag(
-      final StringFilterProperty processDefinitionVersionTag);
+  /** Filter by processDefinitionVersionTag using {@link StringPropertyBuilderCallback} */
+  ProcessInstanceFilter processDefinitionVersionTag(final StringPropertyBuilderCallback callback);
 
   /** Filter by processDefinitionKey */
   ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
 
-  /** Filter by processDefinitionKey using {@link LongFilterProperty} */
-  ProcessInstanceFilter processDefinitionKey(final LongFilterProperty processDefinitionKey);
+  /** Filter by processDefinitionKey using {@link LongPropertyBuilderCallback} */
+  ProcessInstanceFilter processDefinitionKey(final LongPropertyBuilderCallback callback);
 
   /** Filter by parentProcessInstanceKey */
   ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey);
 
-  /** Filter by parentProcessInstanceKey using {@link LongFilterProperty} */
-  ProcessInstanceFilter parentProcessInstanceKey(final LongFilterProperty parentProcessInstanceKey);
+  /** Filter by parentProcessInstanceKey using {@link LongPropertyBuilderCallback} */
+  ProcessInstanceFilter parentProcessInstanceKey(final LongPropertyBuilderCallback callback);
 
   /** Filter by parentFlowNodeInstanceKey */
   ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey);
 
-  /** Filter by parentFlowNodeInstanceKey using {@link LongFilterProperty} */
-  ProcessInstanceFilter parentFlowNodeInstanceKey(
-      final LongFilterProperty parentFlowNodeInstanceKey);
+  /** Filter by parentFlowNodeInstanceKey using {@link LongPropertyBuilderCallback} */
+  ProcessInstanceFilter parentFlowNodeInstanceKey(final LongPropertyBuilderCallback callback);
 
   /** Filter by treePath */
   ProcessInstanceFilter treePath(final String treePath);
 
-  /** Filter by treePath using {@link StringFilterProperty} */
-  ProcessInstanceFilter treePath(final StringFilterProperty treePath);
+  /** Filter by treePath using {@link StringPropertyBuilderCallback} */
+  ProcessInstanceFilter treePath(final StringPropertyBuilderCallback callback);
 
   /** Filter by startDate */
   ProcessInstanceFilter startDate(final OffsetDateTime startDate);
 
-  /** Filter by startDate using {@link DateTimeFilterProperty} */
-  ProcessInstanceFilter startDate(final DateTimeFilterProperty startDate);
+  /** Filter by startDate using {@link DateTimePropertyBuilderCallback} */
+  ProcessInstanceFilter startDate(final DateTimePropertyBuilderCallback callback);
 
   /** Filter by endDate */
   ProcessInstanceFilter endDate(final OffsetDateTime endDate);
 
-  /** Filter by endDate using {@link DateTimeFilterProperty} */
-  ProcessInstanceFilter endDate(final DateTimeFilterProperty endDate);
+  /** Filter by endDate using {@link DateTimePropertyBuilderCallback} */
+  ProcessInstanceFilter endDate(final DateTimePropertyBuilderCallback callback);
 
   /** Filter by state */
   ProcessInstanceFilter state(final String state);
 
-  /** Filter by state using {@link ProcessInstanceStateFilterProperty} */
-  ProcessInstanceFilter state(final ProcessInstanceStateFilterProperty state);
+  /** Filter by state using {@link ProcessInstanceStatePropertyBuilderCallback} */
+  ProcessInstanceFilter state(final ProcessInstanceStatePropertyBuilderCallback callback);
 
   /** Filter by hasIncident */
   ProcessInstanceFilter hasIncident(final Boolean hasIncident);
@@ -106,6 +103,6 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by tenantId */
   ProcessInstanceFilter tenantId(final String tenantId);
 
-  /** Filter by tenantId using {@link StringFilterProperty} */
-  ProcessInstanceFilter tenantId(final StringFilterProperty tenantId);
+  /** Filter by tenantId using {@link StringPropertyBuilderCallback} */
+  ProcessInstanceFilter tenantId(final StringPropertyBuilderCallback callback);
 }

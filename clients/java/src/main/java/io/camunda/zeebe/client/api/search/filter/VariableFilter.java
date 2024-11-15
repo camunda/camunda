@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.LongPropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.StringPropertyBuilderCallback;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 
 public interface VariableFilter extends SearchRequestFilter {
 
@@ -30,6 +30,14 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter variableKey(final Long key);
 
   /**
+   * Filters variables by the specified key using {@link LongPropertyBuilderCallback}.
+   *
+   * @param callback the key {@link LongPropertyBuilderCallback} of the variable
+   * @return the updated filter
+   */
+  VariableFilter variableKey(final LongPropertyBuilderCallback callback);
+
+  /**
    * Filters variables by the specified value.
    *
    * @param value the value of the variable
@@ -38,12 +46,12 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter value(final String value);
 
   /**
-   * Filters variables by the specified value using {@link StringFilterProperty}.
+   * Filters variables by the specified value using {@link StringPropertyBuilderCallback}.
    *
-   * @param value the value {@link StringFilterProperty} of the variable
+   * @param callback the value {@link StringPropertyBuilderCallback} of the variable
    * @return the updated filter
    */
-  VariableFilter value(final StringFilterProperty value);
+  VariableFilter value(final StringPropertyBuilderCallback callback);
 
   /**
    * Filters variables by the specified name.
@@ -54,32 +62,28 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter name(final String name);
 
   /**
-   * Filters variables by the specified name using {@link StringFilterProperty}.
+   * Filters variables by the specified name using {@link StringPropertyBuilderCallback}.
    *
-   * @param name the name {@link StringFilterProperty} of the variable
+   * @param callback the name {@link StringPropertyBuilderCallback} of the variable
    * @return the updated filter
    */
-  VariableFilter name(final StringFilterProperty name);
+  VariableFilter name(final StringPropertyBuilderCallback callback);
 
   /**
    * Filters variables by the specified scope key.
    *
-   * @param scopeKey
-   * @return
    * @param scopeKey the scope key of the variable
    * @return the updated filter
    */
   VariableFilter scopeKey(final Long scopeKey);
 
   /**
-   * Filters variables by the specified scope key using {@link LongFilterProperty}.
+   * Filters variables by the specified scope key using {@link LongPropertyBuilderCallback}.
    *
-   * @param scopeKey
-   * @return
-   * @param scopeKey the scope key {@link LongFilterProperty} of the variable
+   * @param callback the scope key {@link LongPropertyBuilderCallback} of the variable
    * @return the updated filter
    */
-  VariableFilter scopeKey(final LongFilterProperty scopeKey);
+  VariableFilter scopeKey(final LongPropertyBuilderCallback callback);
 
   /**
    * Filters variables by the specified process instance key.
@@ -90,12 +94,13 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter processInstanceKey(final Long processInstanceKey);
 
   /**
-   * Filters variables by the specified process instance key using {@link LongFilterProperty}.
+   * Filters variables by the specified process instance key using {@link
+   * LongPropertyBuilderCallback}.
    *
-   * @param processInstanceKey the process instance key {@link LongFilterProperty} of the variable
+   * @param callback the process instance key {@link LongPropertyBuilderCallback} of the variable
    * @return the updated filter
    */
-  VariableFilter processInstanceKey(final LongFilterProperty processInstanceKey);
+  VariableFilter processInstanceKey(final LongPropertyBuilderCallback callback);
 
   /**
    * Filters variables by the specified tenant id.

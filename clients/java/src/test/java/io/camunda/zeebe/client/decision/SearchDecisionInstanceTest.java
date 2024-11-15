@@ -84,11 +84,9 @@ class SearchDecisionInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionInstanceByDecisionDefinitionKeyLongProperty() {
     // when
-    final BasicLongFilterProperty filterProperty = new BasicLongFilterProperty();
-    filterProperty.$in(Arrays.asList(1L, 10L));
     client
         .newDecisionInstanceQuery()
-        .filter(f -> f.decisionDefinitionKey(filterProperty))
+        .filter(f -> f.decisionDefinitionKey(b -> b.in(1L, 10L)))
         .send()
         .join();
 
@@ -105,10 +103,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionInstanceByEvaluationDateDateTimeProperty() {
     // when
-    final DateTimeFilterProperty filterProperty = new DateTimeFilterProperty();
-    final String dateTime = OffsetDateTime.now().toString();
-    filterProperty.$neq(dateTime);
-    client.newDecisionInstanceQuery().filter(f -> f.evaluationDate(filterProperty)).send().join();
+    final OffsetDateTime now = OffsetDateTime.now();
+    client.newDecisionInstanceQuery().filter(f -> f.evaluationDate(b -> b.neq(now))).send().join();
 
     // then
     final DecisionInstanceSearchQueryRequest request =
@@ -117,7 +113,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final DateTimeFilterProperty evaluationDate = filter.getEvaluationDate();
     assertThat(evaluationDate).isNotNull();
-    assertThat(evaluationDate.get$Neq()).isEqualTo(dateTime);
+    assertThat(evaluationDate.get$Neq()).isEqualTo(now.toString());
   }
 
   @Test

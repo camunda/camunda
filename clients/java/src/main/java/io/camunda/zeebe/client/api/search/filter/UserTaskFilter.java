@@ -15,9 +15,9 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.IntegerPropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.StringPropertyBuilderCallback;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.List;
 
@@ -49,12 +49,12 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter assignee(final String assignee);
 
   /**
-   * Filters user tasks by the specified assignee using {@link StringFilterProperty}.
+   * Filters user tasks by the specified assignee using {@link StringPropertyBuilderCallback}.
    *
-   * @param assignee the assignee {@link StringFilterProperty} of the user task
+   * @param callback the assignee {@link StringPropertyBuilderCallback} of the user task
    * @return the updated filter
    */
-  UserTaskFilter assignee(final StringFilterProperty assignee);
+  UserTaskFilter assignee(final StringPropertyBuilderCallback callback);
 
   /**
    * Filters user tasks by the specified priority.
@@ -65,12 +65,12 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter priority(final Integer priority);
 
   /**
-   * Filters user tasks by the specified priority using {@link IntegerFilterProperty}.
+   * Filters user tasks by the specified priority using {@link IntegerPropertyBuilderCallback}.
    *
-   * @param priority the priority {@link IntegerFilterProperty} of the user task
+   * @param callback the priority {@link IntegerPropertyBuilderCallback} of the user task
    * @return the updated filter
    */
-  UserTaskFilter priority(final IntegerFilterProperty priority);
+  UserTaskFilter priority(final IntegerPropertyBuilderCallback callback);
 
   /**
    * Filters user tasks by the specified task definition ID.
@@ -89,12 +89,13 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter candidateGroup(final String candidateGroup);
 
   /**
-   * Filters user tasks by the specified candidate group using {@link StringFilterProperty}.
+   * Filters user tasks by the specified candidate group using {@link
+   * StringPropertyBuilderCallback}.
    *
-   * @param candidateGroup the candidate group {@link StringFilterProperty} of the user task
+   * @param callback the candidate group {@link StringPropertyBuilderCallback} of the user task
    * @return the updated filter
    */
-  UserTaskFilter candidateGroup(final StringFilterProperty candidateGroup);
+  UserTaskFilter candidateGroup(final StringPropertyBuilderCallback callback);
 
   /**
    * Filters user tasks by the specified candidate user.
@@ -105,12 +106,12 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter candidateUser(final String candidateUser);
 
   /**
-   * Filters user tasks by the specified candidate user using {@link StringFilterProperty}.
+   * Filters user tasks by the specified candidate user using {@link StringPropertyBuilderCallback}.
    *
-   * @param candidateUser the candidate user {@link StringFilterProperty} of the user task
+   * @param callback the candidate user {@link StringPropertyBuilderCallback} of the user task
    * @return the updated filter
    */
-  UserTaskFilter candidateUser(final StringFilterProperty candidateUser);
+  UserTaskFilter candidateUser(final StringPropertyBuilderCallback callback);
 
   /**
    * Filters user tasks by the specified process definition key.
