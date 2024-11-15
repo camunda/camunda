@@ -19,6 +19,7 @@ public class ExporterConfiguration {
   private RetentionConfiguration retention = new RetentionConfiguration();
   private ArchiverConfiguration archiver = new ArchiverConfiguration();
   private CacheConfiguration processCache = new CacheConfiguration();
+  private CacheConfiguration formCache = new CacheConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -69,6 +70,14 @@ public class ExporterConfiguration {
     this.processCache = processCache;
   }
 
+  public CacheConfiguration getFormCache() {
+    return formCache;
+  }
+
+  public void setFormCache(final CacheConfiguration formCache) {
+    this.formCache = formCache;
+  }
+
   public boolean isCreateSchema() {
     return createSchema;
   }
@@ -92,6 +101,10 @@ public class ExporterConfiguration {
         + createSchema
         + ", archiver="
         + archiver
+        + ", processCache="
+        + processCache
+        + ", formCache="
+        + formCache
         + '}';
   }
 

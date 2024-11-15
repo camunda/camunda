@@ -1034,6 +1034,9 @@
         #
         #   processCache:
         #     maxCacheSize: 10000
+        #
+        #   formCache:
+        #     maxCacheSize: 10000
 
     # processing:
       # Sets the maximum number of commands that processed within one batch.
