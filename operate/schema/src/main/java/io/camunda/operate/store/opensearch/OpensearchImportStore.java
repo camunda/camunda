@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component;
 public class OpensearchImportStore implements ImportStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchImportStore.class);
-  private final ImportPositionIndex importPositionType = new ImportPositionIndex("", false);
+  @Autowired private ImportPositionIndex importPositionType;
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Autowired

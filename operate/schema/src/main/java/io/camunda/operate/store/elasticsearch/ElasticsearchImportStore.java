@@ -49,6 +49,7 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchImportStore implements ImportStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchImportStore.class);
+  @Autowired private ImportPositionIndex importPositionType;
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
@@ -70,7 +71,7 @@ public class ElasticsearchImportStore implements ImportStore {
             termQuery(ImportPositionIndex.PARTITION_ID, partitionId));
 
     final SearchRequest searchRequest =
-        new SearchRequest(getImportPositionType().getAlias())
+        new SearchRequest(importPositionType.getAlias())
             .source(new SearchSourceBuilder().query(queryBuilder).size(10));
 
     final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -132,7 +133,7 @@ public class ElasticsearchImportStore implements ImportStore {
 
   @Override
   public boolean getConcurrencyMode() {
-    final String indexName = getImportPositionType().getFullQualifiedName();
+    final String indexName = importPositionType.getFullQualifiedName();
     final Map<String, IndexMapping> indexMappings =
         retryElasticsearchClient.getIndexMappings(indexName);
     if (indexMappings.get(indexName).getMetaProperties() == null) {
@@ -147,7 +148,7 @@ public class ElasticsearchImportStore implements ImportStore {
   @Override
   public void setConcurrencyMode(final boolean concurrencyMode) {
     retryElasticsearchClient.updateMetaField(
-        getImportPositionType(), META_CONCURRENCY_MODE, concurrencyMode);
+        importPositionType, META_CONCURRENCY_MODE, concurrencyMode);
   }
 
   private void withImportPositionTimer(final Callable<Void> action) throws Exception {
@@ -196,7 +197,7 @@ public class ElasticsearchImportStore implements ImportStore {
   private Either<Exception, UpdateRequest> preparePostImportUpdateRequest(
       final ImportPositionEntity position) {
     try {
-      final var index = getImportPositionType().getFullQualifiedName();
+      final var index = importPositionType.getFullQualifiedName();
       final var source = objectMapper.writeValueAsString(position);
       final var updateFields = new HashMap<String, Object>();
 
@@ -225,7 +226,7 @@ public class ElasticsearchImportStore implements ImportStore {
   private Either<Exception, UpdateRequest> prepareUpdateRequest(
       final ImportPositionEntity position) {
     try {
-      final var index = getImportPositionType().getFullQualifiedName();
+      final var index = importPositionType.getFullQualifiedName();
       final var source = objectMapper.writeValueAsString(position);
       final var updateFields = new HashMap<String, Object>();
 
@@ -251,9 +252,5 @@ public class ElasticsearchImportStore implements ImportStore {
           e);
       return Either.left(e);
     }
-  }
-
-  private ImportPositionIndex getImportPositionType() {
-    return new ImportPositionIndex(operateProperties.getElasticsearch().getIndexPrefix(), true);
   }
 }

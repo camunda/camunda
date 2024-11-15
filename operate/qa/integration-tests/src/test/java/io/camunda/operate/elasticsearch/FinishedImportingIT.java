@@ -50,8 +50,8 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Autowired private RestHighLevelClient esClient;
   @Autowired private OperateProperties operateProperties;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
+  @Autowired private ImportPositionIndex importPositionIndex;
   private final ProtocolFactory factory = new ProtocolFactory();
-  private ImportPositionIndex importPositionIndex;
 
   @Before
   public void beforeEach() {
@@ -72,9 +72,6 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
             .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
     EXPORTER.configure(exporterTestContext);
     EXPORTER.open(new ExporterTestController());
-
-    importPositionIndex =
-        new ImportPositionIndex(operateProperties.getElasticsearch().getIndexPrefix(), true);
 
     recordsReaderHolder.resetCountEmptyBatches();
   }
