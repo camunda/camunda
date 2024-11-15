@@ -19,13 +19,16 @@ public final class NetworkCfg implements ConfigurationEntry {
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final DataSize DEFAULT_MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4);
+  private static final int DEFAULT_BROKER_SO_SNDBUF = 1024;
+  private static final int DEFAULT_BROKER_SO_RCVBUF = 1024;
 
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
-  private String advertisedHost;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
+  private int soSndbuf = DEFAULT_BROKER_SO_SNDBUF;
+  private int soRcvbuf = DEFAULT_BROKER_SO_RCVBUF;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -78,6 +81,7 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.maxMessageSize = maxMessageSize;
   }
 
+<<<<<<< HEAD
   public Duration getHeartbeatTimeout() {
     return heartbeatTimeout;
   }
@@ -92,6 +96,22 @@ public final class NetworkCfg implements ConfigurationEntry {
 
   public void setHeartbeatInterval(final Duration heartbeatInterval) {
     this.heartbeatInterval = heartbeatInterval;
+=======
+  public int getSoSndbuf() {
+    return soSndbuf;
+  }
+
+  public void setSoSndbuf(final int soSndbuf) {
+    this.soSndbuf = soSndbuf;
+  }
+
+  public int getSoRcvbuf() {
+    return soRcvbuf;
+  }
+
+  public void setSoRcvbuf(final int soRcvbuf) {
+    this.soRcvbuf = soRcvbuf;
+>>>>>>> fccda7f6c48 (feat: added socket buffers size parameters to config)
   }
 
   public CommandApiCfg getCommandApi() {
@@ -125,10 +145,17 @@ public final class NetworkCfg implements ConfigurationEntry {
         + '\''
         + ", maxMessageSize="
         + maxMessageSize
+<<<<<<< HEAD
         + ", heartbeatTimeout="
         + heartbeatTimeout
         + ", heartbeatInterval="
         + heartbeatInterval
+=======
+        + ", so_sndbuf="
+        + soSndbuf
+        + ", so_rcvbuf="
+        + soRcvbuf
+>>>>>>> fccda7f6c48 (feat: added socket buffers size parameters to config)
         + ", commandApi="
         + commandApi
         + ", internalApi="

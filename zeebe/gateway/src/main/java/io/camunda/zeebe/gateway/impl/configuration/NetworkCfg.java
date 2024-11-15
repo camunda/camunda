@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_GATEWAY_SO_RCVBUF;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_GATEWAY_SO_SNDBUF;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PORT;
 
 import java.net.InetSocketAddress;
@@ -20,6 +22,8 @@ public final class NetworkCfg {
   private int port = DEFAULT_PORT;
   private Duration minKeepAliveInterval = Duration.ofSeconds(30);
   private DataSize maxMessageSize = DataSize.ofMegabytes(4);
+  private int so_sndbuf = DEFAULT_GATEWAY_SO_SNDBUF;
+  private int so_rcvbuf = DEFAULT_GATEWAY_SO_RCVBUF;
 
   public void init(final String defaultHost) {
     if (host == null) {
@@ -63,6 +67,24 @@ public final class NetworkCfg {
     return this;
   }
 
+  public int getSoSndbuf() {
+    return so_sndbuf;
+  }
+
+  public NetworkCfg setSoSndbuf(final int soSndbuf) {
+    so_sndbuf = soSndbuf;
+    return this;
+  }
+
+  public int getSoRcvbuf() {
+    return so_rcvbuf;
+  }
+
+  public NetworkCfg setSoRcvbuf(final int soRcvbuf) {
+    so_rcvbuf = soRcvbuf;
+    return this;
+  }
+
   public InetSocketAddress toSocketAddress() {
     return new InetSocketAddress(host, port);
   }
@@ -94,6 +116,10 @@ public final class NetworkCfg {
         + port
         + ", minKeepAliveInterval="
         + minKeepAliveInterval
+        + ", so_sndbuf="
+        + so_sndbuf
+        + ", so_rcvbuf="
+        + so_rcvbuf
         + '}';
   }
 }
