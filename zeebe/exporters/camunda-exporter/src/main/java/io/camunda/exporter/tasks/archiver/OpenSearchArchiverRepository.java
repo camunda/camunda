@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
@@ -59,7 +58,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
   private final int partitionId;
   private final ArchiverConfiguration config;
   private final RetentionConfiguration retention;
-  private final ConnectConfiguration connectConfiguration;
+  private final String indexPrefix;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
   private final OpenSearchAsyncClient client;
@@ -73,7 +72,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
       final int partitionId,
       final ArchiverConfiguration config,
       final RetentionConfiguration retention,
-      final ConnectConfiguration connectConfiguration,
+      final String indexPrefix,
       final String processInstanceIndex,
       final String batchOperationIndex,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
@@ -83,7 +82,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
-    this.connectConfiguration = connectConfiguration;
+    this.indexPrefix = indexPrefix;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.client = client;
@@ -135,7 +134,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-    final String indexWildCard = "^" + connectConfiguration.getIndexPrefix() + INDEX_WILDCARD;
+    final String indexWildCard = "^" + indexPrefix + INDEX_WILDCARD;
     final List<String> indices;
 
     try {
