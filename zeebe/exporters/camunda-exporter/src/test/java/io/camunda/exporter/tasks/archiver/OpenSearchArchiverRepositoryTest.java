@@ -67,7 +67,7 @@ final class OpenSearchArchiverRepositoryTest {
         1,
         new ArchiverConfiguration(),
         retention,
-        new ConnectConfiguration(),
+        new ConnectConfiguration().getIndexPrefix(),
         "instance",
         "batch",
         client,

@@ -365,7 +365,7 @@ final class OpenSearchArchiverRepositoryIT {
         1,
         config,
         retention,
-        connectConfiguration,
+        connectConfiguration.getIndexPrefix(),
         processInstanceIndex,
         batchOperationIndex,
         client,
