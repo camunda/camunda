@@ -106,6 +106,12 @@ public final class DbDeploymentState implements MutableDeploymentState {
   }
 
   @Override
+  public boolean hasStoredDeploymentRecord(final long deploymentKey) {
+    this.deploymentKey.wrapLong(deploymentKey);
+    return deploymentRawColumnFamily.exists(this.deploymentKey);
+  }
+
+  @Override
   public DeploymentRecord getStoredDeploymentRecord(final long key) {
     deploymentKey.wrapLong(key);
 
