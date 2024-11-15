@@ -36,6 +36,7 @@ public enum Profile {
   DEFAULT_AUTH_PROFILE("auth"),
   LDAP_AUTH_PROFILE("ldap-auth"),
 
+  MIGRATION("migration"),
   // indicating legacy standalone application
   STANDALONE("standalone");
 

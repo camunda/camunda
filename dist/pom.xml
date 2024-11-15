@@ -248,6 +248,23 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>migration-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>process-migration</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>identity-migration</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapps-common</artifactId>
     </dependency>
@@ -773,6 +790,8 @@
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
+            <dep>io.camunda.migration:identity-migration</dep>
+            <dep>io.camunda.migration:process-migration</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

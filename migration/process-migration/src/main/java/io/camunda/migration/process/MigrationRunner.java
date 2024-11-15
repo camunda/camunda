@@ -27,11 +27,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component
-@Profile("process-migration")
+@Component("process-migrator")
 @EnableConfigurationProperties(ProcessMigrationProperties.class)
 public class MigrationRunner implements Migrator {
 
