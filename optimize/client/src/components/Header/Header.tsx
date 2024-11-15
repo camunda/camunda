@@ -20,6 +20,7 @@ import {showError} from 'notifications';
 import {t} from 'translation';
 import {track} from 'tracking';
 import {useDocs, useErrorHandling, useUiConfig} from 'hooks';
+import {UiConfig} from 'config';
 
 import {getUserToken} from './service';
 import useUserMenu from './useUserMenu';
@@ -43,6 +44,8 @@ export default function Header({noActions}: {noActions?: boolean}) {
     notificationsUrl,
     validLicense,
     licenseType,
+    commercial,
+    expiresAt,
   } = useUiConfig();
 
   useEffect(() => {
@@ -58,8 +61,7 @@ export default function Header({noActions}: {noActions?: boolean}) {
 
   if (!noActions) {
     props.navbar = createNavBarProps(
-      validLicense,
-      licenseType,
+      {validLicense, licenseType, commercial, expiresAt},
       location.pathname,
       optimizeDatabase
     );
@@ -130,8 +132,7 @@ function createWebappLinks(webappLinks: Record<string, string> | null): C3Naviga
 }
 
 function createNavBarProps(
-  validLicense: boolean,
-  licenseType: 'production' | 'saas' | 'unknown',
+  license: Pick<UiConfig, 'validLicense' | 'licenseType' | 'commercial' | 'expiresAt'>,
   pathname: string,
   optimizeDatabase?: string
 ): C3NavigationNavBarProps {
@@ -176,8 +177,10 @@ function createNavBarProps(
   }
 
   const licenseTag: C3NavigationNavBarProps['licenseTag'] = {
-    show: licenseType !== 'saas',
-    isProductionLicense: validLicense,
+    show: license.licenseType !== 'saas',
+    isProductionLicense: license.validLicense,
+    isCommercial: license.commercial,
+    expiresAt: license.expiresAt ?? undefined,
   };
 
   return {

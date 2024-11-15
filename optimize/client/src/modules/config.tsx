@@ -63,6 +63,8 @@ export type UiConfig = {
   userTaskAssigneeAnalyticsEnabled: boolean;
   licenseType: 'production' | 'saas' | 'unknown';
   validLicense: boolean;
+  commercial: boolean;
+  expiresAt: string | null;
 };
 
 let globalConfig: UiConfig;
