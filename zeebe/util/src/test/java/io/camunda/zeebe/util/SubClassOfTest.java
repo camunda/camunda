@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.util;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
@@ -17,10 +18,10 @@ class SubClassOfTest {
     final var subclass =
         SubClassOf.make(IllegalArgumentException.class, IllegalStateException.class);
 
-    assertTrue(subclass.test(new IllegalArgumentException("")));
-    assertTrue(subclass.test(new IllegalStateException("")));
-    assertTrue(subclass.test(new MyIllegalArgumentException()));
-    assertFalse(subclass.test(new RuntimeException("")));
+    assertThat(subclass.test(new IllegalArgumentException(""))).isTrue();
+    assertThat(subclass.test(new IllegalStateException(""))).isTrue();
+    assertThat(subclass.test(new MyIllegalArgumentException())).isTrue();
+    assertThat(subclass.test(new RuntimeException(""))).isFalse();
   }
 
   @Test
@@ -29,9 +30,9 @@ class SubClassOfTest {
     final var objects = new Object[] {"", 1, 1.0, new Object[] {}};
 
     for (final var obj : objects) {
-      assertFalse(subclass.test(obj));
+      assertThat(subclass.test(obj)).isFalse();
     }
   }
 
-  public static final class MyIllegalArgumentException extends IllegalArgumentException {}
+  private static final class MyIllegalArgumentException extends IllegalArgumentException {}
 }
