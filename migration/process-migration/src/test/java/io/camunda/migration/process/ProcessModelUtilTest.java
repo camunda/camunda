@@ -64,7 +64,7 @@ public class ProcessModelUtilTest {
   }
 
   @Test
-  void extractedDataShouldBeEmpty() throws IOException {
+  void shouldExtractNothing() throws IOException {
     final var entity = TestData.processEntityWithoutForm(1L);
 
     final var startEvent =

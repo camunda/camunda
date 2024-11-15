@@ -99,7 +99,7 @@ public class ElasticsearchMigrationRunnerIT {
 
   @Test
   public void singleMigrationRound() throws IOException {
-    // when
+    // given
     properties.setBatchSize(1);
     final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
     final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithPublicFormId(2L);
@@ -107,11 +107,12 @@ public class ElasticsearchMigrationRunnerIT {
     writeProcessToIndex(entityNotToBeMigrated);
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
 
-    // then
+    // when
     migrator.migrateBatch(List.of(entityToBeMigrated));
     awaitRecordsArePresent(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
     esClient.indices().refresh();
-    // verify
+
+    // then
     assertProcessorStepContentIsStored("1");
     final var processorRecords =
         readRecords(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
@@ -154,15 +155,16 @@ public class ElasticsearchMigrationRunnerIT {
 
   @Test
   public void shouldMigrateSuccessfully() throws IOException {
-    // when
+    // given
     writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
     writeProcessToIndex(TestData.processEntityWithoutForm(2L));
     writeProcessToIndex(TestData.processEntityWithPublicFormKey(3L));
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
-    // then
+    // when
     migrator.run();
     esClient.indices().refresh();
-    // verify
+
+    // then
     assertProcessorStepContentIsStored("3");
 
     final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
@@ -197,17 +199,18 @@ public class ElasticsearchMigrationRunnerIT {
   }
 
   @Test
-  public void migrationShouldCompleteWithMultipleRounds() throws IOException {
-    // when
+  public void shouldMigrateSuccessfullyWithMultipleRounds() throws IOException {
+    // given
     for (int i = 1; i <= 20; i++) {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
-    // then
+
+    // when
     migrator.run();
     esClient.indices().refresh();
 
-    // verify
+    // then
     final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
 
     // Since the key field is marked as a keyword in ES/OS the sorting is done lexicographically
@@ -220,18 +223,18 @@ public class ElasticsearchMigrationRunnerIT {
   }
 
   @Test
-  public void migrationShouldPickUpFromStoredId() throws IOException {
-    // when
+  public void shouldMigrateFromStoredId() throws IOException {
+    // given
     for (int i = 1; i <= 9; i++) {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     writeProcessorStepToIndex("5");
-    // then
+    // when
     migrator.run();
     esClient.indices().refresh();
 
-    // verify
+    // then
     final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
 
     // Since the key field is marked as a keyword in ES/OS the sorting is done lexicographically
@@ -269,8 +272,8 @@ public class ElasticsearchMigrationRunnerIT {
   }
 
   @Test
-  public void migrationShouldDoNothingWhenFinalStepIsPresent() throws IOException {
-    // when
+  public void shouldNotMigrateWhenFinalStepIsPresent() throws IOException {
+    // given
     properties.setBatchSize(1);
     final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
     final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithPublicFormId(2L);
@@ -278,11 +281,12 @@ public class ElasticsearchMigrationRunnerIT {
     writeProcessToIndex(entityToBeMigrated);
     writeProcessToIndex(entityNotToBeMigrated);
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
-    // then
+
+    // when
     migrator.run();
     esClient.indices().refresh();
 
-    // verify
+    // then
     final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
     final var stepRecords =
         readRecords(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
