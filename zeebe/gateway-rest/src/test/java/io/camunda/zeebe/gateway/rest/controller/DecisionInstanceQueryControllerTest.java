@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -408,6 +409,70 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
     verify(decisionInstanceServices)
         .search(new DecisionInstanceQuery.Builder().filter(filter).build());
+  }
+
+  @Test
+  void shouldThrowExceptionWithInvalidDateTime() {
+    // given
+    final var request = "{\"filter\": {\"evaluationDate\": \"invalid\"}}";
+
+    // when / then
+    final var expectedResponse =
+        """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "Failed to parse date-time: [invalid]",
+              "instance": "/v2/decision-instances/search"
+            }""";
+    webClient
+        .post()
+        .uri("/v2/decision-instances/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class));
+  }
+
+  @Test
+  void shouldThrowExceptionWithWrongType() {
+    // given
+    final var request = "{\"filter\": {\"evaluationDate\": []}";
+
+    // when / then
+    final var expectedResponse =
+        """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "Request property [filter.evaluationDate] cannot be parsed",
+              "instance": "/v2/decision-instances/search"
+            }""";
+    webClient
+        .post()
+        .uri("/v2/decision-instances/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class));
   }
 
   private record TestArguments(

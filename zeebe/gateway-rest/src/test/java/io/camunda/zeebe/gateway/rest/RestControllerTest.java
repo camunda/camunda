@@ -29,14 +29,7 @@ import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
       "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
     })
 public abstract class RestControllerTest {
-  protected static final List<List<Operation<Long>>> BASIC_LONG_OPERATIONS =
-      List.of(
-          List.of(Operation.eq(10L)),
-          List.of(Operation.neq(1L)),
-          List.of(Operation.exists(true)),
-          List.of(Operation.exists(false)),
-          List.of(Operation.in(5L, 10L)));
-  protected static final List<List<Operation<Long>>> LONG_OPERATIONS =
+  public static final List<List<Operation<Long>>> LONG_OPERATIONS =
       List.of(
           List.of(Operation.gt(5L)),
           List.of(Operation.gte(5L)),
@@ -44,7 +37,14 @@ public abstract class RestControllerTest {
           List.of(Operation.lte(5L)),
           List.of(Operation.gt(5L), Operation.lt(10L)),
           List.of(Operation.gte(5L), Operation.lte(10L)));
-  protected static final List<List<Operation<String>>> STRING_OPERATIONS =
+  public static final List<List<Operation<Long>>> BASIC_LONG_OPERATIONS =
+      List.of(
+          List.of(Operation.eq(10L)),
+          List.of(Operation.neq(1L)),
+          List.of(Operation.exists(true)),
+          List.of(Operation.exists(false)),
+          List.of(Operation.in(5L, 10L)));
+  public static final List<List<Operation<String>>> STRING_OPERATIONS =
       List.of(
           List.of(Operation.eq("this")),
           List.of(Operation.neq("that")),
@@ -53,7 +53,7 @@ public abstract class RestControllerTest {
           List.of(Operation.in("this", "that")),
           List.of(Operation.like("th%")),
           List.of(Operation.in("this", "that"), Operation.like("th%")));
-  protected static final List<List<Operation<OffsetDateTime>>> DATE_TIME_OPERATIONS =
+  public static final List<List<Operation<OffsetDateTime>>> DATE_TIME_OPERATIONS =
       List.of(
           List.of(Operation.eq(OffsetDateTime.now())),
           List.of(Operation.neq(OffsetDateTime.now().withOffsetSameInstant(ZoneOffset.of("Z")))),
@@ -111,7 +111,7 @@ public abstract class RestControllerTest {
         .forEach(streamBuilder::add);
   }
 
-  private static Operation<Integer> toIntOperation(final Operation<Long> op) {
+  public static Operation<Integer> toIntOperation(final Operation<Long> op) {
     return new Operation<>(
         op.operator(),
         op.values() != null ? op.values().stream().map(Long::intValue).toList() : null);
