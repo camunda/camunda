@@ -26,12 +26,12 @@ public final record UserTaskSort(List<FieldSorting> orderings) implements SortOp
       implements ObjectBuilder<UserTaskSort> {
 
     public Builder creationDate() {
-      currentOrdering = new FieldSorting("creationTime", null);
+      currentOrdering = new FieldSorting("creationDate", null);
       return this;
     }
 
     public Builder completionDate() {
-      currentOrdering = new FieldSorting("completionTime", null);
+      currentOrdering = new FieldSorting("completionDate", null);
       return this;
     }
 

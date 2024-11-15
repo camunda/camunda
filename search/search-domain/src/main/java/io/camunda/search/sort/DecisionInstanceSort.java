@@ -36,11 +36,6 @@ public record DecisionInstanceSort(List<FieldSorting> orderings) implements Sort
       return this;
     }
 
-    public Builder decisionInstanceId() {
-      currentOrdering = new FieldSorting("id", null);
-      return this;
-    }
-
     public Builder state() {
       currentOrdering = new FieldSorting("state", null);
       return this;
