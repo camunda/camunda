@@ -10,6 +10,7 @@ import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
 import {createInstances, deploy} from '@/utils/zeebeClient';
 import {waitForAssertion} from '@/utils/waitForAssertion';
+import {sleep} from '@/utils/sleep';
 
 test.afterAll(async ({resetData}) => {
   await resetData();
@@ -19,21 +20,32 @@ test.beforeAll(async () => {
   await deploy([
     './e2e/resources/usertask_to_be_completed.bpmn',
     './e2e/resources/user_task_with_form.bpmn',
+    './e2e/resources/user_task_form.form',
     './e2e/resources/user_task_with_form_and_vars.bpmn',
     './e2e/resources/user_task_with_form_rerender_1.bpmn',
     './e2e/resources/user_task_with_form_rerender_2.bpmn',
     './e2e/resources/checkbox_task_with_form.bpmn',
+    './e2e/resources/form_with_checkbox.form',
     './e2e/resources/checklist_task_with_form.bpmn',
+    './e2e/resources/form_with_checklist.form',
     './e2e/resources/date_and_time_task_with_form.bpmn',
+    './e2e/resources/form_with_date_and_time.form',
     './e2e/resources/number_task_with_form.bpmn',
+    './e2e/resources/form_with_number.form',
     './e2e/resources/radio_button_task_with_form.bpmn',
+    './e2e/resources/form_with_radio_button.form',
     './e2e/resources/select_task_with_form.bpmn',
+    './e2e/resources/form_with_select.form',
     './e2e/resources/tag_list_task_with_form.bpmn',
-    './e2e/resources/text-templating-form-task.bpmn',
+    './e2e/resources/form_with_tag_list.form',
+    './e2e/resources/text_templating_form_task.bpmn',
+    './e2e/resources/form_with_text_templating.form',
     './e2e/resources/processWithDeployedForm.bpmn',
-    './e2e/resources/create-invoice_8-5.form',
-    './e2e/resources/Zeebe_Process.bpmn',
+    './e2e/resources/create_invoice.form',
+    './e2e/resources/zeebe_and_job_worker_process.bpmn',
   ]);
+
+  await sleep(1000);
 
   await Promise.all([
     createInstances('usertask_to_be_completed', 1, 1),
@@ -63,8 +75,10 @@ test.beforeAll(async () => {
       age: '50',
     }),
     createInstances('processWithDeployedForm', 1, 1),
-    createInstances('Zeebe_Process', 1, 1),
+    createInstances('zeebe_and_job_worker_process', 1, 1),
   ]);
+
+  await sleep(1000);
 });
 
 test.beforeEach(async ({page, loginPage}) => {

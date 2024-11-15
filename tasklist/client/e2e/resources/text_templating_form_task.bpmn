@@ -1,31 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="f8ba57b" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0" camunda:diagramRelationId="1203f19c-fa9d-4278-a420-53ad652d18ad">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.30.0-nightly.20241111" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0" camunda:diagramRelationId="1203f19c-fa9d-4278-a420-53ad652d18ad">
   <bpmn:process id="Text_Templating_Form_Task" isExecutable="true">
-    <bpmn:extensionElements>
-      <zeebe:userTaskForm id="userTaskForm_1228e4e">{
-  "components": [
-    {
-      "text": "# Hello {{ name }} \n\n You are {{ age }} years old",
-      "label": "Text view",
-      "type": "text",
-      "layout": {
-        "row": "Row_1ie54my",
-        "columns": null
-      },
-      "id": "Field_08hxldt"
-    }
-  ],
-  "schemaVersion": 9,
-  "exporter": {
-    "name": "Camunda Web Modeler",
-    "version": "f8ba57b"
-  },
-  "type": "default",
-  "id": "Form_1c2fmfa",
-  "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.3.0"
-}</zeebe:userTaskForm>
-    </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_0qvpk5w</bpmn:outgoing>
     </bpmn:startEvent>
@@ -36,7 +11,8 @@
     <bpmn:sequenceFlow id="Flow_03mt2zd" sourceRef="Activity_11z9iig" targetRef="Event_196oxp1" />
     <bpmn:userTask id="Activity_11z9iig" name="Text Templating Form Task">
       <bpmn:extensionElements>
-        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_1228e4e" />
+        <zeebe:formDefinition formId="form_with_text_templating" />
+        <zeebe:userTask />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0qvpk5w</bpmn:incoming>
       <bpmn:outgoing>Flow_03mt2zd</bpmn:outgoing>

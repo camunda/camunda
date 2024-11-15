@@ -1,0 +1,38 @@
+{
+  "components": [
+    {
+      "values": [
+        {
+          "label": "Value1",
+          "value": "value"
+        }
+      ],
+      "label": "Checklist",
+      "type": "checklist",
+      "layout": {
+        "row": "Row_198n042",
+        "columns": null
+      },
+      "id": "Field_02lp2es",
+      "key": "field_0c2vunw"
+    },
+    {
+      "values": [
+        {
+          "label": "Value2",
+          "value": "value"
+        }
+      ],
+      "label": "Checklist",
+      "type": "checklist",
+      "layout": {
+        "row": "Row_0yoff12",
+        "columns": null
+      },
+      "id": "Field_189wcqd",
+      "key": "field_0zkzia0"
+    }
+  ],
+  "type": "default",
+  "id": "form_with_checklist"
+}
