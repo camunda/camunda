@@ -59,6 +59,8 @@ const {
   MultiInstanceTask,
   EscalationEventSubProcess,
   EscalationStartEvent,
+  CompensationTask,
+  CompensationBoundaryEvent,
 } = elements;
 
 /**
@@ -107,9 +109,13 @@ describe('MigrationView/BottomPanel', () => {
       screen.getByText(EscalationEventSubProcess.name),
     ).toBeInTheDocument();
     expect(screen.getByText(EscalationStartEvent.name)).toBeInTheDocument();
+    expect(screen.getByText(CompensationTask.name)).toBeInTheDocument();
+    expect(
+      screen.getByText(CompensationBoundaryEvent.name),
+    ).toBeInTheDocument();
 
-    // expect table to have 1 header + 33 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(34);
+    // expect table to have 1 header + 35 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(36);
   });
 
   it.each([
@@ -186,6 +192,7 @@ describe('MigrationView/BottomPanel', () => {
     {source: SignalIntermediateCatch, target: SignalBoundaryEvent},
     {source: MessageIntermediateCatch, target: SignalIntermediateCatch},
     {source: MultiInstanceTask, target: SendTask},
+    {source: CompensationBoundaryEvent, target: SignalBoundaryEvent},
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -303,6 +310,9 @@ describe('MigrationView/BottomPanel', () => {
     const comboboxEscalationStartEvent = await screen.findByLabelText(
       new RegExp(`target flow node for ${EscalationStartEvent.name}`, 'i'),
     );
+    const comboboxCompensationBoundaryEvent = await screen.findByLabelText(
+      new RegExp(`target flow node for ${CompensationBoundaryEvent.name}`, 'i'),
+    );
 
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
@@ -333,6 +343,9 @@ describe('MigrationView/BottomPanel', () => {
       comboboxTimerNonInterrupting.id,
     );
     expect(comboboxSignalBoundaryEvent).toHaveValue(SignalBoundaryEvent.id);
+    expect(comboboxCompensationBoundaryEvent).toHaveValue(
+      comboboxCompensationBoundaryEvent.id,
+    );
 
     // Expect auto-mapping (same id, intermediate catch event, same event type)
     expect(comboboxMessageIntermediateCatch).toHaveValue(
@@ -560,8 +573,8 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeVisible();
 
-    // Expect all 33 rows to be visible (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(34);
+    // Expect all 35 rows to be visible (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(36);
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
@@ -633,6 +646,12 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       screen.queryByText(getMatcherFunction(MultiInstanceSubProcess.name)),
     ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(CompensationTask.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(CompensationBoundaryEvent.name)),
+    ).not.toBeInTheDocument();
 
     // Expect 8 not mapped rows (+1 header row)
     expect(await screen.findAllByRole('row')).toHaveLength(9);
@@ -667,6 +686,6 @@ describe('MigrationView/BottomPanel', () => {
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(await screen.findAllByRole('row')).toHaveLength(34);
+    expect(await screen.findAllByRole('row')).toHaveLength(36);
   });
 });
