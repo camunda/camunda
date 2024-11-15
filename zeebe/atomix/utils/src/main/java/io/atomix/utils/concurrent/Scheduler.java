@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /** Scheduler. */
-@FunctionalInterface
 public interface Scheduler extends CloseableSilently {
 
   /**
@@ -32,9 +31,7 @@ public interface Scheduler extends CloseableSilently {
    * @param callback the callback to run
    * @return the scheduled callback
    */
-  default Scheduled schedule(final long delay, final TimeUnit timeUnit, final Runnable callback) {
-    return schedule(Duration.ofMillis(timeUnit.toMillis(delay)), callback);
-  }
+  Scheduled schedule(final long delay, final TimeUnit timeUnit, final Runnable callback);
 
   /**
    * Schedules a runnable after a delay.
@@ -44,7 +41,7 @@ public interface Scheduler extends CloseableSilently {
    * @return the scheduled callback
    */
   default Scheduled schedule(final Duration delay, final Runnable callback) {
-    return schedule(Duration.ZERO, delay, callback);
+    return schedule(delay.toMillis(), TimeUnit.MILLISECONDS, callback);
   }
 
   /**
