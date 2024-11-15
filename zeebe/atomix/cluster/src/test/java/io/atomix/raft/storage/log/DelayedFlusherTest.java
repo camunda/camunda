@@ -18,6 +18,7 @@ import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.agrona.CloseHelper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -45,9 +46,7 @@ final class DelayedFlusherTest {
     assertThat(scheduler.operations).hasSize(1);
 
     final var scheduled = scheduler.operations.get(0);
-    assertThat(scheduled)
-        .extracting(t -> t.initialDelay, t -> t.interval)
-        .containsExactly(Duration.ZERO, Duration.ofSeconds(5));
+    assertThat(scheduled.delay).isEqualTo(Duration.ofSeconds(5));
     Mockito.verify(journal, Mockito.never()).flush();
   }
 
@@ -80,9 +79,7 @@ final class DelayedFlusherTest {
     // then
     assertThat(scheduler.operations).hasSize(1);
     final var scheduled = scheduler.operations.get(0);
-    assertThat(scheduled)
-        .extracting(t -> t.initialDelay, t -> t.interval)
-        .containsExactly(Duration.ZERO, Duration.ofSeconds(5));
+    assertThat(scheduled.delay).isEqualTo(Duration.ofSeconds(5));
   }
 
   @Test
@@ -149,16 +146,13 @@ final class DelayedFlusherTest {
   }
 
   private static final class TestScheduled implements Scheduled {
-    private final Duration initialDelay;
-    private final Duration interval;
+    private final Duration delay;
     private final Runnable operation;
 
     private boolean cancelled;
 
-    private TestScheduled(
-        final Duration initialDelay, final Duration interval, final Runnable operation) {
-      this.initialDelay = initialDelay;
-      this.interval = interval;
+    private TestScheduled(final Duration delay, final Runnable operation) {
+      this.delay = delay;
       this.operation = operation;
     }
 
@@ -177,11 +171,17 @@ final class DelayedFlusherTest {
     private final List<TestScheduled> operations = new ArrayList<>();
 
     @Override
-    public Scheduled schedule(
-        final Duration initialDelay, final Duration interval, final Runnable callback) {
-      final var scheduled = new TestScheduled(initialDelay, interval, callback);
+    public Scheduled schedule(final long delay, final TimeUnit timeUnit, final Runnable callback) {
+      final var scheduled =
+          new TestScheduled(Duration.of(delay, timeUnit.toChronoUnit()), callback);
       operations.add(scheduled);
       return scheduled;
+    }
+
+    @Override
+    public Scheduled schedule(
+        final Duration initialDelay, final Duration interval, final Runnable callback) {
+      throw new UnsupportedOperationException("fixed rate scheduling unsupported");
     }
 
     private void runNext() {
