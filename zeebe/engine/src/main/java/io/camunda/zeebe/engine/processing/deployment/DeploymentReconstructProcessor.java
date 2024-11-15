@@ -29,6 +29,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
   @Override
   public void processRecord(final TypedRecord<DeploymentRecord> record) {
     final var key = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED, record.getValue());
+    // TODO: Only append the event when there are no more deployments to reconstruct
+    stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED_ALL, record.getValue());
   }
 }
