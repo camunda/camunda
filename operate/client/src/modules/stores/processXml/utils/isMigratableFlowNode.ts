@@ -26,6 +26,7 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
         'bpmn:MessageEventDefinition',
         'bpmn:TimerEventDefinition',
         'bpmn:SignalEventDefinition',
+        'bpmn:CompensateEventDefinition',
       ],
     })
   ) {
