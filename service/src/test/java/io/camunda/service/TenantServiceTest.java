@@ -151,6 +151,6 @@ public class TenantServiceTest {
     final BrokerTenantDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(TenantIntent.DELETE);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
-    assertThat(request.getKey()).isEqualTo(100L);
+    assertThat(request.getRequestWriter().getTenantKey()).isEqualTo(100L);
   }
 }

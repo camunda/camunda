@@ -24,7 +24,7 @@ public class BrokerTenantDeleteRequest extends BrokerExecuteCommand<TenantRecord
   }
 
   public BrokerTenantDeleteRequest setTenantKey(final long tenantKey) {
-    request.setKey(tenantKey);
+    requestDto.setTenantKey(tenantKey);
     return this;
   }
 
