@@ -80,7 +80,7 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
-    if (updatedGroupName.equals(persistedRecord.get().getName())) {
+    if (groupState.getGroupKeyByName(updatedGroupName).isPresent()) {
       final var errorMessage =
           "Expected to update group with name '%s', but a group with this name already exists."
               .formatted(updatedGroupName);
