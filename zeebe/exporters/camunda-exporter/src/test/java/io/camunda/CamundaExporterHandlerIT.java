@@ -429,9 +429,14 @@ public class CamundaExporterHandlerIT {
   void shouldExportUsingMappingDeletedHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
+    final var createHandler = getHandler(config, MappingCreatedHandler.class);
     final var handler = getHandler(config, MappingDeletedHandler.class);
+    final var createMappingRecord = mappingRecordGenerator(createHandler, MappingIntent.CREATED);
+    final var deleteMappingRecord = mappingRecordGenerator(handler, MappingIntent.DELETED);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        createHandler, config, clientAdapter, createMappingRecord);
     basicAssertWhereHandlerDeletesDefaultEntity(
-        handler, config, clientAdapter, mappingRecordGenerator(handler, MappingIntent.DELETED));
+        handler, config, clientAdapter, deleteMappingRecord);
   }
 
   @TestTemplate
@@ -456,9 +461,14 @@ public class CamundaExporterHandlerIT {
   void shouldExportUsingGroupDeletedHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
+    final var createHandler = getHandler(config, GroupCreatedUpdatedHandler.class);
     final var handler = getHandler(config, GroupDeletedHandler.class);
-    basicAssertWhereHandlerDeletesDefaultEntity(
-        handler, config, clientAdapter, groupRecordGenerator(handler, GroupIntent.DELETED));
+    final var createGroupRecord = groupRecordGenerator(createHandler, GroupIntent.CREATED);
+    final var deleteGroupRecord =
+        groupRecordGenerator(handler, GroupIntent.DELETED, createGroupRecord.getKey());
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        createHandler, config, clientAdapter, createGroupRecord);
+    basicAssertWhereHandlerDeletesDefaultEntity(handler, config, clientAdapter, deleteGroupRecord);
   }
 
   @TestTemplate
@@ -686,6 +696,11 @@ public class CamundaExporterHandlerIT {
 
   private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> mappingRecordGenerator(
       final ExportHandler<S, T> handler, final MappingIntent intent) {
+    return mappingRecordGenerator(handler, intent, -1L);
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> mappingRecordGenerator(
+      final ExportHandler<S, T> handler, final MappingIntent intent, final Long mappingKey) {
     return recordGenerator(
         handler,
         () -> {
@@ -695,10 +710,14 @@ public class CamundaExporterHandlerIT {
                   .build();
           return factory.generateRecord(
               ValueType.MAPPING,
-              r ->
-                  r.withValue((T) mappingRecordValue)
-                      .withIntent(intent)
-                      .withTimestamp(System.currentTimeMillis()));
+              r -> {
+                if (mappingKey > 0) {
+                  r.withKey(mappingKey);
+                }
+                return r.withValue((T) mappingRecordValue)
+                    .withIntent(intent)
+                    .withTimestamp(System.currentTimeMillis());
+              });
         });
   }
 
