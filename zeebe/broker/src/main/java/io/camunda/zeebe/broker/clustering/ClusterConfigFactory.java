@@ -79,7 +79,9 @@ public final class ClusterConfigFactory {
         new MessagingConfig()
             .setCompressionAlgorithm(cluster.getMessageCompression())
             .setInterfaces(Collections.singletonList(network.getInternalApi().getHost()))
-            .setPort(network.getInternalApi().getPort());
+            .setPort(network.getInternalApi().getPort())
+            .setBrokerSoRcvbuf(network.getSoRcvbuf())
+            .setBrokerSoSndbuf(network.getSoSndbuf());
 
     if (network.getSecurity().isEnabled()) {
       final var security = network.getSecurity();

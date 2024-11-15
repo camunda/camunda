@@ -35,6 +35,8 @@ public class MessagingConfig implements Config {
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
   private File keyStore;
   private String keyStorePassword;
+  private Integer brokerSoSndbuf = 1024;
+  private Integer brokerSoRcvbuf = 1024;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -248,6 +250,24 @@ public class MessagingConfig implements Config {
 
   public String getKeyStorePassword() {
     return keyStorePassword;
+  }
+
+  public Integer getBrokerSoSndbuf() {
+    return brokerSoSndbuf;
+  }
+
+  public MessagingConfig setBrokerSoSndbuf(final Integer brokerSoSndbuf) {
+    this.brokerSoSndbuf = brokerSoSndbuf;
+    return this;
+  }
+
+  public Integer getBrokerSoRcvbuf() {
+    return brokerSoRcvbuf;
+  }
+
+  public MessagingConfig setBrokerSoRcvbuf(final Integer brokerSoRcvbuf) {
+    this.brokerSoRcvbuf = brokerSoRcvbuf;
+    return this;
   }
 
   public enum CompressionAlgorithm {

@@ -50,6 +50,7 @@ import io.grpc.StatusException;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
+import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -258,7 +259,9 @@ public final class Gateway implements CloseableSilently {
     return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
         .maxInboundMessageSize(maxMessageSize)
         .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
-        .permitKeepAliveWithoutCalls(false);
+        .permitKeepAliveWithoutCalls(false)
+        .withOption(ChannelOption.SO_RCVBUF, cfg.getSoRcvbuf())
+        .withOption(ChannelOption.SO_SNDBUF, cfg.getSoSndbuf());
   }
 
   private void setSecurityConfig(

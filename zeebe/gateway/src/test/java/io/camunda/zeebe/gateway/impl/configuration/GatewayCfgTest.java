@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_GATEWAY_SO_RCVBUF;
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_GATEWAY_SO_SNDBUF;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.utils.net.Address;
@@ -174,13 +176,17 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.filters.0.id", "overwrittenFilter");
     setEnv("zeebe.gateway.filters.0.className", "OverwrittenFilter");
     setEnv("zeebe.gateway.filters.0.jarPath", "./overwrittenFilter.jar");
+    setEnv("zeebe.gateway.network.so_sndbuf", String.valueOf(DEFAULT_GATEWAY_SO_SNDBUF));
+    setEnv("zeebe.gateway.network.so_rcvbuf", String.valueOf(DEFAULT_GATEWAY_SO_RCVBUF));
 
     final GatewayCfg expected = new GatewayCfg();
     expected
         .getNetwork()
         .setHost("zeebe")
         .setPort(5432)
-        .setMinKeepAliveInterval(Duration.ofSeconds(30));
+        .setMinKeepAliveInterval(Duration.ofSeconds(30))
+        .setSoRcvbuf(DEFAULT_GATEWAY_SO_RCVBUF)
+        .setSoSndbuf(DEFAULT_GATEWAY_SO_SNDBUF);
     expected
         .getCluster()
         .setInitialContactPoints(List.of("broker:432", "anotherBroker:789"))

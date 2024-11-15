@@ -17,6 +17,12 @@ public final class ConfigurationDefaults {
   public static final String DEFAULT_CONTACT_POINT_HOST = "127.0.0.1";
   public static final int DEFAULT_CONTACT_POINT_PORT = 26502;
 
+  public static final int DEFAULT_SO_SNDBUF = 1024;
+  public static final int DEFAULT_SO_RCVBUF = 1024;
+  public static final int DEFAULT_BROKER_SO_SNDBUF = 1024;
+  public static final int DEFAULT_BROKER_SO_RCVBUF = 1024;
+  public static final int DEFAULT_GATEWAY_SO_SNDBUF = 1024;
+  public static final int DEFAULT_GATEWAY_SO_RCVBUF = 1024;
   public static final String DEFAULT_MAX_MESSAGE_SIZE = "4M";
   public static final int DEFAULT_MAX_MESSAGE_COUNT = 16;
   public static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(15);

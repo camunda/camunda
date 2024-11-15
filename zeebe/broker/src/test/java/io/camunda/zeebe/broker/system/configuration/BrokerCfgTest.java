@@ -52,6 +52,8 @@ public final class BrokerCfgTest {
   private static final String ZEEBE_BROKER_NETWORK_ADVERTISED_HOST =
       "zeebe.broker.network.advertisedHost";
   private static final String ZEEBE_BROKER_NETWORK_PORT_OFFSET = "zeebe.broker.network.portOffset";
+  private static final String ZEEBE_BROKER_NETWORK_SO_SNDBUF = "zeebe.broker.network.so_sndbuf";
+  private static final String ZEEBE_BROKER_NETWORK_SO_RCVBUF = "zeebe.broker.network.so_rcvbuf";
   private static final String ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED =
       "zeebe.broker.executionMetricsExporterEnabled";
 
