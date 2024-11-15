@@ -6,11 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {ComponentProps} from 'react';
+
+import {EntityListEntity} from 'types';
+
 import {shallow} from 'enzyme';
 import CopyModal from './CopyModal';
 
-const props = {
-  entity: {name: 'Test Dashboard', entityType: 'dashboard', data: {subEntityCounts: {report: 2}}},
+const props: ComponentProps<typeof CopyModal> = {
+  entity: {
+    name: 'Test Dashboard',
+    entityType: 'dashboard',
+    data: {subEntityCounts: {report: 2}},
+  } as EntityListEntity,
   collection: 'aCollectionId',
   onConfirm: jest.fn(),
   onClose: jest.fn(),
@@ -25,7 +33,10 @@ it('should render properly', () => {
 
 it('should hide option to move the copy for collection entities', () => {
   const node = shallow(
-    <CopyModal {...props} entity={{name: 'collection', entityType: 'collection'}} />
+    <CopyModal
+      {...props}
+      entity={{name: 'collection', entityType: 'collection'} as EntityListEntity}
+    />
   );
 
   expect(node.find('MoveCopy')).not.toExist();
@@ -33,7 +44,11 @@ it('should hide option to move the copy for collection entities', () => {
 
 it('should call the onConfirm action', () => {
   const node = shallow(
-    <CopyModal {...props} jumpToEntity entity={{name: 'collection', entityType: 'collection'}} />
+    <CopyModal
+      {...props}
+      jumpToEntity
+      entity={{name: 'collection', entityType: 'collection'} as EntityListEntity}
+    />
   );
 
   node.find('.confirm').simulate('click');
