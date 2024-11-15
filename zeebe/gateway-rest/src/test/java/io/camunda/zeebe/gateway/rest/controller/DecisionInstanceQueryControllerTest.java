@@ -355,7 +355,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "io.camunda.service.exception.ForbiddenException",
                   "status": 403,
-                  "detail": "Unauthorized to perform operation 'READ_INSTANCE' on resource 'DECISION_DEFINITION'",
+                  "detail": "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'DECISION_DEFINITION'",
                   "instance": "/v2/decision-instances/123"
                 }""");
   }

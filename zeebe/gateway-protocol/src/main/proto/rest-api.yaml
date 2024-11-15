@@ -3747,10 +3747,14 @@ components:
       description: Specifies the type of permissions.
       enum:
         - CREATE
+        - CREATE_PROCESS_INSTANCE
+        - CREATE_DECISION_INSTANCE
         - READ
-        - READ_INSTANCE
+        - READ_PROCESS_INSTANCE
         - READ_USER_TASK
         - UPDATE
+        - UPDATE_PROCESS_INSTANCE
+        - UPDATE_USER_TASK
         - DELETE
         - DELETE_PROCESS
         - DELETE_DRD

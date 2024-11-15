@@ -106,7 +106,9 @@ public class UserTaskCompleteAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.UPDATE, List.of(PROCESS_ID)));
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.UPDATE_USER_TASK,
+            List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when then
@@ -137,7 +139,7 @@ public class UserTaskCompleteAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'UPDATE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
+              "Unauthorized to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
               PROCESS_ID);
     }
   }

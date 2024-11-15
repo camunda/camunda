@@ -75,7 +75,9 @@ public final class DefaultJobCommandPreconditionGuard {
       final TypedRecord<JobRecord> command, final JobRecord job) {
     final var request =
         new AuthorizationRequest(
-                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(job.getBpmnProcessId());
 
     if (authCheckBehavior.isAuthorized(request)) {

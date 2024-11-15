@@ -114,7 +114,9 @@ public class JobCompleteAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.UPDATE, List.of(PROCESS_ID)));
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
+            List.of(PROCESS_ID)));
     final var processInstanceKey =
         defaultUserClient
             .newCreateInstanceCommand()
@@ -168,7 +170,7 @@ public class JobCompleteAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'UPDATE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
+              "Unauthorized to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
               PROCESS_ID);
     }
   }
