@@ -12,11 +12,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 
-public class DeploymentCreatedV2Applier
+public class DeploymentCreatedV3Applier
     implements TypedEventApplier<DeploymentIntent, DeploymentRecord> {
   private final MutableDeploymentState deploymentState;
 
-  public DeploymentCreatedV2Applier(final MutableDeploymentState deploymentState) {
+  public DeploymentCreatedV3Applier(final MutableDeploymentState deploymentState) {
     this.deploymentState = deploymentState;
   }
 
