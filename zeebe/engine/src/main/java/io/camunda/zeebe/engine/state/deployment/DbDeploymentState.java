@@ -14,6 +14,7 @@ import io.camunda.zeebe.db.impl.DbCompositeKey;
 import io.camunda.zeebe.db.impl.DbInt;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
+import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -28,6 +29,7 @@ import org.slf4j.Logger;
 
 public final class DbDeploymentState implements MutableDeploymentState {
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
+  private static final String DEPLOYMENTS_RECREATED_KEY = "DEPLOYMENTS_RECREATED";
 
   private final DbLong deploymentKey;
   private final DbInt partitionKey;
@@ -36,6 +38,9 @@ public final class DbDeploymentState implements MutableDeploymentState {
 
   private final DeploymentRaw deploymentRaw;
   private final ColumnFamily<DbLong, DeploymentRaw> deploymentRawColumnFamily;
+
+  private final DbString deploymentsRecreatedKey;
+  private final ColumnFamily<DbString, DbNil> deploymentsRecreatedColumnFamily;
 
   public DbDeploymentState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
@@ -54,6 +59,11 @@ public final class DbDeploymentState implements MutableDeploymentState {
     deploymentRawColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.DEPLOYMENT_RAW, transactionContext, deploymentKey, deploymentRaw);
+
+    deploymentsRecreatedKey = new DbString();
+    deploymentsRecreatedColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.DEFAULT, transactionContext, deploymentsRecreatedKey, DbNil.INSTANCE);
   }
 
   @Override
@@ -84,6 +94,12 @@ public final class DbDeploymentState implements MutableDeploymentState {
   }
 
   @Override
+  public void markALlDeploymentsAsStored() {
+    deploymentsRecreatedKey.wrapString(DEPLOYMENTS_RECREATED_KEY);
+    deploymentsRecreatedColumnFamily.insert(deploymentsRecreatedKey, DbNil.INSTANCE);
+  }
+
+  @Override
   public boolean hasPendingDeploymentDistribution(final long deploymentKey) {
     this.deploymentKey.wrapLong(deploymentKey);
 
@@ -103,6 +119,12 @@ public final class DbDeploymentState implements MutableDeploymentState {
     this.deploymentKey.wrapLong(deploymentKey);
     partitionKey.wrapInt(partitionId);
     return pendingDeploymentColumnFamily.exists(deploymentPartitionKey);
+  }
+
+  @Override
+  public boolean hasStoredAllDeployments() {
+    deploymentsRecreatedKey.wrapString(DEPLOYMENTS_RECREATED_KEY);
+    return deploymentsRecreatedColumnFamily.exists(deploymentsRecreatedKey);
   }
 
   @Override
