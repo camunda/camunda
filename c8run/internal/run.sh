@@ -36,35 +36,34 @@ export CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED=false
 detachProcess=false
 
 function stop {
-  if [ -s "$PID_PATH" ]; then
-    # stop Camunda Run if the process is still running
-    kill $(cat "$PID_PATH")
+  # Helper function to stop a process and remove its PID file
+  stop_process() {
+    local pid_path=$1
+    local process_name=$2
 
-    # remove process ID file
-    rm "$PID_PATH"
+    if [ -s "$pid_path" ]; then
+      # Stop the process if it is still running
+      kill $(cat "$pid_path")
 
-    echo "Camunda Run is shutting down."
-  fi
-  if [ -s "$ELASTIC_PID_PATH" ]; then
-    # stop Camunda Run if the process is still running
-    kill $(cat "$ELASTIC_PID_PATH")
+      # Remove the process ID file
+      rm "$pid_path"
 
-    # remove process ID file
-    rm "$ELASTIC_PID_PATH"
+      echo "$process_name is shutting down."
+    fi
+  }
 
-    echo "Elasticsearch is shutting down."
-  fi
+  # Stop Camunda Run
+  stop_process "$PID_PATH" "Camunda Run"
 
-  if [ -s "$CONNECTORS_PID_PATH" ]; then
-    kill $(cat "$CONNECTORS_PID_PATH")
-    rm "$CONNECTORS_PID_PATH"
-    echo "Connectors is shutting down."
-  fi
+  # Stop Elasticsearch
+  stop_process "$ELASTIC_PID_PATH" "Elasticsearch"
 
-  if [ -s "$POLLING_CAMUNDA_PID_PATH" ]; then
-    kill $(cat "$POLLING_CAMUNDA_PID_PATH")
-    rm "$POLLING_CAMUNDA_PID_PATH"
-  fi
+  # Stop Connectors
+  stop_process "$CONNECTORS_PID_PATH" "Connectors"
+
+  # Stop Polling Camunda
+  stop_process "$POLLING_CAMUNDA_PID_PATH" "Polling Camunda"
+
   exit
 }
 
