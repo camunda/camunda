@@ -10,7 +10,9 @@ package io.camunda.operate.elasticsearch;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestSupport;
+import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.elasticsearch.ElasticsearchRecordsReader;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -34,6 +36,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -41,11 +44,14 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   private static final ElasticsearchExporter EXPORTER = new ElasticsearchExporter();
   private static final ElasticsearchExporterConfiguration CONFIG =
       new ElasticsearchExporterConfiguration();
+  @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @Autowired public SchemaManager schemaManager;
   @Autowired protected ZeebeImporter zeebeImporter;
   @Autowired private RestHighLevelClient esClient;
   @Autowired private OperateProperties operateProperties;
+  @Autowired private RecordsReaderHolder recordsReaderHolder;
   private final ProtocolFactory factory = new ProtocolFactory();
+  private ImportPositionIndex importPositionIndex;
 
   @Before
   public void beforeEach() {
@@ -66,6 +72,11 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
             .setConfiguration(new ExporterTestConfiguration<>("elastic", CONFIG));
     EXPORTER.configure(exporterTestContext);
     EXPORTER.open(new ExporterTestController());
+
+    importPositionIndex =
+        new ImportPositionIndex(operateProperties.getElasticsearch().getIndexPrefix(), true);
+
+    recordsReaderHolder.resetCountEmptyBatches();
   }
 
   @Test
@@ -98,43 +109,91 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     // the import position for
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
-        .until(
-            () -> {
-              final var hits =
-                  Arrays.stream(
-                          esClient
-                              .search(
-                                  new SearchRequest(
-                                      new ImportPositionIndex(
-                                              operateProperties.getElasticsearch().getIndexPrefix(),
-                                              true)
-                                          .getFullQualifiedName()),
-                                  RequestOptions.DEFAULT)
-                              .getHits()
-                              .getHits())
-                      .map(SearchHit::getSourceAsMap)
-                      .toList();
-              if (hits.isEmpty()) {
-                return false;
-              }
-              return (Boolean)
-                  hits.stream()
-                      .filter(hit -> hit.get(ImportPositionIndex.ID).equals("1-process-instance"))
-                      .findFirst()
-                      .orElseThrow()
-                      .get(ImportPositionIndex.COMPLETED);
-            });
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
   }
+
+  @Test
+  public void shouldMarkMultiplePositionIndexAsCompletedIf870RecordReceived() throws IOException {
+    final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var decisionEvalRecord = generateRecord(ValueType.DECISION_EVALUATION, "8.6.0", 1);
+    final var decisionRecord = generateRecord(ValueType.DECISION, "8.6.0", 1);
+    EXPORTER.export(processInstanceRecord);
+    EXPORTER.export(decisionEvalRecord);
+    EXPORTER.export(decisionRecord);
+
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+    zeebeImporter.performOneRoundOfImport();
+
+    // when
+    final var newVersionProcessInstanceRecord =
+        generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(newVersionProcessInstanceRecord);
+    final var newVersionDecisionEvalRecord =
+        generateRecord(ValueType.DECISION_EVALUATION, "8.7.0", 1);
+    EXPORTER.export(newVersionDecisionEvalRecord);
+
+    for (int i = 0;
+        i <= ElasticsearchRecordsReader.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
+        i++) {
+      // simulate existing decision records left to process so it is not marked as completed
+      final var decisionRecord2 = generateRecord(ValueType.DECISION, "8.6.0", 1);
+      EXPORTER.export(decisionRecord2);
+      esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () ->
+                isRecordReaderIsCompleted("1-process-instance")
+                    && isRecordReaderIsCompleted("1-decision-evaluation"));
+    Awaitility.await()
+        .during(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(11))
+        .until(() -> !isRecordReaderIsCompleted("1-decision"));
+  }
+
+  @Test
+  public void shouldMarkMultiplePartitionsAsCompletedIfTheyReceiveAn870Record() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    EXPORTER.export(record);
+    EXPORTER.export(partitionTwoRecord);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    zeebeImporter.performOneRoundOfImport();
+
+    // when
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    EXPORTER.export(record2);
+    EXPORTER.export(partitionTwoRecord2);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    for (int i = 0;
+        i <= ElasticsearchRecordsReader.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
+        i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // the import position for
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("2-process-instance"));
+  }
+
   private boolean isRecordReaderIsCompleted(final String partitionIdFieldValue) throws IOException {
     final var hits =
         Arrays.stream(
                 esClient
                     .search(
-                        new SearchRequest(
-                            new ImportPositionIndex(
-                                    operateProperties.getElasticsearch().getIndexPrefix(), true)
-                                .getFullQualifiedName()),
+                        new SearchRequest(importPositionIndex.getFullQualifiedName()),
                         RequestOptions.DEFAULT)
                     .getHits()
                     .getHits())

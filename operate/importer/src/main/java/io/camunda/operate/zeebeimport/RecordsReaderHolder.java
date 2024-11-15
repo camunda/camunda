@@ -13,6 +13,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -77,6 +78,11 @@ public class RecordsReaderHolder {
   public int incrementEmptyBatches(final int partitionId, final ImportValueType importValueType) {
     final var reader = getRecordsReader(partitionId, importValueType);
     return countEmptyBatchesAfterImportingDone.merge(reader, 1, Integer::sum);
+  }
+
+  @VisibleForTesting
+  public void resetCountEmptyBatches() {
+    countEmptyBatchesAfterImportingDone.replaceAll((k, v) -> v = 0);
   }
 
   public RecordsReader getRecordsReader(
