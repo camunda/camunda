@@ -132,7 +132,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-    final String IndexWildCard = "^" + connectConfiguration.getIndexPrefix() + INDEX_WILDCARD;
+    final String indexWildCard = "^" + connectConfiguration.getIndexPrefix() + INDEX_WILDCARD;
     final List<String> indices = new ArrayList<>();
 
     try {
@@ -143,7 +143,7 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
               response ->
                   response.valueBody().stream()
                       .map(IndicesRecord::index)
-                      .filter(index -> index.matches(IndexWildCard))
+                      .filter(index -> index.matches(indexWildCard))
                       .forEach(indices::add))
           .join();
     } catch (final IOException e) {
