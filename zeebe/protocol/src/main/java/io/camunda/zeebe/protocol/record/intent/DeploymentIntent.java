@@ -32,7 +32,8 @@ public enum DeploymentIntent implements Intent {
   FULLY_DISTRIBUTED((short) 4),
 
   RECONSTRUCT((short) 5),
-  RECONSTRUCTED((short) 6);
+  RECONSTRUCTED((short) 6),
+  RECONSTRUCTED_ALL((short) 7);
 
   private final short value;
 
@@ -60,6 +61,8 @@ public enum DeploymentIntent implements Intent {
         return RECONSTRUCT;
       case 6:
         return RECONSTRUCTED;
+      case 7:
+        return RECONSTRUCTED_ALL;
       default:
         return UNKNOWN;
     }
@@ -77,6 +80,7 @@ public enum DeploymentIntent implements Intent {
       case DISTRIBUTED:
       case FULLY_DISTRIBUTED:
       case RECONSTRUCTED:
+      case RECONSTRUCTED_ALL:
         return true;
       default:
         return false;
