@@ -7,20 +7,20 @@
  */
 package io.camunda.operate.store.opensearch;
 
-import static io.camunda.operate.schema.indices.ImportPositionIndex.META_CONCURRENCY_MODE;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex.META_CONCURRENCY_MODE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping;
-import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.Either;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.util.List;
@@ -42,7 +42,7 @@ import org.springframework.stereotype.Component;
 public class OpensearchImportStore implements ImportStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchImportStore.class);
-  @Autowired private ImportPositionIndex importPositionType;
+  private final ImportPositionIndex importPositionType = new ImportPositionIndex("", false);
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   @Autowired

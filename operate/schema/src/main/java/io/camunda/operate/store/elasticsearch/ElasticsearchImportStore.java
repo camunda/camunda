@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static io.camunda.operate.schema.indices.ImportPositionIndex.META_CONCURRENCY_MODE;
 import static io.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex.META_CONCURRENCY_MODE;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -16,10 +16,10 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.IndexMapping;
-import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.util.HashMap;
@@ -49,7 +49,6 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchImportStore implements ImportStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchImportStore.class);
-  @Autowired private ImportPositionIndex importPositionType;
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
@@ -71,7 +70,7 @@ public class ElasticsearchImportStore implements ImportStore {
             termQuery(ImportPositionIndex.PARTITION_ID, partitionId));
 
     final SearchRequest searchRequest =
-        new SearchRequest(importPositionType.getAlias())
+        new SearchRequest(getImportPositionType().getAlias())
             .source(new SearchSourceBuilder().query(queryBuilder).size(10));
 
     final SearchResponse searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
@@ -133,7 +132,7 @@ public class ElasticsearchImportStore implements ImportStore {
 
   @Override
   public boolean getConcurrencyMode() {
-    final String indexName = importPositionType.getFullQualifiedName();
+    final String indexName = getImportPositionType().getFullQualifiedName();
     final Map<String, IndexMapping> indexMappings =
         retryElasticsearchClient.getIndexMappings(indexName);
     if (indexMappings.get(indexName).getMetaProperties() == null) {
@@ -148,7 +147,7 @@ public class ElasticsearchImportStore implements ImportStore {
   @Override
   public void setConcurrencyMode(final boolean concurrencyMode) {
     retryElasticsearchClient.updateMetaField(
-        importPositionType, META_CONCURRENCY_MODE, concurrencyMode);
+        getImportPositionType(), META_CONCURRENCY_MODE, concurrencyMode);
   }
 
   private void withImportPositionTimer(final Callable<Void> action) throws Exception {
@@ -197,7 +196,7 @@ public class ElasticsearchImportStore implements ImportStore {
   private Either<Exception, UpdateRequest> preparePostImportUpdateRequest(
       final ImportPositionEntity position) {
     try {
-      final var index = importPositionType.getFullQualifiedName();
+      final var index = getImportPositionType().getFullQualifiedName();
       final var source = objectMapper.writeValueAsString(position);
       final var updateFields = new HashMap<String, Object>();
 
@@ -226,7 +225,7 @@ public class ElasticsearchImportStore implements ImportStore {
   private Either<Exception, UpdateRequest> prepareUpdateRequest(
       final ImportPositionEntity position) {
     try {
-      final var index = importPositionType.getFullQualifiedName();
+      final var index = getImportPositionType().getFullQualifiedName();
       final var source = objectMapper.writeValueAsString(position);
       final var updateFields = new HashMap<String, Object>();
 
@@ -252,5 +251,9 @@ public class ElasticsearchImportStore implements ImportStore {
           e);
       return Either.left(e);
     }
+  }
+
+  private ImportPositionIndex getImportPositionType() {
+    return new ImportPositionIndex(operateProperties.getElasticsearch().getIndexPrefix(), true);
   }
 }

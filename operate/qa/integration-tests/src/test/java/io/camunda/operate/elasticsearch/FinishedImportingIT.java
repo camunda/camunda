@@ -9,11 +9,11 @@ package io.camunda.operate.elasticsearch;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
-import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.TestSupport;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.elasticsearch.ElasticsearchRecordsReader;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -44,7 +44,6 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Autowired protected ZeebeImporter zeebeImporter;
   @Autowired private RestHighLevelClient esClient;
   @Autowired private OperateProperties operateProperties;
-  @Autowired private ImportPositionIndex importPositionType;
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @Before
@@ -104,7 +103,11 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
                   Arrays.stream(
                           esClient
                               .search(
-                                  new SearchRequest(importPositionType.getFullQualifiedName()),
+                                  new SearchRequest(
+                                      new ImportPositionIndex(
+                                              operateProperties.getElasticsearch().getIndexPrefix(),
+                                              true)
+                                          .getFullQualifiedName()),
                                   RequestOptions.DEFAULT)
                               .getHits()
                               .getHits())

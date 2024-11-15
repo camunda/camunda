@@ -5,18 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.schema.indices;
+package io.camunda.webapps.schema.descriptors.operate.index;
 
-import io.camunda.operate.conditions.DatabaseInfo;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.backup.Prio1Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
-import jakarta.annotation.PostConstruct;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-@Component
-public class ImportPositionIndex extends OperateIndexDescriptor implements Prio1Backup {
+public class ImportPositionIndex extends OperateIndexDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "import-position";
 
@@ -30,16 +24,8 @@ public class ImportPositionIndex extends OperateIndexDescriptor implements Prio1
   public static final String FIELD_INDEX_NAME = "indexName";
   public static final String COMPLETED = "completed";
 
-  @Autowired private OperateProperties properties;
-
-  public ImportPositionIndex() {
-    super(null, false);
-  }
-
-  @PostConstruct
-  public void init() {
-    indexPrefix = properties.getIndexPrefix(DatabaseInfo.getCurrent());
-    isElasticsearch = DatabaseInfo.isElasticsearch();
+  public ImportPositionIndex(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
   }
 
   @Override
@@ -50,10 +36,5 @@ public class ImportPositionIndex extends OperateIndexDescriptor implements Prio1
   @Override
   public String getVersion() {
     return "8.3.0";
-  }
-
-  @Override
-  public String getIndexPrefix() {
-    return properties.getIndexPrefix();
   }
 }

@@ -17,7 +17,6 @@ import io.camunda.operate.connect.OpensearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.elasticsearch.ElasticsearchSchemaManager;
-import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.schema.opensearch.OpensearchSchemaManager;
 import io.camunda.operate.schema.util.SchemaTestHelper;
 import io.camunda.operate.schema.util.elasticsearch.ElasticsearchSchemaTestHelper;
@@ -28,6 +27,7 @@ import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.OpensearchImportStore;
 import io.camunda.operate.util.IndexPrefixHolder;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +39,6 @@ import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(
     classes = {
-      ImportPositionIndex.class,
       IndexTemplateDescriptorsConfigurator.class,
       IndexPrefixHolder.class,
       ElasticsearchSchemaManager.class,
@@ -65,8 +64,6 @@ public class ImportStoreIT extends AbstractSchemaIT {
 
   @Autowired public SchemaManager schemaManager;
 
-  @Autowired public ImportPositionIndex importPositionIndex;
-
   @Autowired public SchemaTestHelper schemaHelper;
 
   @MockBean public MeterRegistry meterRegistry;
@@ -84,7 +81,8 @@ public class ImportStoreIT extends AbstractSchemaIT {
   @Test
   public void setAndGetConcurrencyMode() {
     schemaManager.createIndex(
-        importPositionIndex, "/schema/elasticsearch/create/index/operate-import-position.json");
+        new ImportPositionIndex("", false),
+        "/schema/elasticsearch/create/index/operate-import-position.json");
 
     assertThat(importStore.getConcurrencyMode()).isFalse();
 
