@@ -32,6 +32,7 @@ import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GroupDeletedHandler;
+import io.camunda.exporter.handlers.GroupEntityAddedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
@@ -434,7 +435,7 @@ public class CamundaExporterHandlerIT {
   }
 
   @TestTemplate
-  void shouldExportGroupCreatedUsingGroupCreateUpdateHandler(
+  void shouldExportGroupCreatedUsingGroupCreatedUpdatedHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     final var handler = getHandler(config, GroupCreatedUpdatedHandler.class);
@@ -443,7 +444,7 @@ public class CamundaExporterHandlerIT {
   }
 
   @TestTemplate
-  void shouldExportGroupUpdatedUsingGroupCreateUpdateHandler(
+  void shouldExportGroupUpdatedUsingGroupCreatedUpdatedHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     final var handler = getHandler(config, GroupCreatedUpdatedHandler.class);
@@ -452,12 +453,27 @@ public class CamundaExporterHandlerIT {
   }
 
   @TestTemplate
-  void shouldExportUsingGroupDeleteHandler(
+  void shouldExportUsingGroupDeletedHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
     final var handler = getHandler(config, GroupDeletedHandler.class);
     basicAssertWhereHandlerDeletesDefaultEntity(
         handler, config, clientAdapter, groupRecordGenerator(handler, GroupIntent.DELETED));
+  }
+
+  @TestTemplate
+  void shouldExportUsingGroupEntityAddedHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var createHandler = getHandler(config, GroupCreatedUpdatedHandler.class);
+    final var updateHandler = getHandler(config, GroupEntityAddedHandler.class);
+    final var createGroupRecord = groupRecordGenerator(createHandler, GroupIntent.CREATED);
+    final var updateGroupRecord =
+        groupRecordGenerator(updateHandler, GroupIntent.ENTITY_ADDED, createGroupRecord.getKey());
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        createHandler, config, clientAdapter, createGroupRecord);
+    basicAssertWhereHandlerUpdatesDefaultEntity(
+        updateHandler, config, clientAdapter, updateGroupRecord);
   }
 
   @SuppressWarnings("unchecked")
@@ -529,6 +545,34 @@ public class CamundaExporterHandlerIT {
         .describedAs(
             "Handler [%s] correctly handles a [%s] record",
             handler.getClass().getSimpleName(), handler.getHandledValueType())
+        .isEqualTo(expectedEntity);
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue>
+      void basicAssertWhereHandlerUpdatesDefaultEntity(
+          final ExportHandler<S, T> updateHandler,
+          final ExporterConfiguration config,
+          final SearchClientAdapter clientAdapter,
+          final Record<T> updateRecord)
+          throws IOException {
+
+    // given
+    final var exporter = getExporter(config, updateHandler);
+
+    final var expectedEntity = getExpectedEntity(updateRecord, updateHandler);
+
+    // when
+    exporter.export(updateRecord);
+
+    // then
+    final var responseEntity =
+        clientAdapter.get(
+            expectedEntity.getId(), updateHandler.getIndexName(), updateHandler.getEntityType());
+
+    assertThat(responseEntity)
+        .describedAs(
+            "Handler [%s] correctly updates a [%s] record",
+            updateHandler.getClass().getSimpleName(), updateHandler.getHandledValueType())
         .isEqualTo(expectedEntity);
   }
 
@@ -660,6 +704,11 @@ public class CamundaExporterHandlerIT {
 
   private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> groupRecordGenerator(
       final ExportHandler<S, T> handler, final GroupIntent intent) {
+    return groupRecordGenerator(handler, intent, -1L);
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> groupRecordGenerator(
+      final ExportHandler<S, T> handler, final GroupIntent intent, final Long existingGroupKey) {
     return recordGenerator(
         handler,
         () -> {
@@ -667,12 +716,17 @@ public class CamundaExporterHandlerIT {
               ImmutableGroupRecordValue.builder()
                   .from(factory.generateObject(GroupRecordValue.class))
                   .build();
+
           return factory.generateRecord(
               ValueType.GROUP,
-              r ->
-                  r.withValue((T) groupRecordValue)
-                      .withIntent(intent)
-                      .withTimestamp(System.currentTimeMillis()));
+              r -> {
+                if (existingGroupKey > 0) {
+                  r.withKey(existingGroupKey);
+                }
+                return r.withValue((T) groupRecordValue)
+                    .withIntent(intent)
+                    .withTimestamp(System.currentTimeMillis());
+              });
         });
   }
 
