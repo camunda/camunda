@@ -80,15 +80,17 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
     return sendBrokerRequest(new BrokerRoleDeleteRequest(roleKey));
   }
 
-  public void addMember(final Long roleKey, final EntityType entityType, final long entityKey) {
-    sendBrokerRequest(
+  public CompletableFuture<?> addMember(
+      final Long roleKey, final EntityType entityType, final long entityKey) {
+    return sendBrokerRequest(
         BrokerRoleEntityRequest.createAddRequest()
             .setRoleKey(roleKey)
             .setEntity(entityType, entityKey));
   }
 
-  public void removeMember(final Long roleKey, final EntityType entityType, final long entityKey) {
-    sendBrokerRequest(
+  public CompletableFuture<?> removeMember(
+      final Long roleKey, final EntityType entityType, final long entityKey) {
+    return sendBrokerRequest(
         BrokerRoleEntityRequest.createRemoveRequest()
             .setRoleKey(roleKey)
             .setEntity(entityType, entityKey));
