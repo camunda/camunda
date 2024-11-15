@@ -13,6 +13,18 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.DECISION_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.DECISION_NAME;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.DECISION_TYPE;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.DECISION_VERSION;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.EVALUATION_DATE;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.EVALUATION_FAILURE;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.TENANT_ID;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -58,11 +70,11 @@ public final class DecisionInstanceFilterTransformer
   }
 
   private SearchQuery getKeysQuery(final List<Long> keys) {
-    return longTerms("key", keys);
+    return longTerms(KEY, keys);
   }
 
   private SearchQuery getIdsQuery(final List<String> ids) {
-    return stringTerms("id", ids);
+    return stringTerms(ID, ids);
   }
 
   private SearchQuery getStatesQuery(final List<DecisionInstanceState> states) {
@@ -71,19 +83,19 @@ public final class DecisionInstanceFilterTransformer
 
   private List<SearchQuery> getEvaluationDateQuery(
       final List<Operation<OffsetDateTime>> evaluationDateOperations) {
-    return dateTimeOperations("evaluationDate", evaluationDateOperations);
+    return dateTimeOperations(EVALUATION_DATE, evaluationDateOperations);
   }
 
   private SearchQuery getEvaluationFailuresQuery(final List<String> evaluationFailures) {
-    return stringTerms("evaluationFailure", evaluationFailures);
+    return stringTerms(EVALUATION_FAILURE, evaluationFailures);
   }
 
   private SearchQuery getProcessDefinitionKeysQuery(final List<Long> processDefinitionKeys) {
-    return longTerms("processDefinitionKey", processDefinitionKeys);
+    return longTerms(PROCESS_DEFINITION_KEY, processDefinitionKeys);
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
-    return longTerms("processInstanceKey", processInstanceKeys);
+    return longTerms(PROCESS_INSTANCE_KEY, processInstanceKeys);
   }
 
   private List<SearchQuery> getDecisionDefinitionKeysQuery(
@@ -96,30 +108,30 @@ public final class DecisionInstanceFilterTransformer
                   return new Operation<>(op.operator(), values);
                 })
             .toList();
-    return stringOperations("decisionDefinitionId", stringOperations);
+    return stringOperations(DECISION_DEFINITION_ID, stringOperations);
   }
 
   private SearchQuery getDecisionDefinitionIdsQuery(final List<String> decisionDefinitionIds) {
-    return stringTerms("decisionId", decisionDefinitionIds);
+    return stringTerms(DECISION_ID, decisionDefinitionIds);
   }
 
   private SearchQuery getDecisionDefinitionNamesQuery(final List<String> decisionDefinitionNames) {
-    return stringTerms("decisionName", decisionDefinitionNames);
+    return stringTerms(DECISION_NAME, decisionDefinitionNames);
   }
 
   private SearchQuery getDecisionDefinitionVersionsQuery(
       final List<Integer> decisionDefinitionVersions) {
-    return intTerms("decisionVersion", decisionDefinitionVersions);
+    return intTerms(DECISION_VERSION, decisionDefinitionVersions);
   }
 
   private SearchQuery getDecisionDefinitionTypesQuery(
       final List<DecisionDefinitionType> decisionTypes) {
     return stringTerms(
-        "decisionType",
+        DECISION_TYPE,
         decisionTypes != null ? decisionTypes.stream().map(Enum::name).toList() : null);
   }
 
   private SearchQuery getTenantIdsQuery(final List<String> tenantIds) {
-    return stringTerms("tenantId", tenantIds);
+    return stringTerms(TENANT_ID, tenantIds);
   }
 }
