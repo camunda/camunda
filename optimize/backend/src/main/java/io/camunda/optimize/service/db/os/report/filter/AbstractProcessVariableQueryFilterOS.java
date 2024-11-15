@@ -129,7 +129,7 @@ public abstract class AbstractProcessVariableQueryFilterOS extends AbstractVaria
       final String variableName, final String valueToContain) {
     final String lowerCaseValue = valueToContain.toLowerCase(Locale.ENGLISH);
     final Query filter =
-        (lowerCaseValue.length() > MAX_GRAM)
+        lowerCaseValue.length() > MAX_GRAM
             /*
               using the slow wildcard query for uncommonly large filter strings (> 10 chars)
             */
@@ -208,7 +208,7 @@ public abstract class AbstractProcessVariableQueryFilterOS extends AbstractVaria
         new ArrayList<>(
             List.of(
                 term(getNestedVariableNameField(), dto.getName()),
-                term(getNestedVariableNameField(), dto.getType().getId())));
+                term(getNestedVariableTypeField(), dto.getType().getId())));
 
     Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
     switch (data.getOperator()) {
