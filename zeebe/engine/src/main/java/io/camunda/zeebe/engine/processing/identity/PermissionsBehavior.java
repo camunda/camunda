@@ -28,6 +28,8 @@ public class PermissionsBehavior {
       "Expected to find owner with key: '%d', but none was found";
   public static final String PERMISSION_ALREADY_EXISTS_MESSAGE =
       "Expected to add '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' already exist. Existing resource ids are: '%s'";
+  public static final String PERMISSION_NOT_FOUND_MESSAGE =
+      "Expected to remove '%s' permission for resource '%s' and resource identifiers '%s' for owner '%s', but this permission for resource identifiers '%s' is not found. Existing resource ids are: '%s'";
 
   private final AuthorizationState authorizationState;
   private final AuthorizationCheckBehavior authCheckBehavior;
@@ -96,6 +98,37 @@ public class PermissionsBehavior {
                     record.getOwnerKey(),
                     duplicates,
                     currentResourceIds)));
+      }
+    }
+
+    return Either.right(record);
+  }
+
+  public Either<Rejection, AuthorizationRecord> permissionDoesNotExist(
+      final AuthorizationRecord record) {
+    for (final PermissionValue permission : record.getPermissions()) {
+      final var currentResourceIdentifiers =
+          authCheckBehavior.getAuthorizedResourceIdentifiers(
+              record.getOwnerKey(),
+              record.getOwnerType(),
+              record.getResourceType(),
+              permission.getPermissionType());
+
+      final var removedResourceIds = permission.getResourceIds();
+      if (!currentResourceIdentifiers.containsAll(removedResourceIds)) {
+        final var differences = new HashSet<>(removedResourceIds);
+        differences.removeAll(currentResourceIdentifiers);
+
+        return Either.left(
+            new Rejection(
+                RejectionType.NOT_FOUND,
+                PERMISSION_NOT_FOUND_MESSAGE.formatted(
+                    permission.getPermissionType(),
+                    record.getResourceType(),
+                    removedResourceIds,
+                    record.getOwnerKey(),
+                    differences,
+                    currentResourceIdentifiers)));
       }
     }
 
