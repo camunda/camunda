@@ -67,6 +67,7 @@ public class ImportStoreIT extends AbstractSchemaIT {
   @Autowired public SchemaTestHelper schemaHelper;
 
   @MockBean public MeterRegistry meterRegistry;
+  @Autowired private OperateProperties operateProperties;
 
   @BeforeEach
   public void createDefault() {
@@ -81,7 +82,7 @@ public class ImportStoreIT extends AbstractSchemaIT {
   @Test
   public void setAndGetConcurrencyMode() {
     schemaManager.createIndex(
-        new ImportPositionIndex("", false),
+        new ImportPositionIndex(operateProperties.getElasticsearch().getIndexPrefix(), true),
         "/schema/elasticsearch/create/index/operate-import-position.json");
 
     assertThat(importStore.getConcurrencyMode()).isFalse();
