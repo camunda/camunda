@@ -55,12 +55,9 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.SnapshotChunkId;
+import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.Either;
-import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
-import io.camunda.zeebe.util.SubClassOf;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.List;
@@ -71,13 +68,6 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 /** Passive state. */
 public class PassiveRole extends InactiveRole {
-
-  private static final SubClassOf<Exception> RETRYABLE_EXCEPTIONS =
-      SubClassOf.make(
-          CheckedJournalException.class,
-          JournalException.class,
-          UncheckedIOException.class,
-          IOException.class);
 
   private final ThrottledLogger throttledLogger = new ThrottledLogger(log, Duration.ofSeconds(5));
   private final SnapshotReplicationMetrics snapshotReplicationMetrics;
@@ -98,7 +88,7 @@ public class PassiveRole extends InactiveRole {
   @Override
   public CompletableFuture<RaftRole> start() {
     return super.start()
-        .thenCompose((ignored) -> truncateUncommittedEntriesWithRetries())
+        .thenRun((CheckedRunnable.toUnchecked(this::truncateUncommittedEntries)))
         .thenApply(v -> this);
   }
 
@@ -115,15 +105,6 @@ public class PassiveRole extends InactiveRole {
           e);
     }
     return super.stop();
-  }
-
-  /** Truncates uncommitted entries from the log. */
-  private CompletableFuture<Void> truncateUncommittedEntriesWithRetries() {
-    final var retryStrategy =
-        new ExponentialBackoffRetryDelay(Duration.ofSeconds(1), Duration.ofMillis(50));
-    return raft.getThreadContext()
-        .retryUntilSuccessful(
-            this::truncateUncommittedEntries, retryStrategy, RETRYABLE_EXCEPTIONS);
   }
 
   private void truncateUncommittedEntries() throws CheckedJournalException {
