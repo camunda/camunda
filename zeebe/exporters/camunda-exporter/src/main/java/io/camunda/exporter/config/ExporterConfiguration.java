@@ -18,7 +18,7 @@ public class ExporterConfiguration {
   private BulkConfiguration bulk = new BulkConfiguration();
   private RetentionConfiguration retention = new RetentionConfiguration();
   private ArchiverConfiguration archiver = new ArchiverConfiguration();
-  private ProcessCacheConfiguration processCache = new ProcessCacheConfiguration();
+  private CacheConfiguration processCache = new CacheConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -61,11 +61,11 @@ public class ExporterConfiguration {
     this.archiver = archiver;
   }
 
-  public ProcessCacheConfiguration getProcessCache() {
+  public CacheConfiguration getProcessCache() {
     return processCache;
   }
 
-  public void setProcessCache(final ProcessCacheConfiguration processCache) {
+  public void setProcessCache(final CacheConfiguration processCache) {
     this.processCache = processCache;
   }
 
@@ -332,7 +332,7 @@ public class ExporterConfiguration {
     }
   }
 
-  public static class ProcessCacheConfiguration {
+  public static class CacheConfiguration {
     private int maxCacheSize = 10000;
 
     public int getMaxCacheSize() {
@@ -345,7 +345,7 @@ public class ExporterConfiguration {
 
     @Override
     public String toString() {
-      return "ProcessCacheConfiguration{" + "cacheSize=" + maxCacheSize + '}';
+      return "CacheConfiguration{" + "cacheSize=" + maxCacheSize + '}';
     }
   }
 }
