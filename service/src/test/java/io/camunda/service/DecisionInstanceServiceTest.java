@@ -72,7 +72,7 @@ class DecisionInstanceServiceTest {
     final var result = mock(SearchQueryResult.class);
     when(result.total()).thenReturn(1L);
     final var decisionInstanceEntity = mock(DecisionInstanceEntity.class);
-    when(decisionInstanceEntity.decisionId()).thenReturn(decisionDefinitionKey);
+    when(decisionInstanceEntity.decisionDefinitionId()).thenReturn(decisionDefinitionKey);
     when(result.items()).thenReturn(List.of(decisionInstanceEntity));
     when(client.searchDecisionInstances(any())).thenReturn(result);
     when(securityContextProvider.isAuthorized(
@@ -124,7 +124,7 @@ class DecisionInstanceServiceTest {
     final var result = mock(SearchQueryResult.class);
     when(result.total()).thenReturn(1L);
     final var decisionInstanceEntity = mock(DecisionInstanceEntity.class);
-    when(decisionInstanceEntity.decisionId()).thenReturn(decisionDefinitionKey);
+    when(decisionInstanceEntity.decisionDefinitionId()).thenReturn(decisionDefinitionKey);
     when(result.items()).thenReturn(List.of(decisionInstanceEntity));
     when(client.searchDecisionInstances(any())).thenReturn(result);
     when(securityContextProvider.isAuthorized(

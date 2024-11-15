@@ -228,7 +228,9 @@ public final class SearchQueryRequestMapper {
         case "decisionInstanceId" -> builder.decisionInstanceId();
         case "state" -> builder.state();
         case "evaluationDate" -> builder.evaluationDate();
+        case "evaluationFailure" -> builder.evaluationFailure();
         case "processDefinitionKey" -> builder.processDefinitionKey();
+        case "processInstanceKey" -> builder.processInstanceKey();
         case "decisionDefinitionKey" -> builder.decisionDefinitionKey();
         case "decisionDefinitionId" -> builder.decisionDefinitionId();
         case "decisionDefinitionName" -> builder.decisionDefinitionName();

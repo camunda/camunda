@@ -16,11 +16,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public final class SearchQueryResultTransformer<T>
-    implements ServiceTransformer<SearchQueryResponse<T>, SearchQueryResult<T>> {
+public final class SearchQueryResultTransformer<T, R>
+    implements ServiceTransformer<SearchQueryResponse<T>, SearchQueryResult<R>> {
+  final ServiceTransformer<T, R> documentToEntityMapper;
+
+  public SearchQueryResultTransformer(final ServiceTransformer<T, R> documentToEntityMapper) {
+    this.documentToEntityMapper = documentToEntityMapper;
+  }
 
   @Override
-  public SearchQueryResult<T> apply(final SearchQueryResponse<T> value) {
+  public SearchQueryResult<R> apply(final SearchQueryResponse<T> value) {
     final var hits = value.hits();
     final var items = of(hits);
     final var size = hits.size();
@@ -32,7 +37,11 @@ public final class SearchQueryResultTransformer<T>
       sortValues = null;
     }
 
-    return new Builder<T>().total(value.totalHits()).sortValues(sortValues).items(items).build();
+    return new Builder<R>()
+        .total(value.totalHits())
+        .sortValues(sortValues)
+        .items(items.stream().map(documentToEntityMapper::apply).toList())
+        .build();
   }
 
   private List<T> of(final List<SearchQueryHit<T>> values) {
