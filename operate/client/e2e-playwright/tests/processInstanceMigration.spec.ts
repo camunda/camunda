@@ -191,7 +191,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(45);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(47);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -289,6 +289,12 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for multi instance task/i),
     ).toHaveValue('MultiInstanceTask');
+    await expect(
+      page.getByLabel(/target flow node for compensation task/i),
+    ).toHaveValue('CompensationTask');
+    await expect(
+      page.getByLabel(/target flow node for compensation boundary event/i),
+    ).toHaveValue('CompensationBoundaryEvent');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -790,11 +796,16 @@ test.describe.serial('Process Instance Migration', () => {
     /**
      * Escalation task
      */
-    const worker = createWorker('escalationWorker', true, {}, async (job) => {
-      const acknowledgement = await job.complete();
-      await worker.close();
-      return acknowledgement;
-    });
+    const escalationWorker = createWorker(
+      'escalationWorker',
+      true,
+      {},
+      async (job) => {
+        const acknowledgement = await job.complete();
+        await escalationWorker.close();
+        return acknowledgement;
+      },
+    );
 
     /**
      * Expect that the escalation boundary event has been migrated.
@@ -830,6 +841,45 @@ test.describe.serial('Process Instance Migration', () => {
       .getByRole('button', {name: /close/i})
       .click();
     await processInstancePage.diagram.clickFlowNode('Escalation event task'); // deselect
+
+    /**
+     * Compensation task
+     */
+    const compensationWorker = createWorker(
+      'compensationWorker',
+      true,
+      {},
+      async (job) => {
+        const acknowledgement = await job.complete();
+        await compensationWorker.close();
+        return acknowledgement;
+      },
+    );
+
+    /**
+     * Expect that the compensation boundary event has been migrated.
+     * After the compensationWorker completes the compensation task, it is expected,
+     * that the compensation catch event catches the token and runs the Undo task.
+     *
+     * When all these elements are selectable, it means that the compensation has been
+     * migrated successfully.
+     */
+    await expect(
+      await processInstancePage.diagram.getLabeledElement(
+        'Compensation boundary event',
+      ),
+    ).toHaveClass(/op-selectable/, {timeout: 20000});
+    await expect(
+      await processInstancePage.diagram.getLabeledElement(
+        'Compensation throw event',
+      ),
+    ).toHaveClass(/op-selectable/);
+    await expect(
+      processInstancePage.diagram.getFlowNode('Compensation task'),
+    ).toHaveClass(/op-selectable/);
+    await expect(processInstancePage.diagram.getFlowNode('Undo')).toHaveClass(
+      /op-selectable/,
+    );
   });
 
   test('Migrated message events', async ({
