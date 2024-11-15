@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.migration.dto;
+package io.camunda.migration.identity.dto;
 
 public record UserResourceAuthorization(
     String username, String resourceId, String resourceType, String permission) {}

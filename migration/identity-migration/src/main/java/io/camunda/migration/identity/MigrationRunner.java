@@ -5,26 +5,25 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.migration;
+package io.camunda.migration.identity;
 
 import static java.util.Arrays.asList;
 
+import io.camunda.migration.api.Migrator;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.UserServices;
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component
+@Component("identity-migrator")
 @Profile("identity-migration")
-public class MigrationRunner implements ApplicationRunner {
+public class MigrationRunner implements Migrator {
 
-  final UserServices userService;
-
-  final AuthorizationServices authorizationServices;
-
-  final AuthorizationMigrationHandler authorizationMigrationHandler;
+  ApplicationArguments args;
+  private final UserServices userService;
+  private final AuthorizationServices authorizationServices;
+  private final AuthorizationMigrationHandler authorizationMigrationHandler;
 
   public MigrationRunner(
       final UserServices userService,
@@ -36,7 +35,7 @@ public class MigrationRunner implements ApplicationRunner {
   }
 
   @Override
-  public void run(final ApplicationArguments args) throws Exception {
+  public void run() {
 
     final String command =
         args.containsOption("command") ? args.getOptionValues("command").getFirst() : "migrate";
@@ -49,5 +48,10 @@ public class MigrationRunner implements ApplicationRunner {
 
     // TODO: place holder to logic
     System.out.println("Migration Logic");
+  }
+
+  @Override
+  public void acceptArguments(final ApplicationArguments args) {
+    this.args = args;
   }
 }

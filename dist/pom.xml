@@ -209,11 +209,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>identity-migration</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>operate-data-generator</artifactId>
     </dependency>
 
