@@ -2271,7 +2271,7 @@
 
       <dependency>
         <groupId>io.camunda.migration</groupId>
-        <artifactId>migration-app</artifactId>
+        <artifactId>migration-api</artifactId>
         <version>${project.version}</version>
       </dependency>
 
