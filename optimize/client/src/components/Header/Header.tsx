@@ -34,12 +34,12 @@ export default function Header({noActions}: {noActions?: boolean}) {
   const location = useLocation();
   const {mightFail} = useErrorHandling();
   const {getBaseDocsUrl} = useDocs();
-  const userSideBar = useUserMenu();
   const {
     optimizeProfile,
     enterpriseMode,
     webappsLinks,
     optimizeDatabase,
+    optimizeVersion,
     onboarding,
     notificationsUrl,
     validLicense,
@@ -47,6 +47,9 @@ export default function Header({noActions}: {noActions?: boolean}) {
     commercial,
     expiresAt,
   } = useUiConfig();
+  const timezoneInfo =
+    t('footer.timezone') + ' ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const userSideBar = useUserMenu(optimizeVersion, timezoneInfo);
 
   useEffect(() => {
     mightFail(getUserToken(), setUserToken, showError);
