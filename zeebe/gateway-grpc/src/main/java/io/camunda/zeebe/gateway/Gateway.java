@@ -86,7 +86,6 @@ public final class Gateway implements CloseableSilently {
   private static final Duration DEFAULT_SHUTDOWN_TIMEOUT = Duration.ofSeconds(30);
 
   private final GatewayCfg gatewayCfg;
-  private final IdentityConfiguration identityCfg;
   private final ActorSchedulingService actorSchedulingService;
   private final GatewayHealthManager healthManager;
   private final ClientStreamer<JobActivationProperties> jobStreamer;
@@ -98,37 +97,20 @@ public final class Gateway implements CloseableSilently {
 
   public Gateway(
       final GatewayCfg gatewayCfg,
-      final IdentityConfiguration identityCfg,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
-    this(
-        DEFAULT_SHUTDOWN_TIMEOUT,
-        gatewayCfg,
-        identityCfg,
-        brokerClient,
-        actorSchedulingService,
-        jobStreamer);
-  }
-
-  public Gateway(
-      final GatewayCfg gatewayCfg,
-      final BrokerClient brokerClient,
-      final ActorSchedulingService actorSchedulingService,
-      final ClientStreamer<JobActivationProperties> jobStreamer) {
-    this(gatewayCfg, null, brokerClient, actorSchedulingService, jobStreamer);
+    this(DEFAULT_SHUTDOWN_TIMEOUT, gatewayCfg, brokerClient, actorSchedulingService, jobStreamer);
   }
 
   public Gateway(
       final Duration shutdownDuration,
       final GatewayCfg gatewayCfg,
-      final IdentityConfiguration identityCfg,
       final BrokerClient brokerClient,
       final ActorSchedulingService actorSchedulingService,
       final ClientStreamer<JobActivationProperties> jobStreamer) {
     shutdownTimeout = shutdownDuration;
     this.gatewayCfg = gatewayCfg;
-    this.identityCfg = identityCfg;
     this.brokerClient = brokerClient;
     this.actorSchedulingService = actorSchedulingService;
     this.jobStreamer = jobStreamer;
@@ -385,24 +367,10 @@ public final class Gateway implements CloseableSilently {
     interceptors.add(new ContextInjectingInterceptor(queryApi));
     interceptors.add(MONITORING_SERVER_INTERCEPTOR);
     if (AuthMode.IDENTITY == gatewayCfg.getSecurity().getAuthentication().getMode()) {
-      final var zeebeIdentityCfg = gatewayCfg.getSecurity().getAuthentication().getIdentity();
-      if (isZeebeIdentityConfigurationNotNull(zeebeIdentityCfg)) {
-        interceptors.add(new IdentityInterceptor(zeebeIdentityCfg, gatewayCfg.getMultiTenancy()));
-        LOG.warn(
-            "These Zeebe configuration properties for Camunda Identity are deprecated! Please use the "
-                + "corresponding Camunda Identity properties or the environment variables defined here: "
-                + "https://docs.camunda.io/docs/self-managed/identity/deployment/configuration-variables/");
-      } else {
-        interceptors.add(new IdentityInterceptor(identityCfg, gatewayCfg.getMultiTenancy()));
-      }
       interceptors.add(new AuthenticationInterceptor());
     }
 
     return ServerInterceptors.intercept(service, interceptors);
-  }
-
-  private boolean isZeebeIdentityConfigurationNotNull(final IdentityCfg identityCfg) {
-    return identityCfg.getIssuerBackendUrl() != null || identityCfg.getBaseUrl() != null;
   }
 
   private static StatusException grpcStatusException(final int code, final String msg) {

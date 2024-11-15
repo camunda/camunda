@@ -71,7 +71,6 @@ public final class StubbedGateway {
   private final ActorScheduler actorScheduler;
   private final GatewayCfg config;
   private Server server;
-  private final Identity identity;
 
   public StubbedGateway(
       final ActorScheduler actorScheduler,
@@ -82,7 +81,6 @@ public final class StubbedGateway {
     this.brokerClient = brokerClient;
     this.jobStreamer = jobStreamer;
     this.config = config;
-    identity = mock(Identity.class, RETURNS_DEEP_STUBS);
   }
 
   public void start() throws IOException {
@@ -95,14 +93,12 @@ public final class StubbedGateway {
     final EndpointManager endpointManager =
         new EndpointManager(brokerClient, activateJobsHandler, clientStreamAdapter, multiTenancy);
     final GatewayGrpcService gatewayGrpcService = new GatewayGrpcService(endpointManager);
-
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
                 ServerInterceptors.intercept(
                     gatewayGrpcService,
-                    new AuthenticationInterceptor(),
-                    new IdentityInterceptor(identity, multiTenancy)));
+                    new AuthenticationInterceptor()));
     server = serverBuilder.build();
     server.start();
   }
@@ -163,17 +159,6 @@ public final class StubbedGateway {
         .setNoJobsReceivedExceptionProvider(Gateway.NO_JOBS_RECEIVED_EXCEPTION_PROVIDER)
         .setRequestCanceledExceptionProvider(Gateway.REQUEST_CANCELED_EXCEPTION_PROVIDER)
         .build();
-  }
-
-  /**
-   * This can be used to adjust how the Identity sdk behaves in tests. For example, to simulate
-   * specific authorized tenants for the {@link IdentityInterceptor}. This mock is deeply stubbed
-   * using mockito.
-   *
-   * @return mock of Identity
-   */
-  public Identity getIdentityMock() {
-    return identity;
   }
 
   public static final class StubbedJobStreamer implements ClientStreamer<JobActivationProperties> {
