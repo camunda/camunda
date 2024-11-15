@@ -11,8 +11,14 @@
       "name": {
         "type": "keyword"
       },
-      "assignedMemberKeys": {
+      "memberKey": {
         "type": "long"
+      },
+      "join": {
+        "type": "join",
+        "relations": {
+          "group": "member"
+        }
       }
     }
   }
