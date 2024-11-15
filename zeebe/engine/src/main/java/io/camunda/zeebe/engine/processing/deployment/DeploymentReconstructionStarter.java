@@ -8,6 +8,8 @@
 package io.camunda.zeebe.engine.processing.deployment;
 
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.Task;
@@ -39,6 +41,7 @@ public final class DeploymentReconstructionStarter implements StreamProcessorLif
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     LOG.debug("Not all deployments are stored, starting reconstruction");
+    taskResultBuilder.appendCommandRecord(DeploymentIntent.RECONSTRUCT, new DeploymentRecord());
     return taskResultBuilder.build();
   }
 }
