@@ -29,7 +29,6 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest.Builder;
-import co.elastic.clients.elasticsearch.indices.IndexState;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
@@ -41,7 +40,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
@@ -53,7 +51,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
   private static final String ALL_INDICES = "*";
-  private  static final String INDEX_WILDCARD = "-.*-\\d+\\.\\d+\\.\\d+_.+$";
+  private static final String INDEX_WILDCARD = "-.*-\\d+\\.\\d+\\.\\d+_.+$";
 
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
@@ -124,7 +122,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
   }
 
   @Override
-  public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
+  public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
@@ -137,19 +135,9 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-    final String indexWildcard =
-        "^" + connectConfiguration.getIndexPrefix() + INDEX_WILDCARD;
+    final String indexWildcard = "^" + connectConfiguration.getIndexPrefix() + INDEX_WILDCARD;
 
-    final Map<String, IndexState> result =
-        client.indices().get(new Builder().index(ALL_INDICES).build()).join().result();
-
-    final Pattern indexNamePattern = Pattern.compile(indexWildcard);
-    final List<String> indexNames =
-        result.keySet().stream()
-            .filter(indexName -> indexNamePattern.matcher(indexName).matches())
-            .toList();
-
-    return setIndexLifeCycleToMatchingIndices(indexNames);
+    return setIndexLifeCycle(fetchMatchingIndexes(indexWildcard).toArray(String[]::new));
   }
 
   @Override
@@ -199,6 +187,19 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
         .reindex(request)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
         .thenApplyAsync(ignored -> null, executor);
+  }
+
+  private List<String> fetchMatchingIndexes(final String indexWildcard) {
+    final Pattern indexNamePattern = Pattern.compile(indexWildcard);
+    return client
+        .indices()
+        .get(new Builder().index(ALL_INDICES).build())
+        .join()
+        .result()
+        .keySet()
+        .stream()
+        .filter(indexName -> indexNamePattern.matcher(indexName).matches())
+        .toList();
   }
 
   public CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(

@@ -120,11 +120,14 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
   }
 
   @Override
-  public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
+  public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-    return applyPolicyToIndex(destinationIndexName);
+    return CompletableFuture.allOf(
+        Arrays.stream(destinationIndexName)
+            .map(this::applyPolicyToIndex)
+            .toArray(CompletableFuture[]::new));
   }
 
   @Override
@@ -133,28 +136,15 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
       return CompletableFuture.completedFuture(null);
     }
     final String indexWildCard = "^" + connectConfiguration.getIndexPrefix() + INDEX_WILDCARD;
-    final List<String> indices = new ArrayList<>();
+    final List<String> indices;
 
     try {
-      client
-          .cat()
-          .indices()
-          .thenAccept(
-              response ->
-                  response.valueBody().stream()
-                      .map(IndicesRecord::index)
-                      .filter(index -> index.matches(indexWildCard))
-                      .forEach(indices::add))
-          .join();
+      indices = fetchIndexMatchingIndexes(indexWildCard);
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
     }
 
-    final ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
-    for (final String index : indices) {
-      futures.add(applyPolicyToIndex(index));
-    }
-    return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]));
+    return setIndexLifeCycle(indices.toArray(String[]::new));
   }
 
   @Override
@@ -202,6 +192,21 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
     return sendRequestAsync(() -> client.reindex(request))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
         .thenApplyAsync(ignored -> null, executor);
+  }
+
+  private List<String> fetchIndexMatchingIndexes(final String indexWildCard) throws IOException {
+    final List<String> indices = new ArrayList<>();
+    client
+        .cat()
+        .indices()
+        .thenAccept(
+            response ->
+                response.valueBody().stream()
+                    .map(IndicesRecord::index)
+                    .filter(index -> index.matches(indexWildCard))
+                    .forEach(indices::add))
+        .join();
+    return indices;
   }
 
   private CompletableFuture<Void> applyPolicyToIndex(final String index) {
