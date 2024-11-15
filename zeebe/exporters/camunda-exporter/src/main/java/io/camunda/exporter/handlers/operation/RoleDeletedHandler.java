@@ -57,7 +57,6 @@ public class RoleDeletedHandler implements ExportHandler<RoleEntity, RoleRecordV
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     final RoleRecordValue value = record.getValue();
     entity.setRoleKey(value.getRoleKey()).setName(value.getName());
-    // TODO - how to handle assignMemberKeys
   }
 
   @Override
