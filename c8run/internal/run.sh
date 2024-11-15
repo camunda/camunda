@@ -1,27 +1,28 @@
 #!/bin/bash
 
-# set constants
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Set versions
 CAMUNDA_VERSION="8.6.2"
 ELASTICSEARCH_VERSION="8.13.4"
 EXPECTED_JAVA_VERSION=21
 
+# Set constants
 BASEDIR=$(dirname "$0")
-PARENTDIR=$(builtin cd "$BASEDIR/.."; pwd)
-DEPLOYMENT_DIR=$PARENTDIR/configuration/resources
-WEBAPPS_PATH=$BASEDIR/webapps/
-REST_PATH=$BASEDIR/rest/
-SWAGGER_PATH=$BASEDIR/swaggerui
-EXAMPLE_PATH=$BASEDIR/example
+PARENTDIR=$(cd "$BASEDIR/.."; pwd)
 
 PID_PATH=$BASEDIR/run.pid
 ELASTIC_PID_PATH=$BASEDIR/elasticsearch.pid
 CONNECTORS_PID_PATH=$BASEDIR/connectors.pid
 POLLING_CAMUNDA_PID_PATH=$PARENTDIR/camunda-polling.pid
 
-OPTIONS_HELP="Options:
+OPTIONS_HELP=$(cat <<EOF
+Options:
   --config     - Applies the specified configuration file
   --detached   - Starts Camunda Run as a detached process
-"
+EOF
+)
 
 # Configuration file defaults overriden because upstream config doesn't export to elasticsearch
 export ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME="io.camunda.zeebe.exporter.ElasticsearchExporter"
@@ -31,31 +32,8 @@ export CAMUNDA_REST_QUERY_ENABLED=true
 export CAMUNDA_OPERATE_CSRFPREVENTIONENABLED=false
 export CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED=false
 
-architectureRaw="$(uname -m)"
-case "${architectureRaw}" in
-  arm64*)     architecture=aarch64;;
-  x86_64*)    architecture=x86_64;;
-  *)          architecture=UNKNOWN
-esac
-
-unameOut="$(uname -s)"
-case "${unameOut}" in
-    Linux*)     machine=Linux;;
-    Darwin*)    machine=Mac;;
-    *)          machine="UNKNOWN:${unameOut}"
-esac
-
-if [ "$machine" == "Mac" ]; then
-    export PLATFORM=darwin
-elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
-    export PLATFORM=linux
-fi
-
-
-# set environment parameters
+# Set environment parameters
 detachProcess=false
-classPath=$PARENTDIR/configuration/userlib/,$PARENTDIR/configuration/keystore/
-
 
 function stop {
   if [ -s "$PID_PATH" ]; then
@@ -91,7 +69,6 @@ function stop {
 }
 
 function childExitHandler {
-  pid=$1
   status=$2
   if [[ "$status" == "0" ]]; then
     return
@@ -100,7 +77,7 @@ function childExitHandler {
   if [[ "$status" == "1" ]]; then
     if [ -s "$POLLING_CAMUNDA_PID_PATH" ]; then
       polling_pid="$(cat "$POLLING_CAMUNDA_PID_PATH")"
-      kill $polling_pid
+      kill "$polling_pid"
       rm "$POLLING_CAMUNDA_PID_PATH"
     fi
   fi
@@ -114,23 +91,24 @@ if [ "$1" = "start" ] ; then
   # setup the JVM
   if [ "x$JAVA_HOME" != "x" ]; then
 
-    # turns out not all java installations put the binary in bin/java . so this should be a find command.
-    if [ "x$JAVA" == "x" ]; then
+    # Not all Java installations place the binary in `bin/java`, so use the `find` command.
+    if [ "x$JAVA" = "x" ]; then # x-prefix to support legacy shells
       JAVA=$(find -L "$JAVA_HOME" -name "java" | head -n 1)
       echo Setting JAVA property to "$JAVA" in "$JAVA_HOME"
     fi
   else
     echo JAVA_HOME is not set. Unexpected results may occur.
     echo Set JAVA_HOME to the directory of your local JDK to avoid this message.
-    if [ "x$JAVA" == "x" ]; then
+    if [ "x$JAVA" = "x" ]; then # x-prefix to support legacy shells
       JAVA="java"
     fi
     # We want to set JAVA_HOME so that we can set elasticsearch to use JAVA_HOME
-    export JAVA_HOME=$(which "$JAVA" | xargs dirname | xargs dirname)
+    export JAVA_HOME="$(dirname "$(dirname "$(readlink -f "$(command -v "$JAVA")")")")"
   fi
 
   JAVA_VERSION=$("$JAVA" -version 2>&1 | head -1 | cut -d'"' -f2 | sed '/^0\./s///' | cut -d'.' -f1)
-  echo Java version is $("$JAVA" -version 2>&1 | head -1 | cut -d'"' -f2)
+  # Check the Java version to ensure it meets the minimum required version
+  echo "Java version is $("$JAVA" -version 2>&1 | head -1 | cut -d'"' -f2)"
 
   if [[ "$JAVA_VERSION" -lt "$EXPECTED_JAVA_VERSION" ]]; then
     echo "You must use at least JDK $EXPECTED_JAVA_VERSION to start Camunda Platform Run."
@@ -142,7 +120,7 @@ if [ "$1" = "start" ] ; then
     echo JAVA_OPTS: $JAVA_OPTS
   fi
 
-  # inspect arguments
+  # Inspect arguments
   while [ "$1" != "" ]; do
     case $1 in
       --config )     shift
@@ -178,7 +156,6 @@ if [ "$1" = "start" ] ; then
   "$PARENTDIR/elasticsearch-${ELASTICSEARCH_VERSION}/bin/elasticsearch" -E xpack.ml.enabled=false -E xpack.security.enabled=false </dev/null > "$ELASTICSEARCH_LOG_FILE" 2>&1 &
   echo $! > "$ELASTIC_PID_PATH"
 
-
   function checkStartup {
     RETRIES=20
       SLEEP_TIME=14
@@ -201,7 +178,7 @@ if [ "$1" = "start" ] ; then
   }
 
   URL="http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
-  checkStartup $URL "Elasticsearch"
+  checkStartup "$URL" "Elasticsearch"
 
   # start the application
   if [[ "$configuration" != "" ]]; then
@@ -212,9 +189,7 @@ if [ "$1" = "start" ] ; then
     fi
   fi
 
-
   if [ "$detachProcess" = "true" ]; then
-
     # check if a Camunda Run instance is already in operation
     if [ -s "$PID_PATH" ]; then
       echo "
@@ -233,11 +208,11 @@ Please stop it or remove the file $PID_PATH."
     "$JAVA" -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> "$PARENTDIR/log/connectors.log" 2>> "$PARENTDIR/log/connectors.log" &
     echo $! > "$CONNECTORS_PID_PATH"
     if [ -s "$POLLING_CAMUNDA_PID_PATH" ]; then
-      wait $(cat "$POLLING_CAMUNDA_PID_PATH")
+      wait "$(cat "$POLLING_CAMUNDA_PID_PATH")"
     fi
     cat endpoints.txt
   else
-    "$JAVA" -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*'" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> "$PARENTDIR/log/connectors.log" 2>> "$PARENTDIR/log/connectors.log" &
+    "$JAVA" -cp "$PARENTDIR/*:$PARENTDIR/custom_connectors/*:./camunda-zeebe-$CAMUNDA_VERSION/lib/*" "io.camunda.connector.runtime.app.ConnectorRuntimeApplication" --spring.config.location=./connectors-application.properties >> "$PARENTDIR/log/connectors.log" 2>> "$PARENTDIR/log/connectors.log" &
     echo $! > "$CONNECTORS_PID_PATH"
 
     pushd "$PARENTDIR/camunda-zeebe-$CAMUNDA_VERSION/"
@@ -251,10 +226,8 @@ Please stop it or remove the file $PID_PATH."
 #   wait $(cat "$PID_PATH")
 
 elif [ "$1" = "stop" ] ; then
-
   stop
 
 elif [ "$1" = "" ] || [ "$1" = "help" ] ; then
-
   printf "Usage: run.sh [start|stop] (options...) \n%s" "$OPTIONS_HELP"
 fi
