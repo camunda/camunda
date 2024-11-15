@@ -131,7 +131,7 @@ export default function SourcesModal({
           id="checked"
           key="checked"
           name="checked"
-          ariaLabel="checked"
+          aria-label="checked"
           className={classnames({hidden: !filteredDefinitions.length})}
           indeterminate={allIndeterminate}
           checked={allChecked}
@@ -221,7 +221,7 @@ export default function SourcesModal({
                 checked={!!selectedDefinition}
                 id={def.key}
                 name={key}
-                ariaLabel={key}
+                aria-label={key}
                 onSelect={({target}) => {
                   const {checked} = target as HTMLInputElement;
                   if (checked) {
