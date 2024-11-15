@@ -26,6 +26,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Map;
 import org.awaitility.Awaitility;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -70,14 +71,14 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Test
   public void shouldMarkRecordReadersAsCompletedIf870RecordReceived() throws IOException {
     // given
-    final var record = generateProcessInstanceRecord("8.6.0", 1);
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
     EXPORTER.export(record);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
     zeebeImporter.performOneRoundOfImport();
 
     // when
-    final var record2 = generateProcessInstanceRecord("8.7.0", 1);
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     EXPORTER.export(record2);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
@@ -123,12 +124,37 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
                       .orElseThrow()
                       .get(ImportPositionIndex.COMPLETED);
             });
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+  }
+  private boolean isRecordReaderIsCompleted(final String partitionIdFieldValue) throws IOException {
+    final var hits =
+        Arrays.stream(
+                esClient
+                    .search(
+                        new SearchRequest(
+                            new ImportPositionIndex(
+                                    operateProperties.getElasticsearch().getIndexPrefix(), true)
+                                .getFullQualifiedName()),
+                        RequestOptions.DEFAULT)
+                    .getHits()
+                    .getHits())
+            .map(SearchHit::getSourceAsMap)
+            .toList();
+    if (hits.isEmpty()) {
+      return false;
+    }
+    return (Boolean)
+        hits.stream()
+            .filter(hit -> hit.get(ImportPositionIndex.ID).equals(partitionIdFieldValue))
+            .findFirst()
+            .orElse(Map.of())
+            .getOrDefault(ImportPositionIndex.COMPLETED, false);
   }
 
-  private <T extends RecordValue> Record<T> generateProcessInstanceRecord(
-      final String brokerVersion, final int partitionId) {
+  private <T extends RecordValue> Record<T> generateRecord(
+      final ValueType valueType, final String brokerVersion, final int partitionId) {
     return factory.generateRecord(
-        ValueType.PROCESS_INSTANCE,
+        valueType,
         r ->
             r.withBrokerVersion(brokerVersion)
                 .withPartitionId(partitionId)
