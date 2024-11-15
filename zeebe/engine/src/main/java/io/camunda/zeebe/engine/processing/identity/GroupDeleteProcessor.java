@@ -28,6 +28,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
 
+  private static final String GROUP_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to delete group with key '%s', but a group with this key does not exist.";
   private final GroupState groupState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -57,9 +59,7 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     final var groupKey = record.getGroupKey();
     final var persistedRecord = groupState.get(groupKey);
     if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          "Expected to delete group with key '%s', but a group with this key does not exist."
-              .formatted(groupKey);
+      final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -94,8 +94,20 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
 
   @Override
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
-    removeAssignedEntities(command.getValue());
-    stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, command.getValue());
+    final var record = command.getValue();
+    groupState
+        .get(record.getGroupKey())
+        .ifPresentOrElse(
+            group -> {
+              removeAssignedEntities(command.getValue());
+              stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
+            },
+            () -> {
+              final var errorMessage =
+                  GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupKey());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+            });
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

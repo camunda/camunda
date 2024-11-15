@@ -60,8 +60,15 @@ public final class AuthorizationRemovePermissionProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), AuthorizationIntent.PERMISSION_REMOVED, command.getValue());
+    permissionsBehavior
+        .permissionDoesNotExist(command.getValue())
+        .ifRightOrLeft(
+            ignored ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), AuthorizationIntent.PERMISSION_REMOVED, command.getValue()),
+            rejection ->
+                rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
+
     distributionBehavior.acknowledgeCommand(command);
   }
 

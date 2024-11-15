@@ -30,6 +30,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
+  private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
+      "Expected to add entity with key '%s' to role with key '%s', but the entity is already assigned to this role.";
 
   private final RoleState roleState;
   private final UserState userState;
@@ -111,7 +113,19 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
 
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_ADDED, command.getValue());
+    final var record = command.getValue();
+    roleState
+        .getEntityType(record.getRoleKey(), record.getEntityKey())
+        .ifPresentOrElse(
+            entityType -> {
+              final var errorMessage =
+                  ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
+                      record.getEntityKey(), record.getRoleKey());
+              rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
+            },
+            () ->
+                stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_ADDED, record));
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

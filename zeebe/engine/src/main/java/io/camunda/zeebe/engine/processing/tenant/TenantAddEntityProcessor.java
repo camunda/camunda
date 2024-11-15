@@ -30,7 +30,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
-
+  private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
+      "Expected to add entity with key '%s' to tenant with key '%s', but the entity is already assigned to this tenant.";
   private final TenantState tenantState;
   private final UserState userState;
   private final MappingState mappingState;
@@ -95,8 +96,20 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), TenantIntent.ENTITY_ADDED, command.getValue());
+    final var record = command.getValue();
+    tenantState
+        .getEntityType(record.getTenantKey(), record.getEntityKey())
+        .ifPresentOrElse(
+            entityType ->
+                rejectionWriter.appendRejection(
+                    command,
+                    RejectionType.ALREADY_EXISTS,
+                    ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
+                        record.getEntityKey(), record.getTenantKey())),
+            () ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), TenantIntent.ENTITY_ADDED, record));
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

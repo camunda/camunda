@@ -29,6 +29,9 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class UserDeleteProcessor implements DistributedTypedRecordProcessor<UserRecord> {
+
+  private static final String USER_DOES_NOT_EXIST_ERROR_MESSAGE =
+      "Expected to delete user with key %s, but a user with this key does not exist";
   private final UserState userState;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -59,8 +62,7 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
 
     if (persistedUser.isEmpty()) {
       final var rejectionMessage =
-          "Expected to delete user with key %s, but a user with this key does not exist"
-              .formatted(command.getValue().getUserKey());
+          USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(command.getValue().getUserKey());
 
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, rejectionMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, rejectionMessage);
@@ -93,8 +95,17 @@ public class UserDeleteProcessor implements DistributedTypedRecordProcessor<User
 
   @Override
   public void processDistributedCommand(final TypedRecord<UserRecord> command) {
-    stateWriter.appendFollowUpEvent(
-        command.getValue().getUserKey(), UserIntent.DELETED, command.getValue());
+    final var record = command.getValue();
+
+    userState
+        .getUser(record.getUserKey())
+        .ifPresentOrElse(
+            ignored ->
+                stateWriter.appendFollowUpEvent(record.getUserKey(), UserIntent.DELETED, record),
+            () -> {
+              final var message = USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getUserKey());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, message);
+            });
 
     distributionBehavior.acknowledgeCommand(command);
   }

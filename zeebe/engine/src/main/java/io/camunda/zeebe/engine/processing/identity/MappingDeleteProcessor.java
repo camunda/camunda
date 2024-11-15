@@ -28,6 +28,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<MappingRecord> {
 
+  private static final String MAPPING_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to delete mapping with key '%s', but a mapping with this key does not exist.";
   private final MappingState mappingState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -57,9 +59,7 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
     final long mappingKey = record.getMappingKey();
     final var persistedMapping = mappingState.get(mappingKey);
     if (persistedMapping.isEmpty()) {
-      final var errorMessage =
-          "Expected to delete mapping with key '%s', but a mapping with this key does not exist."
-              .formatted(mappingKey);
+      final var errorMessage = MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(mappingKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -89,7 +89,19 @@ public class MappingDeleteProcessor implements DistributedTypedRecordProcessor<M
 
   @Override
   public void processDistributedCommand(final TypedRecord<MappingRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), MappingIntent.DELETED, command.getValue());
+    final var record = command.getValue();
+    mappingState
+        .get(record.getMappingKey())
+        .ifPresentOrElse(
+            persistedMapping ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), MappingIntent.DELETED, command.getValue()),
+            () -> {
+              final var errorMessage =
+                  MAPPING_NOT_FOUND_ERROR_MESSAGE.formatted(record.getMappingKey());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+            });
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }
