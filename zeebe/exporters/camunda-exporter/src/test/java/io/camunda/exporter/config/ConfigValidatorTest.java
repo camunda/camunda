@@ -29,7 +29,10 @@ public class ConfigValidatorTest {
     config.getConnect().setType("mysql");
 
     // when - then
-    assertThatCode(() -> ConfigValidator.validate(config)).isInstanceOf(ExporterException.class);
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter connect.type must be one of the supported types '[ELASTICSEARCH, OPENSEARCH]', but was: 'mysql'");
   }
 
   @Test
@@ -85,7 +88,7 @@ public class ConfigValidatorTest {
     assertThatCode(() -> ConfigValidator.validate(config))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining(
-            "CamundaExporter rolloverInterval '1day' must match pattern '^(?:[1-9]\\d*)([smhdwMy])$', but didn't.");
+            "CamundaExporter archiver.rolloverInterval '1day' must match pattern '^(?:[1-9]\\d*)([smhdwMy])$', but didn't.");
   }
 
   @Test
@@ -99,7 +102,7 @@ public class ConfigValidatorTest {
     assertThatCode(() -> ConfigValidator.validate(config))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining(
-            "CamundaExporter waitPeriodBeforeArchiving '20minutes' must match pattern '^(?:[1-9]\\d*)([smhdwMy])$', but didn't.");
+            "CamundaExporter archiver.waitPeriodBeforeArchiving '20minutes' must match pattern '^(?:[1-9]\\d*)([smhdwMy])$', but didn't.");
   }
 
   @Test
@@ -110,7 +113,8 @@ public class ConfigValidatorTest {
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
         .isInstanceOf(ExporterException.class)
-        .hasMessageContaining("CamundaExporter rolloverBatchSize must be >= 1. Current value: 0");
+        .hasMessageContaining(
+            "CamundaExporter archiver.rolloverBatchSize must be >= 1. Current value: 0");
   }
 
   @Test
@@ -121,7 +125,8 @@ public class ConfigValidatorTest {
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
         .isInstanceOf(ExporterException.class)
-        .hasMessageContaining("CamundaExporter delayBetweenRuns must be >= 1. Current value: 0");
+        .hasMessageContaining(
+            "CamundaExporter archiver.delayBetweenRuns must be >= 1. Current value: 0");
   }
 
   @ParameterizedTest(name = "{0}")
@@ -133,6 +138,6 @@ public class ConfigValidatorTest {
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
         .isInstanceOf(ExporterException.class)
-        .hasMessageContaining("CamundaExporter maxCacheSize must be >= 1.");
+        .hasMessageContaining("CamundaExporter processCache.maxCacheSize must be >= 1.");
   }
 }
