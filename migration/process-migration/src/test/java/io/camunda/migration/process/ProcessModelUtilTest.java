@@ -10,12 +10,13 @@ package io.camunda.migration.process;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.migration.process.util.ProcessModelUtil;
+import java.io.IOException;
 import org.junit.jupiter.api.Test;
 
 public class ProcessModelUtilTest {
 
   @Test
-  void shouldExtractFormKey() {
+  void shouldExtractFormKey() throws IOException {
     final var entity = TestData.processEntityWithPublicFormKey(1L);
 
     final var startEvent =
@@ -32,7 +33,7 @@ public class ProcessModelUtilTest {
   }
 
   @Test
-  void shouldExtractFormId() {
+  void shouldExtractFormId() throws IOException {
     final var entity = TestData.processEntityWithPublicFormId(1L);
 
     final var startEvent =
@@ -49,7 +50,7 @@ public class ProcessModelUtilTest {
   }
 
   @Test
-  void shouldExtractIsPublic() {
+  void shouldExtractIsPublic() throws IOException {
     final var entity = TestData.processEntityWithPublicFormId(1L);
 
     final var startEvent =
@@ -63,7 +64,7 @@ public class ProcessModelUtilTest {
   }
 
   @Test
-  void extractedDataShouldBeEmpty() {
+  void extractedDataShouldBeEmpty() throws IOException {
     final var entity = TestData.processEntityWithoutForm(1L);
 
     final var startEvent =
