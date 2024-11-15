@@ -42,7 +42,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: camunda/c8-cross-component-e2e-tests
-          ref: feat(run)-c8-run-linux-workflow
 
       - name: Run tests
         uses: ./.github/actions/run-tests-c8Run
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: c8-run-logs
+          path: ./camunda/c8run/log/*.log
+          retention-days: 10
