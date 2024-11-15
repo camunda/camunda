@@ -20,12 +20,12 @@ public class DecisionRequirementsEntityTransformer
       final io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity
           source) {
     return new DecisionRequirementsEntity(
+        source.getTenantId(),
         source.getKey(),
         source.getDecisionRequirementsId(),
         source.getName(),
         source.getVersion(),
         source.getResourceName(),
-        source.getXml(),
-        source.getTenantId());
+        source.getXml());
   }
 }

@@ -20,12 +20,12 @@ public class DecisionDefinitionEntityTransformer
       final io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity
           source) {
     return new DecisionDefinitionEntity(
+        source.getTenantId(),
         source.getKey(),
         source.getDecisionId(),
         source.getName(),
         source.getVersion(),
         source.getDecisionRequirementsId(),
-        source.getDecisionRequirementsKey(),
-        source.getTenantId());
+        source.getDecisionRequirementsKey());
   }
 }

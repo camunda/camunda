@@ -11,10 +11,10 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record DecisionRequirementsEntity(
+    String tenantId,
     Long decisionRequirementsKey,
     String decisionRequirementsId,
     String name,
     Integer version,
     String resourceName,
-    String xml,
-    String tenantId) {}
+    String xml) {}
