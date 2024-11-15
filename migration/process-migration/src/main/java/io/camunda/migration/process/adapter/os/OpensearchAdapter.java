@@ -12,6 +12,7 @@ import io.camunda.migration.process.MigrationRepositoryIndex;
 import io.camunda.migration.process.ProcessMigrationProperties;
 import io.camunda.migration.process.ProcessorStep;
 import io.camunda.migration.process.adapter.Adapter;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -42,12 +43,13 @@ public class OpensearchAdapter implements Adapter {
   private final ProcessIndex processIndex;
 
   public OpensearchAdapter(
-      final ProcessMigrationProperties properties, final OpensearchConnector connector) {
+      final ProcessMigrationProperties properties,
+      final ConnectConfiguration connectConfiguration) {
     this.properties = properties;
     migrationRepositoryIndex =
-        new MigrationRepositoryIndex(properties.getConnect().getIndexPrefix(), false);
-    processIndex = new ProcessIndex(properties.getConnect().getIndexPrefix(), false);
-    client = connector.createClient();
+        new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), false);
+    processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), false);
+    client = new OpensearchConnector(connectConfiguration).createClient();
   }
 
   @Override

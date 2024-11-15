@@ -8,6 +8,7 @@
 package io.camunda.application;
 
 import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.application.commons.search.SearchClientDatabaseConfiguration;
 import io.camunda.application.commons.service.CamundaServicesConfiguration;
 import io.camunda.application.commons.service.ServiceSecurityConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
@@ -104,12 +105,7 @@ public class MigrationApplication implements ApplicationRunner {
   @Configuration(proxyBeanMethods = false)
   @ComponentScan(basePackages = {"io.camunda.migration.process"})
   @Profile("process-migration")
-  @Import({
-    CommonsModuleConfiguration.class,
-    GatewayModuleConfiguration.class,
-    ServiceSecurityConfiguration.class,
-    CamundaServicesConfiguration.class
-  })
+  @Import({SearchClientDatabaseConfiguration.class})
   public static class ProcessMigrationModuleConfiguration {}
 
   private static final class ProfileInitializer

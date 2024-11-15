@@ -25,6 +25,7 @@ import io.camunda.migration.process.MigrationRepositoryIndex;
 import io.camunda.migration.process.ProcessMigrationProperties;
 import io.camunda.migration.process.ProcessorStep;
 import io.camunda.migration.process.adapter.Adapter;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -44,12 +45,13 @@ public class ElasticsearchAdapter implements Adapter {
   private final ProcessIndex processIndex;
 
   public ElasticsearchAdapter(
-      final ProcessMigrationProperties properties, final ElasticsearchConnector connector) {
+      final ProcessMigrationProperties properties,
+      final ConnectConfiguration connectConfiguration) {
     this.properties = properties;
     migrationRepositoryIndex =
-        new MigrationRepositoryIndex(properties.getConnect().getIndexPrefix(), true);
-    processIndex = new ProcessIndex(properties.getConnect().getIndexPrefix(), true);
-    client = connector.createClient();
+        new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);
+    processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), true);
+    client = new ElasticsearchConnector(connectConfiguration).createClient();
   }
 
   @Override

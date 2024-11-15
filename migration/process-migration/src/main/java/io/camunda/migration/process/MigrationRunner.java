@@ -13,8 +13,7 @@ import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.process.adapter.os.OpensearchAdapter;
 import io.camunda.migration.process.util.ProcessModelUtil;
-import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
 import java.util.List;
@@ -41,13 +40,13 @@ public class MigrationRunner implements Migrator {
   private final Adapter adapter;
   private final ProcessMigrationProperties properties;
 
-  public MigrationRunner(final ProcessMigrationProperties properties) {
+  public MigrationRunner(
+      final ProcessMigrationProperties properties, final ConnectConfiguration connect) {
     this.properties = properties;
     adapter =
-        properties.getConnect().getType().equals(ELASTICSEARCH)
-            ? new ElasticsearchAdapter(
-                properties, new ElasticsearchConnector(properties.getConnect()))
-            : new OpensearchAdapter(properties, new OpensearchConnector(properties.getConnect()));
+        connect.getType().equals(ELASTICSEARCH)
+            ? new ElasticsearchAdapter(properties, connect)
+            : new OpensearchAdapter(properties, connect);
     backoff.set(properties.getBackoffInSeconds() * 1000L);
   }
 
@@ -134,5 +133,9 @@ public class MigrationRunner implements Migrator {
     if (retries.get() >= properties.getMaxRetries()) {
       throw new MigrationException("Process migration failed, retries exceeded");
     }
+  }
+
+  private boolean continueMigration(final boolean hasItems, final boolean retry) {
+    return hasItems || retry;
   }
 }

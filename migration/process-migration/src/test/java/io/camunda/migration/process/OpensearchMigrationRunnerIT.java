@@ -51,6 +51,7 @@ public class OpensearchMigrationRunnerIT {
   private static OpenSearchClient osClient;
   private static MigrationRunner migrator;
   private static ProcessMigrationProperties properties;
+  private static ConnectConfiguration connectConfiguration;
   private static ProcessIndex processIndex;
   private static MigrationRepositoryIndex migrationRepositoryIndex;
 
@@ -58,20 +59,18 @@ public class OpensearchMigrationRunnerIT {
   public static void setUp() throws IOException {
     properties = new ProcessMigrationProperties();
     properties.setBatchSize(5);
-    final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
+    connectConfiguration = new ConnectConfiguration();
     connectConfiguration.setType("opensearch");
     connectConfiguration.setUrl("http://localhost:" + OS_CONTAINER.getMappedPort(9200));
-    properties.setConnect(connectConfiguration);
-    final var connector = new OpensearchConnector(properties.getConnect());
-    osClient = connector.createClient();
+    osClient = new OpensearchConnector(connectConfiguration).createClient();
     createIndices();
   }
 
   private static void createIndices() {
     final OpensearchEngineClient es = new OpensearchEngineClient(osClient);
-    processIndex = new ProcessIndex(properties.getConnect().getIndexPrefix(), false);
+    processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), false);
     migrationRepositoryIndex =
-        new MigrationRepositoryIndex(properties.getConnect().getIndexPrefix(), false);
+        new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), false);
 
     es.createIndex(processIndex, new IndexSettings());
     es.createIndex(migrationRepositoryIndex, new IndexSettings());
@@ -80,7 +79,7 @@ public class OpensearchMigrationRunnerIT {
   @BeforeEach
   public void cleanUp() throws IOException {
     properties.setBatchSize(5);
-    migrator = new MigrationRunner(properties);
+    migrator = new MigrationRunner(properties, connectConfiguration);
     osClient.deleteByQuery(
         DeleteByQueryRequest.of(
             d ->

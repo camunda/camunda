@@ -53,6 +53,7 @@ public class ElasticsearchMigrationRunnerIT {
   private static ElasticsearchClient esClient;
   private static MigrationRunner migrator;
   private static ProcessMigrationProperties properties;
+  private static ConnectConfiguration connectConfiguration;
   private static ProcessIndex processIndex;
   private static MigrationRepositoryIndex migrationRepositoryIndex;
 
@@ -60,19 +61,17 @@ public class ElasticsearchMigrationRunnerIT {
   public static void setUp() throws IOException {
     properties = new ProcessMigrationProperties();
     properties.setBatchSize(5);
-    final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
+    connectConfiguration = new ConnectConfiguration();
     connectConfiguration.setUrl("http://localhost:" + ES_CONTAINER.getMappedPort(9200));
-    properties.setConnect(connectConfiguration);
-    final var connector = new ElasticsearchConnector(properties.getConnect());
-    esClient = connector.createClient();
+    esClient = new ElasticsearchConnector(connectConfiguration).createClient();
     createIndices();
   }
 
   private static void createIndices() {
     final ElasticsearchEngineClient es = new ElasticsearchEngineClient(esClient);
-    processIndex = new ProcessIndex(properties.getConnect().getIndexPrefix(), true);
+    processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), true);
     migrationRepositoryIndex =
-        new MigrationRepositoryIndex(properties.getConnect().getIndexPrefix(), true);
+        new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);
 
     es.createIndex(processIndex, new IndexSettings());
     es.createIndex(migrationRepositoryIndex, new IndexSettings());
@@ -81,7 +80,7 @@ public class ElasticsearchMigrationRunnerIT {
   @BeforeEach
   public void cleanUp() throws IOException {
     properties.setBatchSize(5);
-    migrator = new MigrationRunner(properties);
+    migrator = new MigrationRunner(properties, connectConfiguration);
     esClient.deleteByQuery(
         DeleteByQueryRequest.of(
             d ->

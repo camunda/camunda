@@ -7,7 +7,6 @@
  */
 package io.camunda.migration.process;
 
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "camunda.migration.process")
@@ -16,15 +15,6 @@ public class ProcessMigrationProperties {
   private int batchSize = 20;
   private int maxRetries = 3;
   private int backoffInSeconds = 1;
-  private ConnectConfiguration connect = new ConnectConfiguration();
-
-  public ConnectConfiguration getConnect() {
-    return connect;
-  }
-
-  public void setConnect(final ConnectConfiguration connect) {
-    this.connect = connect;
-  }
 
   public int getBatchSize() {
     return batchSize;
