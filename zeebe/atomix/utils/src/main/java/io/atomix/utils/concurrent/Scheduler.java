@@ -16,9 +16,14 @@
  */
 package io.atomix.utils.concurrent;
 
+import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.RetryDelayStrategy;
 import java.time.Duration;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 
 /** Scheduler. */
 @FunctionalInterface
@@ -76,6 +81,46 @@ public interface Scheduler extends CloseableSilently {
    * @return the scheduled callback
    */
   Scheduled schedule(Duration initialDelay, Duration interval, Runnable callback);
+
+  default <A> CompletableFuture<A> retryUntilSuccessful(
+      final Callable<A> callable,
+      final RetryDelayStrategy retryDelayStrategy,
+      final Predicate<Exception> shouldRetry) {
+    final var result = new CompletableFuture<A>();
+    // cannot be a lambda as it needs a reference to itself for scheduling
+    final Runnable runnable =
+        new Runnable() {
+          Scheduled scheduled = null;
+
+          @Override
+          public void run() {
+            try {
+              final var a = callable.call();
+              result.complete(a);
+            } catch (final Exception e) {
+              if (shouldRetry.test(e)) {
+                if (!result.isDone()) {
+                  final var next = retryDelayStrategy.nextDelay();
+                  scheduled = schedule(next, this);
+                }
+              } else {
+                result.completeExceptionally(e);
+              }
+            }
+          }
+        };
+
+    runnable.run();
+    return result;
+  }
+
+  default CompletableFuture<Void> retryUntilSuccessful(
+      final CheckedRunnable runnable,
+      final RetryDelayStrategy retryDelayStrategy,
+      final Predicate<Exception> shouldRetry) {
+    return retryUntilSuccessful(
+        CheckedRunnable.toCallable(runnable), retryDelayStrategy, shouldRetry);
+  }
 
   @Override
   default void close() {}

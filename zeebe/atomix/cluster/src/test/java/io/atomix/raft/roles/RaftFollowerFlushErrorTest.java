@@ -5,33 +5,25 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.atomix.raft;
+package io.atomix.raft.roles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.atomix.cluster.MemberId;
-import io.atomix.raft.RaftRule.Configurator;
-import io.atomix.raft.RaftServer.Builder;
+import io.atomix.raft.FaultyFlusherConfigurator;
+import io.atomix.raft.RaftRule;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.partition.RaftElectionConfig;
-import io.atomix.raft.storage.RaftStorage;
-import io.atomix.raft.storage.log.RaftLogFlusher;
-import io.camunda.zeebe.journal.Journal;
-import java.io.IOException;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RaftFlushErrorTest {
+public class RaftFollowerFlushErrorTest {
 
-  private static final Logger LOG = LoggerFactory.getLogger(RaftFlushErrorTest.class);
+  private static final Logger LOG = LoggerFactory.getLogger(RaftFollowerFlushErrorTest.class);
   private static final int MEMBERS = 3;
   public AtomicBoolean isFaulty = new AtomicBoolean(false);
   public AtomicInteger flushFailedCount = new AtomicInteger(0);
@@ -41,7 +33,7 @@ public class RaftFlushErrorTest {
       RaftRule.withBootstrappedNodes(
           MEMBERS,
           new FaultyFlusherConfigurator(
-              (MEMBERS - 1) / 2, isFaulty::get, flushFailedCount::incrementAndGet));
+              (MEMBERS - 1) / 2, isFaulty::get, flushFailedCount::incrementAndGet, false, false));
 
   @Test
   public void shouldAppendEntryOnAllNodesWhenFollowerFailsFlush() throws Throwable {
@@ -85,52 +77,5 @@ public class RaftFlushErrorTest {
                 .filter(s -> s.getRole() == Role.FOLLOWER || s.getRole() == Role.LEADER)
                 .count())
         .isEqualTo(MEMBERS);
-  }
-
-  private static RaftLogFlusher.Factory faultyFlusher(
-      final Supplier<Boolean> faultyWhen, final Runnable notifyFaultyFlush) {
-    return (ignored) ->
-        new RaftLogFlusher() {
-          @Override
-          public void flush(final Journal journal) {
-            if (faultyWhen.get()) {
-              notifyFaultyFlush.run();
-              throw new RuntimeException(new IOException("Failed sync"));
-            } else {
-              journal.flush();
-            }
-          }
-        };
-  }
-
-  /**
-   * Set the first faultyFlusherNumber nodes with a faulty flusher, when the supplier returns true
-   */
-  private record FaultyFlusherConfigurator(
-      int faultyFlusherNumber, Supplier<Boolean> faultyWhen, Runnable notifyFaultyFlush)
-      implements Configurator {
-
-    @Override
-    public void configure(final MemberId id, final Builder builder) {
-      final var numericId = Integer.parseInt(id.id());
-      // Node priority is used to avoid the faulty nodes to become leaders
-      final int nodePriority;
-      if (numericId <= faultyFlusherNumber) {
-        LOG.trace("failing flusher for member {}", id);
-        final var storage = builder.storage;
-        Objects.requireNonNull(storage);
-        builder.withStorage(
-            RaftStorage.builder()
-                .withDirectory(storage.directory())
-                .withSnapshotStore(storage.getPersistedSnapshotStore())
-                .withFlusherFactory(faultyFlusher(faultyWhen, notifyFaultyFlush))
-                .build());
-        nodePriority = 1;
-      } else {
-        LOG.trace("not failing flusher for member {} ", id);
-        nodePriority = 5;
-      }
-      builder.withElectionConfig(RaftElectionConfig.ofPriorityElection(5, nodePriority));
-    }
   }
 }

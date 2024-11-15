@@ -579,7 +579,7 @@ public final class RaftRule extends ExternalResource {
     return appendEntry(leader, 1024);
   }
 
-  public TestAppendListener appendEntryAsync() throws Exception {
+  public TestAppendListener appendEntryAsync() {
     final var raftRole = getLeader().orElseThrow().getContext().getRaftRole();
     if (raftRole instanceof LeaderRole) {
       return appendEntry(1024, (LeaderRole) raftRole);

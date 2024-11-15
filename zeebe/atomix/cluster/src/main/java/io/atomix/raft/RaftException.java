@@ -16,6 +16,8 @@
  */
 package io.atomix.raft;
 
+import io.atomix.raft.RaftError.Type;
+
 /**
  * Base Raft protocol exception.
  *
@@ -82,6 +84,13 @@ public abstract class RaftException extends RuntimeException {
     public ConfigurationException(
         final Throwable throwable, final String message, final Object... args) {
       super(RaftError.Type.CONFIGURATION_ERROR, throwable, message, args);
+    }
+  }
+
+  public static class CommitFailedException extends RaftException {
+
+    public CommitFailedException(final String message, final Object... args) {
+      super(Type.COMMAND_FAILURE, message, args);
     }
   }
 }

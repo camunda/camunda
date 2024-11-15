@@ -9,10 +9,11 @@ package io.camunda.zeebe.journal.file;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.util.MockJournalMetastore;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +22,7 @@ final class SegmentsFlusherTest {
   private final SegmentsFlusher flusher = new SegmentsFlusher(metaStore);
 
   @Test
-  void shouldFlushAllSegments() {
+  void shouldFlushAllSegments() throws FlushException {
     // given
     final var firstSegment = new TestSegment(15);
     final var secondSegment = new TestSegment(30);
@@ -36,12 +37,12 @@ final class SegmentsFlusherTest {
   }
 
   @Test
-  void shouldStoreLastFlushedIndexOnPartialFlush() {
+  void shouldStoreLastFlushedIndexOnPartialFlush() throws FlushException {
     // given
     final var dirtySegments = List.of(new TestSegment(15), new TestSegment(30, false));
 
     // when
-    flusher.flush(dirtySegments);
+    assertThatThrownBy(() -> flusher.flush(dirtySegments));
 
     // then
     assertThat(metaStore.loadLastFlushedIndex()).isEqualTo(15L);
@@ -50,7 +51,7 @@ final class SegmentsFlusherTest {
   @Test
   void shouldStoreLastFlushedIndexOnPartialFailedFlush() {
     // given
-    final var error = new UncheckedIOException(new IOException("Cannot allocate memory"));
+    final var error = new FlushException(new IOException("Cannot allocate memory"));
     final var dirtySegments = List.of(new TestSegment(15), new TestSegment(30, error));
 
     // when
@@ -63,7 +64,7 @@ final class SegmentsFlusherTest {
   private static final class TestSegment implements FlushableSegment {
     private final long lastIndex;
     private final boolean shouldFlush;
-    private final RuntimeException flushError;
+    private final FlushException flushError;
     private boolean flushed;
 
     private TestSegment(final long lastIndex) {
@@ -74,12 +75,12 @@ final class SegmentsFlusherTest {
       this(lastIndex, shouldFlush, null);
     }
 
-    private TestSegment(final long lastIndex, final RuntimeException flushError) {
+    private TestSegment(final long lastIndex, final FlushException flushError) {
       this(lastIndex, true, flushError);
     }
 
     private TestSegment(
-        final long lastIndex, final boolean shouldFlush, final RuntimeException flushError) {
+        final long lastIndex, final boolean shouldFlush, final FlushException flushError) {
       this.lastIndex = lastIndex;
       this.shouldFlush = shouldFlush;
       this.flushError = flushError;
@@ -91,13 +92,15 @@ final class SegmentsFlusherTest {
     }
 
     @Override
-    public boolean flush() {
+    public void flush() throws FlushException {
       if (flushError != null) {
         throw flushError;
       }
 
       flushed = shouldFlush;
-      return shouldFlush;
+      if (!shouldFlush) {
+        throw new FlushException(new IOException("flush failed"));
+      }
     }
   }
 }
