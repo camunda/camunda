@@ -115,7 +115,9 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, DecisionDefinitionEntity.class);
+    return executor.search(
+        filter,
+        io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity.class);
   }
 
   @Override
@@ -140,7 +142,9 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, DecisionRequirementsEntity.class);
+    return executor.search(
+        filter,
+        io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity.class);
   }
 
   @Override
