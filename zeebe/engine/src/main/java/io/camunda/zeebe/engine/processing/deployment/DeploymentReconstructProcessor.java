@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment;
 
+import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
+@ExcludeAuthorizationCheck
 public class DeploymentReconstructProcessor implements TypedRecordProcessor<DeploymentRecord> {
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
