@@ -154,14 +154,14 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     final var processCache =
         new ExporterEntityCacheImpl<>(
-            10000,
+            configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
                 indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
             new ExporterCacheMetrics("process", meterRegistry));
 
     final var formCache =
         new ExporterEntityCacheImpl<>(
-            10000,
+            configuration.getFormCache().getMaxCacheSize(),
             entityCacheProvider.getFormCacheLoader(
                 indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()),
             new ExporterCacheMetrics("form", meterRegistry));
