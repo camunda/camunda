@@ -107,7 +107,10 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
               final var message = USER_ALREADY_EXISTS_ERROR_MESSAGE.formatted(user.getUsername());
               rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, message);
             },
-            () -> stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, record));
+            () -> {
+              stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, record);
+              addUserPermissions(record.getUserKey(), record.getUsername());
+            });
 
     distributionBehavior.acknowledgeCommand(command);
   }
@@ -122,7 +125,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
                 new Permission().setPermissionType(PermissionType.READ).addResourceId(username))
             .addPermission(
                 new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(username));
-    commandWriter.appendFollowUpCommand(
-        key, AuthorizationIntent.ADD_PERMISSION, authorizationRecord);
+
+    stateWriter.appendFollowUpEvent(key, AuthorizationIntent.PERMISSION_ADDED, authorizationRecord);
   }
 }
