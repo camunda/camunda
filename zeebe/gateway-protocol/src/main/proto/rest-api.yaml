@@ -4487,10 +4487,13 @@ components:
       type: object
       properties:
         changeset:
-          $ref: "#/components/schemas/RoleChangeset"
+          description: The set of changed role attributes.
+          allOf:
+            - $ref: "#/components/schemas/RoleChangeset"
       required:
         - changeset
     RoleChangeset:
+      description: A set of changed role attributes.
       type: object
       properties:
         name:
@@ -4525,6 +4528,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching roles.
           type: array
           items:
             $ref: "#/components/schemas/RoleItem"
