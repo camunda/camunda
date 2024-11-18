@@ -190,7 +190,7 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, ProcessDefinitionEntity.class);
+    return executor.search(filter, io.camunda.webapps.schema.entities.operate.ProcessEntity.class);
   }
 
   @Override

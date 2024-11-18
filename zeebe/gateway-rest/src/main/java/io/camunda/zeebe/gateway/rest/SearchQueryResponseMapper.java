@@ -196,12 +196,12 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessDefinitionItem toProcessDefinition(final ProcessDefinitionEntity entity) {
     return new ProcessDefinitionItem()
-        .processDefinitionKey(entity.key())
+        .processDefinitionKey(entity.processDefinitionKey())
         .name(entity.name())
         .resourceName(entity.resourceName())
         .version(entity.version())
         .versionTag(entity.versionTag())
-        .processDefinitionId(entity.bpmnProcessId())
+        .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId());
   }
 

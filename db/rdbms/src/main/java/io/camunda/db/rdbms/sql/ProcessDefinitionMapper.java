@@ -22,8 +22,8 @@ public interface ProcessDefinitionMapper {
   List<ProcessDefinitionEntity> search(ProcessDefinitionDbQuery filter);
 
   enum ProcessDefinitionSearchColumn implements SearchColumn<ProcessDefinitionEntity> {
-    PROCESS_DEFINITION_KEY("key", ProcessDefinitionEntity::key),
-    PROCESS_DEFINITION_ID("bpmnProcessId", ProcessDefinitionEntity::bpmnProcessId),
+    PROCESS_DEFINITION_KEY("processDefinitionKey", ProcessDefinitionEntity::processDefinitionKey),
+    PROCESS_DEFINITION_ID("processDefinitionId", ProcessDefinitionEntity::processDefinitionId),
     NAME("name", ProcessDefinitionEntity::name),
     VERSION("version", ProcessDefinitionEntity::version),
     VERSION_TAG("versionTag", ProcessDefinitionEntity::versionTag),
