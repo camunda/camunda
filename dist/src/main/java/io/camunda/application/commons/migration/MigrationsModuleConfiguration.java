@@ -14,9 +14,7 @@ import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -46,20 +44,7 @@ public class MigrationsModuleConfiguration {
 
   @PostConstruct
   public void migrate() {
-    try (final ScheduledExecutorService scheduledExecutorService =
-        Executors.newScheduledThreadPool(1)) {
-      scheduledExecutorService.schedule(
-          () -> {
-            performMigration();
-            LOG.info("Migration finished, shutting down");
-          },
-          0,
-          TimeUnit.SECONDS);
-    } catch (final Exception e) {
-      LOG.error("Migration failed", e);
-      applicationEventPublisher.publishEvent(new MigrationFinishedEvent(-1));
-    }
-    applicationEventPublisher.publishEvent(new MigrationFinishedEvent(0));
+    new Thread(this::performMigration).start();
   }
 
   private void performMigration() {
@@ -70,17 +55,23 @@ public class MigrationsModuleConfiguration {
           migrator ->
               executor.submit(
                   () -> {
+                    boolean catchTriggered = false;
                     try {
                       migrator.run(args);
                     } catch (final MigrationException ex) {
+                      catchTriggered = true;
                       LOG.error(ex.getMessage());
                     } finally {
+                      applicationEventPublisher.publishEvent(
+                          new MigrationFinishedEvent(catchTriggered ? 1 : 0));
                       latch.countDown();
                     }
                   }));
       latch.await();
     } catch (final InterruptedException e) {
-      LOG.error("Migration failed", e);
+      LOG.error("Migration was interrupted", e);
+      migrators.forEach(
+          m -> applicationEventPublisher.publishEvent(new MigrationFinishedEvent(-1)));
     }
   }
 }

@@ -9,6 +9,7 @@ package io.camunda.application;
 
 import io.camunda.application.commons.migration.MigrationsModuleConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
+import java.util.Arrays;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
@@ -28,25 +29,55 @@ public class StandaloneMigration {
         "spring.config.location",
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
 
+    final String[] profiles = adjustProfiles();
+
     final SpringApplication application =
         new SpringApplicationBuilder()
             .logStartupInfo(true)
             .web(WebApplicationType.NONE)
             .sources(MigrationsModuleConfiguration.class)
-            .profiles(Profile.MIGRATION.getId())
+            .profiles(profiles)
             .addCommandLineProperties(true)
-            .listeners(new ApplicationErrorListener(), new ApplicationTerminateListener())
+            .listeners(new ApplicationErrorListener(), new ApplicationTerminateListener(profiles))
             .build(args);
 
     application.run(args);
   }
 
+  private static String[] adjustProfiles() {
+    String[] profiles = System.getProperty("spring.profiles.active").split(",");
+    if (Arrays.stream(profiles).noneMatch(p -> p.matches(".*migration"))) {
+      profiles = Arrays.copyOf(profiles, profiles.length + 1);
+      profiles[profiles.length - 1] = Profile.MIGRATION.getId();
+    }
+
+    return profiles;
+  }
+
   public static class ApplicationTerminateListener
       implements ApplicationListener<MigrationFinishedEvent> {
+
+    private int exitCode = 0;
+    private int arrivedEvents = 0;
+    private final int awaitEvents;
+
+    public ApplicationTerminateListener(final String[] profiles) {
+      if (Arrays.asList(profiles).contains(Profile.MIGRATION.getId())) {
+        awaitEvents = 2;
+      } else {
+        awaitEvents = (int) Arrays.stream(profiles).filter(p -> p.matches(".*-migration")).count();
+      }
+    }
+
     @Override
     public void onApplicationEvent(final MigrationFinishedEvent event) {
       final int errorCode = (int) event.getSource();
-      System.exit(errorCode);
+      if (errorCode < exitCode) {
+        exitCode = errorCode;
+      }
+      if (++arrivedEvents == awaitEvents) {
+        System.exit(exitCode);
+      }
     }
   }
 
