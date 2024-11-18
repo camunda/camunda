@@ -12,11 +12,11 @@ import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record ProcessInstanceEntity(
-    Long key,
-    String bpmnProcessId,
-    String processName,
-    Integer processVersion,
-    String processVersionTag,
+    Long processInstanceKey,
+    String processDefinitionId,
+    String processDefinitionName,
+    Integer processDefinitionVersion,
+    String processDefinitionVersionTag,
     Long processDefinitionKey,
     Long parentProcessInstanceKey,
     Long parentFlowNodeInstanceKey,
@@ -24,7 +24,7 @@ public record ProcessInstanceEntity(
     OffsetDateTime startDate,
     OffsetDateTime endDate,
     ProcessInstanceState state,
-    Boolean incident,
+    Boolean hasIncident,
     String tenantId) {
 
   public enum ProcessInstanceState {

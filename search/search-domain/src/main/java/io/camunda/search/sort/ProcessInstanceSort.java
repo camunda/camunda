@@ -27,27 +27,27 @@ public record ProcessInstanceSort(List<FieldSorting> orderings) implements SortO
       implements ObjectBuilder<ProcessInstanceSort> {
 
     public Builder processInstanceKey() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("processInstanceKey", null);
       return this;
     }
 
     public Builder processDefinitionId() {
-      currentOrdering = new FieldSorting("bpmnProcessId", null);
+      currentOrdering = new FieldSorting("processDefinitionId", null);
       return this;
     }
 
     public Builder processDefinitionName() {
-      currentOrdering = new FieldSorting("processName", null);
+      currentOrdering = new FieldSorting("processDefinitionName", null);
       return this;
     }
 
     public Builder processDefinitionVersion() {
-      currentOrdering = new FieldSorting("processVersion", null);
+      currentOrdering = new FieldSorting("processDefinitionVersion", null);
       return this;
     }
 
     public Builder processDefinitionVersionTag() {
-      currentOrdering = new FieldSorting("processVersionTag", null);
+      currentOrdering = new FieldSorting("processDefinitionVersionTag", null);
       return this;
     }
 
@@ -87,7 +87,7 @@ public record ProcessInstanceSort(List<FieldSorting> orderings) implements SortO
     }
 
     public Builder hasIncident() {
-      currentOrdering = new FieldSorting("incident", null);
+      currentOrdering = new FieldSorting("hasIncident", null);
       return this;
     }
 

@@ -68,8 +68,8 @@ public final class ProcessInstanceServiceTest {
     // given
     final var key = 123L;
     final var entity = mock(ProcessInstanceEntity.class);
-    when(entity.key()).thenReturn(key);
-    when(entity.bpmnProcessId()).thenReturn("processId");
+    when(entity.processInstanceKey()).thenReturn(key);
+    when(entity.processDefinitionId()).thenReturn("processId");
     when(client.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult(1, List.of(entity), null));
     authorizeProcessReadInstance(true, "processId");
@@ -78,7 +78,7 @@ public final class ProcessInstanceServiceTest {
     final var searchQueryResult = services.getByKey(key);
 
     // then
-    assertThat(searchQueryResult.key()).isEqualTo(key);
+    assertThat(searchQueryResult.processInstanceKey()).isEqualTo(key);
   }
 
   @Test
@@ -114,7 +114,7 @@ public final class ProcessInstanceServiceTest {
   public void getByKeyShouldThrowForbiddenExceptionIfNotAuthorized() {
     // given
     final var entity = mock(ProcessInstanceEntity.class);
-    when(entity.bpmnProcessId()).thenReturn("processId");
+    when(entity.processDefinitionId()).thenReturn("processId");
     when(client.searchProcessInstances(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     authorizeProcessReadInstance(false, "processId");

@@ -10,6 +10,7 @@ package io.camunda.search.clients.transformers;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTransformer;
+import io.camunda.search.clients.transformers.entity.ProcessInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.filter.AuthorizationFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ComparableValueFilterTransformer;
 import io.camunda.search.clients.transformers.filter.DateValueFilterTransformer;
@@ -31,6 +32,7 @@ import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfi
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.ProcessInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.sort.DecisionInstanceFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.ProcessInstanceFieldSortingTransformer;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.ComparableValueFilter;
 import io.camunda.search.filter.DateValueFilter;
@@ -65,8 +67,10 @@ import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
 import io.camunda.search.result.ProcessInstanceQueryResultConfig;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
+import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -122,9 +126,11 @@ public final class ServiceTransformers {
 
     // document entity -> domain entity
     mappers.put(DecisionInstanceEntity.class, new DecisionInstanceEntityTransformer());
+    mappers.put(ProcessInstanceForListViewEntity.class, new ProcessInstanceEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(DecisionInstanceSort.class, new DecisionInstanceFieldSortingTransformer());
+    mappers.put(ProcessInstanceSort.class, new ProcessInstanceFieldSortingTransformer());
 
     // filters -> search query
     mappers.put(ProcessInstanceFilter.class, new ProcessInstanceFilterTransformer());

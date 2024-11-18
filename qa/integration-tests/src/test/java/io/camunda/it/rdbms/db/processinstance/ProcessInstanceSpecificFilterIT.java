@@ -86,7 +86,7 @@ public class ProcessInstanceSpecificFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().key()).isEqualTo(42L);
+    assertThat(searchResult.items().getFirst().processInstanceKey()).isEqualTo(42L);
   }
 
   static List<ProcessInstanceFilter> shouldFindProcessInstanceWithSpecificFilterParameters() {
