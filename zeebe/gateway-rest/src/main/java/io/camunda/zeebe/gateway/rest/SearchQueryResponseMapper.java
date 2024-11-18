@@ -374,6 +374,7 @@ public final class SearchQueryResponseMapper {
   public static DecisionInstanceItem toDecisionInstance(final DecisionInstanceEntity entity) {
     return new DecisionInstanceItem()
         .decisionInstanceKey(entity.key())
+        .decisionInstanceId(entity.id())
         .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(formatDate(entity.evaluationDate()))
         .evaluationFailure(entity.evaluationFailure())
@@ -391,6 +392,7 @@ public final class SearchQueryResponseMapper {
       final DecisionInstanceEntity entity) {
     return new DecisionInstanceGetQueryResponse()
         .decisionInstanceKey(entity.key())
+        .decisionInstanceId(entity.id())
         .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(formatDate(entity.evaluationDate()))
         .evaluationFailure(entity.evaluationFailure())

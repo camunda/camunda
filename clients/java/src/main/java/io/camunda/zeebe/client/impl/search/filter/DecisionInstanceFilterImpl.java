@@ -44,6 +44,12 @@ public class DecisionInstanceFilterImpl
   }
 
   @Override
+  public DecisionInstanceFilter decisionInstanceId(final String decisionInstanceId) {
+    filter.decisionInstanceId(decisionInstanceId);
+    return this;
+  }
+
+  @Override
   public DecisionInstanceFilter state(final DecisionInstanceState state) {
     final DecisionInstanceStateEnum stateEnum;
     switch (state) {

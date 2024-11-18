@@ -12,6 +12,7 @@ import java.util.List;
 
 public record DecisionInstanceEntity(
     long key,
+    String id,
     DecisionInstanceState state,
     OffsetDateTime evaluationDate,
     String evaluationFailure,
