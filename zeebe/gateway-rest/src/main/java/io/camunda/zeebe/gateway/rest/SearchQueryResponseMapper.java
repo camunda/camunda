@@ -277,10 +277,10 @@ public final class SearchQueryResponseMapper {
   public static DecisionDefinitionItem toDecisionDefinition(final DecisionDefinitionEntity d) {
     return new DecisionDefinitionItem()
         .tenantId(d.tenantId())
-        .decisionDefinitionKey(d.key())
+        .decisionDefinitionKey(d.decisionDefinitionKey())
         .name(d.name())
         .version(d.version())
-        .decisionDefinitionId(d.decisionId())
+        .decisionDefinitionId(d.decisionDefinitionId())
         .decisionRequirementsKey(d.decisionRequirementsKey())
         .decisionRequirementsId(d.decisionRequirementsId());
   }
@@ -289,7 +289,7 @@ public final class SearchQueryResponseMapper {
       final DecisionRequirementsEntity d) {
     return new DecisionRequirementsItem()
         .tenantId(d.tenantId())
-        .decisionRequirementsKey(d.key())
+        .decisionRequirementsKey(d.decisionRequirementsKey())
         .name(d.name())
         .version(d.version())
         .resourceName(d.resourceName())

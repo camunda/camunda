@@ -67,7 +67,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
   static final SearchQueryResult<DecisionRequirementsEntity> SEARCH_QUERY_RESULT =
       new Builder<DecisionRequirementsEntity>()
           .total(1L)
-          .items(List.of(new DecisionRequirementsEntity("t", 0L, "id", "name", 1, "rN", null)))
+          .items(List.of(new DecisionRequirementsEntity(0L, "id", "name", 1, "rN", null, "t")))
           .sortValues(new Object[] {"v"})
           .build();
 
@@ -97,7 +97,7 @@ public class DecisionRequirementsQueryControllerTest extends RestControllerTest 
         .thenReturn(decisionRequirementsServices);
 
     when(decisionRequirementsServices.getByKey(VALID_DECISION_REQUIREMENTS_KEY))
-        .thenReturn(new DecisionRequirementsEntity("t", 1L, "id", "name", 1, "rN", null));
+        .thenReturn(new DecisionRequirementsEntity(1L, "id", "name", 1, "rN", null, "t"));
 
     when(decisionRequirementsServices.getByKey(INVALID_DECISION_REQUIREMENTS_KEY))
         .thenThrow(
