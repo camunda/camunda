@@ -27,8 +27,8 @@ public class DecisionInstanceEntityTransformer
   public DecisionInstanceEntity apply(
       final io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity source) {
     return new DecisionInstanceEntity(
-        source.getKey(),
         source.getId(),
+        source.getKey(),
         toDecisionInstanceState(source.getState()),
         source.getEvaluationDate(),
         source.getEvaluationFailure(),

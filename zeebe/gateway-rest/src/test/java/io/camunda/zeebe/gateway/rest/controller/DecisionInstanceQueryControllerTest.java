@@ -84,8 +84,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           .items(
               List.of(
                   new DecisionInstanceEntity(
-                      123L,
                       "123-1",
+                      123L,
                       DecisionInstanceState.EVALUATED,
                       OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
                       null,
@@ -201,8 +201,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     final var decisionInstanceId = "123-1";
     final var decisionInstanceInDB =
         new DecisionInstanceEntity(
-            123L,
             "123-1",
+            123L,
             DecisionInstanceState.EVALUATED,
             OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
             null,

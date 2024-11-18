@@ -36,8 +36,8 @@ class DecisionInstanceSearchClientBasedQueryExecutorTest {
 
   private final DecisionInstanceEntity domainEntity =
       new DecisionInstanceEntity(
-          123L,
           "123-1",
+          123L,
           DecisionInstanceState.EVALUATED,
           OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
           "failure",

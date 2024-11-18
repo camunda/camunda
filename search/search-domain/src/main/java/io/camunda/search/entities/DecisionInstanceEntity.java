@@ -11,8 +11,8 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 public record DecisionInstanceEntity(
+    String decisionInstanceId, // this is the unique identifier of the decision instance
     Long decisionInstanceKey,
-    String decisionInstanceId,
     DecisionInstanceState state,
     OffsetDateTime evaluationDate,
     String evaluationFailure,
