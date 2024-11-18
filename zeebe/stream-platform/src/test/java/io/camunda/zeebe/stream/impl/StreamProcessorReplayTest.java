@@ -160,7 +160,7 @@ final class StreamProcessorReplayTest {
             () -> assertThat(streamProcessor.getLastWrittenPositionAsync().join()).isEqualTo(2L));
 
     // state has to be updated
-    assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(1);
+    assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(2);
     assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey())).isEqualTo(19L);
   }
 
@@ -195,13 +195,13 @@ final class StreamProcessorReplayTest {
 
     Awaitility.await("position has to be set on processing start")
         .untilAsserted(
-            () -> assertThat(streamProcessor.getLastProcessedPositionAsync().join()).isEqualTo(1L));
+            () -> assertThat(streamProcessor.getLastProcessedPositionAsync().join()).isEqualTo(2L));
     Awaitility.await("position has to be set on processing start")
         .untilAsserted(
             () -> assertThat(streamProcessor.getLastWrittenPositionAsync().join()).isEqualTo(2L));
 
     // state has to be updated
-    assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(1);
+    assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(2);
     assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey())).isEqualTo(19L);
   }
 

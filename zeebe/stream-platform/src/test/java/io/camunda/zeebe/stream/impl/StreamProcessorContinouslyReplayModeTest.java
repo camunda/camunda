@@ -269,7 +269,7 @@ public final class StreamProcessorContinouslyReplayModeTest {
     // then
     Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition())
         .describedAs("Last processed position in the state must be the last source position")
-        .isEqualTo(1);
+        .isEqualTo(2);
   }
 
   @Test
@@ -313,9 +313,9 @@ public final class StreamProcessorContinouslyReplayModeTest {
         .untilAsserted(
             () ->
                 Assertions.assertThat(streamProcessor.getLastProcessedPositionAsync().join())
-                    .isEqualTo(3L));
+                    .isEqualTo(4L));
 
-    Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(3);
+    Assertions.assertThat(streamPlatform.getLastSuccessfulProcessedRecordPosition()).isEqualTo(4);
     Assertions.assertThat(Protocol.decodeKeyInPartition(streamPlatform.getCurrentKey()))
         .isEqualTo(19L);
   }

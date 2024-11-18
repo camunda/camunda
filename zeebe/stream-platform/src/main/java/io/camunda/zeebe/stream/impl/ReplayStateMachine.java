@@ -210,7 +210,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
           batch.forEachRemaining(this::replayEvent);
 
           if (batchSourceEventPosition > snapshotPosition) {
-            lastProcessedPositionState.markAsProcessed(batchSourceEventPosition);
+            lastProcessedPositionState.markAsProcessed(lastReadRecordPosition);
           }
         });
 
