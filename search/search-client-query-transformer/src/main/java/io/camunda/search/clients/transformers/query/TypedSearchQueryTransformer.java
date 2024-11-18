@@ -18,14 +18,15 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.filter.FilterTransformer;
 import io.camunda.search.clients.transformers.result.ResultConfigTransformer;
 import io.camunda.search.clients.transformers.sort.FieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.SortingTransformer;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.result.QueryResultConfig;
 import io.camunda.search.sort.SearchSortOptions;
 import io.camunda.search.sort.SortOption;
-import io.camunda.search.sort.SortOption.FieldSorting;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Objects;
 
 public final class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOption>
     implements SearchRequestTransformer<F, S> {
@@ -90,7 +91,7 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
 
   private List<SearchSortOptions> toSearchSortOptions(final S sort, final boolean reverse) {
     final var orderings = sort.getFieldSortings();
-    final var sortingTransformer = getFieldSortingTransformer();
+    final var sortingTransformer = getSortingTransformer(sort.getClass());
     return sortingTransformer.apply(Tuple.of(orderings, reverse));
   }
 
@@ -98,10 +99,12 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
     return transformers.getFilterTransformer(cls);
   }
 
-  private FieldSortingTransformer getFieldSortingTransformer() {
-    final ServiceTransformer<Tuple<List<FieldSorting>, Boolean>, List<SearchSortOptions>>
-        transformer = transformers.getTransformer(FieldSortingTransformer.class);
-    return (FieldSortingTransformer) transformer;
+  private SortingTransformer getSortingTransformer(final Class<? extends SortOption> cls) {
+    // TODO remove the fallback to identity once all FieldSortingTransformer are implemented
+    final ServiceTransformer<String, String> fieldSortingTransformer =
+        Objects.requireNonNullElseGet(
+            transformers.getTransformer(cls), () -> FieldSortingTransformer.identity());
+    return new SortingTransformer((FieldSortingTransformer) fieldSortingTransformer);
   }
 
   private <T extends QueryResultConfig>

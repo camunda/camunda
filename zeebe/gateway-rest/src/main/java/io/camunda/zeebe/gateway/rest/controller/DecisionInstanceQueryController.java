@@ -44,14 +44,14 @@ public class DecisionInstanceQueryController {
   @GetMapping(
       path = "/{decisionInstanceKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<DecisionInstanceGetQueryResponse> getDecisionInstanceByKey(
-      @PathVariable("decisionInstanceKey") final long decisionInstanceKey) {
+  public ResponseEntity<DecisionInstanceGetQueryResponse> getDecisionInstanceById(
+      @PathVariable("decisionInstanceKey") final String decisionInstanceId) {
     try {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionInstanceGetQueryResponse(
               decisionInstanceServices
                   .withAuthentication(RequestMapper.getAuthentication())
-                  .getByKey(decisionInstanceKey)));
+                  .getById(decisionInstanceId)));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }

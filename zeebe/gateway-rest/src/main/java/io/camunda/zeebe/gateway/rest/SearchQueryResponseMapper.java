@@ -373,34 +373,36 @@ public final class SearchQueryResponseMapper {
 
   public static DecisionInstanceItem toDecisionInstance(final DecisionInstanceEntity entity) {
     return new DecisionInstanceItem()
-        .decisionInstanceKey(entity.key())
+        .decisionInstanceKey(entity.decisionInstanceKey())
+        .decisionInstanceId(entity.decisionInstanceId())
         .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(formatDate(entity.evaluationDate()))
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(entity.processDefinitionKey())
         .processInstanceKey(entity.processInstanceKey())
-        .decisionDefinitionKey(Long.valueOf(entity.decisionDefinitionId()))
-        .decisionDefinitionId(entity.decisionId())
-        .decisionDefinitionName(entity.decisionName())
-        .decisionDefinitionVersion(entity.decisionVersion())
-        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionType()))
+        .decisionDefinitionKey(entity.decisionDefinitionKey())
+        .decisionDefinitionId(entity.decisionDefinitionId())
+        .decisionDefinitionName(entity.decisionDefinitionName())
+        .decisionDefinitionVersion(entity.decisionDefinitionVersion())
+        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
         .result(entity.result());
   }
 
   public static DecisionInstanceGetQueryResponse toDecisionInstanceGetQueryResponse(
       final DecisionInstanceEntity entity) {
     return new DecisionInstanceGetQueryResponse()
-        .decisionInstanceKey(entity.key())
+        .decisionInstanceKey(entity.decisionInstanceKey())
+        .decisionInstanceId(entity.decisionInstanceId())
         .state(toDecisionInstanceStateEnum(entity.state()))
         .evaluationDate(formatDate(entity.evaluationDate()))
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(entity.processDefinitionKey())
         .processInstanceKey(entity.processInstanceKey())
-        .decisionDefinitionKey(Long.valueOf(entity.decisionDefinitionId()))
-        .decisionDefinitionId(entity.decisionId())
-        .decisionDefinitionName(entity.decisionName())
-        .decisionDefinitionVersion(entity.decisionVersion())
-        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionType()))
+        .decisionDefinitionKey(entity.decisionDefinitionKey())
+        .decisionDefinitionId(entity.decisionDefinitionId())
+        .decisionDefinitionName(entity.decisionDefinitionName())
+        .decisionDefinitionVersion(entity.decisionDefinitionVersion())
+        .decisionDefinitionType(toDecisionDefinitionTypeEnum(entity.decisionDefinitionType()))
         .result(entity.result())
         .evaluatedInputs(toEvaluatedInputs(entity.evaluatedInputs()))
         .matchedRules(toMatchedRules(entity.evaluatedOutputs()));
@@ -415,9 +417,9 @@ public final class SearchQueryResponseMapper {
         .map(
             input ->
                 new EvaluatedDecisionInputItem()
-                    .inputId(input.id())
-                    .inputName(input.name())
-                    .inputValue(input.value()))
+                    .inputId(input.inputId())
+                    .inputName(input.inputName())
+                    .inputValue(input.inputValue()))
         .toList();
   }
 
@@ -442,9 +444,9 @@ public final class SearchQueryResponseMapper {
                           .map(
                               output ->
                                   new EvaluatedDecisionOutputItem()
-                                      .outputId(output.id())
-                                      .outputName(output.name())
-                                      .outputValue(output.value()))
+                                      .outputId(output.outputId())
+                                      .outputName(output.outputName())
+                                      .outputValue(output.outputValue()))
                           .toList());
             })
         .toList();

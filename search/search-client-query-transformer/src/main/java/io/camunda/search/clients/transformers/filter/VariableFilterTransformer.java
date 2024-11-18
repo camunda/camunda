@@ -9,32 +9,27 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.VariableFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class VariableFilterTransformer implements FilterTransformer<VariableFilter> {
-
-  public static final String VAR_NAME = "name";
-  public static final String VAR_VALUE = "value";
 
   @Override
   public SearchQuery toSearchQuery(final VariableFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    ofNullable(getVariablesQuery(filter.variableOperations())).ifPresent(queries::add);
+    ofNullable(stringOperations("name", filter.nameOperations())).ifPresent(queries::addAll);
+    ofNullable(getVariablesQuery(filter.valueOperations())).ifPresent(queries::addAll);
     ofNullable(getScopeKeyQuery(filter.scopeKeyOperations())).ifPresent(queries::addAll);
     ofNullable(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()))
         .ifPresent(queries::addAll);
@@ -49,12 +44,8 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     return Arrays.asList("operate-variable-8.3.0_alias");
   }
 
-  private SearchQuery getVariablesQuery(final Map<String, List<UntypedOperation>> variableFilters) {
-    return or(
-        variableFilters.entrySet().stream()
-            .map(entry -> variableOperations(VAR_NAME, VAR_VALUE, entry.getKey(), entry.getValue()))
-            .map(SearchQueryBuilders::and)
-            .collect(Collectors.toList()));
+  private List<SearchQuery> getVariablesQuery(final List<UntypedOperation> variableFilters) {
+    return variableOperations("value", variableFilters);
   }
 
   private List<SearchQuery> getScopeKeyQuery(final List<Operation<Long>> scopeKey) {

@@ -18,9 +18,11 @@ package io.camunda.zeebe.client.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.VariableFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.VariableSearchQueryRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 public class SearchVariableTest extends ClientRestTest {
@@ -44,7 +46,7 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getValue()).isEqualTo("demo");
+    assertThat(request.getFilter().getValue().get$Eq()).isEqualTo("demo");
   }
 
   @Test
@@ -55,7 +57,20 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getName()).isEqualTo("demo");
+    assertThat(request.getFilter().getName().get$Eq()).isEqualTo("demo");
+  }
+
+  @Test
+  void shouldSearchVariablesByNameStringFilter() {
+    // when
+    final StringFilterProperty filterProperty = new StringFilterProperty();
+    filterProperty.$in(Arrays.asList("this", "that"));
+    client.newVariableQuery().filter(f -> f.name(filterProperty)).send().join();
+
+    // then
+    final VariableSearchQueryRequest request =
+        gatewayService.getLastRequest(VariableSearchQueryRequest.class);
+    assertThat(request.getFilter().getName().get$In()).isEqualTo(Arrays.asList("this", "that"));
   }
 
   @Test
@@ -129,6 +144,6 @@ public class SearchVariableTest extends ClientRestTest {
     // then
     final VariableSearchQueryRequest request =
         gatewayService.getLastRequest(VariableSearchQueryRequest.class);
-    assertThat(request.getFilter().getVariableKey()).isEqualTo(1);
+    assertThat(request.getFilter().getVariableKey().get$Eq()).isEqualTo(1);
   }
 }

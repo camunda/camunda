@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 
 public interface VariableFilter extends SearchRequestFilter {
 
@@ -37,12 +38,28 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter value(final String value);
 
   /**
+   * Filters variables by the specified value using {@link StringFilterProperty}.
+   *
+   * @param value the value {@link StringFilterProperty} of the variable
+   * @return the updated filter
+   */
+  VariableFilter value(final StringFilterProperty value);
+
+  /**
    * Filters variables by the specified name.
    *
    * @param name the name of the variable
    * @return the updated filter
    */
   VariableFilter name(final String name);
+
+  /**
+   * Filters variables by the specified name using {@link StringFilterProperty}.
+   *
+   * @param name the name {@link StringFilterProperty} of the variable
+   * @return the updated filter
+   */
+  VariableFilter name(final StringFilterProperty name);
 
   /**
    * Filters variables by the specified scope key.

@@ -16,21 +16,14 @@ import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.Decision;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
-import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
-import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
-import io.camunda.zeebe.client.api.search.response.DecisionInstance;
-import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
-import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -49,7 +42,6 @@ class DecisionQueryTest {
   private static final List<Decision> DEPLOYED_DECISIONS = new ArrayList<>();
   private static final List<DecisionRequirements> DEPLOYED_DECISION_REQUIREMENTS =
       new ArrayList<>();
-  private static final List<EvaluateDecisionResponse> EVALUATED_DECISIONS = new ArrayList<>();
   private static ZeebeClient zeebeClient;
 
   @TestZeebe(initMethod = "initTestStandaloneCamunda")
@@ -76,21 +68,12 @@ class DecisionQueryTest {
     assertThat(DEPLOYED_DECISIONS.size()).isEqualTo(3);
     assertThat(DEPLOYED_DECISION_REQUIREMENTS.size()).isEqualTo(3);
     waitForDecisionsBeingExported();
-
-    EVALUATED_DECISIONS.addAll(
-        DEPLOYED_DECISIONS.stream()
-            .map(Decision::getDecisionKey)
-            .map(k -> evaluateDecision(k))
-            .toList());
-    assertThat(EVALUATED_DECISIONS.size()).isEqualTo(3);
-    waitForDecisionInstancesBeingExported();
   }
 
   @AfterAll
   static void afterAll() {
     DEPLOYED_DECISIONS.clear();
     DEPLOYED_DECISION_REQUIREMENTS.clear();
-    EVALUATED_DECISIONS.clear();
   }
 
   @Test
@@ -114,7 +97,7 @@ class DecisionQueryTest {
   }
 
   @Test
-  void shouldRetrieveByDecisionKey() {
+  void shouldSearchDecisionDefinitionsByDecisionDefinitionKey() {
     // when
     final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
     final var result =
@@ -500,140 +483,6 @@ class DecisionQueryTest {
     assertThat(resultBefore.items().getFirst().getDecisionRequirementsKey()).isEqualTo(key);
   }
 
-  @Test
-  public void shouldRetrieveAllDecisionInstances() {
-    // when
-    final var result =
-        zeebeClient
-            .newDecisionInstanceQuery()
-            .sort(b -> b.decisionInstanceKey().asc())
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(3);
-    assertThat(result.items().stream().map(DecisionInstance::getDecisionInstanceKey).toList())
-        .isEqualTo(
-            EVALUATED_DECISIONS.stream()
-                .map(EvaluateDecisionResponse::getDecisionInstanceKey)
-                .sorted()
-                .toList());
-  }
-
-  @Test
-  public void shouldRetrieveDecisionInstanceByDecisionKey() {
-    // when
-    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
-    final var result =
-        zeebeClient
-            .newDecisionInstanceQuery()
-            .filter(f -> f.decisionDefinitionKey(decisionKey))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDecisionDefinitionKey()).isEqualTo(decisionKey);
-    assertThat(result.items().get(0).getDecisionInstanceKey())
-        .isEqualTo(EVALUATED_DECISIONS.get(0).getDecisionInstanceKey());
-  }
-
-  @Test
-  public void shouldRetrieveDecisionInstanceByDecisionKeyFilterIn() {
-    // when
-    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
-    final BasicLongFilterProperty filter = new BasicLongFilterProperty();
-    filter.set$In(List.of(Long.MAX_VALUE, decisionKey));
-    final var result =
-        zeebeClient
-            .newDecisionInstanceQuery()
-            .filter(f -> f.decisionDefinitionKey(filter))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDecisionDefinitionKey()).isEqualTo(decisionKey);
-    assertThat(result.items().get(0).getDecisionInstanceKey())
-        .isEqualTo(EVALUATED_DECISIONS.get(0).getDecisionInstanceKey());
-  }
-
-  @Test
-  public void shouldRetrieveDecisionInstanceByDecisionInstanceKey() {
-    // when
-    final long decisionInstanceKey = EVALUATED_DECISIONS.get(0).getDecisionInstanceKey();
-    final var result =
-        zeebeClient
-            .newDecisionInstanceQuery()
-            .filter(f -> f.decisionInstanceKey(decisionInstanceKey))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
-  }
-
-  @Test
-  public void shouldRetrieveDecisionInstanceByStateAndType() {
-    // when
-    final DecisionInstanceState state = DecisionInstanceState.EVALUATED;
-    final DecisionDefinitionType type = DecisionDefinitionType.DECISION_TABLE;
-    final var result =
-        zeebeClient
-            .newDecisionInstanceQuery()
-            .filter(f -> f.state(state).decisionDefinitionType(type))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(3);
-  }
-
-  @Test
-  public void shouldRetrieveDecisionInstanceByEvaluationDate() {
-    // given
-    final var allResult =
-        zeebeClient.newDecisionInstanceQuery().page(p -> p.limit(1)).send().join();
-    final var di = allResult.items().getFirst();
-
-    // when
-    final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSXX");
-    final var offsetDateTime = OffsetDateTime.parse(di.getEvaluationDate(), formatter);
-    final var result =
-        zeebeClient
-            .newDecisionInstanceQuery()
-            .filter(f -> f.evaluationDate(offsetDateTime.toString()))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items()).hasSize(1);
-    assertThat(result.items().getFirst().getDecisionInstanceKey())
-        .isEqualTo(di.getDecisionInstanceKey());
-  }
-
-  @Test
-  public void shouldRetrieveDecisionInstanceByDmnDecisionIdAndDecisionVersion() {
-    // when
-    final String dmnDecisionId = DEPLOYED_DECISIONS.get(1).getDmnDecisionId();
-    final int decisionVersion = DEPLOYED_DECISIONS.get(1).getVersion();
-    final var result =
-        zeebeClient
-            .newDecisionInstanceQuery()
-            .filter(
-                f ->
-                    f.decisionDefinitionId(dmnDecisionId)
-                        .decisionDefinitionVersion(decisionVersion))
-            .send()
-            .join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(1);
-    assertThat(result.items().get(0).getDecisionInstanceKey())
-        .isEqualTo(EVALUATED_DECISIONS.get(1).getDecisionInstanceKey());
-  }
-
   private static void waitForDecisionsBeingExported() {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))
@@ -647,30 +496,10 @@ class DecisionQueryTest {
             });
   }
 
-  private static void waitForDecisionInstancesBeingExported() {
-    Awaitility.await("should receive data from ES")
-        .atMost(Duration.ofMinutes(1))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              assertThat(zeebeClient.newDecisionInstanceQuery().send().join().items().size())
-                  .isEqualTo(EVALUATED_DECISIONS.size());
-            });
-  }
-
   private static DeploymentEvent deployResource(final String resourceName) {
     return zeebeClient
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
-        .send()
-        .join();
-  }
-
-  private static EvaluateDecisionResponse evaluateDecision(final long decisionKey) {
-    return zeebeClient
-        .newEvaluateDecisionCommand()
-        .decisionKey(decisionKey)
-        .variables("{\"input1\": \"A\"}")
         .send()
         .join();
   }
@@ -715,29 +544,5 @@ class DecisionQueryTest {
     assertThat(problemException.details().getDetail())
         .isEqualTo(
             "Decision requirements with key %d not found".formatted(decisionRequirementsKey));
-  }
-
-  @Test
-  void shouldGetDecisionInstance() {
-    // when
-    final long decisionInstanceKey = EVALUATED_DECISIONS.get(0).getDecisionInstanceKey();
-    final var result = zeebeClient.newDecisionInstanceGetRequest(decisionInstanceKey).send().join();
-
-    // then
-    assertThat(result.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
-  }
-
-  @Test
-  void shouldReturn404ForNotFoundDecisionInstance() {
-    // when
-    final long decisionInstanceKey = new Random().nextLong();
-    final var problemException =
-        assertThrows(
-            ProblemException.class,
-            () -> zeebeClient.newDecisionInstanceGetRequest(decisionInstanceKey).send().join());
-    // then
-    assertThat(problemException.code()).isEqualTo(404);
-    assertThat(problemException.details().getDetail())
-        .isEqualTo("Decision instance with key %d not found".formatted(decisionInstanceKey));
   }
 }
