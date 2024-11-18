@@ -7,18 +7,17 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.Collections;
@@ -160,7 +159,7 @@ public class FormStoreOpenSearch implements FormStore {
     try {
       final Query boolQuery;
       final SearchRequest.Builder searchRequest =
-          OpenSearchUtil.createSearchRequest(formIndex, OpenSearchUtil.QueryType.ALL)
+          OpenSearchUtil.createSearchRequest(formIndex.getAlias())
               .index(formIndex.getFullQualifiedName())
               .size(1);
 
@@ -234,7 +233,7 @@ public class FormStoreOpenSearch implements FormStore {
     try {
       final String formId = String.format("%s_%s", processDefinitionId, id);
       return getRawResponseWithTenantCheck(
-          formId, formIndex, ONLY_RUNTIME, tenantAwareClient, FormEntity.class);
+          formId, formIndex.getFullQualifiedName(), tenantAwareClient, FormEntity.class);
     } catch (IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     } catch (NotFoundException e) {
@@ -245,7 +244,7 @@ public class FormStoreOpenSearch implements FormStore {
   @Override
   public List<String> getFormIdsByProcessDefinitionId(String processDefinitionId) {
     final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(formIndex, ONLY_RUNTIME)
+        OpenSearchUtil.createSearchRequest(formIndex.getFullQualifiedName())
             .query(
                 q ->
                     q.term(

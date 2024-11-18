@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.getRawResponseWithTenantCheck;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -16,12 +15,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.List;
@@ -135,7 +134,8 @@ public class FormStoreElasticSearch implements FormStore {
     try {
       final String formId = String.format("%s_%s", processDefinitionId, id);
       final var formSearchHit =
-          getRawResponseWithTenantCheck(formId, formIndex, ONLY_RUNTIME, tenantAwareClient);
+          getRawResponseWithTenantCheck(
+              formId, formIndex.getFullQualifiedName(), tenantAwareClient);
       return fromSearchHit(formSearchHit.getSourceAsString(), objectMapper, FormEntity.class);
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);

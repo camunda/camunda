@@ -9,10 +9,10 @@ package io.camunda.tasklist.zeebeimport.v860.processors.os;
 
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.deployment.FormRecordImpl;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;

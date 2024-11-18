@@ -10,6 +10,7 @@ package io.camunda.tasklist.schema;
 import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +27,11 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
   public DraftTaskVariableTemplate draftTaskVariableTemplate() {
     return new DraftTaskVariableTemplate(
         getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+  }
+
+  @Bean
+  public FormIndex formIndex() {
+    return new FormIndex(getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
   }
 
   private boolean isElasticsearch(final TasklistProperties tasklistProperties) {
