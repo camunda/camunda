@@ -12,6 +12,7 @@ import {
   NoDataContainer,
   NoDataHeader,
 } from "src/components/entityList";
+import PatchModal from "src/pages/users/detail/authorization/PatchModal";
 import {Add, Edit} from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { User } from "src/utility/api/users";
@@ -29,10 +30,12 @@ import {
     TableExpandRow,
     TableHead,
     TableHeader,
-    TableRow, TableToolbar, TableToolbarAction, TableToolbarContent, TableToolbarSearch
+    TableRow, TableToolbar, TableToolbarContent, TableToolbarSearch
 } from "@carbon/react";
-import Flex from "src/components/layout/Flex";
-import {Authorization} from "src/utility/api/authorizations";
+
+import {useEntityModal} from "src/components/modal";
+import {PatchAuthorizationParams} from "src/utility/api/authorizations";
+
 
 type AuthorizationsListProps = {
   user: User;
@@ -58,43 +61,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
         { header: t("ResourceType"), key: "resourceType" }
     ];
 
-    // const rows = authorizations == null ? [] : authorizations.items
-
-    const rows = [
-        {
-            id: '1',
-            ownerKey: 2251799813685249,
-            ownerType: 'USER',
-            resourceType: 'PROCESS_DEFINITION',
-            permissions: [
-                {
-                    permissionType: 'CREATE',
-                    resourceIds: ['resource1', 'resource12'],
-                },
-                {
-                    permissionType: 'DELETE',
-                    resourceIds: ['resource1', 'resource3'],
-                },
-            ],
-        },
-        {
-            id: '2',
-            ownerKey: 2251799813685249,
-            ownerType: 'USER',
-            resourceType: 'DM_DEFINITION',
-            permissions: [
-                {
-                    permissionType: 'CREATE',
-                    resourceIds: ['resource12', 'resource22'],
-                },
-                {
-                    permissionType: 'DELETE',
-                    resourceIds: ['resource11', 'resource31'],
-                },
-            ],
-        }
-    ];
-
+    const rows = authorizations == null ? [] : authorizations.items
     // Create a lookup map for rows by ID
     const dataMap = rows.reduce((map, item) => {
         map[item.id] = item;
@@ -110,6 +77,8 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
         }));
     };
 
+    const patch: PatchAuthorizationParams = {ownerKey: 1, action: "ADD", resourceType: "AUTH", permissions: []}
+    const [handleAddRow, patchModal] = useEntityModal(PatchModal, reload, patch);
 
     const onEditPermission = (rowId: string, permissionIndex: number) => {
         // Find the row by its ID and remove the permission at the given index
@@ -120,7 +89,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
     const onAddPermission = (rowId: string) => {
       console.log(`Add permission row with id: ${rowId}`)
     };
-    const handleAddRow = () => {};
+    // const handleAddRow = () => {};
 
   const availablePermissionTypes = [
     'CREATE',
@@ -150,7 +119,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
 
   return (
       <>
-          <TableContainer title="Expandable Table" description="A table with expandable rows">
+          <TableContainer title="Authorizations" description="Authorizations's of the user">
               <DataTable rows={rows} headers={headers}>
                   {({ rows, headers, getHeaderProps, getRowProps, getTableProps }) => (
                       <div>
@@ -251,7 +220,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                                                   )}
                                                 {/* Add button if not all permissions are present */}
                                                 {checkMissingPermissions(dataMap[row.id].permissions).length > 0 && (
-                                                    <li style={{ marginTop: '16px', textAlign: 'right' }}>
+                                                    <div style={{ marginTop: '16px', textAlign: 'right' }}>
                                                       <button
                                                           type="button"
                                                           onClick={() => onAddPermission(row.id)}
@@ -268,7 +237,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                                                         <Add style={{ marginRight: '8px' }} />
                                                         Add Permission
                                                       </button>
-                                                    </li>
+                                                    </div>
                                                 )}
                                               </TableExpandedRow>
                                           )}
@@ -305,6 +274,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                 actionButton={{ label: "Retry", onClick: reload }}
             />
         )}
+          {patchModal}
       </>
   );
 };

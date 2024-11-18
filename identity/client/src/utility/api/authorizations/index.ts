@@ -6,6 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 import { EntityData } from "src/components/entityList/EntityList";
+import {ApiDefinition, apiPatch, pathBuilder} from "src/utility/api/request";
+
+const path = pathBuilder("/authorizations");
 
 export type Permission = {
   permissionType: string;
@@ -17,3 +20,13 @@ export type Authorization = EntityData & {
   resourceType: string;
   permissions: Permission[];
 };
+
+
+export type PatchAuthorizationParams = {
+  ownerKey: number,
+  action: string,
+  resourceType: string,
+  permissions: Permission[]
+};
+
+export const patchAuthorizations: ApiDefinition<undefined, PatchAuthorizationParams> = (params) => apiPatch(path(params.ownerKey), params);

@@ -14,7 +14,7 @@ export type ApiResult<R> =
 
 export type ApiPromise<R> = Promise<ApiResult<R>>;
 
-export type ApiMethod = "GET" | "POST" | "PUT" | "DELETE";
+export type ApiMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
 
 type ApiRequestParams<P> = {
   url: string;
@@ -54,7 +54,7 @@ const apiRequest: <R, P>(
   options: ApiRequestParams<P>,
 ) => ApiPromise<R> = async ({ url, method, headers, params, baseUrl }) => {
   const hasBody =
-    !!params && ["PUT", "POST", "DELETE"].includes(method.toUpperCase());
+    !!params && ["PUT", "POST", "DELETE", "PATCH"].includes(method.toUpperCase());
   const body = hasBody ? JSON.stringify(params) : undefined;
 
   // default handling for content-type
@@ -127,6 +127,8 @@ export const apiPost = apiRequestWrapper("POST");
 export const apiPut = apiRequestWrapper("PUT");
 
 export const apiDelete = apiRequestWrapper("DELETE");
+
+export const apiPatch = apiRequestWrapper("PATCH");
 
 export const namedErrorsReducer = (
   result: Record<string, string[]>,
