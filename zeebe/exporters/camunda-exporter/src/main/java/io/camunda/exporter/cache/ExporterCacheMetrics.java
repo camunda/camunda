@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class ExporterCacheMetrics implements StatsCounter {
 
   public static final String TAG_TYPE = "type";
-  private static final String NAMESPACE = "zeebe.camunda.exporter.processcache";
+  private static final String NAMESPACE = "zeebe.camunda.exporter.cache";
   private final Timer loadSuccessDuration;
   private final Timer loadFailureDuration;
   private final Counter evictionCount;
