@@ -344,7 +344,7 @@ public class CamundaExporterHandlerIT {
       throws IOException {
     final var handler = getHandler(config, RoleDeletedHandler.class);
     basicAssertWhereHandlerDeletesDefaultEntity(
-        handler, config, clientAdapter, groupRecordGenerator(handler, GroupIntent.DELETED));
+        handler, config, clientAdapter, roleRecordGenerator(handler, RoleIntent.DELETED));
   }
 
   @TestTemplate
