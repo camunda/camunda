@@ -69,12 +69,12 @@ public final class DecisionInstanceServices
   }
 
   /**
-   * Get a Decision Instance by its id.
+   * Get a Decision Instance by its ID.
    *
-   * @param decisionInstanceId the id of the Decision Instance
+   * @param decisionInstanceId the ID of the decision instance
    * @return the Decision Instance
-   * @throws NotFoundException if the Decision Instance with the given id does not exist
-   * @throws CamundaSearchException if the Decision Instance with the given id exists more than once
+   * @throws NotFoundException if the decision instance with the given ID does not exist
+   * @throws CamundaSearchException if the decision instance with the given ID exists more than once
    */
   public DecisionInstanceEntity getById(final String decisionInstanceId) {
     final var result =

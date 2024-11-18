@@ -287,7 +287,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
     // given
     final var decisionInstanceId = "123-1";
     when(decisionInstanceServices.getById(decisionInstanceId))
-        .thenThrow(new NotFoundException("Decision Instance with key 123-1 was not found."));
+        .thenThrow(new NotFoundException("Decision instance with key 123-1 was not found."));
     // when
     webClient
         .get()
@@ -304,7 +304,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                           "type": "about:blank",
                           "title": "NOT_FOUND",
                           "status": 404,
-                          "detail": "Decision Instance with key 123-1 was not found.",
+                          "detail": "Decision instance with key 123-1 was not found.",
                           "instance": "/v2/decision-instances/123-1"
                         }""");
   }

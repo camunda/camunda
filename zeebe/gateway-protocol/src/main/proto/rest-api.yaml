@@ -1720,7 +1720,7 @@ paths:
         - name: decisionInstanceId
           in: path
           required: true
-          description: The assigned id of the decision instance, which acts as a unique identifier for this decision instance.
+          description: The assigned ID of the decision instance, which acts as a unique identifier for this decision instance.
           schema:
             type: string
       responses:
@@ -1741,7 +1741,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
           description: >
-            The decision instance with the given id was not found.
+            The decision instance with the given ID was not found.
             More details are provided in the response body.
           content:
             application/problem+json:

@@ -27,7 +27,7 @@ public interface DecisionInstance {
   long getDecisionInstanceKey();
 
   /**
-   * @return the id of the decision instance
+   * @return the ID of the decision instance
    */
   String getDecisionInstanceId();
 
