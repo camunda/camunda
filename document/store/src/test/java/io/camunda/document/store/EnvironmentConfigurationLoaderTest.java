@@ -19,10 +19,10 @@ public class EnvironmentConfigurationLoaderTest {
   public void shouldLoadConfiguration() {
     // given
     final EnvironmentConfigurationLoader loader = new EnvironmentConfigurationLoader();
-    loader.addEnvironmentVariableOverride("DOCUMENT_DEFAULT_STORE_ID", "MYGCP");
-    loader.addEnvironmentVariableOverride(
+    System.setProperty("DOCUMENT_DEFAULT_STORE_ID", "MYGCP");
+    System.setProperty(
         "DOCUMENT_STORE_MYGCP_CLASS", "io.camunda.document.store.gcp.GcpDocumentStoreProvider");
-    loader.addEnvironmentVariableOverride("DOCUMENT_STORE_MYGCP_BUCKET", "my-bucket");
+    System.setProperty("DOCUMENT_STORE_MYGCP_BUCKET", "my-bucket");
 
     // when
     final var configuration = loader.loadConfiguration();
@@ -34,17 +34,21 @@ public class EnvironmentConfigurationLoaderTest {
     assertThat(store.id()).isEqualTo("mygcp");
     assertThat(store.providerClass()).isEqualTo(GcpDocumentStoreProvider.class);
     assertThat(store.properties()).containsEntry("BUCKET", "my-bucket");
+
+    System.clearProperty("DOCUMENT_DEFAULT_STORE_ID");
+    System.clearProperty("DOCUMENT_STORE_MYGCP_CLASS");
+    System.clearProperty("DOCUMENT_STORE_MYGCP_BUCKET");
   }
 
   @Test
   public void shouldLoadConfigurationWithMultipleStores() {
     // given
     final EnvironmentConfigurationLoader loader = new EnvironmentConfigurationLoader();
-    loader.addEnvironmentVariableOverride("DOCUMENT_DEFAULT_STORE_ID", "MYGCP");
-    loader.addEnvironmentVariableOverride("DOCUMENT_STORE_MYGCP_BUCKET", "my-bucket");
-    loader.addEnvironmentVariableOverride(
+    System.setProperty("DOCUMENT_DEFAULT_STORE_ID", "MYGCP");
+    System.setProperty(
         "DOCUMENT_STORE_MYGCP_CLASS", "io.camunda.document.store.gcp.GcpDocumentStoreProvider");
-    loader.addEnvironmentVariableOverride(
+    System.setProperty("DOCUMENT_STORE_MYGCP_BUCKET", "my-bucket");
+    System.setProperty(
         "DOCUMENT_STORE_MYINMEMORY_CLASS",
         "io.camunda.document.store.inmemory.InMemoryDocumentStoreProvider");
 
@@ -68,6 +72,11 @@ public class EnvironmentConfigurationLoaderTest {
             .get();
     assertThat(inMemoryStore.providerClass()).isEqualTo(InMemoryDocumentStoreProvider.class);
     assertThat(inMemoryStore.properties()).isEmpty();
+
+    System.clearProperty("DOCUMENT_DEFAULT_STORE_ID");
+    System.clearProperty("DOCUMENT_STORE_MYGCP_CLASS");
+    System.clearProperty("DOCUMENT_STORE_MYGCP_BUCKET");
+    System.clearProperty("DOCUMENT_STORE_MYINMEMORY_CLASS");
   }
 
   @Test

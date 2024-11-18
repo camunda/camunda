@@ -15,6 +15,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,8 +35,6 @@ public class EnvironmentConfigurationLoader implements DocumentStoreConfiguratio
       Pattern.compile("^" + STORE_PREFIX + "(?<id>[^_]+)_(?<property>.+)$");
   private static final String STORE_CLASS = "CLASS";
 
-  private final Map<String, String> environmentVariableOverrides = new HashMap<>();
-
   @Override
   public DocumentStoreConfiguration loadConfiguration() {
     return new DocumentStoreConfiguration(
@@ -43,53 +42,49 @@ public class EnvironmentConfigurationLoader implements DocumentStoreConfiguratio
         loadDocumentStoreProperties());
   }
 
-  // For testing purposes
-  void addEnvironmentVariableOverride(final String key, final String value) {
-    environmentVariableOverrides.put(key, value);
+  private List<DocumentStoreConfigurationRecord> loadDocumentStoreProperties() {
+    final var storeProperties = extractStorePropertiesFromEnvVars();
+    return storeProperties.entrySet().stream().map(this::createConfigurationRecord).toList();
   }
 
-  private List<DocumentStoreConfigurationRecord> loadDocumentStoreProperties() {
-    final var envVars = new HashSet<>(environmentVariableOverrides.keySet());
+  private Map<String, Map<String, String>> extractStorePropertiesFromEnvVars() {
+    final Set<String> envVars = new HashSet<>();
     envVars.addAll(System.getenv().keySet());
-    final var matches =
-        envVars.stream().map(DOCUMENT_STORE_PROPERTY_PATTERN::matcher).filter(Matcher::matches);
+    envVars.addAll(System.getProperties().stringPropertyNames());
     final Map<String, Map<String, String>> storeProperties = new HashMap<>();
-    matches.forEach(
-        matcher -> {
-          final var id = matcher.group("id");
-          final var property = matcher.group("property");
-          final var value = getEnvVariable(matcher.group()).orElse(null);
-          storeProperties.computeIfAbsent(id, __ -> new HashMap<>()).put(property, value);
-        });
-    return storeProperties.entrySet().stream()
-        .map(
-            entry -> {
-              final var id = entry.getKey();
-              final Map<String, String> properties = entry.getValue();
-              final var storeClass = properties.get(STORE_CLASS);
-              if (storeClass == null) {
-                throw new IllegalArgumentException(
-                    "Document store class not defined for document store: "
-                        + id
-                        + ". Please define the class in the environment variable: "
-                        + STORE_PREFIX
-                        + id
-                        + "_"
-                        + STORE_CLASS);
-              }
-              properties.remove(STORE_CLASS);
-              final Class<? extends DocumentStoreProvider> storeClassInstance;
-              try {
-                storeClassInstance =
-                    (Class<? extends DocumentStoreProvider>) Class.forName(storeClass);
-              } catch (final ClassNotFoundException e) {
-                throw new IllegalArgumentException(
-                    "Document store class not found: " + storeClass, e);
-              }
-              return new DocumentStoreConfigurationRecord(
-                  id.toLowerCase(), storeClassInstance, properties);
-            })
-        .toList();
+    envVars.stream()
+        .map(DOCUMENT_STORE_PROPERTY_PATTERN::matcher)
+        .filter(Matcher::matches)
+        .forEach(
+            matcher -> {
+              final var storeId = matcher.group("id");
+              final var storeProperty = matcher.group("property");
+              final var value = getEnvVariable(matcher.group()).orElse(null);
+              storeProperties
+                  .computeIfAbsent(storeId, k -> new HashMap<>())
+                  .put(storeProperty, value);
+            });
+    return storeProperties;
+  }
+
+  private DocumentStoreConfigurationRecord createConfigurationRecord(
+      final Map.Entry<String, Map<String, String>> entry) {
+    final var storeId = entry.getKey();
+    final var properties = entry.getValue();
+    final var storeClassName = properties.remove(STORE_CLASS);
+    if (storeClassName == null) {
+      throw new IllegalArgumentException("Store class not defined for store: " + storeId);
+    }
+    final Class<? extends DocumentStoreProvider> storeClass = resolveStoreClass(storeClassName);
+    return new DocumentStoreConfigurationRecord(storeId.toLowerCase(), storeClass, properties);
+  }
+
+  private Class<? extends DocumentStoreProvider> resolveStoreClass(final String storeClassName) {
+    try {
+      return (Class<? extends DocumentStoreProvider>) Class.forName(storeClassName);
+    } catch (final ClassNotFoundException e) {
+      throw new IllegalArgumentException("Store class not found: " + storeClassName, e);
+    }
   }
 
   private Optional<String> getRootLevelProperty(final String name) {
@@ -97,7 +92,7 @@ public class EnvironmentConfigurationLoader implements DocumentStoreConfiguratio
   }
 
   private Optional<String> getEnvVariable(final String name) {
-    return Optional.ofNullable(environmentVariableOverrides.get(name))
-        .or(() -> Optional.ofNullable(System.getenv().get(name)));
+    return Optional.ofNullable(System.getenv().get(name))
+        .or(() -> Optional.ofNullable(System.getProperty(name)));
   }
 }
