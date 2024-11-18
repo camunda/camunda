@@ -9,9 +9,9 @@ package io.camunda.exporter;
 
 import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
-import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.*;
+import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.CONFIG_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
@@ -95,7 +95,7 @@ final class CamundaExporterIT {
   void shouldUpdateExporterPositionAfterFlushing(
       final ExporterConfiguration config, final SearchClientAdapter ignored) {
     // given
-    final var exporter = new CamundaExporter(mockResourceProvider(Set.of(), Set.of(), config));
+    final var exporter = new CamundaExporter();
 
     final var context = getContextFromConfig(config);
     exporter.configure(context);
@@ -118,7 +118,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter ignored) {
     // given
     config.getBulk().setSize(2);
-    final var exporter = new CamundaExporter(mockResourceProvider(Set.of(), Set.of(), config));
+    final var exporter = new CamundaExporter();
 
     final var context = getContextFromConfig(config);
     exporter.configure(context);
@@ -142,7 +142,7 @@ final class CamundaExporterIT {
       final GenericContainer<?> container) {
     // given
     final var config = getConnectConfigForContainer(container);
-    final var exporter = new CamundaExporter(mockResourceProvider(Set.of(), Set.of(), config));
+    final var exporter = new CamundaExporter();
 
     final var context = getContextFromConfig(config);
     final ExporterTestController controller = Mockito.spy(new ExporterTestController());
@@ -181,7 +181,8 @@ final class CamundaExporterIT {
     final var duration = 2;
     config.getBulk().setDelay(duration);
 
-    final var exporter = createExporter(Set.of(), Set.of(), config);
+    final var exporter = new CamundaExporter();
+    exporter.configure(getContextFromConfig(config));
 
     // when
     final ExporterTestController controller = new ExporterTestController();
