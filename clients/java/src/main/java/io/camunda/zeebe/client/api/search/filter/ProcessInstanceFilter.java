@@ -16,10 +16,12 @@
 package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
+import java.time.OffsetDateTime;
 
 public interface ProcessInstanceFilter extends SearchRequestFilter {
 
@@ -81,10 +83,16 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   ProcessInstanceFilter treePath(final StringFilterProperty treePath);
 
   /** Filter by startDate */
-  ProcessInstanceFilter startDate(final String startDate);
+  ProcessInstanceFilter startDate(final OffsetDateTime startDate);
+
+  /** Filter by startDate using {@link DateTimeFilterProperty} */
+  ProcessInstanceFilter startDate(final DateTimeFilterProperty startDate);
 
   /** Filter by endDate */
-  ProcessInstanceFilter endDate(final String endDate);
+  ProcessInstanceFilter endDate(final OffsetDateTime endDate);
+
+  /** Filter by endDate using {@link DateTimeFilterProperty} */
+  ProcessInstanceFilter endDate(final DateTimeFilterProperty endDate);
 
   /** Filter by state */
   ProcessInstanceFilter state(final String state);

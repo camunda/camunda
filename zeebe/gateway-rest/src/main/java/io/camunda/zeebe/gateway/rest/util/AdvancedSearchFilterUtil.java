@@ -11,6 +11,8 @@ import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.Operator;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -22,22 +24,27 @@ public class AdvancedSearchFilterUtil {
 
   private static final Logger LOG = LoggerFactory.getLogger(AdvancedSearchFilterUtil.class);
 
-  public static <T> Operation<T> mapToOperation(final T value) {
-    return Operation.eq(value);
-  }
-
   public static <T> Function<Object, List<Operation<T>>> mapToOperations(final Class<T> tClass) {
     return (final Object filter) -> mapToOperations(filter, tClass);
   }
 
-  private static <T> T convertValue(final Class<T> tClass, final Object value) {
-    if (!tClass.isInstance(value)) {
-      if (tClass == String.class) {
-        return (T) value.toString();
+  protected static <T> T convertValue(final Class<T> tClass, final Object value) {
+    if (tClass.isInstance(value)) {
+      return tClass.cast(value);
+    }
+
+    if (tClass == String.class) {
+      return (T) value.toString();
+    } else if (tClass == OffsetDateTime.class && value instanceof String) {
+      try {
+        return (T) OffsetDateTime.parse((String) value);
+      } catch (final DateTimeParseException e) {
+        throw new IllegalArgumentException("Failed to parse date-time: [%s]".formatted(value), e);
       }
     }
 
-    return tClass.cast(value);
+    throw new IllegalArgumentException(
+        "Could not convert request value [%s] to [%s]".formatted(value, tClass.getName()));
   }
 
   protected static <T> List<Operation<T>> mapToOperations(

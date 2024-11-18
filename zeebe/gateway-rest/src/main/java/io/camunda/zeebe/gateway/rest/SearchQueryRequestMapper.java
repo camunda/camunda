@@ -30,7 +30,6 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
-import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.UserFilter;
@@ -68,7 +67,6 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.gateway.protocol.rest.*;
-import io.camunda.zeebe.gateway.rest.util.AdvancedSearchFilterUtil;
 import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import jakarta.validation.constraints.NotNull;
@@ -200,8 +198,7 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::states);
       ofNullable(filter.getEvaluationFailure()).ifPresent(builder::evaluationFailures);
       ofNullable(filter.getEvaluationDate())
-          .map(SearchQueryRequestMapper::toOffsetDateTime)
-          .map(AdvancedSearchFilterUtil::mapToOperation)
+          .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::evaluationDateOperations);
       ofNullable(filter.getProcessDefinitionKey()).ifPresent(builder::processDefinitionKeys);
       ofNullable(filter.getDecisionDefinitionKey())
@@ -409,12 +406,10 @@ public final class SearchQueryRequestMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::treePathOperations);
       ofNullable(filter.getStartDate())
-          .map(SearchQueryRequestMapper::toOffsetDateTime)
-          .map(f -> List.of(Operation.gte(f), Operation.lt(f)))
+          .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::startDateOperations);
       ofNullable(filter.getEndDate())
-          .map(SearchQueryRequestMapper::toOffsetDateTime)
-          .map(f -> List.of(Operation.gte(f), Operation.lt(f)))
+          .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::endDateOperations);
       ofNullable(filter.getState())
           .map(mapToOperations(String.class))
