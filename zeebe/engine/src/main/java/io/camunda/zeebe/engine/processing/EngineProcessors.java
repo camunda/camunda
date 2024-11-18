@@ -401,7 +401,7 @@ public final class EngineProcessors {
     typedRecordProcessors.onCommand(
         ValueType.DEPLOYMENT,
         DeploymentIntent.RECONSTRUCT,
-        new DeploymentReconstructProcessor(keyGenerator, writers));
+        new DeploymentReconstructProcessor(keyGenerator, processingState, writers));
 
     typedRecordProcessors.withListener(
         new DeploymentReconstructionStarter(processingState.getDeploymentState()));

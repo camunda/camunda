@@ -11,6 +11,10 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.immutable.DecisionState;
+import io.camunda.zeebe.engine.state.immutable.FormState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -18,11 +22,20 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 @ExcludeAuthorizationCheck
 public class DeploymentReconstructProcessor implements TypedRecordProcessor<DeploymentRecord> {
-  private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
+  private final ProcessState processState;
+  private final FormState formState;
+  private final DecisionState decisionState;
+  private final StateWriter stateWriter;
 
-  public DeploymentReconstructProcessor(final KeyGenerator keyGenerator, final Writers writers) {
+  public DeploymentReconstructProcessor(
+      final KeyGenerator keyGenerator,
+      final ProcessingState processingState,
+      final Writers writers) {
     this.keyGenerator = keyGenerator;
+    processState = processingState.getProcessState();
+    formState = processingState.getFormState();
+    decisionState = processingState.getDecisionState();
     stateWriter = writers.state();
   }
 
