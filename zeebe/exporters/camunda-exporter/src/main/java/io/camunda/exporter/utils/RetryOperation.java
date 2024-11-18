@@ -104,8 +104,7 @@ public final class RetryOperation<T> {
         if (retries % 20 == 0) {
           LOGGER.info("{} - Waiting {} {}. {}/{}", message, delay, timeUnit, retries, noOfRetry);
         } else {
-          LOGGER.debug(
-              "{} - Waiting {} {}. {}/{}", message, delay, timeUnit, retries, noOfRetry);
+          LOGGER.debug("{} - Waiting {} {}. {}/{}", message, delay, timeUnit, retries, noOfRetry);
         }
         timeUnit.sleep(delay);
       } catch (final InterruptedException ignore) {
