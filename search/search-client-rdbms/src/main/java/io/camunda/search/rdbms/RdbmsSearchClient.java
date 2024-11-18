@@ -8,7 +8,6 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
 import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
@@ -129,14 +128,7 @@ public class RdbmsSearchClient
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery query) {
-    final var searchResult =
-        rdbmsService
-            .getFlowNodeInstanceReader()
-            .search(
-                FlowNodeInstanceDbQuery.of(
-                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
-
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
+    return rdbmsService.getFlowNodeInstanceReader().search(query);
   }
 
   @Override
