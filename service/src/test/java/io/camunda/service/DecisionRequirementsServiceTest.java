@@ -64,7 +64,7 @@ public final class DecisionRequirementsServiceTest {
   public void shouldReturnDecisionRequirementByKey() {
     // given
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
-    when(decisionRequirementEntity.key()).thenReturn(124L);
+    when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
     when(decisionRequirementEntity.decisionRequirementsId()).thenReturn("decReqId");
     when(client.searchDecisionRequirements(any()))
         .thenReturn(new SearchQueryResult(1, List.of(decisionRequirementEntity), null));
@@ -79,14 +79,14 @@ public final class DecisionRequirementsServiceTest {
 
     // then
     final DecisionRequirementsEntity item = searchQueryResult;
-    assertThat(item.key()).isEqualTo(124L);
+    assertThat(item.decisionRequirementsKey()).isEqualTo(124L);
   }
 
   @Test
   public void shouldReturnDecisionRequirementsXLMyKey() {
     // given
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
-    when(decisionRequirementEntity.key()).thenReturn(124L);
+    when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
     when(decisionRequirementEntity.decisionRequirementsId()).thenReturn("decReqId");
     when(decisionRequirementEntity.xml()).thenReturn("<xml/>");
     final var decisionRequirementResult = mock(SearchQueryResult.class);
@@ -111,7 +111,7 @@ public final class DecisionRequirementsServiceTest {
   void shouldGetByKeyThrowForbiddenExceptionForUnauthorizedDecisionReq() {
     // given
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
-    when(decisionRequirementEntity.key()).thenReturn(124L);
+    when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
     when(decisionRequirementEntity.decisionRequirementsId()).thenReturn("decReqId");
     final var decisionRequirementResult = mock(SearchQueryResult.class);
     when(decisionRequirementResult.items()).thenReturn(List.of(decisionRequirementEntity));
@@ -134,7 +134,7 @@ public final class DecisionRequirementsServiceTest {
   void shouldGetXmlThrowForbiddenExceptionForUnauthorizedDecisionReq() {
     // given
     final var decisionRequirementEntity = mock(DecisionRequirementsEntity.class);
-    when(decisionRequirementEntity.key()).thenReturn(124L);
+    when(decisionRequirementEntity.decisionRequirementsKey()).thenReturn(124L);
     when(decisionRequirementEntity.decisionRequirementsId()).thenReturn("decReqId");
     final var decisionRequirementResult = mock(SearchQueryResult.class);
     when(decisionRequirementResult.items()).thenReturn(List.of(decisionRequirementEntity));
