@@ -189,27 +189,6 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
-   * Checks whether given tenant is authorized for the process given instance.
-   *
-   * @param authorizations list of authorizations available
-   * @param tenantId tenant id to be checked
-   * @param processInstanceKey process instance key to be logged
-   */
-  public static void requireAuthorizedTenant(
-      final Map<String, Object> authorizations,
-      final String tenantId,
-      final long processInstanceKey) {
-//    final boolean isTenantAuthorized =
-//        TenantAuthorizationCheckerImpl.fromAuthorizationMap(authorizations).isAuthorized(tenantId);
-//    if (!isTenantAuthorized) {
-//      final String reason =
-//          String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, processInstanceKey);
-//      throw new ProcessInstanceMigrationPreconditionFailedException(
-//          reason, RejectionType.NOT_FOUND);
-//    }
-  }
-
-  /**
    * Checks whether the given target process definition exists. Throws exception if given target
    * process definition is null.
    *

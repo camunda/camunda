@@ -130,7 +130,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             : PermissionType.UPDATE_PROCESS_INSTANCE;
     final var authRequest =
         new AuthorizationRequest(
-                command, AuthorizationResourceType.PROCESS_DEFINITION, permissionType)
+                command, AuthorizationResourceType.PROCESS_DEFINITION, permissionType, command.getValue().getTenantId())
             .addResourceId(subscriptionRecord.getBpmnProcessId());
 
     if (!authCheckBehavior.isAuthorized(authRequest)) {

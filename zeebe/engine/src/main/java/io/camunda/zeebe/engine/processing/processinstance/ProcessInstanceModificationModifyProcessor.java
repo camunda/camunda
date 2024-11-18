@@ -194,7 +194,8 @@ public final class ProcessInstanceModificationModifyProcessor
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE)
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                value.getTenantId())
             .addResourceId(processInstance.getValue().getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(authRequest)) {
       final String reason =
@@ -206,14 +207,6 @@ public final class ProcessInstanceModificationModifyProcessor
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, reason);
       return;
     }
-
-//    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
-//        .isAuthorized(processInstance.getValue().getTenantId())) {
-//      final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
-//      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
-//      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
-//      return;
-//    }
 
     final var processInstanceRecord = processInstance.getValue();
     final var process =

@@ -94,7 +94,8 @@ public final class ProcessInstanceCancelProcessor
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE)
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                command.getValue().getTenantId())
             .addResourceId(elementInstance.getValue().getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(request)) {
       final var errorMessage =
@@ -106,19 +107,6 @@ public final class ProcessInstanceCancelProcessor
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return false;
     }
-
-//    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
-//        .isAuthorized(elementInstance.getValue().getTenantId())) {
-//      rejectionWriter.appendRejection(
-//          command,
-//          RejectionType.NOT_FOUND,
-//          String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
-//      responseWriter.writeRejectionOnCommand(
-//          command,
-//          RejectionType.NOT_FOUND,
-//          String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
-//      return false;
-//    }
 
     final var parentProcessInstanceKey = elementInstance.getValue().getParentProcessInstanceKey();
     if (parentProcessInstanceKey > 0) {

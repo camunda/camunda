@@ -70,7 +70,8 @@ public class DecisionEvaluationEvaluteProcessor
           new AuthorizationRequest(
                   command,
                   AuthorizationResourceType.DECISION_DEFINITION,
-                  PermissionType.CREATE_DECISION_INSTANCE)
+                  PermissionType.CREATE_DECISION_INSTANCE,
+                  record.getTenantId())
               .addResourceId(decisionId);
 
       if (!authCheckBehavior.isAuthorized(authRequest)) {

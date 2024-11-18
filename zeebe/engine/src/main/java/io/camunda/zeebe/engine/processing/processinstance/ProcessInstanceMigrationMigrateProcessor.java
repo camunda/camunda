@@ -123,7 +123,8 @@ public class ProcessInstanceMigrationMigrateProcessor
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE)
+                PermissionType.UPDATE_PROCESS_INSTANCE,
+                processInstance.getValue().getTenantId())
             .addResourceId(processInstance.getValue().getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
@@ -136,8 +137,6 @@ public class ProcessInstanceMigrationMigrateProcessor
       return;
     }
 
-    requireAuthorizedTenant(
-        command.getAuthorizations(), processInstance.getValue().getTenantId(), processInstanceKey);
     requireNonDuplicateSourceElementIds(mappingInstructions, processInstanceKey);
 
     final DeployedProcess targetProcessDefinition =

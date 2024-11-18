@@ -144,7 +144,8 @@ public final class ProcessInstanceCreationCreateProcessor
         new AuthorizationRequest(
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.CREATE_PROCESS_INSTANCE)
+                PermissionType.CREATE_PROCESS_INSTANCE,
+                command.getValue().getTenantId())
             .addResourceId(processId);
 
     if (authCheckBehavior.isAuthorized(request)) {

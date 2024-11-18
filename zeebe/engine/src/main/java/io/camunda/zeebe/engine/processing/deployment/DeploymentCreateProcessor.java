@@ -126,7 +126,7 @@ public final class DeploymentCreateProcessor
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
     final var authorizationRequest =
         new AuthorizationRequest(
-            command, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
+            command, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE, command.getValue().getTenantId());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
