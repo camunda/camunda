@@ -63,7 +63,7 @@ runs:
           echo "result=" >> $GITHUB_OUTPUT
         fi
 
-    - uses: camunda/infra-global-github-actions/submit-build-status@main
+    - uses: camunda/infra-global-github-actions/submit-build-status@add-build-head-ref-to-build-status-actions
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         job_name_override: "${{ inputs.job_name }}"
