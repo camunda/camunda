@@ -47,8 +47,8 @@ public class ProcessDefinitionIT {
     final var instance =
         processDefinitionReader.findOne(processDefinition.processDefinitionKey()).orElse(null);
     assertThat(instance).isNotNull();
-    assertThat(instance.key()).isEqualTo(processDefinition.processDefinitionKey());
-    assertThat(instance.bpmnProcessId()).isEqualTo(processDefinition.processDefinitionId());
+    assertThat(instance.processDefinitionKey()).isEqualTo(processDefinition.processDefinitionKey());
+    assertThat(instance.processDefinitionId()).isEqualTo(processDefinition.processDefinitionId());
     assertThat(instance.version()).isEqualTo(processDefinition.version());
     assertThat(instance.name()).isEqualTo(processDefinition.name());
     assertThat(instance.resourceName()).isEqualTo(processDefinition.resourceName());
@@ -82,8 +82,8 @@ public class ProcessDefinitionIT {
 
     final var instance = searchResult.items().getFirst();
 
-    assertThat(instance.key()).isEqualTo(processDefinition.processDefinitionKey());
-    assertThat(instance.bpmnProcessId()).isEqualTo(processDefinition.processDefinitionId());
+    assertThat(instance.processDefinitionKey()).isEqualTo(processDefinition.processDefinitionKey());
+    assertThat(instance.processDefinitionId()).isEqualTo(processDefinition.processDefinitionId());
     assertThat(instance.version()).isEqualTo(processDefinition.version());
     assertThat(instance.name()).isEqualTo(processDefinition.name());
     assertThat(instance.resourceName()).isEqualTo(processDefinition.resourceName());
@@ -166,7 +166,7 @@ public class ProcessDefinitionIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().key())
+    assertThat(searchResult.items().getFirst().processDefinitionKey())
         .isEqualTo(processDefinition.processDefinitionKey());
   }
 
@@ -204,7 +204,7 @@ public class ProcessDefinitionIT {
                                           instanceAfter.name(),
                                           instanceAfter.version(),
                                           instanceAfter.tenantId(),
-                                          instanceAfter.key()
+                                          instanceAfter.processDefinitionKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

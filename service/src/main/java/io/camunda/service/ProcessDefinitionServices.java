@@ -62,7 +62,7 @@ public class ProcessDefinitionServices
         getSingleResultOrThrow(result, processDefinitionKey, "Process definition");
     final var authorization = Authorization.of(a -> a.processDefinition().read());
     if (!securityContextProvider.isAuthorized(
-        processDefinitionEntity.bpmnProcessId(), authentication, authorization)) {
+        processDefinitionEntity.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
     return processDefinitionEntity;

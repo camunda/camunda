@@ -1036,7 +1036,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * Retrieves a decision instance by id.
    *
    * <pre>
-   * String decisionInstanceKey = ...;
+   * String decisionInstanceId = ...;
    *
    * zeebeClient
    * .newDecisionInstanceGetQuery(decisionInstanceId)
