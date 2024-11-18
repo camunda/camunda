@@ -15,14 +15,13 @@ import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.health.CriticalComponentsHealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
-import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
@@ -104,9 +103,12 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
   private final HealthMonitor healthMonitor;
   private final MemberId nodeId;
 
-  public BrokerHealthCheckService(final BrokerInfo localBroker) {
+  public BrokerHealthCheckService(
+      final BrokerInfo localBroker, final HealthTreeMetrics healthGraphMetrics) {
     nodeId = MemberId.from(String.valueOf(localBroker.getNodeId()));
-    healthMonitor = new CriticalComponentsHealthMonitor("Broker-" + nodeId, actor, LOG);
+    healthMonitor =
+        new CriticalComponentsHealthMonitor(
+            "Broker-" + nodeId, actor, healthGraphMetrics, Optional.empty(), LOG);
   }
 
   public void registerBootstrapPartitions(final Collection<PartitionMetadata> partitions) {
@@ -119,6 +121,11 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
 
   public boolean isBrokerReady() {
     return brokerStarted && allPartitionsInstalled;
+  }
+
+  public String componentName() {
+    // Broker-{id}, different from the actor name
+    return healthMonitor.componentName();
   }
 
   @Override
@@ -196,11 +203,5 @@ public final class BrokerHealthCheckService extends Actor implements PartitionRa
 
   public boolean isBrokerStarted() {
     return brokerStarted;
-  }
-
-  public ActorFuture<HealthReport> getHealthReport() {
-    final var future = new CompletableActorFuture<HealthReport>();
-    actor.run(() -> future.complete(healthMonitor.getHealthReport()));
-    return future;
   }
 }
