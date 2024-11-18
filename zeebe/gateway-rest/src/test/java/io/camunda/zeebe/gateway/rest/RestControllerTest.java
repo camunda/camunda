@@ -42,19 +42,15 @@ public abstract class RestControllerTest {
           List.of(Operation.lte(5L)),
           List.of(Operation.gt(5L), Operation.lt(10L)),
           List.of(Operation.gte(5L), Operation.lte(10L)));
-  protected static final List<List<Operation<Integer>>> INTEGER_OPERATIONS =
+  protected static final List<List<Operation<String>>> STRING_OPERATIONS =
       List.of(
-          List.of(Operation.eq(10)),
-          List.of(Operation.neq(1)),
+          List.of(Operation.eq("this")),
+          List.of(Operation.neq("that")),
           List.of(Operation.exists(true)),
           List.of(Operation.exists(false)),
-          List.of(Operation.gt(5)),
-          List.of(Operation.gte(5)),
-          List.of(Operation.lt(5)),
-          List.of(Operation.lte(5)),
-          List.of(Operation.in(5, 10)),
-          List.of(Operation.gt(5), Operation.lt(10)),
-          List.of(Operation.gte(5), Operation.lte(10)));
+          List.of(Operation.in("this", "that")),
+          List.of(Operation.like("th%")),
+          List.of(Operation.in("this", "that"), Operation.like("th%")));
   @Autowired protected WebTestClient webClient;
 
   public ResponseSpec withMultiTenancy(
@@ -72,8 +68,10 @@ public abstract class RestControllerTest {
   protected static <T> Arguments generateParameterizedArguments(
       final String filterKey,
       final Function<List<Operation<T>>, Object> consumer,
-      final List<Operation<T>> operations) {
-    return Arguments.of(operationsToJSON(filterKey, operations), consumer.apply(operations));
+      final List<Operation<T>> operations,
+      final boolean stringValues) {
+    return Arguments.of(
+        operationsToJSON(filterKey, operations, stringValues), consumer.apply(operations));
   }
 
   public static void basicLongOperationTestCases(
@@ -81,7 +79,7 @@ public abstract class RestControllerTest {
       final String filterKey,
       final Function<List<Operation<Long>>, Object> builderMethod) {
     BASIC_LONG_OPERATIONS.stream()
-        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops))
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, false))
         .forEach(streamBuilder::add);
   }
 
@@ -91,43 +89,81 @@ public abstract class RestControllerTest {
       final Function<List<Operation<Long>>, Object> builderMethod) {
     basicLongOperationTestCases(streamBuilder, filterKey, builderMethod);
     LONG_OPERATIONS.stream()
-        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops))
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, false))
         .forEach(streamBuilder::add);
+  }
+
+  private static Operation<Integer> toIntOperation(final Operation<Long> op) {
+    return new Operation<>(
+        op.operator(),
+        op.values() != null ? op.values().stream().map(Long::intValue).toList() : null);
   }
 
   public static void integerOperationTestCases(
       final Stream.Builder<Arguments> streamBuilder,
       final String filterKey,
       final Function<List<Operation<Integer>>, Object> builderMethod) {
-    INTEGER_OPERATIONS.stream()
-        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops))
+    BASIC_LONG_OPERATIONS.stream()
+        .map(ops -> ops.stream().map(RestControllerTest::toIntOperation).toList())
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, false))
+        .forEach(streamBuilder::add);
+    LONG_OPERATIONS.stream()
+        .map(ops -> ops.stream().map(RestControllerTest::toIntOperation).toList())
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, false))
+        .forEach(streamBuilder::add);
+  }
+
+  public static void stringOperationTestCases(
+      final Stream.Builder<Arguments> streamBuilder,
+      final String filterKey,
+      final Function<List<Operation<String>>, Object> builderMethod) {
+    STRING_OPERATIONS.stream()
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, true))
+        .forEach(streamBuilder::add);
+  }
+
+  public static <T> void customOperationTestCases(
+      final Stream.Builder<Arguments> streamBuilder,
+      final String filterKey,
+      final Function<List<Operation<T>>, Object> builderMethod,
+      final List<List<Operation<T>>> operations,
+      final boolean stringValues) {
+    operations.stream()
+        .map(ops -> generateParameterizedArguments(filterKey, builderMethod, ops, stringValues))
         .forEach(streamBuilder::add);
   }
 
   public static <T> String operationsToJSON(
-      final String filterKey, final List<Operation<T>> operations) {
+      final String filterKey, final List<Operation<T>> operations, final boolean stringValues) {
 
-    final var filterTemplate = "\"%s\": %s";
+    final var implicitTpl = stringValues ? "\"%s\"" : "%s";
+    final var keyValueTpl = "\"%s\": %s";
+    final var explicitTpl = "\"%s\": " + (stringValues ? "\"%s\"" : "%s");
     final var filterValue =
         operations.stream()
             .map(
                 op ->
                     switch (op.operator()) {
-                      case EQUALS -> "%s".formatted(op.value());
-                      case NOT_EQUALS -> filterTemplate.formatted("$neq", op.value());
-                      case EXISTS -> filterTemplate.formatted("$exists", true);
-                      case NOT_EXISTS -> filterTemplate.formatted("$exists", false);
-                      case GREATER_THAN -> filterTemplate.formatted("$gt", op.value());
-                      case GREATER_THAN_EQUALS -> filterTemplate.formatted("$gte", op.value());
-                      case LOWER_THAN -> filterTemplate.formatted("$lt", op.value());
-                      case LOWER_THAN_EQUALS -> filterTemplate.formatted("$lte", op.value());
-                      case IN -> filterTemplate.formatted("$in", op.values());
-                      case LIKE -> filterTemplate.formatted("$like", op.value());
+                      case EQUALS -> implicitTpl.formatted(op.value());
+                      case NOT_EQUALS -> explicitTpl.formatted("$neq", op.value());
+                      case EXISTS -> explicitTpl.formatted("$exists", true);
+                      case NOT_EXISTS -> explicitTpl.formatted("$exists", false);
+                      case GREATER_THAN -> explicitTpl.formatted("$gt", op.value());
+                      case GREATER_THAN_EQUALS -> explicitTpl.formatted("$gte", op.value());
+                      case LOWER_THAN -> explicitTpl.formatted("$lt", op.value());
+                      case LOWER_THAN_EQUALS -> explicitTpl.formatted("$lte", op.value());
+                      case IN ->
+                          keyValueTpl.formatted(
+                              "$in",
+                              stringValues
+                                  ? op.values().stream().map(implicitTpl::formatted).toList()
+                                  : op.values());
+                      case LIKE -> explicitTpl.formatted("$like", op.value());
                     })
             .collect(Collectors.joining(","));
     if (operations.size() == 1 && operations.getFirst().operator().equals(Operator.EQUALS)) {
       // implicit case
-      return "{\"%s\": %s}".formatted(filterKey, filterValue);
+      return "{%s}".formatted(keyValueTpl).formatted(filterKey, filterValue);
     }
     return "{\"%s\": {%s}}".formatted(filterKey, filterValue);
   }

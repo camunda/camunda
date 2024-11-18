@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -32,6 +33,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -121,6 +124,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           .build();
 
   @MockBean ProcessInstanceServices processInstanceServices;
+  @Captor ArgumentCaptor<ProcessInstanceQuery> queryCaptor;
 
   @BeforeEach
   void setupServices() {
@@ -461,6 +465,40 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "processDefinitionVersion",
         ops -> new ProcessInstanceFilter.Builder().processDefinitionVersionOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "processDefinitionId",
+        ops -> new ProcessInstanceFilter.Builder().processDefinitionIdOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "processDefinitionName",
+        ops -> new ProcessInstanceFilter.Builder().processDefinitionNameOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "processDefinitionVersionTag",
+        ops ->
+            new ProcessInstanceFilter.Builder().processDefinitionVersionTagOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "treePath",
+        ops -> new ProcessInstanceFilter.Builder().treePathOperations(ops).build());
+    customOperationTestCases(
+        streamBuilder,
+        "state",
+        ops -> new ProcessInstanceFilter.Builder().stateOperations(ops).build(),
+        List.of(
+            List.of(Operation.eq(String.valueOf(ProcessInstanceState.ACTIVE))),
+            List.of(Operation.neq(String.valueOf(ProcessInstanceState.CANCELED))),
+            List.of(
+                Operation.in(
+                    String.valueOf(ProcessInstanceState.COMPLETED),
+                    String.valueOf(ProcessInstanceState.ACTIVE)),
+                Operation.like("act"))),
+        true);
+    stringOperationTestCases(
+        streamBuilder,
+        "tenantId",
+        ops -> new ProcessInstanceFilter.Builder().tenantIdOperations(ops).build());
 
     return streamBuilder.build();
   }
@@ -477,8 +515,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             }"""
             .formatted(filterString);
     System.out.println("request = " + request);
-    when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
-        .thenReturn(SEARCH_QUERY_RESULT);
+    when(processInstanceServices.search(queryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient

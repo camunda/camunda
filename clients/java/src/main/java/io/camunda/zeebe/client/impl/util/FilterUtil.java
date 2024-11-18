@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.impl.util;
 import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 
 public class FilterUtil {
 
@@ -35,6 +36,12 @@ public class FilterUtil {
 
   public static IntegerFilterProperty integerFilterProperty(final Integer value) {
     final IntegerFilterProperty filter = new IntegerFilterProperty();
+    filter.$eq(value);
+    return filter;
+  }
+
+  public static StringFilterProperty stringFilterProperty(final String value) {
+    final StringFilterProperty filter = new StringFilterProperty();
     filter.$eq(value);
     return filter;
   }

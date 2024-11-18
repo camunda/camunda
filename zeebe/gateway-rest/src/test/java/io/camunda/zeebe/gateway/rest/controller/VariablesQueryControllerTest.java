@@ -31,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
@@ -87,6 +89,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
           .sortValues(new Object[] {"v"})
           .build();
   @MockBean VariableServices variableServices;
+  @Captor ArgumentCaptor<VariableQuery> variableQueryCaptor;
 
   @BeforeEach
   void setupServices() {
@@ -360,6 +363,10 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "processInstanceKey",
         ops -> new VariableFilter.Builder().processInstanceKeyOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder, "name", ops -> new VariableFilter.Builder().nameOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder, "value", ops -> new VariableFilter.Builder().valueOperations(ops).build());
 
     return streamBuilder.build();
   }
@@ -376,7 +383,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
             }"""
             .formatted(filterString);
     System.out.println("request = " + request);
-    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    when(variableServices.search(variableQueryCaptor.capture())).thenReturn(SEARCH_QUERY_RESULT);
 
     // when / then
     webClient

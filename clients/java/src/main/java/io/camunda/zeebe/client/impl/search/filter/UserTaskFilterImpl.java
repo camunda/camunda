@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.util.FilterUtil;
 import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.List;
@@ -50,6 +51,12 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter assignee(final String assignee) {
+    filter.setAssignee(FilterUtil.stringFilterProperty(assignee));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter assignee(final StringFilterProperty assignee) {
     filter.setAssignee(assignee);
     return this;
   }
@@ -74,12 +81,24 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter candidateGroup(final String candidateGroup) {
+    filter.setCandidateGroup(FilterUtil.stringFilterProperty(candidateGroup));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter candidateGroup(final StringFilterProperty candidateGroup) {
     filter.setCandidateGroup(candidateGroup);
     return this;
   }
 
   @Override
   public UserTaskFilter candidateUser(final String candidateUser) {
+    filter.setCandidateUser(FilterUtil.stringFilterProperty(candidateUser));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter candidateUser(final StringFilterProperty candidateUser) {
     filter.setCandidateUser(candidateUser);
     return this;
   }

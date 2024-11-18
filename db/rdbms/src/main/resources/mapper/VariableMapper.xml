@@ -65,20 +65,18 @@
       AND TENANT_ID IN
       <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
-
-    <!-- advanced filters on variable name / values -->
-    <if test="filter.variableOperations != null and !filter.variableOperations.isEmpty()">
-      AND (
-      <foreach collection="filter.variableOperations" index="name" item="operations">
-        (VAR_NAME = #{name}
-        <foreach collection="operations" item="operation">
-          AND
-          <include refid="variableOperationCondition"/>
-        </foreach>
-        )
-        OR
+    <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+      <foreach collection="filter.nameOperations" item="operation">
+        AND VAR_NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
-      false )
+    </if>
+    <!-- advanced filters on variable name / values -->
+    <if test="filter.valueOperations != null and !filter.valueOperations.isEmpty()">
+      <foreach collection="filter.valueOperations" item="operation">
+        AND
+        <include refid="variableOperationCondition"/>
+      </foreach>
     </if>
 
   </sql>

@@ -26,6 +26,9 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.util.ArrayList;
@@ -288,6 +291,59 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
+  void shouldQueryProcessInstancesByProcessDefinitionIdFilterIn() {
+    // given
+    final String bpmnProcessId = "service_tasks_v1";
+    final long processInstanceKey =
+        PROCESS_INSTANCES.stream()
+            .filter(p -> Objects.equals(bpmnProcessId, p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow()
+            .getProcessInstanceKey();
+    final var filter = new StringFilterProperty();
+    filter.$in(List.of("not-found", bpmnProcessId));
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processDefinitionId(filter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items()).extracting("processInstanceKey").containsExactly(processInstanceKey);
+  }
+
+  @Test
+  void shouldRetrieveProcessInstancesByProcessDefinitionIdFilterLikeMultiple() {
+    // given
+    final String bpmnProcessId = "service_tasks";
+    final List<Long> processInstanceKeys =
+        PROCESS_INSTANCES.stream()
+            .filter(p -> p.getBpmnProcessId().startsWith(bpmnProcessId))
+            .map(ProcessInstanceEvent::getProcessInstanceKey)
+            .toList();
+    final var stringFilter = new StringFilterProperty();
+    stringFilter.$like(bpmnProcessId.replace("_", "?") + "*");
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processDefinitionId(stringFilter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).hasSize(2);
+    assertThat(result.items())
+        .extracting("processInstanceKey")
+        .containsExactlyInAnyOrder(processInstanceKeys.toArray());
+  }
+
+  @Test
   void shouldQueryProcessInstancesByProcessDefinitionKey() {
     // given
     final String bpmnProcessId = "service_tasks_v1";
@@ -322,6 +378,33 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v2", "incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByStateFilterLike() {
+    // when
+    final var filter = new ProcessInstanceStateFilterProperty();
+    filter.$like("ACT*");
+    final var result =
+        zeebeClient.newProcessInstanceQuery().filter(f -> f.state(filter)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
+        .containsExactlyInAnyOrder("service_tasks_v1", "service_tasks_v2", "incident_process_v1");
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByStateFilterNeq() {
+    // when
+    final var filter = new ProcessInstanceStateFilterProperty();
+    filter.$neq(ProcessInstanceStateEnum.ACTIVE);
+    final var result =
+        zeebeClient.newProcessInstanceQuery().filter(f -> f.state(filter)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items()).extracting("state").doesNotContain(ProcessInstanceStateEnum.ACTIVE);
   }
 
   @Test

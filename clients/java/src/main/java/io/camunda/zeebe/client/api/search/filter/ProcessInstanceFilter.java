@@ -18,6 +18,8 @@ package io.camunda.zeebe.client.api.search.filter;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 
 public interface ProcessInstanceFilter extends SearchRequestFilter {
 
@@ -30,8 +32,14 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by processDefinitionId */
   ProcessInstanceFilter processDefinitionId(final String processDefinitionId);
 
+  /** Filter by processDefinitionId using {@link StringFilterProperty} */
+  ProcessInstanceFilter processDefinitionId(final StringFilterProperty processDefinitionId);
+
   /** Filter by processDefinitionName */
   ProcessInstanceFilter processDefinitionName(final String processDefinitionName);
+
+  /** Filter by processDefinitionName using {@link StringFilterProperty} */
+  ProcessInstanceFilter processDefinitionName(final StringFilterProperty processDefinitionName);
 
   /** Filter by processDefinitionVersion */
   ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion);
@@ -42,6 +50,10 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
 
   /** Filter by processDefinitionVersionTag */
   ProcessInstanceFilter processDefinitionVersionTag(final String processDefinitionVersionTag);
+
+  /** Filter by processDefinitionVersionTag using {@link StringFilterProperty} */
+  ProcessInstanceFilter processDefinitionVersionTag(
+      final StringFilterProperty processDefinitionVersionTag);
 
   /** Filter by processDefinitionKey */
   ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey);
@@ -65,6 +77,9 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by treePath */
   ProcessInstanceFilter treePath(final String treePath);
 
+  /** Filter by treePath using {@link StringFilterProperty} */
+  ProcessInstanceFilter treePath(final StringFilterProperty treePath);
+
   /** Filter by startDate */
   ProcessInstanceFilter startDate(final String startDate);
 
@@ -74,9 +89,15 @@ public interface ProcessInstanceFilter extends SearchRequestFilter {
   /** Filter by state */
   ProcessInstanceFilter state(final String state);
 
+  /** Filter by state using {@link ProcessInstanceStateFilterProperty} */
+  ProcessInstanceFilter state(final ProcessInstanceStateFilterProperty state);
+
   /** Filter by hasIncident */
   ProcessInstanceFilter hasIncident(final Boolean hasIncident);
 
   /** Filter by tenantId */
   ProcessInstanceFilter tenantId(final String tenantId);
+
+  /** Filter by tenantId using {@link StringFilterProperty} */
+  ProcessInstanceFilter tenantId(final StringFilterProperty tenantId);
 }

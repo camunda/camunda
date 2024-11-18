@@ -19,6 +19,7 @@ import io.camunda.zeebe.client.api.search.filter.VariableFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.util.FilterUtil;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.VariableFilterRequest;
 
 public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<VariableFilterRequest>
@@ -36,18 +37,30 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
 
   @Override
   public VariableFilter variableKey(final Long key) {
-    filter.setVariableKey(key);
+    filter.setVariableKey(FilterUtil.longFilterProperty(key));
     return this;
   }
 
   @Override
   public VariableFilter value(final String value) {
+    filter.setValue(FilterUtil.stringFilterProperty(value));
+    return this;
+  }
+
+  @Override
+  public VariableFilter value(final StringFilterProperty value) {
     filter.setValue(value);
     return this;
   }
 
   @Override
   public VariableFilter name(final String name) {
+    filter.setName(FilterUtil.stringFilterProperty(name));
+    return this;
+  }
+
+  @Override
+  public VariableFilter name(final StringFilterProperty name) {
     filter.setName(name);
     return this;
   }
