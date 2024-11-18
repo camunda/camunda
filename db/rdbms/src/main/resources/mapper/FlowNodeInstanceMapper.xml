@@ -19,6 +19,7 @@
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery"
     resultMap="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchResultMap">
+    SELECT * FROM (
     SELECT
     FLOW_NODE_INSTANCE_KEY,
     FLOW_NODE_ID,
@@ -36,13 +37,10 @@
     SCOPE_KEY
     FROM FLOW_NODE_INSTANCE
     <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
-    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
-      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.flowNodeInstanceSortMapper"/>
-        ${item.order}
-      </foreach>
-    </if>
-    ${paging.after}
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
   <sql id="searchFilter">
@@ -94,47 +92,6 @@
       AND TENANT_ID IN
       <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
-  </sql>
-
-  <sql id="flowNodeInstanceSortMapper">
-    <choose>
-      <when test='item.field == "key"'>
-        FLOW_NODE_INSTANCE_KEY
-      </when>
-      <when test='item.field == "bpmnProcessId"'>
-        PROCESS_DEFINITION_ID
-      </when>
-      <when test='item.field == "processDefinitionKey"'>
-        PROCESS_DEFINITION_KEY
-      </when>
-      <when test='item.field == "processInstanceKey"'>
-        PROCESS_INSTANCE_KEY
-      </when>
-      <when test='item.field == "flowNodeId"'>
-        FLOW_NODE_ID
-      </when>
-      <when test='item.field == "type"'>
-        TYPE
-      </when>
-      <when test='item.field == "state"'>
-        STATE
-      </when>
-      <when test='item.field == "startDate"'>
-        START_DATE
-      </when>
-      <when test='item.field == "endDate"'>
-        END_DATE
-      </when>
-      <when test='item.field == "tenantId"'>
-        TENANT_ID
-      </when>
-      <when test='item.field == "incidentKey"'>
-        INCIDENT_KEY
-      </when>
-      <when test='item.field == "incidentKey"'>
-        INCIDENT_KEY
-      </when>
-    </choose>
   </sql>
 
   <resultMap id="searchResultMap" type="io.camunda.search.entities.FlowNodeInstanceEntity">
