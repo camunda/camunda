@@ -32,7 +32,7 @@ public class ElasticsearchSessionDocumentClient implements SessionDocumentStorag
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchSessionDocumentClient.class);
   private final ElasticsearchClient client;
-  private final String indexName = String.format("%s-%s-%s_", "camunda", "web-session", "8.7.0");
+  private final String indexName = String.format("%s-%s-%s_", "identity", "web-session", "8.7.0");
 
   public ElasticsearchSessionDocumentClient(final ElasticsearchClient client) {
     this.client = client;

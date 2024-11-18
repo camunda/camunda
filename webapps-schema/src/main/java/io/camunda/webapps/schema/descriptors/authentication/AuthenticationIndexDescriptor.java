@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.descriptors.authentication;
 
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.ComponentNames;
 
 public abstract class AuthenticationIndexDescriptor extends AbstractIndexDescriptor {
 
@@ -17,6 +18,6 @@ public abstract class AuthenticationIndexDescriptor extends AbstractIndexDescrip
 
   @Override
   public String getComponentName() {
-    return "camunda";
+    return ComponentNames.IDENTITY.toString();
   }
 }
