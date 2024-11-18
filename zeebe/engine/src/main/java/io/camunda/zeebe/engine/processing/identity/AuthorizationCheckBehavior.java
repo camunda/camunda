@@ -14,6 +14,8 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.HashSet;
 import java.util.List;
@@ -50,7 +52,7 @@ public final class AuthorizationCheckBehavior {
    * contains the data required to do the check.
    *
    * @param request the authorization request to check authorization for. This contains the command,
-   *     the resource type, the permission type and a set of resource identifiers
+   *     the resource type, the permission type, a set of resource identifiers and the tenant id
    * @return true if the entity is authorized, false otherwise
    */
   public boolean isAuthorized(final AuthorizationRequest request) {
@@ -69,6 +71,11 @@ public final class AuthorizationCheckBehavior {
       authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
               userKey.get(), request.getResourceType(), request.getPermissionType());
+
+      // verify if the user is authorized for the tenant
+      if (!isUserAuthorizedForTenant(request, userKey.get())) {
+        return false;
+      }
     } else {
       authorizedResourceIdentifiers = Stream.empty();
     }
@@ -81,6 +88,22 @@ public final class AuthorizationCheckBehavior {
   private static Optional<Long> getUserKey(final AuthorizationRequest request) {
     return Optional.ofNullable(
         (Long) request.getCommand().getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
+  }
+
+  private boolean isUserAuthorizedForTenant(
+      final AuthorizationRequest request, final long userKey) {
+    final var tenantId = request.tenantId;
+    if (tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
+      return true;
+    }
+
+    final var userOptional = userState.getUser(userKey);
+    if (userOptional.isEmpty()) {
+      return false;
+    }
+
+    final var user = userOptional.get();
+    return user.getTenantIdsList().contains(tenantId);
   }
 
   public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
@@ -181,6 +204,21 @@ public final class AuthorizationCheckBehavior {
     private final AuthorizationResourceType resourceType;
     private final PermissionType permissionType;
     private final Set<String> resourceIds;
+    private final String tenantId;
+
+    public AuthorizationRequest(
+        final TypedRecord<?> command,
+        final AuthorizationResourceType resourceType,
+        final PermissionType permissionType,
+        final String tenantId) {
+      this.command = command;
+      this.resourceType = resourceType;
+      this.permissionType = permissionType;
+      resourceIds = new HashSet<>();
+      resourceIds.add(WILDCARD_PERMISSION);
+      this.tenantId = tenantId;
+    }
+
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
@@ -191,6 +229,7 @@ public final class AuthorizationCheckBehavior {
       this.permissionType = permissionType;
       resourceIds = new HashSet<>();
       resourceIds.add(WILDCARD_PERMISSION);
+      tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
     }
 
     public TypedRecord<?> getCommand() {
@@ -212,6 +251,10 @@ public final class AuthorizationCheckBehavior {
 
     public Set<String> getResourceIds() {
       return resourceIds;
+    }
+
+    public String getTenantId() {
+      return tenantId;
     }
   }
 
