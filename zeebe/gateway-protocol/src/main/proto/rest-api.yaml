@@ -3430,7 +3430,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/ProcessDefinitionFilterRequest"
+          description: The process definition search filters.
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionFilterRequest"
     ProcessDefinitionFilterRequest:
       description: Process definition search filter.
       type: object
@@ -3501,7 +3503,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+          description: The process instance search filters.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
     AdvancedIntegerFilter:
       description: Advanced integer (int32) filter.
       type: object
@@ -3865,7 +3869,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
+          description: The flow node instance search filters.
+          allOf:
+            - $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
     FlowNodeInstanceFilterRequest:
       description: Flow node instance filter.
       type: object
@@ -4034,7 +4040,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
+          description: The decision definition search filters.
+          allOf:
+            - $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
     DecisionDefinitionFilterRequest:
       description: Decision definition search filter.
       type: object
@@ -4069,7 +4077,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/IncidentFilterRequest"
+          description: The incident search filters.
+          allOf:
+            - $ref: "#/components/schemas/IncidentFilterRequest"
     IncidentFilterRequest:
       description: Incident search filter.
       type: object
@@ -4333,7 +4343,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/AuthorizationFilterRequest"
+          description: The authorization search filters.
+          allOf:
+            - $ref: "#/components/schemas/AuthorizationFilterRequest"
     AuthorizationFilterRequest:
       description: Authorization search filter.
       type: object
@@ -4407,7 +4419,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/UserFilterRequest"
+          description: The user search filters.
+          allOf:
+            - $ref: "#/components/schemas/UserFilterRequest"
     UserFilterRequest:
       description: User search filter.
       type: object
@@ -4978,6 +4992,7 @@ components:
           format: int64
           description: The duration of the new timeout in ms, starting from the current moment.
           nullable: true
+
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
@@ -5056,7 +5071,9 @@ components:
       type: object
       properties:
         page:
-          $ref: "#/components/schemas/SearchQueryPageResponse"
+          description: Pagination information about the search results.
+          allOf:
+            - $ref: "#/components/schemas/SearchQueryPageResponse"
     SearchQueryPageResponse:
       description: Pagination information about the search results.
       type: object
@@ -5081,7 +5098,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/DecisionRequirementsFilterRequest"
+          description: The decision definition search filters.
+          allOf:
+            - $ref: "#/components/schemas/DecisionRequirementsFilterRequest"
     DecisionRequirementsFilterRequest:
       description: Decision requirements search filter.
       type: object
@@ -5136,7 +5155,6 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision requirements.
-
     EvaluateDecisionRequest:
       type: object
       properties:
@@ -5291,7 +5309,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/DecisionInstanceFilterRequest"
+          description: The decision instance search filters.
+          allOf:
+            - $ref: "#/components/schemas/DecisionInstanceFilterRequest"
     DecisionInstanceFilterRequest:
       description: Decision instance search filter.
       type: object
@@ -5350,6 +5370,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionInstanceItem"
+
     DecisionInstanceItem:
       type: object
       properties:
@@ -5399,6 +5420,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the decision instance.
+
     DecisionInstanceGetQueryResponse:
       allOf:
         - $ref: "#/components/schemas/DecisionInstanceItem"
@@ -5416,6 +5438,7 @@ components:
                 $ref: "#/components/schemas/MatchedDecisionRuleItem"
               description: |
                 The matched rules of the decision instance.
+
     DecisionDefinitionTypeEnum:
       description: The type of the decision.
       enum:
@@ -5430,6 +5453,7 @@ components:
         - FAILED
         - UNSPECIFIED
         - UNKNOWN
+
     MessageCorrelationRequest:
       type: object
       properties:
@@ -5511,6 +5535,7 @@ components:
         tenantId:
           description: The tenant ID of the message.
           type: string
+
     DocumentReference:
       type: object
       properties:
@@ -5549,6 +5574,7 @@ components:
           type: object
           description: Custom properties of the document.
           additionalProperties: true
+
     DocumentLinkRequest:
       type: object
       properties:
@@ -5567,6 +5593,7 @@ components:
           type: string
           format: date-time
           description: The date and time when the link expires.
+
     DeploymentResponse:
       type: object
       properties:
@@ -5698,6 +5725,7 @@ components:
         tenantId:
           type: string
           description: The tenant ID of the deployed form.
+
     CreateProcessInstanceRequest:
       type: object
       properties:
@@ -5911,6 +5939,7 @@ components:
           format: int64
       required:
         - elementInstanceKey
+
     SetVariableRequest:
       type: object
       properties:
@@ -5946,6 +5975,7 @@ components:
           minimum: 1
       required:
         - variables
+
     DeleteResourceRequest:
       type: object
       nullable: true
@@ -5957,6 +5987,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+
     SignalBroadcastRequest:
       type: object
       properties:
