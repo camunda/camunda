@@ -42,7 +42,10 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 @SpringBootTest(
     classes = {CommonsModuleConfiguration.class, BrokerModuleConfiguration.class},
-    properties = {"spring.profiles.active=broker,auth-basic"})
+    properties = {
+      "spring.profiles.active=broker,auth-basic",
+      "camunda.persistent.sessions.enabled=false"
+    })
 @WebAppConfiguration
 @AutoConfigureMockMvc
 public class BasicAuthIT {
