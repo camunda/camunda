@@ -4842,7 +4842,8 @@ components:
         decisionInstanceKey:
           type: integer
           format: int64
-          description: The key of the decision instance.
+          description: |
+            The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
         decisionInstanceId:
           type: string
           description: The ID of the decision instance.
@@ -4898,7 +4899,7 @@ components:
         decisionInstanceKey:
           type: integer
           format: int64
-          description: The key of the decision instance.
+          description: The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
         decisionInstanceId:
           type: string
           description: The ID of the decision instance.
