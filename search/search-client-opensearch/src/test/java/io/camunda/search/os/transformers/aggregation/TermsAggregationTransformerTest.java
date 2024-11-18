@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.os.transformers.aggregator;
+package io.camunda.search.os.transformers.aggregation;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import io.camunda.search.clients.aggregator.SearchTermsAggregator;
+import io.camunda.search.clients.aggregation.SearchTermsAggregation;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.os.util.OSAggregationSerializer;
@@ -28,13 +28,13 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 public class TermsAggregationTransformerTest {
 
   private final OpensearchTransformers transformers = new OpensearchTransformers();
-  private SearchTransfomer<SearchTermsAggregator, Aggregation> transformer;
+  private SearchTransfomer<SearchTermsAggregation, Aggregation> transformer;
 
   private OSAggregationSerializer osAggregationSerializer;
 
   @BeforeEach
   public void before() throws IOException {
-    transformer = transformers.getTransformer(SearchTermsAggregator.class);
+    transformer = transformers.getTransformer(SearchTermsAggregation.class);
 
     // To serialize OS aggregations to json
     osAggregationSerializer = new OSAggregationSerializer();
@@ -48,20 +48,20 @@ public class TermsAggregationTransformerTest {
   private static Stream<Arguments> provideAggregations() {
     return Stream.of(
         Arguments.arguments(
-            new SearchTermsAggregator.Builder().field("name").size(10).minDocCount(1).build(),
+            new SearchTermsAggregation.Builder().field("name").size(10).minDocCount(1).build(),
             "{'terms':{'field':'name','min_doc_count':1,'size':10}}"),
         Arguments.arguments(
-            new SearchTermsAggregator.Builder().field("category").size(5).minDocCount(0).build(),
+            new SearchTermsAggregation.Builder().field("category").size(5).minDocCount(0).build(),
             "{'terms':{'field':'category','min_doc_count':0,'size':5}}"),
         Arguments.arguments(
-            new SearchTermsAggregator.Builder().field("status").size(20).minDocCount(3).build(),
+            new SearchTermsAggregation.Builder().field("status").size(20).minDocCount(3).build(),
             "{'terms':{'field':'status','min_doc_count':3,'size':20}}"));
   }
 
   @ParameterizedTest
   @MethodSource("provideAggregations")
   public void shouldApplyTransformer(
-      final SearchTermsAggregator aggregation, final String expectedResult) {
+      final SearchTermsAggregation aggregation, final String expectedResult) {
     // given
     final var expectedQuery = expectedResult.replace("'", "\"");
 
@@ -78,7 +78,7 @@ public class TermsAggregationTransformerTest {
     // given
 
     // when - throw
-    assertThatThrownBy(() -> new SearchTermsAggregator.Builder().size(10).build())
+    assertThatThrownBy(() -> new SearchTermsAggregation.Builder().size(10).build())
         .hasMessageContaining("Expected non-null field for terms aggregation.")
         .isInstanceOf(NullPointerException.class);
   }
@@ -88,7 +88,7 @@ public class TermsAggregationTransformerTest {
     // given
 
     // when - throw
-    assertThatThrownBy(() -> new SearchTermsAggregator.Builder().field("name").size(-1).build())
+    assertThatThrownBy(() -> new SearchTermsAggregation.Builder().field("name").size(-1).build())
         .hasMessageContaining("Size must be a positive integer.")
         .isInstanceOf(IllegalArgumentException.class);
   }

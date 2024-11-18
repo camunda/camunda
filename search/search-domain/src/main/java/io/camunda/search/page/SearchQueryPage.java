@@ -13,6 +13,9 @@ import java.util.function.Function;
 public record SearchQueryPage(
     Integer from, Integer size, Object[] searchAfter, Object[] searchBefore) {
 
+  public static final SearchQueryPage NO_ENTITIES_QUERY =
+      new SearchQueryPage(0, 0, new Object[] {}, new Object[] {});
+
   public static final Integer DEFAULT_FROM = 0;
   public static final Integer DEFAULT_SIZE = 100;
 

@@ -5,9 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.os.transformers.aggregator;
+package io.camunda.search.os.transformers.aggregation;
 
-import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.os.transformers.OpensearchTransformer;
 import io.camunda.search.os.transformers.OpensearchTransformers;
@@ -19,11 +18,10 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregation;
  * @param <T> The type of the input aggregation option (e.g., SearchTermsAggregation)
  * @param <R> The type of the resulting Elasticsearch aggregation (e.g., TermsAggregation)
  */
-public abstract class AggregationOptionTransformer<
-        T extends SearchTermsAggregator, R extends Aggregation>
+public abstract class AggregationTransformer<T, R extends Aggregation>
     extends OpensearchTransformer<T, R> implements SearchTransfomer<T, R> {
 
-  public AggregationOptionTransformer(final OpensearchTransformers transformers) {
+  public AggregationTransformer(final OpensearchTransformers transformers) {
     super(transformers);
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import io.camunda.search.aggregation.UsageMetricsAggregation;
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
@@ -35,6 +36,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -55,7 +57,8 @@ public class SearchClients
         TenantSearchClient,
         UserTaskSearchClient,
         UserSearchClient,
-        VariableSearchClient {
+        VariableSearchClient,
+        MetricsSearchClient {
 
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
@@ -259,5 +262,16 @@ public class SearchClients
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
     return executor.search(filter, VariableEntity.class);
+  }
+
+  @Override
+  public UsageMetricsAggregation searchMetrics(final UsageMetricsQuery filter) {
+    final var executor =
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.aggregate(filter, UsageMetricsAggregation.class);
   }
 }

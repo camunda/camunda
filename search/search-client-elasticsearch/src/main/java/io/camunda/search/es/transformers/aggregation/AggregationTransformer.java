@@ -5,25 +5,24 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.es.transformers.aggregator;
+package io.camunda.search.es.transformers.aggregation;
 
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import io.camunda.search.clients.aggregator.SearchTermsAggregator;
+import io.camunda.search.clients.aggregation.SearchAggregation;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 
 /**
- * A generic base class for transforming aggregation options into Elasticsearch aggregations.
+ * A generic base class for transforming aggregations into Elasticsearch aggregations.
  *
  * @param <T> The type of the input aggregation option (e.g., SearchTermsAggregation)
  * @param <R> The type of the resulting Elasticsearch aggregation (e.g., TermsAggregation)
  */
-public abstract class AggregationOptionTransformer<
-        T extends SearchTermsAggregator, R extends Aggregation>
+public abstract class AggregationTransformer<T extends SearchAggregation, R extends Aggregation>
     extends ElasticsearchTransformer<T, R> implements SearchTransfomer<T, R> {
 
-  public AggregationOptionTransformer(final ElasticsearchTransformers transformers) {
+  public AggregationTransformer(final ElasticsearchTransformers transformers) {
     super(transformers);
   }
 }

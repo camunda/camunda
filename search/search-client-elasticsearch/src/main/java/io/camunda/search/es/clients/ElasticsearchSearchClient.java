@@ -89,6 +89,20 @@ public class ElasticsearchSearchClient implements DocumentBasedSearchClient, Aut
     return result;
   }
 
+  @Override
+  public <T> T aggregate(final SearchQueryRequest searchRequest, final Class<T> aggregationClass) {
+    try {
+      final var requestTransformer = getSearchRequestTransformer();
+      final var request = requestTransformer.apply(searchRequest);
+      final SearchResponse<?> rawSearchResponse = client.search(request, Object.class);
+      final SearchTransfomer<SearchResponse<?>, T> resultTransformer =
+          transformers.getTransformer(aggregationClass);
+      return resultTransformer.apply(rawSearchResponse);
+    } catch (final IOException | ElasticsearchException ioe) {
+      throw new SearchQueryExecutionException("Failed to execute aggregation query", ioe);
+    }
+  }
+
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
     return client.scroll(r -> r.scrollId(scrollId), documentClass);

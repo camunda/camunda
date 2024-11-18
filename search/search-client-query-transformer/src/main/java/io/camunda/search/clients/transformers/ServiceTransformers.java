@@ -26,11 +26,13 @@ import io.camunda.search.clients.transformers.filter.FormFilterTransformer;
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
+import io.camunda.search.clients.transformers.filter.UsageMetricsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableValueFilterTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
+import io.camunda.search.clients.transformers.query.UsageMetricsQueryTransformer;
 import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.ProcessInstanceResultConfigTransformer;
@@ -51,6 +53,7 @@ import io.camunda.search.filter.FormFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
@@ -65,6 +68,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.TypedSearchQuery;
+import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -135,6 +139,7 @@ public final class ServiceTransformers {
         FlowNodeInstanceQuery.class,
         new TypedSearchQueryTransformer<FlowNodeInstanceFilter, FlowNodeInstanceSort>(mappers));
     mappers.put(ProcessDefinitionQuery.class, new TypedSearchQueryTransformer<>(mappers));
+    mappers.put(UsageMetricsQuery.class, new UsageMetricsQueryTransformer(mappers));
 
     // document entity -> domain entity
     mappers.put(DecisionDefinitionEntity.class, new DecisionDefinitionEntityTransformer());
@@ -167,6 +172,7 @@ public final class ServiceTransformers {
     mappers.put(IncidentFilter.class, new IncidentFilterTransformer(mappers));
     mappers.put(FormFilter.class, new FormFilterTransformer(mappers));
     mappers.put(ProcessDefinitionFilter.class, new ProcessDefinitionFilterTransformer(mappers));
+    mappers.put(UsageMetricsFilter.class, new UsageMetricsFilterTransformer());
 
     // result config -> source config
     mappers.put(

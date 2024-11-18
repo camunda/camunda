@@ -5,21 +5,26 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.clients.transformers.aggregator;
+package io.camunda.search.clients.transformers.aggregation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.search.clients.aggregator.SearchTermsAggregator;
+import io.camunda.search.clients.aggregation.SearchTermsAggregation;
 import org.junit.jupiter.api.Test;
 
-public class SearchTermsAggregatorTest {
+public class SearchTermsAggregationTest {
 
   @Test
   public void shouldBuildAggregatorWithValidValues() {
     // given
     final var aggregator =
-        new SearchTermsAggregator.Builder().field("testField").size(10).minDocCount(1).build();
+        new SearchTermsAggregation.Builder()
+            .name("A")
+            .field("testField")
+            .size(10)
+            .minDocCount(1)
+            .build();
 
     // then
     assertThat(aggregator.field()).isEqualTo("testField");
@@ -30,7 +35,8 @@ public class SearchTermsAggregatorTest {
   @Test
   public void shouldThrowExceptionWhenFieldIsNull() {
     // when - then
-    assertThatThrownBy(() -> new SearchTermsAggregator.Builder().size(10).minDocCount(1).build())
+    assertThatThrownBy(
+            () -> new SearchTermsAggregation.Builder().name("A").size(10).minDocCount(1).build())
         .isInstanceOf(NullPointerException.class)
         .hasMessageContaining("Expected non-null field for terms aggregation.");
   }
@@ -39,7 +45,8 @@ public class SearchTermsAggregatorTest {
   public void shouldThrowExceptionWhenSizeIsInvalid() {
     // when - then
     assertThatThrownBy(
-            () -> new SearchTermsAggregator.Builder().field("testField").size(-1).build())
+            () ->
+                new SearchTermsAggregation.Builder().name("A").field("testField").size(-1).build())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Size must be a positive integer.");
   }
@@ -48,7 +55,7 @@ public class SearchTermsAggregatorTest {
   public void shouldBuildWithDefaultSizeAndMinDocCount() {
     // given
     final var aggregator =
-        new SearchTermsAggregator.Builder().field("testField").build(); // Use defaults
+        new SearchTermsAggregation.Builder().name("A").field("testField").build(); // Use defaults
 
     // then
     assertThat(aggregator.size()).isEqualTo(10); // Default size
@@ -59,7 +66,12 @@ public class SearchTermsAggregatorTest {
   public void shouldBuildWithCustomSizeAndMinDocCount() {
     // given
     final var aggregator =
-        new SearchTermsAggregator.Builder().field("testField").size(20).minDocCount(5).build();
+        new SearchTermsAggregation.Builder()
+            .name("A")
+            .field("testField")
+            .size(20)
+            .minDocCount(5)
+            .build();
 
     // then
     assertThat(aggregator.size()).isEqualTo(20);
