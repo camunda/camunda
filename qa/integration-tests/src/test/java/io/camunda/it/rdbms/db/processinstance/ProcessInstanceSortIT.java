@@ -80,7 +80,7 @@ public class ProcessInstanceSortIT {
             .items();
 
     assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
@@ -132,7 +132,7 @@ public class ProcessInstanceSortIT {
             .items();
 
     assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
@@ -184,7 +184,7 @@ public class ProcessInstanceSortIT {
             .items();
 
     assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
@@ -264,7 +264,7 @@ public class ProcessInstanceSortIT {
             .items();
 
     assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
@@ -344,7 +344,7 @@ public class ProcessInstanceSortIT {
             .items();
 
     assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
@@ -396,7 +396,7 @@ public class ProcessInstanceSortIT {
             .items();
 
     assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
@@ -448,7 +448,7 @@ public class ProcessInstanceSortIT {
             .items();
 
     assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
@@ -500,7 +500,7 @@ public class ProcessInstanceSortIT {
             .items();
 
     assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
@@ -552,7 +552,7 @@ public class ProcessInstanceSortIT {
             .items();
 
     assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey, processInstanceKey4, processInstanceKey3);
   }
@@ -608,7 +608,7 @@ public class ProcessInstanceSortIT {
             .items();
 
     assertThat(searchResult).hasSize(4);
-    assertThat(searchResult.stream().map(ProcessInstanceEntity::key).toList())
+    assertThat(searchResult.stream().map(ProcessInstanceEntity::processInstanceKey).toList())
         .containsExactly(
             processInstanceKey2, processInstanceKey3, processInstanceKey, processInstanceKey4);
   }

@@ -59,15 +59,15 @@ public class ProcessInstanceIT {
     final var instance = processInstanceReader.findOne(processInstanceKey).orElse(null);
 
     assertThat(instance).isNotNull();
-    assertThat(instance.key()).isEqualTo(processInstanceKey);
-    assertThat(instance.bpmnProcessId()).isEqualTo("test-process");
+    assertThat(instance.processInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(instance.processDefinitionId()).isEqualTo("test-process");
     assertThat(instance.processDefinitionKey()).isEqualTo(1337L);
     assertThat(instance.state()).isEqualTo(ProcessInstanceState.ACTIVE);
     assertThat(instance.startDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(instance.parentProcessInstanceKey()).isEqualTo(-1L);
     assertThat(instance.parentFlowNodeInstanceKey()).isEqualTo(-1L);
-    assertThat(instance.processVersion()).isEqualTo(1);
+    assertThat(instance.processDefinitionVersion()).isEqualTo(1);
   }
 
   @TestTemplate
@@ -105,15 +105,15 @@ public class ProcessInstanceIT {
 
     final var instance = searchResult.items().getFirst();
 
-    assertThat(instance.key()).isEqualTo(processInstanceKey);
-    assertThat(instance.bpmnProcessId()).isEqualTo("test-process-unique");
+    assertThat(instance.processInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(instance.processDefinitionId()).isEqualTo("test-process-unique");
     assertThat(instance.processDefinitionKey()).isEqualTo(1338L);
     assertThat(instance.state()).isEqualTo(ProcessInstanceState.ACTIVE);
     assertThat(instance.startDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(instance.parentProcessInstanceKey()).isEqualTo(-1L);
     assertThat(instance.parentFlowNodeInstanceKey()).isEqualTo(-1L);
-    assertThat(instance.processVersion()).isEqualTo(1);
+    assertThat(instance.processDefinitionVersion()).isEqualTo(1);
   }
 
   @TestTemplate
@@ -141,7 +141,10 @@ public class ProcessInstanceIT {
     final var lastInstance = searchResult.items().getLast();
     assertThat(searchResult.sortValues()).hasSize(3);
     assertThat(searchResult.sortValues())
-        .containsExactly(lastInstance.startDate(), lastInstance.processName(), lastInstance.key());
+        .containsExactly(
+            lastInstance.startDate(),
+            lastInstance.processDefinitionName(),
+            lastInstance.processInstanceKey());
   }
 
   @TestTemplate
@@ -184,7 +187,7 @@ public class ProcessInstanceIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().key()).isEqualTo(processInstanceKey);
+    assertThat(searchResult.items().getFirst().processInstanceKey()).isEqualTo(processInstanceKey);
   }
 
   @TestTemplate
@@ -230,10 +233,10 @@ public class ProcessInstanceIT {
                                 p.size(5)
                                     .searchAfter(
                                         new Object[] {
-                                          instanceAfter.processName(),
-                                          instanceAfter.processVersion(),
+                                          instanceAfter.processDefinitionName(),
+                                          instanceAfter.processDefinitionVersion(),
                                           instanceAfter.startDate(),
-                                          instanceAfter.key()
+                                          instanceAfter.processInstanceKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

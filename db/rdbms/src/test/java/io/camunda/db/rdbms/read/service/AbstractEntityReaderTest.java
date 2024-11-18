@@ -54,7 +54,7 @@ class AbstractEntityReaderTest {
                 reader.convertSort(
                     new ProcessInstanceSort(
                         List.of(
-                            new FieldSorting("processName", SortOrder.ASC),
+                            new FieldSorting("processDefinitionName", SortOrder.ASC),
                             new FieldSorting("foo", SortOrder.ASC))),
                     ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY))
         .isInstanceOf(IllegalArgumentException.class)
@@ -66,14 +66,14 @@ class AbstractEntityReaderTest {
     final var reader = new ProcessInstanceReader(null);
 
     final var hit1 = Mockito.mock(ProcessInstanceEntity.class);
-    when(hit1.key()).thenReturn(1L);
-    when(hit1.processName()).thenReturn("foo");
+    when(hit1.processInstanceKey()).thenReturn(1L);
+    when(hit1.processDefinitionName()).thenReturn("foo");
     final var hit2 = Mockito.mock(ProcessInstanceEntity.class);
-    when(hit2.key()).thenReturn(2L);
-    when(hit2.processName()).thenReturn("bar");
+    when(hit2.processInstanceKey()).thenReturn(2L);
+    when(hit2.processDefinitionName()).thenReturn("bar");
     final var hit3 = Mockito.mock(ProcessInstanceEntity.class);
-    when(hit3.key()).thenReturn(3L);
-    when(hit3.processName()).thenReturn("alice");
+    when(hit3.processInstanceKey()).thenReturn(3L);
+    when(hit3.processDefinitionName()).thenReturn("alice");
     final var searchResult = List.of(hit1, hit2, hit3);
 
     final DbQuerySorting<ProcessInstanceEntity> sorting =
