@@ -15,7 +15,6 @@ import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.TasklistEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -350,7 +349,7 @@ public abstract class ElasticsearchUtil {
     return entity;
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       SearchRequest searchRequest,
       Class<T> clazz,
       ObjectMapper objectMapper,
@@ -359,7 +358,7 @@ public abstract class ElasticsearchUtil {
     return scroll(searchRequest, clazz, objectMapper, esClient, null, null);
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       SearchRequest searchRequest,
       Class<T> clazz,
       ObjectMapper objectMapper,

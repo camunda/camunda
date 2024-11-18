@@ -12,7 +12,6 @@ import static io.camunda.tasklist.util.CollectionUtil.throwAwayNullElements;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.TasklistEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -429,13 +428,13 @@ public abstract class OpenSearchUtil {
     return builder;
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       SearchRequest.Builder searchRequest, Class<T> clazz, OpenSearchClient osClient)
       throws IOException {
     return scroll(searchRequest, clazz, osClient, null);
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       SearchRequest.Builder searchRequest,
       Class<T> clazz,
       OpenSearchClient osClient,
