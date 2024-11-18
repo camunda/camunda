@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.entities.meta;
+package io.camunda.webapps.schema.entities.operate;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.util.Objects;
@@ -24,6 +24,8 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
 
   private String indexName;
 
+  private boolean completed;
+
   public static ImportPositionEntity createFrom(
       final long sequence,
       final ImportPositionEntity importPositionEntity,
@@ -34,7 +36,8 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
         .setAliasName(importPositionEntity.getAliasName())
         .setPartitionId(importPositionEntity.getPartitionId())
         .setIndexName(indexName)
-        .setPosition(newPosition);
+        .setPosition(newPosition)
+        .setCompleted(false);
   }
 
   public String getAliasName() {
@@ -88,6 +91,15 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
 
   public ImportPositionEntity setIndexName(final String indexName) {
     this.indexName = indexName;
+    return this;
+  }
+
+  public boolean getCompleted() {
+    return completed;
+  }
+
+  public ImportPositionEntity setCompleted(final boolean completed) {
+    this.completed = completed;
     return this;
   }
 
