@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -159,7 +158,7 @@ public class GcpDocumentStore implements DocumentStore {
       final var link = blob.signUrl(durationInMillis, TimeUnit.MILLISECONDS);
       return Either.right(
           new DocumentLink(
-              link.toString(), ZonedDateTime.now().plus(Duration.ofMillis(durationInMillis))));
+              link.toString(), OffsetDateTime.now().plus(Duration.ofMillis(durationInMillis))));
     } catch (final Exception e) {
       return Either.left(new UnknownDocumentError(e));
     }

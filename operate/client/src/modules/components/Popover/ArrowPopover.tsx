@@ -45,6 +45,8 @@ type Props = {
   autoUpdatePosition?: boolean;
 };
 
+const APP_HEADER_HEIGHT = 47;
+
 const ArrowPopover: React.FC<Props> = ({
   referenceElement,
   children,
@@ -66,7 +68,7 @@ const ArrowPopover: React.FC<Props> = ({
     placement,
     middleware: [
       ...middlewareOptions,
-      shift({padding: {top: 47}}), // 47px = Operate app header height
+      shift({padding: {top: APP_HEADER_HEIGHT}}),
       arrow({element: arrowElementRef}),
     ],
     whileElementsMounted: autoUpdatePosition ? autoUpdate : undefined,

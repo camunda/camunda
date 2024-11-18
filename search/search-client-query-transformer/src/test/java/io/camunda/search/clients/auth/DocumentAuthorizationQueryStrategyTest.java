@@ -8,30 +8,30 @@
 package io.camunda.search.clients.auth;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
-import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.search.query.SearchQueryBuilders.authorizationSearchQuery;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.CREATE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.query.SearchMatchNoneQuery;
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
+import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.entity.Permission;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,15 +42,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DocumentAuthorizationQueryStrategyTest {
 
-  @Mock private DocumentBasedSearchClient searchClient;
+  @Mock private AuthorizationSearchClient authorizationSearchClient;
 
   private DocumentAuthorizationQueryStrategy queryStrategy;
 
   @BeforeEach
   void setUp() {
-    queryStrategy =
-        new DocumentAuthorizationQueryStrategy(
-            searchClient, ServiceTransformers.newInstance(false));
+    when(authorizationSearchClient.withSecurityContext(SecurityContext.withoutAuthentication()))
+        .thenReturn(authorizationSearchClient);
+    queryStrategy = new DocumentAuthorizationQueryStrategy(authorizationSearchClient);
   }
 
   @Test
@@ -95,7 +95,7 @@ class DocumentAuthorizationQueryStrategyTest {
                 s.withAuthentication(a -> a.user(123L))
                     .withAuthorization(
                         a -> a.permissionType(READ).resourceType(PROCESS_DEFINITION)));
-    when(searchClient.findAll(any(SearchQueryRequest.class), eq(AuthorizationEntity.class)))
+    when(authorizationSearchClient.findAllAuthorizations(any()))
         .thenReturn(
             List.of(
                 new AuthorizationEntity(
@@ -103,8 +103,8 @@ class DocumentAuthorizationQueryStrategyTest {
                     null,
                     null,
                     List.of(
-                        new Permission(READ, List.of("foo", "*")),
-                        new Permission(CREATE, List.of("bar"))))));
+                        new Permission(READ, Set.of("foo", "*")),
+                        new Permission(CREATE, Set.of("bar"))))));
 
     // when
     final SearchQueryRequest result =
@@ -125,8 +125,7 @@ class DocumentAuthorizationQueryStrategyTest {
                 s.withAuthentication(a -> a.user(123L))
                     .withAuthorization(
                         a -> a.permissionType(READ).resourceType(PROCESS_DEFINITION)));
-    when(searchClient.findAll(any(SearchQueryRequest.class), eq(AuthorizationEntity.class)))
-        .thenReturn(List.of());
+    when(authorizationSearchClient.findAllAuthorizations(any())).thenReturn(List.of());
 
     // when
     final SearchQueryRequest result =
@@ -148,9 +147,8 @@ class DocumentAuthorizationQueryStrategyTest {
                 s.withAuthentication(a -> a.user(123L))
                     .withAuthorization(
                         a -> a.permissionType(READ).resourceType(PROCESS_DEFINITION)));
-    final var authorizationsSearchQueryCaptor = ArgumentCaptor.forClass(SearchQueryRequest.class);
-    when(searchClient.findAll(
-            authorizationsSearchQueryCaptor.capture(), eq(AuthorizationEntity.class)))
+    final var authorizationQueryCaptor = ArgumentCaptor.forClass(AuthorizationQuery.class);
+    when(authorizationSearchClient.findAllAuthorizations(authorizationQueryCaptor.capture()))
         .thenReturn(
             List.of(
                 new AuthorizationEntity(
@@ -158,8 +156,8 @@ class DocumentAuthorizationQueryStrategyTest {
                     null,
                     null,
                     List.of(
-                        new Permission(READ, List.of("foo")),
-                        new Permission(CREATE, List.of("bar"))))));
+                        new Permission(READ, Set.of("foo")),
+                        new Permission(CREATE, Set.of("bar"))))));
 
     // when
     final SearchQueryRequest result =
@@ -169,12 +167,15 @@ class DocumentAuthorizationQueryStrategyTest {
     // then
     assertThat(result.query())
         .isEqualTo(and(originalRequest.query(), stringTerms("bpmnProcessId", List.of("foo"))));
-    assertThat(authorizationsSearchQueryCaptor.getValue().query().queryOption().toSearchQuery())
+    assertThat(authorizationQueryCaptor.getValue())
         .isEqualTo(
-            and(
-                longTerms("ownerKey", List.of(123L)),
-                stringTerms("resourceType", List.of("PROCESS_DEFINITION")),
-                stringTerms("permissions.type", List.of("READ"))));
+            authorizationSearchQuery(
+                q ->
+                    q.filter(
+                        f ->
+                            f.ownerKeys(List.of(123L))
+                                .resourceType("PROCESS_DEFINITION")
+                                .permissionType(READ))));
   }
 
   private SearchQueryResponse<AuthorizationEntity> buildSearchQueryResponse(

@@ -121,4 +121,61 @@ public class MappingStateTest {
     final var persistedMapping = mappingState.get(key).get();
     assertThat(persistedMapping.getRoleKeysList()).isEmpty();
   }
+
+  @Test
+  void shouldAddTenant() {
+    // given
+    final long key = 1L;
+    final String claimName = "foo";
+    final String claimValue = "bar";
+    final var mapping =
+        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+    mappingState.create(mapping);
+    final long tenantKey = 1L;
+
+    // when
+    mappingState.addTenant(key, tenantKey);
+
+    // then
+    final var persistedMapping = mappingState.get(key).get();
+    assertThat(persistedMapping.getTenantKeysList()).containsExactly(tenantKey);
+  }
+
+  @Test
+  void shouldRemoveTenant() {
+    // given
+    final long key = 1L;
+    final String claimName = "foo";
+    final String claimValue = "bar";
+    final var mapping =
+        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+    mappingState.create(mapping);
+    final long tenantKey = 1L;
+    mappingState.addTenant(key, tenantKey);
+
+    // when
+    mappingState.removeTenant(key, tenantKey);
+
+    // then
+    final var persistedMapping = mappingState.get(key).get();
+    assertThat(persistedMapping.getTenantKeysList()).isEmpty();
+  }
+
+  @Test
+  void shouldDeleteMapping() {
+    // given
+    final long key = 1L;
+    final String claimName = "foo";
+    final String claimValue = "bar";
+    final var mapping =
+        new MappingRecord().setMappingKey(key).setClaimName(claimName).setClaimValue(claimValue);
+    mappingState.create(mapping);
+
+    // when
+    mappingState.delete(key);
+
+    // then
+    assertThat(mappingState.get(key)).isEmpty();
+    assertThat(mappingState.get(claimName, claimValue)).isEmpty();
+  }
 }

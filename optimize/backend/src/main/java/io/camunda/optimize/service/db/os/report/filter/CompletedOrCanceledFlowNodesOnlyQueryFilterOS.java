@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.filter;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.nested;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
 import static io.camunda.optimize.service.db.os.report.filter.util.ModelElementFilterQueryUtilOS.createCompletedOrCanceledFlowNodesOnlyFilterQuery;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
 

@@ -17,6 +17,8 @@ package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
+import io.camunda.zeebe.client.impl.util.FilterUtil;
+import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import java.util.List;
@@ -54,6 +56,12 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
 
   @Override
   public UserTaskFilter priority(final Integer priority) {
+    filter.setPriority(FilterUtil.integerFilterProperty(priority));
+    return this;
+  }
+
+  @Override
+  public UserTaskFilter priority(final IntegerFilterProperty priority) {
     filter.setPriority(priority);
     return this;
   }

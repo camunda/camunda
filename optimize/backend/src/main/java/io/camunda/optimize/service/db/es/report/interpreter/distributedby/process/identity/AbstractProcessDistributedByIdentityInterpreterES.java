@@ -21,44 +21,34 @@ import co.elastic.clients.elasticsearch._types.aggregations.TermsAggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.NamedValue;
-import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.IdentityType;
-import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
-import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import io.camunda.optimize.service.AssigneeCandidateGroupService;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.AbstractProcessDistributedByInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.distributedby.process.identity.ProcessDistributedByIdentityInterpreter;
+import io.camunda.optimize.service.db.report.interpreter.distributedby.process.identity.ProcessDistributedByIdentityInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public abstract class AbstractProcessDistributedByIdentityInterpreterES
     extends AbstractProcessDistributedByInterpreterES {
-  public static final String DISTRIBUTE_BY_IDENTITY_MISSING_KEY = "unassignedUserTasks___";
   private static final String DISTRIBUTE_BY_IDENTITY_TERMS_AGGREGATION = "identity";
-  // temporary GROUP_BY_IDENTITY_MISSING_KEY to ensure no overlap between this label and userTask
-  // names
   private static final String FILTERED_USER_TASKS_AGGREGATION = "userTasksFilterAggregation";
 
   protected abstract ConfigurationService getConfigurationService();
 
-  protected abstract LocalizationService getLocalizationService();
+  protected abstract ProcessDistributedByIdentityInterpreterHelper getHelper();
 
   protected abstract DefinitionService getDefinitionService();
-
-  protected abstract AssigneeCandidateGroupService getAssigneeCandidateGroupService();
 
   protected abstract String getIdentityField();
 
@@ -73,7 +63,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
         .size(getConfigurationService().getElasticSearchConfiguration().getAggregationBucketLimit())
         .order(NamedValue.of("_key", SortOrder.Asc))
         .field(FLOW_NODE_INSTANCES + "." + getIdentityField())
-        .missing(DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
+        .missing(ProcessDistributedByIdentityInterpreter.DISTRIBUTE_BY_IDENTITY_MISSING_KEY);
     final Aggregation.Builder.ContainerBuilder identityTermsAggregation =
         new Aggregation.Builder().terms(builder.build());
     getViewInterpreter()
@@ -92,7 +82,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
                     f.bool(
                         createInclusiveFlowNodeIdFilterQuery(
                                 context.getReportData(),
-                                getUserTaskIds(context.getReportData()),
+                                getHelper().getUserTaskIds(context.getReportData()),
                                 context.getFilterContext(),
                                 getDefinitionService())
                             .build()))
@@ -121,7 +111,7 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
           getViewInterpreter().retrieveResult(response, identityBucket.aggregations(), context);
 
       final String key = identityBucket.key().stringValue();
-      if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
+      if (ProcessDistributedByIdentityInterpreter.DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
         for (final CompositeCommandResult.ViewMeasure viewMeasure : viewResult.getViewMeasures()) {
           final AggregationDto aggTypeDto = viewMeasure.getAggregationType();
           if (aggTypeDto != null
@@ -133,10 +123,13 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
       }
 
       distributedByIdentity.add(
-          createDistributedByResult(key, resolveIdentityName(key), viewResult));
+          createDistributedByResult(
+              key, getHelper().resolveIdentityName(key, this::getIdentityType), viewResult));
     }
 
-    addEmptyMissingDistributedByResults(distributedByIdentity, context);
+    getHelper()
+        .addEmptyMissingDistributedByResults(
+            distributedByIdentity, context, () -> getViewInterpreter().createEmptyResult(context));
 
     return distributedByIdentity;
   }
@@ -155,54 +148,10 @@ public abstract class AbstractProcessDistributedByIdentityInterpreterES
     final Map<String, String> allDistributedByIdentityKeys =
         allIdentityAggregation.buckets().array().stream()
             .map(v -> v.key().stringValue())
-            .collect(Collectors.toMap(Function.identity(), this::resolveIdentityName));
+            .collect(
+                Collectors.toMap(
+                    Function.identity(),
+                    key -> getHelper().resolveIdentityName(key, this::getIdentityType)));
     context.setAllDistributedByKeysAndLabels(allDistributedByIdentityKeys);
-  }
-
-  private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
-    return getDefinitionService()
-        .extractUserTaskIdAndNames(
-            reportData.getDefinitions().stream()
-                .map(
-                    definitionDto ->
-                        getDefinitionService()
-                            .getDefinition(
-                                DefinitionType.PROCESS,
-                                definitionDto.getKey(),
-                                definitionDto.getVersions(),
-                                definitionDto.getTenantIds()))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(ProcessDefinitionOptimizeDto.class::cast)
-                .collect(Collectors.toList()))
-        .keySet();
-  }
-
-  private String resolveIdentityName(final String key) {
-    if (DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(key)) {
-      return getLocalizationService().getDefaultLocaleMessageForMissingAssigneeLabel();
-    }
-    return getAssigneeCandidateGroupService()
-        .getIdentityByIdAndType(key, getIdentityType())
-        .map(IdentityWithMetadataResponseDto::getName)
-        .orElse(key);
-  }
-
-  private void addEmptyMissingDistributedByResults(
-      final List<CompositeCommandResult.DistributedByResult> distributedByIdentityResultList,
-      final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    context.getAllDistributedByKeysAndLabels().entrySet().stream()
-        .filter(
-            entry ->
-                distributedByIdentityResultList.stream()
-                    .noneMatch(
-                        distributedByResult -> distributedByResult.getKey().equals(entry.getKey())))
-        .map(
-            entry ->
-                createDistributedByResult(
-                    entry.getKey(),
-                    entry.getValue(),
-                    getViewInterpreter().createEmptyResult(context)))
-        .forEach(distributedByIdentityResultList::add);
   }
 }

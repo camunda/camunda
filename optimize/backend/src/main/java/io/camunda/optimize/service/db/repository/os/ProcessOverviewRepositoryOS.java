@@ -9,7 +9,7 @@ package io.camunda.optimize.service.db.repository.os;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.script;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.script;
 import static java.lang.String.format;
 
 import io.camunda.optimize.dto.optimize.query.processoverview.ProcessDigestDto;

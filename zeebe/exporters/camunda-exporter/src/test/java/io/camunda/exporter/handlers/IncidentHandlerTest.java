@@ -16,6 +16,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
@@ -30,13 +32,15 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 public class IncidentHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-incident";
-  private final IncidentHandler underTest = new IncidentHandler(indexName, false);
+  private final TestProcessCache processCache = new TestProcessCache();
+  private final IncidentHandler underTest = new IncidentHandler(indexName, false, processCache);
 
   @Test
   void testGetHandledValueType() {
@@ -52,7 +56,7 @@ public class IncidentHandlerTest {
   void shouldHandleRecord() {
     // given
     final Record<IncidentRecordValue> incidentRecord =
-        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(ProcessIntent.CREATED));
+        factory.generateRecord(ValueType.INCIDENT, r -> r.withIntent(IncidentIntent.CREATED));
 
     // when - then
     assertThat(underTest.handlesRecord(incidentRecord)).isTrue();
@@ -120,7 +124,7 @@ public class IncidentHandlerTest {
   void shouldAddEntityOnFlushWithScript() {
     // given
     final IncidentEntity inputEntity = new IncidentEntity();
-    final var underTest = new IncidentHandler(indexName, true);
+    final var underTest = new IncidentHandler(indexName, true, null);
     inputEntity.setPosition(1L);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
@@ -181,6 +185,100 @@ public class IncidentHandlerTest {
         .isEqualTo(incidentRecordValue.getElementInstanceKey());
     assertThat(incidentEntity.getErrorMessageHash())
         .isEqualTo(incidentRecordValue.getErrorMessage().hashCode());
+  }
+
+  @Test
+  void shouldUpdateTreePathForCallActivitiesCase() {
+    // given
+    final long processDefinitionKey1 = 999L;
+    final Long pi1Key = 111L;
+    final Integer callActivityIndex1 = 3;
+    final String callActivityId1 = "callActivity1";
+    final long callActivity1Key = 123L;
+    final long processDefinitionKey2 = 888L;
+    final Long pi2Key = 222L;
+    final Integer callActivityIndex2 = 1;
+    final String callActivityId2 = "callActivity2";
+    final long callActivity2Key = 234L;
+    final Long pi3Key = 333L;
+    final long flowNodeInstanceKey = 345L;
+    final ImmutableIncidentRecordValue.Builder valueBuilder =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class));
+    addCallStackInfo(
+        valueBuilder,
+        List.of(
+            List.of(pi1Key, callActivity1Key),
+            List.of(pi2Key, callActivity2Key),
+            List.of(pi3Key, flowNodeInstanceKey)),
+        List.of(callActivityIndex1, callActivityIndex2),
+        List.of(processDefinitionKey1, processDefinitionKey2, 777L),
+        "userTask");
+    final IncidentRecordValue incidentRecordValue = valueBuilder.build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(incidentRecordValue));
+
+    processCache.put(
+        processDefinitionKey1,
+        new CachedProcessEntity(null, null, List.of("0", "1", "2", callActivityId1)));
+
+    processCache.put(
+        processDefinitionKey2, new CachedProcessEntity(null, null, List.of("0", callActivityId2)));
+
+    // when
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getTreePath())
+        .isEqualTo(
+            "PI_111/FN_callActivity1/FNI_123/PI_222/FN_callActivity2/FNI_234/PI_333/FN_userTask/FNI_345");
+  }
+
+  @Test
+  void shouldUpdateTreePathForSimpleCase() {
+    // given
+    final Long pi3Key = 333L;
+    final ImmutableIncidentRecordValue.Builder valueBuilder =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class));
+    addCallStackInfo(
+        valueBuilder, List.of(List.of(pi3Key, 345L)), List.of(), List.of(777L), "userTask");
+    final IncidentRecordValue incidentRecordValue = valueBuilder.build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(incidentRecordValue));
+
+    // when
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getTreePath()).isEqualTo("PI_333/FN_userTask/FNI_345");
+  }
+
+  private void addCallStackInfo(
+      final ImmutableIncidentRecordValue.Builder builder,
+      final List<List<Long>> elementInstancePath,
+      final List<Integer> callingElementPath,
+      final List<Long> processDefinitionPath,
+      final String elementId) {
+    builder
+        .withProcessInstanceKey(elementInstancePath.getLast().get(0))
+        .withElementId(elementId)
+        .withElementInstanceKey(elementInstancePath.getLast().get(1))
+        .withElementInstancePath(elementInstancePath);
+    if (callingElementPath != null) {
+      builder.withCallingElementPath(callingElementPath);
+    }
+    if (processDefinitionPath != null) {
+      builder.withProcessDefinitionPath(processDefinitionPath);
+    }
   }
 
   /**

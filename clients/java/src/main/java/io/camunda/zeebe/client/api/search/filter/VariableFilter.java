@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.api.search.filter;
 
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
+import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 
 public interface VariableFilter extends SearchRequestFilter {
 
@@ -54,12 +55,30 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter scopeKey(final Long scopeKey);
 
   /**
+   * Filters variables by the specified scope key using {@link LongFilterProperty}.
+   *
+   * @param scopeKey
+   * @return
+   * @param scopeKey the scope key {@link LongFilterProperty} of the variable
+   * @return the updated filter
+   */
+  VariableFilter scopeKey(final LongFilterProperty scopeKey);
+
+  /**
    * Filters variables by the specified process instance key.
    *
    * @param processInstanceKey the process instance key of the variable
    * @return the updated filter
    */
   VariableFilter processInstanceKey(final Long processInstanceKey);
+
+  /**
+   * Filters variables by the specified process instance key using {@link LongFilterProperty}.
+   *
+   * @param processInstanceKey the process instance key {@link LongFilterProperty} of the variable
+   * @return the updated filter
+   */
+  VariableFilter processInstanceKey(final LongFilterProperty processInstanceKey);
 
   /**
    * Filters variables by the specified tenant id.

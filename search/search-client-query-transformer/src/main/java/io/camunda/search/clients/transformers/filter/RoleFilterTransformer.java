@@ -20,12 +20,12 @@ public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
   public SearchQuery toSearchQuery(final RoleFilter filter) {
 
     return and(
-        filter.roleKey() == null ? null : term("roleKey", filter.roleKey()),
+        filter.roleKey() == null ? null : term("key", filter.roleKey()),
         filter.name() == null ? null : term("name", filter.name()));
   }
 
   @Override
   public List<String> toIndices(final RoleFilter filter) {
-    return List.of("camunda-role-8.7.0_alias");
+    return List.of("identity-role-8.7.0_alias");
   }
 }

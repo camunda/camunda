@@ -57,38 +57,38 @@ public class BrokerAdminServiceEndpointTest {
             "status": "HEALTHY",
             "componentsState": "HEALTHY",
             "children": [
-              {
-                "id": "ZeebePartition-1",
-                "name": "ZeebePartition-1",
-                "status": "HEALTHY",
-                "children": []
-              },
-              {
-                "id": "raft-partition-partition-1",
-                "name": "raft-partition-partition-1",
-                "status": "HEALTHY",
-                "children": []
-              },
-              {
-                "id": "SnapshotDirector-1",
-                "name": "SnapshotDirector-1",
-                "status": "HEALTHY",
-                "children": []
-              },
-              {
-                "id": "StreamProcessor-1",
-                "name": "StreamProcessor-1",
-                "status": "HEALTHY",
-                "children": []
-              },
-              {
-                "id": "Exporter-1",
-                "name": "Exporter-1",
-                "status": "HEALTHY",
-                "children": []
-              }
-            ]
-          }
+                {
+                 "id": "SnapshotDirector-1",
+                 "name": "SnapshotDirector-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "ZeebePartitionHealth-1",
+                 "name": "ZeebePartitionHealth-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "StreamProcessor-1",
+                 "name": "StreamProcessor-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "Exporter-1",
+                 "name": "Exporter-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "RaftPartition-1",
+                 "name": "RaftPartition-1",
+                 "status": "HEALTHY",
+                 "children": []
+               }
+             ]
+           }
         }
       }
       """;
@@ -109,43 +109,43 @@ public class BrokerAdminServiceEndpointTest {
           "modification": {}
         },
         "health": {
-          "id": "Partition-1",
-          "name": "Partition-1",
-          "status": "HEALTHY",
-          "componentsState": "HEALTHY",
-          "children": [
-            {
-              "id": "ZeebePartition-1",
-              "name": "ZeebePartition-1",
-              "status": "HEALTHY",
-              "children": []
-            },
-            {
-              "id": "raft-partition-partition-1",
-              "name": "raft-partition-partition-1",
-              "status": "HEALTHY",
-              "children": []
-            },
-            {
-              "id": "SnapshotDirector-1",
-              "name": "SnapshotDirector-1",
-              "status": "HEALTHY",
-              "children": []
-            },
-            {
-              "id": "StreamProcessor-1",
-              "name": "StreamProcessor-1",
-              "status": "HEALTHY",
-              "children": []
-            },
-            {
-              "id": "Exporter-1",
-              "name": "Exporter-1",
-              "status": "HEALTHY",
-              "children": []
-            }
-          ]
-        }
+             "id": "Partition-1",
+             "name": "Partition-1",
+             "status": "HEALTHY",
+             "componentsState": "HEALTHY",
+             "children": [
+               {
+                 "id": "SnapshotDirector-1",
+                 "name": "SnapshotDirector-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "ZeebePartitionHealth-1",
+                 "name": "ZeebePartitionHealth-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "StreamProcessor-1",
+                 "name": "StreamProcessor-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "Exporter-1",
+                 "name": "Exporter-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "RaftPartition-1",
+                 "name": "RaftPartition-1",
+                 "status": "HEALTHY",
+                 "children": []
+               }
+             ]
+           }
       }
       """;
 

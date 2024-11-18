@@ -19,10 +19,10 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerAuthorizationPatchRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -66,7 +66,7 @@ public class AuthorizationServices
                     fn.filter(
                             f ->
                                 f.resourceType(resourceType.name())
-                                    .resourceKey(
+                                    .resourceKeys(
                                         resourceId != null && !resourceId.isEmpty()
                                             ? resourceId
                                             : null)
@@ -82,10 +82,13 @@ public class AuthorizationServices
 
   public CompletableFuture<AuthorizationRecord> patchAuthorization(
       final PatchAuthorizationRequest request) {
+    final var intent =
+        request.action() == PermissionAction.ADD
+            ? AuthorizationIntent.ADD_PERMISSION
+            : AuthorizationIntent.REMOVE_PERMISSION;
     final var brokerRequest =
-        new BrokerAuthorizationPatchRequest()
+        new BrokerAuthorizationPatchRequest(intent)
             .setOwnerKey(request.ownerKey())
-            .setAction(request.action())
             .setResourceType(request.resourceType());
     request.permissions().forEach(brokerRequest::addPermissions);
     return sendBrokerRequest(brokerRequest);
@@ -95,5 +98,5 @@ public class AuthorizationServices
       long ownerKey,
       PermissionAction action,
       AuthorizationResourceType resourceType,
-      Map<PermissionType, List<String>> permissions) {}
+      Map<PermissionType, Set<String>> permissions) {}
 }

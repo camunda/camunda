@@ -11,6 +11,7 @@ import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REFRESH;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NO_REPLICA;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.NUMBERS_OF_REPLICA;
 import static io.camunda.tasklist.es.RetryElasticsearchClient.REFRESH_INTERVAL;
+import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatFullQualifiedIndexName;
 import static io.camunda.tasklist.util.CollectionUtil.filter;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -77,19 +78,19 @@ public class ElasticSearchMigrator implements Migrator {
   public void migrate() throws MigrationException {
     try {
       stepsRepository.updateSteps();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new MigrationException(
           String.format("Migration failed in updating steps: %s ", e.getMessage()));
     }
     boolean failed = false;
     final List<Future<Boolean>> results =
         indexDescriptors.stream().map(this::migrateIndexInThread).toList();
-    for (Future<Boolean> result : results) {
+    for (final Future<Boolean> result : results) {
       try {
         if (!result.get()) {
           failed = true;
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOGGER.error("Migration failed: ", e);
         failed = true;
       }
@@ -100,13 +101,13 @@ public class ElasticSearchMigrator implements Migrator {
     }
   }
 
-  private Future<Boolean> migrateIndexInThread(IndexDescriptor indexDescriptor) {
+  private Future<Boolean> migrateIndexInThread(final IndexDescriptor indexDescriptor) {
     return getTaskExecutor()
         .submit(
             () -> {
               try {
                 migrateIndexIfNecessary(indexDescriptor);
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 LOGGER.error("Migration for {} failed:", indexDescriptor.getIndexName(), e);
                 return false;
               }
@@ -114,7 +115,7 @@ public class ElasticSearchMigrator implements Migrator {
             });
   }
 
-  private void migrateIndexIfNecessary(IndexDescriptor indexDescriptor)
+  private void migrateIndexIfNecessary(final IndexDescriptor indexDescriptor)
       throws MigrationException, IOException {
     LOGGER.info("Check if index {} needs to migrate.", indexDescriptor.getIndexName());
     final Set<String> olderVersions = indexSchemaValidator.olderVersionsForIndex(indexDescriptor);
@@ -138,8 +139,7 @@ public class ElasticSearchMigrator implements Migrator {
       migrateIndex(indexDescriptor, plan);
       if (migrationProperties.isDeleteSrcSchema()) {
         final String olderBaseIndexName =
-            String.format(
-                "%s-%s-%s_",
+            formatFullQualifiedIndexName(
                 tasklistProperties.getElasticsearch().getIndexPrefix(),
                 indexDescriptor.getIndexName(),
                 olderVersion);
@@ -194,7 +194,7 @@ public class ElasticSearchMigrator implements Migrator {
   }
 
   private Map<String, String> getIndexSettingsOrDefaultsFor(
-      final IndexDescriptor indexDescriptor, TasklistElasticsearchProperties elsConfig) {
+      final IndexDescriptor indexDescriptor, final TasklistElasticsearchProperties elsConfig) {
     final Map<String, String> settings = new HashMap<>();
     settings.put(
         REFRESH_INTERVAL,
@@ -226,8 +226,8 @@ public class ElasticSearchMigrator implements Migrator {
                     .isBetween(sourceVersion, destinationVersion));
 
     final String indexPrefix = tasklistProperties.getElasticsearch().getIndexPrefix();
-    final String srcIndex = String.format("%s-%s-%s", indexPrefix, indexName, srcVersion);
-    final String dstIndex = String.format("%s-%s-%s", indexPrefix, indexName, dstVersion);
+    final String srcIndex = formatFullQualifiedIndexName(indexPrefix, indexName, srcVersion);
+    final String dstIndex = formatFullQualifiedIndexName(indexPrefix, indexName, dstVersion);
 
     return ReindexPlanElasticSearch.create()
         .setBatchSize(migrationProperties.getReindexBatchSize())

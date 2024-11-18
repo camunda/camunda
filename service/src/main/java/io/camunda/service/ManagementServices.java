@@ -31,7 +31,7 @@ public final class ManagementServices {
     return license.isCommercial();
   }
 
-  public OffsetDateTime getCamundaLicenseExpirationDate() {
+  public OffsetDateTime getCamundaLicenseExpiresAt() {
     return license.expiresAt();
   }
 }

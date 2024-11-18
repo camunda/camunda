@@ -20,6 +20,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkState;
 
 import com.google.common.collect.Sets;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -121,18 +122,18 @@ final class Segment implements AutoCloseable, FlushableSegment {
    * @throws UncheckedIOException if the operation failed but the segment is live
    */
   @Override
-  public boolean flush() {
+  public void flush() throws FlushException {
     final long lastIndex = lastIndex();
 
     try (final var ignored = metrics.observeSegmentFlush()) {
       buffer.force();
     } catch (final UncheckedIOException e) {
       if (isOpen()) {
-        throw e;
+        throw new FlushException(e.getCause());
       }
 
       LOG.debug("Flushing failed on a closed or deleted segment, and will be ignored");
-      return false;
+      return;
     }
 
     LOG.trace(
@@ -140,7 +141,6 @@ final class Segment implements AutoCloseable, FlushableSegment {
         descriptor.id(),
         descriptor.index(),
         lastIndex);
-    return true;
   }
 
   /**

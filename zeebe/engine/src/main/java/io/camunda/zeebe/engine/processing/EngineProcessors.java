@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
+import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
 import io.camunda.zeebe.engine.processing.identity.MappingProcessors;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
@@ -49,6 +50,7 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.scaling.ScalingProcessors;
+import io.camunda.zeebe.engine.scaling.redistribution.RedistributionBehavior;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -256,8 +258,18 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior);
 
+    GroupProcessors.addGroupProcessors(
+        typedRecordProcessors,
+        processingState,
+        authCheckBehavior,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior);
+
+    final var redistributionBehavior =
+        new RedistributionBehavior(writers, commandDistributionBehavior, processingState);
     ScalingProcessors.addScalingProcessors(
-        typedRecordProcessors, writers, keyGenerator, processingState);
+        redistributionBehavior, typedRecordProcessors, writers, keyGenerator, processingState);
 
     TenantProcessors.addTenantProcessors(
         typedRecordProcessors,

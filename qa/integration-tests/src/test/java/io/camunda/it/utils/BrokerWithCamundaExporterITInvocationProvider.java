@@ -16,8 +16,8 @@ import io.camunda.it.utils.ZeebeClientTestFactory.User;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.lang.reflect.Parameter;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.Extension;
@@ -37,9 +36,7 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
-import org.testcontainers.utility.DockerImageName;
 
 /**
  * Invocation context provider that provides TestStandaloneBroker instances configured with each
@@ -53,16 +50,14 @@ public class BrokerWithCamundaExporterITInvocationProvider
   private static final Logger LOGGER =
       LoggerFactory.getLogger(BrokerWithCamundaExporterITInvocationProvider.class);
 
-  private static final DockerImageName ELASTIC_IMAGE =
-      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-          .withTag(RestClient.class.getPackage().getImplementationVersion());
   private final Map<String, ExporterType> exporterTypes;
   private final Map<String, TestStandaloneBroker> testBrokers = new HashMap<>();
   private final Set<Profile> additionalProfiles = new HashSet<>();
   private Consumer<BrokerBasedProperties> additionalBrokerConfig = cfg -> {};
   private final Map<String, Object> additionalProperties = new HashMap<>();
   private final List<AutoCloseable> closeables = new ArrayList<>();
-  private final ZeebeClientTestFactory zeebeClientTestFactory = new ZeebeClientTestFactory();
+  private final Map<String, ZeebeClientTestFactory> zeebeClientTestFactories = new HashMap<>();
+  private final List<User> registeredUsers = new ArrayList<>();
 
   public BrokerWithCamundaExporterITInvocationProvider() {
     exporterTypes = new HashMap<>();
@@ -96,7 +91,7 @@ public class BrokerWithCamundaExporterITInvocationProvider
   }
 
   public BrokerWithCamundaExporterITInvocationProvider withUsers(final User... users) {
-    zeebeClientTestFactory.registerUsers(users);
+    registeredUsers.addAll(List.of(users));
     return this;
   }
 
@@ -111,19 +106,7 @@ public class BrokerWithCamundaExporterITInvocationProvider
               switch (entry.getValue()) {
                 case CAMUNDA_EXPORTER_ELASTIC_SEARCH -> {
                   final ElasticsearchContainer elasticsearchContainer =
-                      new ElasticsearchContainer(ELASTIC_IMAGE)
-                          // use JVM option files to avoid overwriting default options set by the ES
-                          // container class
-                          .withClasspathResourceMapping(
-                              "elasticsearch-fast-startup.options",
-                              "/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-fast-startup.options",
-                              BindMode.READ_ONLY)
-                          // can be slow in CI
-                          .withStartupTimeout(Duration.ofMinutes(5))
-                          .withEnv("action.auto_create_index", "true")
-                          .withEnv("xpack.security.enabled", "false")
-                          .withEnv("xpack.watcher.enabled", "false")
-                          .withEnv("xpack.ml.enabled", "false");
+                      TestSearchContainers.createDefeaultElasticsearchContainer();
                   elasticsearchContainer.start();
                   closeables.add(elasticsearchContainer);
 
@@ -133,6 +116,7 @@ public class BrokerWithCamundaExporterITInvocationProvider
                               "http://" + elasticsearchContainer.getHttpHostAddress())
                           .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
                           .withBrokerConfig(additionalBrokerConfig)
+                          .withRecordingExporter(true)
                           .withProperty("camunda.rest.query.enabled", true)
                           .withProperty(
                               "camunda.database.url",
@@ -143,12 +127,15 @@ public class BrokerWithCamundaExporterITInvocationProvider
                   closeables.add(testBroker);
                   testBrokers.put(entry.getKey(), testBroker);
                   testBroker.awaitCompleteTopology();
+                  final var zeebeClientTestFactory =
+                      new ZeebeClientTestFactory().withUsers(registeredUsers);
+                  zeebeClientTestFactories.put(entry.getKey(), zeebeClientTestFactory);
+                  closeables.add(zeebeClientTestFactory);
                 }
                 default -> throw new RuntimeException("Unknown exporter type");
               }
               LOGGER.info("Start up of '{}' finished.", entry.getKey());
             });
-    closeables.add(zeebeClientTestFactory);
   }
 
   @Override
@@ -190,6 +177,8 @@ public class BrokerWithCamundaExporterITInvocationProvider
                 if (TestStandaloneBroker.class.equals(parameter.getType())) {
                   return testGateway;
                 } else if (ZeebeClient.class.equals(parameter.getType())) {
+                  final var zeebeClientTestFactory =
+                      zeebeClientTestFactories.get(standaloneCamundaKey);
                   return zeebeClientTestFactory.createZeebeClient(
                       testGateway, parameter.getAnnotation(Authenticated.class));
                 }

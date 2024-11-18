@@ -9,19 +9,22 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.ProcessInstanceSearchColumn;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import java.util.List;
+import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessInstanceReader {
+public class ProcessInstanceReader extends AbstractEntityReader<ProcessInstanceEntity> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceReader.class);
 
   private final ProcessInstanceMapper processInstanceMapper;
 
   public ProcessInstanceReader(final ProcessInstanceMapper processInstanceMapper) {
+    super(ProcessInstanceMapper.ProcessInstanceSearchColumn::findByProperty);
     this.processInstanceMapper = processInstanceMapper;
   }
 
@@ -30,12 +33,15 @@ public class ProcessInstanceReader {
     return Optional.ofNullable(processInstanceMapper.findOne(processInstanceKey));
   }
 
-  public SearchResult search(final ProcessInstanceDbQuery filter) {
-    LOG.trace("[RDBMS DB] Search for process instance with filter {}", filter);
-    final var totalHits = processInstanceMapper.count(filter);
-    final var hits = processInstanceMapper.search(filter);
-    return new SearchResult(hits, totalHits.intValue());
-  }
+  public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
+    final var dbSort = convertSort(query.sort(), ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY);
+    final var dbQuery =
+        ProcessInstanceDbQuery.of(
+            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
 
-  public record SearchResult(List<ProcessInstanceEntity> hits, Integer total) {}
+    LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
+    final var totalHits = processInstanceMapper.count(dbQuery);
+    final var hits = processInstanceMapper.search(dbQuery);
+    return new SearchQueryResult<>(totalHits.intValue(), hits, extractSortValues(hits, dbSort));
+  }
 }

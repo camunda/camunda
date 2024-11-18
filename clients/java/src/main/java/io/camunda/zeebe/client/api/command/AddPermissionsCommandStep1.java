@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.api.command;
 
 import io.camunda.zeebe.client.api.response.AddPermissionsResponse;
 import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import java.util.List;
 
 public interface AddPermissionsCommandStep1 {
@@ -27,8 +28,7 @@ public interface AddPermissionsCommandStep1 {
    * @param resourceType the resource type
    * @return the builder for this command
    */
-  AddPermissionsCommandStep2 resourceType(
-      io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum resourceType);
+  AddPermissionsCommandStep2 resourceType(ResourceTypeEnum resourceType);
 
   interface AddPermissionsCommandStep2 {
 

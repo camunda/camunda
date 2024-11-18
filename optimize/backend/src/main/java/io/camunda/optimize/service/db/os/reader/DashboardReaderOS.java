@@ -13,7 +13,7 @@ import static io.camunda.optimize.service.db.schema.index.DashboardIndex.COLLECT
 
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.reader.DashboardReader;
 import io.camunda.optimize.service.db.schema.index.DashboardIndex;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;

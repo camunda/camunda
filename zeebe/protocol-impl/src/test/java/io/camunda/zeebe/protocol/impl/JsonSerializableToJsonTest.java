@@ -38,6 +38,8 @@ import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -56,6 +58,8 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationVariableInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionProgress;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -76,7 +80,6 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserType;
@@ -688,6 +691,25 @@ final class JsonSerializableToJsonTest {
               final String activityId = "activity";
               final int activityInstanceKey = 123;
               final Set<String> changedAttributes = Set.of("bar", "foo");
+              final JobResult result =
+                  new JobResult()
+                      .setDenied(true)
+                      .setCorrections(
+                          new JobResultCorrections()
+                              .setAssignee("frodo")
+                              .setDueDate("today")
+                              .setFollowUpDate("tomorrow")
+                              .setCandidateGroups(List.of("fellowship", "eagles"))
+                              .setCandidateUsers(List.of("frodo", "sam", "gollum"))
+                              .setPriority(1))
+                      .setCorrectedAttributes(
+                          List.of(
+                              "assignee",
+                              "dueDate",
+                              "followUpDate",
+                              "candidateGroups",
+                              "candidateUsers",
+                              "priority"));
 
               jobRecord
                   .setWorker(wrapString(worker))
@@ -705,7 +727,8 @@ final class JsonSerializableToJsonTest {
                   .setProcessInstanceKey(processInstanceKey)
                   .setElementId(wrapString(activityId))
                   .setElementInstanceKey(activityInstanceKey)
-                  .setChangedAttributes(changedAttributes);
+                  .setChangedAttributes(changedAttributes)
+                  .setResult(result);
 
               return record;
             },
@@ -742,7 +765,26 @@ final class JsonSerializableToJsonTest {
               "deadline": 1000,
               "timeout": -1,
               "tenantId": "<default>",
-              "changedAttributes": ["bar", "foo"]
+              "changedAttributes": ["bar", "foo"],
+              "result": {
+                "denied": true,
+                "correctedAttributes": [
+                  "assignee",
+                  "dueDate",
+                  "followUpDate",
+                  "candidateGroups",
+                  "candidateUsers",
+                  "priority"
+                ],
+                "corrections": {
+                  "assignee": "frodo",
+                  "dueDate": "today",
+                  "followUpDate": "tomorrow",
+                  "candidateGroups": ["fellowship", "eagles"],
+                  "candidateUsers": ["frodo", "sam", "gollum"],
+                  "priority": 1
+                }
+              }
             }
           ],
           "timeout": 2,
@@ -793,6 +835,25 @@ final class JsonSerializableToJsonTest {
               final String elementId = "activity";
               final int activityInstanceKey = 123;
               final Set<String> changedAttributes = Set.of("bar", "foo");
+              final JobResult result =
+                  new JobResult()
+                      .setDenied(true)
+                      .setCorrections(
+                          new JobResultCorrections()
+                              .setAssignee("frodo")
+                              .setDueDate("today")
+                              .setFollowUpDate("tomorrow")
+                              .setCandidateGroups(List.of("fellowship", "eagles"))
+                              .setCandidateUsers(List.of("frodo", "sam", "gollum"))
+                              .setPriority(1))
+                      .setCorrectedAttributes(
+                          List.of(
+                              "assignee",
+                              "dueDate",
+                              "followUpDate",
+                              "candidateGroups",
+                              "candidateUsers",
+                              "priority"));
 
               final Map<String, String> customHeaders =
                   Collections.singletonMap("workerVersion", "42");
@@ -815,7 +876,8 @@ final class JsonSerializableToJsonTest {
                       .setProcessInstanceKey(processInstanceKey)
                       .setElementId(wrapString(elementId))
                       .setElementInstanceKey(activityInstanceKey)
-                      .setChangedAttributes(changedAttributes);
+                      .setChangedAttributes(changedAttributes)
+                      .setResult(result);
 
               record.setCustomHeaders(wrapArray(MsgPackConverter.convertToMsgPack(customHeaders)));
               return record;
@@ -846,7 +908,26 @@ final class JsonSerializableToJsonTest {
           "deadline": 13,
           "timeout": 14,
           "tenantId": "<default>",
-          "changedAttributes": ["bar", "foo"]
+          "changedAttributes": ["bar", "foo"],
+          "result": {
+            "denied": true,
+            "correctedAttributes": [
+              "assignee",
+              "dueDate",
+              "followUpDate",
+              "candidateGroups",
+              "candidateUsers",
+              "priority"
+            ],
+            "corrections": {
+              "assignee": "frodo",
+              "dueDate": "today",
+              "followUpDate": "tomorrow",
+              "candidateGroups": ["fellowship", "eagles"],
+              "candidateUsers": ["frodo", "sam", "gollum"],
+              "priority": 1
+            }
+          }
         }
         """
       },
@@ -879,7 +960,19 @@ final class JsonSerializableToJsonTest {
           "deadline": -1,
           "timeout": -1,
           "tenantId": "<default>",
-          "changedAttributes": []
+          "changedAttributes": [],
+          "result": {
+            "denied": false,
+            "correctedAttributes": [],
+            "corrections": {
+              "assignee": "",
+              "dueDate": "",
+              "followUpDate": "",
+              "candidateGroups": [],
+              "candidateUsers": [],
+              "priority": -1
+            }
+          }
         }
         """
       },
@@ -917,7 +1010,19 @@ final class JsonSerializableToJsonTest {
           "processDefinitionVersion": -1,
           "customHeaders": {},
           "tenantId": "<default>",
-          "changedAttributes": []
+          "changedAttributes": [],
+          "result": {
+            "denied": false,
+            "correctedAttributes": [],
+            "corrections": {
+              "assignee": "",
+              "dueDate": "",
+              "followUpDate": "",
+              "candidateGroups": [],
+              "candidateUsers": [],
+              "priority": -1
+            }
+          }
         }
         """
       },
@@ -2595,7 +2700,6 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
-                    .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
                     .setOwnerType(AuthorizationOwnerType.USER)
                     .setResourceType(AuthorizationResourceType.DEPLOYMENT)
@@ -2608,14 +2712,13 @@ final class JsonSerializableToJsonTest {
                         new Permission().setPermissionType(PermissionType.READ).addResourceId("*")),
         """
         {
-          "action": "ADD",
           "ownerKey": 1,
           "ownerType": "USER",
           "resourceType": "DEPLOYMENT",
           "permissions": [
             {
               "permissionType": "CREATE",
-              "resourceIds": ["*", "bpmnProcessId:foo"]
+              "resourceIds": ["bpmnProcessId:foo", "*"]
             },
             {
               "permissionType": "READ",
@@ -2633,12 +2736,10 @@ final class JsonSerializableToJsonTest {
         (Supplier<AuthorizationRecord>)
             () ->
                 new AuthorizationRecord()
-                    .setAction(PermissionAction.ADD)
                     .setOwnerKey(1L)
                     .setResourceType(AuthorizationResourceType.DEPLOYMENT),
         """
         {
-          "action": "ADD",
           "ownerKey": 1,
           "ownerType": "UNSPECIFIED",
           "resourceType": "DEPLOYMENT",
@@ -2768,6 +2869,38 @@ final class JsonSerializableToJsonTest {
         """
         {
          "desiredPartitionCount": 5
+        }
+        """
+      },
+
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////////// RedistributionRecord //////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "RedistributionRecord (empty)",
+        (Supplier<RedistributionRecord>) RedistributionRecord::new,
+        """
+        {
+          "stage": -1,
+          "progress": {
+            "deploymentKey": -1
+          }
+        }
+        """
+      },
+      {
+        "RedistributionRecord",
+        (Supplier<RedistributionRecord>)
+            () ->
+                new RedistributionRecord()
+                    .setStage(2)
+                    .setProgress(new RedistributionProgress().claimDeploymentKey(123)),
+        """
+        {
+          "stage": 2,
+          "progress": {
+            "deploymentKey": 123
+          }
         }
         """
       },

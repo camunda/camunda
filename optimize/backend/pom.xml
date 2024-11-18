@@ -384,7 +384,7 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-license-check</artifactId>
-      <version>2.9.0</version>
+      <version>2.10.0</version>
     </dependency>
 
     <!-- ClassGraph  -->
@@ -597,7 +597,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-common</artifactId>
-      <version>4.1.114.Final</version>
+      <version>4.1.115.Final</version>
       <scope>compile</scope>
     </dependency>
 

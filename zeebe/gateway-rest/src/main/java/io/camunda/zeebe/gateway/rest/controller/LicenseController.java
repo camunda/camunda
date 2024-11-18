@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.service.ManagementServices;
 import io.camunda.zeebe.gateway.protocol.rest.LicenseResponse;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import org.springframework.http.MediaType;
@@ -36,8 +37,9 @@ public class LicenseController {
     response.setValidLicense(managementServices.isCamundaLicenseValid());
     response.setLicenseType(managementServices.getCamundaLicenseType().getName());
     response.setIsCommercial(managementServices.isCommercialCamundaLicense());
+    final OffsetDateTime expirationDate = managementServices.getCamundaLicenseExpiresAt();
     response.setExpiresAt(
-        DATE_TIME_FORMATTER.format(managementServices.getCamundaLicenseExpirationDate()));
+        expirationDate == null ? null : DATE_TIME_FORMATTER.format(expirationDate));
 
     return response;
   }

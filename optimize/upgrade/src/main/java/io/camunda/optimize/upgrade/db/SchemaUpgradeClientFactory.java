@@ -46,6 +46,7 @@ public final class SchemaUpgradeClientFactory {
               upgradeDependencies.indexNameService(),
               mappingUtil.getAllMappings(upgradeDependencies.indexNameService().getIndexPrefix())),
           metadataService,
+          upgradeDependencies.configurationService(),
           esClient,
           new ObjectMapperFactory(
                   new OptimizeDateTimeFormatterFactory().getObject(),
@@ -87,6 +88,7 @@ public final class SchemaUpgradeClientFactory {
       return new SchemaUpgradeClientES(
           (ElasticSearchSchemaManager) schemaManager,
           (ElasticSearchMetadataService) metadataService,
+          configurationService,
           esClient,
           new ObjectMapperFactory(
                   new OptimizeDateTimeFormatterFactory().getObject(), configurationService)

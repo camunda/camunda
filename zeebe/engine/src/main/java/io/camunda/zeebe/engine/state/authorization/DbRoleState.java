@@ -45,7 +45,7 @@ public class DbRoleState implements MutableRoleState {
     roleKey = new DbLong();
     roleColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.ROLES, transactionContext, roleKey, persistedRole);
+            ZbColumnFamilies.ROLES, transactionContext, roleKey, new PersistedRole());
 
     fkRoleKey = new DbForeignKey<>(roleKey, ZbColumnFamilies.ROLES);
     entityKey = new DbLong();

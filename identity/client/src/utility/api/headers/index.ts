@@ -11,6 +11,8 @@ export const LICENSE_ENDPOINT = "/license";
 export type License = {
   validLicense: boolean;
   licenseType: string;
+  isCommercial: boolean;
+  expiresAt: string | null;
 };
 
 export const checkLicense: ApiDefinition<License> = () =>

@@ -26,6 +26,10 @@ public class MappingClient {
     return new MappingCreateClient(writer, name);
   }
 
+  public MappingDeleteClient deleteMapping(final long key) {
+    return new MappingDeleteClient(writer, key);
+  }
+
   public static class MappingCreateClient {
 
     private static final Function<Long, Record<MappingRecordValue>> SUCCESS_SUPPLIER =
@@ -63,6 +67,43 @@ public class MappingClient {
     }
 
     public MappingCreateClient expectRejection() {
+      expectation = REJECTION_SUPPLIER;
+      return this;
+    }
+  }
+
+  public static class MappingDeleteClient {
+
+    private static final Function<Long, Record<MappingRecordValue>> SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.mappingRecords()
+                .withIntent(MappingIntent.DELETED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+
+    private static final Function<Long, Record<MappingRecordValue>> REJECTION_SUPPLIER =
+        (position) ->
+            RecordingExporter.mappingRecords()
+                .onlyCommandRejections()
+                .withIntent(MappingIntent.DELETE)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private final CommandWriter writer;
+    private final MappingRecord mappingRecord;
+    private Function<Long, Record<MappingRecordValue>> expectation = SUCCESS_SUPPLIER;
+
+    public MappingDeleteClient(final CommandWriter writer, final long key) {
+      this.writer = writer;
+      mappingRecord = new MappingRecord();
+      mappingRecord.setMappingKey(key);
+    }
+
+    public Record<MappingRecordValue> delete() {
+      final long position = writer.writeCommand(MappingIntent.DELETE, mappingRecord);
+      return expectation.apply(position);
+    }
+
+    public MappingDeleteClient expectRejection() {
       expectation = REJECTION_SUPPLIER;
       return this;
     }

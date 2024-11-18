@@ -7,20 +7,21 @@
  */
 package io.camunda.exporter;
 
-import io.camunda.exporter.archiver.ArchiverRepository;
-import io.camunda.exporter.cache.ProcessCacheLoaderFactory;
+import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Set;
 
 public interface ExporterResourceProvider {
 
   void init(
-      ExporterConfiguration configuration,
-      final ProcessCacheLoaderFactory processCacheLoaderFactory);
+      final ExporterConfiguration configuration,
+      final ExporterEntityCacheProvider entityCacheProvider,
+      final MeterRegistry meterRegistry);
 
   /**
    * This should return descriptors describing the desired state of all indices provided.
@@ -46,10 +47,5 @@ public interface ExporterResourceProvider {
   /**
    * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter
    */
-  Set<ExportHandler> getExportHandlers();
-
-  /**
-   * @return a new archiver repository scoped to the current partition
-   */
-  ArchiverRepository newArchiverRepository();
+  Set<ExportHandler<?, ?>> getExportHandlers();
 }

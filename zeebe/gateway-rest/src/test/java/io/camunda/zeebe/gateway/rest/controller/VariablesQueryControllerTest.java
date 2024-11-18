@@ -15,21 +15,29 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.VariableServices;
+import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 
 @WebMvcTest(value = VariableQueryController.class, properties = "camunda.rest.query.enabled=true")
+@Import(JacksonConfig.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
 
   private static final Long VALID_VARIABLE_KEY = 0L;
@@ -75,7 +83,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
   private static final SearchQueryResult<VariableEntity> SEARCH_QUERY_RESULT =
       new Builder<VariableEntity>()
           .total(1L)
-          .items(List.of(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "<default>")))
+          .items(List.of(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "bpid", "<default>")))
           .sortValues(new Object[] {"v"})
           .build();
   @MockBean VariableServices variableServices;
@@ -86,7 +94,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
         .thenReturn(variableServices);
 
     when(variableServices.getByKey(VALID_VARIABLE_KEY))
-        .thenReturn(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "<default>"));
+        .thenReturn(new VariableEntity(0L, "n", "v", "v", false, 2L, 3L, "bpid", "<default>"));
 
     when(variableServices.getByKey(INVALID_VARIABLE_KEY))
         .thenThrow(
@@ -339,5 +347,52 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                 }""");
 
     verify(variableServices).getByKey(INVALID_VARIABLE_KEY);
+  }
+
+  private static Stream<Arguments> provideAdvancedSearchParameters() {
+    final var streamBuilder = Stream.<Arguments>builder();
+
+    longOperationTestCases(
+        streamBuilder,
+        "scopeKey",
+        ops -> new VariableFilter.Builder().scopeKeyOperations(ops).build());
+    longOperationTestCases(
+        streamBuilder,
+        "processInstanceKey",
+        ops -> new VariableFilter.Builder().processInstanceKeyOperations(ops).build());
+
+    return streamBuilder.build();
+  }
+
+  @ParameterizedTest
+  @MethodSource("provideAdvancedSearchParameters")
+  void shouldSearchVariablesWithAdvancedFilter(
+      final String filterString, final VariableFilter filter) {
+    // given
+    final var request =
+        """
+            {
+                "filter": %s
+            }"""
+            .formatted(filterString);
+    System.out.println("request = " + request);
+    when(variableServices.search(any(VariableQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+
+    // when / then
+    webClient
+        .post()
+        .uri(VARIABLE_TASKS_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(variableServices).search(new VariableQuery.Builder().filter(filter).build());
   }
 }

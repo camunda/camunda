@@ -12,7 +12,7 @@ import static io.camunda.optimize.service.util.DefinitionVersionHandlingUtil.isD
 
 import com.google.common.collect.ImmutableList;
 import io.camunda.optimize.dto.optimize.ReportConstants;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex;
 import java.util.ArrayList;
 import java.util.List;

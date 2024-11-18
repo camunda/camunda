@@ -25,6 +25,7 @@ import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
+import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.util.ArrayList;
@@ -154,7 +155,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(exception.details().getTitle()).isEqualTo("NOT_FOUND");
     assertThat(exception.details().getStatus()).isEqualTo(404);
     assertThat(exception.details().getDetail())
-        .isEqualTo("Process Instance with key 100 not found");
+        .isEqualTo("Process instance with key 100 not found");
   }
 
   @Test
@@ -191,6 +192,75 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByKeyFilterGtLt() {
+    // given
+    final long processInstanceKey =
+        PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
+    final var longFilter = new LongFilterProperty();
+    longFilter.set$Gt(processInstanceKey - 1);
+    longFilter.set$Lt(processInstanceKey + 1);
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processInstanceKey(longFilter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByKeyFilterGteLte() {
+    // given
+    final long processInstanceKey =
+        PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
+    final var longFilter = new LongFilterProperty();
+    longFilter.set$Gte(processInstanceKey);
+    longFilter.set$Lte(processInstanceKey);
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processInstanceKey(longFilter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
+  }
+
+  @Test
+  void shouldQueryProcessInstancesByKeyFilterIn() {
+    // given
+    final List<Long> processInstanceKeys =
+        PROCESS_INSTANCES.subList(0, 2).stream()
+            .map(ProcessInstanceEvent::getProcessInstanceKey)
+            .toList();
+    final var longFilter = new LongFilterProperty();
+    longFilter.set$In(processInstanceKeys);
+
+    // when
+    final var result =
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.processInstanceKey(longFilter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+    assertThat(result.items())
+        .extracting("processInstanceKey")
+        .containsExactlyInAnyOrderElementsOf(processInstanceKeys);
   }
 
   @Test

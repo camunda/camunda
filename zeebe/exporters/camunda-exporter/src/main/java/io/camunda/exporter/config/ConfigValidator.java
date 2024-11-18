@@ -8,8 +8,7 @@
 package io.camunda.exporter.config;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -38,14 +37,17 @@ public final class ConfigValidator {
       ConnectionTypes.from(configuration.getConnect().getType());
     } catch (final IllegalArgumentException e) {
       throw new ExporterException(
-          "CamundaExporter: Unsupported connection type: " + configuration.getConnect().getType());
+          String.format(
+              "CamundaExporter connect.type must be one of the supported types '%s', but was: '%s'.",
+              Arrays.toString(ConnectionTypes.values()), configuration.getConnect().getType()),
+          e);
     }
 
     if (configuration.getIndex().getPrefix() != null
         && configuration.getIndex().getPrefix().contains("_")) {
       throw new ExporterException(
           String.format(
-              "CamundaExporter Index prefix must not contain underscore. Current value: %s",
+              "CamundaExporter index.prefix must not contain underscore. Current value: %s",
               configuration.getIndex().getPrefix()));
     }
 
@@ -53,14 +55,15 @@ public final class ConfigValidator {
     if (numberOfShards != null && numberOfShards < 1) {
       throw new ExporterException(
           String.format(
-              "CamundaExporter numberOfShards must be >= 1. Current value: %d", numberOfShards));
+              "CamundaExporter index.numberOfShards must be >= 1. Current value: %d",
+              numberOfShards));
     }
 
     final Integer numberOfReplicas = configuration.getIndex().getNumberOfReplicas();
     if (numberOfReplicas != null && numberOfReplicas < 0) {
       throw new ExporterException(
           String.format(
-              "CamundaExporter numberOfReplicas must be >= 0. Current value: %d",
+              "CamundaExporter index.numberOfReplicas must be >= 0. Current value: %d",
               numberOfReplicas));
     }
 
@@ -68,26 +71,15 @@ public final class ConfigValidator {
     if (minimumAge != null && !CHECKER_MIN_AGE.test(minimumAge)) {
       throw new ExporterException(
           String.format(
-              "CamundaExporter retention minimumAge '%s' must match pattern '%s', but didn't.",
+              "CamundaExporter retention.minimumAge '%s' must match pattern '%s', but didn't.",
               minimumAge, PATTERN_MIN_AGE_FORMAT));
-    }
-
-    final String rolloverDateFormat = configuration.getArchiver().getRolloverDateFormat();
-    try {
-      DateTimeFormatter.ofPattern(rolloverDateFormat).withZone(ZoneId.systemDefault());
-    } catch (final IllegalArgumentException e) {
-      throw new ExporterException(
-          "CamundaExporter rolloverDateFormat "
-              + rolloverDateFormat
-              + "is not a valid DateTimeFormatter pattern: "
-              + e);
     }
 
     final String rolloverInterval = configuration.getArchiver().getRolloverInterval();
     if (rolloverInterval != null && !CHECK_DATE_INTERVAL.test(rolloverInterval)) {
       throw new ExporterException(
           String.format(
-              "CamundaExporter rolloverInterval '%s' must match pattern '%s', but didn't.",
+              "CamundaExporter archiver.rolloverInterval '%s' must match pattern '%s', but didn't.",
               rolloverInterval, PATTERN_DATE_INTERVAL_FORMAT));
     }
 
@@ -96,20 +88,35 @@ public final class ConfigValidator {
     if (waitPeriodBeforeArchiving != null && !CHECK_DATE_INTERVAL.test(waitPeriodBeforeArchiving)) {
       throw new ExporterException(
           String.format(
-              "CamundaExporter waitPeriodBeforeArchiving '%s' must match pattern '%s', but didn't.",
+              "CamundaExporter archiver.waitPeriodBeforeArchiving '%s' must match pattern '%s', but didn't.",
               waitPeriodBeforeArchiving, PATTERN_DATE_INTERVAL_FORMAT));
     }
 
     final int rolloverBatchSize = configuration.getArchiver().getRolloverBatchSize();
     if (rolloverBatchSize < 1) {
       throw new ExporterException(
-          "CamundaExporter rolloverBatchSize must be >= 1. Current value: " + rolloverBatchSize);
+          "CamundaExporter archiver.rolloverBatchSize must be >= 1. Current value: "
+              + rolloverBatchSize);
     }
 
     final int delayBetweenRuns = configuration.getArchiver().getDelayBetweenRuns();
     if (delayBetweenRuns < 1) {
       throw new ExporterException(
-          "CamundaExporter delayBetweenRuns must be >= 1. Current value: " + delayBetweenRuns);
+          "CamundaExporter archiver.delayBetweenRuns must be >= 1. Current value: "
+              + delayBetweenRuns);
+    }
+
+    final int processCacheMaxCacheSize = configuration.getProcessCache().getMaxCacheSize();
+    if (processCacheMaxCacheSize < 1) {
+      throw new ExporterException(
+          "CamundaExporter processCache.maxCacheSize must be >= 1. Current value: "
+              + processCacheMaxCacheSize);
+    }
+
+    final int formCacheMaxCacheSize = configuration.getFormCache().getMaxCacheSize();
+    if (formCacheMaxCacheSize < 1) {
+      throw new ExporterException(
+          "CamundaExporter maxCacheSize must be >= 1. Current value: " + formCacheMaxCacheSize);
     }
   }
 }

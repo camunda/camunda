@@ -13,6 +13,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -48,7 +49,14 @@ public class CreateUserMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limit(record -> record.getIntent().equals(CommandDistributionIntent.FINISHED)))
+                .limitByCount(
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .filter(
+                    record ->
+                        record.getValueType() == ValueType.USER
+                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
+                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
+                                    == UserIntent.CREATE)))
         .extracting(
             Record::getIntent,
             Record::getRecordType,

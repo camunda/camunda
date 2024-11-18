@@ -15,7 +15,8 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 @JsonIgnoreProperties({
@@ -51,14 +52,14 @@ public final class Permission extends ObjectValue implements PermissionValue {
   }
 
   @Override
-  public List<String> getResourceIds() {
+  public Set<String> getResourceIds() {
     return StreamSupport.stream(resourceIdsProp.spliterator(), false)
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
-        .toList();
+        .collect(Collectors.toSet());
   }
 
-  public Permission addResourceIds(final List<String> resourceIds) {
+  public Permission addResourceIds(final Set<String> resourceIds) {
     resourceIds.forEach(this::addResourceId);
     return this;
   }

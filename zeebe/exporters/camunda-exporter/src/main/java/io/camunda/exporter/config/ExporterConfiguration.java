@@ -18,6 +18,8 @@ public class ExporterConfiguration {
   private BulkConfiguration bulk = new BulkConfiguration();
   private RetentionConfiguration retention = new RetentionConfiguration();
   private ArchiverConfiguration archiver = new ArchiverConfiguration();
+  private CacheConfiguration processCache = new CacheConfiguration();
+  private CacheConfiguration formCache = new CacheConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -60,6 +62,22 @@ public class ExporterConfiguration {
     this.archiver = archiver;
   }
 
+  public CacheConfiguration getProcessCache() {
+    return processCache;
+  }
+
+  public void setProcessCache(final CacheConfiguration processCache) {
+    this.processCache = processCache;
+  }
+
+  public CacheConfiguration getFormCache() {
+    return formCache;
+  }
+
+  public void setFormCache(final CacheConfiguration formCache) {
+    this.formCache = formCache;
+  }
+
   public boolean isCreateSchema() {
     return createSchema;
   }
@@ -83,6 +101,10 @@ public class ExporterConfiguration {
         + createSchema
         + ", archiver="
         + archiver
+        + ", processCache="
+        + processCache
+        + ", formCache="
+        + formCache
         + '}';
   }
 
@@ -240,7 +262,6 @@ public class ExporterConfiguration {
 
   public static class ArchiverConfiguration {
     private boolean rolloverEnabled = true;
-    private String rolloverDateFormat = "yyyy-MM-dd";
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private int rolloverBatchSize = 100;
@@ -253,14 +274,6 @@ public class ExporterConfiguration {
 
     public void setRolloverEnabled(final boolean rolloverEnabled) {
       this.rolloverEnabled = rolloverEnabled;
-    }
-
-    public String getRolloverDateFormat() {
-      return rolloverDateFormat;
-    }
-
-    public void setRolloverDateFormat(final String rolloverDateFormat) {
-      this.rolloverDateFormat = rolloverDateFormat;
     }
 
     public String getElsRolloverDateFormat() {
@@ -312,8 +325,6 @@ public class ExporterConfiguration {
       return "RetentionConfiguration{"
           + "rolloverEnabled="
           + rolloverEnabled
-          + ", rolloverDateFormat='"
-          + rolloverDateFormat
           + '\''
           + ", elsRolloverDateFormat='"
           + elsRolloverDateFormat
@@ -322,7 +333,7 @@ public class ExporterConfiguration {
           + rolloverInterval
           + '\''
           + ", rolloverBatchSize='"
-          + rolloverDateFormat
+          + rolloverBatchSize
           + '\''
           + ", waitPeriodBeforeArchiving='"
           + waitPeriodBeforeArchiving
@@ -331,6 +342,23 @@ public class ExporterConfiguration {
           + delayBetweenRuns
           + '\''
           + '}';
+    }
+  }
+
+  public static class CacheConfiguration {
+    private int maxCacheSize = 10000;
+
+    public int getMaxCacheSize() {
+      return maxCacheSize;
+    }
+
+    public void setMaxCacheSize(final int maxCacheSize) {
+      this.maxCacheSize = maxCacheSize;
+    }
+
+    @Override
+    public String toString() {
+      return "CacheConfiguration{" + "cacheSize=" + maxCacheSize + '}';
     }
   }
 }

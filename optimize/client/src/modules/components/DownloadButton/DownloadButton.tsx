@@ -7,7 +7,7 @@
  */
 
 import {useState, useEffect, ComponentPropsWithoutRef} from 'react';
-import {Button} from '@carbon/react';
+import {Button, Stack} from '@carbon/react';
 import {Download} from '@carbon/icons-react';
 
 import {Modal} from 'components';
@@ -105,15 +105,17 @@ export function DownloadButton({
       <Modal open={modalOpen} onClose={closeModal} className="DownloadButtonConfirmationModal">
         <Modal.Header title={t('report.downloadCSV')} />
         <Modal.Content>
-          <p>
-            <b>{t('common.csvLimit.Warning')}</b>
-          </p>
-          <p>{t('common.csvLimit.info', {exportLimit, totalCount})}</p>
-          <p>
-            {t('common.csvLimit.exportApi', {
-              docsLink: generateDocsLink('apis-clients/optimize-api/report/get-data-export/'),
-            })}
-          </p>
+          <Stack gap={4}>
+            <p>
+              <b>{t('common.csvLimit.Warning')}</b>
+            </p>
+            <p>{t('common.csvLimit.info', {exportLimit, totalCount})}</p>
+            <p>
+              {t('common.csvLimit.exportApi', {
+                docsLink: generateDocsLink('apis-clients/optimize-api/report/get-data-export/'),
+              })}
+            </p>
+          </Stack>
         </Modal.Content>
         <Modal.Footer>
           <Button kind="secondary" onClick={closeModal}>

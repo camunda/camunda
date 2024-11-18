@@ -20,7 +20,7 @@ import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.io.ByteArrayInputStream;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +51,7 @@ public class DocumentControllerTest extends RestControllerTest {
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
     final var content = new byte[] {1, 2, 3};
 
-    final var timestamp = ZonedDateTime.now();
+    final var timestamp = OffsetDateTime.now();
 
     final ArgumentCaptor<DocumentCreateRequest> requestCaptor =
         ArgumentCaptor.forClass(DocumentCreateRequest.class);
@@ -119,7 +119,7 @@ public class DocumentControllerTest extends RestControllerTest {
     final var contentType = MediaType.APPLICATION_OCTET_STREAM;
     final var content = new byte[] {1, 2, 3};
 
-    final var timestamp = ZonedDateTime.now();
+    final var timestamp = OffsetDateTime.now();
 
     final ArgumentCaptor<DocumentCreateRequest> requestCaptor =
         ArgumentCaptor.forClass(DocumentCreateRequest.class);

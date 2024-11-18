@@ -22,6 +22,7 @@ import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstance;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.search.response.DecisionDefinitionImpl;
+import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.IOException;
@@ -207,7 +208,7 @@ class DecisionQueryTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .isEqualTo("Decision Definition with decisionKey=%d not found".formatted(decisionKey));
+        .isEqualTo("Decision definition with key %d not found".formatted(decisionKey));
   }
 
   @Test
@@ -231,7 +232,7 @@ class DecisionQueryTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .isEqualTo("Decision Definition with decisionKey=%d not found".formatted(decisionKey));
+        .isEqualTo("Decision definition with key %d not found".formatted(decisionKey));
   }
 
   @Test
@@ -538,6 +539,26 @@ class DecisionQueryTest {
   }
 
   @Test
+  public void shouldRetrieveDecisionInstanceByDecisionKeyFilterIn() {
+    // when
+    final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
+    final BasicLongFilterProperty filter = new BasicLongFilterProperty();
+    filter.set$In(List.of(Long.MAX_VALUE, decisionKey));
+    final var result =
+        zeebeClient
+            .newDecisionInstanceQuery()
+            .filter(f -> f.decisionDefinitionKey(filter))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().get(0).getDecisionDefinitionKey()).isEqualTo(decisionKey);
+    assertThat(result.items().get(0).getDecisionInstanceKey())
+        .isEqualTo(EVALUATED_DECISIONS.get(0).getDecisionInstanceKey());
+  }
+
+  @Test
   public void shouldRetrieveDecisionInstanceByDecisionInstanceKey() {
     // when
     final long decisionInstanceKey = EVALUATED_DECISIONS.get(0).getDecisionInstanceKey();
@@ -693,8 +714,7 @@ class DecisionQueryTest {
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Decision requirements with decisionRequirementsKey=%d not found"
-                .formatted(decisionRequirementsKey));
+            "Decision requirements with key %d not found".formatted(decisionRequirementsKey));
   }
 
   @Test
@@ -718,8 +738,6 @@ class DecisionQueryTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .isEqualTo(
-            "Decision Instance with decisionInstanceKey=%d not found"
-                .formatted(decisionInstanceKey));
+        .isEqualTo("Decision instance with key %d not found".formatted(decisionInstanceKey));
   }
 }

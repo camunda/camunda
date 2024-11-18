@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import io.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.writer.DecisionDefinitionWriter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.OpenSearchCondition;

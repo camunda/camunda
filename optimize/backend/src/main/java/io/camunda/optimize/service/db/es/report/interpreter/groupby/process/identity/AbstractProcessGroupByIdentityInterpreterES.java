@@ -19,22 +19,17 @@ import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch.core.search.ResponseBody;
 import co.elastic.clients.util.NamedValue;
-import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.IdentityType;
-import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
-import io.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import io.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import io.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import io.camunda.optimize.service.AssigneeCandidateGroupService;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.db.es.filter.util.ModelElementFilterQueryUtilES;
-import io.camunda.optimize.service.db.es.report.interpreter.distributedby.process.identity.AbstractProcessDistributedByIdentityInterpreterES;
 import io.camunda.optimize.service.db.es.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterES;
 import io.camunda.optimize.service.db.report.ExecutionContext;
+import io.camunda.optimize.service.db.report.interpreter.groupby.process.identity.ProcessGroupByIdentityInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessExecutionPlan;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult;
 import io.camunda.optimize.service.db.report.result.CompositeCommandResult.DistributedByResult;
@@ -45,7 +40,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 public abstract class AbstractProcessGroupByIdentityInterpreterES
     extends AbstractProcessGroupByInterpreterES {
@@ -59,11 +53,9 @@ public abstract class AbstractProcessGroupByIdentityInterpreterES
 
   protected abstract ConfigurationService getConfigurationService();
 
-  protected abstract LocalizationService getLocalizationService();
-
   protected abstract DefinitionService getDefinitionService();
 
-  protected abstract AssigneeCandidateGroupService getAssigneeCandidateGroupService();
+  protected abstract ProcessGroupByIdentityInterpreterHelper getHelper();
 
   @Override
   public Map<String, Aggregation.Builder.ContainerBuilder> createAggregation(
@@ -93,7 +85,9 @@ public abstract class AbstractProcessGroupByIdentityInterpreterES
                                                 ModelElementFilterQueryUtilES
                                                     .createInclusiveFlowNodeIdFilterQuery(
                                                         context.getReportData(),
-                                                        getUserTaskIds(context.getReportData()),
+                                                        getHelper()
+                                                            .getUserTaskIds(
+                                                                context.getReportData()),
                                                         context.getFilterContext(),
                                                         getDefinitionService())
                                                     .build()))
@@ -155,25 +149,6 @@ public abstract class AbstractProcessGroupByIdentityInterpreterES
 
   protected abstract IdentityType getIdentityType();
 
-  private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
-    return getDefinitionService()
-        .extractUserTaskIdAndNames(
-            reportData.getDefinitions().stream()
-                .map(
-                    definitionDto ->
-                        getDefinitionService()
-                            .getDefinition(
-                                DefinitionType.PROCESS,
-                                definitionDto.getKey(),
-                                definitionDto.getVersions(),
-                                definitionDto.getTenantIds()))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .map(ProcessDefinitionOptimizeDto.class::cast)
-                .toList())
-        .keySet();
-  }
-
   private List<GroupByResult> getByIdentityAggregationResults(
       final ResponseBody<?> response,
       final FilterAggregate filteredUserTasks,
@@ -222,19 +197,11 @@ public abstract class AbstractProcessGroupByIdentityInterpreterES
       }
 
       groupedData.add(
-          GroupByResult.createGroupByResult(key, resolveIdentityName(key), distributedByResults));
+          GroupByResult.createGroupByResult(
+              key,
+              getHelper().resolveIdentityName(key, this::getIdentityType),
+              distributedByResults));
     }
     return groupedData;
-  }
-
-  private String resolveIdentityName(final String key) {
-    if (AbstractProcessDistributedByIdentityInterpreterES.DISTRIBUTE_BY_IDENTITY_MISSING_KEY.equals(
-        key)) {
-      return getLocalizationService().getDefaultLocaleMessageForMissingAssigneeLabel();
-    }
-    return getAssigneeCandidateGroupService()
-        .getIdentityByIdAndType(key, getIdentityType())
-        .map(IdentityWithMetadataResponseDto::getName)
-        .orElse(key);
   }
 }

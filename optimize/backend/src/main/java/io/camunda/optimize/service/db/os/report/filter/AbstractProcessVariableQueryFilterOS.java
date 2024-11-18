@@ -10,17 +10,17 @@ package io.camunda.optimize.service.db.os.report.filter;
 import static io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
 import static io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_GRAM;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.gt;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.gte;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.lt;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.lte;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.nested;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.not;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.terms;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.wildcardQuery;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.gt;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.gte;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.lt;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.lte;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.not;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.terms;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.wildcardQuery;
 import static io.camunda.optimize.service.db.os.util.ProcessVariableHelperOS.createExcludeUndefinedOrNullQueryFilter;
 import static io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex.LOWERCASE_FIELD;
 import static io.camunda.optimize.service.db.schema.index.AbstractInstanceIndex.N_GRAM_FIELD;
@@ -131,7 +131,7 @@ public abstract class AbstractProcessVariableQueryFilterOS extends AbstractVaria
       final String variableName, final String valueToContain) {
     final String lowerCaseValue = valueToContain.toLowerCase(Locale.ENGLISH);
     final Query filter =
-        (lowerCaseValue.length() > MAX_GRAM)
+        lowerCaseValue.length() > MAX_GRAM
             /*
               using the slow wildcard query for uncommonly large filter strings (> 10 chars)
             */
@@ -210,7 +210,7 @@ public abstract class AbstractProcessVariableQueryFilterOS extends AbstractVaria
         new ArrayList<>(
             List.of(
                 term(getNestedVariableNameField(), dto.getName()),
-                term(getNestedVariableNameField(), dto.getType().getId())));
+                term(getNestedVariableTypeField(), dto.getType().getId())));
 
     final Object value = OperatorMultipleValuesVariableFilterDataDtoUtil.retrieveValue(dto);
     switch (data.getOperator()) {

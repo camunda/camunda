@@ -13,8 +13,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.exporter.cache.CachedProcessEntity;
 import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
@@ -30,6 +30,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -264,7 +265,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
     processCache.put(
         processInstanceRecordValue.getProcessDefinitionKey(),
-        new CachedProcessEntity("test-process-name", "test-version-tag"));
+        new CachedProcessEntity("test-process-name", "test-version-tag", new ArrayList<>()));
 
     // when
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =

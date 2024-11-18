@@ -7,10 +7,11 @@
  */
 package io.camunda.exporter.handlers;
 
-import io.camunda.exporter.cache.CachedProcessEntity;
-import io.camunda.exporter.cache.ProcessCache;
+import io.camunda.exporter.cache.ExporterEntityCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.exporter.utils.ProcessModelReader;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -25,10 +26,12 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
 
   private final String indexName;
   private final XMLUtil xmlUtil;
-  private final ProcessCache processCache;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
   public ProcessHandler(
-      final String indexName, final XMLUtil xmlUtil, final ProcessCache processCache) {
+      final String indexName,
+      final XMLUtil xmlUtil,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.indexName = indexName;
     this.xmlUtil = xmlUtil;
     this.processCache = processCache;
@@ -76,9 +79,12 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     final String resourceName = process.getResourceName();
     entity.setResourceName(resourceName);
 
-    if (!process.getVersionTag().isEmpty()) {
-      entity.setVersionTag(process.getVersionTag());
+    final var versionTag = process.getVersionTag();
+    if (!ExporterUtil.isEmpty(versionTag)) {
+      entity.setVersionTag(versionTag);
     }
+
+    linkStartFormIfPresent(record, entity);
 
     final Optional<ProcessEntity> diagramData =
         xmlUtil.extractDiagramData(byteArray, process.getBpmnProcessId());
@@ -87,14 +93,14 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
             entity
                 .setName(processEntity.getName())
                 .setFlowNodes(processEntity.getFlowNodes())
-                .setVersionTag(processEntity.getVersionTag())
-                .setFormId(processEntity.getFormId())
-                .setIsPublic(processEntity.getIsPublic()));
+                .setIsPublic(processEntity.getIsPublic())
+                .setCallActivityIds(processEntity.getCallActivityIds()));
 
     // update local cache so that the process info is available immediately to the process instance
     // record handler
     final var cachedProcessEntity =
-        new CachedProcessEntity(entity.getName(), entity.getVersionTag());
+        new CachedProcessEntity(
+            entity.getName(), entity.getVersionTag(), entity.getCallActivityIds());
     processCache.put(process.getProcessDefinitionKey(), cachedProcessEntity);
   }
 
@@ -106,5 +112,21 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private void linkStartFormIfPresent(final Record<Process> record, final ProcessEntity entity) {
+    final var process = record.getValue();
+    final var bpmnProcessId = process.getBpmnProcessId();
+    final var byteArray = process.getResource();
+
+    xmlUtil
+        .createProcessModelReader(byteArray, bpmnProcessId)
+        .flatMap(ProcessModelReader::extractStartFormLink)
+        .ifPresent(
+            startFormLink ->
+                entity
+                    .setFormId(startFormLink.formId())
+                    .setFormKey(startFormLink.formKey())
+                    .setIsFormEmbedded(!ExporterUtil.isEmpty(startFormLink.formKey())));
   }
 }

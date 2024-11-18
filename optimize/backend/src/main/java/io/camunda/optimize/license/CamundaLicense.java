@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.license;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import org.camunda.bpm.licensecheck.InvalidLicenseException;
 import org.camunda.bpm.licensecheck.LicenseKey;
 import org.camunda.bpm.licensecheck.LicenseKeyImpl;
@@ -26,6 +28,8 @@ public class CamundaLicense {
   private static final Logger LOGGER = LoggerFactory.getLogger(CamundaLicense.class);
   private boolean isValid;
   private LicenseType licenseType;
+  private boolean isCommercial;
+  private OffsetDateTime expiresAt;
   private boolean isInitialized;
 
   public CamundaLicense(final String license) {
@@ -38,6 +42,14 @@ public class CamundaLicense {
 
   public synchronized LicenseType getLicenseType() {
     return licenseType;
+  }
+
+  public synchronized boolean isCommercial() {
+    return isCommercial;
+  }
+
+  public synchronized OffsetDateTime expiresAt() {
+    return expiresAt;
   }
 
   public synchronized void initializeWithLicense(final String license) {
@@ -62,6 +74,12 @@ public class CamundaLicense {
   private void validateLicense(final String licenseStr) {
     try {
       final LicenseKey licenseKey = getLicenseKey(licenseStr);
+
+      isCommercial = licenseKey.isCommercial();
+      if (licenseKey.getValidUntil() != null) {
+        expiresAt = licenseKey.getValidUntil().toInstant().atOffset(ZoneOffset.UTC);
+      }
+
       licenseKey.validate(); // this method logs the license status
 
       licenseType = LicenseType.get(licenseKey.getProperties().get("licenseType"));

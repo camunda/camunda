@@ -8,6 +8,10 @@
 package io.camunda.zeebe.gateway.rest;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static java.time.temporal.ChronoField.HOUR_OF_DAY;
+import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
+import static java.time.temporal.ChronoField.NANO_OF_SECOND;
+import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 
 import io.camunda.document.api.DocumentLink;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
@@ -32,10 +36,12 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
@@ -52,6 +58,9 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -61,6 +70,38 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 public final class ResponseMapper {
+
+  /**
+   * Date format <code>uuuu-MM-dd'T'HH:mm:ss.SSS[SSSSSS]Z</code>, always creating
+   * millisecond-precision outputs at least, with up to 9 digits of nanosecond precision if present
+   * in the date. Examples:
+   *
+   * <ul>
+   *   <li>2020-11-11T10:10.11.123Z
+   *   <li>2020-11-11T10:10.00.000Z
+   *   <li>2020-11-11T10:10.00.00301Z
+   *   <li>2020-11-11T10:10.00.003013456Z
+   * </ul>
+   */
+  private static final DateTimeFormatter DATE_RESPONSE_MAPPER =
+      new DateTimeFormatterBuilder()
+          .parseCaseInsensitive()
+          .append(DateTimeFormatter.ISO_LOCAL_DATE)
+          .appendLiteral('T')
+          .appendValue(HOUR_OF_DAY, 2)
+          .appendLiteral(':')
+          .appendValue(MINUTE_OF_HOUR, 2)
+          .appendLiteral(':')
+          .appendValue(SECOND_OF_MINUTE, 2)
+          .appendFraction(NANO_OF_SECOND, 3, 9, true)
+          .parseLenient()
+          .appendOffsetId()
+          .parseStrict()
+          .toFormatter();
+
+  public static String formatDate(final OffsetDateTime date) {
+    return date == null ? null : DATE_RESPONSE_MAPPER.format(date);
+  }
 
   public static JobActivationResult<JobActivationResponse> toActivateJobsResponse(
       final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
@@ -281,6 +322,11 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toUserCreateResponse(final UserRecord userRecord) {
     final var response = new UserCreateResponse().userKey(userRecord.getUserKey());
+    return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+  }
+
+  public static ResponseEntity<Object> toRoleCreateResponse(final RoleRecord roleRecord) {
+    final var response = new RoleCreateResponse().roleKey(roleRecord.getRoleKey());
     return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
   }
 

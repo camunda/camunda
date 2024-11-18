@@ -10,11 +10,11 @@ package io.camunda.optimize.service.db.os.report.interpreter.view.process;
 import static io.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.json;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.scriptField;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.sourceExclude;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.UnitDSL.seconds;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.json;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.scriptField;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.sourceExclude;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.UnitDSL.seconds;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScript;
 import static io.camunda.optimize.service.db.os.writer.OpenSearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;
@@ -33,7 +33,7 @@ import io.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespon
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import io.camunda.optimize.service.DefinitionService;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.interpreter.util.RawProcessDataResultDtoMapper;
@@ -161,22 +161,21 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
         new HashMap<>();
     final Map<String, Long> instanceIdsToUserTaskCount = new HashMap<>();
     final List<ProcessInstanceDto> rawDataProcessInstanceDtos;
+    final List<Hit<RawResult>> hits = new ArrayList<>();
     if (context.isCsvExport()) {
       final int limit = context.getPagination().orElse(new PaginationDto()).getLimit();
-      final List<Hit<RawResult>> hits = new ArrayList<>();
       osClient.scrollWith(response, hits::addAll, RawResult.class, limit);
-      rawDataProcessInstanceDtos = transformHits(hits);
     } else {
-      rawDataProcessInstanceDtos =
-          response.hits().hits().stream()
-              .map(
-                  mappingFunction(
-                      processInstanceIdsToFlowNodeIdsAndDurations,
-                      instanceIdsToUserTaskCount,
-                      context))
-              .toList();
+      hits.addAll(response.hits().hits());
     }
-
+    rawDataProcessInstanceDtos =
+        hits.stream()
+            .map(
+                mappingFunction(
+                    processInstanceIdsToFlowNodeIdsAndDurations,
+                    instanceIdsToUserTaskCount,
+                    context))
+            .toList();
     final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper =
         new RawProcessDataResultDtoMapper();
     final Map<String, String> flowNodeIdsToFlowNodeNames =
@@ -262,10 +261,6 @@ public class ProcessViewRawDataInterpreterOS extends AbstractProcessViewRawDataI
         .map(QueryDSL::transformSortOrder)
         .map(order -> SortOrder.valueOf(order.name()))
         .orElse(SortOrder.Desc);
-  }
-
-  private List<ProcessInstanceDto> transformHits(final List<Hit<RawResult>> rawResult) {
-    return rawResult.stream().map(this::transformHit).toList();
   }
 
   private ProcessInstanceDto transformHit(final Hit<RawResult> hit) {

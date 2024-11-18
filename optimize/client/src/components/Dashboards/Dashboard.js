@@ -12,7 +12,7 @@ import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {loadEntity, updateEntity, createEntity, getCollection} from 'services';
 import {isSharingEnabled, newReport} from 'config';
-import {ErrorPage, Loading, PageTitle} from 'components';
+import {Breadcrumbs, ErrorPage, Loading, PageTitle} from 'components';
 import {showError} from 'notifications';
 import {t} from 'translation';
 
@@ -373,6 +373,7 @@ export class Dashboard extends Component {
     return (
       <div className="Dashboard">
         <PageTitle pageName={t('dashboard.label')} resourceName={name} isNew={this.isNew()} />
+        <Breadcrumbs />
         {viewMode === 'edit' ? (
           <DashboardEdit
             {...commonProps}

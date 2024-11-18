@@ -41,6 +41,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
   private final RecordBatch mutableRecordBatch;
   private ProcessingResponseImpl processingResponse;
   private final long operationReference;
+  private int currentSourceIndex;
 
   BufferedProcessingResultBuilder(final RecordBatchSizePredicate predicate) {
     this(predicate, operationReferenceNullValue());
@@ -48,14 +49,25 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
 
   BufferedProcessingResultBuilder(
       final RecordBatchSizePredicate predicate, final long operationReference) {
+    this(predicate, operationReference, -1);
+  }
+
+  BufferedProcessingResultBuilder(
+      final RecordBatchSizePredicate predicate,
+      final long operationReference,
+      final int currentSourceIndex) {
     mutableRecordBatch = new RecordBatch(predicate);
     this.operationReference = operationReference;
+    this.currentSourceIndex = currentSourceIndex;
+  }
+
+  void setCurrentSourceIndex(final int currentSourceIndex) {
+    this.currentSourceIndex = currentSourceIndex;
   }
 
   @Override
   public Either<RuntimeException, ProcessingResultBuilder> appendRecordReturnEither(
       final long key, final RecordValue value, final RecordMetadata metadata) {
-
     if (operationReference != operationReferenceNullValue()) {
       metadata.operationReference(operationReference);
     }
@@ -69,7 +81,8 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
     if (value instanceof final UnifiedRecordValue unifiedRecordValue) {
       final var metadataWithValueType = metadata.valueType(valueType);
       final var either =
-          mutableRecordBatch.appendRecord(key, metadataWithValueType, -1, unifiedRecordValue);
+          mutableRecordBatch.appendRecord(
+              key, metadataWithValueType, currentSourceIndex, unifiedRecordValue);
       if (either.isLeft()) {
         return Either.left(either.getLeft());
       }
@@ -102,7 +115,7 @@ final class BufferedProcessingResultBuilder implements ProcessingResultBuilder {
             .rejectionReason(rejectionReason)
             .valueType(valueType)
             .operationReference(operationReference);
-    final var entry = RecordBatchEntry.createEntry(key, metadata, -1, value);
+    final var entry = RecordBatchEntry.createEntry(key, metadata, currentSourceIndex, value);
     processingResponse = new ProcessingResponseImpl(entry, requestId, requestStreamId);
     return this;
   }

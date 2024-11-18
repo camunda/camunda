@@ -11,6 +11,8 @@ import {requestAndParse} from 'modules/request';
 type License = {
   licenseType: string;
   validLicense: boolean;
+  isCommercial: boolean;
+  expiresAt: string | null;
 };
 
 const fetchLicense = async () => {

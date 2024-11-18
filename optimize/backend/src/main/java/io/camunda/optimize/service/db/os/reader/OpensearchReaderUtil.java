@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.reader;
 
-import io.camunda.optimize.service.db.os.externalcode.client.sync.OpenSearchDocumentOperations;
+import io.camunda.optimize.service.db.os.client.sync.OpenSearchDocumentOperations;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.ArrayList;
 import java.util.Collection;

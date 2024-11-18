@@ -12,15 +12,20 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -35,6 +40,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
   private final TypedResponseWriter responseWriter;
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final TypedCommandWriter commandWriter;
 
   public UserCreateProcessor(
       final KeyGenerator keyGenerator,
@@ -47,6 +53,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    commandWriter = writers.command();
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
   }
@@ -64,7 +71,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
       return;
     }
 
-    final var username = command.getValue().getUsernameBuffer();
+    final var username = command.getValue().getUsername();
     final var user = userState.getUser(username);
 
     if (user.isPresent()) {
@@ -80,6 +87,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     command.getValue().setUserKey(key);
 
     stateWriter.appendFollowUpEvent(key, UserIntent.CREATED, command.getValue());
+    addUserPermissions(key, username);
     responseWriter.writeEventOnCommand(key, UserIntent.CREATED, command.getValue(), command);
 
     distributionBehavior
@@ -93,5 +101,19 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     stateWriter.appendFollowUpEvent(command.getKey(), UserIntent.CREATED, command.getValue());
 
     distributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void addUserPermissions(final long key, final String username) {
+    final var authorizationRecord =
+        new AuthorizationRecord()
+            .setOwnerKey(key)
+            .setOwnerType(AuthorizationOwnerType.USER)
+            .setResourceType(AuthorizationResourceType.USER)
+            .addPermission(
+                new Permission().setPermissionType(PermissionType.READ).addResourceId(username))
+            .addPermission(
+                new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(username));
+    commandWriter.appendFollowUpCommand(
+        key, AuthorizationIntent.ADD_PERMISSION, authorizationRecord);
   }
 }

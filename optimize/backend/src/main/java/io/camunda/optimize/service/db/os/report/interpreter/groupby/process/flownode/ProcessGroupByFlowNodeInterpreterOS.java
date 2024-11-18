@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.flownode;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.termAggregation;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.termAggregation;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_FLOW_NODE;
 import static io.camunda.optimize.service.db.report.result.CompositeCommandResult.GroupByResult;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;

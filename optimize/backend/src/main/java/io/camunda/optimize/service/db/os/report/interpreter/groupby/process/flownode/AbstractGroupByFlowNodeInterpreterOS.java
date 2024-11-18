@@ -36,7 +36,9 @@ public abstract class AbstractGroupByFlowNodeInterpreterOS
         new Aggregation.Builder()
             .filter(
                 ModelElementFilterQueryUtilOS.createModelElementAggregationFilter(
-                    context.getReportData(), context.getFilterContext(), getDefinitionService()))
+                        context.getReportData(), context.getFilterContext(), getDefinitionService())
+                    .build()
+                    .toQuery())
             .aggregations(subAggregations)
             .build();
 

@@ -23,7 +23,6 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.FlowNodeInstanceSort;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
@@ -175,9 +174,9 @@ public class FlowNodeInstanceIT {
 
     assertThat(actual.key()).isEqualTo(expected.flowNodeInstanceKey());
     assertThat(actual.bpmnProcessId()).isEqualTo(expected.processDefinitionId());
-    assertThat(OffsetDateTime.parse(actual.startDate()))
+    assertThat(actual.startDate())
         .isCloseTo(expected.startDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(OffsetDateTime.parse(actual.endDate()))
+    assertThat(actual.endDate())
         .isCloseTo(expected.endDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
   }
 }

@@ -8,10 +8,10 @@
 package io.camunda.optimize.service.db.os.reader;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.termAggregation;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.sourceExcluded;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.termAggregation;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.sourceExcluded;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.stringTerms;
 import static io.camunda.optimize.service.util.ExceptionUtil.isInstanceIndexNotFoundException;
 
 import io.camunda.optimize.dto.optimize.DefinitionType;

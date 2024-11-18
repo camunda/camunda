@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -57,7 +59,7 @@ public class ElasticsearchExporter implements Exporter {
   private MeterRegistry registry;
 
   private long lastPosition = -1;
-  private boolean indexTemplatesCreated;
+  private Set<String> indexTemplatesCreated;
 
   @Override
   public void configure(final Context context) {
@@ -70,7 +72,7 @@ public class ElasticsearchExporter implements Exporter {
     pluginRepository.load(configuration.getInterceptorPlugins());
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
-    indexTemplatesCreated = false;
+    indexTemplatesCreated = new HashSet<>();
     registry = context.getMeterRegistry();
   }
 
@@ -118,8 +120,8 @@ public class ElasticsearchExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    if (!indexTemplatesCreated) {
-      createIndexTemplates();
+    if (!indexTemplatesCreated.contains(record.getBrokerVersion())) {
+      createIndexTemplates(record.getBrokerVersion());
 
       updateRetentionPolicyForExistingIndices();
     }
@@ -234,7 +236,7 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
-  private void createIndexTemplates() {
+  private void createIndexTemplates(final String version) {
     if (configuration.retention.isEnabled()) {
       createIndexLifecycleManagementPolicy();
     }
@@ -245,117 +247,117 @@ public class ElasticsearchExporter implements Exporter {
       createComponentTemplate();
 
       if (index.deployment) {
-        createValueIndexTemplate(ValueType.DEPLOYMENT);
+        createValueIndexTemplate(ValueType.DEPLOYMENT, version);
       }
       if (index.process) {
-        createValueIndexTemplate(ValueType.PROCESS);
+        createValueIndexTemplate(ValueType.PROCESS, version);
       }
       if (index.error) {
-        createValueIndexTemplate(ValueType.ERROR);
+        createValueIndexTemplate(ValueType.ERROR, version);
       }
       if (index.incident) {
-        createValueIndexTemplate(ValueType.INCIDENT);
+        createValueIndexTemplate(ValueType.INCIDENT, version);
       }
       if (index.job) {
-        createValueIndexTemplate(ValueType.JOB);
+        createValueIndexTemplate(ValueType.JOB, version);
       }
       if (index.jobBatch) {
-        createValueIndexTemplate(ValueType.JOB_BATCH);
+        createValueIndexTemplate(ValueType.JOB_BATCH, version);
       }
       if (index.message) {
-        createValueIndexTemplate(ValueType.MESSAGE);
+        createValueIndexTemplate(ValueType.MESSAGE, version);
       }
       if (index.messageBatch) {
-        createValueIndexTemplate(ValueType.MESSAGE_BATCH);
+        createValueIndexTemplate(ValueType.MESSAGE_BATCH, version);
       }
       if (index.messageSubscription) {
-        createValueIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION);
+        createValueIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION, version);
       }
       if (index.variable) {
-        createValueIndexTemplate(ValueType.VARIABLE);
+        createValueIndexTemplate(ValueType.VARIABLE, version);
       }
       if (index.variableDocument) {
-        createValueIndexTemplate(ValueType.VARIABLE_DOCUMENT);
+        createValueIndexTemplate(ValueType.VARIABLE_DOCUMENT, version);
       }
       if (index.processInstance) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE);
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE, version);
       }
       if (index.processInstanceBatch) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_BATCH);
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_BATCH, version);
       }
       if (index.processInstanceCreation) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION);
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_CREATION, version);
       }
       if (index.processInstanceModification) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION);
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MODIFICATION, version);
       }
       if (index.processMessageSubscription) {
-        createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION);
+        createValueIndexTemplate(ValueType.PROCESS_MESSAGE_SUBSCRIPTION, version);
       }
       if (index.decisionRequirements) {
-        createValueIndexTemplate(ValueType.DECISION_REQUIREMENTS);
+        createValueIndexTemplate(ValueType.DECISION_REQUIREMENTS, version);
       }
       if (index.decision) {
-        createValueIndexTemplate(ValueType.DECISION);
+        createValueIndexTemplate(ValueType.DECISION, version);
       }
       if (index.decisionEvaluation) {
-        createValueIndexTemplate(ValueType.DECISION_EVALUATION);
+        createValueIndexTemplate(ValueType.DECISION_EVALUATION, version);
       }
       if (index.checkpoint) {
-        createValueIndexTemplate(ValueType.CHECKPOINT);
+        createValueIndexTemplate(ValueType.CHECKPOINT, version);
       }
       if (index.timer) {
-        createValueIndexTemplate(ValueType.TIMER);
+        createValueIndexTemplate(ValueType.TIMER, version);
       }
       if (index.messageStartEventSubscription) {
-        createValueIndexTemplate(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION);
+        createValueIndexTemplate(ValueType.MESSAGE_START_EVENT_SUBSCRIPTION, version);
       }
       if (index.processEvent) {
-        createValueIndexTemplate(ValueType.PROCESS_EVENT);
+        createValueIndexTemplate(ValueType.PROCESS_EVENT, version);
       }
       if (index.deploymentDistribution) {
-        createValueIndexTemplate(ValueType.DEPLOYMENT_DISTRIBUTION);
+        createValueIndexTemplate(ValueType.DEPLOYMENT_DISTRIBUTION, version);
       }
       if (index.escalation) {
-        createValueIndexTemplate(ValueType.ESCALATION);
+        createValueIndexTemplate(ValueType.ESCALATION, version);
       }
       if (index.signal) {
-        createValueIndexTemplate(ValueType.SIGNAL);
+        createValueIndexTemplate(ValueType.SIGNAL, version);
       }
       if (index.signalSubscription) {
-        createValueIndexTemplate(ValueType.SIGNAL_SUBSCRIPTION);
+        createValueIndexTemplate(ValueType.SIGNAL_SUBSCRIPTION, version);
       }
       if (index.resourceDeletion) {
-        createValueIndexTemplate(ValueType.RESOURCE_DELETION);
+        createValueIndexTemplate(ValueType.RESOURCE_DELETION, version);
       }
       if (index.commandDistribution) {
-        createValueIndexTemplate(ValueType.COMMAND_DISTRIBUTION);
+        createValueIndexTemplate(ValueType.COMMAND_DISTRIBUTION, version);
       }
       if (index.form) {
-        createValueIndexTemplate(ValueType.FORM);
+        createValueIndexTemplate(ValueType.FORM, version);
       }
       if (index.userTask) {
-        createValueIndexTemplate(ValueType.USER_TASK);
+        createValueIndexTemplate(ValueType.USER_TASK, version);
       }
       if (index.processInstanceMigration) {
-        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MIGRATION);
+        createValueIndexTemplate(ValueType.PROCESS_INSTANCE_MIGRATION, version);
       }
       if (index.compensationSubscription) {
-        createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION);
+        createValueIndexTemplate(ValueType.COMPENSATION_SUBSCRIPTION, version);
       }
       if (index.messageCorrelation) {
-        createValueIndexTemplate(ValueType.MESSAGE_CORRELATION);
+        createValueIndexTemplate(ValueType.MESSAGE_CORRELATION, version);
       }
       if (index.user) {
-        createValueIndexTemplate(ValueType.USER);
+        createValueIndexTemplate(ValueType.USER, version);
       }
 
       if (index.authorization) {
-        createValueIndexTemplate(ValueType.AUTHORIZATION);
+        createValueIndexTemplate(ValueType.AUTHORIZATION, version);
       }
     }
 
-    indexTemplatesCreated = true;
+    indexTemplatesCreated.add(version);
   }
 
   private void createIndexLifecycleManagementPolicy() {
@@ -371,8 +373,8 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
-  private void createValueIndexTemplate(final ValueType valueType) {
-    if (!client.putIndexTemplate(valueType)) {
+  private void createValueIndexTemplate(final ValueType valueType, final String version) {
+    if (!client.putIndexTemplate(valueType, version)) {
       log.warn(
           "Failed to acknowledge the creation or update of the index template for value type {}",
           valueType);

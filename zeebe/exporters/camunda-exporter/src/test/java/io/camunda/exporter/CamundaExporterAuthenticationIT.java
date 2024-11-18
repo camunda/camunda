@@ -12,11 +12,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.ElasticsearchExporterException;
-import io.camunda.exporter.utils.TestSupport;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -31,7 +31,7 @@ public class CamundaExporterAuthenticationIT {
 
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefeaultElasticsearchContainer()
+      TestSearchContainers.createDefeaultElasticsearchContainer()
           .withPassword(ELASTIC_PASSWORD)
           .withEnv("xpack.security.enabled", "true");
 

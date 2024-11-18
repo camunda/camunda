@@ -9,9 +9,9 @@ package io.camunda.optimize.service.db.repository.os;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.PROCESS_OVERVIEW_INDEX_NAME;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.ids;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.prefix;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.ids;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.prefix;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.schema.index.ProcessOverviewIndex.DIGEST;
 import static io.camunda.optimize.service.db.schema.index.ProcessOverviewIndex.ENABLED;
 

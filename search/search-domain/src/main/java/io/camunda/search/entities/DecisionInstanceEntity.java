@@ -7,12 +7,13 @@
  */
 package io.camunda.search.entities;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public record DecisionInstanceEntity(
     long key,
     DecisionInstanceState state,
-    String evaluationDate,
+    OffsetDateTime evaluationDate,
     String evaluationFailure,
     long processDefinitionKey,
     long processInstanceKey,

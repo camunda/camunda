@@ -24,13 +24,13 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
         new ProcessInstanceDbModelBuilder()
             .processInstanceKey(nextKey())
             .processDefinitionKey(nextKey())
-            .processDefinitionId("process-" + RANDOM.nextInt(1000))
+            .processDefinitionId("process-" + RANDOM.nextInt(10000))
             .parentProcessInstanceKey(nextKey())
             .parentElementInstanceKey(nextKey())
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
-            .version(RANDOM.nextInt(20))
-            .tenantId("tenant-" + RANDOM.nextInt(1000));
+            .version(RANDOM.nextInt(10000))
+            .tenantId("tenant-" + RANDOM.nextInt(10000));
 
     return builderFunction.apply(builder).build();
   }

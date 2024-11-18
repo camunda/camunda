@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -115,7 +116,48 @@ class UserTaskQueryTest {
 
   @Test
   public void shouldRetrieveTaskByPriority() {
+    // when
     final var result = camundaClient.newUserTaskQuery().filter(f -> f.priority(30)).send().join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+  }
+
+  @Test
+  public void shouldRetrieveTaskByPriorityFilterGtLt() {
+    // when
+    final IntegerFilterProperty filter = new IntegerFilterProperty();
+    filter.set$Gt(29);
+    filter.set$Lt(31);
+    final var result =
+        camundaClient.newUserTaskQuery().filter(f -> f.priority(filter)).send().join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+  }
+
+  @Test
+  public void shouldRetrieveTaskByPriorityFilterGteLte() {
+    // when
+    final IntegerFilterProperty filter = new IntegerFilterProperty();
+    filter.set$Gte(30);
+    filter.set$Lte(30);
+    final var result =
+        camundaClient.newUserTaskQuery().filter(f -> f.priority(filter)).send().join();
+
+    // then
+    assertThat(result.items()).hasSize(1);
+  }
+
+  @Test
+  public void shouldRetrieveTaskByPriorityFilterIn() {
+    // when
+    final IntegerFilterProperty filter = new IntegerFilterProperty();
+    filter.set$In(List.of(Integer.MAX_VALUE, 30));
+    final var result =
+        camundaClient.newUserTaskQuery().filter(f -> f.priority(filter)).send().join();
+
+    // then
     assertThat(result.items()).hasSize(1);
   }
 
@@ -324,7 +366,7 @@ class UserTaskQueryTest {
     // then
     assertThat(problemException.code()).isEqualTo(404);
     assertThat(problemException.details().getDetail())
-        .isEqualTo("User Task with key %d not found".formatted(userTaskKey));
+        .isEqualTo("User task with key %d not found".formatted(userTaskKey));
   }
 
   @Test

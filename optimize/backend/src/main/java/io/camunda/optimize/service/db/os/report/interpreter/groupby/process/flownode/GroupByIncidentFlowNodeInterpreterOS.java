@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.flownode;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.termAggregation;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.termAggregation;
 import static io.camunda.optimize.service.db.report.plan.process.ProcessGroupBy.PROCESS_GROUP_BY_INCIDENT_FLOW_NODE;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENTS;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.INCIDENT_ACTIVITY_ID;
@@ -42,6 +42,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class GroupByIncidentFlowNodeInterpreterOS extends AbstractGroupByFlowNodeInterpreterOS {
+
   private static final String NESTED_INCIDENT_AGGREGATION = "nestedIncidentAggregation";
   private static final String GROUPED_BY_FLOW_NODE_ID_AGGREGATION =
       "groupedByFlowNodeIdAggregation";
@@ -79,8 +80,7 @@ public class GroupByIncidentFlowNodeInterpreterOS extends AbstractGroupByFlowNod
   public Map<String, Aggregation> createAggregation(
       final Query query,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final int size =
-        configurationService.getElasticSearchConfiguration().getAggregationBucketLimit();
+    final int size = configurationService.getOpenSearchConfiguration().getAggregationBucketLimit();
     final Aggregation groupedByFlowNodeIdAggregation =
         new Aggregation.Builder()
             .terms(termAggregation(INCIDENTS + "." + INCIDENT_ACTIVITY_ID, size))

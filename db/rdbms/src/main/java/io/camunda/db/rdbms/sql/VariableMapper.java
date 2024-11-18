@@ -8,6 +8,9 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.search.entities.VariableEntity;
+import io.camunda.search.query.VariableQuery;
+import java.util.List;
 
 public interface VariableMapper {
 
@@ -15,5 +18,7 @@ public interface VariableMapper {
 
   void update(VariableDbModel variable);
 
-  VariableDbModel findOne(Long key);
+  Long count(VariableQuery filter);
+
+  List<VariableEntity> search(VariableQuery filter);
 }

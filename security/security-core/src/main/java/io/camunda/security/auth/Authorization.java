@@ -12,9 +12,10 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.D
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
 
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -59,6 +60,10 @@ public record Authorization(AuthorizationResourceType resourceType, PermissionTy
       return resourceType(ROLE);
     }
 
+    public Builder tenant() {
+      return resourceType(TENANT);
+    }
+
     public Builder authorization() {
       return resourceType(AUTHORIZATION);
     }
@@ -72,7 +77,7 @@ public record Authorization(AuthorizationResourceType resourceType, PermissionTy
     }
 
     public Builder readInstance() {
-      return permissionType(READ_INSTANCE);
+      return permissionType(READ_PROCESS_INSTANCE);
     }
 
     public Builder readUserTask() {

@@ -18,6 +18,7 @@ package io.camunda.zeebe.client.api.search.filter;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
+import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 
 public interface DecisionInstanceFilter extends SearchRequestFilter {
 
@@ -41,6 +42,9 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
 
   /** Filter by decisionDefinitionKey */
   DecisionInstanceFilter decisionDefinitionKey(long decisionDefinitionKey);
+
+  /** Filter by decisionDefinitionKey using {@link BasicLongFilterProperty} */
+  DecisionInstanceFilter decisionDefinitionKey(BasicLongFilterProperty decisionDefinitionKey);
 
   /** Filter by decisionDefinitionId */
   DecisionInstanceFilter decisionDefinitionId(String decisionDefinitionId);
