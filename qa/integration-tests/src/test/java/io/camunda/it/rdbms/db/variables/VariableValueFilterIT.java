@@ -215,7 +215,8 @@ public class VariableValueFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(randomizedVariable.key());
+    assertThat(searchResult.hits().getFirst().variableKey())
+        .isEqualTo(randomizedVariable.variableKey());
     assertThat(searchResult.hits().getFirst().name()).isEqualTo(randomizedVariable.name());
   }
 
@@ -248,7 +249,8 @@ public class VariableValueFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(randomizedVariable.key());
+    assertThat(searchResult.hits().getFirst().variableKey())
+        .isEqualTo(randomizedVariable.variableKey());
     assertThat(searchResult.hits().getFirst().name()).isEqualTo(randomizedVariable.name());
   }
 
@@ -283,7 +285,8 @@ public class VariableValueFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(variableDbModel.key());
+    assertThat(searchResult.hits().getFirst().variableKey())
+        .isEqualTo(variableDbModel.variableKey());
     assertThat(searchResult.hits().getFirst().name()).isEqualTo(variableDbModel.name());
   }
 }

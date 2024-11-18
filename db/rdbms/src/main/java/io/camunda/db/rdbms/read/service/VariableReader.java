@@ -7,7 +7,9 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.domain.VariableDbQuery;
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.db.rdbms.sql.VariableMapper.VariableSearchColumn;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.page.SearchQueryPage;
@@ -17,13 +19,14 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class VariableReader {
+public class VariableReader extends AbstractEntityReader<VariableEntity> {
 
   private static final Logger LOG = LoggerFactory.getLogger(VariableReader.class);
 
   private final VariableMapper variableMapper;
 
   public VariableReader(final VariableMapper variableMapper) {
+    super(VariableMapper.VariableSearchColumn::findByProperty);
     this.variableMapper = variableMapper;
   }
 
@@ -37,10 +40,14 @@ public class VariableReader {
         .getFirst();
   }
 
-  public SearchResult search(final VariableQuery filter) {
-    LOG.trace("[RDBMS DB] Search for variables with filter {}", filter);
-    final var totalHits = variableMapper.count(filter);
-    final var hits = variableMapper.search(filter);
+  public SearchResult search(final VariableQuery query) {
+    final var dbSort = convertSort(query.sort(), VariableSearchColumn.VAR_KEY);
+    final var dbQuery =
+        VariableDbQuery.of(
+            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+    LOG.trace("[RDBMS DB] Search for variables with filter {}", query);
+    final var totalHits = variableMapper.count(dbQuery);
+    final var hits = variableMapper.search(dbQuery);
     return new SearchResult(hits, totalHits.intValue());
   }
 

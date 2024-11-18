@@ -37,7 +37,7 @@ public class VariableSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.variableKey().asc(),
-        Comparator.comparing(VariableEntity::key));
+        Comparator.comparing(VariableEntity::variableKey));
   }
 
   @TestTemplate
@@ -45,7 +45,7 @@ public class VariableSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.variableKey().desc(),
-        Comparator.comparing(VariableEntity::key).reversed());
+        Comparator.comparing(VariableEntity::variableKey).reversed());
   }
 
   @TestTemplate

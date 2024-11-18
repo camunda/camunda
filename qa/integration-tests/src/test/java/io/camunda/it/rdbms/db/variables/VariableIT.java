@@ -37,7 +37,10 @@ public class VariableIT {
     final VariableDbModel randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
 
     final var instance =
-        testApplication.getRdbmsService().getVariableReader().findOne(randomizedVariable.key());
+        testApplication
+            .getRdbmsService()
+            .getVariableReader()
+            .findOne(randomizedVariable.variableKey());
 
     assertThat(instance).isNotNull();
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
@@ -54,7 +57,7 @@ public class VariableIT {
         VariableFixtures.createRandomized(b -> b.value(bigValue));
     createAndSaveVariable(rdbmsService, randomizedVariable);
 
-    final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.key());
+    final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.variableKey());
 
     assertThat(instance).isNotNull();
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
@@ -149,7 +152,7 @@ public class VariableIT {
         processInstanceReader.search(
             new VariableQuery(
                 new VariableFilter.Builder()
-                    .variableKeys(randomizedVariable.key())
+                    .variableKeys(randomizedVariable.variableKey())
                     .processInstanceKeys(randomizedVariable.processInstanceKey())
                     .names(varName)
                     .tenantIds(randomizedVariable.tenantId())
@@ -159,14 +162,16 @@ public class VariableIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(randomizedVariable.key());
+    assertThat(searchResult.hits().getFirst().variableKey())
+        .isEqualTo(randomizedVariable.variableKey());
   }
 
-  private void assertVariableDbModelEqualToEntity(VariableDbModel dbModel, VariableEntity entity) {
+  private void assertVariableDbModelEqualToEntity(
+      final VariableDbModel dbModel, final VariableEntity entity) {
     assertThat(entity)
         .usingRecursiveComparison()
         .ignoringFields("bpmnProcessId", "processDefinitionId")
         .isEqualTo(dbModel);
-    assertThat(entity.bpmnProcessId()).isEqualTo(dbModel.processDefinitionId());
+    assertThat(entity.processDefinitionId()).isEqualTo(dbModel.processDefinitionId());
   }
 }

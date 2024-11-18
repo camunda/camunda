@@ -13,7 +13,7 @@ import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.util.ValueTypeUtil;
 
 public record VariableDbModel(
-    Long key,
+    Long variableKey,
     String name,
     ValueTypeEnum type,
     Double doubleValue,

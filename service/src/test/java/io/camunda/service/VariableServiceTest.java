@@ -77,7 +77,7 @@ public class VariableServiceTest {
     // given
     final var entity = mock(VariableEntity.class);
     final var processId = "processId";
-    when(entity.bpmnProcessId()).thenReturn(processId);
+    when(entity.processDefinitionId()).thenReturn(processId);
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
     when(client.searchVariables(any())).thenReturn(result);
     when(securityContextProvider.isAuthorized(
@@ -96,7 +96,7 @@ public class VariableServiceTest {
     // given
     final var entity = mock(VariableEntity.class);
     final var processId = "processId";
-    when(entity.bpmnProcessId()).thenReturn(processId);
+    when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchVariables(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     when(securityContextProvider.isAuthorized(

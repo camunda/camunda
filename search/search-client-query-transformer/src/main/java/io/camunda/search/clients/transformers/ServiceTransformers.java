@@ -12,6 +12,7 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.entity.DecisionDefinitionEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionRequirementsEntityTransformer;
+import io.camunda.search.clients.transformers.entity.VariableEntityTransformer;
 import io.camunda.search.clients.transformers.filter.AuthorizationFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ComparableValueFilterTransformer;
 import io.camunda.search.clients.transformers.filter.DateValueFilterTransformer;
@@ -35,6 +36,7 @@ import io.camunda.search.clients.transformers.result.ProcessInstanceResultConfig
 import io.camunda.search.clients.transformers.sort.DecisionDefinitionFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.DecisionInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.DecisionRequirementsFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.VariableFieldSortingTransformer;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.ComparableValueFilter;
 import io.camunda.search.filter.DateValueFilter;
@@ -72,6 +74,8 @@ import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.SortOption;
+import io.camunda.search.sort.VariableSort;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity;
@@ -132,11 +136,13 @@ public final class ServiceTransformers {
     mappers.put(DecisionDefinitionEntity.class, new DecisionDefinitionEntityTransformer());
     mappers.put(DecisionRequirementsEntity.class, new DecisionRequirementsEntityTransformer());
     mappers.put(DecisionInstanceEntity.class, new DecisionInstanceEntityTransformer());
+    mappers.put(VariableEntity.class, new VariableEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(DecisionDefinitionSort.class, new DecisionDefinitionFieldSortingTransformer());
     mappers.put(DecisionRequirementsSort.class, new DecisionRequirementsFieldSortingTransformer());
     mappers.put(DecisionInstanceSort.class, new DecisionInstanceFieldSortingTransformer());
+    mappers.put(VariableSort.class, new VariableFieldSortingTransformer());
 
     // filters -> search query
     mappers.put(ProcessInstanceFilter.class, new ProcessInstanceFilterTransformer());

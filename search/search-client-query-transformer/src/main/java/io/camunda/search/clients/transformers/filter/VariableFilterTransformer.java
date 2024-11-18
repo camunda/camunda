@@ -13,6 +13,13 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperatio
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.IS_PREVIEW;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.NAME;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.SCOPE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.VALUE;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -28,7 +35,7 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
   @Override
   public SearchQuery toSearchQuery(final VariableFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    ofNullable(stringOperations("name", filter.nameOperations())).ifPresent(queries::addAll);
+    ofNullable(stringOperations(NAME, filter.nameOperations())).ifPresent(queries::addAll);
     ofNullable(getVariablesQuery(filter.valueOperations())).ifPresent(queries::addAll);
     ofNullable(getScopeKeyQuery(filter.scopeKeyOperations())).ifPresent(queries::addAll);
     ofNullable(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()))
@@ -45,30 +52,30 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
   }
 
   private List<SearchQuery> getVariablesQuery(final List<UntypedOperation> variableFilters) {
-    return variableOperations("value", variableFilters);
+    return variableOperations(VALUE, variableFilters);
   }
 
   private List<SearchQuery> getScopeKeyQuery(final List<Operation<Long>> scopeKey) {
-    return longOperations("scopeKey", scopeKey);
+    return longOperations(SCOPE_KEY, scopeKey);
   }
 
   private List<SearchQuery> getProcessInstanceKeyQuery(
       final List<Operation<Long>> processInstanceKey) {
-    return longOperations("processInstanceKey", processInstanceKey);
+    return longOperations(PROCESS_INSTANCE_KEY, processInstanceKey);
   }
 
   private List<SearchQuery> getVariableKeyQuery(final List<Operation<Long>> variableKeys) {
-    return longOperations("key", variableKeys);
+    return longOperations(KEY, variableKeys);
   }
 
   private SearchQuery getTenantIdQuery(final List<String> tenant) {
-    return stringTerms("tenantId", tenant);
+    return stringTerms(TENANT_ID, tenant);
   }
 
   private SearchQuery getIsTruncatedQuery(final Boolean isTruncated) {
     if (isTruncated == null) {
       return null;
     }
-    return term("isPreview", isTruncated);
+    return term(IS_PREVIEW, isTruncated);
   }
 }
