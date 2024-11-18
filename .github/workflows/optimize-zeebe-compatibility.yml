@@ -17,7 +17,7 @@ jobs:
       matrix:
         zeebe-version: [8.3.0, 8.4.0, 8.5.0, 8.6.0, latest, snapshot]
     steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       # Parses the pom within less than second and exposes every value as an output of the step
       # That's why we need the id `pom-info`, so we can reference it in follow-up steps
       - name: "Read Java Info"
