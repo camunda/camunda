@@ -60,6 +60,7 @@ import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.authentication.index.WebSessionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
@@ -151,7 +152,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             entry(AuthorizationIndex.class, new AuthorizationIndex(globalPrefix, isElasticsearch)),
             entry(MappingIndex.class, new MappingIndex(globalPrefix, isElasticsearch)),
             entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
-            entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)));
+            entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)),
+            entry(WebSessionIndex.class, new WebSessionIndex(globalPrefix, isElasticsearch)));
 
     final var processCache =
         new ExporterEntityCacheImpl<>(

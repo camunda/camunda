@@ -8,7 +8,6 @@
 package io.camunda.application.commons.search;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.authentication.handler.session.ConditionalOnSessionPersistence;
@@ -20,7 +19,6 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.es.clients.ElasticsearchSessionDocumentClient;
-import io.camunda.search.es.clients.RetryElasticsearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.search.rdbms.RdbmsSearchClient;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
@@ -72,13 +70,9 @@ public class SearchClientDatabaseConfiguration {
   @ConditionalOnSessionPersistence
   @Primary
   public ElasticsearchSessionDocumentClient elasticsearchSessionDocumentClient(
-      @Qualifier("searchModuleElasticsearchClient") final ElasticsearchClient elasticsearchClient,
-      final ObjectMapper objectMapper)
+      @Qualifier("searchModuleElasticsearchClient") final ElasticsearchClient elasticsearchClient)
       throws IOException {
-    final var sessionDocumentClient =
-        new ElasticsearchSessionDocumentClient(
-            new RetryElasticsearchClient(elasticsearchClient, objectMapper));
-    sessionDocumentClient.setup();
+    final var sessionDocumentClient = new ElasticsearchSessionDocumentClient(elasticsearchClient);
     return sessionDocumentClient;
   }
 

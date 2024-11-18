@@ -31,7 +31,7 @@ public class SessionRepositoryConfig {
   public ThreadPoolTaskScheduler getTaskScheduler() {
     final ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
     executor.setPoolSize(5);
-    executor.setThreadNamePrefix("operate_session_");
+    executor.setThreadNamePrefix("camunda_session_");
     executor.initialize();
     return executor;
   }
