@@ -62,7 +62,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "processDefinitionKey": 2251799813688736,
                        "processInstanceKey": 6755399441058457,
                        "decisionDefinitionKey": 123456,
-                       "decisionDefinitionId": "di",
+                       "decisionDefinitionId": "ddi",
                        "decisionDefinitionName": "ddn",
                        "decisionDefinitionVersion": 0,
                        "decisionDefinitionType": "DECISION_TABLE",
@@ -84,16 +84,16 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           .items(
               List.of(
                   new DecisionInstanceEntity(
-                      123L,
                       "123-1",
+                      123L,
                       DecisionInstanceState.EVALUATED,
                       OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
                       null,
                       2251799813688736L,
                       6755399441058457L,
-                      "bpi",
-                      "di",
-                      "123456",
+                      "tenantId",
+                      "ddi",
+                      123456L,
                       "ddn",
                       0,
                       DecisionDefinitionType.DECISION_TABLE,
@@ -196,21 +196,21 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnDecisionInstanceByKey() {
+  void shouldReturnDecisionInstanceById() {
     // given
     final var decisionInstanceId = "123-1";
     final var decisionInstanceInDB =
         new DecisionInstanceEntity(
-            123L,
             "123-1",
+            123L,
             DecisionInstanceState.EVALUATED,
             OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
             null,
             2251799813688736L,
             6755399441058457L,
-            "bpi",
-            "di",
-            "123456",
+            "tenantId",
+            "ddi",
+            123456L,
             "ddn",
             0,
             DecisionDefinitionType.DECISION_TABLE,
@@ -238,7 +238,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                      "processDefinitionKey": 2251799813688736,
                      "processInstanceKey": 6755399441058457,
                      "decisionDefinitionKey": 123456,
-                     "decisionDefinitionId": "di",
+                     "decisionDefinitionId": "ddi",
                      "decisionDefinitionName": "ddn",
                      "decisionDefinitionVersion": 0,
                      "decisionDefinitionType": "DECISION_TABLE",
