@@ -121,11 +121,10 @@ public class OpenSearchSchemaManager implements SchemaManager {
       final String currentVersionSchema =
           StreamUtils.copyToString(description, StandardCharsets.UTF_8);
       final TypeReference<HashMap<String, Object>> type = new TypeReference<>() {};
-      final Map<String, Object> properties =
-          (Map<String, Object>)
-              objectMapper.readValue(currentVersionSchema, type).get("properties");
-      final String dynamic =
-          (String) objectMapper.readValue(currentVersionSchema, type).get("dynamic");
+      final Map<String, Object> mappings =
+          (Map<String, Object>) objectMapper.readValue(currentVersionSchema, type).get("mappings");
+      final Map<String, Object> properties = (Map<String, Object>) mappings.get("properties");
+      final String dynamic = (String) mappings.get("dynamic");
       return new IndexMapping()
           .setIndexName(indexDescriptor.getIndexName())
           .setDynamic(dynamic)
@@ -247,7 +246,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
     final CreateIndexRequest request =
         new CreateIndexRequest.Builder()
-            .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
+            .mappings(IndexTemplateMapping._DESERIALIZER.deserialize(parser, mapper).mappings())
             .aliases(indexDescriptor.getAlias(), new Alias.Builder().isWriteIndex(false).build())
             .settings(getIndexSettings())
             .index(indexDescriptor.getFullQualifiedName())
@@ -483,7 +482,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     final JsonParser parser = mapper.jsonProvider().createParser(templateConfig);
 
     return new IndexTemplateMapping.Builder()
-        .mappings(TypeMapping._DESERIALIZER.deserialize(parser, mapper))
+        .mappings(IndexTemplateMapping._DESERIALIZER.deserialize(parser, mapper).mappings())
         .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
         .build();
   }
