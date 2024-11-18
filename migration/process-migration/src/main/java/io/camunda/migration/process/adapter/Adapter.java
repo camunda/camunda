@@ -7,19 +7,25 @@
  */
 package io.camunda.migration.process.adapter;
 
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import io.camunda.exporter.utils.RetryOperation;
+import io.camunda.exporter.utils.RetryOperation.RetryPredicate;
 import io.camunda.migration.api.MigrationException;
-import io.camunda.migration.process.ProcessMigrationProperties;
 import io.camunda.migration.process.ProcessorStep;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 public interface Adapter {
 
@@ -37,6 +43,12 @@ public interface Adapter {
   void writeLastMigratedEntity(final String processDefinitionKey) throws MigrationException;
 
   void close() throws IOException;
+
+  int getMaxRetries();
+
+  int getMinDelayInSeconds();
+
+  int getMaxDelayInSeconds();
 
   default Map<String, Object> getUpdateMap(final ProcessEntity entity) {
     final Map<String, Object> updateMap = new HashMap<>();
@@ -63,26 +75,22 @@ public interface Adapter {
     return step;
   }
 
-  default <T> T doWithRetry(final ProcessMigrationProperties properties, final Callable<T> callable)
-      throws MigrationException {
-    long backoff = properties.getBackoffInSeconds() * 1000L;
-    for (int attempt = 1; attempt <= properties.getMaxRetries(); attempt++) {
-      try {
-        return callable.call();
-      } catch (final Exception e) {
-        if (attempt == properties.getMaxRetries()) {
-          throw new MigrationException(
-              "Operation failed after " + properties.getMaxRetries() + " attempts", e);
-        }
-        try {
-          Thread.sleep(backoff);
-        } catch (final InterruptedException ie) {
-          Thread.currentThread().interrupt();
-          throw new MigrationException("Retry interrupted", ie);
-        }
-        backoff *= 2;
-      }
-    }
-    throw new MigrationException("Operation failed");
+  default <T> T doWithRetry(
+      final String message, final Callable<T> callable, final RetryPredicate<T> retryPredicate)
+      throws Exception {
+    final ExponentialBackoffRetryDelay retryDelay =
+        new ExponentialBackoffRetryDelay(
+            Duration.of(getMaxDelayInSeconds(), ChronoUnit.SECONDS),
+            Duration.of(getMinDelayInSeconds(), ChronoUnit.SECONDS));
+    return RetryOperation.<T>newBuilder()
+        .noOfRetry(getMaxRetries())
+        .delayInterval(getMinDelayInSeconds(), TimeUnit.SECONDS)
+        .delaySupplier(() -> Math.toIntExact(retryDelay.nextDelay().getSeconds()))
+        .retryOn(IOException.class, ElasticsearchException.class)
+        .retryPredicate(retryPredicate)
+        .retryConsumer(callable::call)
+        .message(message)
+        .build()
+        .retry();
   }
 }

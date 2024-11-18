@@ -14,7 +14,8 @@ public class ProcessMigrationProperties {
 
   private int batchSize = 20;
   private int maxRetries = 3;
-  private int backoffInSeconds = 1;
+  private int minRetryDelayInSeconds = 1;
+  private int maxRetryDelayInSeconds = 60;
 
   public int getBatchSize() {
     return batchSize;
@@ -32,11 +33,19 @@ public class ProcessMigrationProperties {
     this.maxRetries = maxRetries;
   }
 
-  public int getBackoffInSeconds() {
-    return backoffInSeconds;
+  public int getMinRetryDelayInSeconds() {
+    return minRetryDelayInSeconds;
   }
 
-  public void setBackoffInSeconds(final int backoffInSeconds) {
-    this.backoffInSeconds = backoffInSeconds;
+  public void setMinRetryDelayInSeconds(final int minRetryDelayInSeconds) {
+    this.minRetryDelayInSeconds = minRetryDelayInSeconds;
+  }
+
+  public int getMaxRetryDelayInSeconds() {
+    return maxRetryDelayInSeconds;
+  }
+
+  public void setMaxRetryDelayInSeconds(final int maxRetryDelayInSeconds) {
+    this.maxRetryDelayInSeconds = maxRetryDelayInSeconds;
   }
 }

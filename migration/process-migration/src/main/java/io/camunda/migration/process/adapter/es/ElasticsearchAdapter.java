@@ -57,8 +57,18 @@ public class ElasticsearchAdapter implements Adapter {
   @Override
   public String migrate(final List<ProcessEntity> entities) throws MigrationException {
     final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
+    final var idList = entities.stream().map(ProcessEntity::getId).toList();
     entities.forEach(entity -> migrateEntity(entity, bulkRequest));
-    final BulkResponse response = doWithRetry(properties, () -> client.bulk(bulkRequest.build()));
+    final BulkResponse response;
+    try {
+      response =
+          doWithRetry(
+              "Migrate entities %s".formatted(idList),
+              () -> client.bulk(bulkRequest.build()),
+              (res) -> res == null || res.errors() || res.items().isEmpty());
+    } catch (final Exception e) {
+      throw new MigrationException("Failed to migrate entities %s".formatted(idList), e);
+    }
     return lastUpdatedProcessDefinition(response.items());
   }
 
@@ -79,8 +89,15 @@ public class ElasticsearchAdapter implements Adapter {
                                         lastMigratedEntity == null ? "" : lastMigratedEntity))))
             .build();
     final SearchResponse<ProcessEntity> searchResponse;
-    searchResponse =
-        doWithRetry(properties, () -> client.search(searchRequest, ProcessEntity.class));
+    try {
+      searchResponse =
+          doWithRetry(
+              "Fetching next process batch",
+              () -> client.search(searchRequest, ProcessEntity.class),
+              res -> res.timedOut() || Boolean.TRUE.equals(res.terminatedEarly()));
+    } catch (final Exception e) {
+      throw new MigrationException("Failed to fetch next processes batch", e);
+    }
 
     return searchResponse.hits().hits().stream().map(Hit::source).collect(toList());
   }
@@ -109,8 +126,17 @@ public class ElasticsearchAdapter implements Adapter {
                                                     .value(PROCESSOR_STEP_ID)))))
             .build();
     final SearchResponse<ProcessorStep> searchResponse;
-    searchResponse =
-        doWithRetry(properties, () -> client.search(searchRequest, ProcessorStep.class));
+
+    try {
+      searchResponse =
+          doWithRetry(
+              "Fetching last migrated process",
+              () -> client.search(searchRequest, ProcessorStep.class),
+              res -> res.timedOut() || Boolean.TRUE.equals(res.terminatedEarly()));
+    } catch (final Exception e) {
+      throw new MigrationException("Failed to fetch last migrated process", e);
+    }
+
     return searchResponse.hits().hits().stream()
         .map(Hit::source)
         .filter(Objects::nonNull)
@@ -130,12 +156,35 @@ public class ElasticsearchAdapter implements Adapter {
             .refresh(Refresh.True)
             .upsert(upsertProcessorStep(processDefinitionKey))
             .build();
-    doWithRetry(properties, () -> client.update(updateRequest, ProcessorStep.class));
+
+    try {
+      doWithRetry(
+          "Update last migrated process",
+          () -> client.update(updateRequest, ProcessorStep.class),
+          res -> res.result() == null);
+    } catch (final Exception e) {
+      throw new MigrationException("Failed to update migrated process", e);
+    }
   }
 
   @Override
   public void close() throws IOException {
     client._transport().close();
+  }
+
+  @Override
+  public int getMaxRetries() {
+    return properties.getMaxRetries();
+  }
+
+  @Override
+  public int getMinDelayInSeconds() {
+    return properties.getMinRetryDelayInSeconds();
+  }
+
+  @Override
+  public int getMaxDelayInSeconds() {
+    return properties.getMaxRetryDelayInSeconds();
   }
 
   private void migrateEntity(final ProcessEntity entity, final BulkRequest.Builder bulkRequest) {

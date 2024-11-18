@@ -67,6 +67,10 @@
       <artifactId>zeebe-util</artifactId>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-exporter</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
     </dependency>
@@ -109,11 +113,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-exporter</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

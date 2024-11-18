@@ -10,6 +10,7 @@ package io.camunda.migration.process;
 import static io.camunda.migration.process.adapter.Adapter.PROCESSOR_STEP_ID;
 import static io.camunda.migration.process.adapter.Adapter.STEP_DESCRIPTION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Conflicts;
@@ -22,6 +23,7 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.migration.api.MigrationException;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
@@ -35,15 +37,19 @@ import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
+@TestMethodOrder(OrderAnnotation.class)
 public class ElasticsearchMigrationRunnerIT {
 
   @Container
@@ -61,6 +67,7 @@ public class ElasticsearchMigrationRunnerIT {
   public static void setUp() throws IOException {
     properties = new ProcessMigrationProperties();
     properties.setBatchSize(5);
+    properties.setMaxRetryDelayInSeconds(10);
     connectConfiguration = new ConnectConfiguration();
     connectConfiguration.setUrl("http://localhost:" + ES_CONTAINER.getMappedPort(9200));
     esClient = new ElasticsearchConnector(connectConfiguration).createClient();
@@ -296,6 +303,17 @@ public class ElasticsearchMigrationRunnerIT {
     assertThat(records.stream().allMatch(r -> r.getIsFormEmbedded() == null)).isTrue();
     assertThat(stepRecords.size()).isEqualTo(1);
     assertThat(stepRecords.getFirst().getContent()).isEqualTo("2");
+  }
+
+  @Test
+  @Order(Integer.MAX_VALUE)
+  public void shouldThrowException() {
+    ES_CONTAINER.close();
+    properties.setMaxRetries(2);
+    properties.setMinRetryDelayInSeconds(1);
+
+    final var ex = assertThrows(MigrationException.class, migrator::run);
+    assertThat(ex.getMessage()).isEqualTo("Failed to fetch last migrated process");
   }
 
   private void writeProcessToIndex(final ProcessEntity entity) throws IOException {

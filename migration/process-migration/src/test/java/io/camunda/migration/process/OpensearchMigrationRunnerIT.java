@@ -10,9 +10,11 @@ package io.camunda.migration.process;
 import static io.camunda.migration.process.adapter.Adapter.PROCESSOR_STEP_ID;
 import static io.camunda.migration.process.adapter.Adapter.STEP_DESCRIPTION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
+import io.camunda.migration.api.MigrationException;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
@@ -25,9 +27,12 @@ import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.Refresh;
@@ -42,6 +47,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
+@TestMethodOrder(OrderAnnotation.class)
 public class OpensearchMigrationRunnerIT {
 
   @Container
@@ -59,6 +65,7 @@ public class OpensearchMigrationRunnerIT {
   public static void setUp() throws IOException {
     properties = new ProcessMigrationProperties();
     properties.setBatchSize(5);
+    properties.setMaxRetryDelayInSeconds(10);
     connectConfiguration = new ConnectConfiguration();
     connectConfiguration.setType("opensearch");
     connectConfiguration.setUrl("http://localhost:" + OS_CONTAINER.getMappedPort(9200));
@@ -288,6 +295,16 @@ public class OpensearchMigrationRunnerIT {
     assertThat(records.stream().allMatch(r -> r.getFormId() == null)).isTrue();
     assertThat(stepRecords.size()).isEqualTo(1);
     assertThat(stepRecords.getFirst().getContent()).isEqualTo("2");
+  }
+
+  @Test
+  @Order(Integer.MAX_VALUE)
+  public void shouldThrowException() {
+    OS_CONTAINER.close();
+    properties.setMaxRetries(2);
+
+    final var ex = assertThrows(MigrationException.class, migrator::run);
+    assertThat(ex.getMessage()).isEqualTo("Failed to fetch last migrated process");
   }
 
   private void writeProcessToIndex(final ProcessEntity entity) throws IOException {
