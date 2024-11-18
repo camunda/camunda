@@ -20,7 +20,7 @@ import io.camunda.zeebe.management.backups.BackupInfo;
 import io.camunda.zeebe.management.backups.Error;
 import io.camunda.zeebe.management.backups.PartitionBackupInfo;
 import io.camunda.zeebe.management.backups.StateCode;
-import io.camunda.zeebe.management.backups.TakeBackupResponse;
+import io.camunda.zeebe.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.protocol.management.BackupStatusCode;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
@@ -64,7 +64,7 @@ public final class BackupEndpoint {
       }
       api.takeBackup(backupId).toCompletableFuture().join();
       return new WebEndpointResponse<>(
-          new TakeBackupResponse()
+          new TakeBackupRuntimeResponse()
               .message(
                   "A backup with id %d has been scheduled. Use GET actuator/backups/%d to monitor the status."
                       .formatted(backupId, backupId)),
