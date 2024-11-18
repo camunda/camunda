@@ -103,11 +103,6 @@
       <artifactId>elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_6</artifactId>
-      <scope>test</scope>
-    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
