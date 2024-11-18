@@ -216,7 +216,7 @@
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.8.6.4</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.8.6.6</plugin.version.spotbugs>
     <plugin.version.surefire>3.5.0</plugin.version.surefire>
     <plugin.version.versions>2.17.1</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>
