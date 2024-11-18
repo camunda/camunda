@@ -53,7 +53,7 @@ public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRe
   @Override
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     final RoleRecordValue value = record.getValue();
-    entity.setRoleKey(value.getRoleKey()).setName(value.getName());
+    entity.setKey(value.getRoleKey()).setName(value.getName());
   }
 
   @Override

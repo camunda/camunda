@@ -20,11 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
@@ -98,6 +100,24 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     final BasicLongFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
     assertThat(decisionDefinitionKey).isNotNull();
     assertThat(decisionDefinitionKey.get$In()).isEqualTo(Arrays.asList(1L, 10L));
+  }
+
+  @Test
+  void shouldSearchDecisionInstanceByEvaluationDateDateTimeProperty() {
+    // when
+    final DateTimeFilterProperty filterProperty = new DateTimeFilterProperty();
+    final String dateTime = OffsetDateTime.now().toString();
+    filterProperty.$neq(dateTime);
+    client.newDecisionInstanceQuery().filter(f -> f.evaluationDate(filterProperty)).send().join();
+
+    // then
+    final DecisionInstanceSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
+    final DecisionInstanceFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final DateTimeFilterProperty evaluationDate = filter.getEvaluationDate();
+    assertThat(evaluationDate).isNotNull();
+    assertThat(evaluationDate.get$Neq()).isEqualTo(dateTime);
   }
 
   @Test

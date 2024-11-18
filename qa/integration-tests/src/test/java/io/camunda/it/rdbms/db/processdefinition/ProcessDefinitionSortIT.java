@@ -12,7 +12,6 @@ import static io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures.nextStri
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -20,6 +19,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessDefinitionSort.Builder;
 import io.camunda.util.ObjectBuilder;
@@ -148,11 +148,11 @@ public class ProcessDefinitionSortIT {
     final var searchResult =
         reader
             .search(
-                new ProcessDefinitionDbQuery(
+                new ProcessDefinitionQuery(
                     new ProcessDefinitionFilter.Builder().versionTags(versionTag).build(),
                     ProcessDefinitionSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))
-            .hits();
+            .items();
 
     assertThat(searchResult).hasSize(20);
     assertThat(searchResult).isSortedAccordingTo(comparator);

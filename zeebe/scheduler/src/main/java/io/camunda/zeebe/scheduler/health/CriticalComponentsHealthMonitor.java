@@ -8,6 +8,7 @@
 package io.camunda.zeebe.scheduler.health;
 
 import io.camunda.zeebe.scheduler.ActorControl;
+import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -17,6 +18,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import org.slf4j.Logger;
 
@@ -34,24 +36,33 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
 
   private final String name;
   private final Duration monitoringInterval;
+  private final ComponentTreeListener graphListener;
 
   public CriticalComponentsHealthMonitor(
-      final String name, final ActorControl actor, final Logger log) {
-    this(name, actor, log, HEALTH_MONITORING_PERIOD);
+      final String name,
+      final ActorControl actor,
+      final ComponentTreeListener healthGraphMetrics,
+      final Optional<String> parentComponent,
+      final Logger log) {
+    this(name, actor, healthGraphMetrics, parentComponent, log, HEALTH_MONITORING_PERIOD);
   }
 
   public CriticalComponentsHealthMonitor(
       final String name,
       final ActorControl actor,
+      final ComponentTreeListener graphListener,
+      final Optional<String> parentComponent,
       final Logger log,
       final Duration monitoringInterval) {
     this.name = name;
     this.actor = actor;
     this.log = log;
+    this.graphListener = graphListener;
     this.monitoringInterval = monitoringInterval;
     healthReport =
         HealthReport.unhealthy(this)
             .withMessage("Components are not yet initialized", Instant.now());
+    this.graphListener.registerNode(this, parentComponent);
   }
 
   @Override
@@ -62,37 +73,46 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
   }
 
   @Override
-  public void monitorComponent(final String componentName) {
-    actor.run(() -> componentHealth.put(componentName, HealthReport.unknown(componentName)));
-  }
-
-  @Override
-  public void removeComponent(final String componentName) {
+  public void registerComponent(final HealthMonitorable component) {
     actor.run(
         () -> {
-          final var monitoredComponent = monitoredComponents.remove(componentName);
-          if (monitoredComponent != null) {
-            componentHealth.remove(componentName);
-            monitoredComponent.component.removeFailureListener(monitoredComponent);
-          }
-        });
-  }
-
-  @Override
-  public void registerComponent(final String componentName, final HealthMonitorable component) {
-    actor.run(
-        () -> {
+          final var componentName = component.componentName();
           final var monitoredComponent = new MonitoredComponent(componentName, component);
           monitoredComponents.put(componentName, monitoredComponent);
           componentHealth.put(componentName, component.getHealthReport());
 
           component.addFailureListener(monitoredComponent);
           calculateHealth();
+          // register graphs
+          // it's safe to do it more than once
+          graphListener.registerNode(component, Optional.of(name));
+          log.info("Registered component {}:{}", componentName, component.componentName());
         });
   }
 
   @Override
-  public String getName() {
+  public void removeComponent(final HealthMonitorable component) {
+    actor.run(
+        () -> {
+          final var componentName = component.componentName();
+          final var monitoredComponent = monitoredComponents.remove(componentName);
+          if (monitoredComponent != null) {
+            componentHealth.remove(componentName);
+            monitoredComponent.component.removeFailureListener(monitoredComponent);
+            graphListener.unregisterRelationship(name, componentName);
+            graphListener.unregisterNode(monitoredComponent.component);
+            log.info("Unregistered edge {}:{}", name, componentName);
+          }
+        });
+  }
+
+  @Override
+  public void monitorComponent(final String componentName) {
+    actor.run(() -> componentHealth.put(componentName, HealthReport.unknown(componentName)));
+  }
+
+  @Override
+  public String componentName() {
     return name;
   }
 

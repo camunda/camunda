@@ -27,10 +27,11 @@ import io.camunda.exporter.handlers.EventFromJobHandler;
 import io.camunda.exporter.handlers.EventFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.EventFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
-import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
+import io.camunda.exporter.handlers.GroupDeletedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
@@ -45,6 +46,7 @@ import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
+import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
 import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
@@ -69,6 +71,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
@@ -80,11 +83,15 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableMappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -193,7 +200,7 @@ public class CamundaExporterHandlerIT {
   void shouldExportUsingFlowNodeInstanceIncidentHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
-    final var handler = getHandler(config, FlowNodeInstanceIncidentHandler.class);
+    final var handler = getHandler(config, FlowNodeInstanceFromIncidentHandler.class);
     basicAssertWhereHandlerCreatesDefaultEntity(
         handler, config, clientAdapter, defaultRecordGenerator(handler));
   }
@@ -202,7 +209,7 @@ public class CamundaExporterHandlerIT {
   void shouldExportUsingFlowNodeInstanceProcessInstanceHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
-    final var handler = getHandler(config, FlowNodeInstanceProcessInstanceHandler.class);
+    final var handler = getHandler(config, FlowNodeInstanceFromProcessInstanceHandler.class);
     basicAssertWhereHandlerCreatesDefaultEntity(
         handler, config, clientAdapter, defaultRecordGenerator(handler));
   }
@@ -331,6 +338,15 @@ public class CamundaExporterHandlerIT {
   }
 
   @TestTemplate
+  void shouldExportUsingTenantCreateUpdateHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, TenantCreateUpdateHandler.class);
+    basicAssertWhereHandlerCreatesDefaultEntity(
+        handler, config, clientAdapter, tenantRecordGenerator(handler, TenantIntent.CREATED));
+  }
+
+  @TestTemplate
   void shouldExportUsingUserTaskCompletionVariableHandler(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
       throws IOException {
@@ -435,11 +451,23 @@ public class CamundaExporterHandlerIT {
         handler, config, clientAdapter, groupRecordGenerator(handler, GroupIntent.UPDATED));
   }
 
+  @TestTemplate
+  void shouldExportUsingGroupDeleteHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, GroupDeletedHandler.class);
+    basicAssertWhereHandlerDeletesDefaultEntity(
+        handler, config, clientAdapter, groupRecordGenerator(handler, GroupIntent.DELETED));
+  }
+
   @SuppressWarnings("unchecked")
   private <S extends ExporterEntity<S>, T extends RecordValue> ExportHandler<S, T> getHandler(
       final ExporterConfiguration config, final Class<?> handlerClass) {
     final var provider = new DefaultExporterResourceProvider();
-    provider.init(config, ClientAdapter.of(config).getExporterEntityCacheProvider());
+    provider.init(
+        config,
+        ClientAdapter.of(config).getExporterEntityCacheProvider(),
+        new SimpleMeterRegistry());
 
     return provider.getExportHandlers().stream()
         .filter(handler -> handler.getClass().equals(handlerClass))
@@ -456,7 +484,8 @@ public class CamundaExporterHandlerIT {
   private CamundaExporter getExporter(
       final ExporterConfiguration config, final ExportHandler<?, ?> handler) {
     final var provider = spy(new DefaultExporterResourceProvider());
-    provider.init(config, ClientAdapter.of(config).getExporterEntityCacheProvider());
+    provider.init(
+        config, ClientAdapter.of(config).getExporterEntityCacheProvider(), Metrics.globalRegistry);
 
     doReturn(Set.of(handler)).when(provider).getExportHandlers();
 
@@ -660,6 +689,24 @@ public class CamundaExporterHandlerIT {
               ValueType.ROLE,
               r ->
                   r.withValue((T) roleRecordValue)
+                      .withIntent(intent)
+                      .withTimestamp(System.currentTimeMillis()));
+        });
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue> Record<T> tenantRecordGenerator(
+      final ExportHandler<S, T> handler, final TenantIntent intent) {
+    return recordGenerator(
+        handler,
+        () -> {
+          final var tenantRecordValue =
+              ImmutableTenantRecordValue.builder()
+                  .from(factory.generateObject(TenantRecordValue.class))
+                  .build();
+          return factory.generateRecord(
+              ValueType.TENANT,
+              r ->
+                  r.withValue((T) tenantRecordValue)
                       .withIntent(intent)
                       .withTimestamp(System.currentTimeMillis()));
         });

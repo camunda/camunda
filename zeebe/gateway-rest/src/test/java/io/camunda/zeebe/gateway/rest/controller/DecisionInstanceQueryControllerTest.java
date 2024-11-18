@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,12 +56,13 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                "items": [
                    {
                        "decisionInstanceKey": 123,
+                       "decisionInstanceId": "123-1",
                        "state": "EVALUATED",
                        "evaluationDate": "2024-06-05T08:29:15.027Z",
                        "processDefinitionKey": 2251799813688736,
                        "processInstanceKey": 6755399441058457,
                        "decisionDefinitionKey": 123456,
-                       "decisionDefinitionId": "di",
+                       "decisionDefinitionId": "ddi",
                        "decisionDefinitionName": "ddn",
                        "decisionDefinitionVersion": 0,
                        "decisionDefinitionType": "DECISION_TABLE",
@@ -82,15 +84,16 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
           .items(
               List.of(
                   new DecisionInstanceEntity(
+                      "123-1",
                       123L,
                       DecisionInstanceState.EVALUATED,
                       OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
                       null,
                       2251799813688736L,
                       6755399441058457L,
-                      "bpi",
-                      "di",
-                      "123456",
+                      "tenantId",
+                      "ddi",
+                      123456L,
                       "ddn",
                       0,
                       DecisionDefinitionType.DECISION_TABLE,
@@ -193,20 +196,21 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnDecisionInstanceByKey() {
+  void shouldReturnDecisionInstanceById() {
     // given
-    final var decisionInstanceKey = 123L;
+    final var decisionInstanceId = "123-1";
     final var decisionInstanceInDB =
         new DecisionInstanceEntity(
+            "123-1",
             123L,
             DecisionInstanceState.EVALUATED,
             OffsetDateTime.parse("2024-06-05T08:29:15.027+00:00"),
             null,
             2251799813688736L,
             6755399441058457L,
-            "bpi",
-            "di",
-            "123456",
+            "tenantId",
+            "ddi",
+            123456L,
             "ddn",
             0,
             DecisionDefinitionType.DECISION_TABLE,
@@ -216,11 +220,11 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                 new DecisionInstanceOutputEntity("1", "name1", "value1", "ruleId1", 1),
                 new DecisionInstanceOutputEntity("2", "name2", "value2", "ruleId1", 1),
                 new DecisionInstanceOutputEntity("3", "name3", "value3", "ruleId2", 2)));
-    when(decisionInstanceServices.getByKey(decisionInstanceKey)).thenReturn(decisionInstanceInDB);
+    when(decisionInstanceServices.getById(decisionInstanceId)).thenReturn(decisionInstanceInDB);
     // when
     webClient
         .get()
-        .uri("/v2/decision-instances/{decisionInstanceKey}", decisionInstanceKey)
+        .uri("/v2/decision-instances/{decisionInstanceId}", decisionInstanceId)
         .exchange()
         .expectStatus()
         .isOk()
@@ -234,7 +238,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                      "processDefinitionKey": 2251799813688736,
                      "processInstanceKey": 6755399441058457,
                      "decisionDefinitionKey": 123456,
-                     "decisionDefinitionId": "di",
+                     "decisionDefinitionId": "ddi",
                      "decisionDefinitionName": "ddn",
                      "decisionDefinitionVersion": 0,
                      "decisionDefinitionType": "DECISION_TABLE",
@@ -281,13 +285,13 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
   @Test
   void shouldReturn404WhenDecisionInstanceNotFound() {
     // given
-    final var decisionInstanceKey = 123L;
-    when(decisionInstanceServices.getByKey(decisionInstanceKey))
-        .thenThrow(new NotFoundException("Decision Instance with key 1 was not found."));
+    final var decisionInstanceId = "123-1";
+    when(decisionInstanceServices.getById(decisionInstanceId))
+        .thenThrow(new NotFoundException("Decision instance with key 123-1 was not found."));
     // when
     webClient
         .get()
-        .uri("/v2/decision-instances/{decisionInstanceKey}", decisionInstanceKey)
+        .uri("/v2/decision-instances/{decisionInstanceId}", decisionInstanceId)
         .exchange()
         .expectStatus()
         .isNotFound()
@@ -300,21 +304,21 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                           "type": "about:blank",
                           "title": "NOT_FOUND",
                           "status": 404,
-                          "detail": "Decision Instance with key 1 was not found.",
-                          "instance": "/v2/decision-instances/123"
+                          "detail": "Decision instance with key 123-1 was not found.",
+                          "instance": "/v2/decision-instances/123-1"
                         }""");
   }
 
   @Test
   void shouldReturn500ForInternalErrorGetDecisionDefinitionByKey() {
     // given
-    final var decisionInstanceKey = 123L;
-    when(decisionInstanceServices.getByKey(decisionInstanceKey))
+    final var decisionInstanceId = "123-1";
+    when(decisionInstanceServices.getById(decisionInstanceId))
         .thenThrow(new RuntimeException("Something bad happened."));
     // when
     webClient
         .get()
-        .uri("/v2/decision-instances/{decisionInstanceKey}", decisionInstanceKey)
+        .uri("/v2/decision-instances/{decisionInstanceId}", decisionInstanceId)
         .exchange()
         .expectStatus()
         .is5xxServerError()
@@ -328,21 +332,21 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "title": "java.lang.RuntimeException",
                   "status": 500,
                   "detail": "Unexpected error occurred during the request processing: Something bad happened.",
-                  "instance": "/v2/decision-instances/123"
+                  "instance": "/v2/decision-instances/123-1"
                 }""");
   }
 
   @Test
   void shouldReturn403ForUnauthorizedGetDecisionDefinitionByKey() {
     // given
-    final var decisionInstanceKey = 123L;
-    when(decisionInstanceServices.getByKey(decisionInstanceKey))
+    final var decisionInstanceId = "123-1";
+    when(decisionInstanceServices.getById(decisionInstanceId))
         .thenThrow(
             new ForbiddenException(Authorization.of(a -> a.decisionDefinition().readInstance())));
     // when
     webClient
         .get()
-        .uri("/v2/decision-instances/{decisionInstanceKey}", decisionInstanceKey)
+        .uri("/v2/decision-instances/{decisionInstanceId}", decisionInstanceId)
         .exchange()
         .expectStatus()
         .isForbidden()
@@ -355,8 +359,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                   "type": "about:blank",
                   "title": "io.camunda.service.exception.ForbiddenException",
                   "status": 403,
-                  "detail": "Unauthorized to perform operation 'READ_INSTANCE' on resource 'DECISION_DEFINITION'",
-                  "instance": "/v2/decision-instances/123"
+                  "detail": "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'DECISION_DEFINITION'",
+                  "instance": "/v2/decision-instances/123-1"
                 }""");
   }
 
@@ -367,6 +371,10 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "decisionDefinitionKey",
         ops -> new DecisionInstanceFilter.Builder().decisionDefinitionKeyOperations(ops).build());
+    dateTimeOperationTestCases(
+        streamBuilder,
+        "evaluationDate",
+        ops -> new DecisionInstanceFilter.Builder().evaluationDateOperations(ops).build());
 
     return streamBuilder.build();
   }
@@ -404,6 +412,70 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
 
     verify(decisionInstanceServices)
         .search(new DecisionInstanceQuery.Builder().filter(filter).build());
+  }
+
+  @Test
+  void shouldThrowExceptionWithInvalidDateTime() {
+    // given
+    final var request = "{\"filter\": {\"evaluationDate\": \"invalid\"}}";
+
+    // when / then
+    final var expectedResponse =
+        """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "Failed to parse date-time: [invalid]",
+              "instance": "/v2/decision-instances/search"
+            }""";
+    webClient
+        .post()
+        .uri("/v2/decision-instances/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class));
+  }
+
+  @Test
+  void shouldThrowExceptionWithWrongType() {
+    // given
+    final var request = "{\"filter\": {\"evaluationDate\": []}";
+
+    // when / then
+    final var expectedResponse =
+        """
+            {
+              "type": "about:blank",
+              "title": "Bad Request",
+              "status": 400,
+              "detail": "Request property [filter.evaluationDate] cannot be parsed",
+              "instance": "/v2/decision-instances/search"
+            }""";
+    webClient
+        .post()
+        .uri("/v2/decision-instances/search")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(decisionInstanceServices, never()).search(any(DecisionInstanceQuery.class));
   }
 
   private record TestArguments(

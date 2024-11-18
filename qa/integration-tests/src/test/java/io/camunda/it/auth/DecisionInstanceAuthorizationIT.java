@@ -8,7 +8,8 @@
 package io.camunda.it.auth;
 
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE;
-import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_INSTANCE;
+import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE_DECISION_INSTANCE;
+import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DECISION_DEFINITION;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,15 +48,15 @@ class DecisionInstanceAuthorizationIT {
           "password",
           List.of(
               new Permissions(DEPLOYMENT, CREATE, List.of("*")),
-              new Permissions(DECISION_DEFINITION, CREATE, List.of("*")),
-              new Permissions(DECISION_DEFINITION, READ_INSTANCE, List.of("*"))));
+              new Permissions(DECISION_DEFINITION, CREATE_DECISION_INSTANCE, List.of("*")),
+              new Permissions(DECISION_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
   private static final User RESTRICTED_USER =
       new User(
           RESTRICTED,
           "password",
           List.of(
               new Permissions(
-                  DECISION_DEFINITION, READ_INSTANCE, List.of(DECISION_DEFINITION_ID_1))));
+                  DECISION_DEFINITION, READ_PROCESS_INSTANCE, List.of(DECISION_DEFINITION_ID_1))));
 
   @RegisterExtension
   static final BrokerWithCamundaExporterITInvocationProvider PROVIDER =
@@ -95,41 +96,42 @@ class DecisionInstanceAuthorizationIT {
   }
 
   @TestTemplate
-  void getByKeyShouldReturnForbiddenForUnauthorizedDecisionInstance(
+  void getByIdShouldReturnForbiddenForUnauthorizedDecisionInstance(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given
-    final var decisionInstanceKey = getDecisionInstanceKey(adminClient, DECISION_DEFINITION_ID_2);
+    final var decisionInstanceId = getDecisionInstanceId(adminClient, DECISION_DEFINITION_ID_2);
 
     // when
     final Executable executeGet =
-        () -> userClient.newDecisionInstanceGetRequest(decisionInstanceKey).send().join();
+        () -> userClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
 
     // then
     final var problemException = assertThrows(ProblemException.class, executeGet);
     assertThat(problemException.code()).isEqualTo(403);
     assertThat(problemException.details().getDetail())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_INSTANCE' on resource 'DECISION_DEFINITION'");
+            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'DECISION_DEFINITION'");
   }
 
   @TestTemplate
-  void getByKeyShouldReturnAuthorizedDecisionDefinition(
+  void getByIdShouldReturnAuthorizedDecisionDefinition(
       @Authenticated(ADMIN) final ZeebeClient adminClient,
       @Authenticated(RESTRICTED) final ZeebeClient userClient) {
     // given
-    final var decisionInstanceKey = getDecisionInstanceKey(adminClient, DECISION_DEFINITION_ID_1);
+    final var decisionInstanceId = getDecisionInstanceId(adminClient, DECISION_DEFINITION_ID_1);
 
     // when
     final var decisionInstance =
-        userClient.newDecisionInstanceGetRequest(decisionInstanceKey).send().join();
+        userClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
 
     // then
     assertThat(decisionInstance).isNotNull();
     assertThat(decisionInstance.getDecisionDefinitionId()).isEqualTo(DECISION_DEFINITION_ID_1);
   }
 
-  private long getDecisionInstanceKey(final ZeebeClient client, final String decisionDefinitionId) {
+  private String getDecisionInstanceId(
+      final ZeebeClient client, final String decisionDefinitionId) {
     return client
         .newDecisionInstanceQuery()
         .filter(f -> f.decisionDefinitionId(decisionDefinitionId))
@@ -137,7 +139,7 @@ class DecisionInstanceAuthorizationIT {
         .join()
         .items()
         .getFirst()
-        .getDecisionInstanceKey();
+        .getDecisionInstanceId();
   }
 
   private DeploymentEvent deployResource(final ZeebeClient zeebeClient, final String resourceName) {

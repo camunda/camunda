@@ -151,8 +151,11 @@ public final class EventAppliers implements EventApplier {
         DeploymentDistributionIntent.COMPLETED,
         new DeploymentDistributionCompletedApplier(state.getDeploymentState()));
 
-    register(DeploymentIntent.CREATED, 1, new DeploymentCreatedApplier(state.getDeploymentState()));
+    register(
+        DeploymentIntent.CREATED, 1, new DeploymentCreatedV1Applier(state.getDeploymentState()));
     register(DeploymentIntent.CREATED, 2, NOOP_EVENT_APPLIER);
+    register(
+        DeploymentIntent.CREATED, 3, new DeploymentCreatedV3Applier(state.getDeploymentState()));
     register(
         DeploymentIntent.DISTRIBUTED,
         new DeploymentDistributedApplier(state.getProcessState(), state.getDecisionState()));
@@ -401,8 +404,10 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.COMPLETING, 2, new UserTaskCompletingV2Applier(state));
     register(UserTaskIntent.COMPLETED, 1, new UserTaskCompletedV1Applier(state));
     register(UserTaskIntent.COMPLETED, 2, new UserTaskCompletedV2Applier(state));
-    register(UserTaskIntent.ASSIGNING, new UserTaskAssigningApplier(state));
-    register(UserTaskIntent.ASSIGNED, new UserTaskAssignedApplier(state));
+    register(UserTaskIntent.ASSIGNING, 1, new UserTaskAssigningV1Applier(state));
+    register(UserTaskIntent.ASSIGNING, 2, new UserTaskAssigningV2Applier(state));
+    register(UserTaskIntent.ASSIGNED, 1, new UserTaskAssignedV1Applier(state));
+    register(UserTaskIntent.ASSIGNED, 2, new UserTaskAssignedV2Applier(state));
     register(UserTaskIntent.UPDATING, new UserTaskUpdatingApplier(state));
     register(UserTaskIntent.UPDATED, new UserTaskUpdatedApplier(state));
     register(UserTaskIntent.MIGRATED, new UserTaskMigratedApplier(state));

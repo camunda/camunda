@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.qa.util;
 
-import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.schema.SchemaStartup;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -22,7 +21,7 @@ public class TestSchemaStartup extends SchemaStartup {
 
   @PostConstruct
   @Override
-  public void initializeSchema() throws MigrationException {
+  public void initializeSchema() {
     LOGGER.info("TestSchemaStartup: no schema will be created, validated or migrated.");
   }
 }

@@ -37,7 +37,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
 
   public ZeebePartitionHealth(
       final int partitionId, final PartitionTransition partitionTransition) {
-    name = "ZeebePartition-" + partitionId;
+    name = "ZeebePartitionHealth-" + partitionId;
     this.partitionTransition = partitionTransition;
   }
 
@@ -80,7 +80,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
   }
 
   @Override
-  public String getName() {
+  public String componentName() {
     return name;
   }
 

@@ -18,8 +18,6 @@
     <module>data-generator</module>
     <module>integration-tests</module>
     <module>query-performance-tests</module>
-    <module>migration-tests</module>
-    <module>migration-performance-test</module>
     <module>backup-restore-tests</module>
   </modules>
 

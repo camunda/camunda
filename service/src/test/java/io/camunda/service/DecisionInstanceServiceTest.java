@@ -65,14 +65,14 @@ class DecisionInstanceServiceTest {
   }
 
   @Test
-  void shouldGetDecisionInstanceByKey() {
+  void shouldGetDecisionInstanceById() {
     // given
-    final Long decisionInstanceKey = 1L;
+    final var decisionInstanceId = "1-1";
     final var decisionDefinitionKey = "dd1";
     final var result = mock(SearchQueryResult.class);
     when(result.total()).thenReturn(1L);
     final var decisionInstanceEntity = mock(DecisionInstanceEntity.class);
-    when(decisionInstanceEntity.decisionId()).thenReturn(decisionDefinitionKey);
+    when(decisionInstanceEntity.decisionDefinitionId()).thenReturn(decisionDefinitionKey);
     when(result.items()).thenReturn(List.of(decisionInstanceEntity));
     when(client.searchDecisionInstances(any())).thenReturn(result);
     when(securityContextProvider.isAuthorized(
@@ -82,13 +82,13 @@ class DecisionInstanceServiceTest {
         .thenReturn(true);
 
     // when
-    services.getByKey(decisionInstanceKey);
+    services.getById(decisionInstanceId);
 
     // then
     verify(client)
         .searchDecisionInstances(
             SearchQueryBuilders.decisionInstanceSearchQuery(
-                q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))));
+                q -> q.filter(f -> f.decisionInstanceIds(decisionInstanceId))));
   }
 
   @Test
@@ -117,14 +117,14 @@ class DecisionInstanceServiceTest {
   }
 
   @Test
-  void getByKeyShouldReturnForbiddenForUnauthorizedDecisionDefinition() {
+  void getByIdShouldReturnForbiddenForUnauthorizedDecisionDefinition() {
     // given
-    final Long decisionInstanceKey = 1L;
+    final var decisionInstanceId = "1-1";
     final var decisionDefinitionKey = "dd1";
     final var result = mock(SearchQueryResult.class);
     when(result.total()).thenReturn(1L);
     final var decisionInstanceEntity = mock(DecisionInstanceEntity.class);
-    when(decisionInstanceEntity.decisionId()).thenReturn(decisionDefinitionKey);
+    when(decisionInstanceEntity.decisionDefinitionId()).thenReturn(decisionDefinitionKey);
     when(result.items()).thenReturn(List.of(decisionInstanceEntity));
     when(client.searchDecisionInstances(any())).thenReturn(result);
     when(securityContextProvider.isAuthorized(
@@ -134,12 +134,12 @@ class DecisionInstanceServiceTest {
         .thenReturn(false);
 
     // when
-    final Executable executable = () -> services.getByKey(decisionInstanceKey);
+    final Executable executable = () -> services.getById(decisionInstanceId);
 
     // then
     final var exception = assertThrows(ForbiddenException.class, executable);
     assertThat(exception.getMessage())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_INSTANCE' on resource 'DECISION_DEFINITION'");
+            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'DECISION_DEFINITION'");
   }
 }

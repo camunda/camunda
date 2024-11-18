@@ -9,15 +9,15 @@ package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
 
-public record TenantFilter(Long tenantKey, String tenantId, String name) implements FilterBase {
+public record TenantFilter(Long key, String tenantId, String name) implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<TenantFilter> {
-    private Long tenantKey;
+    private Long key;
     private String tenantId;
     private String name;
 
-    public Builder tenantKey(final Long value) {
-      tenantKey = value;
+    public Builder key(final Long value) {
+      key = value;
       return this;
     }
 
@@ -33,7 +33,7 @@ public record TenantFilter(Long tenantKey, String tenantId, String name) impleme
 
     @Override
     public TenantFilter build() {
-      return new TenantFilter(tenantKey, tenantId, name);
+      return new TenantFilter(key, tenantId, name);
     }
   }
 }

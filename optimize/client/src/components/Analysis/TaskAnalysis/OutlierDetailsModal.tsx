@@ -8,6 +8,7 @@
 
 import {Modal, DurationChart} from 'components';
 import {t} from 'translation';
+import {Stack} from '@carbon/react';
 
 import {
   AnalysisProcessDefinitionParameters,
@@ -39,17 +40,19 @@ export default function OutlierDetailsModal({
     <Modal open onClose={onClose} className="OutlierDetailsModal" size="lg">
       <Modal.Header title={t('analysis.task.detailsModal.title', {name})} />
       <Modal.Content>
-        <p className="description">
-          {t('analysis.task.totalFlowNodeInstances', {count: totalCount})}
-          <span>{getOutlierSummary(count, relation)}</span>
-        </p>
-        <h2>{t('analysis.task.detailsModal.durationChart')}</h2>
+        <Stack gap={4}>
+          <p className="description">
+            {t('analysis.task.totalFlowNodeInstances', {count: totalCount})}
+            <span>{getOutlierSummary(count, relation)}</span>
+          </p>
+          <h4 className="subTitle">{t('analysis.task.detailsModal.durationChart')}</h4>
+        </Stack>
         <DurationChart
           data={data}
           colors={data.map(({outlier}) => (outlier ? '#1991c8' : '#eeeeee'))}
           isLogharitmic={shouldUseLogharitmicScale(data, MIN_OUTLIER_TO_MAX_NONOUTLIER_RATIO)}
         />
-        <h2>{t('analysis.task.detailsModal.variablesTable')}</h2>
+        <h4 className="subTitle">{t('analysis.task.detailsModal.variablesTable')}</h4>
         <VariablesTable config={config} selectedOutlierNode={selectedOutlierNode} />
       </Modal.Content>
     </Modal>

@@ -9,40 +9,47 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
+import io.camunda.db.rdbms.sql.ProcessDefinitionMapper.ProcessDefinitionSearchColumn;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import java.util.List;
+import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.SearchQueryResult;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ProcessDefinitionReader {
+public class ProcessDefinitionReader extends AbstractEntityReader<ProcessDefinitionEntity> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessDefinitionReader.class);
 
   private final ProcessDefinitionMapper processDefinitionMapper;
 
   public ProcessDefinitionReader(final ProcessDefinitionMapper processDefinitionMapper) {
+    super(ProcessDefinitionMapper.ProcessDefinitionSearchColumn::findByProperty);
     this.processDefinitionMapper = processDefinitionMapper;
   }
 
   public Optional<ProcessDefinitionEntity> findOne(final long processDefinitionKey) {
     final var result =
         search(
-            ProcessDefinitionDbQuery.of(
+            ProcessDefinitionQuery.of(
                 b -> b.filter(f -> f.processDefinitionKeys(processDefinitionKey))));
-    if (result.hits == null || result.hits.isEmpty()) {
+    if (result.items() == null || result.items().isEmpty()) {
       return Optional.empty();
     } else {
-      return Optional.of(result.hits.getFirst());
+      return Optional.of(result.items().getFirst());
     }
   }
 
-  public SearchResult search(final ProcessDefinitionDbQuery filter) {
-    LOG.trace("[RDBMS DB] Search for process instance with filter {}", filter);
-    final var totalHits = processDefinitionMapper.count(filter);
-    final var hits = processDefinitionMapper.search(filter);
-    return new SearchResult(hits, totalHits);
-  }
+  public SearchQueryResult<ProcessDefinitionEntity> search(final ProcessDefinitionQuery query) {
+    final var dbSort =
+        convertSort(query.sort(), ProcessDefinitionSearchColumn.PROCESS_DEFINITION_KEY);
+    final var dbQuery =
+        ProcessDefinitionDbQuery.of(
+            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
 
-  public record SearchResult(List<ProcessDefinitionEntity> hits, Long total) {}
+    LOG.trace("[RDBMS DB] Search for process instance with filter {}", dbQuery);
+    final var totalHits = processDefinitionMapper.count(dbQuery);
+    final var hits = processDefinitionMapper.search(dbQuery);
+    return new SearchQueryResult<>(totalHits.intValue(), hits, extractSortValues(hits, dbSort));
+  }
 }

@@ -108,6 +108,6 @@ public class VariableServiceTest {
     final var exception = assertThrowsExactly(ForbiddenException.class, executeGetByKey);
     assertThat(exception.getMessage())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_INSTANCE' on resource 'PROCESS_DEFINITION'");
+            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 }

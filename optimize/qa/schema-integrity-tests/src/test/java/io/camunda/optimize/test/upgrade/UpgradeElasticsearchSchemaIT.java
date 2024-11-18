@@ -9,15 +9,13 @@ package io.camunda.optimize.test.upgrade;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import co.elastic.clients.elasticsearch.indices.TemplateMapping;
+import co.elastic.clients.elasticsearch.indices.get_alias.IndexAliases;
+import co.elastic.clients.elasticsearch.indices.get_mapping.IndexMappingRecord;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.test.upgrade.client.ElasticsearchSchemaTestClient;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import org.elasticsearch.client.indices.IndexTemplateMetadata;
-import org.elasticsearch.cluster.metadata.AliasMetadata;
-import org.elasticsearch.cluster.metadata.MappingMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,9 +24,9 @@ public class UpgradeElasticsearchSchemaIT
   private static final Logger LOG = LoggerFactory.getLogger(UpgradeElasticsearchSchemaIT.class);
 
   Map<String, Map> expectedSettings;
-  Map<String, MappingMetadata> expectedMappings;
-  Map<String, Set<AliasMetadata>> expectedAliases;
-  List<IndexTemplateMetadata> expectedTemplates;
+  Map<String, IndexMappingRecord> expectedMappings;
+  Map<String, IndexAliases> expectedAliases;
+  Map<String, TemplateMapping> expectedTemplates;
 
   @Override
   protected String getOptimizeUpdateLogPath() {
@@ -52,16 +50,17 @@ public class UpgradeElasticsearchSchemaIT
     final Map<String, Map> newSettings = newDatabaseSchemaClient.getSettings();
     LOG.info("Actual settings size: {}, keys: {}", newSettings.size(), newSettings.keySet());
     assertThat(newSettings).isEqualTo(expectedSettings);
-    assertThat(newDatabaseSchemaClient.getMappings()).isEqualTo(expectedMappings);
+    assertThat(newDatabaseSchemaClient.getMappings())
+        .isEqualToComparingFieldByFieldRecursively(expectedMappings);
   }
 
   @Override
   protected void assertMigratedDatabaseAliasesMatchExpected() throws IOException {
     LOG.info(
         "Expected aliases size: {}, keys: {}", expectedAliases.size(), expectedAliases.keySet());
-    final Map<String, Set<AliasMetadata>> newAliases = newDatabaseSchemaClient.getAliases();
+    final Map<String, IndexAliases> newAliases = newDatabaseSchemaClient.getAliases();
     LOG.info("Actual aliases size: {}, keys: {}", newAliases.size(), newAliases.keySet());
-    assertThat(newAliases).isEqualTo(expectedAliases);
+    assertThat(newAliases).isEqualToComparingFieldByFieldRecursively(expectedAliases);
   }
 
   @Override
@@ -69,13 +68,10 @@ public class UpgradeElasticsearchSchemaIT
     LOG.info(
         "Expected templates size: {}, names: {}",
         expectedTemplates.size(),
-        expectedTemplates.stream().map(IndexTemplateMetadata::name).toList());
-    final List<IndexTemplateMetadata> newTemplates = newDatabaseSchemaClient.getTemplates();
-    LOG.info(
-        "Actual templates size: {}, names: {}",
-        newTemplates.size(),
-        newTemplates.stream().map(IndexTemplateMetadata::name).toList());
-    assertThat(newTemplates).containsExactlyInAnyOrderElementsOf(expectedTemplates);
+        expectedTemplates.keySet());
+    final Map<String, TemplateMapping> newTemplates = newDatabaseSchemaClient.getTemplates();
+    LOG.info("Actual templates size: {}, names: {}", newTemplates.size(), newTemplates.keySet());
+    assertThat(newTemplates).isEqualToComparingFieldByFieldRecursively(expectedTemplates);
   }
 
   @Override

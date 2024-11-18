@@ -9,6 +9,7 @@ package io.camunda.exporter;
 
 import static java.util.Map.entry;
 
+import io.camunda.exporter.cache.ExporterCacheMetrics;
 import io.camunda.exporter.cache.ExporterEntityCacheImpl;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -23,10 +24,11 @@ import io.camunda.exporter.handlers.EventFromJobHandler;
 import io.camunda.exporter.handlers.EventFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.EventFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.ExportHandler;
-import io.camunda.exporter.handlers.FlowNodeInstanceIncidentHandler;
-import io.camunda.exporter.handlers.FlowNodeInstanceProcessInstanceHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
+import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
+import io.camunda.exporter.handlers.GroupDeletedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
@@ -82,6 +84,7 @@ import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -102,7 +105,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public void init(
       final ExporterConfiguration configuration,
-      final ExporterEntityCacheProvider entityCacheProvider) {
+      final ExporterEntityCacheProvider entityCacheProvider,
+      final MeterRegistry meterRegistry) {
     final var globalPrefix = configuration.getIndex().getPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(configuration.getConnect().getType())
@@ -152,15 +156,17 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
     final var processCache =
         new ExporterEntityCacheImpl<>(
-            10000,
+            configuration.getProcessCache().getMaxCacheSize(),
             entityCacheProvider.getProcessCacheLoader(
-                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()));
+                indexDescriptorsMap.get(ProcessIndex.class).getFullQualifiedName(), new XMLUtil()),
+            new ExporterCacheMetrics("process", meterRegistry));
 
     final var formCache =
         new ExporterEntityCacheImpl<>(
-            10000,
+            configuration.getFormCache().getMaxCacheSize(),
             entityCacheProvider.getFormCacheLoader(
-                indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()));
+                indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()),
+            new ExporterCacheMetrics("form", meterRegistry));
 
     exportHandlers =
         Set.of(
@@ -175,6 +181,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new TenantCreateUpdateHandler(
                 indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
             new GroupCreatedUpdatedHandler(
+                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
+            new GroupDeletedHandler(
                 indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
             new DecisionHandler(
                 indexDescriptorsMap.get(DecisionIndex.class).getFullQualifiedName()),
@@ -197,9 +205,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(DecisionRequirementsIndex.class).getFullQualifiedName()),
             new PostImporterQueueFromIncidentHandler(
                 templateDescriptorsMap.get(PostImporterQueueTemplate.class).getFullQualifiedName()),
-            new FlowNodeInstanceIncidentHandler(
+            new FlowNodeInstanceFromIncidentHandler(
                 templateDescriptorsMap.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
-            new FlowNodeInstanceProcessInstanceHandler(
+            new FlowNodeInstanceFromProcessInstanceHandler(
                 templateDescriptorsMap.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new IncidentHandler(
                 templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(),

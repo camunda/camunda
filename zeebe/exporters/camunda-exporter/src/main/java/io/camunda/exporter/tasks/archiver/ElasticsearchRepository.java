@@ -21,11 +21,11 @@ import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
-import co.elastic.clients.elasticsearch.async_search.SubmitRequest;
-import co.elastic.clients.elasticsearch.async_search.SubmitResponse;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
@@ -94,8 +94,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
 
     final var timer = Timer.start();
     return client
-        .asyncSearch()
-        .submit(searchRequest, Object.class)
+        .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenApplyAsync(this::createArchiveBatch, executor);
   }
@@ -108,8 +107,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
 
     final var timer = Timer.start();
     return client
-        .asyncSearch()
-        .submit(searchRequest, Object.class)
+        .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenApplyAsync(this::createArchiveBatch, executor);
   }
@@ -131,6 +129,11 @@ public final class ElasticsearchRepository implements ArchiverRepository {
             .build();
 
     return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> setLifeCycleToAllIndexes() {
+    return CompletableFuture.completedFuture(null);
   }
 
   @Override
@@ -187,7 +190,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
     client._transport().close();
   }
 
-  private SubmitRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {
+  private SearchRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {
     final var endDateQ =
         QueryBuilders.range(
             q ->
@@ -207,10 +210,13 @@ public final class ElasticsearchRepository implements ArchiverRepository {
         processInstanceIndex, combinedQuery, aggregation, ListViewTemplate.END_DATE);
   }
 
-  private ArchiveBatch createArchiveBatch(final SubmitResponse<?> search) {
-    final List<DateHistogramBucket> buckets =
-        search.response().aggregations().get(DATES_AGG).dateHistogram().buckets().array();
+  private ArchiveBatch createArchiveBatch(final SearchResponse<?> search) {
+    final var aggregate = search.aggregations().get(DATES_AGG);
+    if (aggregate == null) {
+      return null;
+    }
 
+    final List<DateHistogramBucket> buckets = aggregate.dateHistogram().buckets().array();
     if (buckets.isEmpty()) {
       return null;
     }
@@ -265,7 +271,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
         .build();
   }
 
-  private SubmitRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
+  private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
     final var endDateQ =
         QueryBuilders.range(
             q ->
@@ -276,7 +282,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
         batchOperationIndex, endDateQ, aggregation, BatchOperationTemplate.END_DATE);
   }
 
-  private SubmitRequest createSearchRequest(
+  private SearchRequest createSearchRequest(
       final String indexName,
       final Query filterQuery,
       final Aggregation aggregation,
@@ -286,7 +292,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
         filterQuery.toString(),
         aggregation.toString());
 
-    return new SubmitRequest.Builder()
+    return new SearchRequest.Builder()
         .index(indexName)
         .requestCache(false)
         .allowNoIndices(true)

@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.protocol.rest.*;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayService;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   @Test
   public void shouldSearchProcessInstanceWithFullFilters() {
     // when
+    final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
+    final OffsetDateTime endDate = OffsetDateTime.now();
     client
         .newProcessInstanceQuery()
         .filter(
@@ -67,8 +70,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .parentProcessInstanceKey(25L)
                     .parentFlowNodeInstanceKey(30L)
                     .treePath("PI_1")
-                    .startDate("startDate")
-                    .endDate("endDate")
+                    .startDate(startDate)
+                    .endDate(endDate)
                     .state("ACTIVE")
                     .hasIncident(true)
                     .tenantId("tenant"))
@@ -80,23 +83,23 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final ProcessInstanceFilterRequest filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getProcessInstanceKey().get$Eq()).isEqualTo(123L);
-    assertThat(filter.getProcessDefinitionId()).isEqualTo("bpmnProcessId");
-    assertThat(filter.getProcessDefinitionName()).isEqualTo("Demo process");
+    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("bpmnProcessId");
+    assertThat(filter.getProcessDefinitionName().get$Eq()).isEqualTo("Demo process");
     assertThat(filter.getProcessDefinitionVersion().get$Eq()).isEqualTo(7);
-    assertThat(filter.getProcessDefinitionVersionTag()).isEqualTo("v7");
+    assertThat(filter.getProcessDefinitionVersionTag().get$Eq()).isEqualTo("v7");
     assertThat(filter.getProcessDefinitionKey().get$Eq()).isEqualTo(15L);
     assertThat(filter.getParentProcessInstanceKey().get$Eq()).isEqualTo(25L);
     assertThat(filter.getParentFlowNodeInstanceKey().get$Eq()).isEqualTo(30L);
-    assertThat(filter.getTreePath()).isEqualTo("PI_1");
-    assertThat(filter.getStartDate()).isEqualTo("startDate");
-    assertThat(filter.getEndDate()).isEqualTo("endDate");
-    assertThat(filter.getState()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(filter.getTreePath().get$Eq()).isEqualTo("PI_1");
+    assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
+    assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
+    assertThat(filter.getState().get$Eq()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasIncident()).isEqualTo(true);
-    assertThat(filter.getTenantId()).isEqualTo("tenant");
+    assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
   }
 
   @Test
-  void shouldSearchProcessInstanceByProcessInstanceKeyLongProperty() {
+  void shouldSearchProcessInstanceByProcessInstanceKeyLongFilter() {
     // when
     final LongFilterProperty filterProperty = new LongFilterProperty();
     filterProperty.$gt(1L);
@@ -116,6 +119,45 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(processInstanceKey).isNotNull();
     assertThat(processInstanceKey.get$Gt()).isEqualTo(1);
     assertThat(processInstanceKey.get$Lt()).isEqualTo(10);
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByProcessDefinitionIdStringFilter() {
+    // when
+    final StringFilterProperty filterProperty = new StringFilterProperty();
+    filterProperty.$like("string");
+    client
+        .newProcessInstanceQuery()
+        .filter(f -> f.processDefinitionId(filterProperty))
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceSearchQueryRequest request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
+    final ProcessInstanceFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final StringFilterProperty processInstanceKey = filter.getProcessDefinitionId();
+    assertThat(processInstanceKey).isNotNull();
+    assertThat(processInstanceKey.get$Like()).isEqualTo("string");
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByStartDateDateTimeFilter() {
+    // when
+    final DateTimeFilterProperty filterProperty = new DateTimeFilterProperty();
+    final String dateTime = OffsetDateTime.now().toString();
+    filterProperty.$gt(dateTime);
+    client.newProcessInstanceQuery().filter(f -> f.startDate(filterProperty)).send().join();
+
+    // then
+    final ProcessInstanceSearchQueryRequest request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
+    final ProcessInstanceFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final DateTimeFilterProperty startDate = filter.getStartDate();
+    assertThat(startDate).isNotNull();
+    assertThat(startDate.get$Gt()).isEqualTo(dateTime);
   }
 
   @Test

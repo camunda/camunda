@@ -77,7 +77,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
 
   @Bean
   public ExporterRepository exporterRepository(
-      @Autowired(required = false) List<ExporterDescriptor> exporterDescriptors) {
+      @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors) {
     if (exporterDescriptors != null && !exporterDescriptors.isEmpty()) {
       LOGGER.info("Create ExporterRepository with predefined exporter descriptors.");
       return new ExporterRepository(exporterDescriptors);

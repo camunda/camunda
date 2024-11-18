@@ -20,8 +20,9 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import java.util.Set;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, RoleEntity> {
@@ -52,24 +53,28 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         brokerClient, securityContextProvider, roleSearchClient, authentication);
   }
 
-  public CompletableFuture<RoleRecord> createRole(final RoleDTO request) {
-    return sendBrokerRequest(new BrokerRoleCreateRequest().setName(request.name()));
+  public CompletableFuture<RoleRecord> createRole(final String name) {
+    return sendBrokerRequest(new BrokerRoleCreateRequest().setName(name));
   }
 
-  public CompletableFuture<RoleRecord> updateRole(final RoleDTO request) {
-    return sendBrokerRequest(
-        new BrokerRoleUpdateRequest(request.roleKey()).setName(request.name()));
+  public CompletableFuture<RoleRecord> updateRole(final long roleKey, final String name) {
+    return sendBrokerRequest(new BrokerRoleUpdateRequest(roleKey).setName(name));
   }
 
-  public RoleEntity getByRoleKey(final Long roleKey) {
-    final SearchQueryResult<RoleEntity> result =
-        search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleKey(roleKey)).build());
-    if (result.total() < 1) {
-      throw new NotFoundException(String.format("Role with roleKey %d not found", roleKey));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
-    }
+  public RoleEntity getRole(final Long roleKey) {
+    return findRole(roleKey)
+        .orElseThrow(
+            () -> new NotFoundException("Role with roleKey %d not found".formatted(roleKey)));
   }
 
-  public record RoleDTO(long roleKey, String name, Set<Long> assignedMemberKeys) {}
+  public Optional<RoleEntity> findRole(final Long roleKey) {
+    return search(SearchQueryBuilders.roleSearchQuery().filter(f -> f.roleKey(roleKey)).build())
+        .items()
+        .stream()
+        .findFirst();
+  }
+
+  public CompletableFuture<RoleRecord> deleteRole(final long roleKey) {
+    return sendBrokerRequest(new BrokerRoleDeleteRequest(roleKey));
+  }
 }

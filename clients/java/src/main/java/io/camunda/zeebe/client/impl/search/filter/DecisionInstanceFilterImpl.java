@@ -21,9 +21,11 @@ import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.util.FilterUtil;
 import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
+import java.time.OffsetDateTime;
 
 public class DecisionInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<DecisionInstanceFilterRequest>
@@ -38,6 +40,12 @@ public class DecisionInstanceFilterImpl
   @Override
   public DecisionInstanceFilter decisionInstanceKey(final long decisionInstanceKey) {
     filter.setDecisionInstanceKey(decisionInstanceKey);
+    return this;
+  }
+
+  @Override
+  public DecisionInstanceFilter decisionInstanceId(final String decisionInstanceId) {
+    filter.decisionInstanceId(decisionInstanceId);
     return this;
   }
 
@@ -71,7 +79,13 @@ public class DecisionInstanceFilterImpl
   }
 
   @Override
-  public DecisionInstanceFilter evaluationDate(final String evaluationDate) {
+  public DecisionInstanceFilter evaluationDate(final OffsetDateTime evaluationDate) {
+    filter.setEvaluationDate(FilterUtil.dateTimeFilterProperty(evaluationDate));
+    return null;
+  }
+
+  @Override
+  public DecisionInstanceFilter evaluationDate(final DateTimeFilterProperty evaluationDate) {
     filter.setEvaluationDate(evaluationDate);
     return null;
   }

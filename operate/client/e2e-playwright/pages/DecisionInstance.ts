@@ -8,6 +8,7 @@
 
 import {Locator, Page} from '@playwright/test';
 import {Paths} from 'modules/Routes';
+import {relativizePath} from './utils/relativizePath';
 
 export class DecisionInstance {
   private page: Page;
@@ -47,6 +48,8 @@ export class DecisionInstance {
   }: {
     decisionInstanceKey: string;
   }) {
-    await this.page.goto(Paths.decisionInstance(decisionInstanceKey));
+    await this.page.goto(
+      relativizePath(Paths.decisionInstance(decisionInstanceKey)),
+    );
   }
 }

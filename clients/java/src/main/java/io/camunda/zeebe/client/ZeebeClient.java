@@ -1033,13 +1033,13 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   DecisionInstanceQuery newDecisionInstanceQuery();
 
   /**
-   * Retrieves a decision instance by key.
+   * Retrieves a decision instance by id.
    *
    * <pre>
-   * long decisionInstanceKey = ...;
+   * String decisionInstanceKey = ...;
    *
    * zeebeClient
-   * .newDecisionInstanceGetQuery(decisionInstanceKey)
+   * .newDecisionInstanceGetQuery(decisionInstanceId)
    * .send();
    * </pre>
    *
@@ -1049,11 +1049,11 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
-   * @param decisionInstanceKey
+   * @param decisionInstanceId
    * @return a builder for the request to get a decision instance
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  DecisionInstanceGetRequest newDecisionInstanceGetRequest(long decisionInstanceKey);
+  DecisionInstanceGetRequest newDecisionInstanceGetRequest(String decisionInstanceId);
 
   /*
    * Executes a search request to query decision definitions.

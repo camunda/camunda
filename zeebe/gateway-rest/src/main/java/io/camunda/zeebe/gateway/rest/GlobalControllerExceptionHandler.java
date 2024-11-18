@@ -7,14 +7,19 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
+import com.fasterxml.jackson.databind.JsonMappingException.Reference;
+import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.Objects;
+import java.util.stream.Collectors;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
@@ -26,6 +31,8 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
 
   private static final String REQUEST_BODY_MISSING_EXCEPTION_MESSAGE =
       "Required request body is missing";
+  private static final String REQUEST_BODY_PARSE_EXCEPTION_MESSAGE =
+      "Request property [%s] cannot be parsed";
   private static final String INVALID_ENUM_VALUE_EXCEPTION_MESSAGE = "Invalid Enum value";
 
   @Override
@@ -44,6 +51,13 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       // with "Required request body is missing"
       // for proper exception tracing
       detail = REQUEST_BODY_MISSING_EXCEPTION_MESSAGE;
+    } else if (isMismatchedInputError(ex)) {
+      final var mismatchedInputException = (MismatchedInputException) ex.getCause();
+      final var path =
+          mismatchedInputException.getPath().stream()
+              .map(Reference::getFieldName)
+              .collect(Collectors.joining("."));
+      detail = REQUEST_BODY_PARSE_EXCEPTION_MESSAGE.formatted(path);
     } else if (isUnknownEnumError(ex)) {
       final var httpMessageNotReadableException = (HttpMessageNotReadableException) ex;
       detail = Objects.requireNonNull(httpMessageNotReadableException.getRootCause()).getMessage();
@@ -53,6 +67,17 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
 
     return super.createProblemDetail(
         ex, status, detail, detailMessageCode, detailMessageArguments, request);
+  }
+
+  @Override
+  protected ResponseEntity<Object> handleExceptionInternal(
+      @NonNull final Exception ex,
+      final Object body,
+      @NonNull final HttpHeaders headers,
+      @NonNull final HttpStatusCode statusCode,
+      @NonNull final WebRequest request) {
+    Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
+    return super.handleExceptionInternal(ex, body, headers, statusCode, request);
   }
 
   private boolean isRequestBodyMissing(final Exception ex) {
@@ -65,6 +90,11 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     }
 
     return false;
+  }
+
+  private boolean isMismatchedInputError(final Exception ex) {
+    return ex instanceof HttpMessageNotReadableException
+        && ex.getCause() instanceof MismatchedInputException;
   }
 
   private boolean isUnknownEnumError(final Exception ex) {

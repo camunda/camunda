@@ -27,7 +27,12 @@ public record DecisionInstanceSort(List<FieldSorting> orderings) implements Sort
       implements ObjectBuilder<DecisionInstanceSort> {
 
     public Builder decisionInstanceKey() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("decisionInstanceKey", null);
+      return this;
+    }
+
+    public Builder decisionInstanceId() {
+      currentOrdering = new FieldSorting("decisionInstanceId", null);
       return this;
     }
 
@@ -51,13 +56,13 @@ public record DecisionInstanceSort(List<FieldSorting> orderings) implements Sort
       return this;
     }
 
-    public Builder processInstanceId() {
-      currentOrdering = new FieldSorting("processInstanceId", null);
+    public Builder processInstanceKey() {
+      currentOrdering = new FieldSorting("processInstanceKey", null);
       return this;
     }
 
     public Builder decisionDefinitionKey() {
-      currentOrdering = new FieldSorting("decisionId", null);
+      currentOrdering = new FieldSorting("decisionDefinitionKey", null);
       return this;
     }
 
@@ -67,17 +72,17 @@ public record DecisionInstanceSort(List<FieldSorting> orderings) implements Sort
     }
 
     public Builder decisionDefinitionName() {
-      currentOrdering = new FieldSorting("decisionName", null);
+      currentOrdering = new FieldSorting("decisionDefinitionName", null);
       return this;
     }
 
     public Builder decisionDefinitionVersion() {
-      currentOrdering = new FieldSorting("decisionVersion", null);
+      currentOrdering = new FieldSorting("decisionDefinitionVersion", null);
       return this;
     }
 
     public Builder decisionDefinitionType() {
-      currentOrdering = new FieldSorting("decisionType", null);
+      currentOrdering = new FieldSorting("decisionDefinitionType", null);
       return this;
     }
 

@@ -39,6 +39,7 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
@@ -690,7 +691,25 @@ final class JsonSerializableToJsonTest {
               final String activityId = "activity";
               final int activityInstanceKey = 123;
               final Set<String> changedAttributes = Set.of("bar", "foo");
-              final JobResult result = new JobResult().setDenied(true);
+              final JobResult result =
+                  new JobResult()
+                      .setDenied(true)
+                      .setCorrections(
+                          new JobResultCorrections()
+                              .setAssignee("frodo")
+                              .setDueDate("today")
+                              .setFollowUpDate("tomorrow")
+                              .setCandidateGroups(List.of("fellowship", "eagles"))
+                              .setCandidateUsers(List.of("frodo", "sam", "gollum"))
+                              .setPriority(1))
+                      .setCorrectedAttributes(
+                          List.of(
+                              "assignee",
+                              "dueDate",
+                              "followUpDate",
+                              "candidateGroups",
+                              "candidateUsers",
+                              "priority"));
 
               jobRecord
                   .setWorker(wrapString(worker))
@@ -748,7 +767,23 @@ final class JsonSerializableToJsonTest {
               "tenantId": "<default>",
               "changedAttributes": ["bar", "foo"],
               "result": {
-                "denied": true
+                "denied": true,
+                "correctedAttributes": [
+                  "assignee",
+                  "dueDate",
+                  "followUpDate",
+                  "candidateGroups",
+                  "candidateUsers",
+                  "priority"
+                ],
+                "corrections": {
+                  "assignee": "frodo",
+                  "dueDate": "today",
+                  "followUpDate": "tomorrow",
+                  "candidateGroups": ["fellowship", "eagles"],
+                  "candidateUsers": ["frodo", "sam", "gollum"],
+                  "priority": 1
+                }
               }
             }
           ],
@@ -800,7 +835,25 @@ final class JsonSerializableToJsonTest {
               final String elementId = "activity";
               final int activityInstanceKey = 123;
               final Set<String> changedAttributes = Set.of("bar", "foo");
-              final JobResult result = new JobResult().setDenied(true);
+              final JobResult result =
+                  new JobResult()
+                      .setDenied(true)
+                      .setCorrections(
+                          new JobResultCorrections()
+                              .setAssignee("frodo")
+                              .setDueDate("today")
+                              .setFollowUpDate("tomorrow")
+                              .setCandidateGroups(List.of("fellowship", "eagles"))
+                              .setCandidateUsers(List.of("frodo", "sam", "gollum"))
+                              .setPriority(1))
+                      .setCorrectedAttributes(
+                          List.of(
+                              "assignee",
+                              "dueDate",
+                              "followUpDate",
+                              "candidateGroups",
+                              "candidateUsers",
+                              "priority"));
 
               final Map<String, String> customHeaders =
                   Collections.singletonMap("workerVersion", "42");
@@ -857,8 +910,24 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "changedAttributes": ["bar", "foo"],
           "result": {
-            "denied": true
-           }
+            "denied": true,
+            "correctedAttributes": [
+              "assignee",
+              "dueDate",
+              "followUpDate",
+              "candidateGroups",
+              "candidateUsers",
+              "priority"
+            ],
+            "corrections": {
+              "assignee": "frodo",
+              "dueDate": "today",
+              "followUpDate": "tomorrow",
+              "candidateGroups": ["fellowship", "eagles"],
+              "candidateUsers": ["frodo", "sam", "gollum"],
+              "priority": 1
+            }
+          }
         }
         """
       },
@@ -893,7 +962,16 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "changedAttributes": [],
           "result": {
-            "denied": false
+            "denied": false,
+            "correctedAttributes": [],
+            "corrections": {
+              "assignee": "",
+              "dueDate": "",
+              "followUpDate": "",
+              "candidateGroups": [],
+              "candidateUsers": [],
+              "priority": -1
+            }
           }
         }
         """
@@ -934,7 +1012,16 @@ final class JsonSerializableToJsonTest {
           "tenantId": "<default>",
           "changedAttributes": [],
           "result": {
-            "denied": false
+            "denied": false,
+            "correctedAttributes": [],
+            "corrections": {
+              "assignee": "",
+              "dueDate": "",
+              "followUpDate": "",
+              "candidateGroups": [],
+              "candidateUsers": [],
+              "priority": -1
+            }
           }
         }
         """

@@ -400,7 +400,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         dashboardReader.getDashboard(dashboardId);
 
     if (dashboard.isEmpty()) {
-      LOG.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
+      LOG.error("Was not able to retrieve dashboard with id [{}] from Database.", dashboardId);
       throw new NotFoundException(
           "Dashboard does not exist! Tried to retrieve dashboard with id " + dashboardId);
     }

@@ -9,19 +9,16 @@ package io.camunda.search.filter;
 
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
-import static java.util.Collections.emptyList;
-import static java.util.Optional.ofNullable;
 
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public record VariableFilter(
-    Map<String, List<UntypedOperation>> variableOperations,
+    List<Operation<String>> nameOperations,
+    List<UntypedOperation> valueOperations,
     List<Operation<Long>> scopeKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
     List<Operation<Long>> variableKeyOperations,
@@ -30,36 +27,58 @@ public record VariableFilter(
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<VariableFilter> {
-    private Map<String, List<UntypedOperation>> variableOperations;
+    private List<Operation<String>> nameOperations;
+    private List<UntypedOperation> valueOperations;
     private List<Operation<Long>> scopeKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
     private List<Operation<Long>> variableKeyOperations;
     private List<String> tenantIds;
     private Boolean isTruncated;
 
-    public Builder variableOperations(final String name, final List<Operation<Object>> operations) {
-      return variableUntypedOperations(
-          name,
-          ofNullable(operations).orElse(emptyList()).stream().map(UntypedOperation::of).toList());
-    }
-
-    private Builder variableUntypedOperations(
-        final String name, final List<UntypedOperation> operations) {
-      variableOperations = Objects.requireNonNullElse(variableOperations, new HashMap<>());
-      variableOperations.compute(name, (k, list) -> addValuesToList(list, operations));
+    public Builder nameOperations(final List<Operation<String>> operations) {
+      nameOperations = addValuesToList(nameOperations, operations);
       return this;
     }
 
-    @SafeVarargs
-    public final Builder variableOperations(
-        final String name,
-        final Operation<Object> operation,
-        final Operation<Object>... operations) {
-      return variableOperations(name, collectValues(operation, operations));
+    public Builder names(final String value, final String... values) {
+      return nameOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
-    public Builder variable(final String name) {
-      return variableOperations(name, Operation.exists(true));
+    public Builder names(final List<String> values) {
+      return nameOperations(FilterUtil.mapDefaultToOperation(values));
+    }
+
+    @SafeVarargs
+    public final Builder nameOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return nameOperations(collectValues(operation, operations));
+    }
+
+    public Builder valueOperations(final List<Operation<String>> operations) {
+      final List<Operation<String>> ops =
+          Objects.requireNonNullElse(operations, Collections.emptyList());
+      valueOperations =
+          addValuesToList(valueOperations, ops.stream().map(UntypedOperation::of).toList());
+      return this;
+    }
+
+    private Builder valueUntypedOperations(final List<UntypedOperation> operations) {
+      valueOperations = addValuesToList(valueOperations, operations);
+      return this;
+    }
+
+    public Builder values(final String value, final String... values) {
+      return valueOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    public Builder values(final List<String> values) {
+      return valueOperations(FilterUtil.mapDefaultToOperation(values));
+    }
+
+    @SafeVarargs
+    public final Builder valueOperations(
+        final Operation<String> operation, final Operation<String>... operations) {
+      return valueOperations(collectValues(operation, operations));
     }
 
     public Builder scopeKeyOperations(final List<Operation<Long>> operations) {
@@ -126,8 +145,9 @@ public record VariableFilter(
     }
 
     public Builder copyFrom(final VariableFilter sourceFilter) {
-      sourceFilter.variableOperations().forEach(this::variableUntypedOperations);
-      return scopeKeyOperations(sourceFilter.scopeKeyOperations())
+      return nameOperations(sourceFilter.nameOperations)
+          .valueUntypedOperations(sourceFilter.valueOperations)
+          .scopeKeyOperations(sourceFilter.scopeKeyOperations())
           .processInstanceKeyOperations(sourceFilter.processInstanceKeyOperations())
           .variableKeyOperations(sourceFilter.variableKeyOperations())
           .tenantIds(sourceFilter.tenantIds())
@@ -137,7 +157,8 @@ public record VariableFilter(
     @Override
     public VariableFilter build() {
       return new VariableFilter(
-          Objects.requireNonNullElseGet(variableOperations, Collections::emptyMap),
+          Objects.requireNonNullElseGet(nameOperations, Collections::emptyList),
+          Objects.requireNonNullElseGet(valueOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(scopeKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(processInstanceKeyOperations, Collections::emptyList),
           Objects.requireNonNullElseGet(variableKeyOperations, Collections::emptyList),

@@ -1,31 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="4319cff" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0" camunda:diagramRelationId="1414ef84-eb93-47ca-9c7f-43f3356aa550">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.30.0-nightly.20241111" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0" camunda:diagramRelationId="1414ef84-eb93-47ca-9c7f-43f3356aa550">
   <bpmn:process id="Number_Task" name="Number Task" isExecutable="true">
-    <bpmn:extensionElements>
-      <zeebe:userTaskForm id="userTaskForm_3fcn11m">{
-  "components": [
-    {
-      "label": "Number",
-      "type": "number",
-      "layout": {
-        "row": "Row_19tsbk6",
-        "columns": null
-      },
-      "id": "Field_13msghy",
-      "key": "field_1nmvdj2"
-    }
-  ],
-  "schemaVersion": 9,
-  "exporter": {
-    "name": "Camunda Web Modeler",
-    "version": "a15e467"
-  },
-  "type": "default",
-  "id": "Form_0ihs7sn",
-  "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.3.0"
-}</zeebe:userTaskForm>
-    </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_02yuo0k</bpmn:outgoing>
     </bpmn:startEvent>
@@ -36,7 +11,8 @@
     <bpmn:sequenceFlow id="Flow_0mcil84" sourceRef="Activity_1mx5rn7" targetRef="Event_0tu9rci" />
     <bpmn:userTask id="Activity_1mx5rn7" name="UserTask_Number">
       <bpmn:extensionElements>
-        <zeebe:formDefinition formKey="camunda-forms:bpmn:userTaskForm_3fcn11m" />
+        <zeebe:formDefinition formId="form_with_number" />
+        <zeebe:userTask />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_02yuo0k</bpmn:incoming>
       <bpmn:outgoing>Flow_0mcil84</bpmn:outgoing>

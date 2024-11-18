@@ -14,9 +14,7 @@ import static org.junit.Assert.assertTrue;
 
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.MigrationRepositoryIndex;
 import io.camunda.operate.schema.indices.OperateWebSessionIndex;
-import io.camunda.operate.schema.migration.ProcessorStep;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -110,26 +108,6 @@ public class SchemaCreationIT extends OperateSearchAbstractIT {
         testSearchRepository.getIndexSettings(eventTemplate.getFullQualifiedName());
     assertEquals(Integer.valueOf(1), settings.shards());
     assertEquals(Integer.valueOf(0), settings.replicas());
-  }
-
-  @Test // OPE-1310
-  public void testMigrationStepsRepositoryFields() throws IOException {
-    final IndexDescriptor migrationStepsIndexDescriptor =
-        getIndexDescriptorBy(MigrationRepositoryIndex.INDEX_NAME);
-    assertThat(migrationStepsIndexDescriptor.getVersion()).isEqualTo("1.1.0");
-    assertThat(
-            testSearchRepository.getFieldNames(
-                migrationStepsIndexDescriptor.getFullQualifiedName()))
-        .containsExactlyInAnyOrder(
-            ProcessorStep.VERSION,
-            "@type",
-            "description",
-            ProcessorStep.APPLIED,
-            ProcessorStep.APPLIED_DATE,
-            ProcessorStep.CREATED_DATE,
-            ProcessorStep.CONTENT,
-            ProcessorStep.INDEX_NAME,
-            ProcessorStep.ORDER);
   }
 
   @Test // OPE-1308

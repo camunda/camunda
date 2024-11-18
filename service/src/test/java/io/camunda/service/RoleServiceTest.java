@@ -8,19 +8,16 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.service.RoleServices.RoleDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
@@ -28,7 +25,6 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import java.util.List;
-import java.util.Set;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -83,10 +79,10 @@ public class RoleServiceTest {
     when(client.searchRoles(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getByRoleKey(1L);
+    final var searchQueryResult = services.findRole(1L);
 
     // then
-    assertThat(searchQueryResult).isEqualTo(entity);
+    assertThat(searchQueryResult).contains(entity);
   }
 
   @Test
@@ -96,25 +92,24 @@ public class RoleServiceTest {
     when(client.searchRoles(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
 
     // when / then
-    final var exception =
-        assertThrowsExactly(NotFoundException.class, () -> services.getByRoleKey(key));
-    assertThat(exception.getMessage()).isEqualTo("Role with roleKey 100 not found");
+    assertThat(services.findRole(key)).isEmpty();
   }
 
   @Test
   public void shouldUpdateName() {
     // given
-    final var roleDTO = new RoleDTO(100, "UpdatedName", Set.of());
+    final var roleKey = 100L;
+    final var name = "UpdatedName";
 
     // when
-    services.updateRole(roleDTO);
+    services.updateRole(roleKey, name);
 
     // then
     final BrokerRoleUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(RoleIntent.UPDATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.ROLE);
-    assertThat(request.getKey()).isEqualTo(roleDTO.roleKey());
+    assertThat(request.getKey()).isEqualTo(roleKey);
     final RoleRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getName()).isEqualTo(roleDTO.name());
+    assertThat(brokerRequestValue.getName()).isEqualTo(name);
   }
 }

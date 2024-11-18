@@ -16,8 +16,11 @@
 package io.camunda.zeebe.client.impl.util;
 
 import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
+import java.time.OffsetDateTime;
 
 public class FilterUtil {
 
@@ -36,6 +39,18 @@ public class FilterUtil {
   public static IntegerFilterProperty integerFilterProperty(final Integer value) {
     final IntegerFilterProperty filter = new IntegerFilterProperty();
     filter.$eq(value);
+    return filter;
+  }
+
+  public static StringFilterProperty stringFilterProperty(final String value) {
+    final StringFilterProperty filter = new StringFilterProperty();
+    filter.$eq(value);
+    return filter;
+  }
+
+  public static DateTimeFilterProperty dateTimeFilterProperty(final OffsetDateTime value) {
+    final DateTimeFilterProperty filter = new DateTimeFilterProperty();
+    filter.$eq(value.toString());
     return filter;
   }
 }

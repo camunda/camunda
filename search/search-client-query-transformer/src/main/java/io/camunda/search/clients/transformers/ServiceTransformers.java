@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.filter.AuthorizationFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ComparableValueFilterTransformer;
 import io.camunda.search.clients.transformers.filter.DateValueFilterTransformer;
@@ -25,12 +26,11 @@ import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserTaskFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableFilterTransformer;
 import io.camunda.search.clients.transformers.filter.VariableValueFilterTransformer;
-import io.camunda.search.clients.transformers.query.SearchQueryResultTransformer;
 import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.ProcessInstanceResultConfigTransformer;
-import io.camunda.search.clients.transformers.sort.FieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.DecisionInstanceFieldSortingTransformer;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.ComparableValueFilter;
 import io.camunda.search.filter.DateValueFilter;
@@ -56,7 +56,6 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
@@ -64,8 +63,10 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
 import io.camunda.search.result.ProcessInstanceQueryResultConfig;
+import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.SortOption;
+import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -118,11 +119,12 @@ public final class ServiceTransformers {
         FlowNodeInstanceQuery.class,
         new TypedSearchQueryTransformer<FlowNodeInstanceFilter, FlowNodeInstanceSort>(mappers));
     mappers.put(ProcessDefinitionQuery.class, new TypedSearchQueryTransformer<>(mappers));
-    // search query response -> search query result
-    mappers.put(SearchQueryResult.class, new SearchQueryResultTransformer());
 
-    // sorting -> search sort options
-    mappers.put(FieldSortingTransformer.class, new FieldSortingTransformer());
+    // document entity -> domain entity
+    mappers.put(DecisionInstanceEntity.class, new DecisionInstanceEntityTransformer());
+
+    // domain field sorting -> database field sorting
+    mappers.put(DecisionInstanceSort.class, new DecisionInstanceFieldSortingTransformer());
 
     // filters -> search query
     mappers.put(ProcessInstanceFilter.class, new ProcessInstanceFilterTransformer());

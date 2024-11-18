@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
@@ -48,7 +49,20 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getAssignee()).isEqualTo("demo");
+    assertThat(request.getFilter().getAssignee().get$Eq()).isEqualTo("demo");
+  }
+
+  @Test
+  void shouldSearchUserTaskByAssigneeStringFilter() {
+    // when
+    final StringFilterProperty filterProperty = new StringFilterProperty();
+    filterProperty.$neq("that");
+    client.newUserTaskQuery().filter(f -> f.assignee(filterProperty)).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getAssignee().get$Neq()).isEqualTo("that");
   }
 
   @Test
@@ -92,7 +106,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getCandidateGroup()).isEqualTo("group1");
+    assertThat(request.getFilter().getCandidateGroup().get$Eq()).isEqualTo("group1");
   }
 
   @Test
@@ -103,7 +117,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getCandidateUser()).isEqualTo("user1");
+    assertThat(request.getFilter().getCandidateUser().get$Eq()).isEqualTo("user1");
   }
 
   @Test

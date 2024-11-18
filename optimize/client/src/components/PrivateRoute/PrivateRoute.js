@@ -10,7 +10,7 @@ import React, {useEffect} from 'react';
 import {Route} from 'react-router-dom';
 import {addHandler, removeHandler} from 'request';
 
-import {Header, Footer} from '..';
+import {Header} from '..';
 
 import './PrivateRoute.scss';
 
@@ -43,7 +43,6 @@ export function PrivateRoute({component: Component, ...rest}) {
                 {rest.render ? rest.render(props) : <Component {...props} />}
               </div>
             </main>
-            <Footer />
           </>
         );
       }}

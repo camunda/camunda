@@ -40,6 +40,7 @@ tags:
   - name: Process definition
   - name: Process instance
   - name: Resource
+  - name: Role
   - name: Signal
   - name: User
   - name: User task
@@ -1701,7 +1702,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /decision-instances/{decisionInstanceKey}:
+  /decision-instances/{decisionInstanceId}:
     get:
       tags:
         - Decision instance
@@ -1716,13 +1717,12 @@ paths:
         This endpoint is an alpha feature and may be subject to change
         in future releases.
       parameters:
-        - name: decisionInstanceKey
+        - name: decisionInstanceId
           in: path
           required: true
-          description: The assigned key of the decision instance, which acts as a unique identifier for this decision instance.
+          description: The assigned ID of the decision instance, which acts as a unique identifier for this decision instance.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "200":
           description: >
@@ -1741,7 +1741,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
           description: >
-            The decision instance with the given key was not found.
+            The decision instance with the given ID was not found.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -1895,6 +1895,183 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /roles:
+    post:
+      tags:
+        - Role
+      operationId: createRole
+      summary: Create role
+      description: |
+        Create a new role
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleCreateRequest"
+      responses:
+        "202":
+          description: |
+            The role was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleCreateResponse"
+        "400":
+          description: |
+            The role could not be created.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: |
+            The request to create a role was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /roles/{roleKey}:
+    get:
+      tags:
+        - Role
+      operationId: getRole
+      summary: Get role
+      description: |
+        Get a role by its key
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The role key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The role is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The role with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    patch:
+      tags:
+        - Role
+      operationId: updateRole
+      summary: Update role
+      description: Update a role with the given key.
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The key of the role to update.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleUpdateRequest"
+      responses:
+        "204":
+          description: The role was updated successfully.
+        "400":
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The role with the roleKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Role
+      operationId: deleteRole
+      summary: Delete role
+      description: Deletes the role with the given key.
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The key of the role to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The role was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The role with the roleKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /roles/search:
+    post:
+      tags:
+        - Role
+      operationId: searchRoles
+      summary: Query roles
+      description: |
+        Search for roles based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleSearchQueryRequest"
+      responses:
+        "200":
+          description: The roles search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleSearchQueryResponse"
+        "400":
+          description: >
+            The role search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /messages/publication:
     post:
       tags:
@@ -2604,8 +2781,9 @@ components:
             - CANCELED
             - FAILED
         assignee:
-          type: string
           description: The assignee of the user task.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         priority:
           description: The priority of the user task.
           allOf:
@@ -2614,11 +2792,13 @@ components:
           type: string
           description: The element ID of the user task.
         candidateGroup:
-          type: string
           description: The candidate group for this user task.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         candidateUser:
-          type: string
           description: The candidate user for this user task.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionKey:
           type: integer
           description: The key of the process definition.
@@ -2747,14 +2927,16 @@ components:
       properties:
         variableKey:
           description: The key for this variable.
-          type: integer
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         name:
           description: Name of the variable.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         value:
           description: The value of the variable.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         scopeKey:
           description: The key of the scope of this variable.
           allOf:
@@ -2975,6 +3157,91 @@ components:
               description: Lower than or equal comparison with the provided value.
               type: integer
               format: int64
+    AdvancedStringFilter:
+      description: Advanced string filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: string
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: string
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: string
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+            Supported wildcard characters depend on the configured search client.
+          type: string
+    AdvancedProcessInstanceStateFilter:
+      description: Advanced ProcessInstanceStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+            Supported wildcard characters depend on the configured search client.
+          type: string
+    AdvancedDateTimeFilter:
+      description: Advanced date-time filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: string
+          format: date-time
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: string
+          format: date-time
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: string
+          format: date-time
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: string
+          format: date-time
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: string
+          format: date-time
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: string
+          format: date-time
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: string
+            format: date-time
     BasicLongFilterProperty:
       description: Long property with basic advanced search capabilities.
       type: object
@@ -2989,6 +3256,25 @@ components:
         - type: integer
           format: int64
         - $ref: "#/components/schemas/AdvancedLongFilter"
+    StringFilterProperty:
+      description: String property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+        - $ref: "#/components/schemas/AdvancedStringFilter"
+    ProcessInstanceStateFilterProperty:
+      description: ProcessInstanceStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        - $ref: "#/components/schemas/AdvancedProcessInstanceStateFilter"
+    DateTimeFilterProperty:
+      description: Date-time property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          format: date-time
+        - $ref: "#/components/schemas/AdvancedDateTimeFilter"
     ProcessInstanceFilterRequest:
       description: Process instance search filter.
       type: object
@@ -2998,18 +3284,21 @@ components:
           allOf:
             - $ref: "#/components/schemas/LongFilterProperty"
         processDefinitionId:
-          type: string
           description: The process definition ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionName:
-          type: string
           description: The process definition name.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionVersion:
           description: The process definition version.
           allOf:
             - $ref: "#/components/schemas/IntegerFilterProperty"
         processDefinitionVersionTag:
-          type: string
           description: The process definition version tag.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionKey:
           description: The process definition key.
           allOf:
@@ -3023,24 +3312,28 @@ components:
           allOf:
             - $ref: "#/components/schemas/LongFilterProperty"
         treePath:
-          type: string
           description: The path of keys to this process instance, separated by '/'.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         startDate:
-          type: string
           description: The start date.
-          format: date-time
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         endDate:
-          type: string
           description: The end date.
-          format: date-time
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         state:
-          $ref: "#/components/schemas/ProcessInstanceStateEnum"
+          description: The process instance state.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateFilterProperty"
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
         tenantId:
-          type: string
           description: The tenant ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
@@ -3569,10 +3862,14 @@ components:
       description: Specifies the type of permissions.
       enum:
         - CREATE
+        - CREATE_PROCESS_INSTANCE
+        - CREATE_DECISION_INSTANCE
         - READ
-        - READ_INSTANCE
+        - READ_PROCESS_INSTANCE
         - READ_USER_TASK
         - UPDATE
+        - UPDATE_PROCESS_INSTANCE
+        - UPDATE_USER_TASK
         - DELETE
         - DELETE_PROCESS
         - DELETE_DRD
@@ -3745,6 +4042,64 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserResponse"
+    RoleCreateRequest:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: The display name of the new role
+    RoleCreateResponse:
+      type: "object"
+      properties:
+        roleKey:
+          description: The key of the created role
+          type: "integer"
+          format: "int64"
+    RoleUpdateRequest:
+      type: object
+      properties:
+        changeset:
+          $ref: "#/components/schemas/RoleChangeset"
+      required:
+        - changeset
+    RoleChangeset:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The updated display name of the role.
+    RoleItem:
+      description: Role search response item.
+      type: object
+      properties:
+        key:
+          type: integer
+          description: The role key.
+          format: int64
+        name:
+          type: string
+          description: The role name.
+        assignedMemberKeys:
+          type: array
+          description: The set of keys of members assigned to the role.
+          items:
+            type: integer
+            format: int64
+    RoleSearchQueryRequest:
+      description: Role search request.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+    RoleSearchQueryResponse:
+      description: Role search response.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleItem"
     TopologyResponse:
       description: The response of a topology request.
       type: object
@@ -4125,9 +4480,10 @@ components:
       properties:
         denied:
           type: boolean
-          description: Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. >
-            For example, a Task Listener can deny the completion of a task by setting this flag to true. >
-            In this example, the completion of a task is represented by a job that the worker can complete as denied. >
+          description: >
+            Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
+            For example, a Task Listener can deny the completion of a task by setting this flag to true.
+            In this example, the completion of a task is represented by a job that the worker can complete as denied.
             As a result, the completion request is rejected and the task remains active.
             Defaults to false.
           nullable: true
@@ -4486,16 +4842,20 @@ components:
         decisionInstanceKey:
           type: integer
           format: int64
-          description: The key of the decision instance.
+          description: |
+            The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+        decisionInstanceId:
+          type: string
+          description: The ID of the decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
         evaluationDate:
-          type: string
           description: The evaluation date of the decision instance.
-          format: date-time
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         processDefinitionKey:
           type: integer
           format: int64
@@ -4539,7 +4899,10 @@ components:
         decisionInstanceKey:
           type: integer
           format: int64
-          description: The key of the decision instance.
+          description: The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+        decisionInstanceId:
+          type: string
+          description: The ID of the decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationDate:

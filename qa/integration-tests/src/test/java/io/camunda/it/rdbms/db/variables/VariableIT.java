@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.VariableFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.VariableQuery;
@@ -39,7 +40,7 @@ public class VariableIT {
         testApplication.getRdbmsService().getVariableReader().findOne(randomizedVariable.key());
 
     assertThat(instance).isNotNull();
-    assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedVariable);
+    assertVariableDbModelEqualToEntity(randomizedVariable, instance);
     assertThat(instance.fullValue()).isNull();
     assertThat(instance.isPreview()).isFalse();
   }
@@ -56,7 +57,7 @@ public class VariableIT {
     final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.key());
 
     assertThat(instance).isNotNull();
-    assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedVariable);
+    assertVariableDbModelEqualToEntity(randomizedVariable, instance);
     assertThat(instance.fullValue()).isEqualTo(bigValue);
     assertThat(instance.isPreview()).isTrue();
   }
@@ -87,7 +88,7 @@ public class VariableIT {
     final var instance = searchResult.hits().getFirst();
 
     assertThat(instance).isNotNull();
-    assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedVariable);
+    assertVariableDbModelEqualToEntity(randomizedVariable, instance);
   }
 
   @TestTemplate
@@ -102,7 +103,7 @@ public class VariableIT {
             .getVariableReader()
             .search(
                 new VariableQuery(
-                    new VariableFilter.Builder().variable(varName).build(),
+                    new VariableFilter.Builder().names(varName).build(),
                     VariableSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
@@ -124,7 +125,7 @@ public class VariableIT {
             .getVariableReader()
             .search(
                 new VariableQuery(
-                    new VariableFilter.Builder().variable(varName).build(),
+                    new VariableFilter.Builder().names(varName).build(),
                     VariableSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(null).size(null))));
 
@@ -150,7 +151,7 @@ public class VariableIT {
                 new VariableFilter.Builder()
                     .variableKeys(randomizedVariable.key())
                     .processInstanceKeys(randomizedVariable.processInstanceKey())
-                    .variable(varName)
+                    .names(varName)
                     .tenantIds(randomizedVariable.tenantId())
                     .build(),
                 VariableSort.of(b -> b),
@@ -159,5 +160,13 @@ public class VariableIT {
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hits()).hasSize(1);
     assertThat(searchResult.hits().getFirst().key()).isEqualTo(randomizedVariable.key());
+  }
+
+  private void assertVariableDbModelEqualToEntity(VariableDbModel dbModel, VariableEntity entity) {
+    assertThat(entity)
+        .usingRecursiveComparison()
+        .ignoringFields("bpmnProcessId", "processDefinitionId")
+        .isEqualTo(dbModel);
+    assertThat(entity.bpmnProcessId()).isEqualTo(dbModel.processDefinitionId());
   }
 }

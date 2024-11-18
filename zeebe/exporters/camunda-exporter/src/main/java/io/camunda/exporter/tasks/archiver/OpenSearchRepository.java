@@ -144,6 +144,11 @@ public final class OpenSearchRepository implements ArchiverRepository {
   }
 
   @Override
+  public CompletableFuture<Void> setLifeCycleToAllIndexes() {
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
   public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
@@ -207,9 +212,12 @@ public final class OpenSearchRepository implements ArchiverRepository {
   }
 
   private ArchiveBatch createArchiveBatch(final SearchResponse<?> search) {
-    final List<DateHistogramBucket> buckets =
-        search.aggregations().get(DATES_AGG).dateHistogram().buckets().array();
+    final var aggregation = search.aggregations().get(DATES_AGG);
+    if (aggregation == null) {
+      return null;
+    }
 
+    final List<DateHistogramBucket> buckets = aggregation.dateHistogram().buckets().array();
     if (buckets.isEmpty()) {
       return null;
     }
