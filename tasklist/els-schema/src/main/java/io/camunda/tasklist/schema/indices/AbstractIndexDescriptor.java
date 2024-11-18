@@ -74,7 +74,7 @@ public abstract class AbstractIndexDescriptor implements IndexDescriptor {
         ALL_VERSIONS_INDEX_NAME_PATTERN, formatIndexPrefix(prefix), TASK_LIST, index);
   }
 
-  private String getIndexPrefix() {
+  protected String getIndexPrefix() {
     return ELASTIC_SEARCH.equals(tasklistProperties.getDatabase())
         ? tasklistProperties.getElasticsearch().getIndexPrefix()
         : tasklistProperties.getOpenSearch().getIndexPrefix();

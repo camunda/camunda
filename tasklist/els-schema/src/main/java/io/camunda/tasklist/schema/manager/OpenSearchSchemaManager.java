@@ -19,7 +19,10 @@ import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import io.camunda.tasklist.schema.templates.AbstractTemplateDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
@@ -33,6 +36,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.http.util.EntityUtils;
@@ -80,9 +84,15 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Qualifier("tasklistOsRestClient")
   private RestClient opensearchRestClient;
 
-  @Autowired private List<TemplateDescriptor> templateDescriptors;
+  @Autowired private List<AbstractIndexDescriptor> tasklistIndexDescriptors;
 
-  @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
+  @Autowired(required = false)
+  private List<TasklistIndexDescriptor> commonIndexDescriptors;
+
+  @Autowired private List<TemplateDescriptor> tasklistTemplateDescriptors;
+
+  @Autowired(required = false)
+  private List<TasklistTemplateDescriptor> commonTemplateDescriptors;
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -376,7 +386,57 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private void createTemplates() {
-    templateDescriptors.forEach(this::createTemplate);
+    tasklistTemplateDescriptors.forEach(this::createTemplate);
+    // Note: While migrating the entities and index descriptors
+    // to the harmonized webapps-schema module, this intermediate
+    // HACK is required to ensure that the necessary templates are
+    // created so that the integration tests can run.
+    // Once all entities and index descriptors have been moved,
+    // this code snippet will be deleted and adjusted as necessary!
+    Optional.ofNullable(commonTemplateDescriptors)
+        .ifPresent(
+            l ->
+                l.stream()
+                    .map(
+                        t ->
+                            new AbstractTemplateDescriptor() {
+
+                              @Override
+                              public String getSchemaClasspathFilename() {
+                                return t.getMappingsClasspathFilename();
+                              }
+
+                              @Override
+                              protected String getIndexPrefix() {
+                                return tasklistProperties.getOpenSearch().getIndexPrefix();
+                              }
+
+                              @Override
+                              public String getIndexName() {
+                                return t.getIndexName();
+                              }
+
+                              @Override
+                              public String getAlias() {
+                                return t.getAlias();
+                              }
+
+                              @Override
+                              public String getTemplateName() {
+                                return t.getTemplateName();
+                              }
+
+                              @Override
+                              public String getIndexPattern() {
+                                return t.getIndexPattern();
+                              }
+
+                              @Override
+                              public String getVersion() {
+                                return t.getVersion();
+                              }
+                            })
+                    .forEach(this::createTemplate));
   }
 
   private void createTemplate(final TemplateDescriptor templateDescriptor) {
@@ -452,7 +512,52 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private void createIndices() {
-    indexDescriptors.forEach(this::createIndex);
+    tasklistIndexDescriptors.forEach(this::createIndex);
+    // Note: While migrating the entities and index descriptors
+    // to the harmonized webapps-schema module, this intermediate
+    // HACK is required to ensure that the necessary templates are
+    // created so that the integration tests can run.
+    // Once all entities and index descriptors have been moved,
+    // this code snippet will be deleted and adjusted as necessary!
+    Optional.ofNullable(commonIndexDescriptors)
+        .ifPresent(
+            l ->
+                l.stream()
+                    .map(
+                        i ->
+                            new AbstractIndexDescriptor() {
+
+                              @Override
+                              public String getIndexName() {
+                                return i.getIndexName();
+                              }
+
+                              @Override
+                              public String getAlias() {
+                                return i.getAlias();
+                              }
+
+                              @Override
+                              public String getFullQualifiedName() {
+                                return i.getFullQualifiedName();
+                              }
+
+                              @Override
+                              public String getSchemaClasspathFilename() {
+                                return i.getMappingsClasspathFilename();
+                              }
+
+                              @Override
+                              protected String getIndexPrefix() {
+                                return tasklistProperties.getOpenSearch().getIndexPrefix();
+                              }
+
+                              @Override
+                              public String getVersion() {
+                                return i.getVersion();
+                              }
+                            })
+                    .forEach(this::createIndex));
   }
 
   private IndexSettings templateSettings(final TemplateDescriptor indexDescriptor) {
