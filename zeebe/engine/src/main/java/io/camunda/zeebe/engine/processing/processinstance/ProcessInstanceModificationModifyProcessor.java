@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 import static java.util.function.Predicate.not;
 
-import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
@@ -208,13 +207,13 @@ public final class ProcessInstanceModificationModifyProcessor
       return;
     }
 
-    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
-        .isAuthorized(processInstance.getValue().getTenantId())) {
-      final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
-      return;
-    }
+//    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
+//        .isAuthorized(processInstance.getValue().getTenantId())) {
+//      final String reason = String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, eventKey);
+//      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, reason);
+//      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, reason);
+//      return;
+//    }
 
     final var processInstanceRecord = processInstance.getValue();
     final var process =

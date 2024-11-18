@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
-import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -81,13 +80,13 @@ public final class VariableDocumentUpdateProcessor
       return;
     }
 
-    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(record.getAuthorizations())
-        .isAuthorized(scope.getValue().getTenantId())) {
-      final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
-      writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
-      return;
-    }
+//    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(record.getAuthorizations())
+//        .isAuthorized(scope.getValue().getTenantId())) {
+//      final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
+//      writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
+//      writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
+//      return;
+//    }
 
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();

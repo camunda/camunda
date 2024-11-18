@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.processinstance;
 
-import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableBoundaryEvent;
@@ -200,14 +199,14 @@ public final class ProcessInstanceMigrationPreconditions {
       final Map<String, Object> authorizations,
       final String tenantId,
       final long processInstanceKey) {
-    final boolean isTenantAuthorized =
-        TenantAuthorizationCheckerImpl.fromAuthorizationMap(authorizations).isAuthorized(tenantId);
-    if (!isTenantAuthorized) {
-      final String reason =
-          String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, processInstanceKey);
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.NOT_FOUND);
-    }
+//    final boolean isTenantAuthorized =
+//        TenantAuthorizationCheckerImpl.fromAuthorizationMap(authorizations).isAuthorized(tenantId);
+//    if (!isTenantAuthorized) {
+//      final String reason =
+//          String.format(ERROR_MESSAGE_PROCESS_INSTANCE_NOT_FOUND, processInstanceKey);
+//      throw new ProcessInstanceMigrationPreconditionFailedException(
+//          reason, RejectionType.NOT_FOUND);
+//    }
   }
 
   /**

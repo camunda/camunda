@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
-import io.camunda.zeebe.auth.impl.TenantAuthorizationCheckerImpl;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
@@ -108,18 +107,18 @@ public final class ProcessInstanceCancelProcessor
       return false;
     }
 
-    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
-        .isAuthorized(elementInstance.getValue().getTenantId())) {
-      rejectionWriter.appendRejection(
-          command,
-          RejectionType.NOT_FOUND,
-          String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
-      responseWriter.writeRejectionOnCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
-      return false;
-    }
+//    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(command.getAuthorizations())
+//        .isAuthorized(elementInstance.getValue().getTenantId())) {
+//      rejectionWriter.appendRejection(
+//          command,
+//          RejectionType.NOT_FOUND,
+//          String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
+//      responseWriter.writeRejectionOnCommand(
+//          command,
+//          RejectionType.NOT_FOUND,
+//          String.format(PROCESS_NOT_FOUND_MESSAGE, command.getKey()));
+//      return false;
+//    }
 
     final var parentProcessInstanceKey = elementInstance.getValue().getParentProcessInstanceKey();
     if (parentProcessInstanceKey > 0) {
