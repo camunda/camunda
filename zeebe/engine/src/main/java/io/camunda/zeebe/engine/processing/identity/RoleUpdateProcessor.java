@@ -79,7 +79,7 @@ public class RoleUpdateProcessor implements DistributedTypedRecordProcessor<Role
       return;
     }
 
-    if (updatedName.equals(persistedRecord.get().getName())) {
+    if (roleState.getRoleKeyByName(updatedName).isPresent()) {
       final var errorMessage =
           "Expected to update role with name '%s', but a role with this name already exists."
               .formatted(updatedName);

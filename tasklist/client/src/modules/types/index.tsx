@@ -145,6 +145,8 @@ type TasksSearchBody = {
 type License = {
   validLicense: boolean;
   licenseType: string;
+  isCommercial: boolean;
+  expiresAt: string | null;
 };
 
 export type {

@@ -2,22 +2,12 @@
 
 exports[`should accept a custom name formatter 1`] = `
 <ForwardRef>
-  <ForwardRef(Stack)
-    gap={4}
-  >
-    <p>
-      The 'cool name' Report will be permanently deleted.
-    </p>
-    <p>
-      <b>
-        Warning: This action cannot be undone.
-      </b>
-    </p>
-  </ForwardRef(Stack)>
+  <p>
+    The 'cool name' Report will be permanently deleted.
+  </p>
+  <p />
 </ForwardRef>
 `;
-
-exports[`should not render anything when no entity is set 1`] = `""`;
 
 exports[`should show the confirmation modal when entity is set 1`] = `
 <Modal
@@ -29,18 +19,10 @@ exports[`should show the confirmation modal when entity is set 1`] = `
     title="Delete Report"
   />
   <ForwardRef>
-    <ForwardRef(Stack)
-      gap={4}
-    >
-      <p>
-        The 'Doomed Report' Report will be permanently deleted.
-      </p>
-      <p>
-        <b>
-          Warning: This action cannot be undone.
-        </b>
-      </p>
-    </ForwardRef(Stack)>
+    <p>
+      The 'Doomed Report' Report will be permanently deleted.
+    </p>
+    <p />
   </ForwardRef>
   <ForwardRef(ModalFooter)>
     <Button
@@ -73,18 +55,10 @@ exports[`should use provided delete text for title and button 1`] = `
     title="Remove entity"
   />
   <ForwardRef>
-    <ForwardRef(Stack)
-      gap={4}
-    >
-      <p>
-        The 'Doomed Report' Report will be permanently deleted.
-      </p>
-      <p>
-        <b>
-          Warning: This action cannot be undone.
-        </b>
-      </p>
-    </ForwardRef(Stack)>
+    <p>
+      The 'Doomed Report' Report will be permanently deleted.
+    </p>
+    <p />
   </ForwardRef>
   <ForwardRef(ModalFooter)>
     <Button

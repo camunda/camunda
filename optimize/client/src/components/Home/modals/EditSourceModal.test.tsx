@@ -17,7 +17,6 @@ import {getDefinitionTenants} from './service';
 
 jest.mock('./service', () => ({getDefinitionTenants: jest.fn()}));
 jest.mock('hooks', () => ({
-  ...jest.requireActual('hooks'),
   useErrorHandling: () => ({
     mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   }),

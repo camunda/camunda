@@ -95,7 +95,9 @@ public class DecisionEvaluationEvaluateAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.DECISION_DEFINITION, PermissionTypeEnum.CREATE, List.of(DECISION_ID)));
+            ResourceTypeEnum.DECISION_DEFINITION,
+            PermissionTypeEnum.CREATE_DECISION_INSTANCE,
+            List.of(DECISION_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when
@@ -134,7 +136,7 @@ public class DecisionEvaluationEvaluateAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'CREATE' on resource 'DECISION_DEFINITION' with decision id '%s'",
+              "Unauthorized to perform operation 'CREATE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION' with decision id '%s'",
               DECISION_ID);
     }
   }

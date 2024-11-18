@@ -10,11 +10,17 @@ package io.camunda.zeebe.broker.utils;
 import io.atomix.utils.concurrent.Scheduled;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public class InlineThreadContext implements ThreadContext {
 
   @Override
   public void checkThread() {}
+
+  @Override
+  public Scheduled schedule(final long delay, final TimeUnit timeUnit, final Runnable callback) {
+    throw new UnsupportedOperationException("schedule");
+  }
 
   @Override
   public Scheduled schedule(

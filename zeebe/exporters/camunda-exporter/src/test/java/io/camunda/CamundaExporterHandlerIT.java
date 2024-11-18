@@ -31,6 +31,7 @@ import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
+import io.camunda.exporter.handlers.GroupDeletedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
@@ -448,6 +449,15 @@ public class CamundaExporterHandlerIT {
     final var handler = getHandler(config, GroupCreatedUpdatedHandler.class);
     basicAssertWhereHandlerCreatesDefaultEntity(
         handler, config, clientAdapter, groupRecordGenerator(handler, GroupIntent.UPDATED));
+  }
+
+  @TestTemplate
+  void shouldExportUsingGroupDeleteHandler(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    final var handler = getHandler(config, GroupDeletedHandler.class);
+    basicAssertWhereHandlerDeletesDefaultEntity(
+        handler, config, clientAdapter, groupRecordGenerator(handler, GroupIntent.DELETED));
   }
 
   @SuppressWarnings("unchecked")

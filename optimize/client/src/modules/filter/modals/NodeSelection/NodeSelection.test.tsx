@@ -19,7 +19,6 @@ import FilterSingleDefinitionSelection from '../FilterSingleDefinitionSelection'
 import NodeSelection from './NodeSelection';
 
 jest.mock('hooks', () => ({
-  ...jest.requireActual('hooks'),
   useErrorHandling: () => ({
     mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   }),
