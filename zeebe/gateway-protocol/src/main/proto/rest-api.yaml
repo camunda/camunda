@@ -5019,7 +5019,7 @@ components:
       type: object
       properties:
         from:
-          description: The index to start searching from.
+          description: The index of items to start searching from.
           type: integer
           format: int32
         limit:
