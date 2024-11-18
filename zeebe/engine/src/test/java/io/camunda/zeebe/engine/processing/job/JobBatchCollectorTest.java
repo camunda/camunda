@@ -59,8 +59,7 @@ final class JobBatchCollectorTest {
   @BeforeEach
   void beforeEach() {
     final var authorizationCheckBehavior =
-        new AuthorizationCheckBehavior(
-            state.getAuthorizationState(), state.getUserState(), new EngineConfiguration());
+        new AuthorizationCheckBehavior(state, new EngineConfiguration());
     collector = new JobBatchCollector(state, lengthEvaluator, authorizationCheckBehavior);
   }
 

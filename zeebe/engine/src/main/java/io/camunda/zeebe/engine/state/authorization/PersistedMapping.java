@@ -40,6 +40,17 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
         .declareProperty(groupKeysProp);
   }
 
+  public PersistedMapping copy() {
+    final PersistedMapping copy = new PersistedMapping();
+    copy.setMappingKey(getMappingKey())
+        .setClaimName(getClaimName())
+        .setClaimValue(getClaimValue())
+        .setRoleKeysList(getRoleKeysList())
+        .setTenantKeysList(getTenantKeysList())
+        .setGroupKeysList(getGroupKeysList());
+    return copy;
+  }
+
   public long getMappingKey() {
     return mappingKeyProp.getValue();
   }

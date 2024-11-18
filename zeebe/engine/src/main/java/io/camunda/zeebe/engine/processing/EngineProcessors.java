@@ -110,9 +110,7 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
-    final var authCheckBehavior =
-        new AuthorizationCheckBehavior(
-            processingState.getAuthorizationState(), processingState.getUserState(), config);
+    final var authCheckBehavior = new AuthorizationCheckBehavior(processingState, config);
 
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(

@@ -38,9 +38,7 @@ public class AuthorizationCheckBehaviorTest {
     final var processingState = engine.getProcessingState();
     authorizationCheckBehavior =
         new AuthorizationCheckBehavior(
-            processingState.getAuthorizationState(),
-            processingState.getUserState(),
-            new EngineConfiguration().setEnableAuthorization(true));
+            processingState, new EngineConfiguration().setEnableAuthorization(true));
   }
 
   @Test

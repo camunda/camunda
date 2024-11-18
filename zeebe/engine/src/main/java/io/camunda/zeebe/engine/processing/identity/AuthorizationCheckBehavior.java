@@ -7,9 +7,14 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.USER_TOKEN_CLAIM_PREFIX;
+
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.state.authorization.PersistedMapping;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.state.immutable.MappingState;
+import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -32,14 +37,14 @@ public final class AuthorizationCheckBehavior {
   public static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
   private final UserState userState;
+  private final MappingState mappingState;
   private final EngineConfiguration engineConfig;
 
   public AuthorizationCheckBehavior(
-      final AuthorizationState authorizationState,
-      final UserState userState,
-      final EngineConfiguration engineConfig) {
-    this.authorizationState = authorizationState;
-    this.userState = userState;
+      final ProcessingState processingState, final EngineConfiguration engineConfig) {
+    authorizationState = processingState.getAuthorizationState();
+    userState = processingState.getUserState();
+    mappingState = processingState.getMappingState();
     this.engineConfig = engineConfig;
   }
 
@@ -64,13 +69,16 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
-    Set<String> authorizedResourceIdentifiers = new HashSet<>();
+    final Set<String> authorizedResourceIdentifiers;
 
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
       authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
               userKey.get(), request.getResourceType(), request.getPermissionType());
+    } else {
+      // If there's no user key, it must be a user provided JWT
+      authorizedResourceIdentifiers = getMappingsAuthorizedResourceIdentifiers(request);
     }
 
     // Check if authorizations contain a resource identifier that matches the required resource
@@ -78,7 +86,7 @@ public final class AuthorizationCheckBehavior {
     return hasRequiredPermission(request.getResourceIds(), authorizedResourceIdentifiers);
   }
 
-  private static Optional<Long> getUserKey(final AuthorizationRequest request) {
+  private Optional<Long> getUserKey(final AuthorizationRequest request) {
     return Optional.ofNullable(
         (Long) request.getCommand().getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
   }
@@ -150,6 +158,60 @@ public final class AuthorizationCheckBehavior {
                 authorizationState
                     .getResourceIdentifiers(roleKey, resourceType, permissionType)
                     .stream())
+        .collect(Collectors.toSet());
+  }
+
+  private List<PersistedMapping> getMappings(final AuthorizationRequest request) {
+    return request.getCommand().getAuthorizations().entrySet().stream()
+        .filter(entry -> entry.getKey().startsWith(USER_TOKEN_CLAIM_PREFIX))
+        .flatMap(
+            entry -> {
+              final var claimNameWithoutPrefix =
+                  entry.getKey().substring(USER_TOKEN_CLAIM_PREFIX.length());
+
+              final var entryValue = entry.getValue();
+              if (entryValue instanceof final List<?> claimValues) {
+                return claimValues.stream()
+                    .flatMap(
+                        claimValue ->
+                            mappingState
+                                .get(claimNameWithoutPrefix, claimValue.toString())
+                                .stream());
+              } else {
+                return mappingState.get(claimNameWithoutPrefix, entryValue.toString()).stream();
+              }
+            })
+        .toList();
+  }
+
+  private Set<String> getMappingsAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
+    final var mappings = getMappings(request);
+
+    final var mappingAuthorizedResourceIdentifiers =
+        mappings.stream()
+            .flatMap(
+                mapping ->
+                    authorizationState
+                        .getResourceIdentifiers(
+                            mapping.getMappingKey(),
+                            request.getResourceType(),
+                            request.getPermissionType())
+                        .stream())
+            .collect(Collectors.toSet());
+
+    final var roleAuthorizedResourceIdentifiers =
+        mappings.stream()
+            .map(PersistedMapping::getRoleKeysList)
+            .flatMap(
+                roleKeys ->
+                    getRoleAuthorizedResourceIdentifiers(
+                        roleKeys, request.getResourceType(), request.getPermissionType())
+                        .stream())
+            .collect(Collectors.toSet());
+
+    return Stream.concat(
+            mappingAuthorizedResourceIdentifiers.stream(),
+            roleAuthorizedResourceIdentifiers.stream())
         .collect(Collectors.toSet());
   }
 
