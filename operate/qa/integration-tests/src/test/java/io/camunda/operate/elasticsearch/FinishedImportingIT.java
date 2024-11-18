@@ -145,11 +145,8 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .until(
             () ->
                 isRecordReaderIsCompleted("1-process-instance")
-                    && isRecordReaderIsCompleted("1-decision-evaluation"));
-    Awaitility.await()
-        .during(Duration.ofSeconds(10))
-        .atMost(Duration.ofSeconds(11))
-        .until(() -> !isRecordReaderIsCompleted("1-decision"));
+                    && isRecordReaderIsCompleted("1-decision-evaluation")
+                    && !isRecordReaderIsCompleted("1-decision"));
   }
 
   @Test
