@@ -135,7 +135,10 @@ public class FormStoreElasticSearch implements FormStore {
       final String formId = String.format("%s_%s", processDefinitionId, id);
       final var formSearchHit =
           getRawResponseWithTenantCheck(
-              formId, formIndex.getFullQualifiedName(), tenantAwareClient);
+              formId,
+              formIndex.getFullQualifiedName(),
+              formIndex.getIndexName(),
+              tenantAwareClient);
       return fromSearchHit(formSearchHit.getSourceAsString(), objectMapper, FormEntity.class);
     } catch (IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);

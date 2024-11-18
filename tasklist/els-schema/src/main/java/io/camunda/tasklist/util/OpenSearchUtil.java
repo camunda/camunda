@@ -404,12 +404,17 @@ public abstract class OpenSearchUtil {
       final Class<T> objectClass)
       throws IOException {
     return getRawResponseWithTenantCheck(
-        id, whereToSearch(descriptor, queryType), tenantAwareClient, objectClass);
+        id,
+        whereToSearch(descriptor, queryType),
+        descriptor.getIndexName(),
+        tenantAwareClient,
+        objectClass);
   }
 
   public static <T> T getRawResponseWithTenantCheck(
       final String id,
       final String index,
+      final String entityName,
       final TenantAwareOpenSearchClient tenantAwareClient,
       final Class<T> objectClass)
       throws IOException {
@@ -422,9 +427,10 @@ public abstract class OpenSearchUtil {
     if (response.hits().total().value() == 1L) {
       return response.hits().hits().get(0).source();
     } else if (response.hits().total().value() > 1L) {
-      throw new NotFoundException(String.format("Unique %s with id %s was not found", index, id));
+      throw new NotFoundException(
+          String.format("Unique %s with id %s was not found", entityName, id));
     } else {
-      throw new NotFoundException(String.format("%s with id %s was not found", index, id));
+      throw new NotFoundException(String.format("%s with id %s was not found", entityName, id));
     }
   }
 

@@ -88,11 +88,14 @@ public abstract class ElasticsearchUtil {
       final TenantAwareElasticsearchClient tenantAwareClient)
       throws IOException {
     return getRawResponseWithTenantCheck(
-        id, whereToSearch(descriptor, queryType), tenantAwareClient);
+        id, whereToSearch(descriptor, queryType), descriptor.getIndexName(), tenantAwareClient);
   }
 
   public static SearchHit getRawResponseWithTenantCheck(
-      final String id, final String index, final TenantAwareElasticsearchClient tenantAwareClient)
+      final String id,
+      final String index,
+      final String entityName,
+      final TenantAwareElasticsearchClient tenantAwareClient)
       throws IOException {
     final QueryBuilder query = idsQuery().addIds(id);
 
@@ -104,9 +107,10 @@ public abstract class ElasticsearchUtil {
     if (response.getHits().getTotalHits().value == 1) {
       return response.getHits().getHits()[0];
     } else if (response.getHits().getTotalHits().value > 1) {
-      throw new NotFoundException(String.format("Unique %s with id %s was not found", index, id));
+      throw new NotFoundException(
+          String.format("Unique %s with id %s was not found", entityName, id));
     } else {
-      throw new NotFoundException(String.format("%s with id %s was not found", index, id));
+      throw new NotFoundException(String.format("%s with id %s was not found", entityName, id));
     }
   }
 

@@ -233,7 +233,11 @@ public class FormStoreOpenSearch implements FormStore {
     try {
       final String formId = String.format("%s_%s", processDefinitionId, id);
       return getRawResponseWithTenantCheck(
-          formId, formIndex.getFullQualifiedName(), tenantAwareClient, FormEntity.class);
+          formId,
+          formIndex.getFullQualifiedName(),
+          formIndex.getIndexName(),
+          tenantAwareClient,
+          FormEntity.class);
     } catch (IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     } catch (NotFoundException e) {
