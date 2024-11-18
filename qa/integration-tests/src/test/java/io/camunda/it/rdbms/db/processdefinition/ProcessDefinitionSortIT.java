@@ -41,7 +41,7 @@ public class ProcessDefinitionSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.processDefinitionId().asc(),
-        Comparator.comparing(ProcessDefinitionEntity::bpmnProcessId));
+        Comparator.comparing(ProcessDefinitionEntity::processDefinitionId));
   }
 
   @TestTemplate
@@ -50,7 +50,7 @@ public class ProcessDefinitionSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.processDefinitionId().desc(),
-        Comparator.comparing(ProcessDefinitionEntity::bpmnProcessId).reversed());
+        Comparator.comparing(ProcessDefinitionEntity::processDefinitionId).reversed());
   }
 
   @TestTemplate
@@ -59,7 +59,7 @@ public class ProcessDefinitionSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.processDefinitionKey().asc(),
-        Comparator.comparing(ProcessDefinitionEntity::key));
+        Comparator.comparing(ProcessDefinitionEntity::processDefinitionKey));
   }
 
   @TestTemplate
@@ -68,7 +68,7 @@ public class ProcessDefinitionSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.processDefinitionKey().desc(),
-        Comparator.comparing(ProcessDefinitionEntity::key).reversed());
+        Comparator.comparing(ProcessDefinitionEntity::processDefinitionKey).reversed());
   }
 
   @TestTemplate

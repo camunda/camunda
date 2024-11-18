@@ -11,11 +11,12 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.entities.HitEntity;
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.NoSuchIndexException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.migration.SemanticVersion;
 import io.camunda.operate.store.ZeebeStore;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -152,6 +153,13 @@ public class ImportJob implements Callable<Boolean> {
       final ImportBatchProcessor importBatchProcessor =
           importBatchProcessorFactory.getImportBatchProcessor(version);
       importBatchProcessor.performImport(subBatch);
+
+      final var batchVersion = SemanticVersion.fromVersion(version);
+
+      if (batchVersion.getMajor() == 8 && batchVersion.getMinor() == 7) {
+        recordsReaderHolder.addPartitionCompletedImporting(subBatch.getPartitionId());
+      }
+
       return true;
     } catch (final Exception ex) {
       LOGGER.error(ex.getMessage(), ex);

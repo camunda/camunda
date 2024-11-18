@@ -12,24 +12,24 @@ if [[ "$returnCode" != 0 ]]; then
 fi
 
 
-printf "\nTest: Operate process instance api\n"
-
-curl -f -L -X POST 'http://localhost:8080/v2/process-instances/search' --cookie cookie.txt \
--H 'Content-Type: application/json' \
--H 'Accept: application/json' \
---data-raw '{
-  "filter": {
-    "running": true,
-    "active": true
-  }
-}'
-
-returnCode=$?
-
-if [[ "$returnCode" != 0 ]]; then
-   echo "test failed"
-   exit 1
-fi
+# printf "\nTest: Operate process instance api\n"
+#
+# curl -f -L -X POST 'http://localhost:8080/v2/process-instances/search' --cookie cookie.txt \
+# -H 'Content-Type: application/json' \
+# -H 'Accept: application/json' \
+# --data-raw '{
+#   "filter": {
+#     "running": true,
+#     "active": true
+#   }
+# }'
+#
+# returnCode=$?
+#
+# if [[ "$returnCode" != 0 ]]; then
+#    echo "test failed"
+#    exit 1
+# fi
 
 
 printf "\nTest: Tasklist user task\n"

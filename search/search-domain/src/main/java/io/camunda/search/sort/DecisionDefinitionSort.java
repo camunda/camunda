@@ -27,12 +27,12 @@ public record DecisionDefinitionSort(List<FieldSorting> orderings) implements So
       implements ObjectBuilder<DecisionDefinitionSort> {
 
     public Builder decisionDefinitionKey() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("decisionDefinitionKey", null);
       return this;
     }
 
     public Builder decisionDefinitionId() {
-      currentOrdering = new FieldSorting("decisionId", null);
+      currentOrdering = new FieldSorting("decisionDefinitionId", null);
       return this;
     }
 

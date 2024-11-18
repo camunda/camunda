@@ -24,6 +24,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.DecisionIns
 import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.STATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.TENANT_ID;
 import static java.util.Optional.ofNullable;
 
@@ -78,7 +79,7 @@ public final class DecisionInstanceFilterTransformer
   }
 
   private SearchQuery getStatesQuery(final List<DecisionInstanceState> states) {
-    return stringTerms("state", states != null ? states.stream().map(Enum::name).toList() : null);
+    return stringTerms(STATE, states != null ? states.stream().map(Enum::name).toList() : null);
   }
 
   private List<SearchQuery> getEvaluationDateQuery(

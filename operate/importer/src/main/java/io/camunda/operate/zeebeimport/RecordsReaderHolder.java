@@ -13,8 +13,11 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +42,10 @@ public class RecordsReaderHolder {
 
   @Autowired private OperateProperties operateProperties;
 
+  private final Set<Integer> partitionsCompletedImporting = new HashSet<>();
+
+  private final Map<RecordsReader, Integer> countEmptyBatchesAfterImportingDone = new HashMap<>();
+
   public Set<RecordsReader> getAllRecordsReaders() {
     if (CollectionUtil.isNotEmpty(recordsReaders)) {
       return recordsReaders;
@@ -51,11 +58,31 @@ public class RecordsReaderHolder {
     for (final Integer partitionId : partitionIds) {
       // TODO what if it's not the final list of partitions
       for (final ImportValueType importValueType : IMPORT_VALUE_TYPES) {
-        recordsReaders.add(
-            beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
+        final var recordReader =
+            beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize);
+        recordsReaders.add(recordReader);
+        countEmptyBatchesAfterImportingDone.put(recordReader, 0);
       }
     }
     return recordsReaders;
+  }
+
+  public void addPartitionCompletedImporting(final int partitionId) {
+    partitionsCompletedImporting.add(partitionId);
+  }
+
+  public boolean hasPartitionCompletedImporting(final int partitionId) {
+    return partitionsCompletedImporting.contains(partitionId);
+  }
+
+  public int incrementEmptyBatches(final int partitionId, final ImportValueType importValueType) {
+    final var reader = getRecordsReader(partitionId, importValueType);
+    return countEmptyBatchesAfterImportingDone.merge(reader, 1, Integer::sum);
+  }
+
+  @VisibleForTesting
+  public void resetCountEmptyBatches() {
+    countEmptyBatchesAfterImportingDone.replaceAll((k, v) -> v = 0);
   }
 
   public RecordsReader getRecordsReader(

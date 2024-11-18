@@ -14,11 +14,11 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.UserEntity;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
 import io.camunda.tasklist.qa.migration.v810.BasicProcessDataGenerator;
 import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
