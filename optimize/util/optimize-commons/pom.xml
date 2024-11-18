@@ -196,7 +196,7 @@
     <dependency>
       <groupId>com.amazonaws</groupId>
       <artifactId>aws-java-sdk-core</artifactId>
-      <version>1.12.772</version>
+      <version>1.12.778</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
