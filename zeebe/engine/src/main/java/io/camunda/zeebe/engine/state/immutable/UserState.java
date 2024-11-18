@@ -25,8 +25,4 @@ public interface UserState {
    * @return An optional containing the user if it was found, otherwise an empty optional
    */
   Optional<PersistedUser> getUser(final long userKey);
-
-  void updateUser(final UserRecord user);
-
-  void deleteUser(final long userKey);
 }

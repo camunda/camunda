@@ -58,6 +58,21 @@ public class DbUserState implements UserState, MutableUserState {
   }
 
   @Override
+  public void update(final UserRecord user) {
+    username.wrapBuffer(user.getUsernameBuffer());
+    final var key = userKeyByUsernameColumnFamily.get(username);
+    persistedUser.setUser(user);
+
+    userByUserKeyColumnFamily.update(key, persistedUser);
+  }
+
+  @Override
+  public void delete(final long userKey) {
+    this.userKey.wrapLong(userKey);
+    userByUserKeyColumnFamily.deleteExisting(this.userKey);
+  }
+
+  @Override
   public void addRole(final long userKey, final long roleKey) {
     this.userKey.wrapLong(userKey);
     final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
@@ -137,20 +152,5 @@ public class DbUserState implements UserState, MutableUserState {
       return Optional.empty();
     }
     return Optional.of(persistedUser.copy());
-  }
-
-  @Override
-  public void updateUser(final UserRecord user) {
-    username.wrapBuffer(user.getUsernameBuffer());
-    final var key = userKeyByUsernameColumnFamily.get(username);
-    persistedUser.setUser(user);
-
-    userByUserKeyColumnFamily.update(key, persistedUser);
-  }
-
-  @Override
-  public void deleteUser(final long userKey) {
-    this.userKey.wrapLong(userKey);
-    userByUserKeyColumnFamily.deleteExisting(this.userKey);
   }
 }
