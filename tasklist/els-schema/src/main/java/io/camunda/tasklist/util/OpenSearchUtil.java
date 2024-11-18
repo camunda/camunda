@@ -398,33 +398,44 @@ public abstract class OpenSearchUtil {
 
   public static <T> T getRawResponseWithTenantCheck(
       final String id,
-      IndexDescriptor descriptor,
-      OpenSearchUtil.QueryType queryType,
-      TenantAwareOpenSearchClient tenantAwareClient,
-      Class<T> objectClass)
+      final IndexDescriptor descriptor,
+      final OpenSearchUtil.QueryType queryType,
+      final TenantAwareOpenSearchClient tenantAwareClient,
+      final Class<T> objectClass)
+      throws IOException {
+    return getRawResponseWithTenantCheck(
+        id, whereToSearch(descriptor, queryType), tenantAwareClient, objectClass);
+  }
+
+  public static <T> T getRawResponseWithTenantCheck(
+      final String id,
+      final String index,
+      final TenantAwareOpenSearchClient tenantAwareClient,
+      final Class<T> objectClass)
       throws IOException {
 
     final SearchRequest.Builder request =
-        OpenSearchUtil.createSearchRequest(descriptor, queryType)
-            .query(q -> q.ids(ids -> ids.values(id)));
+        OpenSearchUtil.createSearchRequest(index).query(q -> q.ids(ids -> ids.values(id)));
 
     final SearchResponse<T> response = tenantAwareClient.search(request, objectClass);
 
     if (response.hits().total().value() == 1L) {
       return response.hits().hits().get(0).source();
     } else if (response.hits().total().value() > 1L) {
-      throw new NotFoundException(
-          String.format("Unique %s with id %s was not found", descriptor.getIndexName(), id));
+      throw new NotFoundException(String.format("Unique %s with id %s was not found", index, id));
     } else {
-      throw new NotFoundException(
-          String.format("%s with id %s was not found", descriptor.getIndexName(), id));
+      throw new NotFoundException(String.format("%s with id %s was not found", index, id));
     }
   }
 
   public static SearchRequest.Builder createSearchRequest(
       IndexDescriptor descriptor, OpenSearchUtil.QueryType queryType) {
+    return createSearchRequest(whereToSearch(descriptor, queryType));
+  }
+
+  public static SearchRequest.Builder createSearchRequest(final String index) {
     final SearchRequest.Builder builder = new SearchRequest.Builder();
-    builder.index(whereToSearch(descriptor, queryType));
+    builder.index(index);
     return builder;
   }
 
