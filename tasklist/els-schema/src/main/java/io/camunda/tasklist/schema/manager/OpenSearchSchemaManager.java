@@ -414,9 +414,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private IndexTemplateMapping getTemplateFrom(final TemplateDescriptor templateDescriptor) {
-    final String templateFilename =
-        String.format(
-            "/schema/os/create/template/tasklist-%s.json", templateDescriptor.getIndexName());
+    final String templateFilename = templateDescriptor.getSchemaClasspathFilename();
 
     final InputStream templateConfig =
         OpenSearchSchemaManager.class.getResourceAsStream(templateFilename);
