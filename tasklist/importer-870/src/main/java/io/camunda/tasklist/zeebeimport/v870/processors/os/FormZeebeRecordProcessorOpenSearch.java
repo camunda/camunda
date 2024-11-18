@@ -8,12 +8,12 @@
 package io.camunda.tasklist.zeebeimport.v870.processors.os;
 
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.FormRecordImpl;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import java.nio.charset.StandardCharsets;
@@ -71,7 +71,15 @@ public class FormZeebeRecordProcessorOpenSearch {
       final List<BulkOperation> operations)
       throws PersistenceException {
     final FormEntity formEntity =
-        new FormEntity(null, formId, schema, version, tenantId, formKey, false, isDelete);
+        new FormEntity()
+            .setId(String.valueOf(formKey))
+            .setKey(formKey)
+            .setFormId(formId)
+            .setSchema(schema)
+            .setVersion(version)
+            .setTenantId(tenantId)
+            .setEmbedded(false)
+            .setIsDeleted(isDelete);
     try {
 
       if (isDelete) {

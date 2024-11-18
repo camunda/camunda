@@ -11,7 +11,6 @@ import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ONLY_RUNTIME;
 import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.FormIndex;
@@ -20,6 +19,7 @@ import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -281,7 +281,7 @@ public class FormStoreOpenSearch implements FormStore {
       if (formEntityResponse.hits().total().value() == 1L) {
         final FormEntity formEntity = formEntityResponse.hits().hits().get(0).source();
         return Optional.of(
-            new FormIdView(formEntity.getId(), formEntity.getBpmnId(), formEntity.getVersion()));
+            new FormIdView(formEntity.getId(), formEntity.getFormId(), formEntity.getVersion()));
       } else {
         return Optional.empty();
       }

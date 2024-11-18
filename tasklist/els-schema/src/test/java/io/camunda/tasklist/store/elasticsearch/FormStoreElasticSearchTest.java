@@ -15,13 +15,13 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.get.GetRequest;
@@ -95,7 +95,7 @@ class FormStoreElasticSearchTest {
         new FormEntity()
             .setId("id3")
             .setProcessDefinitionId("processDefId3")
-            .setBpmnId("bpmnId3")
+            .setFormId("bpmnId3")
             .setSchema("");
 
     final var responseAsstring = objectMapper.writeValueAsString(providedFormEntity);

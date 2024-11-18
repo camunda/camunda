@@ -14,7 +14,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.FormIndex;
@@ -23,6 +22,7 @@ import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -174,7 +174,7 @@ public class FormStoreElasticSearch implements FormStore {
         final Map<String, Object> sourceAsMap =
             searchResponse.getHits().getHits()[0].getSourceAsMap();
         final FormEntity formEntity = new FormEntity();
-        formEntity.setBpmnId((String) sourceAsMap.get(FormIndex.BPMN_ID));
+        formEntity.setFormId((String) sourceAsMap.get(FormIndex.BPMN_ID));
         formEntity.setVersion(((Number) sourceAsMap.get(FormIndex.VERSION)).longValue());
         formEntity.setEmbedded((Boolean) sourceAsMap.get(FormIndex.EMBEDDED));
         formEntity.setSchema((String) sourceAsMap.get(FormIndex.SCHEMA));
