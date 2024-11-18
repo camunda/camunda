@@ -33,7 +33,7 @@ public class StandaloneMigration {
             .logStartupInfo(true)
             .web(WebApplicationType.NONE)
             .sources(MigrationsModuleConfiguration.class)
-            .profiles("process-migration")
+            .profiles(Profile.MIGRATION.getId())
             .addCommandLineProperties(true)
             .listeners(new ApplicationErrorListener(), new ApplicationTerminateListener())
             .build(args);
