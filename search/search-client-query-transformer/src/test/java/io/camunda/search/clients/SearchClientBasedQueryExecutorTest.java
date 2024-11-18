@@ -88,7 +88,8 @@ class SearchClientBasedQueryExecutorTest {
     assertThat(searchResult.total()).isEqualTo(1);
     final List<ProcessInstanceEntity> items = searchResult.items();
     assertThat(items).hasSize(1);
-    assertThat(items.getFirst().key()).isEqualTo(demoProcessInstance.key());
+    assertThat(items.getFirst().processInstanceKey())
+        .isEqualTo(demoProcessInstance.processInstanceKey());
   }
 
   @Test
@@ -110,7 +111,8 @@ class SearchClientBasedQueryExecutorTest {
         queryExecutor.findAll(searchAllQuery, ProcessInstanceEntity.class);
 
     assertThat(searchResult).hasSize(1);
-    assertThat(searchResult.getFirst().key()).isEqualTo(demoProcessInstance.key());
+    assertThat(searchResult.getFirst().processInstanceKey())
+        .isEqualTo(demoProcessInstance.processInstanceKey());
   }
 
   private SearchQueryResponse<ProcessInstanceEntity> createProcessInstanceEntityResponse(

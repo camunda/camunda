@@ -212,11 +212,11 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
-        .processInstanceKey(p.key())
-        .processDefinitionId(p.bpmnProcessId())
-        .processDefinitionName(p.processName())
-        .processDefinitionVersion(p.processVersion())
-        .processDefinitionVersionTag(p.processVersionTag())
+        .processInstanceKey(p.processInstanceKey())
+        .processDefinitionId(p.processDefinitionId())
+        .processDefinitionName(p.processDefinitionName())
+        .processDefinitionVersion(p.processDefinitionVersion())
+        .processDefinitionVersionTag(p.processDefinitionVersionTag())
         .processDefinitionKey(p.processDefinitionKey())
         .parentProcessInstanceKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
@@ -224,7 +224,7 @@ public final class SearchQueryResponseMapper {
         .startDate(formatDate(p.startDate()))
         .endDate(formatDate(p.endDate()))
         .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
-        .hasIncident(p.incident())
+        .hasIncident(p.hasIncident())
         .tenantId(p.tenantId());
   }
 
