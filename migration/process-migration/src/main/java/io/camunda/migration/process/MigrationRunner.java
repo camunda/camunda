@@ -135,7 +135,4 @@ public class MigrationRunner implements Migrator {
     }
   }
 
-  private boolean continueMigration(final boolean hasItems, final boolean retry) {
-    return hasItems || retry;
-  }
 }
