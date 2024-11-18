@@ -7,7 +7,6 @@
  */
 package io.camunda.migration.process;
 
-import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
@@ -21,8 +20,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -35,19 +32,14 @@ public class MigrationRunner implements Migrator {
   private static final Logger LOG = LoggerFactory.getLogger(MigrationRunner.class);
 
   private static final String ELASTICSEARCH = "elasticsearch";
-  final AtomicLong backoff = new AtomicLong();
-  final AtomicInteger retries = new AtomicInteger(0);
   private final Adapter adapter;
-  private final ProcessMigrationProperties properties;
 
   public MigrationRunner(
       final ProcessMigrationProperties properties, final ConnectConfiguration connect) {
-    this.properties = properties;
     adapter =
         connect.getType().equals(ELASTICSEARCH)
             ? new ElasticsearchAdapter(properties, connect)
             : new OpensearchAdapter(properties, connect);
-    backoff.set(properties.getBackoffInSeconds() * 1000L);
   }
 
   @Override
@@ -55,50 +47,34 @@ public class MigrationRunner implements Migrator {
     final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     LOG.info("Process Migration started");
-    String lastMigratedProcessDefinitionKey = adapter.readLastMigratedEntity();
-
-    List<ProcessEntity> items = adapter.nextBatch(lastMigratedProcessDefinitionKey);
-    while (!items.isEmpty()) {
-      lastMigratedProcessDefinitionKey = migrateBatch(items);
-      final boolean retry = lastMigratedProcessDefinitionKey == null;
-      scheduleNextBatch(scheduler, retry);
-      if (retries.get() >= properties.getMaxRetries()) {
-        break;
+    try {
+      String lastMigratedProcessDefinitionKey = adapter.readLastMigratedEntity();
+      List<ProcessEntity> items = adapter.nextBatch(lastMigratedProcessDefinitionKey);
+      while (!items.isEmpty()) {
+        lastMigratedProcessDefinitionKey = migrateBatch(items);
+        scheduleNextBatch(scheduler);
+        items = adapter.nextBatch(lastMigratedProcessDefinitionKey);
       }
-      items = retry ? items : adapter.nextBatch(lastMigratedProcessDefinitionKey);
+    } catch (final Exception e) {
+      terminate(scheduler);
+      throw e;
     }
-    terminate(scheduler);
     LOG.info("Process Migration completed");
   }
 
   protected String migrateBatch(final List<ProcessEntity> processes) {
-    String lastMigratedProcessDefinitionKey = null;
-    try {
-      lastMigratedProcessDefinitionKey = adapter.migrate(extractBatchData(processes));
-      resetBackoff();
-      adapter.writeLastMigratedEntity(lastMigratedProcessDefinitionKey);
-    } catch (final MigrationException me) {
-      LOG.error(me.getMessage());
-    }
+    final String lastMigratedProcessDefinitionKey = adapter.migrate(extractBatchData(processes));
+    adapter.writeLastMigratedEntity(lastMigratedProcessDefinitionKey);
     return lastMigratedProcessDefinitionKey;
   }
 
-  private void scheduleNextBatch(final ScheduledExecutorService scheduler, final boolean retry) {
+  private void scheduleNextBatch(final ScheduledExecutorService scheduler) {
     try {
-      scheduler.schedule(() -> {}, backoff.get(), TimeUnit.MILLISECONDS).get();
-      if (retry) {
-        backoff.updateAndGet(v -> v * 2);
-        retries.getAndIncrement();
-      }
+      scheduler.schedule(() -> {}, adapter.getMinDelayInSeconds(), TimeUnit.SECONDS).get();
     } catch (final ExecutionException | InterruptedException ex) {
       Thread.currentThread().interrupt();
       LOG.error("Schedule interrupted", ex);
     }
-  }
-
-  private void resetBackoff() {
-    backoff.set(properties.getBackoffInSeconds());
-    retries.set(0);
   }
 
   private List<ProcessEntity> extractBatchData(final List<ProcessEntity> processDefinitions) {
@@ -129,10 +105,5 @@ public class MigrationRunner implements Migrator {
     } catch (final IOException e) {
       LOG.error("Failed to close adapter", e);
     }
-
-    if (retries.get() >= properties.getMaxRetries()) {
-      throw new MigrationException("Process migration failed, retries exceeded");
-    }
   }
-
 }

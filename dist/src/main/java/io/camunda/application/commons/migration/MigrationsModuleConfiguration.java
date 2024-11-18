@@ -8,7 +8,6 @@
 package io.camunda.application.commons.migration;
 
 import io.camunda.application.StandaloneMigration.MigrationFinishedEvent;
-import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
@@ -58,7 +57,7 @@ public class MigrationsModuleConfiguration {
                     boolean catchTriggered = false;
                     try {
                       migrator.run(args);
-                    } catch (final MigrationException ex) {
+                    } catch (final Exception ex) {
                       catchTriggered = true;
                       LOG.error(ex.getMessage());
                     } finally {
