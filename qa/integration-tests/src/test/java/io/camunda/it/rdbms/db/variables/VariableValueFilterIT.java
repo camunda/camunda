@@ -214,9 +214,10 @@ public class VariableValueFilterIT {
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(randomizedVariable.key());
-    assertThat(searchResult.hits().getFirst().name()).isEqualTo(randomizedVariable.name());
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().variableKey())
+        .isEqualTo(randomizedVariable.variableKey());
+    assertThat(searchResult.items().getFirst().name()).isEqualTo(randomizedVariable.name());
   }
 
   @TestTemplate
@@ -247,9 +248,10 @@ public class VariableValueFilterIT {
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(randomizedVariable.key());
-    assertThat(searchResult.hits().getFirst().name()).isEqualTo(randomizedVariable.name());
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().variableKey())
+        .isEqualTo(randomizedVariable.variableKey());
+    assertThat(searchResult.items().getFirst().name()).isEqualTo(randomizedVariable.name());
   }
 
   private static void searchAndAssertVariableValueFilter(
@@ -282,8 +284,9 @@ public class VariableValueFilterIT {
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(variableDbModel.key());
-    assertThat(searchResult.hits().getFirst().name()).isEqualTo(variableDbModel.name());
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().variableKey())
+        .isEqualTo(variableDbModel.variableKey());
+    assertThat(searchResult.items().getFirst().name()).isEqualTo(variableDbModel.name());
   }
 }

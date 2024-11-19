@@ -7,10 +7,11 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.domain.VariableDbQuery;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
 import io.camunda.search.entities.VariableEntity;
-import io.camunda.search.query.VariableQuery;
 import java.util.List;
+import java.util.function.Function;
 
 public interface VariableMapper {
 
@@ -18,7 +19,60 @@ public interface VariableMapper {
 
   void update(VariableDbModel variable);
 
-  Long count(VariableQuery filter);
+  Long count(VariableDbQuery filter);
 
-  List<VariableEntity> search(VariableQuery filter);
+  List<VariableEntity> search(VariableDbQuery filter);
+
+  enum VariableSearchColumn implements SearchColumn<VariableEntity> {
+    VAR_KEY("variableKey", VariableEntity::variableKey),
+    PROCESS_INSTANCE_KEY("processInstanceKey", VariableEntity::processInstanceKey),
+    SCOPE_KEY("scopeKey", VariableEntity::scopeKey),
+    VAR_NAME("name", VariableEntity::name),
+    VAR_VALUE("value", VariableEntity::value),
+    VAR_FULL_VALUE("fullValue", VariableEntity::fullValue),
+    TENANT_ID("tenantId", VariableEntity::tenantId),
+    IS_PREVIEW("isPreview", VariableEntity::isPreview),
+    PROCESS_DEFINITION_ID("processDefinitionId", VariableEntity::processDefinitionId);
+
+    private final String property;
+    private final Function<VariableEntity, Object> propertyReader;
+    private final Function<Object, Object> sortOptionConverter;
+
+    VariableSearchColumn(
+        final String property, final Function<VariableEntity, Object> propertyReader) {
+      this(property, propertyReader, Function.identity());
+    }
+
+    VariableSearchColumn(
+        final String property,
+        final Function<VariableEntity, Object> propertyReader,
+        final Function<Object, Object> sortOptionConverter) {
+      this.property = property;
+      this.propertyReader = propertyReader;
+      this.sortOptionConverter = sortOptionConverter;
+    }
+
+    @Override
+    public Object getPropertyValue(final VariableEntity entity) {
+      return propertyReader.apply(entity);
+    }
+
+    @Override
+    public Object convertSortOption(final Object object) {
+      if (object == null) {
+        return null;
+      }
+
+      return sortOptionConverter.apply(object);
+    }
+
+    public static VariableSearchColumn findByProperty(final String property) {
+      for (final VariableSearchColumn column : VariableSearchColumn.values()) {
+        if (column.property.equals(property)) {
+          return column;
+        }
+      }
+      return null;
+    }
+  }
 }

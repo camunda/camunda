@@ -495,7 +495,7 @@ public final class SearchQueryResponseMapper {
 
   public static VariableItem toVariable(final VariableEntity variableEntity) {
     return new VariableItem()
-        .variableKey(variableEntity.key())
+        .variableKey(variableEntity.variableKey())
         .name(variableEntity.name())
         .value(variableEntity.value())
         .fullValue(variableEntity.fullValue())
