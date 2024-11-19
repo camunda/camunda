@@ -12,6 +12,7 @@ import static io.camunda.operate.Metrics.TAG_KEY_PARTITION;
 import static io.camunda.operate.Metrics.TAG_KEY_TYPE;
 import static io.camunda.operate.util.ElasticsearchUtil.*;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
+import static io.camunda.operate.zeebeimport.ReadBatchErrorMessage.READ_BATCH_ERROR_MESSAGE;
 import static org.elasticsearch.index.query.QueryBuilders.*;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -293,7 +294,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        throw new OperateRuntimeException(readBatchErrorMessage(aliasName, ex.getMessage()), ex);
+        throw new OperateRuntimeException(
+            READ_BATCH_ERROR_MESSAGE.apply(aliasName, ex.getMessage()), ex);
       }
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
@@ -305,7 +307,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         batchSizeThrottle.throttle();
         return readNextBatchBySequence(sequence, lastSequence);
       } else {
-        throw new OperateRuntimeException(readBatchErrorMessage(aliasName, e.getMessage()), e);
+        throw new OperateRuntimeException(
+            READ_BATCH_ERROR_MESSAGE.apply(aliasName, e.getMessage()), e);
       }
     }
   }
@@ -325,13 +328,15 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       }
-      throw new OperateRuntimeException(readBatchErrorMessage(aliasName, ex.getMessage()), ex);
+      throw new OperateRuntimeException(
+          READ_BATCH_ERROR_MESSAGE.apply(aliasName, ex.getMessage()), ex);
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
         batchSizeThrottle.throttle();
         return readNextBatchByPositionAndPartition(positionFrom, positionTo);
       }
-      throw new OperateRuntimeException(readBatchErrorMessage(aliasName, e.getMessage()), e);
+      throw new OperateRuntimeException(
+          READ_BATCH_ERROR_MESSAGE.apply(aliasName, e.getMessage()), e);
     }
   }
 
@@ -348,12 +353,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   @Override
   public BlockingQueue<Callable<Boolean>> getImportJobs() {
     return importJobs;
-  }
-
-  private String readBatchErrorMessage(final String aliasName, final String message) {
-    return String.format(
-        "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-        aliasName, message);
   }
 
   private ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException {
