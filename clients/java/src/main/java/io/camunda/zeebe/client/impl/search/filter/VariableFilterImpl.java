@@ -16,12 +16,13 @@
 package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.VariableFilter;
-import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.LongPropertyBuilderCallback;
-import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.StringPropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.LongProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.impl.search.filter.builder.LongPropertyBuilderImpl;
-import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyBuilderImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.LongPropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.zeebe.client.protocol.rest.VariableFilterRequest;
+import java.util.function.Consumer;
 
 public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<VariableFilterRequest>
     implements VariableFilter {
@@ -39,8 +40,10 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
   }
 
   @Override
-  public VariableFilter variableKey(final LongPropertyBuilderCallback callback) {
-    filter.setVariableKey(callback.apply(new LongPropertyBuilderImpl()).build());
+  public VariableFilter variableKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setVariableKey(property.build());
     return this;
   }
 
@@ -51,8 +54,10 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
   }
 
   @Override
-  public VariableFilter value(final StringPropertyBuilderCallback callback) {
-    filter.setValue(callback.apply(new StringPropertyBuilderImpl()).build());
+  public VariableFilter value(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setValue(property.build());
     return this;
   }
 
@@ -63,8 +68,10 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
   }
 
   @Override
-  public VariableFilter name(final StringPropertyBuilderCallback callback) {
-    filter.setName(callback.apply(new StringPropertyBuilderImpl()).build());
+  public VariableFilter name(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setName(property.build());
     return this;
   }
 
@@ -75,8 +82,10 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
   }
 
   @Override
-  public VariableFilter scopeKey(final LongPropertyBuilderCallback callback) {
-    filter.setScopeKey(callback.apply(new LongPropertyBuilderImpl()).build());
+  public VariableFilter scopeKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setScopeKey(property.build());
     return this;
   }
 
@@ -87,8 +96,10 @@ public class VariableFilterImpl extends TypedSearchRequestPropertyProvider<Varia
   }
 
   @Override
-  public VariableFilter processInstanceKey(final LongPropertyBuilderCallback callback) {
-    filter.setProcessInstanceKey(callback.apply(new LongPropertyBuilderImpl()).build());
+  public VariableFilter processInstanceKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessInstanceKey(property.build());
     return this;
   }
 

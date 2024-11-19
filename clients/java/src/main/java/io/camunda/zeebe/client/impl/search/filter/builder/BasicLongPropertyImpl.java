@@ -15,54 +15,45 @@
  */
 package io.camunda.zeebe.client.impl.search.filter.builder;
 
-import io.camunda.zeebe.client.api.search.filter.builder.ProcessInstanceStatePropertyBuilder;
+import io.camunda.zeebe.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 import java.util.List;
 
-public class ProcessInstanceStatePropertyBuilderImpl
-    implements ProcessInstanceStatePropertyBuilder {
-  private final ProcessInstanceStateFilterProperty filterProperty =
-      new ProcessInstanceStateFilterProperty();
+public class BasicLongPropertyImpl implements BasicLongProperty {
+  private final BasicLongFilterProperty filterProperty = new BasicLongFilterProperty();
 
   @Override
-  public ProcessInstanceStatePropertyBuilder eq(final ProcessInstanceStateEnum value) {
+  public BasicLongProperty eq(final Long value) {
     filterProperty.set$Eq(value);
     return this;
   }
 
   @Override
-  public ProcessInstanceStatePropertyBuilder neq(final ProcessInstanceStateEnum value) {
+  public BasicLongProperty neq(final Long value) {
     filterProperty.set$Neq(value);
     return this;
   }
 
   @Override
-  public ProcessInstanceStatePropertyBuilder exists(final boolean value) {
+  public BasicLongProperty exists(final boolean value) {
     filterProperty.set$Exists(value);
     return this;
   }
 
   @Override
-  public ProcessInstanceStatePropertyBuilder in(final List<ProcessInstanceStateEnum> values) {
+  public BasicLongProperty in(final List<Long> values) {
     filterProperty.set$In(values);
     return this;
   }
 
   @Override
-  public ProcessInstanceStatePropertyBuilder in(final ProcessInstanceStateEnum... values) {
+  public BasicLongProperty in(final Long... values) {
     return in(CollectionUtil.toList(values));
   }
 
   @Override
-  public ProcessInstanceStateFilterProperty build() {
+  public BasicLongFilterProperty build() {
     return filterProperty;
-  }
-
-  @Override
-  public ProcessInstanceStatePropertyBuilder like(final String value) {
-    filterProperty.$like(value);
-    return this;
   }
 }

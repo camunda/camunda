@@ -15,69 +15,51 @@
  */
 package io.camunda.zeebe.client.impl.search.filter.builder;
 
-import io.camunda.zeebe.client.api.search.filter.builder.LongPropertyBuilder;
+import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import java.util.List;
 
-public class LongPropertyBuilderImpl implements LongPropertyBuilder {
-  private final LongFilterProperty filterProperty = new LongFilterProperty();
+public class StringPropertyImpl implements StringProperty {
+  private final StringFilterProperty filterProperty = new StringFilterProperty();
 
   @Override
-  public LongPropertyBuilder eq(final Long value) {
+  public StringProperty eq(final String value) {
     filterProperty.set$Eq(value);
     return this;
   }
 
   @Override
-  public LongPropertyBuilder neq(final Long value) {
+  public StringProperty neq(final String value) {
     filterProperty.set$Neq(value);
     return this;
   }
 
   @Override
-  public LongPropertyBuilder exists(final boolean value) {
+  public StringProperty exists(final boolean value) {
     filterProperty.set$Exists(value);
     return this;
   }
 
   @Override
-  public LongPropertyBuilder in(final List<Long> values) {
+  public StringProperty in(final List<String> values) {
     filterProperty.set$In(values);
     return this;
   }
 
   @Override
-  public LongPropertyBuilder in(final Long... values) {
+  public StringProperty in(final String... values) {
     return in(CollectionUtil.toList(values));
   }
 
   @Override
-  public LongFilterProperty build() {
+  public StringFilterProperty build() {
     return filterProperty;
   }
 
   @Override
-  public LongPropertyBuilder gt(final Long value) {
-    filterProperty.set$Gt(value);
-    return this;
-  }
-
-  @Override
-  public LongPropertyBuilder gte(final Long value) {
-    filterProperty.set$Gte(value);
-    return this;
-  }
-
-  @Override
-  public LongPropertyBuilder lt(final Long value) {
-    filterProperty.set$Lt(value);
-    return this;
-  }
-
-  @Override
-  public LongPropertyBuilder lte(final Long value) {
-    filterProperty.set$Lte(value);
+  public StringProperty like(final String value) {
+    filterProperty.set$Like(value);
     return this;
   }
 }

@@ -15,67 +15,67 @@
  */
 package io.camunda.zeebe.client.impl.search.filter.builder;
 
-import io.camunda.zeebe.client.api.search.filter.builder.DateTimePropertyBuilder;
+import io.camunda.zeebe.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
 import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class DateTimePropertyBuilderImpl implements DateTimePropertyBuilder {
+public class DateTimePropertyImpl implements DateTimeProperty {
   private final DateTimeFilterProperty filterProperty = new DateTimeFilterProperty();
 
   @Override
-  public DateTimePropertyBuilder gt(final OffsetDateTime value) {
+  public DateTimeProperty gt(final OffsetDateTime value) {
     filterProperty.set$Gt(value.toString());
     return this;
   }
 
   @Override
-  public DateTimePropertyBuilder gte(final OffsetDateTime value) {
+  public DateTimeProperty gte(final OffsetDateTime value) {
     filterProperty.set$Gte(value.toString());
     return this;
   }
 
   @Override
-  public DateTimePropertyBuilder lt(final OffsetDateTime value) {
+  public DateTimeProperty lt(final OffsetDateTime value) {
     filterProperty.set$Lt(value.toString());
     return this;
   }
 
   @Override
-  public DateTimePropertyBuilder lte(final OffsetDateTime value) {
+  public DateTimeProperty lte(final OffsetDateTime value) {
     filterProperty.set$Lte(value.toString());
     return this;
   }
 
   @Override
-  public DateTimePropertyBuilder eq(final OffsetDateTime value) {
+  public DateTimeProperty eq(final OffsetDateTime value) {
     filterProperty.set$Eq(value.toString());
     return this;
   }
 
   @Override
-  public DateTimePropertyBuilder neq(final OffsetDateTime value) {
+  public DateTimeProperty neq(final OffsetDateTime value) {
     filterProperty.set$Neq(value.toString());
     return this;
   }
 
   @Override
-  public DateTimePropertyBuilder exists(final boolean value) {
+  public DateTimeProperty exists(final boolean value) {
     filterProperty.set$Exists(value);
     return this;
   }
 
   @Override
-  public DateTimePropertyBuilder in(final List<OffsetDateTime> values) {
+  public DateTimeProperty in(final List<OffsetDateTime> values) {
     filterProperty.set$In(
         values.stream().map(OffsetDateTime::toString).collect(Collectors.toList()));
     return this;
   }
 
   @Override
-  public DateTimePropertyBuilder in(final OffsetDateTime... values) {
+  public DateTimeProperty in(final OffsetDateTime... values) {
     return in(CollectionUtil.toList(values));
   }
 

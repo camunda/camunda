@@ -15,9 +15,18 @@
  */
 package io.camunda.zeebe.client.api.search.filter.builder;
 
-import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
-import java.time.OffsetDateTime;
+import java.util.List;
 
-public interface DateTimePropertyBuilder
-    extends ComparisonPropertyBuilder<
-        OffsetDateTime, DateTimeFilterProperty, DateTimePropertyBuilder> {}
+public interface PropertyBase<T, R, SELF extends PropertyBase<T, R, SELF>> {
+  SELF eq(final T value);
+
+  SELF neq(final T value);
+
+  SELF exists(final boolean value);
+
+  SELF in(final List<T> values);
+
+  SELF in(final T... values);
+
+  R build();
+}

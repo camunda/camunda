@@ -15,51 +15,53 @@
  */
 package io.camunda.zeebe.client.impl.search.filter.builder;
 
-import io.camunda.zeebe.client.api.search.filter.builder.StringPropertyBuilder;
+import io.camunda.zeebe.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import java.util.List;
 
-public class StringPropertyBuilderImpl implements StringPropertyBuilder {
-  private final StringFilterProperty filterProperty = new StringFilterProperty();
+public class ProcessInstanceStatePropertyImpl implements ProcessInstanceStateProperty {
+  private final ProcessInstanceStateFilterProperty filterProperty =
+      new ProcessInstanceStateFilterProperty();
 
   @Override
-  public StringPropertyBuilder eq(final String value) {
+  public ProcessInstanceStateProperty eq(final ProcessInstanceStateEnum value) {
     filterProperty.set$Eq(value);
     return this;
   }
 
   @Override
-  public StringPropertyBuilder neq(final String value) {
+  public ProcessInstanceStateProperty neq(final ProcessInstanceStateEnum value) {
     filterProperty.set$Neq(value);
     return this;
   }
 
   @Override
-  public StringPropertyBuilder exists(final boolean value) {
+  public ProcessInstanceStateProperty exists(final boolean value) {
     filterProperty.set$Exists(value);
     return this;
   }
 
   @Override
-  public StringFilterProperty build() {
-    return filterProperty;
-  }
-
-  @Override
-  public StringPropertyBuilder in(final List<String> values) {
+  public ProcessInstanceStateProperty in(final List<ProcessInstanceStateEnum> values) {
     filterProperty.set$In(values);
     return this;
   }
 
   @Override
-  public StringPropertyBuilder in(final String... values) {
+  public ProcessInstanceStateProperty in(final ProcessInstanceStateEnum... values) {
     return in(CollectionUtil.toList(values));
   }
 
   @Override
-  public StringPropertyBuilder like(final String value) {
-    filterProperty.set$Like(value);
+  public ProcessInstanceStateFilterProperty build() {
+    return filterProperty;
+  }
+
+  @Override
+  public ProcessInstanceStateProperty like(final String value) {
+    filterProperty.$like(value);
     return this;
   }
 }

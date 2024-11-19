@@ -15,12 +15,13 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
-import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.BasicLongPropertyBuilderCallback;
-import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.DateTimePropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import java.time.OffsetDateTime;
+import java.util.function.Consumer;
 
 public interface DecisionInstanceFilter extends SearchRequestFilter {
 
@@ -39,8 +40,8 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by evaluationDate */
   DecisionInstanceFilter evaluationDate(OffsetDateTime evaluationDate);
 
-  /** Filter by evaluationDate using {@link DateTimePropertyBuilderCallback} */
-  DecisionInstanceFilter evaluationDate(DateTimePropertyBuilderCallback callback);
+  /** Filter by evaluationDate using {@link DateTimeProperty} consumer */
+  DecisionInstanceFilter evaluationDate(Consumer<DateTimeProperty> callback);
 
   /** Filter by processDefinitionKey */
   DecisionInstanceFilter processDefinitionKey(long processDefinitionKey);
@@ -51,8 +52,8 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   /** Filter by decisionDefinitionKey */
   DecisionInstanceFilter decisionDefinitionKey(long decisionDefinitionKey);
 
-  /** Filter by decisionDefinitionKey using {@link BasicLongPropertyBuilderCallback} */
-  DecisionInstanceFilter decisionDefinitionKey(BasicLongPropertyBuilderCallback callback);
+  /** Filter by decisionDefinitionKey using {@link BasicLongProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionKey(Consumer<BasicLongProperty> fn);
 
   /** Filter by decisionDefinitionId */
   DecisionInstanceFilter decisionDefinitionId(String decisionDefinitionId);

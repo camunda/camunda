@@ -15,7 +15,12 @@
  */
 package io.camunda.zeebe.client.api.search.filter.builder;
 
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
 
-public interface StringPropertyBuilder
-    extends LikePropertyBuilder<String, String, StringFilterProperty, StringPropertyBuilder> {}
+public interface ProcessInstanceStateProperty
+    extends LikeProperty<
+        ProcessInstanceStateEnum,
+        String,
+        ProcessInstanceStateFilterProperty,
+        ProcessInstanceStateProperty> {}

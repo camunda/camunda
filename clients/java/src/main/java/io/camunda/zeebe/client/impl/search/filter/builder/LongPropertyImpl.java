@@ -15,68 +15,68 @@
  */
 package io.camunda.zeebe.client.impl.search.filter.builder;
 
-import io.camunda.zeebe.client.api.search.filter.builder.IntegerPropertyBuilder;
+import io.camunda.zeebe.client.api.search.filter.builder.LongProperty;
 import io.camunda.zeebe.client.impl.util.CollectionUtil;
-import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import java.util.List;
 
-public class IntegerPropertyBuilderImpl implements IntegerPropertyBuilder {
-  private final IntegerFilterProperty filterProperty = new IntegerFilterProperty();
+public class LongPropertyImpl implements LongProperty {
+  private final LongFilterProperty filterProperty = new LongFilterProperty();
 
   @Override
-  public IntegerPropertyBuilder eq(final Integer value) {
+  public LongProperty eq(final Long value) {
     filterProperty.set$Eq(value);
     return this;
   }
 
   @Override
-  public IntegerPropertyBuilder neq(final Integer value) {
+  public LongProperty neq(final Long value) {
     filterProperty.set$Neq(value);
     return this;
   }
 
   @Override
-  public IntegerPropertyBuilder exists(final boolean value) {
+  public LongProperty exists(final boolean value) {
     filterProperty.set$Exists(value);
     return this;
   }
 
   @Override
-  public IntegerPropertyBuilder in(final List<Integer> values) {
+  public LongProperty in(final List<Long> values) {
     filterProperty.set$In(values);
     return this;
   }
 
   @Override
-  public IntegerPropertyBuilder in(final Integer... values) {
+  public LongProperty in(final Long... values) {
     return in(CollectionUtil.toList(values));
   }
 
   @Override
-  public IntegerFilterProperty build() {
+  public LongFilterProperty build() {
     return filterProperty;
   }
 
   @Override
-  public IntegerPropertyBuilder gt(final Integer value) {
+  public LongProperty gt(final Long value) {
     filterProperty.set$Gt(value);
     return this;
   }
 
   @Override
-  public IntegerPropertyBuilder gte(final Integer value) {
+  public LongProperty gte(final Long value) {
     filterProperty.set$Gte(value);
     return this;
   }
 
   @Override
-  public IntegerPropertyBuilder lt(final Integer value) {
+  public LongProperty lt(final Long value) {
     filterProperty.set$Lt(value);
     return this;
   }
 
   @Override
-  public IntegerPropertyBuilder lte(final Integer value) {
+  public LongProperty lte(final Long value) {
     filterProperty.set$Lte(value);
     return this;
   }

@@ -17,5 +17,5 @@ package io.camunda.zeebe.client.api.search.filter.builder;
 
 import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
 
-public interface BasicLongPropertyBuilder
-    extends PropertyBuilder<Long, BasicLongFilterProperty, BasicLongPropertyBuilder> {}
+public interface BasicLongProperty
+    extends PropertyBase<Long, BasicLongFilterProperty, BasicLongProperty> {}

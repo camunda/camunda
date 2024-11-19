@@ -16,20 +16,21 @@
 package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
-import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.DateTimePropertyBuilderCallback;
-import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.IntegerPropertyBuilderCallback;
-import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.LongPropertyBuilderCallback;
-import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.ProcessInstanceStatePropertyBuilderCallback;
-import io.camunda.zeebe.client.api.search.filter.builder.PropertyBuilderCallbacks.StringPropertyBuilderCallback;
+import io.camunda.zeebe.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.IntegerProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.LongProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.ProcessInstanceStateProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.impl.search.filter.builder.DateTimePropertyBuilderImpl;
-import io.camunda.zeebe.client.impl.search.filter.builder.IntegerPropertyBuilderImpl;
-import io.camunda.zeebe.client.impl.search.filter.builder.LongPropertyBuilderImpl;
-import io.camunda.zeebe.client.impl.search.filter.builder.ProcessInstanceStatePropertyBuilderImpl;
-import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyBuilderImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.DateTimePropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.IntegerPropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.LongPropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
 import java.time.OffsetDateTime;
+import java.util.function.Consumer;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceFilterRequest>
@@ -48,8 +49,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter processInstanceKey(final LongPropertyBuilderCallback callback) {
-    filter.setProcessInstanceKey(callback.apply(new LongPropertyBuilderImpl()).build());
+  public ProcessInstanceFilter processInstanceKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessInstanceKey(property.build());
     return this;
   }
 
@@ -60,9 +63,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionId(
-      final StringPropertyBuilderCallback propertyBuilder) {
-    filter.processDefinitionId(propertyBuilder.apply(new StringPropertyBuilderImpl()).build());
+  public ProcessInstanceFilter processDefinitionId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.processDefinitionId(property.build());
     return this;
   }
 
@@ -73,8 +77,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionName(final StringPropertyBuilderCallback callback) {
-    filter.setProcessDefinitionName(callback.apply(new StringPropertyBuilderImpl()).build());
+  public ProcessInstanceFilter processDefinitionName(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionName(property.build());
     return this;
   }
 
@@ -85,9 +91,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionVersion(
-      final IntegerPropertyBuilderCallback callback) {
-    filter.setProcessDefinitionVersion(callback.apply(new IntegerPropertyBuilderImpl()).build());
+  public ProcessInstanceFilter processDefinitionVersion(final Consumer<IntegerProperty> fn) {
+    final IntegerPropertyImpl property = new IntegerPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionVersion(property.build());
     return this;
   }
 
@@ -99,9 +106,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionVersionTag(
-      final StringPropertyBuilderCallback callback) {
-    filter.setProcessDefinitionVersionTag(callback.apply(new StringPropertyBuilderImpl()).build());
+  public ProcessInstanceFilter processDefinitionVersionTag(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionVersionTag(property.build());
     return this;
   }
 
@@ -112,8 +120,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionKey(final LongPropertyBuilderCallback callback) {
-    filter.setProcessDefinitionKey(callback.apply(new LongPropertyBuilderImpl()).build());
+  public ProcessInstanceFilter processDefinitionKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionKey(property.build());
     return this;
   }
 
@@ -124,9 +134,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter parentProcessInstanceKey(
-      final LongPropertyBuilderCallback callback) {
-    filter.setParentProcessInstanceKey(callback.apply(new LongPropertyBuilderImpl()).build());
+  public ProcessInstanceFilter parentProcessInstanceKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setParentProcessInstanceKey(property.build());
     return this;
   }
 
@@ -137,9 +148,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter parentFlowNodeInstanceKey(
-      final LongPropertyBuilderCallback callback) {
-    filter.setParentFlowNodeInstanceKey(callback.apply(new LongPropertyBuilderImpl()).build());
+  public ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setParentFlowNodeInstanceKey(property.build());
     return this;
   }
 
@@ -150,8 +162,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter treePath(final StringPropertyBuilderCallback callback) {
-    filter.setTreePath(callback.apply(new StringPropertyBuilderImpl()).build());
+  public ProcessInstanceFilter treePath(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setTreePath(property.build());
     return this;
   }
 
@@ -162,8 +176,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter startDate(final DateTimePropertyBuilderCallback callback) {
-    filter.setStartDate(callback.apply(new DateTimePropertyBuilderImpl()).build());
+  public ProcessInstanceFilter startDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setStartDate(property.build());
     return this;
   }
 
@@ -174,8 +190,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter endDate(final DateTimePropertyBuilderCallback callback) {
-    filter.setEndDate(callback.apply(new DateTimePropertyBuilderImpl()).build());
+  public ProcessInstanceFilter endDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setEndDate(property.build());
     return this;
   }
 
@@ -185,8 +203,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter state(final ProcessInstanceStatePropertyBuilderCallback callback) {
-    filter.setState(callback.apply(new ProcessInstanceStatePropertyBuilderImpl()).build());
+  public ProcessInstanceFilter state(final Consumer<ProcessInstanceStateProperty> fn) {
+    final ProcessInstanceStateProperty property = new ProcessInstanceStatePropertyImpl();
+    fn.accept(property);
+    filter.setState(property.build());
     return this;
   }
 
@@ -203,8 +223,10 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter tenantId(final StringPropertyBuilderCallback callback) {
-    filter.setTenantId(callback.apply(new StringPropertyBuilderImpl()).build());
+  public ProcessInstanceFilter tenantId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setTenantId(property.build());
     return this;
   }
 

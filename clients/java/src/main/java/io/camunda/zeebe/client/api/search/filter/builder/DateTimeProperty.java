@@ -15,7 +15,8 @@
  */
 package io.camunda.zeebe.client.api.search.filter.builder;
 
-public interface LikePropertyBuilder<T, L, R, SELF extends PropertyBuilder<T, R, SELF>>
-    extends PropertyBuilder<T, R, SELF> {
-  SELF like(final L value);
-}
+import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
+import java.time.OffsetDateTime;
+
+public interface DateTimeProperty
+    extends ComparisonProperty<OffsetDateTime, DateTimeFilterProperty, DateTimeProperty> {}

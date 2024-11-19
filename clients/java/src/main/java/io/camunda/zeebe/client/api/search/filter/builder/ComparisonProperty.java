@@ -15,7 +15,13 @@
  */
 package io.camunda.zeebe.client.api.search.filter.builder;
 
-import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
+public interface ComparisonProperty<T, R, SELF extends PropertyBase<T, R, SELF>>
+    extends PropertyBase<T, R, SELF> {
+  SELF gt(final T value);
 
-public interface IntegerPropertyBuilder
-    extends ComparisonPropertyBuilder<Integer, IntegerFilterProperty, IntegerPropertyBuilder> {}
+  SELF gte(final T value);
+
+  SELF lt(final T value);
+
+  SELF lte(final T value);
+}
