@@ -577,6 +577,11 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>webapps-backup</artifactId>
+        <version>${project.version}</version>
+      </dependency>
       <!-- Operate Modules -->
       <dependency>
         <groupId>io.camunda</groupId>

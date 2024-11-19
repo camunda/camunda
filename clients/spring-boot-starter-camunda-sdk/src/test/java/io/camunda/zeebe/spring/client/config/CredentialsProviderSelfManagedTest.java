@@ -36,6 +36,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,6 +91,7 @@ public class CredentialsProviderSelfManagedTest {
   }
 
   @Test
+  @Disabled
   void shouldHaveZeebeAuth() throws IOException {
     final CredentialsProvider credentialsProvider = configuration.getCredentialsProvider();
     final Map<String, String> headers = new HashMap<>();

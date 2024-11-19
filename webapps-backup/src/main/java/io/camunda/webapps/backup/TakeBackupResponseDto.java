@@ -5,18 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.management.dto;
+package io.camunda.webapps.backup;
 
-public class TakeBackupRequestDto {
+import java.util.List;
 
-  private Long backupId;
+public class TakeBackupResponseDto {
 
-  public Long getBackupId() {
-    return backupId;
+  private List<String> scheduledSnapshots;
+
+  public List<String> getScheduledSnapshots() {
+    return scheduledSnapshots;
   }
 
-  public TakeBackupRequestDto setBackupId(Long backupId) {
-    this.backupId = backupId;
+  public TakeBackupResponseDto setScheduledSnapshots(final List<String> scheduledSnapshots) {
+    this.scheduledSnapshots = scheduledSnapshots;
     return this;
   }
 }
