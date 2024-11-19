@@ -35,7 +35,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .map(
             candidate ->
                 aCamundaUser()
-                    .withUserKey(candidate.key())
+                    .withUserKey(candidate.userKey())
                     .withName(candidate.name())
                     .withUsername(candidate.username())
                     .withPassword(candidate.password())
