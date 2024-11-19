@@ -72,6 +72,10 @@ public final class FilterBuilders {
     return new TenantFilter.Builder();
   }
 
+  public static GroupFilter.Builder group() {
+    return new GroupFilter.Builder();
+  }
+
   public static AuthorizationFilter.Builder authorization() {
     return new AuthorizationFilter.Builder();
   }
@@ -126,6 +130,11 @@ public final class FilterBuilders {
   public static TenantFilter tenant(
       final Function<TenantFilter.Builder, ObjectBuilder<TenantFilter>> fn) {
     return fn.apply(new TenantFilter.Builder()).build();
+  }
+
+  public static GroupFilter group(
+      final Function<GroupFilter.Builder, ObjectBuilder<GroupFilter>> fn) {
+    return fn.apply(new GroupFilter.Builder()).build();
   }
 
   public static AuthorizationFilter authorization(
