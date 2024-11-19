@@ -41,7 +41,7 @@ public class CamundaExporterITInvocationProvider
         BeforeAllCallback,
         AfterEachCallback {
 
-  public static final String CONFIG_PREFIX = "camunda-record";
+  public static final String CONFIG_PREFIX = "custom-prefix";
   protected SearchClientAdapter elsClientAdapter;
   protected SearchClientAdapter osClientAdapter;
   private final ElasticsearchContainer elsContainer =
