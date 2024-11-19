@@ -15,6 +15,7 @@ import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
+import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
@@ -33,6 +34,7 @@ import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.FormServices;
+import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MappingServices;
@@ -147,6 +149,14 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final TenantSearchClient tenantSearchClient) {
     return new TenantServices(brokerClient, securityContextProvider, tenantSearchClient, null);
+  }
+
+  @Bean
+  public GroupServices groupServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final GroupSearchClient groupSearchClient) {
+    return new GroupServices(brokerClient, securityContextProvider, groupSearchClient, null);
   }
 
   @Bean
