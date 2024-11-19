@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
@@ -20,6 +19,7 @@ import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -171,10 +171,10 @@ public class OpenSearchHelper implements NoSqlHelper {
     varNameQ.term(term -> term.field(TaskVariableTemplate.NAME).value(FieldValue.of(varName)));
 
     try {
-      final SearchResponse<TaskVariableEntity> response =
+      final SearchResponse<SnapshotTaskVariableEntity> response =
           osClient.search(
               s -> s.query(OpenSearchUtil.joinWithAnd(taskIdQ, varNameQ)),
-              TaskVariableEntity.class);
+              SnapshotTaskVariableEntity.class);
       return response.hits().total().value() > 0;
     } catch (IOException e) {
       final String message =

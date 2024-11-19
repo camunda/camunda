@@ -12,7 +12,6 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
@@ -21,6 +20,7 @@ import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.v870.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v870.processors.common.UserTaskRecordToVariableEntityMapper;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.io.IOException;
@@ -68,9 +68,9 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
       bulkRequest.add(persistUserTaskToListView(taskEntity.get(), record));
       // Variables
       if (!record.getValue().getVariables().isEmpty()) {
-        final List<TaskVariableEntity> variables =
+        final List<SnapshotTaskVariableEntity> variables =
             userTaskRecordToVariableEntityMapper.mapVariables(record);
-        for (final TaskVariableEntity variable : variables) {
+        for (final SnapshotTaskVariableEntity variable : variables) {
           bulkRequest.add(getVariableQuery(variable));
         }
       }
@@ -102,7 +102,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private UpdateRequest getVariableQuery(final TaskVariableEntity variable)
+  private UpdateRequest getVariableQuery(final SnapshotTaskVariableEntity variable)
       throws PersistenceException {
     try {
       LOGGER.debug("Variable instance for list view: id {}", variable.getId());

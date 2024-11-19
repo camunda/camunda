@@ -9,6 +9,7 @@ package io.camunda.tasklist.store;
 
 import io.camunda.tasklist.entities.*;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.util.*;
 
 public interface VariableStore {
@@ -16,18 +17,19 @@ public interface VariableStore {
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
       List<String> flowNodeInstanceIds, List<String> varNames, final Set<String> fieldNames);
 
-  public Map<String, List<TaskVariableEntity>> getTaskVariablesPerTaskId(
+  public Map<String, List<SnapshotTaskVariableEntity>> getTaskVariablesPerTaskId(
       final List<GetVariablesRequest> requests);
 
   Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(final List<String> taskIds);
 
-  public void persistTaskVariables(final Collection<TaskVariableEntity> finalVariables);
+  public void persistTaskVariables(final Collection<SnapshotTaskVariableEntity> finalVariables);
 
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds);
 
   public VariableEntity getRuntimeVariable(final String variableId, Set<String> fieldNames);
 
-  public TaskVariableEntity getTaskVariable(final String variableId, Set<String> fieldNames);
+  public SnapshotTaskVariableEntity getTaskVariable(
+      final String variableId, Set<String> fieldNames);
 
   public List<String> getProcessInstanceIdsWithMatchingVars(
       List<String> varNames, List<String> varValues);

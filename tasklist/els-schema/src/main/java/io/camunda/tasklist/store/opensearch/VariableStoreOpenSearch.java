@@ -20,7 +20,6 @@ import static java.util.stream.Collectors.toList;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
@@ -32,6 +31,7 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -121,7 +121,7 @@ public class VariableStoreOpenSearch implements VariableStore {
     }
   }
 
-  public Map<String, List<TaskVariableEntity>> getTaskVariablesPerTaskId(
+  public Map<String, List<SnapshotTaskVariableEntity>> getTaskVariablesPerTaskId(
       final List<GetVariablesRequest> requests) {
 
     if (requests == null || requests.size() == 0) {
@@ -167,11 +167,12 @@ public class VariableStoreOpenSearch implements VariableStore {
             .getFieldNames()); // we assume here that all requests has the same list of fields
 
     try {
-      final List<TaskVariableEntity> entities =
-          OpenSearchUtil.scroll(searchRequestBuilder, TaskVariableEntity.class, osClient);
+      final List<SnapshotTaskVariableEntity> entities =
+          OpenSearchUtil.scroll(searchRequestBuilder, SnapshotTaskVariableEntity.class, osClient);
       return entities.stream()
           .collect(
-              groupingBy(TaskVariableEntity::getTaskId, mapping(Function.identity(), toList())));
+              groupingBy(
+                  SnapshotTaskVariableEntity::getTaskId, mapping(Function.identity(), toList())));
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
@@ -204,10 +205,10 @@ public class VariableStoreOpenSearch implements VariableStore {
     }
   }
 
-  public void persistTaskVariables(final Collection<TaskVariableEntity> finalVariables) {
+  public void persistTaskVariables(final Collection<SnapshotTaskVariableEntity> finalVariables) {
     final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
     final List<BulkOperation> operations = new ArrayList<BulkOperation>();
-    for (TaskVariableEntity variableEntity : finalVariables) {
+    for (SnapshotTaskVariableEntity variableEntity : finalVariables) {
       operations.add(createUpsertRequest(variableEntity));
     }
     bulkRequest.operations(operations);
@@ -219,7 +220,7 @@ public class VariableStoreOpenSearch implements VariableStore {
     }
   }
 
-  private BulkOperation createUpsertRequest(TaskVariableEntity variableEntity) {
+  private BulkOperation createUpsertRequest(SnapshotTaskVariableEntity variableEntity) {
     return new BulkOperation.Builder()
         .update(
             UpdateOperation.of(
@@ -289,14 +290,15 @@ public class VariableStoreOpenSearch implements VariableStore {
     }
   }
 
-  public TaskVariableEntity getTaskVariable(final String variableId, Set<String> fieldNames) {
+  public SnapshotTaskVariableEntity getTaskVariable(
+      final String variableId, Set<String> fieldNames) {
 
     final SearchRequest.Builder request = createSearchRequest(taskVariableTemplate);
     request.query(q -> q.ids(ids -> ids.values(variableId)));
     applyFetchSourceForTaskVariableTemplate(request, fieldNames);
     try {
-      final SearchResponse<TaskVariableEntity> response =
-          tenantAwareClient.search(request, TaskVariableEntity.class);
+      final SearchResponse<SnapshotTaskVariableEntity> response =
+          tenantAwareClient.search(request, SnapshotTaskVariableEntity.class);
       if (response.hits().total().value() == 1L) {
         return response.hits().hits().get(0).source();
       } else if (response.hits().total().value() > 1L) {

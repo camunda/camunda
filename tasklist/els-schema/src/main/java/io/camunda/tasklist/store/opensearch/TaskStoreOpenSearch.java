@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.queries.Sort;
@@ -36,6 +35,7 @@ import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -881,8 +881,8 @@ public class TaskStoreOpenSearch implements TaskStore {
       final Set<String> taskIdsForCurrentVar = new HashSet<>();
 
       try {
-        SearchResponse<TaskVariableEntity> response =
-            osClient.search(searchRequestBuilder.build(), TaskVariableEntity.class);
+        SearchResponse<SnapshotTaskVariableEntity> response =
+            osClient.search(searchRequestBuilder.build(), SnapshotTaskVariableEntity.class);
 
         List<String> scrollTaskIds =
             response.hits().hits().stream()
@@ -901,7 +901,7 @@ public class TaskStoreOpenSearch implements TaskStore {
                           .scrollId(scrollId)
                           .scroll(new Time.Builder().time(SCROLL_KEEP_ALIVE_MS).build()));
 
-          response = osClient.scroll(scrollRequest, TaskVariableEntity.class);
+          response = osClient.scroll(scrollRequest, SnapshotTaskVariableEntity.class);
           scrollTaskIds =
               response.hits().hits().stream()
                   .map(hit -> hit.source().getTaskId())

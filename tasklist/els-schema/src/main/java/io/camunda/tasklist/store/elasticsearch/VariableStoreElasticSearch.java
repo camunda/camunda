@@ -29,7 +29,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
@@ -41,6 +40,7 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -120,7 +120,7 @@ public class VariableStoreElasticSearch implements VariableStore {
     }
   }
 
-  public Map<String, List<TaskVariableEntity>> getTaskVariablesPerTaskId(
+  public Map<String, List<SnapshotTaskVariableEntity>> getTaskVariablesPerTaskId(
       final List<GetVariablesRequest> requests) {
 
     if (requests == null || requests.size() == 0) {
@@ -154,11 +154,12 @@ public class VariableStoreElasticSearch implements VariableStore {
     final SearchRequest searchRequest =
         new SearchRequest(taskVariableTemplate.getAlias()).source(searchSourceBuilder);
     try {
-      final List<TaskVariableEntity> entities =
-          scroll(searchRequest, TaskVariableEntity.class, objectMapper, esClient);
+      final List<SnapshotTaskVariableEntity> entities =
+          scroll(searchRequest, SnapshotTaskVariableEntity.class, objectMapper, esClient);
       return entities.stream()
           .collect(
-              groupingBy(TaskVariableEntity::getTaskId, mapping(Function.identity(), toList())));
+              groupingBy(
+                  SnapshotTaskVariableEntity::getTaskId, mapping(Function.identity(), toList())));
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
@@ -180,9 +181,9 @@ public class VariableStoreElasticSearch implements VariableStore {
     }
   }
 
-  public void persistTaskVariables(final Collection<TaskVariableEntity> finalVariables) {
+  public void persistTaskVariables(final Collection<SnapshotTaskVariableEntity> finalVariables) {
     final BulkRequest bulkRequest = new BulkRequest();
-    for (TaskVariableEntity variableEntity : finalVariables) {
+    for (SnapshotTaskVariableEntity variableEntity : finalVariables) {
       bulkRequest.add(createUpsertRequest(variableEntity));
     }
     try {
@@ -193,7 +194,7 @@ public class VariableStoreElasticSearch implements VariableStore {
     }
   }
 
-  private UpdateRequest createUpsertRequest(TaskVariableEntity variableEntity) {
+  private UpdateRequest createUpsertRequest(SnapshotTaskVariableEntity variableEntity) {
     try {
       final Map<String, Object> updateFields = new HashMap<>();
       updateFields.put(TaskVariableTemplate.TASK_ID, variableEntity.getTaskId());
@@ -265,7 +266,8 @@ public class VariableStoreElasticSearch implements VariableStore {
     }
   }
 
-  public TaskVariableEntity getTaskVariable(final String variableId, Set<String> fieldNames) {
+  public SnapshotTaskVariableEntity getTaskVariable(
+      final String variableId, Set<String> fieldNames) {
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder().query(idsQuery().addIds(variableId));
     applyFetchSourceForTaskVariableTemplate(searchSourceBuilder, fieldNames);
@@ -277,7 +279,7 @@ public class VariableStoreElasticSearch implements VariableStore {
         return fromSearchHit(
             response.getHits().getHits()[0].getSourceAsString(),
             objectMapper,
-            TaskVariableEntity.class);
+            SnapshotTaskVariableEntity.class);
       } else if (response.getHits().getTotalHits().value > 1) {
         throw new NotFoundException(
             String.format("Unique task variable with id %s was not found", variableId));
