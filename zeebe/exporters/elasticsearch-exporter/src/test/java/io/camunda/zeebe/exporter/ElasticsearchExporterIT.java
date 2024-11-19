@@ -38,8 +38,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -245,14 +245,10 @@ final class ElasticsearchExporterIT {
 
   private <T extends RecordValue> Record<T> generateSupportedRecord(
       final UnaryOperator<Builder<T>> modifier) {
-    Record<T> record = factory.generateRecord(modifier);
-    while (!TestSupport.provideValueTypes()
-        .collect(Collectors.toSet())
-        .contains(record.getValueType())) {
-      record = factory.generateRecord(modifier);
-    }
+    final var supportedTypes = TestSupport.provideValueTypes().toList();
 
-    return record;
+    return factory.generateRecord(
+        supportedTypes.get(new Random().nextInt(supportedTypes.size())), modifier);
   }
 
   @Nested
