@@ -131,6 +131,8 @@ public class RdbmsExporter implements Exporter {
             new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter())));
     registeredHandlers.put(
         ValueType.VARIABLE, List.of(new VariableExportHandler(rdbmsWriter.getVariableWriter())));
+    registeredHandlers.put(
+        ValueType.USER_TASK, List.of(new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter())));
   }
 
   private void updatePositionInBroker() {
