@@ -60,7 +60,7 @@ public class MappingServices
             .setClaimValue(request.claimValue()));
   }
 
-  public MappingEntity getRole(final Long mappingKey) {
+  public MappingEntity getMapping(final Long mappingKey) {
     return findMapping(mappingKey)
         .orElseThrow(
             () ->

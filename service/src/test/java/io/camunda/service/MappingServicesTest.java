@@ -8,12 +8,14 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.filter.MappingFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
@@ -91,7 +93,7 @@ public class MappingServicesTest {
   }
 
   @Test
-  public void shouldReturnSingleVariableForGet() {
+  public void shouldReturnSingleVariableForFind() {
     // given
     final var entity = mock(MappingEntity.class);
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
@@ -105,12 +107,21 @@ public class MappingServicesTest {
   }
 
   @Test
-  public void shouldThrownExceptionIfNotFoundByKey() {
+  public void shouldReturnEmptyWhenNotFoundByFind() {
     // given
     final var key = 100L;
     when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
 
     // when / then
     assertThat(services.findMapping(key)).isEmpty();
+  }
+
+  @Test
+  public void shouldThrowExceptionWhenNotFoundByGet() {
+    // given
+    when(client.searchMappings(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
+
+    // when / then
+    assertThrows(NotFoundException.class, () -> services.getMapping(1L));
   }
 }
