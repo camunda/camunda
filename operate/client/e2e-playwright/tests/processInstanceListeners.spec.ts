@@ -119,7 +119,7 @@ test.describe('Process Instance Listeners', () => {
     ).toBe(1);
   });
 
-  test.only('Listeners list filtered by listener type @roundtrip', async ({
+  test('Listeners list filtered by listener type @roundtrip', async ({
     page,
     processInstancePage,
   }) => {

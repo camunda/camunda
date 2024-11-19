@@ -29,7 +29,7 @@ type Props = {
 enum FilterLabelMapping {
   'All listeners' = 'ALL_LISTENERS',
   'Execution listeners' = 'EXECUTION_LISTENER',
-  'User task listeners' = 'USER_TASK_LISTENER',
+  'User task listeners' = 'TASK_LISTENER',
 }
 
 type FilterLabelMappingType = typeof FilterLabelMapping;
