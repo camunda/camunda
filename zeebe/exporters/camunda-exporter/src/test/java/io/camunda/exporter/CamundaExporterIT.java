@@ -11,6 +11,7 @@ import static io.camunda.exporter.config.ConnectionTypes.ELASTICSEARCH;
 import static io.camunda.exporter.schema.SchemaTestUtil.mappingsMatch;
 import static io.camunda.exporter.utils.CamundaExporterITInvocationProvider.CONFIG_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -26,23 +27,27 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
@@ -303,6 +308,66 @@ final class CamundaExporterIT {
             "custom-prefix-tasklist-form-8.4.0_",
             "custom-prefix-tasklist-metric-8.3.0_",
             "custom-prefix-tasklist-task-8.5.0_");
+  }
+
+  @TestTemplate
+  void shouldExportRecord(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
+    // given
+    final var valueType = ValueType.VARIABLE;
+    final Record record = factory.generateRecord(valueType);
+    final var resourceProvider = new DefaultExporterResourceProvider();
+    resourceProvider.init(
+        config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+    final var expectedHandlers =
+        resourceProvider.getExportHandlers().stream()
+            .filter(exportHandler -> exportHandler.getHandledValueType() == valueType)
+            .filter(exportHandler -> exportHandler.handlesRecord(record))
+            .toList();
+
+    final CamundaExporter camundaExporter = new CamundaExporter();
+    final ExporterTestContext exporterTestContext =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
+
+    camundaExporter.configure(exporterTestContext);
+    camundaExporter.open(new ExporterTestController());
+
+    // when
+    camundaExporter.export(record);
+
+    // then
+    assertThat(expectedHandlers).isNotEmpty();
+    expectedHandlers.forEach(
+        exportHandler -> {
+          final ExporterEntity expectedEntity = getExpectedEntity(record, exportHandler);
+          final ExporterEntity<?> responseEntity;
+          try {
+            responseEntity =
+                clientAdapter.get(
+                    expectedEntity.getId(),
+                    exportHandler.getIndexName(),
+                    exportHandler.getEntityType());
+          } catch (final IOException e) {
+            fail("Failed to find expected entity " + expectedEntity, e);
+            return;
+          }
+
+          assertThat(responseEntity)
+              .describedAs(
+                  "Handler [%s] correctly handles a [%s] record",
+                  exportHandler.getClass().getSimpleName(), exportHandler.getHandledValueType())
+              .isEqualTo(expectedEntity);
+        });
+  }
+
+  private <S extends ExporterEntity<S>, T extends RecordValue> S getExpectedEntity(
+      final io.camunda.zeebe.protocol.record.Record<T> record, final ExportHandler<S, T> handler) {
+    final var entityId = handler.generateIds(record).getFirst();
+    final var expectedEntity = handler.createNewEntity(entityId);
+    handler.updateEntity(record, expectedEntity);
+
+    return expectedEntity;
   }
 
   private static Stream<Arguments> containerProvider() {
