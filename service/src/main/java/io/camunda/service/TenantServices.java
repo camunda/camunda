@@ -62,7 +62,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
   }
 
   public CompletableFuture<TenantRecord> deleteTenant(final long key) {
-    return sendBrokerRequest(new BrokerTenantDeleteRequest(key));
+    return sendBrokerRequest(new BrokerTenantDeleteRequest(key).setTenantKey(key));
   }
 
   public TenantEntity getByKey(final Long key) {

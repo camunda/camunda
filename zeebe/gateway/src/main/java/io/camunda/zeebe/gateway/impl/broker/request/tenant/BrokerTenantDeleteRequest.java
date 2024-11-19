@@ -21,11 +21,11 @@ public class BrokerTenantDeleteRequest extends BrokerExecuteCommand<TenantRecord
   public BrokerTenantDeleteRequest(final long key) {
     super(ValueType.TENANT, TenantIntent.DELETE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
-    setTenantKey(key);
+    request.setKey(key);
   }
 
-  public BrokerTenantDeleteRequest setTenantKey(final long key) {
-    requestDto.setTenantKey(key);
+  public BrokerTenantDeleteRequest setTenantKey(final long tenantKey) {
+    requestDto.setTenantKey(tenantKey);
     return this;
   }
 
