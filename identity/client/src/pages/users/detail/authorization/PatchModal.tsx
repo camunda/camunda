@@ -13,6 +13,7 @@ import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {Dropdown, Tag} from "@carbon/react";
 import styled from "styled-components";
 import {
+  addAuthorization,
   PatchAuthorizationParams,
   patchAuthorizations
 } from "src/utility/api/authorizations";
@@ -28,16 +29,15 @@ const PatchModal: FC<UseEntityModalProps<PatchAuthorizationParams>> = ({
   entity,
 }) => {
   const { t } = useTranslate();
-  const [apiCall, { loading, namedErrors }] = useApiCall(patchAuthorizations);
+  const [addAuthorizationCall, { loading, namedErrors }] = useApiCall(addAuthorization);
   const [resourceType, setResourceType] = useState("");
-  const [action, setAction] = useState("");
   const [permissionType, setPermissionType] = useState("");
 
 
   const handleSubmit = async () => {
-    const { success } = await apiCall({
+
+    const { success } = await addAuthorizationCall({
       ownerKey: entity.ownerKey,
-      action: action,
       resourceType: resourceType,
       permissions: [{permissionType: permissionType, resourceIds: ["1"]}]
     });
@@ -115,14 +115,6 @@ const PatchModal: FC<UseEntityModalProps<PatchAuthorizationParams>> = ({
             onChange={({ selectedItem }) => setResourceType(selectedItem.id)}
             itemToString={(item) => (item ? item.text : '')}
         />
-
-      <Dropdown
-          id="resource-type-dropdown"
-          label="Select Action"
-          onChange={({ selectedItem }) => setAction(selectedItem.id)}
-          items={actionTypeItems}
-          itemToString={(item) => (item ? item.text : '')}
-      />
 
         <Dropdown
             id="permission-type-dropdown"

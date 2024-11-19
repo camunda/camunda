@@ -34,7 +34,8 @@ import {
 } from "@carbon/react";
 
 import {useEntityModal} from "src/components/modal";
-import {PatchAuthorizationParams} from "src/utility/api/authorizations";
+import {Authorization, PatchAuthorizationParams, Permission} from "src/utility/api/authorizations";
+import {DataTableRenderProps} from "@carbon/react/lib/components/DataTable/DataTable";
 
 
 type AuthorizationsListProps = {
@@ -64,9 +65,11 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
     const rows = authorizations == null ? [] : authorizations.items
     // Create a lookup map for rows by ID
     const dataMap = rows.reduce((map, item) => {
-        map[item.id] = item;
+        map[item.key] = item;
         return map;
     }, {} as { [key: string]: typeof rows[0] });
+    console.log("ROWS", rows);
+    console.log("MAP", dataMap);
 
     const [expandedRows, setExpandedRows] = useState({});
 
@@ -86,8 +89,8 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
         // Logic to update state or trigger an API call to remove the permission
     };
 
-    const onAddPermission = (rowId: string) => {
-      console.log(`Add permission row with id: ${rowId}`)
+    const onAddPermission = (authorization: Authorization) => {
+      console.log(`Add permission to ${authorization.ownerType} ${authorization.ownerKey}`)
     };
     // const handleAddRow = () => {};
 
@@ -103,7 +106,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
     'DELETE_FORM',
   ];
 
-  const checkMissingPermissions = (permissions) => {
+  const checkMissingPermissions = (permissions: readonly Permission[]) => {
     const existingTypes = permissions.map((perm) => perm.permissionType);
     return availablePermissionTypes.filter((type) => !existingTypes.includes(type));
   };
@@ -116,21 +119,19 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
       </Translate>
   );
 
-
   return (
       <>
           <TableContainer title="Authorizations" description="Authorizations's of the user">
-              <DataTable rows={rows} headers={headers}>
-                  {({ rows, headers, getHeaderProps, getRowProps, getTableProps }) => (
+              <DataTable<Authorization> rows={rows} headers={headers}>
+                  {({ rows, headers, getHeaderProps, getRowProps, getTableProps }: DataTableRenderProps<Authorization, unknown[]>) => (
                       <div>
                           {/* Table Toolbar with Add Row Button */}
                           <TableToolbar>
                               <TableToolbarContent style={{ display: 'flex', justifyContent: 'flex-end', gap: '16px' }}>
 
                               <TableToolbarSearch/>
-
                                   <button
-                                      onClick={handleAddRow}
+                                      onClick={() => handleAddRow({})}
                                       style={{
                                           border: 'none',
                                           background: '#0f62fe',
@@ -153,7 +154,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                               <TableRow>
                                   <TableExpandHeader />
                                   {headers.map((header) => (
-                                      <TableHeader key={header.key} {...getHeaderProps({ header })}>
+                                      <TableHeader {...getHeaderProps({ header })}>
                                           {header.header}
                                       </TableHeader>
                                   ))}
@@ -223,7 +224,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                                                     <div style={{ marginTop: '16px', textAlign: 'right' }}>
                                                       <button
                                                           type="button"
-                                                          onClick={() => onAddPermission(row.id)}
+                                                          onClick={() => onAddPermission(row)}
                                                           style={{
                                                             border: 'none',
                                                             background: '#0f62fe',
@@ -274,7 +275,7 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                 actionButton={{ label: "Retry", onClick: reload }}
             />
         )}
-          {patchModal}
+        {patchModal}
       </>
   );
 };

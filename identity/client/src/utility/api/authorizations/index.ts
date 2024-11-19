@@ -10,23 +10,59 @@ import {ApiDefinition, apiPatch, pathBuilder} from "src/utility/api/request";
 
 const path = pathBuilder("/authorizations");
 
+enum PermissionType {
+  CREATE = "CREATE",
+  READ = "READ",
+  READ_INSTANCE = "READ_INSTANCE",
+  READ_USER_TASK = "READ_USER_TASK",
+  UPDATE = "UPDATE",
+  DELETE = "DELETE",
+  DELETE_DRD = "DELETE_DRD",
+  DELETE_FORM = "DELETE_FORM",
+}
+
 export type Permission = {
-  permissionType: string;
+  permissionType: PermissionType;
   resourceIds: string[];
 };
 export type Authorization = EntityData & {
   ownerKey: number;
   ownerType: string;
   resourceType: string;
-  permissions: Permission[];
+  permissions: readonly Permission[];
 };
 
+enum PatchAuthorizationAction {
+  ADD = "ADD", REMOVE = "REMOVE"
+}
 
 export type PatchAuthorizationParams = {
   ownerKey: number,
-  action: string,
+  action: PatchAuthorizationAction,
   resourceType: string,
-  permissions: Permission[]
+  permissions: readonly Permission[]
 };
 
 export const patchAuthorizations: ApiDefinition<undefined, PatchAuthorizationParams> = (params) => apiPatch(path(params.ownerKey), params);
+
+
+export type AddAuthorizationParams = {
+  ownerKey: number;
+  permissionType: PermissionType;
+  resourceType: string;
+  resourceKey: string;
+};
+
+export const addAuthorization: ApiDefinition<unknown, AddAuthorizationParams> = (params) => {
+  return patchAuthorizations({
+    ownerKey: params.ownerKey,
+    action: PatchAuthorizationAction.ADD,
+    resourceType: params.resourceType,
+    permissions: [
+      {
+        permissionType: params.permissionType,
+        resourceIds: [params.resourceKey],
+      }
+    ]
+  });
+};
