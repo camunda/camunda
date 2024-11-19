@@ -18,8 +18,6 @@ import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.queries.Sort;
@@ -36,6 +34,8 @@ import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -183,7 +183,9 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
 
     final TaskEntity completedTask =
-        taskBefore.makeCopy().setState(TaskState.COMPLETED).setCompletionTime(OffsetDateTime.now());
+        makeCopyOf(taskBefore)
+            .setState(TaskState.COMPLETED)
+            .setCompletionTime(OffsetDateTime.now());
 
     try {
       // update task with optimistic locking
@@ -219,7 +221,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
 
-    final TaskEntity completedTask = taskBefore.makeCopy().setCompletionTime(null);
+    final TaskEntity completedTask = makeCopyOf(taskBefore).setCompletionTime(null);
 
     try {
       // update task with optimistic locking
@@ -251,13 +253,13 @@ public class TaskStoreOpenSearch implements TaskStore {
 
     updateTask(taskBefore.getId(), asMap(TaskTemplate.ASSIGNEE, assignee));
 
-    return taskBefore.makeCopy().setAssignee(assignee);
+    return makeCopyOf(taskBefore).setAssignee(assignee);
   }
 
   @Override
   public TaskEntity persistTaskUnclaim(final TaskEntity task) {
     updateTask(task.getId(), asMap(TaskTemplate.ASSIGNEE, null));
-    return task.makeCopy().setAssignee(null);
+    return makeCopyOf(task).setAssignee(null);
   }
 
   @Override

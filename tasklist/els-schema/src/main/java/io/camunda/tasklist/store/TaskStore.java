@@ -7,10 +7,10 @@
  */
 package io.camunda.tasklist.store;
 
-import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.util.List;
 import java.util.Map;
 
@@ -43,4 +43,32 @@ public interface TaskStore {
   TaskEntity persistTaskUnclaim(TaskEntity task);
 
   List<TaskEntity> getTasksById(List<String> ids);
+
+  default TaskEntity makeCopyOf(final TaskEntity taskBefore) {
+    return new TaskEntity()
+        .setId(taskBefore.getId())
+        .setKey(taskBefore.getKey())
+        .setPartitionId(taskBefore.getPartitionId())
+        .setBpmnProcessId(taskBefore.getBpmnProcessId())
+        .setProcessDefinitionId(taskBefore.getProcessDefinitionId())
+        .setFlowNodeBpmnId(taskBefore.getFlowNodeBpmnId())
+        .setFlowNodeInstanceId(taskBefore.getFlowNodeInstanceId())
+        .setProcessInstanceId(taskBefore.getProcessInstanceId())
+        .setCreationTime(taskBefore.getCreationTime())
+        .setCompletionTime(taskBefore.getCompletionTime())
+        .setState(taskBefore.getState())
+        .setAssignee(taskBefore.getAssignee())
+        .setCandidateGroups(taskBefore.getCandidateGroups())
+        .setCandidateUsers(taskBefore.getCandidateUsers())
+        .setFormKey(taskBefore.getFormKey())
+        .setFormId(taskBefore.getFormId())
+        .setFormVersion(taskBefore.getFormVersion())
+        .setIsFormEmbedded(taskBefore.getIsFormEmbedded())
+        .setTenantId(taskBefore.getTenantId())
+        .setImplementation(taskBefore.getImplementation())
+        .setExternalFormReference(taskBefore.getExternalFormReference())
+        .setCustomHeaders(taskBefore.getCustomHeaders())
+        .setProcessDefinitionVersion(taskBefore.getProcessDefinitionVersion())
+        .setPriority(taskBefore.getPriority());
+  }
 }
