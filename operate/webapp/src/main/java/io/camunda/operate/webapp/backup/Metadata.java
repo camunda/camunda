@@ -76,6 +76,10 @@ public class Metadata {
     return this;
   }
 
+  public io.camunda.webapps.backup.Metadata toCommon() {
+    return new io.camunda.webapps.backup.Metadata(backupId, version, partNo, partCount);
+  }
+
   public String buildSnapshotName() {
     return SNAPSHOT_NAME_PATTERN
         .replace("{prefix}", buildSnapshotNamePrefix(backupId))
