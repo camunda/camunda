@@ -285,6 +285,38 @@ public class DbDistributionState implements MutableDistributionState {
   }
 
   @Override
+  public void foreachPendingDistribution(final PendingDistributionVisitor visitor) {
+    final var lastDistributionKey = new MutableLong(0);
+    final var lastCommandDistribution = new MutableReference<CommandDistributionRecord>();
+
+    pendingDistributionColumnFamily.whileTrue(
+        (compositeKey, nil) -> {
+          final var distributionKey = compositeKey.first().inner().getValue();
+          final var partitionId = compositeKey.second().getValue();
+
+          // we may encounter the same distribution key for several partitions, we can reuse it
+          if (lastDistributionKey.value != distributionKey) {
+            final var commandDistributionRecord =
+                getCommandDistributionRecord(distributionKey, partitionId);
+            if (commandDistributionRecord == null) {
+              LOG.warn(
+                  "Expected to find a command distribution with key {} for a partition {}, but none found. The state is inconsistent",
+                  distributionKey,
+                  partitionId);
+              // we ignore this currently
+              return true;
+            }
+            lastDistributionKey.set(distributionKey);
+            lastCommandDistribution.set(commandDistributionRecord);
+          }
+
+          final var commandDistributionRecord = new CommandDistributionRecord();
+          commandDistributionRecord.wrap(lastCommandDistribution.get()).setPartitionId(partitionId);
+          return visitor.visit(distributionKey, commandDistributionRecord);
+        });
+  }
+
+  @Override
   public Optional<Long> getNextQueuedDistributionKey(final String queue, final int partition) {
     queueId.wrapString(queue);
     partitionKey.wrapInt(partition);

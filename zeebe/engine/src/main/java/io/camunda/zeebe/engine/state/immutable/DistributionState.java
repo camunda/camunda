@@ -70,6 +70,17 @@ public interface DistributionState {
   void foreachRetriableDistribution(PendingDistributionVisitor visitor);
 
   /**
+   * Visits each persisted pending distribution, providing both the key of that distribution and the
+   * {@link CommandDistributionRecord}.
+   *
+   * <p>Note that a new instance of the record is provided for each visit, so the visitor does not
+   * have to make a copy when long term access is needed.
+   *
+   * @param visitor Each pending distribution is visited by this visitor
+   */
+  void foreachPendingDistribution(PendingDistributionVisitor visitor);
+
+  /**
    * Returns the distribution key at the head of the queue for the given partition.
    *
    * @param queue the queue to look up
@@ -111,7 +122,7 @@ public interface DistributionState {
      * @param distributionKey The key of the pending distribution
      * @param pendingDistribution The pending distribution itself as command distribution record
      */
-    void visit(final long distributionKey, final CommandDistributionRecord pendingDistribution);
+    boolean visit(final long distributionKey, final CommandDistributionRecord pendingDistribution);
   }
 
   @FunctionalInterface
