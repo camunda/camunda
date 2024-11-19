@@ -34,23 +34,23 @@ const Details: FC<DetailsProps> = ({ tenant, loading }) => {
   }
 
   return (
-      <EntityDetail
-          label={t("Tenant details")}
-          data={[
-            {
-              label: t("Name"),
-              value: tenant.name,
-            },
-            {
-              label: t("Tenant ID"),
-              value: (
-                  <StyledCodeSnippet type="single">
-                    {tenant.tenantId}
-                  </StyledCodeSnippet>
-              ),
-            },
-          ]}
-      />
+    <EntityDetail
+      label={t("Tenant details")}
+      data={[
+        {
+          label: t("Name"),
+          value: tenant.name,
+        },
+        {
+          label: t("Tenant ID"),
+          value: (
+            <StyledCodeSnippet type="single">
+              {tenant.tenantId}
+            </StyledCodeSnippet>
+          ),
+        },
+      ]}
+    />
   );
 };
 

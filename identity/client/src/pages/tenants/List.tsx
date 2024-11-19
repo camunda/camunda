@@ -39,59 +39,59 @@ const List: FC = () => {
 
   if (success && !tenantSearchResults?.items.length) {
     return (
-        <Page>
-          <PageTitle>
-            <Translate>Tenants</Translate>
-          </PageTitle>
-          <C3EmptyState
-              heading={t("You don’t have any tenants yet")}
-              description={t(
-                  "Create isolated environments with their own assigned users, groups, and applications."
-              )}
-              button={{
-                label: t("Create a tenant"),
-                onClick: addTenant,
-              }}
-              link={{
-                href: documentationHref("/concepts/multi-tenancy/", ""),
-                label: t("Learn more about tenants"),
-              }}
-          />
-          {addTenantModal}
-        </Page>
+      <Page>
+        <PageTitle>
+          <Translate>Tenants</Translate>
+        </PageTitle>
+        <C3EmptyState
+          heading={t("You don’t have any tenants yet")}
+          description={t(
+            "Create isolated environments with their own assigned users, groups, and applications.",
+          )}
+          button={{
+            label: t("Create a tenant"),
+            onClick: addTenant,
+          }}
+          link={{
+            href: documentationHref("/concepts/multi-tenancy/", ""),
+            label: t("Learn more about tenants"),
+          }}
+        />
+        {addTenantModal}
+      </Page>
     );
   }
 
   return (
-      <Page>
-        <EntityList
-            title={t("Tenants")}
-            data={tenantSearchResults == null ? [] : tenantSearchResults.items}
-            headers={[
-              { header: t("Name"), key: "name" },
-              { header: t("Tenant ID"), key: "tenantId" },
-            ]}
-            sortProperty="name"
-            onEntityClick={showDetails}
-            addEntityLabel={t("Create tenant")}
-            onAddEntity={addTenant}
-            onSearch={setSearch}
-            loading={loading}
+    <Page>
+      <EntityList
+        title={t("Tenants")}
+        data={tenantSearchResults == null ? [] : tenantSearchResults.items}
+        headers={[
+          { header: t("Name"), key: "name" },
+          { header: t("Tenant ID"), key: "tenantId" },
+        ]}
+        sortProperty="name"
+        onEntityClick={showDetails}
+        addEntityLabel={t("Create tenant")}
+        onAddEntity={addTenant}
+        onSearch={setSearch}
+        loading={loading}
+      />
+      {success && (
+        <DocumentationDescription>
+          <Translate>Learn more about tenants in our</Translate>{" "}
+          <DocumentationLink path="/concepts/multi-tenancy/" />.
+        </DocumentationDescription>
+      )}
+      {!loading && !success && (
+        <TranslatedErrorInlineNotification
+          title={t("The list of tenants could not be loaded.")}
+          actionButton={{ label: t("Retry"), onClick: reload }}
         />
-        {success && (
-            <DocumentationDescription>
-              <Translate>Learn more about tenants in our</Translate>{" "}
-              <DocumentationLink path="/concepts/multi-tenancy/" />.
-            </DocumentationDescription>
-        )}
-        {!loading && !success && (
-            <TranslatedErrorInlineNotification
-                title={t("The list of tenants could not be loaded.")}
-                actionButton={{ label: t("Retry"), onClick: reload }}
-            />
-        )}
-        {addTenantModal}
-      </Page>
+      )}
+      {addTenantModal}
+    </Page>
   );
 };
 

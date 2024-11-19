@@ -12,8 +12,8 @@ import Detail from "src/pages/tenants/detail";
 
 const Tenants: FC = () => (
   <PageRoutes
-      indexElement={<Lazy load={() => import("./List")} />}
-      detailElement={<Detail />}
+    indexElement={<Lazy load={() => import("./List")} />}
+    detailElement={<Detail />}
   />
 );
 

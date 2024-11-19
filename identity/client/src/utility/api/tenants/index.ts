@@ -2,10 +2,7 @@
  * Copyright © Camunda Services GmbH
  */
 
-import {
-  ApiDefinition,
-  apiPost,
-} from "src/utility/api/request";
+import { ApiDefinition, apiPost } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
 import { EntityData } from "src/components/entityList/EntityList";
 
@@ -19,7 +16,7 @@ export type Tenant = EntityData & {
 };
 
 export const searchTenant: ApiDefinition<SearchResponse<Tenant>> = () =>
-    apiPost(`${TENANTS_ENDPOINT}/search`);
+  apiPost(`${TENANTS_ENDPOINT}/search`);
 
 type GetTenantParams = {
   tenantId?: string;
@@ -27,16 +24,15 @@ type GetTenantParams = {
 };
 
 export const getTenantDetails: ApiDefinition<
-    SearchResponse<Tenant>,
-    GetTenantParams
+  SearchResponse<Tenant>,
+  GetTenantParams
 > = ({ tenantId, name }) =>
-    apiPost(`${TENANTS_ENDPOINT}/search`, {
-      filter: { ...(tenantId && { tenantId }), ...(name && { name }) },
-    });
-
+  apiPost(`${TENANTS_ENDPOINT}/search`, {
+    filter: { ...(tenantId && { tenantId }), ...(name && { name }) },
+  });
 
 type CreateTenantParams = Omit<Tenant, "id" | "permissions">;
 
 export const createTenant: ApiDefinition<undefined, CreateTenantParams> = (
-    tenant
+  tenant,
 ) => apiPost(TENANTS_ENDPOINT, tenant);

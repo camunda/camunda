@@ -33,31 +33,31 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   };
 
   return (
-      <FormModal
-          headline={t("Create new tenant")}
-          open={open}
-          onClose={onClose}
-          loading={loading}
-          submitDisabled={submitDisabled}
-          confirmLabel={t("Create tenant")}
-          onSubmit={handleSubmit}
-      >
-        <TextField
-            label={t("Tenant name")}
-            placeholder={t("Enter tenant name")}
-            onChange={setName}
-            value={name}
-            errors={namedErrors?.name}
-            autoFocus
-        />
-        <TextField
-            label={t("Tenant ID")}
-            placeholder={t("Enter tenant ID")}
-            onChange={setTenantId}
-            value={tenantId}
-            errors={namedErrors?.tenantId}
-        />
-      </FormModal>
+    <FormModal
+      headline={t("Create new tenant")}
+      open={open}
+      onClose={onClose}
+      loading={loading}
+      submitDisabled={submitDisabled}
+      confirmLabel={t("Create tenant")}
+      onSubmit={handleSubmit}
+    >
+      <TextField
+        label={t("Tenant name")}
+        placeholder={t("Enter tenant name")}
+        onChange={setName}
+        value={name}
+        errors={namedErrors?.name}
+        autoFocus
+      />
+      <TextField
+        label={t("Tenant ID")}
+        placeholder={t("Enter tenant ID")}
+        onChange={setTenantId}
+        value={tenantId}
+        errors={namedErrors?.tenantId}
+      />
+    </FormModal>
   );
 };
 
