@@ -84,6 +84,12 @@ export class ProcessInstance {
       .getByTestId('new-variable-value');
   };
 
+  getListenerTypeFilterOption = (
+    option: 'Execution listeners' | 'User task listeners' | 'All listeners',
+  ) => {
+    return this.listenerTypeFilter.getByText(option, {exact: true});
+  };
+
   async undoModification() {
     await this.page
       .getByRole('button', {
