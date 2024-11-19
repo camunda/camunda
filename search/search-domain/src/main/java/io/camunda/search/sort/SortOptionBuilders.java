@@ -60,6 +60,10 @@ public final class SortOptionBuilders {
     return new UserSort.Builder();
   }
 
+  public static MappingSort.Builder mapping() {
+    return new MappingSort.Builder();
+  }
+
   public static RoleSort.Builder role() {
     return new RoleSort.Builder();
   }
@@ -105,6 +109,11 @@ public final class SortOptionBuilders {
 
   public static UserSort user(final Function<UserSort.Builder, ObjectBuilder<UserSort>> fn) {
     return fn.apply(user()).build();
+  }
+
+  public static MappingSort mapping(
+      final Function<MappingSort.Builder, ObjectBuilder<MappingSort>> fn) {
+    return fn.apply(mapping()).build();
   }
 
   public static RoleSort role(final Function<RoleSort.Builder, ObjectBuilder<RoleSort>> fn) {
