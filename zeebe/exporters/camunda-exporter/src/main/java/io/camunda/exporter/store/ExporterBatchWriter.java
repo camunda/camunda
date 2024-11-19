@@ -16,8 +16,10 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Caches exporter entities of different types and provide the method to flush them in a batch. */
 @SuppressWarnings({"rawtypes", "unchecked"})
@@ -43,20 +45,19 @@ public class ExporterBatchWriter {
       final Record<?> record, final ExportHandler handler, final String id) {
     final var cacheKey = new EntityIdAndEntityType(id, handler.getEntityType());
 
-    final ExporterEntity entity;
+    final EntityAndHandler entityAndHandler =
+        cachedEntities.computeIfAbsent(
+            cacheKey,
+            (k) -> {
+              final ExporterEntity entity = handler.createNewEntity(id);
+              return new EntityAndHandler(entity, new HashSet<>());
+            });
 
-    final boolean alreadyCached = cachedEntities.containsKey(cacheKey);
-    if (alreadyCached) {
-      entity = cachedEntities.get(cacheKey).entity();
-    } else {
-      entity = handler.createNewEntity(id);
-    }
-
+    final var entity = entityAndHandler.entity;
     handler.updateEntity(record, entity);
 
-    // always store the latest handler in the tuple, because that is the one
-    // taking care of flushing
-    cachedEntities.put(cacheKey, new EntityAndHandler(entity, handler));
+    // we store all handlers for an entity to make sure not to miss any flushes
+    entityAndHandler.handlers.add(handler);
   }
 
   public void flush(final BatchRequest batchRequest) throws PersistenceException {
@@ -70,8 +71,9 @@ public class ExporterBatchWriter {
 
     for (final var entityAndHandler : cachedEntities.values()) {
       final ExporterEntity entity = entityAndHandler.entity();
-      final ExportHandler handler = entityAndHandler.handler();
-      handler.flush(entity, batchRequest);
+      for (final var handler : entityAndHandler.handlers()) {
+        handler.flush(entity, batchRequest);
+      }
     }
     batchRequest.execute();
     reset();
@@ -111,5 +113,5 @@ public class ExporterBatchWriter {
 
   private record EntityIdAndEntityType(String entityId, Class<?> entityType) {}
 
-  private record EntityAndHandler(ExporterEntity entity, ExportHandler handler) {}
+  private record EntityAndHandler(ExporterEntity entity, Set<ExportHandler> handlers) {}
 }
