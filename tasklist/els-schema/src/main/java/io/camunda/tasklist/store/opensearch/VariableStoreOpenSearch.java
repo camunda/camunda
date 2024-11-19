@@ -27,10 +27,10 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -74,7 +74,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
   @Autowired private VariableIndex variableIndex;
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
 
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
@@ -133,7 +133,7 @@ public class VariableStoreOpenSearch implements VariableStore {
     taskIdsQ.terms(
         terms ->
             terms
-                .field(TaskVariableTemplate.TASK_ID)
+                .field(SnapshotTaskVariableTemplate.TASK_ID)
                 .terms(t -> t.value(ids.stream().map(m -> FieldValue.of(m)).collect(toList()))));
 
     final List<String> varNames =
@@ -183,20 +183,20 @@ public class VariableStoreOpenSearch implements VariableStore {
   @Override
   public Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(List<String> taskIds) {
     final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(taskVariableTemplate)
+        OpenSearchUtil.createSearchRequest(taskVariableTemplate.getAlias())
             .query(
                 q ->
                     q.terms(
                         terms ->
                             terms
-                                .field(TaskVariableTemplate.TASK_ID)
+                                .field(SnapshotTaskVariableTemplate.TASK_ID)
                                 .terms(
                                     t ->
                                         t.value(
                                             taskIds.stream()
                                                 .map(FieldValue::of)
                                                 .collect(Collectors.toList())))))
-            .fields(f -> f.field(TaskVariableTemplate.ID));
+            .fields(f -> f.field(SnapshotTaskVariableTemplate.ID));
 
     try {
       return OpenSearchUtil.scrollIdsWithIndexToMap(searchRequest, osClient);
@@ -293,7 +293,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   public SnapshotTaskVariableEntity getTaskVariable(
       final String variableId, Set<String> fieldNames) {
 
-    final SearchRequest.Builder request = createSearchRequest(taskVariableTemplate);
+    final SearchRequest.Builder request = createSearchRequest(taskVariableTemplate.getAlias());
     request.query(q -> q.ids(ids -> ids.values(variableId)));
     applyFetchSourceForTaskVariableTemplate(request, fieldNames);
     try {
@@ -418,11 +418,10 @@ public class VariableStoreOpenSearch implements VariableStore {
       SearchRequest.Builder searchRequestBuilder, final Set<String> fieldNames) {
     final String[] includesFields;
     if (isNotEmpty(fieldNames)) {
-      final Set<String> elsFieldNames =
-          TaskVariableTemplate.getElsFieldsByGraphqlFields(fieldNames);
-      elsFieldNames.add(TaskVariableTemplate.ID);
-      elsFieldNames.add(TaskVariableTemplate.NAME);
-      elsFieldNames.add(TaskVariableTemplate.TASK_ID);
+      final Set<String> elsFieldNames = VariableStore.getElsFieldsByGraphqlFields(fieldNames);
+      elsFieldNames.add(SnapshotTaskVariableTemplate.ID);
+      elsFieldNames.add(SnapshotTaskVariableTemplate.NAME);
+      elsFieldNames.add(SnapshotTaskVariableTemplate.TASK_ID);
       includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
       searchRequestBuilder.source(s -> s.filter(f -> f.includes(Arrays.asList(includesFields))));
     }

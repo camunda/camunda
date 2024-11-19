@@ -18,12 +18,12 @@ import io.camunda.tasklist.archiver.TaskArchiverJob;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.ArchiverException;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestCheck;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
@@ -53,7 +53,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -260,7 +260,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
       throws IOException {
     assertTaskIndex(tasksCount, ids, endDate);
     assertDependentIndex(
-        taskVariableTemplate.getFullQualifiedName(), TaskVariableTemplate.TASK_ID, ids, endDate);
+        taskVariableTemplate.getFullQualifiedName(),
+        SnapshotTaskVariableTemplate.TASK_ID,
+        ids,
+        endDate);
   }
 
   private void assertTaskIndex(int tasksCount, List<String> ids, Instant endDate)

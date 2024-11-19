@@ -15,11 +15,11 @@ import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v870.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v870.processors.common.UserTaskRecordToVariableEntityMapper;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -49,7 +49,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private TaskVariableTemplate variableIndex;
+  @Autowired private SnapshotTaskVariableTemplate variableIndex;
 
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
 
@@ -92,9 +92,9 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
   private BulkOperation getVariableQuery(final SnapshotTaskVariableEntity variable) {
     LOGGER.debug("Variable instance for list view: id {}", variable.getId());
     final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(TaskVariableTemplate.VALUE, variable.getValue());
-    updateFields.put(TaskVariableTemplate.FULL_VALUE, variable.getFullValue());
-    updateFields.put(TaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
+    updateFields.put(SnapshotTaskVariableTemplate.VALUE, variable.getValue());
+    updateFields.put(SnapshotTaskVariableTemplate.FULL_VALUE, variable.getFullValue());
+    updateFields.put(SnapshotTaskVariableTemplate.IS_PREVIEW, variable.getIsPreview());
 
     return new BulkOperation.Builder()
         .update(

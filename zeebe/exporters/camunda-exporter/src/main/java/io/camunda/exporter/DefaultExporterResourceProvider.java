@@ -78,6 +78,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
@@ -138,7 +139,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 new BatchOperationTemplate(globalPrefix, isElasticsearch)),
             entry(
                 DraftTaskVariableTemplate.class,
-                new DraftTaskVariableTemplate(globalPrefix, isElasticsearch)));
+                new DraftTaskVariableTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                SnapshotTaskVariableTemplate.class,
+                new SnapshotTaskVariableTemplate(globalPrefix, isElasticsearch)));
 
     indexDescriptorsMap =
         Map.ofEntries(

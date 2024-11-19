@@ -9,8 +9,10 @@ package io.camunda.tasklist.store;
 
 import io.camunda.tasklist.entities.*;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public interface VariableStore {
 
@@ -33,6 +35,30 @@ public interface VariableStore {
 
   public List<String> getProcessInstanceIdsWithMatchingVars(
       List<String> varNames, List<String> varValues);
+
+  private static Optional<String> getElsFieldByGraphqlField(final String fieldName) {
+    switch (fieldName) {
+      case ("id"):
+        return Optional.of(SnapshotTaskVariableTemplate.ID);
+      case ("name"):
+        return Optional.of(SnapshotTaskVariableTemplate.NAME);
+      case ("value"):
+        return Optional.of(SnapshotTaskVariableTemplate.FULL_VALUE);
+      case ("previewValue"):
+        return Optional.of(SnapshotTaskVariableTemplate.VALUE);
+      case ("isValueTruncated"):
+        return Optional.of(SnapshotTaskVariableTemplate.IS_PREVIEW);
+      default:
+        return Optional.empty();
+    }
+  }
+
+  public static Set<String> getElsFieldsByGraphqlFields(final Set<String> fieldNames) {
+    return fieldNames.stream()
+        .map((fn) -> getElsFieldByGraphqlField(fn))
+        .flatMap(Optional::stream)
+        .collect(Collectors.toSet());
+  }
 
   static class FlowNodeTree extends HashMap<String, String> {
 

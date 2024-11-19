@@ -36,10 +36,10 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -89,7 +89,7 @@ public class VariableStoreElasticSearch implements VariableStore {
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
   @Autowired private VariableIndex variableIndex;
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired
@@ -129,7 +129,7 @@ public class VariableStoreElasticSearch implements VariableStore {
 
     final TermsQueryBuilder taskIdsQ =
         termsQuery(
-            TaskVariableTemplate.TASK_ID,
+            SnapshotTaskVariableTemplate.TASK_ID,
             requests.stream().map(GetVariablesRequest::getTaskId).collect(toList()));
     final List<String> varNames =
         requests.stream()
@@ -169,11 +169,11 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   public Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(final List<String> taskIds) {
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(taskVariableTemplate)
+        ElasticsearchUtil.createSearchRequest(taskVariableTemplate.getAlias())
             .source(
                 SearchSourceBuilder.searchSource()
-                    .query(termsQuery(TaskVariableTemplate.TASK_ID, taskIds))
-                    .fetchField(TaskVariableTemplate.ID));
+                    .query(termsQuery(SnapshotTaskVariableTemplate.TASK_ID, taskIds))
+                    .fetchField(SnapshotTaskVariableTemplate.ID));
     try {
       return ElasticsearchUtil.scrollIdsWithIndexToMap(searchRequest, esClient);
     } catch (IOException e) {
@@ -197,9 +197,9 @@ public class VariableStoreElasticSearch implements VariableStore {
   private UpdateRequest createUpsertRequest(SnapshotTaskVariableEntity variableEntity) {
     try {
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskVariableTemplate.TASK_ID, variableEntity.getTaskId());
-      updateFields.put(TaskVariableTemplate.NAME, variableEntity.getName());
-      updateFields.put(TaskVariableTemplate.VALUE, variableEntity.getValue());
+      updateFields.put(SnapshotTaskVariableTemplate.TASK_ID, variableEntity.getTaskId());
+      updateFields.put(SnapshotTaskVariableTemplate.NAME, variableEntity.getName());
+      updateFields.put(SnapshotTaskVariableTemplate.VALUE, variableEntity.getValue());
 
       // format date fields properly
       final Map<String, Object> jsonMap =
@@ -272,7 +272,7 @@ public class VariableStoreElasticSearch implements VariableStore {
         new SearchSourceBuilder().query(idsQuery().addIds(variableId));
     applyFetchSourceForTaskVariableTemplate(searchSourceBuilder, fieldNames);
     final SearchRequest request =
-        createSearchRequest(taskVariableTemplate).source(searchSourceBuilder);
+        createSearchRequest(taskVariableTemplate.getAlias()).source(searchSourceBuilder);
     try {
       final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value == 1) {
@@ -311,11 +311,10 @@ public class VariableStoreElasticSearch implements VariableStore {
       SearchSourceBuilder searchSourceBuilder, final Set<String> fieldNames) {
     final String[] includesFields;
     if (isNotEmpty(fieldNames)) {
-      final Set<String> elsFieldNames =
-          TaskVariableTemplate.getElsFieldsByGraphqlFields(fieldNames);
-      elsFieldNames.add(TaskVariableTemplate.ID);
-      elsFieldNames.add(TaskVariableTemplate.NAME);
-      elsFieldNames.add(TaskVariableTemplate.TASK_ID);
+      final Set<String> elsFieldNames = VariableStore.getElsFieldsByGraphqlFields(fieldNames);
+      elsFieldNames.add(SnapshotTaskVariableTemplate.ID);
+      elsFieldNames.add(SnapshotTaskVariableTemplate.NAME);
+      elsFieldNames.add(SnapshotTaskVariableTemplate.TASK_ID);
       includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
       searchSourceBuilder.fetchSource(includesFields, null);
     }

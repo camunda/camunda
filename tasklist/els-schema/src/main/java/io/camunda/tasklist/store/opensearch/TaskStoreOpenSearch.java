@@ -28,13 +28,13 @@ import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.queries.TaskSortFields;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -99,7 +99,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   @Autowired private VariableStore variableStoreElasticSearch;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TaskVariableSearchUtil taskVariableSearchUtil;
 
@@ -855,7 +855,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       nameQ.terms(
           terms ->
               terms
-                  .field(TaskVariableTemplate.NAME)
+                  .field(SnapshotTaskVariableTemplate.NAME)
                   .terms(
                       t ->
                           t.value(Collections.singletonList(FieldValue.of(varNames.get(finalI))))));
@@ -864,7 +864,7 @@ public class TaskStoreOpenSearch implements TaskStore {
       valueQ.terms(
           terms ->
               terms
-                  .field(TaskVariableTemplate.VALUE)
+                  .field(SnapshotTaskVariableTemplate.VALUE)
                   .terms(
                       t ->
                           t.value(

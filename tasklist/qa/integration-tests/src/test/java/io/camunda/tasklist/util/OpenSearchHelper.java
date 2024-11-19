@@ -17,8 +17,8 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.util.Arrays;
@@ -51,7 +51,7 @@ public class OpenSearchHelper implements NoSqlHelper {
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private VariableIndex variableIndex;
 
@@ -165,10 +165,12 @@ public class OpenSearchHelper implements NoSqlHelper {
 
   public boolean checkVariableExists(final String taskId, final String varName) {
     final Query.Builder taskIdQ = new Query.Builder();
-    taskIdQ.term(term -> term.field(TaskVariableTemplate.TASK_ID).value(FieldValue.of(taskId)));
+    taskIdQ.term(
+        term -> term.field(SnapshotTaskVariableTemplate.TASK_ID).value(FieldValue.of(taskId)));
 
     final Query.Builder varNameQ = new Query.Builder();
-    varNameQ.term(term -> term.field(TaskVariableTemplate.NAME).value(FieldValue.of(varName)));
+    varNameQ.term(
+        term -> term.field(SnapshotTaskVariableTemplate.NAME).value(FieldValue.of(varName)));
 
     try {
       final SearchResponse<SnapshotTaskVariableEntity> response =

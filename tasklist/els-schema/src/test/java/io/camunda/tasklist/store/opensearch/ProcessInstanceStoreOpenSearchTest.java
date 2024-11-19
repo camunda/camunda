@@ -21,9 +21,9 @@ import io.camunda.tasklist.property.MultiTenancyProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -43,7 +43,11 @@ class ProcessInstanceStoreOpenSearchTest {
   @Mock private ProcessInstanceIndex processInstanceIndex;
   @Mock private TaskStore taskStore;
   @Spy private List<ProcessInstanceDependant> processInstanceDependants = Collections.emptyList();
-  @Spy private TaskVariableTemplate taskVariableTemplate = new TaskVariableTemplate();
+
+  @Spy
+  private SnapshotTaskVariableTemplate taskVariableTemplate =
+      new SnapshotTaskVariableTemplate("test", false);
+
   @Mock private RetryElasticsearchClient retryElasticsearchClient;
   @Mock private TenantAwareOpenSearchClient tenantAwareClient;
   @Mock private TasklistProperties tasklistProperties;
