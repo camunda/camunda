@@ -94,7 +94,7 @@ public final class DbDeploymentState implements MutableDeploymentState {
   }
 
   @Override
-  public void markALlDeploymentsAsStored() {
+  public void markAllDeploymentsAsStored() {
     deploymentsRecreatedKey.wrapString(DEPLOYMENTS_RECREATED_KEY);
     deploymentsRecreatedColumnFamily.insert(deploymentsRecreatedKey, DbNil.INSTANCE);
   }

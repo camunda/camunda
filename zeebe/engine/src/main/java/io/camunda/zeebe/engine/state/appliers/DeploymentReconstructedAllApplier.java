@@ -22,6 +22,6 @@ public class DeploymentReconstructedAllApplier
 
   @Override
   public void applyState(final long key, final DeploymentRecord value) {
-    deploymentState.markALlDeploymentsAsStored();
+    deploymentState.markAllDeploymentsAsStored();
   }
 }
