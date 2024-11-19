@@ -23,11 +23,6 @@ public class BrokerMappingCreateRequest extends BrokerExecuteCommand<MappingReco
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerMappingCreateRequest setMappingKey(final Long mappingKey) {
-    requestDto.setMappingKey(mappingKey);
-    return this;
-  }
-
   public BrokerMappingCreateRequest setClaimName(final String claimName) {
     requestDto.setClaimName(claimName);
     return this;
