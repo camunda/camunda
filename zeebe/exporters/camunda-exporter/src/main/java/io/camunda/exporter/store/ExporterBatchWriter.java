@@ -25,7 +25,7 @@ import java.util.Set;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ExporterBatchWriter {
   private final Map<ValueType, List<ExportHandler>> handlers = new HashMap<>();
-  private final Map<EntityIdAndEntityType, EntityAndHandler> cachedEntities = new HashMap<>();
+  private final Map<EntityIdAndEntityType, EntityAndHandlers> cachedEntities = new HashMap<>();
 
   public void addRecord(final Record<?> record) {
     final ValueType valueType = record.getValueType();
@@ -45,19 +45,19 @@ public class ExporterBatchWriter {
       final Record<?> record, final ExportHandler handler, final String id) {
     final var cacheKey = new EntityIdAndEntityType(id, handler.getEntityType());
 
-    final EntityAndHandler entityAndHandler =
+    final EntityAndHandlers entityAndHandlers =
         cachedEntities.computeIfAbsent(
             cacheKey,
             (k) -> {
               final ExporterEntity entity = handler.createNewEntity(id);
-              return new EntityAndHandler(entity, new HashSet<>());
+              return new EntityAndHandlers(entity, new HashSet<>());
             });
 
-    final var entity = entityAndHandler.entity;
+    final var entity = entityAndHandlers.entity;
     handler.updateEntity(record, entity);
 
     // we store all handlers for an entity to make sure not to miss any flushes
-    entityAndHandler.handlers.add(handler);
+    entityAndHandlers.handlers.add(handler);
   }
 
   public void flush(final BatchRequest batchRequest) throws PersistenceException {
@@ -113,5 +113,5 @@ public class ExporterBatchWriter {
 
   private record EntityIdAndEntityType(String entityId, Class<?> entityType) {}
 
-  private record EntityAndHandler(ExporterEntity entity, Set<ExportHandler> handlers) {}
+  private record EntityAndHandlers(ExporterEntity entity, Set<ExportHandler> handlers) {}
 }
