@@ -7,11 +7,11 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT;
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT_TIME;
-import static io.camunda.tasklist.schema.indices.MetricIndex.VALUE;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.ASSIGNEE;
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.EVENT_TASK_COMPLETED_BY_ASSIGNEE;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.VALUE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -26,7 +26,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.MetricIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -60,7 +60,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class TaskMetricsStoreElasticSearchTest {
 
   private static final String METRIC_INDEX_NAME = "tasklist_metric_x.0.0";
-  @Mock private MetricIndex index;
+  @Mock private TasklistMetricIndex index;
   @Mock private RestHighLevelClient esClient;
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
 

@@ -7,16 +7,16 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT;
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT_TIME;
-import static io.camunda.tasklist.schema.indices.MetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.VALUE;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.MetricIndex;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -51,7 +51,7 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
   public static final String ASSIGNEE = "assignee";
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreOpenSearch.class);
 
-  @Autowired private MetricIndex index;
+  @Autowired private TasklistMetricIndex index;
 
   @Autowired
   @Qualifier("tasklistOsClient")

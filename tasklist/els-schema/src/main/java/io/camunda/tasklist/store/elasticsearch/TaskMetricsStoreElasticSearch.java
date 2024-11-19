@@ -7,17 +7,17 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT;
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT_TIME;
-import static io.camunda.tasklist.schema.indices.MetricIndex.VALUE;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.VALUE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.MetricIndex;
 import io.camunda.tasklist.store.TaskMetricsStore;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -53,7 +53,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   public static final String EVENT_TASK_COMPLETED_BY_ASSIGNEE = "task_completed_by_assignee";
   public static final String ASSIGNEE = "assignee";
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreElasticSearch.class);
-  @Autowired private MetricIndex index;
+  @Autowired private TasklistMetricIndex index;
 
   @Autowired
   @Qualifier("tasklistEsClient")
