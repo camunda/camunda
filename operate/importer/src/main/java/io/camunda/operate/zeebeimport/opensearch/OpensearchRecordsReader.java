@@ -38,6 +38,7 @@ import io.camunda.operate.zeebeimport.ImportJob;
 import io.camunda.operate.zeebeimport.ImportListener;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.operate.zeebeimport.RecordsReader;
+import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import jakarta.annotation.PostConstruct;
@@ -122,6 +123,8 @@ public class OpensearchRecordsReader implements RecordsReader {
   @Autowired(required = false)
   private List<ImportListener> importListeners;
 
+  @Autowired private RecordsReaderHolder recordsReaderHolder;
+
   public OpensearchRecordsReader(
       final int partitionId, final ImportValueType importValueType, final int queueSize) {
     this.partitionId = partitionId;
@@ -181,6 +184,14 @@ public class OpensearchRecordsReader implements RecordsReader {
       if (importBatch == null
           || importBatch.getHits() == null
           || importBatch.getHits().size() == 0) {
+        if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+          recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
+        }
+
+        if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
+          recordsReaderHolder.recordLatestLoadedPositionAsCompleted(
+              importPositionHolder, importValueType.getAliasTemplate(), partitionId);
+        }
         nextRunDelay = readerBackoff;
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);

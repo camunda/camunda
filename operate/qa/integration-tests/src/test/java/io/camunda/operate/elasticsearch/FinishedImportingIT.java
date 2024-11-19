@@ -14,7 +14,6 @@ import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestSupport;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
-import io.camunda.operate.zeebeimport.elasticsearch.ElasticsearchRecordsReader;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
@@ -97,9 +96,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     // require multiple checks to avoid race condition. If records are written to zeebe indices and
     // before a refresh, the record reader pulls the import batch is empty so it then says that the
     // record reader is done when it is not.
-    for (int i = 0;
-        i < ElasticsearchRecordsReader.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
-        i++) {
+    for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
@@ -129,9 +126,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         generateRecord(ValueType.DECISION_EVALUATION, "8.7.0", 1);
     EXPORTER.export(newVersionDecisionEvalRecord);
 
-    for (int i = 0;
-        i <= ElasticsearchRecordsReader.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
-        i++) {
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       // simulate existing decision records left to process so it is not marked as completed
       final var decisionRecord2 = generateRecord(ValueType.DECISION, "8.6.0", 1);
       EXPORTER.export(decisionRecord2);
@@ -167,9 +162,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.export(partitionTwoRecord2);
     esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
-    for (int i = 0;
-        i <= ElasticsearchRecordsReader.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
-        i++) {
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
 
