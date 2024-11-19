@@ -196,12 +196,12 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessDefinitionItem toProcessDefinition(final ProcessDefinitionEntity entity) {
     return new ProcessDefinitionItem()
-        .processDefinitionKey(entity.key())
+        .processDefinitionKey(entity.processDefinitionKey())
         .name(entity.name())
         .resourceName(entity.resourceName())
         .version(entity.version())
         .versionTag(entity.versionTag())
-        .processDefinitionId(entity.bpmnProcessId())
+        .processDefinitionId(entity.processDefinitionId())
         .tenantId(entity.tenantId());
   }
 
@@ -212,11 +212,11 @@ public final class SearchQueryResponseMapper {
 
   public static ProcessInstanceItem toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceItem()
-        .processInstanceKey(p.key())
-        .processDefinitionId(p.bpmnProcessId())
-        .processDefinitionName(p.processName())
-        .processDefinitionVersion(p.processVersion())
-        .processDefinitionVersionTag(p.processVersionTag())
+        .processInstanceKey(p.processInstanceKey())
+        .processDefinitionId(p.processDefinitionId())
+        .processDefinitionName(p.processDefinitionName())
+        .processDefinitionVersion(p.processDefinitionVersion())
+        .processDefinitionVersionTag(p.processDefinitionVersionTag())
         .processDefinitionKey(p.processDefinitionKey())
         .parentProcessInstanceKey(p.parentProcessInstanceKey())
         .parentFlowNodeInstanceKey(p.parentFlowNodeInstanceKey())
@@ -224,7 +224,7 @@ public final class SearchQueryResponseMapper {
         .startDate(formatDate(p.startDate()))
         .endDate(formatDate(p.endDate()))
         .state((p.state() == null) ? null : ProcessInstanceStateEnum.fromValue(p.state().name()))
-        .hasIncident(p.incident())
+        .hasIncident(p.hasIncident())
         .tenantId(p.tenantId());
   }
 
@@ -324,19 +324,19 @@ public final class SearchQueryResponseMapper {
   public static UserTaskItem toUserTask(final UserTaskEntity t) {
     return new UserTaskItem()
         .tenantId(t.tenantId())
-        .userTaskKey(t.key())
-        .processInstanceKey(t.processInstanceId())
-        .processDefinitionKey(t.processDefinitionId())
-        .elementInstanceKey(t.flowNodeInstanceId())
-        .processDefinitionId(t.bpmnProcessId())
+        .userTaskKey(t.userTaskKey())
+        .processInstanceKey(t.processInstanceKey())
+        .processDefinitionKey(t.processDefinitionKey())
+        .elementInstanceKey(t.elementInstanceKey())
+        .processDefinitionId(t.processDefinitionId())
         .state(UserTaskItem.StateEnum.fromValue(t.state().name()))
         .assignee(t.assignee())
         .candidateUsers(t.candidateUsers())
         .candidateGroups(t.candidateGroups())
         .formKey(t.formKey())
-        .elementId(t.flowNodeBpmnId())
-        .creationDate(formatDate(t.creationTime()))
-        .completionDate(formatDate(t.completionTime()))
+        .elementId(t.elementId())
+        .creationDate(formatDate(t.creationDate()))
+        .completionDate(formatDate(t.completionDate()))
         .dueDate(formatDate(t.dueDate()))
         .followUpDate(formatDate(t.followUpDate()))
         .externalFormReference(t.externalFormReference())

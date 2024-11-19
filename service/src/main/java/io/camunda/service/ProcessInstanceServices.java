@@ -85,7 +85,7 @@ public final class ProcessInstanceServices
         getSingleResultOrThrow(result, processInstanceKey, "Process instance");
     final var authorization = Authorization.of(a -> a.processDefinition().readInstance());
     if (!securityContextProvider.isAuthorized(
-        processInstanceEntity.bpmnProcessId(), authentication, authorization)) {
+        processInstanceEntity.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
     return processInstanceEntity;

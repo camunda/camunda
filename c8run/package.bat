@@ -1,7 +1,7 @@
 @echo on
 REM set constants
-set CAMUNDA_VERSION=8.6.2
-set CAMUNDA_CONNECTORS_VERSION=8.6.2
+set CAMUNDA_VERSION=8.7.0-alpha1
+set CAMUNDA_CONNECTORS_VERSION=8.7.0-alpha1
 set ELASTICSEARCH_VERSION=8.13.4
 
 set BASEDIR=%~dp0
@@ -21,13 +21,13 @@ if not exist "elasticsearch-%ELASTICSEARCH_VERSION%.zip" (
 tar -xf elasticsearch-%ELASTICSEARCH_VERSION%.zip -C %BASEDIR%
 
 if not exist "camunda-zeebe-%CAMUNDA_VERSION%.zip" (
-    curl -L -o camunda-zeebe-%CAMUNDA_VERSION%.zip "https://github.com/camunda/camunda/releases/download/%CAMUNDA_VERSION%/camunda-zeebe-%CAMUNDA_VERSION%.zip"
+    gh release download -R "camunda/camunda" "%CAMUNDA_VERSION%" -p "camunda-zeebe-%CAMUNDA_VERSION%.zip"
 )
 tar -xf camunda-zeebe-%CAMUNDA_VERSION%.zip -C %BASEDIR%
 
 set connectorsFileName=connector-runtime-bundle-%CAMUNDA_CONNECTORS_VERSION%-with-dependencies.jar
 if not exist "%connectorsFileName%" (
-    curl -L -o "%connectorsFileName%" "https://repo1.maven.org/maven2/io/camunda/connector/connector-runtime-bundle/%CAMUNDA_CONNECTORS_VERSION%/%connectorsFileName%"
+    curl -L -o "%connectorsFileName%" "https://artifacts.camunda.com/artifactory/connectors/io/camunda/connector/connector-runtime-bundle/%CAMUNDA_CONNECTORS_VERSION%/%connectorsFileName%"
 )
 
 

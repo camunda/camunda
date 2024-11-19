@@ -25,12 +25,14 @@ public interface ProcessInstanceMapper {
   List<ProcessInstanceEntity> search(ProcessInstanceDbQuery filter);
 
   enum ProcessInstanceSearchColumn implements SearchColumn<ProcessInstanceEntity> {
-    PROCESS_INSTANCE_KEY("key", ProcessInstanceEntity::key),
+    PROCESS_INSTANCE_KEY("processInstanceKey", ProcessInstanceEntity::processInstanceKey),
     PROCESS_DEFINITION_KEY("processDefinitionKey", ProcessInstanceEntity::processDefinitionKey),
-    PROCESS_DEFINITION_ID("bpmnProcessId", ProcessInstanceEntity::bpmnProcessId),
-    PROCESS_DEFINITION_NAME("processName", ProcessInstanceEntity::processName),
-    PROCESS_DEFINITION_VERSION("processVersion", ProcessInstanceEntity::processVersion),
-    PROCESS_DEFINITION_VERSION_TAG("processVersionTag", ProcessInstanceEntity::processVersionTag),
+    PROCESS_DEFINITION_ID("processDefinitionId", ProcessInstanceEntity::processDefinitionId),
+    PROCESS_DEFINITION_NAME("processDefinitionName", ProcessInstanceEntity::processDefinitionName),
+    PROCESS_DEFINITION_VERSION(
+        "processDefinitionVersion", ProcessInstanceEntity::processDefinitionVersion),
+    PROCESS_DEFINITION_VERSION_TAG(
+        "processDefinitionVersionTag", ProcessInstanceEntity::processDefinitionVersionTag),
     START_DATE("startDate", ProcessInstanceEntity::startDate, DateUtil::fuzzyToOffsetDateTime),
     END_DATE("endDate", ProcessInstanceEntity::endDate, DateUtil::fuzzyToOffsetDateTime),
     STATE("state", ProcessInstanceEntity::state),
@@ -40,7 +42,7 @@ public interface ProcessInstanceMapper {
     PARENT_FLOW_NODE_INSTANCE_KEY(
         "parentFlowNodeInstanceKey", ProcessInstanceEntity::parentFlowNodeInstanceKey),
     TREE_PATH("treePath", ProcessInstanceEntity::treePath),
-    INCIDENT("incident", ProcessInstanceEntity::incident);
+    INCIDENT("hasIncident", ProcessInstanceEntity::hasIncident);
 
     private final String property;
     private final Function<ProcessInstanceEntity, Object> propertyReader;
