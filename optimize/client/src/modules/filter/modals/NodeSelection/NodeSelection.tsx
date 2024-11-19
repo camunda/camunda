@@ -118,7 +118,7 @@ export default function NodeSelection({
           <Loading />
         ) : (
           <>
-            <p>{t('common.filter.UnselectFlowNodes')}</p>
+            <p className="instructions">{t('common.filter.UnselectFlowNodes')}</p>
             <div className="diagramActions">
               <ButtonSet>
                 <Button size="md" kind="tertiary" onClick={() => setSelectedNodes(allFlowNodes)}>
