@@ -201,6 +201,10 @@ public final class AuthorizationCheckBehavior {
   }
 
   public List<String> getAuthorizedTenantIds(final TypedRecord<?> command) {
+    // todo: this is a temporary solution until we adjust all the tests to fetch the tenant from the state
+    if (command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS) != null) {
+      return (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
+    }
     final var userKey = getUserKey(command);
     final List<String> authorizedTenantIds = new ArrayList<>();
     authorizedTenantIds.add(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
