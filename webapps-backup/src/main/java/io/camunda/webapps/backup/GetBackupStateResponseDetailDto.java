@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.management.dto;
+package io.camunda.webapps.backup;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -24,7 +24,7 @@ public class GetBackupStateResponseDetailDto {
     return snapshotName;
   }
 
-  public GetBackupStateResponseDetailDto setSnapshotName(String snapshotName) {
+  public GetBackupStateResponseDetailDto setSnapshotName(final String snapshotName) {
     this.snapshotName = snapshotName;
     return this;
   }
@@ -33,7 +33,7 @@ public class GetBackupStateResponseDetailDto {
     return state;
   }
 
-  public GetBackupStateResponseDetailDto setState(String state) {
+  public GetBackupStateResponseDetailDto setState(final String state) {
     this.state = state;
     return this;
   }
@@ -42,7 +42,7 @@ public class GetBackupStateResponseDetailDto {
     return startTime;
   }
 
-  public GetBackupStateResponseDetailDto setStartTime(OffsetDateTime startTime) {
+  public GetBackupStateResponseDetailDto setStartTime(final OffsetDateTime startTime) {
     this.startTime = startTime;
     return this;
   }
@@ -51,7 +51,7 @@ public class GetBackupStateResponseDetailDto {
     return failures;
   }
 
-  public GetBackupStateResponseDetailDto setFailures(String[] failures) {
+  public GetBackupStateResponseDetailDto setFailures(final String[] failures) {
     this.failures = failures;
     return this;
   }
@@ -64,7 +64,7 @@ public class GetBackupStateResponseDetailDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

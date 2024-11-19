@@ -5,18 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.management.dto;
+package io.camunda.webapps.backup;
 
-public class TakeBackupRequestDto {
-
-  private Long backupId;
-
-  public Long getBackupId() {
-    return backupId;
-  }
-
-  public TakeBackupRequestDto setBackupId(Long backupId) {
-    this.backupId = backupId;
-    return this;
-  }
-}
+public record Metadata(Long backupId, String version, Integer partNo, Integer partCount) {}

@@ -12,10 +12,12 @@ import io.camunda.operate.schema.backup.Prio1Backup;
 import io.camunda.operate.schema.backup.Prio2Backup;
 import io.camunda.operate.schema.backup.Prio3Backup;
 import io.camunda.operate.schema.backup.Prio4Backup;
-import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
-import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
-import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.webapps.backup.BackupRepository;
+import io.camunda.webapps.backup.BackupService;
+import io.camunda.webapps.backup.GetBackupStateResponseDto;
+import io.camunda.webapps.backup.TakeBackupRequestDto;
+import io.camunda.webapps.backup.TakeBackupResponseDto;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import java.util.ArrayList;
@@ -32,9 +34,9 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
-public class BackupService {
+public class BackupServiceImpl implements BackupService {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BackupService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BackupServiceImpl.class);
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
   private final Queue<SnapshotRequest> requestsQueue = new ConcurrentLinkedQueue<>();
 
@@ -52,7 +54,7 @@ public class BackupService {
 
   private String[][] indexPatternsOrdered;
 
-  public BackupService(
+  public BackupServiceImpl(
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor,
       final List<Prio1Backup> prio1BackupIndices,
       final List<Prio2Backup> prio2BackupTemplates,
@@ -69,6 +71,7 @@ public class BackupService {
     this.operateProperties = operateProperties;
   }
 
+  @Override
   public void deleteBackup(final Long backupId) {
     repository.validateRepositoryExists(getRepositoryName());
     final String repositoryName = getRepositoryName();
@@ -86,6 +89,7 @@ public class BackupService {
     }
   }
 
+  @Override
   public TakeBackupResponseDto takeBackup(final TakeBackupRequestDto request) {
     repository.validateRepositoryExists(getRepositoryName());
     repository.validateNoDuplicateBackupId(getRepositoryName(), request.getBackupId());
@@ -100,7 +104,17 @@ public class BackupService {
     }
   }
 
-  private TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
+  @Override
+  public GetBackupStateResponseDto getBackupState(final Long backupId) {
+    return repository.getBackupState(getRepositoryName(), backupId);
+  }
+
+  @Override
+  public List<GetBackupStateResponseDto> getBackups() {
+    return repository.getBackups(getRepositoryName());
+  }
+
+  TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
     final String repositoryName = getRepositoryName();
     final int count = getIndexPatternsOrdered().length;
     final List<String> snapshotNames = new ArrayList<>();
@@ -115,10 +129,10 @@ public class BackupService {
               .setBackupId(request.getBackupId());
       final String snapshotName = metadata.buildSnapshotName();
       final SnapshotRequest snapshotRequest =
-          new SnapshotRequest(repositoryName, snapshotName, indexPattern, metadata);
+          new SnapshotRequest(repositoryName, snapshotName, indexPattern, metadata.toCommon());
 
       requestsQueue.offer(snapshotRequest);
-      LOGGER.debug("Snapshot scheduled: {}", snapshotName);
+      BackupServiceImpl.LOGGER.debug("Snapshot scheduled: {}", snapshotName);
       snapshotNames.add(snapshotName);
     }
     // schedule next snapshot
@@ -126,14 +140,14 @@ public class BackupService {
     return new TakeBackupResponseDto().setScheduledSnapshots(snapshotNames);
   }
 
-  private void scheduleNextSnapshot() {
+  void scheduleNextSnapshot() {
     final SnapshotRequest nextRequest = requestsQueue.poll();
     if (nextRequest != null) {
       threadPoolTaskExecutor.submit(
           () ->
               repository.executeSnapshotting(
                   nextRequest, this::scheduleNextSnapshot, requestsQueue::clear));
-      LOGGER.debug("Snapshot picked for execution: {}", nextRequest);
+      BackupServiceImpl.LOGGER.debug("Snapshot picked for execution: {}", nextRequest);
     }
   }
 
@@ -185,15 +199,4 @@ public class BackupService {
   private String getCurrentOperateVersion() {
     return operateProperties.getVersion().toLowerCase();
   }
-
-  public GetBackupStateResponseDto getBackupState(final Long backupId) {
-    return repository.getBackupState(getRepositoryName(), backupId);
-  }
-
-  public List<GetBackupStateResponseDto> getBackups() {
-    return repository.getBackups(getRepositoryName());
-  }
-
-  public record SnapshotRequest(
-      String repositoryName, String snapshotName, List<String> indices, Metadata metadata) {}
 }
