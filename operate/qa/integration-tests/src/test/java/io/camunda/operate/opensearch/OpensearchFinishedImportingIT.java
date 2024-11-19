@@ -34,21 +34,19 @@ import org.junit.Test;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Opensearch operate tests are not executed in CI, to test locally start a container with docker
  * run -p 9200:9200 -p 9600:9600 -e "discovery.type=single-node" -e "plugins.security.disabled=true"
  * -e "OPENSEARCH_INITIAL_ADMIN_PASSWORD=APassword321?" opensearchproject/opensearch:latest
  */
-public class FinishedImportingIT extends OperateZeebeAbstractIT {
+@TestPropertySource(properties = DatabaseCondition.DATABASE_PROPERTY + "=opensearch")
+public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
 
   private static final OpensearchExporter EXPORTER = new OpensearchExporter();
   private static final OpensearchExporterConfiguration CONFIG =
       new OpensearchExporterConfiguration();
-
-  static {
-    System.setProperty(DatabaseCondition.DATABASE_PROPERTY, "opensearch");
-  }
 
   @Autowired public SchemaManager schemaManager;
   @Autowired protected ZeebeImporter zeebeImporter;
