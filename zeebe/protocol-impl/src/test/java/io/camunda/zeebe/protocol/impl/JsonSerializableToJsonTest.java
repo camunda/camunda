@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -2970,6 +2971,72 @@ final class JsonSerializableToJsonTest {
         "mappingKey": -1,
         "claimName": "",
         "claimValue": ""
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// IdentitySetupRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "IdentitySetup record",
+        (Supplier<IdentitySetupRecord>)
+            () ->
+                new IdentitySetupRecord()
+                    .setDefaultRole(
+                        new RoleRecord()
+                            .setRoleKey(1)
+                            .setName("roleName")
+                            .setEntityKey(2)
+                            .setEntityType(EntityType.USER))
+                    .setDefaultUser(
+                        new UserRecord()
+                            .setUserKey(3L)
+                            .setUsername("username")
+                            .setName("name")
+                            .setEmail("email")
+                            .setPassword("password")
+                            .setUserType(UserType.REGULAR)),
+        """
+      {
+        "defaultRole": {
+          "roleKey": 1,
+          "name": "roleName",
+          "entityKey": 2,
+          "entityType": "USER"
+        },
+        "defaultUser": {
+          "userKey": 3,
+          "username": "username",
+          "name": "name",
+          "email": "email",
+          "password": "password",
+          "userType": "REGULAR"
+        }
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Empty IdentitySetupRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty IdentitySetupRecord",
+        (Supplier<IdentitySetupRecord>) IdentitySetupRecord::new,
+        """
+      {
+          "defaultRole": {
+              "roleKey": -1,
+              "name": "",
+              "entityKey": -1,
+              "entityType": "UNSPECIFIED"
+          },
+          "defaultUser": {
+              "userKey": -1,
+              "name": "",
+              "username": "",
+              "password": "",
+              "email": "",
+              "userType": "REGULAR"
+          }
       }
       """
       },
