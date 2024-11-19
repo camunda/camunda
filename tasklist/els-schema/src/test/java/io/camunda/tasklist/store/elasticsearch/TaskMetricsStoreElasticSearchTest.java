@@ -24,10 +24,10 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.MetricEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.MetricIndex;
+import io.camunda.webapps.schema.entities.MetricEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.Collections;

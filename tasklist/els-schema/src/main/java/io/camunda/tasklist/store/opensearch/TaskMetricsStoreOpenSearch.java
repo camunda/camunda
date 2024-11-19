@@ -12,12 +12,12 @@ import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT_TIME;
 import static io.camunda.tasklist.schema.indices.MetricIndex.VALUE;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.MetricEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.MetricIndex;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.webapps.schema.entities.MetricEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
