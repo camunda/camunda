@@ -16,16 +16,18 @@
 package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.DecisionInstanceFilter;
+import io.camunda.zeebe.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.impl.util.FilterUtil;
-import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
+import io.camunda.zeebe.client.impl.search.filter.builder.BasicLongPropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.DateTimePropertyImpl;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
 import java.time.OffsetDateTime;
+import java.util.function.Consumer;
 
 public class DecisionInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<DecisionInstanceFilterRequest>
@@ -80,13 +82,15 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter evaluationDate(final OffsetDateTime evaluationDate) {
-    filter.setEvaluationDate(FilterUtil.dateTimeFilterProperty(evaluationDate));
+    evaluationDate(b -> b.eq(evaluationDate));
     return null;
   }
 
   @Override
-  public DecisionInstanceFilter evaluationDate(final DateTimeFilterProperty evaluationDate) {
-    filter.setEvaluationDate(evaluationDate);
+  public DecisionInstanceFilter evaluationDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimePropertyImpl property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setEvaluationDate(property.build());
     return null;
   }
 
@@ -104,14 +108,15 @@ public class DecisionInstanceFilterImpl
 
   @Override
   public DecisionInstanceFilter decisionDefinitionKey(final long decisionDefinitionKey) {
-    filter.setDecisionDefinitionKey(FilterUtil.basicLongFilterProperty(decisionDefinitionKey));
+    decisionDefinitionKey(b -> b.eq(decisionDefinitionKey));
     return this;
   }
 
   @Override
-  public DecisionInstanceFilter decisionDefinitionKey(
-      final BasicLongFilterProperty decisionDefinitionKey) {
-    filter.setDecisionDefinitionKey(decisionDefinitionKey);
+  public DecisionInstanceFilter decisionDefinitionKey(final Consumer<BasicLongProperty> fn) {
+    final BasicLongPropertyImpl property = new BasicLongPropertyImpl();
+    fn.accept(property);
+    filter.setDecisionDefinitionKey(property.build());
     return this;
   }
 

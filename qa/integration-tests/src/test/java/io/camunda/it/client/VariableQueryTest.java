@@ -14,8 +14,6 @@ import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.search.response.Variable;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -110,9 +108,12 @@ class VariableQueryTest {
   @Test
   void shouldQueryByNameFilterIn() {
     // when
-    final var filter = new StringFilterProperty();
-    filter.$in(List.of("not-found", variable.getName()));
-    final var result = camundaClient.newVariableQuery().filter(f -> f.name(filter)).send().join();
+    final var result =
+        camundaClient
+            .newVariableQuery()
+            .filter(f -> f.name(b -> b.in("not-found", variable.getName())))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(2);
@@ -122,9 +123,12 @@ class VariableQueryTest {
   @Test
   void shouldQueryByNameFilterLike() {
     // when
-    final var filter = new StringFilterProperty();
-    filter.$like(variable.getName().replace("proc", "*"));
-    final var result = camundaClient.newVariableQuery().filter(f -> f.name(filter)).send().join();
+    final var result =
+        camundaClient
+            .newVariableQuery()
+            .filter(f -> f.name(b -> b.like(variable.getName().replace("proc", "*"))))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(2);
@@ -150,9 +154,12 @@ class VariableQueryTest {
   @Test
   void shouldQueryByValueFilterIn() {
     // when
-    final var filter = new StringFilterProperty();
-    filter.$in(List.of("not-found", variable.getValue()));
-    final var result = camundaClient.newVariableQuery().filter(f -> f.value(filter)).send().join();
+    final var result =
+        camundaClient
+            .newVariableQuery()
+            .filter(f -> f.value(b -> b.in("not-found", variable.getValue())))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
@@ -164,9 +171,12 @@ class VariableQueryTest {
   @Test
   void shouldQueryByValueFilterLike() {
     // when
-    final var filter = new StringFilterProperty();
-    filter.$like(variable.getValue().replace("p", "?"));
-    final var result = camundaClient.newVariableQuery().filter(f -> f.value(filter)).send().join();
+    final var result =
+        camundaClient
+            .newVariableQuery()
+            .filter(f -> f.value(b -> b.like(variable.getValue().replace("p", "?"))))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
@@ -196,11 +206,17 @@ class VariableQueryTest {
   @Test
   void shouldQueryByProcessInstanceKeyFilterGtLt() {
     // when
-    final var filter = new LongFilterProperty();
-    filter.$gt(variable.getProcessInstanceKey() - 1);
-    filter.$lt(variable.getProcessInstanceKey() + 1);
     final var result =
-        camundaClient.newVariableQuery().filter(f -> f.processInstanceKey(filter)).send().join();
+        camundaClient
+            .newVariableQuery()
+            .filter(
+                f ->
+                    f.processInstanceKey(
+                        b ->
+                            b.gt(variable.getProcessInstanceKey() - 1)
+                                .lt(variable.getProcessInstanceKey() + 1)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);
@@ -213,11 +229,17 @@ class VariableQueryTest {
   @Test
   void shouldQueryByProcessInstanceKeyFilterGteLte() {
     // when
-    final var filter = new LongFilterProperty();
-    filter.$gte(variable.getProcessInstanceKey());
-    filter.$lte(variable.getProcessInstanceKey());
     final var result =
-        camundaClient.newVariableQuery().filter(f -> f.processInstanceKey(filter)).send().join();
+        camundaClient
+            .newVariableQuery()
+            .filter(
+                f ->
+                    f.processInstanceKey(
+                        b ->
+                            b.gte(variable.getProcessInstanceKey())
+                                .lte(variable.getProcessInstanceKey())))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);
@@ -230,10 +252,12 @@ class VariableQueryTest {
   @Test
   void shouldQueryByProcessInstanceKeyFilterIn() {
     // when
-    final var filter = new LongFilterProperty();
-    filter.$in(List.of(variable.getProcessInstanceKey()));
     final var result =
-        camundaClient.newVariableQuery().filter(f -> f.processInstanceKey(filter)).send().join();
+        camundaClient
+            .newVariableQuery()
+            .filter(f -> f.processInstanceKey(b -> b.in(variable.getProcessInstanceKey())))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);

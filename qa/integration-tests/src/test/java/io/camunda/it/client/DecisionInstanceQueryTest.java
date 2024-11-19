@@ -18,8 +18,6 @@ import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstance;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
-import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
@@ -118,12 +116,10 @@ class DecisionInstanceQueryTest {
     // when
     final long decisionDefinitionKey =
         evaluatedDecisions.get(DECISION_DEFINITION_ID_1).getDecisionKey();
-    final BasicLongFilterProperty filter = new BasicLongFilterProperty();
-    filter.set$In(List.of(Long.MAX_VALUE, decisionDefinitionKey));
     final var result =
         zeebeClient
             .newDecisionInstanceQuery()
-            .filter(f -> f.decisionDefinitionKey(filter))
+            .filter(f -> f.decisionDefinitionKey(b -> b.in(Long.MAX_VALUE, decisionDefinitionKey)))
             .send()
             .join();
 
@@ -202,16 +198,18 @@ class DecisionInstanceQueryTest {
             .send()
             .join();
     final var di = allResult.items().getFirst();
-    final DateTimeFilterProperty filter = new DateTimeFilterProperty();
-    filter.set$Gt(di.getEvaluationDate());
+    final var requestDate = OffsetDateTime.parse(di.getEvaluationDate());
 
     // when
     final var result =
-        zeebeClient.newDecisionInstanceQuery().filter(f -> f.evaluationDate(filter)).send().join();
+        zeebeClient
+            .newDecisionInstanceQuery()
+            .filter(f -> f.evaluationDate(b -> b.gt(requestDate)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(2);
-    final var requestDate = OffsetDateTime.parse(di.getEvaluationDate());
     assertThat(result.items())
         .extracting("evaluationDate", String.class)
         .allMatch(date -> requestDate.isBefore(OffsetDateTime.parse(date)));
@@ -232,16 +230,18 @@ class DecisionInstanceQueryTest {
             .send()
             .join();
     final var di = allResult.items().getFirst();
-    final DateTimeFilterProperty filter = new DateTimeFilterProperty();
-    filter.set$Gte(di.getEvaluationDate());
+    final var requestDate = OffsetDateTime.parse(di.getEvaluationDate());
 
     // when
     final var result =
-        zeebeClient.newDecisionInstanceQuery().filter(f -> f.evaluationDate(filter)).send().join();
+        zeebeClient
+            .newDecisionInstanceQuery()
+            .filter(f -> f.evaluationDate(b -> b.gte(requestDate)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(3);
-    final var requestDate = OffsetDateTime.parse(di.getEvaluationDate());
     assertThat(result.items())
         .extracting("evaluationDate", String.class)
         .allMatch(date -> !OffsetDateTime.parse(date).isBefore(requestDate));
