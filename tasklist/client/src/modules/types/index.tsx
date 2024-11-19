@@ -102,46 +102,6 @@ type ProcessInstance = {
   isFirst: boolean;
 };
 
-type DateSearch = {
-  from?: string;
-  to?: string;
-};
-
-type PaginationSearchPair = [string, string];
-
-type TasksSearchBody = {
-  state?: TaskState;
-  followUpDate?: DateSearch;
-  dueDate?: DateSearch;
-  assigned?: boolean;
-  assignee?: string;
-  taskDefinitionId?: string;
-  candidateGroup?: string;
-  candidateUser?: string;
-  processDefinitionKey?: string;
-  processInstanceKey?: string;
-  pageSize?: number;
-  sort?: Array<{
-    field:
-      | 'completionTime'
-      | 'creationTime'
-      | 'followUpDate'
-      | 'dueDate'
-      | 'priority';
-    order: 'ASC' | 'DESC';
-  }>;
-  searchAfter?: PaginationSearchPair;
-  searchAfterOrEqual?: PaginationSearchPair;
-  searchBefore?: PaginationSearchPair;
-  searchBeforeOrEqual?: PaginationSearchPair;
-  tenantIds?: string[];
-  taskVariables?: Array<{
-    name: string;
-    value: string;
-    operator: 'eq';
-  }>;
-};
-
 type License = {
   validLicense: boolean;
   licenseType: string;
@@ -158,7 +118,6 @@ export type {
   Permissions,
   Process,
   ProcessInstance,
-  TasksSearchBody,
   FullVariable,
   TruncatedVariable,
   License,

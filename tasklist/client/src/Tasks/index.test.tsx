@@ -8,7 +8,6 @@
 
 import {render, screen, fireEvent, waitFor} from 'modules/testing-library';
 import {MemoryRouter} from 'react-router-dom';
-import {generateTask} from 'modules/mock-schema/mocks/tasks';
 import {Component} from './index';
 import {http, HttpResponse} from 'msw';
 import {nodeMockServer} from 'modules/mockServer/nodeMockServer';
@@ -16,7 +15,9 @@ import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
 import {LocationLog} from 'modules/utils/LocationLog';
-import type {Task} from 'modules/types';
+import type {QueryUserTasksRequestBody} from '@vzeta/camunda-api-zod-schemas/tasklist';
+import {unassignedTask} from 'modules/mocks/v2/task';
+import {getQueryTasksResponseMock} from 'modules/mocks/v2/tasks';
 
 vi.mock('modules/stores/autoSelectFirstTask', () => ({
   autoSelectNextTaskStore: {
@@ -26,12 +27,17 @@ vi.mock('modules/stores/autoSelectFirstTask', () => ({
   },
 }));
 
-const FIRST_PAGE = Array.from({length: 50}).map((_, index) =>
-  generateTask(`${index}`),
+const FIRST_PAGE = Array.from({length: 50}).map((_, userTaskKey) =>
+  unassignedTask({userTaskKey, elementName: `TASK ${userTaskKey}`}),
 );
-const SECOND_PAGE = Array.from({length: 50}).map((_, index) =>
-  generateTask(`${index + 50}`),
-);
+const SECOND_PAGE = Array.from({length: 50}).map((_, index) => {
+  const userTaskKey = index + 50;
+
+  return unassignedTask({
+    userTaskKey: userTaskKey,
+    elementName: `TASK ${userTaskKey}`,
+  });
+});
 
 function getWrapper(
   initialEntries: React.ComponentProps<
@@ -68,15 +74,23 @@ describe('<Tasks />', () => {
         },
         {once: true},
       ),
-      http.post<never, {searchAfter: [string, string]}>(
-        '/v1/tasks/search',
+      http.post<never, QueryUserTasksRequestBody>(
+        '/v2/user-tasks/search',
         async ({request}) => {
-          const {searchAfter} = await request.json();
-          if (searchAfter === undefined) {
-            return HttpResponse.json(FIRST_PAGE);
-          }
+          const {page} = await request.json();
 
-          return HttpResponse.json(SECOND_PAGE);
+          switch (page?.from) {
+            case 0:
+              return HttpResponse.json(
+                getQueryTasksResponseMock(FIRST_PAGE, 100),
+              );
+            case 50:
+              return HttpResponse.json(
+                getQueryTasksResponseMock(SECOND_PAGE, 100),
+              );
+            default:
+              return HttpResponse.json(getQueryTasksResponseMock([]));
+          }
         },
       ),
     );
@@ -109,13 +123,17 @@ describe('<Tasks />', () => {
       http.get('/v1/internal/users/current', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
-      http.post<never, {candidateUser: string; foo: unknown}>(
-        '/v1/tasks/search',
+      http.post<never, QueryUserTasksRequestBody & {foo: unknown}>(
+        '/v2/user-tasks/search',
         async ({request}) => {
-          const {candidateUser, foo} = await request.json();
+          const {filter, foo} = await request.json();
 
-          if (candidateUser === 'demo' && foo === undefined) {
-            return HttpResponse.json(FIRST_PAGE);
+          if (
+            Array.isArray(filter?.candidateUsers) &&
+            filter.candidateUsers.includes('demo') &&
+            foo === undefined
+          ) {
+            return HttpResponse.json(getQueryTasksResponseMock(FIRST_PAGE));
           }
 
           return HttpResponse.error();
@@ -136,11 +154,13 @@ describe('<Tasks />', () => {
       http.get('/v1/internal/users/current', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
-      http.post<never, never>('/v1/tasks/search', async () => {
-        return HttpResponse.json([
-          {...FIRST_PAGE[0], taskState: 'COMPLETED'},
-          ...FIRST_PAGE.splice(1),
-        ] satisfies Task[]);
+      http.post<never, never>('/v2/user-tasks/search', async () => {
+        return HttpResponse.json(
+          getQueryTasksResponseMock([
+            {...FIRST_PAGE[0], state: 'COMPLETED'},
+            ...FIRST_PAGE.splice(1),
+          ]),
+        );
       }),
     );
 
@@ -160,15 +180,15 @@ describe('<Tasks />', () => {
     );
   });
 
-  it('should go to the inital page when auto-select is enabled and no tasks are available', async () => {
+  it('should go to the initial page when auto-select is enabled and no tasks are available', async () => {
     nodeMockServer.use(
       http.get('/v1/internal/users/current', () => {
         return HttpResponse.json(userMocks.currentUser);
       }),
       http.post<never, {candidateUser: string; foo: unknown}>(
-        '/v1/tasks/search',
+        '/v2/user-tasks/search',
         async () => {
-          return HttpResponse.json([]);
+          return HttpResponse.json(getQueryTasksResponseMock([]));
         },
       ),
     );

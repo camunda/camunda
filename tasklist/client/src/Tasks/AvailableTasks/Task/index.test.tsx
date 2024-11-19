@@ -41,15 +41,14 @@ describe('<Task />', () => {
   it('should render task', () => {
     render(
       <Task
-        taskId="1"
+        userTaskKey={1}
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        context="My Task"
         assignee={currentUser.userId}
-        followUpDate={null}
-        dueDate={null}
-        completionDate={null}
+        followUpDate={undefined}
+        dueDate={undefined}
+        completionDate={undefined}
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
@@ -73,15 +72,14 @@ describe('<Task />', () => {
   it('should handle unassigned tasks', () => {
     render(
       <Task
-        taskId="1"
+        userTaskKey={1}
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        context="My Task"
-        assignee={null}
-        followUpDate={null}
-        dueDate={null}
-        completionDate={null}
+        assignee={undefined}
+        followUpDate={undefined}
+        dueDate={undefined}
+        completionDate={undefined}
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
@@ -97,15 +95,14 @@ describe('<Task />', () => {
   it('should render creation time as empty value if given date is invalid', () => {
     render(
       <Task
-        taskId="1"
+        userTaskKey={1}
         name="name"
         processName="processName"
         creationDate="invalid date"
-        context="My Task"
         assignee={currentUser.userId}
-        followUpDate={null}
-        dueDate={null}
-        completionDate={null}
+        followUpDate={undefined}
+        dueDate={undefined}
+        completionDate={undefined}
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
@@ -121,15 +118,14 @@ describe('<Task />', () => {
   it('should navigate to task detail on click', () => {
     render(
       <Task
-        taskId="1"
+        userTaskKey={1}
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        context="My Task"
         assignee={currentUser.userId}
-        followUpDate={null}
-        dueDate={null}
-        completionDate={null}
+        followUpDate={undefined}
+        dueDate={undefined}
+        completionDate={undefined}
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
@@ -146,15 +142,14 @@ describe('<Task />', () => {
   it('should preserve search params', () => {
     render(
       <Task
-        taskId="1"
+        userTaskKey={1}
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        context="My Task"
         assignee={currentUser.userId}
-        followUpDate={null}
-        dueDate={null}
-        completionDate={null}
+        followUpDate={undefined}
+        dueDate={undefined}
+        completionDate={undefined}
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
@@ -174,15 +169,14 @@ describe('<Task />', () => {
   it('should render a task with due date', async () => {
     render(
       <Task
-        taskId="1"
+        userTaskKey={1}
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        context="My Task"
         assignee={currentUser.userId}
-        followUpDate={null}
+        followUpDate={undefined}
         dueDate="2025-05-29T14:00:00.000Z"
-        completionDate={null}
+        completionDate={undefined}
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
@@ -198,15 +192,14 @@ describe('<Task />', () => {
   it('should render a task with due date when filtered by due date', async () => {
     render(
       <Task
-        taskId="1"
+        userTaskKey={1}
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        context="My Task"
         assignee={currentUser.userId}
         followUpDate="2025-05-29T14:00:00.000Z"
         dueDate="2025-05-29T14:00:00.000Z"
-        completionDate={null}
+        completionDate={undefined}
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
@@ -224,15 +217,14 @@ describe('<Task />', () => {
   it('should render a task with follow-up date when filtered by follow-up date', async () => {
     render(
       <Task
-        taskId="1"
+        userTaskKey={1}
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        context="My Task"
         assignee={currentUser.userId}
         followUpDate="2025-05-29T14:00:00.000Z"
         dueDate="2025-05-29T14:00:00.000Z"
-        completionDate={null}
+        completionDate={undefined}
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}
@@ -252,13 +244,12 @@ describe('<Task />', () => {
   it('should render a task with completion date', async () => {
     render(
       <Task
-        taskId="1"
+        userTaskKey={1}
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        context="My Task"
         assignee={currentUser.userId}
-        followUpDate={null}
+        followUpDate={undefined}
         dueDate="2025-05-29T14:00:00.000Z"
         completionDate="2025-05-28T14:00:00.000Z"
         priority={50}
@@ -279,15 +270,14 @@ describe('<Task />', () => {
   it('should render a task with overdue date', async () => {
     render(
       <Task
-        taskId="1"
+        userTaskKey={1}
         name="name"
         processName="processName"
         creationDate="2024-05-29T14:00:00.000Z"
-        context="My Task"
         assignee={currentUser.userId}
-        followUpDate={null}
+        followUpDate={undefined}
         dueDate="2024-05-29T00:00:00.000Z"
-        completionDate={null}
+        completionDate={undefined}
         priority={50}
         currentUser={userMocks.currentUser}
         position={0}

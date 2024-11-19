@@ -1,0 +1,40 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+const user = {
+  userId: 'demo',
+  displayName: 'demo',
+  permissions: ['READ', 'WRITE'],
+  salesPlanType: null,
+  roles: null,
+  c8Links: [],
+  tenants: [],
+};
+
+const MOCK_TENANTS = [
+  {
+    id: 'tenantA',
+    name: 'Tenant A',
+  },
+  {
+    id: 'tenantB',
+    name: 'Tenant B',
+  },
+];
+
+const multiTenancyUser = {
+  userId: 'demo',
+  displayName: 'demo',
+  permissions: ['READ', 'WRITE'],
+  salesPlanType: null,
+  roles: null,
+  c8Links: [],
+  tenants: MOCK_TENANTS,
+} as const;
+
+export {multiTenancyUser, user};

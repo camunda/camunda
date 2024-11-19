@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Form, Task, TasksSearchBody, Variable} from './types';
+import {
+  endpoints,
+  type QueryUserTasksRequestBody,
+} from '@vzeta/camunda-api-zod-schemas/tasklist';
+import type {Form, Task, Variable} from './types';
 import {mergePathname} from './utils/mergePathname';
 
 const BASENAME = window.clientConfig?.contextPath ?? '/';
@@ -213,17 +217,6 @@ const api = {
         },
       });
     },
-    searchTasks: (body: TasksSearchBody) => {
-      return new Request(getFullURL('/v1/tasks/search'), {
-        ...BASE_REQUEST_OPTIONS,
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-is-polling': 'true',
-        },
-      });
-    },
     unassignTask: (taskId: Task['id']) => {
       return new Request(getFullURL(`/v1/tasks/${taskId}/unassign`), {
         ...BASE_REQUEST_OPTIONS,
@@ -309,6 +302,17 @@ const api = {
     },
   },
   v2: {
+    queryTasks: (body: QueryUserTasksRequestBody) => {
+      return new Request(getFullURL(endpoints.queryUserTasks.getUrl()), {
+        ...BASE_REQUEST_OPTIONS,
+        method: endpoints.queryUserTasks.method,
+        body: JSON.stringify(body),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-is-polling': 'true',
+        },
+      });
+    },
     getLicense: () => {
       return new Request(getFullURL('/v2/license'), {
         ...BASE_REQUEST_OPTIONS,

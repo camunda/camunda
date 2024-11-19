@@ -6,64 +6,41 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {TaskFilters} from 'modules/hooks/useTaskFilters';
-import type {TasksSearchBody} from 'modules/types';
+import {
+  numberFiltersSchema,
+  type TaskFilters,
+} from 'modules/hooks/useTaskFilters';
 import {getStateLocally} from './localStorage';
-import {formatRFC3339} from 'date-fns';
+import {type QueryUserTasksRequestBody} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
 const SORT_BY_FIELD: Record<
   TaskFilters['sortBy'],
-  'creationTime' | 'dueDate' | 'followUpDate' | 'completionTime' | 'priority'
+  'creationDate' | 'dueDate' | 'followUpDate' | 'completionDate' | 'priority'
 > = {
-  creation: 'creationTime',
+  creation: 'creationDate',
   due: 'dueDate',
   'follow-up': 'followUpDate',
-  completion: 'completionTime',
+  completion: 'completionDate',
   priority: 'priority',
 };
 
 const getQueryVariables = (
-  filters: Omit<
-    TaskFilters,
-    | 'assignee'
-    | 'pageSize'
-    | 'searchBefore'
-    | 'searchBeforeOrEqual'
-    | 'searchAfter'
-    | 'searchAfterOrEqual'
-  >,
-  {
-    assignee,
-    pageSize,
-    searchBefore,
-    searchBeforeOrEqual,
-    searchAfter,
-    searchAfterOrEqual,
-  }: Pick<
-    TasksSearchBody,
-    | 'assignee'
-    | 'pageSize'
-    | 'searchBefore'
-    | 'searchBeforeOrEqual'
-    | 'searchAfter'
-    | 'searchAfterOrEqual'
-  >,
-): TasksSearchBody => {
+  filters: Omit<TaskFilters, 'assignee'>,
+  {currentUserId, pageSize}: {pageSize: number; currentUserId?: string},
+): QueryUserTasksRequestBody => {
   const {filter, sortBy, sortOrder, ...remainingFilters} = filters;
-  const BASE_QUERY_VARIABLES: TasksSearchBody = {
+  const BASE_QUERY_VARIABLES: QueryUserTasksRequestBody = {
     sort: [
       {
         field: SORT_BY_FIELD[sortBy],
-        order: sortOrder.toUpperCase() as 'ASC' | 'DESC',
+        order: sortOrder.toLocaleLowerCase() as 'asc' | 'desc',
       },
     ],
-    pageSize,
-    searchBefore,
-    searchBeforeOrEqual,
-    searchAfter,
-    searchAfterOrEqual,
+    page: {
+      limit: pageSize,
+    },
   };
-  const {taskVariables, ...parsedFilters} = convertFiltersToQueryVariables({
+  const {variables = [], ...parsedFilters} = convertFiltersToQueryVariables({
     ...remainingFilters,
     filter,
   });
@@ -72,40 +49,51 @@ const getQueryVariables = (
     case 'assigned-to-me': {
       return {
         ...BASE_QUERY_VARIABLES,
-        assigned: true,
-        assignee: assignee!,
-        state: 'CREATED',
-        ...parsedFilters,
+        filter: {
+          assignee: currentUserId!,
+          state: 'CREATED',
+          ...parsedFilters,
+        },
       };
     }
     case 'unassigned': {
       return {
         ...BASE_QUERY_VARIABLES,
-        assigned: false,
-        state: 'CREATED',
-        ...parsedFilters,
+        filter: {
+          state: 'CREATED',
+          ...parsedFilters,
+        },
       };
     }
     case 'completed': {
       return {
         ...BASE_QUERY_VARIABLES,
-        state: 'COMPLETED',
-        ...parsedFilters,
+        filter: {
+          state: 'COMPLETED',
+          ...parsedFilters,
+        },
       };
     }
     case 'all-open': {
       return {
         ...BASE_QUERY_VARIABLES,
-        state: 'CREATED',
-        ...parsedFilters,
+        filter: {
+          state: 'CREATED',
+          ...parsedFilters,
+        },
       };
     }
     case 'custom':
     default: {
       return {
         ...BASE_QUERY_VARIABLES,
-        ...parsedFilters,
-        taskVariables,
+        filter:
+          variables.length === 0
+            ? parsedFilters
+            : {
+                ...parsedFilters,
+                variables,
+              },
       };
     }
   }
@@ -113,54 +101,41 @@ const getQueryVariables = (
 
 function convertFiltersToQueryVariables(
   filters: Omit<TaskFilters, 'sortBy' | 'sortOrder'>,
-): TasksSearchBody {
+): NonNullable<QueryUserTasksRequestBody['filter']> {
   const {
     filter,
-    dueDateFrom,
-    dueDateTo,
-    followUpDateFrom,
-    followUpDateTo,
+    candidateGroup,
+    candidateUser,
+    processInstanceKey,
+    processDefinitionKey,
+    userTaskKey,
     ...restFilters
   } = filters;
-  const updatedFilters: TasksSearchBody = restFilters;
+  const numberFilters =
+    numberFiltersSchema.safeParse({
+      processInstanceKey,
+      processDefinitionKey,
+      userTaskKey,
+    }).data ?? {};
+  const updatedFilters: QueryUserTasksRequestBody['filter'] = {
+    ...restFilters,
+    ...numberFilters,
+  };
   const customFilters = getStateLocally('customFilters')?.[filter];
 
   if (customFilters !== undefined && Array.isArray(customFilters?.variables)) {
-    updatedFilters.taskVariables = customFilters.variables.map<{
-      name: string;
-      value: string;
-      operator: 'eq';
-    }>(({name, value}) => ({
+    updatedFilters.variables = customFilters.variables.map(({name, value}) => ({
       name: name!,
       value: value!,
-      operator: 'eq',
     }));
   }
 
-  if (filters.dueDateFrom !== undefined) {
-    updatedFilters.dueDate = {
-      from: formatRFC3339(filters.dueDateFrom),
-    };
+  if (candidateGroup !== undefined) {
+    updatedFilters.candidateGroups = [candidateGroup];
   }
 
-  if (filters.dueDateTo !== undefined) {
-    updatedFilters.dueDate = {
-      ...updatedFilters.dueDate,
-      to: formatRFC3339(filters.dueDateTo),
-    };
-  }
-
-  if (filters.followUpDateFrom !== undefined) {
-    updatedFilters.followUpDate = {
-      from: formatRFC3339(filters.followUpDateFrom),
-    };
-  }
-
-  if (filters.followUpDateTo !== undefined) {
-    updatedFilters.followUpDate = {
-      ...updatedFilters.followUpDate,
-      to: formatRFC3339(filters.followUpDateTo),
-    };
+  if (candidateUser !== undefined) {
+    updatedFilters.candidateUsers = [candidateUser];
   }
 
   return updatedFilters;

@@ -7,21 +7,17 @@
  */
 
 import {expect} from '@playwright/test';
-import subscribeFormSchema from '@/resources/subscribeForm.json' assert {type: 'json'};
 import {test} from '@/visual-fixtures';
+import {apiURLPattern} from '@/mocks/apiURLPattern';
+import {invalidForm, subscribeForm} from '@/mocks/forms';
 
 test.describe('start process from form page', () => {
   test('initial page', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(apiURLPattern, (route) => {
       if (route.request().url().includes('v1/external/process/foo/form')) {
         return route.fulfill({
           status: 200,
-          body: JSON.stringify({
-            id: 'foo',
-            processDefinitionKey: '2251799813685255',
-            schema: JSON.stringify(subscribeFormSchema),
-            title: 'Subscribe',
-          }),
+          body: JSON.stringify(subscribeForm),
           headers: {
             'content-type': 'application/json',
           },
@@ -46,7 +42,7 @@ test.describe('start process from form page', () => {
   });
 
   test('process not found', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(apiURLPattern, (route) => {
       if (route.request().url().includes('v1/external/process/foo/form')) {
         return route.fulfill({
           status: 404,
@@ -77,16 +73,11 @@ test.describe('start process from form page', () => {
   });
 
   test('invalid schema', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(apiURLPattern, (route) => {
       if (route.request().url().includes('v1/external/process/foo/form')) {
         return route.fulfill({
           status: 200,
-          body: JSON.stringify({
-            id: 'foo',
-            processDefinitionKey: '2251799813685255',
-            schema: `${JSON.stringify(subscribeFormSchema)}invalidschema`,
-            title: 'Subscribe',
-          }),
+          body: JSON.stringify(invalidForm),
           headers: {
             'content-type': 'application/json',
           },
@@ -110,16 +101,11 @@ test.describe('start process from form page', () => {
   });
 
   test('successful submission', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(apiURLPattern, (route) => {
       if (route.request().url().includes('v1/external/process/foo/form')) {
         return route.fulfill({
           status: 200,
-          body: JSON.stringify({
-            id: 'foo',
-            processDefinitionKey: '2251799813685255',
-            schema: JSON.stringify(subscribeFormSchema),
-            title: 'Subscribe',
-          }),
+          body: JSON.stringify(subscribeForm),
           headers: {
             'content-type': 'application/json',
           },
@@ -159,16 +145,11 @@ test.describe('start process from form page', () => {
   });
 
   test('failed submission', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(apiURLPattern, (route) => {
       if (route.request().url().includes('v1/external/process/foo/form')) {
         return route.fulfill({
           status: 200,
-          body: JSON.stringify({
-            id: 'foo',
-            processDefinitionKey: '2251799813685255',
-            schema: JSON.stringify(subscribeFormSchema),
-            title: 'Subscribe',
-          }),
+          body: JSON.stringify(subscribeForm),
           headers: {
             'content-type': 'application/json',
           },

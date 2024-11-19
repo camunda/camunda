@@ -6,177 +6,119 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  type InfiniteData,
-  type UseInfiniteQueryOptions,
-  useInfiniteQuery,
-  useQueryClient,
-} from '@tanstack/react-query';
+import {useInfiniteQuery} from '@tanstack/react-query';
 import {api} from 'modules/api';
-import {type RequestError, request} from 'modules/request';
-import type {Task} from 'modules/types';
+import {request} from 'modules/request';
 import {getQueryVariables} from 'modules/utils/getQueryVariables';
 import type {TaskFilters} from 'modules/hooks/useTaskFilters';
-import chunk from 'lodash/chunk';
 import {useCurrentUser} from './useCurrentUser';
+import {
+  type QueryUserTasksRequestBody,
+  type QueryUserTasksResponseBody,
+} from '@vzeta/camunda-api-zod-schemas/tasklist';
+import {useCallback, useMemo} from 'react';
 
 const POLLING_INTERVAL = 5000;
-const MAX_TASKS_DISPLAYED = 200;
 const MAX_TASKS_PER_REQUEST = 50;
-const MAX_PAGE_COUNT = Math.ceil(MAX_TASKS_DISPLAYED / MAX_TASKS_PER_REQUEST);
 
-type PageParam = {
-  pageParam?:
-    | {
-        searchBefore: [string, string];
-      }
-    | {
-        searchAfter: [string, string];
-      };
-};
+function getQueryKey(payload: QueryUserTasksRequestBody) {
+  const {filter = {}, page = {}, sort = []} = payload;
 
-function getQueryKey(keys: unknown[]) {
-  return ['tasks', ...keys];
+  return [
+    'tasks',
+    ...Object.entries(filter).map(([key, value]) => `${key}:${value}`),
+    ...Object.entries(page).map(([key, value]) => `${key}:${value}`),
+    ...sort.flatMap((item) =>
+      Object.entries(item).map(([key, value]) => `${key}:${value}`),
+    ),
+  ];
 }
 
 function useTasks(
   filters: TaskFilters,
-  options?: Partial<
-    Pick<
-      UseInfiniteQueryOptions<Task[], RequestError | Error>,
-      'refetchInterval'
-    >
-  >,
+  options?: {
+    refetchInterval: number | false;
+  },
 ) {
-  const {refetchInterval} = options ?? {};
-  const {data: currentUser} = useCurrentUser();
+  const {refetchInterval = POLLING_INTERVAL} = options ?? {
+    refetchInterval: POLLING_INTERVAL,
+  };
+  const {data: currentUser, isFetched} = useCurrentUser();
   const payload = getQueryVariables(filters, {
-    assignee: currentUser?.userId,
+    currentUserId: currentUser?.userId,
     pageSize: MAX_TASKS_PER_REQUEST,
   });
-  const client = useQueryClient();
-  const result = useInfiniteQuery<Task[], RequestError | Error>({
-    queryKey: getQueryKey(Object.values(payload)),
+  const result = useInfiniteQuery({
+    queryKey: [...getQueryKey(payload), filters.filter],
+    enabled: isFetched,
     queryFn: async ({pageParam}) => {
       const {response, error} = await request(
-        api.v1.searchTasks({...payload, ...(pageParam as PageParam)}),
+        api.v2.queryTasks({
+          ...payload,
+          page: {
+            ...payload.page,
+            from: pageParam,
+          },
+        }),
       );
 
       if (response !== null) {
-        return response.json();
+        return response.json() as Promise<QueryUserTasksResponseBody>;
       }
 
-      throw error ?? new Error('Could not fetch tasks');
+      throw error;
     },
-    initialPageParam: undefined,
+    initialPageParam: 0,
     placeholderData: (previousData) => previousData,
-    refetchInterval: refetchInterval ?? POLLING_INTERVAL,
-    getNextPageParam: (lastPage) => {
-      if (lastPage.length < MAX_TASKS_PER_REQUEST) {
+    refetchInterval,
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      const {page} = lastPage;
+      const nextPage = lastPageParam + MAX_TASKS_PER_REQUEST;
+
+      if (nextPage > page.totalItems) {
         return null;
       }
 
-      const lastTask = lastPage[lastPage.length - 1];
-
-      return {
-        searchAfter: lastTask.sortValues,
-      };
+      return nextPage;
     },
-    getPreviousPageParam: (firstPage) => {
-      if (firstPage.length < MAX_TASKS_PER_REQUEST) {
+    getPreviousPageParam: (_, __, firstPageParam) => {
+      const previousPage = firstPageParam - MAX_TASKS_PER_REQUEST;
+
+      if (previousPage < 0) {
         return null;
       }
 
-      const firstTask = firstPage[0];
-
-      if (firstTask.isFirst) {
-        return null;
-      }
-
-      return {
-        searchBefore: firstTask.sortValues,
-      };
+      return previousPage;
     },
   });
 
-  async function fetchPreviousTasks() {
-    if (!result.hasPreviousPage) {
-      return [];
-    }
+  const data = useMemo(() => {
+    return result.data?.pages.flatMap(({items}) => items) ?? [];
+  }, [result.data]);
 
-    const {data} = await result.fetchPreviousPage();
-    function calculatePreviousTasksData(
-      data?: InfiniteData<Task[]>,
-    ): InfiniteData<Task[]> | undefined {
-      const tasks = data?.pages.flat() ?? [];
-      if (data === undefined || tasks.length <= MAX_TASKS_DISPLAYED) {
-        return data;
-      }
-      const trimmedTasks = tasks.slice(0, MAX_TASKS_DISPLAYED + 1);
-      const lastTask = trimmedTasks.pop();
+  const {
+    fetchNextPage: originalFetchNextPage,
+    fetchPreviousPage: originalFetchPreviousPage,
+  } = result;
 
-      return {
-        pages: chunk(trimmedTasks, MAX_TASKS_PER_REQUEST),
-        pageParams: [
-          ...data.pageParams.slice(0, MAX_PAGE_COUNT - 1),
-          {
-            searchBefore: lastTask!.sortValues,
-          },
-        ],
-      };
-    }
-    const newData = calculatePreviousTasksData(data);
+  const fetchNextPage = useCallback(async () => {
+    const {data} = await originalFetchNextPage();
 
-    client.setQueryData<InfiniteData<Task[]>>(
-      getQueryKey(Object.values(payload)),
-      () => {
-        return newData;
-      },
-    );
+    return data?.pages.flatMap(({items}) => items) ?? [];
+  }, [originalFetchNextPage]);
 
-    return newData?.pages[0] ?? [];
-  }
+  const fetchPreviousPage = useCallback(async () => {
+    const {data} = await originalFetchPreviousPage();
 
-  async function fetchNextTasks() {
-    if (!result.hasNextPage) {
-      return [];
-    }
+    return data?.pages.flatMap(({items}) => items) ?? [];
+  }, [originalFetchPreviousPage]);
 
-    const {data} = await result.fetchNextPage();
-    function calculateNextTasksData(
-      data?: InfiniteData<Task[]>,
-    ): InfiniteData<Task[]> | undefined {
-      const tasks = data?.pages.flat() ?? [];
-      if (data === undefined || tasks.length <= MAX_TASKS_DISPLAYED) {
-        return data;
-      }
-      const [firstTask, ...trimmedTasks] = tasks.slice(
-        -(MAX_TASKS_DISPLAYED + 1),
-      );
-
-      return {
-        pages: chunk(trimmedTasks, MAX_TASKS_PER_REQUEST),
-        pageParams: [
-          {
-            searchAfter: firstTask.sortValues,
-          },
-          ...data.pageParams.slice(-(MAX_PAGE_COUNT - 1)),
-        ],
-      };
-    }
-    const newData = calculateNextTasksData(data);
-
-    client.setQueryData<InfiniteData<Task[]>>(
-      getQueryKey(Object.values(payload)),
-      () => {
-        return newData;
-      },
-    );
-
-    return newData === undefined ? [] : newData.pages[newData.pages.length - 1];
-  }
-
-  return {...result, fetchPreviousTasks, fetchNextTasks};
+  return {
+    ...result,
+    fetchNextPage,
+    fetchPreviousPage,
+    data,
+  };
 }
 
 export {useTasks};

@@ -16,7 +16,7 @@ function useAutoSelectNextTask() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const navigateToTaskDetailsWithRef = (taskId: string) => {
+  const navigateToTaskDetailsWithRef = (userTaskKey: number) => {
     const search = new URLSearchParams(location.search);
     search.set(
       'ref',
@@ -29,7 +29,7 @@ function useAutoSelectNextTask() {
     );
     navigate({
       ...location,
-      pathname: pages.taskDetails(taskId),
+      pathname: pages.taskDetails(userTaskKey),
       search: search.toString(),
     });
   };

@@ -23,8 +23,8 @@ import {
   formatISODate,
   formatISODateTime,
 } from 'modules/utils/formatDateRelative';
-import {unraw} from 'modules/utils/unraw';
-import type {CurrentUser, Task as TaskType} from 'modules/types';
+import type {CurrentUser} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {type TaskFilters, useTaskFilters} from 'modules/hooks/useTaskFilters';
 import {encodeTaskOpenedRef} from 'modules/utils/reftags';
 import {AssigneeTag} from 'Tasks/AssigneeTag';
@@ -34,17 +34,19 @@ import styles from './styles.module.scss';
 import cn from 'classnames';
 import {useIsCurrentTaskOpen} from './useIsCurrentTaskOpen';
 
-type Props = {
-  taskId: TaskType['id'];
-  name: TaskType['name'];
-  processName: TaskType['processName'];
-  context: TaskType['context'];
-  assignee: TaskType['assignee'];
-  creationDate: TaskType['creationDate'];
-  followUpDate: TaskType['followUpDate'];
-  dueDate: TaskType['dueDate'];
-  completionDate: TaskType['completionDate'];
-  priority: TaskType['priority'];
+type Props = Pick<
+  UserTask,
+  | 'userTaskKey'
+  | 'assignee'
+  | 'creationDate'
+  | 'followUpDate'
+  | 'dueDate'
+  | 'completionDate'
+  | 'priority'
+> & {
+  name: string;
+  processName: string;
+
   currentUser: CurrentUser;
   position: number;
 };
@@ -55,7 +57,7 @@ function getNavLinkLabel({
   currentUserId,
 }: {
   name: string;
-  assigneeId: string | null;
+  assigneeId: string | undefined;
   currentUserId: string;
 }) {
   const isAssigned = assigneeId !== null;
@@ -110,10 +112,9 @@ function getSecondaryDate({
 const Task = React.forwardRef<HTMLDivElement, Props>(
   (
     {
-      taskId,
+      userTaskKey,
       name,
       processName,
-      context,
       assignee,
       creationDate: creationDateString,
       followUpDate: followUpDateString,
@@ -126,7 +127,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
     ref,
   ) => {
     const location = useLocation();
-    const isActive = useIsCurrentTaskOpen(taskId);
+    const isActive = useIsCurrentTaskOpen(userTaskKey);
     const {filter, sortBy} = useTaskFilters();
     const {t} = useTranslation();
 
@@ -155,18 +156,13 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
       return params;
     }, [location, position, filter, sortBy]);
 
-    const decodedContext = useMemo(
-      () => (context !== null ? unraw(context) : null),
-      [context],
-    );
-
     return (
       <article className={cn(styles.container, {[styles.active]: isActive})}>
         <NavLink
           className={styles.taskLink}
           to={{
             ...location,
-            pathname: pages.taskDetails(taskId),
+            pathname: pages.taskDetails(userTaskKey),
             search: searchWithRefTag.toString(),
           }}
           aria-label={getNavLinkLabel({
@@ -177,7 +173,7 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
         >
           <Stack
             className={styles.fullWidthAndHeight}
-            data-testid={`task-${taskId}`}
+            data-testid={`task-${userTaskKey}`}
             gap={3}
             ref={ref as React.LegacyRef<React.ReactNode>}
           >
@@ -185,18 +181,6 @@ const Task = React.forwardRef<HTMLDivElement, Props>(
               <span className={styles.name}>{name}</span>
               <span className={styles.label}>{processName}</span>
             </div>
-            {decodedContext !== null && (
-              <div className={cn(styles.flex, styles.flexColumn)}>
-                <div
-                  className={cn(styles.label, styles.contextWrap)}
-                  title={decodedContext}
-                >
-                  {decodedContext.split('\n').map((line, index) => (
-                    <div key={index}>{line}</div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             <div className={cn(styles.flex, styles.flexRow)}>
               <AssigneeTag currentUser={currentUser} assignee={assignee} />

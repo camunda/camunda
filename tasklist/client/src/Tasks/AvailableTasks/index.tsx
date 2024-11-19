@@ -11,7 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {Search} from '@carbon/react/icons';
 import {useTaskFilters} from 'modules/hooks/useTaskFilters';
-import type {Task as TaskType} from 'modules/types';
+import type {UserTask} from '@vzeta/camunda-api-zod-schemas/tasklist';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {Task} from './Task';
 import {Skeleton} from './Skeleton';
@@ -19,9 +19,11 @@ import styles from './styles.module.scss';
 import cn from 'classnames';
 
 type Props = {
-  onScrollUp: () => Promise<TaskType[]>;
-  onScrollDown: () => Promise<TaskType[]>;
-  tasks: TaskType[];
+  onScrollUp: () => Promise<UserTask[]>;
+  onScrollDown: () => Promise<UserTask[]>;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+  tasks: UserTask[];
   loading: boolean;
 };
 
@@ -30,6 +32,8 @@ const AvailableTasks: React.FC<Props> = ({
   onScrollDown,
   onScrollUp,
   tasks,
+  hasNextPage,
+  hasPreviousPage,
 }) => {
   const taskRef = useRef<HTMLDivElement | null>(null);
   const scrollableListRef = useRef<HTMLDivElement | null>(null);
@@ -67,10 +71,11 @@ const AvailableTasks: React.FC<Props> = ({
                     target.scrollHeight -
                       target.clientHeight -
                       target.scrollTop,
-                  ) <= 0
+                  ) <= 0 &&
+                  hasNextPage
                 ) {
                   await onScrollDown();
-                } else if (target.scrollTop === 0) {
+                } else if (target.scrollTop === 0 && hasPreviousPage) {
                   const previousTasks = await onScrollUp();
 
                   target.scrollTop =
@@ -84,11 +89,10 @@ const AvailableTasks: React.FC<Props> = ({
                 return (
                   <Task
                     ref={taskRef}
-                    key={task.id}
-                    taskId={task.id}
-                    name={task.name}
-                    processName={task.processName}
-                    context={task.context}
+                    key={task.userTaskKey}
+                    userTaskKey={task.userTaskKey}
+                    name={task.elementName ?? task.elementId}
+                    processName={task.processName ?? task.processDefinitionId}
                     assignee={task.assignee}
                     creationDate={task.creationDate}
                     followUpDate={task.followUpDate}

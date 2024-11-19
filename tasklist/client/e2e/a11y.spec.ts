@@ -8,14 +8,13 @@
 
 import {expect} from '@playwright/test';
 import {test} from './test-fixtures';
-import schema from './resources/bigForm.json' assert {type: 'json'};
+import {endpoints} from '@vzeta/camunda-api-zod-schemas/tasklist';
+import {apiURLPattern} from './mocks/apiURLPattern';
+import {getQueryTasksResponseMock, getTask} from './mocks/tasks';
+import {multiTenancyUser} from './mocks/users';
+import {bigForm} from './mocks/forms';
 
-const MOCK_TENANT = {
-  id: 'tenantA',
-  name: 'Tenant A',
-};
-
-const MOCK_TASK = {
+const MOCK_TASK_V1 = {
   id: 'task123',
   formKey: 'camunda-forms:bpmn:userTaskForm_1',
   formId: null,
@@ -29,19 +28,23 @@ const MOCK_TASK = {
   creationDate: '2023-03-03T14:16:18.441+0100',
   completionDate: null,
   priority: 50,
-  taskDefinitionId: 'Activity_0aecztp',
+  taskDefinitionId: 'bigFormTask',
   processInstanceKey: '4503599627371425',
   dueDate: null,
   followUpDate: null,
   candidateGroups: null,
   candidateUsers: null,
-  tenantId: MOCK_TENANT.id,
+  tenantId: 'tenantA',
   context: null,
 };
 
 test.describe('a11y', () => {
   test('have no violations', async ({page, makeAxeBuilder}) => {
-    await page.route(/^.*\/v1.*$/i, (route) => {
+    await page.route(apiURLPattern, (route) => {
+      const mockTask = getTask({
+        elementName: 'Big form task',
+        processName: 'Big form process',
+      });
       if (route.request().url().includes('v1/tasks/task123/variables/search')) {
         return route.fulfill({
           status: 200,
@@ -52,26 +55,20 @@ test.describe('a11y', () => {
         });
       }
 
-      if (route.request().url().includes('v1/tasks/search')) {
+      if (route.request().url().includes(endpoints.queryUserTasks.getUrl())) {
         return route.fulfill({
           status: 200,
-          body: JSON.stringify([
-            {
-              ...MOCK_TASK,
-              isFirst: true,
-              sortValues: ['1684878523864', '4503599627371430'],
-            },
-          ]),
+          body: JSON.stringify(getQueryTasksResponseMock([mockTask])),
           headers: {
             'content-type': 'application/json',
           },
         });
       }
 
-      if (route.request().url().includes('v1/tasks/task123')) {
+      if (route.request().url().includes(`v1/tasks/${mockTask.userTaskKey}`)) {
         return route.fulfill({
           status: 200,
-          body: JSON.stringify(MOCK_TASK),
+          body: JSON.stringify(MOCK_TASK_V1),
           headers: {
             'content-type': 'application/json',
           },
@@ -81,11 +78,7 @@ test.describe('a11y', () => {
       if (route.request().url().includes('v1/forms/userTaskForm_1')) {
         return route.fulfill({
           status: 200,
-          body: JSON.stringify({
-            id: 'userTaskForm_3j0n396',
-            processDefinitionKey: '2251799813685255',
-            schema: JSON.stringify(schema),
-          }),
+          body: JSON.stringify(bigForm),
           headers: {
             'content-type': 'application/json',
           },
@@ -95,15 +88,7 @@ test.describe('a11y', () => {
       if (route.request().url().includes('v1/internal/users/current')) {
         return route.fulfill({
           status: 200,
-          body: JSON.stringify({
-            userId: 'demo',
-            displayName: 'demo',
-            permissions: ['READ', 'WRITE'],
-            salesPlanType: null,
-            roles: null,
-            c8Links: [],
-            tenants: [MOCK_TENANT],
-          }),
+          body: JSON.stringify(multiTenancyUser),
           headers: {
             'content-type': 'application/json',
           },

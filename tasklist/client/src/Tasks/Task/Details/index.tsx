@@ -33,7 +33,7 @@ type OutletContext = {
 const Details: React.FC = () => {
   const {id} = useTaskDetailsParams();
   const {t} = useTranslation();
-  const {data: task, refetch} = useTask(id, {
+  const {data: task, refetch} = useTask(id.toString(), {
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchInterval: 5000,

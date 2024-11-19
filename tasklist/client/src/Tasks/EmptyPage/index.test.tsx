@@ -19,7 +19,8 @@ import {http, HttpResponse} from 'msw';
 import * as userMocks from 'modules/mock-schema/mocks/current-user';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/getMockQueryClient';
-import {generateTask} from 'modules/mock-schema/mocks/tasks';
+import {getQueryTasksResponseMock} from 'modules/mocks/v2/tasks';
+import {unassignedTask} from 'modules/mocks/v2/task';
 
 const getWrapper = () => {
   const mockClient = getMockQueryClient();
@@ -35,7 +36,7 @@ const getWrapper = () => {
   return Wrapper;
 };
 
-describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
+describe('<EmptyPage />', () => {
   afterEach(() => {
     clearStateLocally('hasCompletedTask');
   });
@@ -49,8 +50,8 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
         },
         {once: true},
       ),
-      http.post('/v1/tasks/search', async () => {
-        return HttpResponse.json([]);
+      http.post('/v2/user-tasks/search', async () => {
+        return HttpResponse.json(getQueryTasksResponseMock([]));
       }),
     );
 
@@ -78,8 +79,8 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
         },
         {once: true},
       ),
-      http.post('/v1/tasks/search', async () => {
-        return HttpResponse.json([generateTask('0')]);
+      http.post('/v2/user-tasks/search', async () => {
+        return HttpResponse.json(getQueryTasksResponseMock([unassignedTask()]));
       }),
     );
 
@@ -119,8 +120,8 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
         },
         {once: true},
       ),
-      http.post('/v1/tasks/search', async () => {
-        return HttpResponse.json([generateTask('0')]);
+      http.post('/v2/user-tasks/search', async () => {
+        return HttpResponse.json(getQueryTasksResponseMock([unassignedTask()]));
       }),
     );
 
@@ -146,8 +147,8 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
         },
         {once: true},
       ),
-      http.post('/v1/tasks/search', async () => {
-        return HttpResponse.json([]);
+      http.post('/v2/user-tasks/search', async () => {
+        return HttpResponse.json(getQueryTasksResponseMock([]));
       }),
     );
 
@@ -173,8 +174,8 @@ describe('<EmptyPage isLoadingTasks={false} hasNoTasks={false} />', () => {
         },
         {once: true},
       ),
-      http.post('/v1/tasks/search', async () => {
-        return HttpResponse.json([generateTask('0')]);
+      http.post('/v2/user-tasks/search', async () => {
+        return HttpResponse.json(getQueryTasksResponseMock([unassignedTask()]));
       }),
     );
 

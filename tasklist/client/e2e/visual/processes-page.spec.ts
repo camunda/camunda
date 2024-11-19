@@ -8,17 +8,14 @@
 
 import {expect, type Route, type Request} from '@playwright/test';
 import {test} from '@/visual-fixtures';
-
-const MOCK_TENANTS = [
-  {
-    id: 'tenantA',
-    name: 'Tenant A',
-  },
-  {
-    id: 'tenantB',
-    name: 'Tenant B',
-  },
-];
+import {apiURLPattern} from '@/mocks/apiURLPattern';
+import {multiTenancyUser} from '@/mocks/users';
+import {clientConfig} from '@/mocks/clientConfig';
+import {
+  noStartFormProcessQueryResult,
+  processWithStartFormQueryResult,
+} from '@/mocks/processes';
+import {invalidLicense} from '@/mocks/licenses';
 
 function mockResponses(
   processes: Array<unknown> = [],
@@ -34,15 +31,17 @@ function mockResponses(
     if (route.request().url().includes('v1/internal/users/current')) {
       return route.fulfill({
         status: 200,
-        body: JSON.stringify({
-          userId: 'demo',
-          displayName: 'demo',
-          permissions: ['READ', 'WRITE'],
-          salesPlanType: null,
-          roles: null,
-          c8Links: [],
-          tenants: MOCK_TENANTS,
-        }),
+        body: JSON.stringify(multiTenancyUser),
+        headers: {
+          'content-type': 'application/json',
+        },
+      });
+    }
+
+    if (route.request().url().includes('v2/license')) {
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(invalidLicense),
         headers: {
           'content-type': 'application/json',
         },
@@ -55,7 +54,7 @@ function mockResponses(
 
 test.describe('processes page', () => {
   test('consent modal', async ({page}) => {
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(apiURLPattern, mockResponses());
 
     await page.goto('/processes', {
       waitUntil: 'networkidle',
@@ -68,7 +67,7 @@ test.describe('processes page', () => {
     await page.addInitScript(`(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     })()`);
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(apiURLPattern, mockResponses());
 
     await page.goto('/processes', {
       waitUntil: 'networkidle',
@@ -82,7 +81,7 @@ test.describe('processes page', () => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
       window.localStorage.setItem('theme', '"dark"');
     })()`);
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(apiURLPattern, mockResponses());
 
     await page.goto('/processes', {
       waitUntil: 'networkidle',
@@ -95,7 +94,7 @@ test.describe('processes page', () => {
     await page.addInitScript(`(() => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     })()`);
-    await page.route(/^.*\/v1.*$/i, mockResponses());
+    await page.route(apiURLPattern, mockResponses());
 
     await page.goto('/processes?search=foo', {
       waitUntil: 'networkidle',
@@ -109,23 +108,8 @@ test.describe('processes page', () => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     })()`);
     await page.route(
-      /^.*\/v1.*$/i,
-      mockResponses([
-        {
-          id: '2251799813685285',
-          name: 'multipleVersions',
-          bpmnProcessId: 'multipleVersions',
-          version: 1,
-          startEventFormId: null,
-        },
-        {
-          id: '2251799813685271',
-          name: 'Order process',
-          bpmnProcessId: 'orderProcess',
-          version: 1,
-          startEventFormId: null,
-        },
-      ]),
+      apiURLPattern,
+      mockResponses(noStartFormProcessQueryResult),
     );
 
     await page.goto('/processes', {
@@ -145,39 +129,12 @@ test.describe('processes page', () => {
         headers: {
           'Content-Type': 'text/javascript;charset=UTF-8',
         },
-        body: `window.clientConfig = {
-        "isEnterprise":false,
-        "canLogout":true,
-        "isLoginDelegated":false,
-        "contextPath":"",
-        "baseName":"",
-        "organizationId":null,
-        "clusterId":null,
-        "stage":null,
-        "mixpanelToken":null,
-        "mixpanelAPIHost":null,
-        "isMultiTenancyEnabled": true
-      };`,
+        body: `window.clientConfig = ${JSON.stringify(clientConfig)};`,
       }),
     );
     await page.route(
-      /^.*\/v1.*$/i,
-      mockResponses([
-        {
-          id: '2251799813685285',
-          name: 'multipleVersions',
-          bpmnProcessId: 'multipleVersions',
-          version: 1,
-          startEventFormId: null,
-        },
-        {
-          id: '2251799813685271',
-          name: 'Order process',
-          bpmnProcessId: 'orderProcess',
-          version: 1,
-          startEventFormId: null,
-        },
-      ]),
+      apiURLPattern,
+      mockResponses(noStartFormProcessQueryResult),
     );
 
     await page.goto('/processes', {
@@ -192,23 +149,8 @@ test.describe('processes page', () => {
       window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     })()`);
     await page.route(
-      /^.*\/v1.*$/i,
-      mockResponses([
-        {
-          id: '2251799813685285',
-          name: 'startForm',
-          bpmnProcessId: 'startForm',
-          version: 1,
-          startEventFormId: 'startFormForm',
-        },
-        {
-          id: '2251799813685271',
-          name: 'Order process',
-          bpmnProcessId: 'orderProcess',
-          version: 1,
-          startEventFormId: null,
-        },
-      ]),
+      apiURLPattern,
+      mockResponses(processWithStartFormQueryResult),
     );
 
     await page.goto('/processes', {

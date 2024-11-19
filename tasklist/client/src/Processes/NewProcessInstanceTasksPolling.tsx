@@ -9,21 +9,19 @@
 import {observer} from 'mobx-react-lite';
 import {pages} from 'modules/routing';
 import {newProcessInstance} from 'modules/stores/newProcessInstance';
-import type {Task} from 'modules/types';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
 import {useQuery} from '@tanstack/react-query';
-import {request, type RequestError} from 'modules/request';
+import {request} from 'modules/request';
 import {api} from 'modules/api';
-
-type NewTasksResponse = Task[];
+import type {QueryUserTasksResponseBody} from '@vzeta/camunda-api-zod-schemas/tasklist';
 
 const NewProcessInstanceTasksPolling: React.FC = observer(() => {
   const {instance} = newProcessInstance;
   const navigate = useNavigate();
   const location = useLocation();
 
-  useQuery<NewTasksResponse, RequestError | Error>({
+  useQuery({
     queryKey: ['newTasks', instance?.id],
     enabled: instance !== null,
     refetchInterval: 1000,
@@ -34,34 +32,38 @@ const NewProcessInstanceTasksPolling: React.FC = observer(() => {
       }
 
       const {response, error} = await request(
-        api.v1.searchTasks({
-          pageSize: 10,
-          processInstanceKey: id,
-          state: 'CREATED',
+        api.v2.queryTasks({
+          filter: {
+            processInstanceKey: parseInt(id, 10),
+            state: 'CREATED',
+          },
+          page: {
+            limit: 10,
+          },
         }),
       );
 
       if (response !== null) {
-        const data = await response.json();
+        const data = (await response.json()) as QueryUserTasksResponseBody;
 
-        if (data.length === 0) {
+        if (data.items.length === 0) {
           return;
         }
 
         newProcessInstance.removeInstance();
 
         if (
-          data.length === 1 &&
+          data.items.length === 1 &&
           location.pathname === `/${pages.processes()}`
         ) {
-          const [{id}] = data;
+          const [{userTaskKey}] = data.items;
 
           tracking.track({
             eventName: 'process-tasks-polling-ended',
             outcome: 'single-task-found',
           });
 
-          navigate({pathname: pages.taskDetails(id)});
+          navigate({pathname: pages.taskDetails(userTaskKey)});
 
           return;
         }

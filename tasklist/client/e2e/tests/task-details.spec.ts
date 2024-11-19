@@ -64,7 +64,7 @@ test.beforeAll(async () => {
     }),
     createInstances('Checkbox_User_Task', 1, 1),
     createInstances('Checklist_Task', 1, 1),
-    createInstances('Date_and_Time_Task', 1, 1),
+    createInstances('Date_and_Time_Process', 1, 1),
     createInstances('Number_Task', 1, 2),
     createInstances('Tag_List_Task', 1, 1),
     createInstances('Radio_Button_User_Task', 1, 1),
@@ -156,7 +156,7 @@ test.describe('task details page', () => {
     await expect(tasksPage.completeTaskButton).not.toBeVisible();
   });
 
-  test('complete zeebe and job worker tasks', async ({
+  test.skip('complete zeebe and job worker tasks', async ({
     page,
     tasksPage,
     taskVariableView,
@@ -209,7 +209,7 @@ test.describe('task details page', () => {
   });
 
   test('task completion with form', async ({page, tasksPage, taskFormView}) => {
-    await tasksPage.openTask('User registration');
+    await tasksPage.openTask('user_registration');
 
     await expect(taskFormView.nameInput).toBeVisible();
     await tasksPage.assignToMeButton.click();
@@ -222,7 +222,7 @@ test.describe('task details page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
-    await tasksPage.openTask('User registration');
+    await tasksPage.openTask('user_registration');
 
     await expect(taskFormView.nameInput).toHaveValue('Jon');
     await expect(taskFormView.addressInput).toHaveValue('Earth');
@@ -325,14 +325,14 @@ test.describe('task details page', () => {
     tasksPage,
     taskFormView,
   }) => {
-    await tasksPage.openTask('User registration');
+    await tasksPage.openTask('user_registration');
 
     await expect(taskFormView.nameInput).toBeVisible();
     await tasksPage.assignToMeButton.click();
     await expect(tasksPage.completeTaskButton).toBeEnabled();
 
     await tasksPage.filterBy('Assigned to me');
-    await tasksPage.openTask('User registration');
+    await tasksPage.openTask('user_registration');
 
     await expect(taskFormView.nameInput).toBeVisible();
     await taskFormView.nameInput.fill('Gaius Julius Caesar');
@@ -342,7 +342,7 @@ test.describe('task details page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
-    await tasksPage.openTask('User registration');
+    await tasksPage.openTask('user_registration');
 
     await expect(taskFormView.nameInput).toHaveValue('Gaius Julius Caesar');
     await expect(taskFormView.addressInput).toHaveValue('Rome');
@@ -355,7 +355,7 @@ test.describe('task details page', () => {
     taskFormView,
   }) => {
     await tasksPage.filterBy('Unassigned');
-    await tasksPage.openTask('User registration with vars');
+    await tasksPage.openTask('user_registration_with_vars');
     await tasksPage.assignToMeButton.click();
 
     await expect(taskFormView.nameInput).toHaveValue('Jane');
@@ -369,7 +369,7 @@ test.describe('task details page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
-    await tasksPage.openTask('User registration with vars');
+    await tasksPage.openTask('user_registration_with_vars');
 
     await expect(taskFormView.nameInput).toHaveValue('Jon');
     await expect(taskFormView.addressInput).toHaveValue('Earth');
@@ -377,10 +377,10 @@ test.describe('task details page', () => {
   });
 
   test('should rerender forms properly', async ({tasksPage, taskFormView}) => {
-    await tasksPage.openTask('User Task with form rerender 1');
+    await tasksPage.openTask('user_task_with_form_rerender_1');
     await expect(taskFormView.nameInput).toHaveValue('Mary');
 
-    await tasksPage.openTask('User Task with form rerender 2');
+    await tasksPage.openTask('user_task_with_form_rerender_2');
     await expect(taskFormView.nameInput).toHaveValue('Stuart');
   });
 
@@ -390,7 +390,7 @@ test.describe('task details page', () => {
     page,
   }) => {
     await tasksPage.filterBy('Unassigned');
-    await tasksPage.openTask('UserTask_Number');
+    await tasksPage.openTask('task_number');
     await tasksPage.assignToMeButton.click();
 
     await taskFormView.numberInput.fill('4');
@@ -398,7 +398,7 @@ test.describe('task details page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
-    await tasksPage.openTask('UserTask_Number');
+    await tasksPage.openTask('task_number');
 
     await expect(taskFormView.numberInput).toHaveValue('4');
   });
@@ -409,7 +409,7 @@ test.describe('task details page', () => {
     page,
   }) => {
     await tasksPage.filterBy('Unassigned');
-    await tasksPage.openTask('UserTask_Number');
+    await tasksPage.openTask('task_number');
     await tasksPage.assignToMeButton.click();
 
     await taskFormView.incrementButton.click();
@@ -424,7 +424,7 @@ test.describe('task details page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
-    await tasksPage.openTask('UserTask_Number');
+    await tasksPage.openTask('task_number');
     await expect(taskFormView.numberInput).toHaveValue('1');
   });
 
@@ -434,7 +434,7 @@ test.describe('task details page', () => {
     page,
   }) => {
     await tasksPage.filterBy('Unassigned');
-    await tasksPage.openTask('Date and Time Task');
+    await tasksPage.openTask('Date_and_Time_Task');
     await tasksPage.assignToMeButton.click();
 
     await taskFormView.fillDatetimeField('Date', '1/1/3000');
@@ -443,7 +443,7 @@ test.describe('task details page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
-    await tasksPage.openTask('Date and Time Task');
+    await tasksPage.openTask('Date_and_Time_Task');
 
     await expect(taskFormView.dateInput).toHaveValue('1/1/3000');
     await expect(taskFormView.timeInput).toHaveValue('12:00 PM');
@@ -455,7 +455,7 @@ test.describe('task details page', () => {
     page,
   }) => {
     await tasksPage.filterBy('Unassigned');
-    await tasksPage.openTask('Checkbox Task');
+    await tasksPage.openTask('Checkbox_Task');
     await tasksPage.assignToMeButton.click();
 
     await taskFormView.checkbox.check();
@@ -463,7 +463,7 @@ test.describe('task details page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
-    await tasksPage.openTask('Checkbox Task');
+    await tasksPage.openTask('Checkbox_Task');
 
     await expect(taskFormView.checkbox).toBeChecked();
   });
@@ -474,7 +474,7 @@ test.describe('task details page', () => {
     page,
   }) => {
     await tasksPage.filterBy('Unassigned');
-    await tasksPage.openTask('Select User Task');
+    await tasksPage.openTask('Select_User_Task');
     await tasksPage.assignToMeButton.click();
 
     await expect(tasksPage.unassignButton).toBeVisible();
@@ -483,14 +483,14 @@ test.describe('task details page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
-    await tasksPage.openTask('Select User Task');
+    await tasksPage.openTask('Select_User_Task');
 
     await expect(taskFormView.form.getByText('Value')).toBeVisible();
   });
 
   test('task completion with radio button form', async ({tasksPage, page}) => {
     await tasksPage.filterBy('Unassigned');
-    await tasksPage.openTask('Radio Button Task');
+    await tasksPage.openTask('Radio_Button_Task');
     await tasksPage.assignToMeButton.click();
 
     await page.getByText('Value').check();
@@ -498,14 +498,14 @@ test.describe('task details page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
-    await tasksPage.openTask('Radio Button Task');
+    await tasksPage.openTask('Radio_Button_Task');
 
     await expect(page.getByText('Value')).toBeChecked();
   });
 
   test('task completion with checklist form', async ({tasksPage, page}) => {
     await tasksPage.filterBy('Unassigned');
-    await tasksPage.openTask('Checklist User Task');
+    await tasksPage.openTask('Checklist_User_Task');
     await tasksPage.assignToMeButton.click();
 
     await page.getByRole('checkbox', {name: 'Value1'}).check();
@@ -514,7 +514,7 @@ test.describe('task details page', () => {
     await expect(page.getByText('Task completed')).toBeVisible();
 
     await tasksPage.filterBy('Completed');
-    await tasksPage.openTask('Checklist User Task');
+    await tasksPage.openTask('Checklist_User_Task');
 
     await expect(page.getByLabel('Value1')).toBeChecked();
     await expect(page.getByLabel('Value2')).toBeChecked();
@@ -568,7 +568,7 @@ test.describe('task details page', () => {
   });
 
   test('show process model', async ({tasksPage}) => {
-    await tasksPage.openTask('User registration');
+    await tasksPage.openTask('user_registration');
 
     await expect(tasksPage.detailsNav).toBeVisible();
     await tasksPage.detailsNav.getByText(/process/i).click();

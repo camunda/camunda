@@ -52,9 +52,8 @@ const Task: React.FC = observer(() => {
   } = useOutletContext<OutletContext>();
 
   const filters = useTaskFilters();
-  const {data, refetch: refetchAllTasks} = useTasks(filters);
+  const {data: tasks, refetch: refetchAllTasks} = useTasks(filters);
   const {t} = useTranslation();
-  const tasks = data?.pages.flat() ?? [];
   const hasRemainingTasks = tasks.length > 0;
 
   const {id} = useTaskDetailsParams();
@@ -126,14 +125,12 @@ const Task: React.FC = observer(() => {
     storeStateLocally('hasCompletedTask', true);
 
     if (autoSelectNextTaskEnabled) {
-      const newTasks = (await refetchAllTasks()).data?.pages[0] ?? [];
-      const openTasks = newTasks.filter(
-        ({taskState}) => taskState === 'CREATED',
-      );
-      if (openTasks.length > 1 && openTasks[0].id === id) {
-        autoSelectGoToTask(openTasks[1].id);
-      } else if (openTasks.length > 0 && openTasks[0].id !== id) {
-        autoSelectGoToTask(openTasks[0].id);
+      const newTasks = (await refetchAllTasks()).data?.pages[0].items ?? [];
+      const openTasks = newTasks.filter(({state}) => state === 'CREATED');
+      if (openTasks.length > 1 && openTasks[0].userTaskKey === id) {
+        autoSelectGoToTask(openTasks[1].userTaskKey);
+      } else if (openTasks.length > 0 && openTasks[0].userTaskKey !== id) {
+        autoSelectGoToTask(openTasks[0].userTaskKey);
       } else {
         navigate({
           pathname: pages.initial,

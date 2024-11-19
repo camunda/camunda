@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useState} from 'react';
 import {Outlet, useLocation} from 'react-router-dom';
 import {Stack} from '@carbon/react';
 import {observer} from 'mobx-react-lite';
@@ -25,10 +25,8 @@ import {CollapsiblePanel} from './CollapsiblePanel';
 function useAutoSelectNextTaskSideEffects() {
   const {enabled} = autoSelectNextTaskStore;
   const filters = useTaskFilters();
-  const {isLoading, isFetching, data} = useTasks(filters);
+  const {isLoading, isFetching, data: tasks} = useTasks(filters);
   const location = useLocation();
-  const tasks = useMemo(() => data?.pages[0] ?? [], [data?.pages]);
-
   const {goToTask} = useAutoSelectNextTask();
 
   // We cannot call `navigate` during a render, we need to defer this with useEffect
@@ -42,9 +40,9 @@ function useAutoSelectNextTaskSideEffects() {
       if (
         enabled &&
         tasks.length > 0 &&
-        location.pathname !== pages.taskDetails(tasks[0].id)
+        location.pathname !== pages.taskDetails(tasks[0].userTaskKey)
       ) {
-        goToTask(tasks[0].id);
+        goToTask(tasks[0].userTaskKey);
       }
     }
   }, [
@@ -64,7 +62,7 @@ function useAutoSelectNextTaskSideEffects() {
     if (!isFinishedLoading && !isLoading) {
       setIsFinishedLoading(true);
       if (enabled && tasks.length > 0 && location.pathname === pages.initial) {
-        goToTask(tasks[0].id);
+        goToTask(tasks[0].userTaskKey);
       }
     }
   }, [
@@ -80,22 +78,26 @@ function useAutoSelectNextTaskSideEffects() {
 const Tasks: React.FC = observer(() => {
   const filters = useTaskFilters();
   const {t} = useTranslation();
-  const {fetchPreviousTasks, fetchNextTasks, isLoading, isPending, data} =
-    useTasks(filters);
-  const tasks = useMemo(() => data?.pages.flat() ?? [], [data]);
+  const {
+    fetchPreviousPage,
+    fetchNextPage,
+    isLoading,
+    isPending,
+    hasNextPage,
+    hasPreviousPage,
+    data: tasks,
+  } = useTasks(filters);
 
   useAutoSelectNextTaskSideEffects();
 
   const {goToTask: autoSelectGoToTask} = useAutoSelectNextTask();
 
   const onAutoSelectToggle = useCallback(
-    (state: boolean) => {
-      if (state && location.pathname === pages.initial) {
-        const openTasks = tasks.filter(
-          ({taskState}) => taskState === 'CREATED',
-        );
+    (isToggleEnabled: boolean) => {
+      if (isToggleEnabled && location.pathname === pages.initial) {
+        const openTasks = tasks.filter(({state}) => state === 'CREATED');
         if (openTasks.length > 0) {
-          autoSelectGoToTask(openTasks[0].id);
+          autoSelectGoToTask(openTasks[0].userTaskKey);
         }
       }
     },
@@ -113,8 +115,10 @@ const Tasks: React.FC = observer(() => {
         <Filters disabled={isPending} />
         <AvailableTasks
           loading={isLoading}
-          onScrollDown={fetchNextTasks}
-          onScrollUp={fetchPreviousTasks}
+          onScrollDown={fetchNextPage}
+          onScrollUp={fetchPreviousPage}
+          hasNextPage={hasNextPage}
+          hasPreviousPage={hasPreviousPage}
           tasks={tasks}
         />
         <Options onAutoSelectToggle={onAutoSelectToggle} />

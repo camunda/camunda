@@ -9,14 +9,14 @@
 import {pages} from 'modules/routing';
 import {useMatch} from 'react-router-dom';
 
-function useIsCurrentTaskOpen(id: string) {
+function useIsCurrentTaskOpen(id: number) {
   const taskDetailsMatch = useMatch(pages.taskDetails());
   const taskDetailsProcessMatch = useMatch(pages.taskDetailsProcess());
 
   return [
     taskDetailsMatch?.params.id,
     taskDetailsProcessMatch?.params.id,
-  ].includes(id);
+  ].includes(id.toString());
 }
 
 export {useIsCurrentTaskOpen};

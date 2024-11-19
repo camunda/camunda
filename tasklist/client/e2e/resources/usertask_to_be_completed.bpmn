@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_190h7pv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.30.0-nightly.20241111">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_190h7pv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.30.0-nightly.20241114">
   <bpmn:process id="usertask_to_be_completed" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_0u665te</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_0u665te" sourceRef="StartEvent_1" targetRef="Activity_0awbj0c" />
+    <bpmn:sequenceFlow id="Flow_0u665te" sourceRef="StartEvent_1" targetRef="some_user_activity_to_be_completed" />
     <bpmn:endEvent id="Event_0gtkwhz" name="End">
       <bpmn:incoming>Flow_1mtspc2</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="Flow_1mtspc2" sourceRef="Activity_0awbj0c" targetRef="Event_0gtkwhz" />
-    <bpmn:userTask id="Activity_0awbj0c" name="Some user activity">
+    <bpmn:sequenceFlow id="Flow_1mtspc2" sourceRef="some_user_activity_to_be_completed" targetRef="Event_0gtkwhz" />
+    <bpmn:userTask id="some_user_activity_to_be_completed" name="Some user activity to be completed">
       <bpmn:extensionElements>
         <zeebe:userTask />
       </bpmn:extensionElements>
@@ -31,8 +31,9 @@
           <dc:Bounds x="490" y="142" width="20" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_1svyo8o_di" bpmnElement="Activity_0awbj0c">
+      <bpmndi:BPMNShape id="Activity_1svyo8o_di" bpmnElement="some_user_activity_to_be_completed">
         <dc:Bounds x="270" y="77" width="100" height="80" />
+        <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0u665te_di" bpmnElement="Flow_0u665te">
         <di:waypoint x="215" y="117" />

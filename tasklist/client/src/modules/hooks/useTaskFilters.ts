@@ -6,95 +6,59 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo} from 'react';
+import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import zod from 'zod';
+import {z} from 'zod';
+import {queryUserTasksRequestBodySchema} from '@vzeta/camunda-api-zod-schemas/tasklist';
+import {querySortOrderSchema} from '@vzeta/camunda-api-zod-schemas';
 
-const searchSchema = zod.tuple([zod.string(), zod.string()]);
+const apiFiltersSchema = queryUserTasksRequestBodySchema.shape.filter
+  .unwrap()
+  .omit({
+    variables: true,
+  });
 
-const filtersSchema = zod.object({
-  filter: zod.string().default('all-open'),
-  sortBy: zod
-    .enum(['creation', 'follow-up', 'due', 'completion', 'priority'])
-    .default('creation'),
-  sortOrder: zod.enum(['asc', 'desc']).default('desc'),
-  state: zod.enum(['CREATED', 'COMPLETED', 'CANCELED']).optional(),
-  assigned: zod
-    .enum(['true', 'false'])
-    .transform((value) => value === 'true')
-    .optional(),
-  assignee: zod.string().optional(),
-  taskDefinitionId: zod.string().optional(),
-  candidateGroup: zod.string().optional(),
-  candidateUser: zod.string().optional(),
-  processDefinitionKey: zod.string().optional(),
-  processInstanceKey: zod.string().optional(),
-  pageSize: zod.coerce.number().optional(),
-  tenantIds: zod
-    .string()
-    .transform<string[] | undefined>((value) => {
-      if (value === undefined) {
-        return undefined;
-      }
-      const parsedValue = JSON.parse(value);
+const filtersSchema = z
+  .object({
+    filter: z.string().default('all-open'),
+    sortBy: z
+      .enum(['creation', 'follow-up', 'due', 'completion', 'priority'])
+      .default('creation'),
+    sortOrder: querySortOrderSchema.default('desc'),
+    candidateGroup: z.string().optional(),
+    candidateUser: z.string().optional(),
+    processInstanceKey: z.string().optional(),
+    processDefinitionKey: z.string().optional(),
+    userTaskKey: z.string().optional(),
+  })
+  .merge(
+    apiFiltersSchema.omit({
+      candidateGroups: true,
+      candidateUsers: true,
+      processInstanceKey: true,
+      processDefinitionKey: true,
+      userTaskKey: true,
+    }),
+  );
 
-      if (Array.isArray(parsedValue)) {
-        return parsedValue;
-      }
-
-      return [parsedValue];
-    })
-    .optional(),
-  dueDateFrom: zod.coerce.date().optional(),
-  dueDateTo: zod.coerce.date().optional(),
-  followUpDateFrom: zod.coerce.date().optional(),
-  followUpDateTo: zod.coerce.date().optional(),
-  sort: zod
-    .array(
-      zod.object({
-        field: zod.enum([
-          'creationTime',
-          'dueDate',
-          'followUpDate',
-          'completionTime',
-        ]),
-        order: zod.enum(['ASC', 'DESC']),
-      }),
-    )
-    .optional(),
-  searchAfter: searchSchema.optional(),
-  searchAfterOrEqual: searchSchema.optional(),
-  searchBefore: searchSchema.optional(),
-  searchBeforeOrEqual: searchSchema.optional(),
-});
+const numberFiltersSchema = z
+  .object({
+    processInstanceKey: z.coerce.number().optional(),
+    processDefinitionKey: z.coerce.number().optional(),
+    userTaskKey: z.coerce.number().optional(),
+  })
+  .transform((result) =>
+    Object.fromEntries(
+      Object.entries(result).filter(([_, value]) => typeof value === 'number'),
+    ),
+  );
 
 const DEFAULT_FILTERS = filtersSchema.parse({});
 
-type TaskFilters = zod.infer<typeof filtersSchema>;
+type TaskFilters = z.infer<typeof filtersSchema>;
 
 function useTaskFilters(): TaskFilters {
-  const [params, setSearchParams] = useSearchParams();
-  const currentFilter = params.get('filter');
-  const OLD_FILTERS = {
-    'claimed-by-me': 'assigned-to-me',
-    unclaimed: 'unassigned',
-  } as const;
-
-  useEffect(() => {
-    if (
-      currentFilter !== null &&
-      Object.keys(OLD_FILTERS).includes(currentFilter)
-    ) {
-      params.set(
-        'filter',
-        OLD_FILTERS[currentFilter as keyof typeof OLD_FILTERS],
-      );
-
-      setSearchParams(params, {
-        replace: true,
-      });
-    }
-  });
+  const [params] = useSearchParams();
 
   const queryString = params.toString();
 
@@ -108,5 +72,5 @@ function useTaskFilters(): TaskFilters {
   }, [queryString]);
 }
 
-export {useTaskFilters, filtersSchema};
+export {useTaskFilters, filtersSchema, numberFiltersSchema};
 export type {TaskFilters};

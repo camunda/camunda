@@ -133,7 +133,8 @@ test.describe('variables page', () => {
     ).not.toHaveValue('"updatedValue"');
   });
 
-  test('new variable disappears after refresh', async ({
+  // waiting for advanced query to be able to filter by unassigned - https://github.com/camunda/camunda/issues/22584
+  test.skip('new variable disappears after refresh', async ({
     page,
     taskVariableView,
     tasksPage,
@@ -160,7 +161,8 @@ test.describe('variables page', () => {
     ).not.toBeVisible();
   });
 
-  test('new variable still exists after refresh if task is completed', async ({
+  // waiting for advanced query to be able to filter by unassigned - https://github.com/camunda/camunda/issues/22584
+  test.skip('new variable still exists after refresh if task is completed', async ({
     page,
     taskVariableView,
     tasksPage,

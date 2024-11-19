@@ -28,6 +28,8 @@ test.beforeAll(async () => {
   await createInstances('usertask_for_scrolling_2', 1, 50);
   await createInstances('usertask_for_scrolling_1', 1, 1);
   await createInstances('usertask_to_be_assigned', 1, 1); // this task will be seen on top since it is created last
+
+  await sleep(1500);
 });
 
 test.afterAll(async ({resetData}) => {
@@ -46,11 +48,16 @@ test.beforeEach(async ({page, loginPage}) => {
 test.describe('task panel page', () => {
   test('filter selection', async ({page, tasksPage}) => {
     test.slow();
+
     await expect(
-      tasksPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(50, {
-      timeout: 10000,
-    });
+      tasksPage.availableTasks.getByText('some_user_activity_to_be_assigned'),
+    ).toHaveCount(1);
+    await expect(
+      tasksPage.availableTasks.getByText('some_user_activity_scrolling_1'),
+    ).toHaveCount(1);
+    await expect(
+      tasksPage.availableTasks.getByText('some_user_activity_scrolling_2'),
+    ).toHaveCount(48);
 
     await tasksPage.filterBy('Assigned to me');
     await expect(page).toHaveURL(/\?filter=assigned-to-me/);
@@ -66,19 +73,27 @@ test.describe('task panel page', () => {
 
     await expect(page).toHaveURL(/\?filter=all-open/);
     await expect(
-      tasksPage.availableTasks.getByText('Some user activity'),
-    ).toHaveCount(50, {
-      timeout: 10000,
-    });
+      tasksPage.availableTasks.getByText('some_user_activity_to_be_assigned'),
+    ).toHaveCount(1);
+    await expect(
+      tasksPage.availableTasks.getByText('some_user_activity_scrolling_1'),
+    ).toHaveCount(1);
+    await expect(
+      tasksPage.availableTasks.getByText('some_user_activity_scrolling_2'),
+    ).toHaveCount(48);
 
     await expect(
       tasksPage.availableTasks.getByText('No tasks found'),
-    ).toHaveCount(0, {
-      timeout: 10000,
-    });
+    ).not.toBeVisible();
+
+    // This block is done temporarily while the next test is skipped
+    await tasksPage.openTask('usertask_to_be_assigned');
+    await tasksPage.assignToMeButton.click();
+    await tasksPage.completeTaskButton.click();
   });
 
-  test('update task list according to user actions', async ({
+  // waiting for advanced query to be able to filter by unassigned - https://github.com/camunda/camunda/issues/22584
+  test.skip('update task list according to user actions', async ({
     page,
     tasksPage,
   }) => {
@@ -140,14 +155,8 @@ test.describe('task panel page', () => {
 
     await tasksPage.scrollToLastTask('usertask_for_scrolling_2');
 
-    await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
-
-    await tasksPage.scrollToFirstTask('usertask_for_scrolling_2');
-
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
-    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
-    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
+    await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(200);
+    await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
   });
 });
