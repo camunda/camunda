@@ -16,11 +16,11 @@ import java.util.function.Function;
 
 public class UserTaskDbModel {
 
-  private Long key;
-  private String flowNodeBpmnId; // elementId in UserTaskFilter
+  private Long userTaskKey;
+  private String elementId;
   private String processDefinitionId;
-  private OffsetDateTime creationTime;
-  private OffsetDateTime completionTime;
+  private OffsetDateTime creationDate;
+  private OffsetDateTime completionDate;
   private String assignee;
   private UserTaskState state;
   private Long formKey;
@@ -39,15 +39,15 @@ public class UserTaskDbModel {
   private Integer priority;
 
   public UserTaskDbModel(final Long userTaskKey) {
-    key = userTaskKey;
+    this.userTaskKey = userTaskKey;
   }
 
   public UserTaskDbModel(
       final Long userTaskKey,
-      final String flowNodeBpmnId,
+      final String elementId,
       final String processDefinitionId,
-      final OffsetDateTime creationTime,
-      final OffsetDateTime completionTime,
+      final OffsetDateTime creationDate,
+      final OffsetDateTime completionDate,
       final String assignee,
       final UserTaskState state,
       final Long formKey,
@@ -61,11 +61,11 @@ public class UserTaskDbModel {
       final Integer processDefinitionVersion,
       final Map<String, String> customHeaders,
       final Integer priority) {
-    key = userTaskKey;
-    this.flowNodeBpmnId = flowNodeBpmnId;
+    this.userTaskKey = userTaskKey;
+    this.elementId = elementId;
     this.processDefinitionId = processDefinitionId;
-    this.creationTime = creationTime;
-    this.completionTime = completionTime;
+    this.creationDate = creationDate;
+    this.completionDate = completionDate;
     this.assignee = assignee;
     this.state = state;
     this.formKey = formKey;
@@ -84,20 +84,20 @@ public class UserTaskDbModel {
 
   // Methods without get/set prefix
 
-  public Long key() {
-    return key;
+  public Long userTaskKey() {
+    return userTaskKey;
   }
 
-  public void key(final Long key) {
-    this.key = key;
+  public void userTaskKey(final Long userTaskKey) {
+    this.userTaskKey = userTaskKey;
   }
 
-  public String flowNodeBpmnId() {
-    return flowNodeBpmnId;
+  public String elementId() {
+    return elementId;
   }
 
-  public void flowNodeBpmnId(final String flowNodeBpmnId) {
-    this.flowNodeBpmnId = flowNodeBpmnId;
+  public void elementId(final String elementId) {
+    this.elementId = elementId;
   }
 
   public String processDefinitionId() {
@@ -108,20 +108,20 @@ public class UserTaskDbModel {
     this.processDefinitionId = processDefinitionId;
   }
 
-  public OffsetDateTime creationTime() {
-    return creationTime;
+  public OffsetDateTime creationDate() {
+    return creationDate;
   }
 
-  public void creationTime(final OffsetDateTime creationTime) {
-    this.creationTime = creationTime;
+  public void creationDate(final OffsetDateTime creationDate) {
+    this.creationDate = creationDate;
   }
 
-  public OffsetDateTime completionTime() {
-    return completionTime;
+  public OffsetDateTime completionDate() {
+    return completionDate;
   }
 
-  public void completionTime(final OffsetDateTime completionTime) {
-    this.completionTime = completionTime;
+  public void completionDate(final OffsetDateTime completionDate) {
+    this.completionDate = completionDate;
   }
 
   public String assignee() {
@@ -255,11 +255,11 @@ public class UserTaskDbModel {
 
   public Builder toBuilder() {
     return new Builder()
-        .key(key)
-        .flowNodeBpmnId(flowNodeBpmnId)
+        .userTaskKey(userTaskKey)
+        .elementId(elementId)
         .processDefinitionId(processDefinitionId)
-        .creationTime(creationTime)
-        .completionTime(completionTime)
+        .creationDate(creationDate)
+        .completionDate(completionDate)
         .assignee(assignee)
         .state(state)
         .formKey(formKey)
@@ -279,11 +279,11 @@ public class UserTaskDbModel {
 
   public static class Builder implements ObjectBuilder<UserTaskDbModel> {
 
-    private Long key;
-    private String flowNodeBpmnId;
+    private Long userTaskKey;
+    private String elementId;
     private String processDefinitionId;
-    private OffsetDateTime creationTime;
-    private OffsetDateTime completionTime;
+    private OffsetDateTime creationDate;
+    private OffsetDateTime completionDate;
     private String assignee;
     private UserTaskDbModel.UserTaskState state;
     private Long formKey;
@@ -309,13 +309,13 @@ public class UserTaskDbModel {
     }
 
     // Builder methods for each field
-    public Builder key(final Long key) {
-      this.key = key;
+    public Builder userTaskKey(final Long userTaskKey) {
+      this.userTaskKey = userTaskKey;
       return this;
     }
 
-    public Builder flowNodeBpmnId(final String flowNodeBpmnId) {
-      this.flowNodeBpmnId = flowNodeBpmnId;
+    public Builder elementId(final String elementId) {
+      this.elementId = elementId;
       return this;
     }
 
@@ -324,13 +324,13 @@ public class UserTaskDbModel {
       return this;
     }
 
-    public Builder creationTime(final OffsetDateTime creationTime) {
-      this.creationTime = creationTime;
+    public Builder creationDate(final OffsetDateTime creationDate) {
+      this.creationDate = creationDate;
       return this;
     }
 
-    public Builder completionTime(final OffsetDateTime completionTime) {
-      this.completionTime = completionTime;
+    public Builder completionDate(final OffsetDateTime completionDate) {
+      this.completionDate = completionDate;
       return this;
     }
 
@@ -414,11 +414,11 @@ public class UserTaskDbModel {
     public UserTaskDbModel build() {
       final var model =
           new UserTaskDbModel(
-              key,
-              flowNodeBpmnId,
+              userTaskKey,
+              elementId,
               processDefinitionId,
-              creationTime,
-              completionTime,
+              creationDate,
+              completionDate,
               assignee,
               state,
               formKey,

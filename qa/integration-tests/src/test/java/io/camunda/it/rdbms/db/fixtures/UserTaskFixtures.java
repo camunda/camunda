@@ -27,12 +27,12 @@ public final class UserTaskFixtures extends CommonFixtures {
   public static UserTaskDbModel createRandomized(final Function<Builder, Builder> builderFunction) {
     final var builder =
         new Builder()
-            .key(nextKey())
-            .flowNodeBpmnId("flowNodeBpmnId-" + RANDOM.nextInt(1000))
+            .userTaskKey(nextKey())
+            .elementId("flowNodeBpmnId-" + RANDOM.nextInt(1000))
             .processDefinitionId("processDefinitionId-" + RANDOM.nextInt(1000))
             .processInstanceKey(nextKey())
-            .creationTime(NOW)
-            .completionTime(NOW.plusDays(1))
+            .creationDate(NOW)
+            .completionDate(NOW.plusDays(1))
             .assignee("bud spencer")
             .state(UserTaskState.CREATED)
             .formKey(nextKey())

@@ -44,7 +44,7 @@ public class UserTaskIT {
     final UserTaskDbModel randomizedUserTask = UserTaskFixtures.createRandomized();
     createAndSaveUserTask(rdbmsService, randomizedUserTask);
 
-    final var instance = rdbmsService.getUserTaskReader().findOne(randomizedUserTask.key());
+    final var instance = rdbmsService.getUserTaskReader().findOne(randomizedUserTask.userTaskKey());
     assertUserTaskEntity(instance, randomizedUserTask);
   }
 
@@ -58,11 +58,11 @@ public class UserTaskIT {
     final UserTaskDbModel updatedModel =
         randomizedUserTask.toBuilder()
             .state(UserTaskState.COMPLETED)
-            .completionTime(NOW.plusDays(2))
+            .completionDate(NOW.plusDays(2))
             .build();
     rdbmsService.createWriter(1L).getUserTaskWriter().update(updatedModel);
 
-    final var instance = rdbmsService.getUserTaskReader().findOne(randomizedUserTask.key());
+    final var instance = rdbmsService.getUserTaskReader().findOne(randomizedUserTask.userTaskKey());
     assertUserTaskEntity(instance, randomizedUserTask);
   }
 
@@ -83,7 +83,7 @@ public class UserTaskIT {
     rdbmsWriter.getUserTaskWriter().update(updatedModel);
     rdbmsWriter.flush();
 
-    final var instance = rdbmsService.getUserTaskReader().findOne(randomizedUserTask.key());
+    final var instance = rdbmsService.getUserTaskReader().findOne(randomizedUserTask.userTaskKey());
     assertUserTaskEntity(instance, updatedModel);
   }
 
@@ -170,8 +170,8 @@ public class UserTaskIT {
         processInstanceReader.search(
             new UserTaskDbQuery(
                 new UserTaskFilter.Builder()
-                    .userTaskKeys(randomizedUserTask.key())
-                    .elementIds(randomizedUserTask.flowNodeBpmnId())
+                    .userTaskKeys(randomizedUserTask.userTaskKey())
+                    .elementIds(randomizedUserTask.elementId())
                     .assignees(randomizedUserTask.assignee())
                     .states(randomizedUserTask.state().name())
                     .processInstanceKeys(randomizedUserTask.processInstanceKey())
@@ -185,7 +185,8 @@ public class UserTaskIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(randomizedUserTask.key());
+    assertThat(searchResult.hits().getFirst().userTaskKey())
+        .isEqualTo(randomizedUserTask.userTaskKey());
   }
 
   private static void assertUserTaskEntity(
@@ -194,28 +195,20 @@ public class UserTaskIT {
     assertThat(instance)
         .usingRecursiveComparison()
         .ignoringFields(
-            "processInstanceId",
-            "bpmnProcessId",
             "customHeaders",
-            "flowNodeInstanceId",
-            "processDefinitionId",
-            "creationTime",
-            "completionTime",
+            "creationDate",
+            "completionDate",
             "dueDate",
             "followUpDate",
             "candidateUsers",
             "candidateGroups")
         .isEqualTo(randomizedUserTask);
-    assertThat(instance.processInstanceId()).isEqualTo(randomizedUserTask.processInstanceKey());
-    assertThat(instance.bpmnProcessId()).isEqualTo(randomizedUserTask.processDefinitionId());
-    assertThat(instance.flowNodeInstanceId()).isEqualTo(randomizedUserTask.elementInstanceKey());
-    assertThat(instance.processDefinitionId()).isEqualTo(randomizedUserTask.processDefinitionKey());
-    assertThat(instance.creationTime())
+    assertThat(instance.creationDate())
         .isCloseTo(
-            randomizedUserTask.creationTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(instance.completionTime())
+            randomizedUserTask.creationDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(instance.completionDate())
         .isCloseTo(
-            randomizedUserTask.completionTime(),
+            randomizedUserTask.completionDate(),
             new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(instance.dueDate())
         .isCloseTo(

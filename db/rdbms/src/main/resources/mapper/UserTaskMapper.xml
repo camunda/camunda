@@ -15,14 +15,15 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel"
     statementType="PREPARED">
-    INSERT INTO USER_TASK (USER_TASK_KEY, FLOW_NODE_BPM_ID, PROCESS_DEFINITION_ID, CREATION_TIME,
-                           COMPLETION_TIME, ASSIGNEE, STATE,
+    INSERT INTO USER_TASK (USER_TASK_KEY, ELEMENT_ID, PROCESS_DEFINITION_ID, CREATION_DATE,
+                           COMPLETION_DATE, ASSIGNEE, STATE,
                            FORM_KEY,
                            PROCESS_DEFINITION_KEY, PROCESS_INSTANCE_KEY,
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
                            PRIORITY)
-    VALUES (#{key}, #{flowNodeBpmnId}, #{processDefinitionId}, #{creationTime}, #{completionTime},
+    VALUES (#{userTaskKey}, #{elementId}, #{processDefinitionId}, #{creationDate},
+            #{completionDate},
             #{assignee}, #{state}, #{formKey},
             #{processDefinitionKey}, #{processInstanceKey}, #{elementInstanceKey}, #{tenantId},
             #{dueDate}, #{followUpDate},
@@ -37,7 +38,7 @@
     INSERT INTO CANDIDATE_USER (USER_TASK_KEY, CANDIDATE_USER)
     VALUES
     <foreach collection="candidateUsers" item="candidateUser" separator=", ">
-      (#{key}, #{candidateUser})
+      (#{userTaskKey}, #{candidateUser})
     </foreach>
   </insert>
 
@@ -48,7 +49,7 @@
     INSERT INTO CANDIDATE_GROUP (USER_TASK_KEY, CANDIDATE_GROUP)
     VALUES
     <foreach collection="candidateGroups" item="candidateGroup" separator=", ">
-      (#{key}, #{candidateGroup})
+      (#{userTaskKey}, #{candidateGroup})
     </foreach>
   </insert>
 
@@ -56,11 +57,11 @@
     <constructor>
       <idArg column="USER_TASK_KEY" javaType="java.lang.Long"/>
     </constructor>
-    <result property="flowNodeBpmnId" column="FLOW_NODE_BPM_ID" javaType="java.lang.String"/>
+    <result property="elementId" column="ELEMENT_ID" javaType="java.lang.String"/>
     <result property="processDefinitionId" column="PROCESS_DEFINITION_ID"
       javaType="java.lang.String"/>
-    <result property="creationTime" column="CREATION_TIME" javaType="java.time.OffsetDateTime"/>
-    <result property="completionTime" column="COMPLETION_TIME" javaType="java.time.OffsetDateTime"/>
+    <result property="creationDate" column="CREATION_DATE" javaType="java.time.OffsetDateTime"/>
+    <result property="completionDate" column="COMPLETION_DATE" javaType="java.time.OffsetDateTime"/>
     <result property="assignee" column="ASSIGNEE" javaType="java.lang.String"/>
     <result property="state" column="STATE"
       javaType="io.camunda.db.rdbms.write.domain.UserTaskDbModel$UserTaskState"/>
@@ -98,10 +99,10 @@
     FROM
     (SELECT
     ut.USER_TASK_KEY,
-    ut.FLOW_NODE_BPM_ID,
+    ut.ELEMENT_ID,
     ut.PROCESS_DEFINITION_ID,
-    ut.CREATION_TIME,
-    ut.COMPLETION_TIME,
+    ut.CREATION_DATE,
+    ut.COMPLETION_DATE,
     ut.ASSIGNEE,
     ut.STATE,
     ut.FORM_KEY,
@@ -139,11 +140,11 @@
 
   <sql id="userTaskSortMapper">
     <choose>
-      <when test='item.field == "creationTime"'>
-        ut.CREATION_TIME
+      <when test='item.field == "creationDate"'>
+        ut.CREATION_DATE
       </when>
-      <when test='item.field == "completionTime"'>
-        ut.COMPLETION_TIME
+      <when test='item.field == "completionDate"'>
+        ut.COMPLETION_DATE
       </when>
       <when test='item.field == "priority"'>
         ut.PRIORITY
@@ -167,7 +168,7 @@
       </foreach>
     </if>
     <if test="filter.elementIds != null and !filter.elementIds.isEmpty()">
-      AND ut.FLOW_NODE_BPM_ID IN
+      AND ut.ELEMENT_ID IN
       <foreach close=")" collection="filter.elementIds" item="value" open="("
         separator=", ">#{value}
       </foreach>
@@ -246,7 +247,7 @@
     statementType="PREPARED">
     UPDATE USER_TASK
     SET
-    COMPLETION_TIME = #{completionTime},
+    COMPLETION_DATE = #{completionDate},
     DUE_DATE = #{dueDate},
     <if test="state != null">
       STATE = #{state},
@@ -254,7 +255,7 @@
     FOLLOW_UP_DATE = #{followUpDate},
     CUSTOM_HEADERS = #{serializedCustomHeaders},
     PRIORITY = #{priority}
-    WHERE USER_TASK_KEY = #{key}
+    WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 
   <delete
@@ -264,7 +265,7 @@
     statementType="PREPARED">
     DELETE
     FROM CANDIDATE_USER
-    WHERE USER_TASK_KEY = #{key};
+    WHERE USER_TASK_KEY = #{userTaskKey};
   </delete>
 
   <delete
@@ -274,7 +275,7 @@
     statementType="PREPARED">
     DELETE
     FROM CANDIDATE_GROUP
-    WHERE USER_TASK_KEY = #{key};
+    WHERE USER_TASK_KEY = #{userTaskKey};
   </delete>
 
 </mapper>

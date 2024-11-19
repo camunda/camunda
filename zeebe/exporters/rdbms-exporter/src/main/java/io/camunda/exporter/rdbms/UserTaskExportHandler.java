@@ -38,7 +38,7 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
 
   @Override
   public boolean canExport(final Record<UserTaskRecordValue> record) {
-    if (record.getIntent() != null && record.getIntent() instanceof UserTaskIntent intent) {
+    if (record.getIntent() != null && record.getIntent() instanceof final UserTaskIntent intent) {
       return EXPORTABLE_INTENTS.contains(intent);
     }
 
@@ -69,11 +69,11 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
       final UserTaskState state,
       final OffsetDateTime completionTime) {
     return new UserTaskDbModel.Builder()
-        .key(record.getUserTaskKey())
-        .flowNodeBpmnId(record.getElementId())
+        .userTaskKey(record.getUserTaskKey())
+        .elementId(record.getElementId())
         .processDefinitionId(record.getBpmnProcessId())
-        .creationTime(DateUtil.toOffsetDateTime(record.getCreationTimestamp()))
-        .completionTime(completionTime)
+        .creationDate(DateUtil.toOffsetDateTime(record.getCreationTimestamp()))
+        .completionDate(completionTime)
         .assignee(record.getAssignee())
         .state(state)
         .formKey(record.getFormKey())

@@ -27,11 +27,11 @@ public class UserTaskEntityMapperTest {
     // Given
     final UserTaskDbModel dbModel =
         new Builder()
-            .key(1L)
-            .flowNodeBpmnId("flowNodeBpmnId")
+            .userTaskKey(1L)
+            .elementId("flowNodeBpmnId")
             .processDefinitionId("processDefinitionId")
-            .creationTime(OffsetDateTime.now())
-            .completionTime(OffsetDateTime.now().plusDays(1))
+            .creationDate(OffsetDateTime.now())
+            .completionDate(OffsetDateTime.now().plusDays(1))
             .assignee("assignee")
             .state(UserTaskDbModel.UserTaskState.CREATED)
             .formKey(1L)
@@ -56,26 +56,14 @@ public class UserTaskEntityMapperTest {
     assertThat(entity)
         .usingRecursiveComparison()
         .ignoringFields(
-            "bpmnProcessId",
-            "processDefinitionId",
-            "processInstanceId",
-            "flowNodeInstanceId",
-            "customHeaders",
-            "creationTime",
-            "completionTime",
-            "dueDate",
-            "followUpDate")
+            "customHeaders", "creationDate", "completionDate", "dueDate", "followUpDate")
         .isEqualTo(dbModel);
 
-    assertThat(entity.bpmnProcessId()).isEqualTo(dbModel.processDefinitionId());
-    assertThat(entity.processDefinitionId()).isEqualTo(dbModel.processDefinitionKey());
-    assertThat(entity.processInstanceId()).isEqualTo(dbModel.processInstanceKey());
-    assertThat(entity.flowNodeInstanceId()).isEqualTo(dbModel.elementInstanceKey());
     assertThat(entity.customHeaders()).isEqualTo(Map.of("key", "value"));
-    assertThat(entity.creationTime())
-        .isCloseTo(dbModel.creationTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(entity.completionTime())
-        .isCloseTo(dbModel.completionTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(entity.creationDate())
+        .isCloseTo(dbModel.creationDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(entity.completionDate())
+        .isCloseTo(dbModel.completionDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(entity.dueDate())
         .isCloseTo(dbModel.dueDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(entity.followUpDate())
@@ -87,11 +75,11 @@ public class UserTaskEntityMapperTest {
     // Given
     final UserTaskDbModel dbModel =
         new Builder()
-            .key(1L)
-            .flowNodeBpmnId("flowNodeBpmnId")
+            .userTaskKey(1L)
+            .elementId("flowNodeBpmnId")
             .processDefinitionId("processDefinitionId")
-            .creationTime(OffsetDateTime.now())
-            .completionTime(null)
+            .creationDate(OffsetDateTime.now())
+            .completionDate(null)
             .assignee("assignee")
             .state(UserTaskDbModel.UserTaskState.CREATED)
             .formKey(1L)
@@ -116,25 +104,13 @@ public class UserTaskEntityMapperTest {
     assertThat(entity)
         .usingRecursiveComparison()
         .ignoringFields(
-            "bpmnProcessId",
-            "processDefinitionId",
-            "processInstanceId",
-            "flowNodeInstanceId",
-            "customHeaders",
-            "creationTime",
-            "completionTime",
-            "dueDate",
-            "followUpDate")
+            "customHeaders", "creationDate", "completionDate", "dueDate", "followUpDate")
         .isEqualTo(dbModel);
 
-    assertThat(entity.bpmnProcessId()).isEqualTo(dbModel.processDefinitionId());
-    assertThat(entity.processDefinitionId()).isEqualTo(dbModel.processDefinitionKey());
-    assertThat(entity.processInstanceId()).isEqualTo(dbModel.processInstanceKey());
-    assertThat(entity.flowNodeInstanceId()).isEqualTo(dbModel.elementInstanceKey());
     assertThat(entity.customHeaders()).isEqualTo(Map.of("key", "value"));
-    assertThat(entity.creationTime())
-        .isCloseTo(dbModel.creationTime(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertNull(entity.completionTime());
+    assertThat(entity.creationDate())
+        .isCloseTo(dbModel.creationDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertNull(entity.completionDate());
     assertNull(entity.dueDate());
     assertNull(entity.followUpDate());
   }

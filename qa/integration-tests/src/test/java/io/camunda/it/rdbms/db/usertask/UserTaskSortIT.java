@@ -39,7 +39,7 @@ public class UserTaskSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.creationDate().asc(),
-        Comparator.comparing(UserTaskEntity::creationTime));
+        Comparator.comparing(UserTaskEntity::creationDate));
   }
 
   @TestTemplate
@@ -47,7 +47,7 @@ public class UserTaskSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.creationDate().desc(),
-        Comparator.comparing(UserTaskEntity::creationTime).reversed());
+        Comparator.comparing(UserTaskEntity::creationDate).reversed());
   }
 
   @TestTemplate
@@ -55,7 +55,7 @@ public class UserTaskSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.completionDate().asc(),
-        Comparator.comparing(UserTaskEntity::completionTime));
+        Comparator.comparing(UserTaskEntity::creationDate));
   }
 
   @TestTemplate
@@ -63,7 +63,7 @@ public class UserTaskSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.completionDate().desc(),
-        Comparator.comparing(UserTaskEntity::completionTime).reversed());
+        Comparator.comparing(UserTaskEntity::creationDate).reversed());
   }
 
   @TestTemplate

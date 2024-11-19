@@ -21,11 +21,11 @@ public class UserTaskDbModelTest {
     final OffsetDateTime now = OffsetDateTime.now();
     final UserTaskDbModel model =
         new UserTaskDbModel.Builder()
-            .key(1L)
-            .flowNodeBpmnId("flowNodeBpmnId")
+            .userTaskKey(1L)
+            .elementId("flowNodeBpmnId")
             .processDefinitionId("processDefinitionId")
-            .creationTime(now)
-            .completionTime(now)
+            .creationDate(now)
+            .completionDate(now)
             .assignee("assignee")
             .state(UserTaskDbModel.UserTaskState.CREATED)
             .formKey(2L)
@@ -44,11 +44,11 @@ public class UserTaskDbModelTest {
             .build();
 
     assertThat(model).isNotNull();
-    assertThat(model.key()).isEqualTo(1L);
-    assertThat(model.flowNodeBpmnId()).isEqualTo("flowNodeBpmnId");
+    assertThat(model.userTaskKey()).isEqualTo(1L);
+    assertThat(model.elementId()).isEqualTo("flowNodeBpmnId");
     assertThat(model.processDefinitionId()).isEqualTo("processDefinitionId");
-    assertThat(model.creationTime()).isEqualTo(now);
-    assertThat(model.completionTime()).isEqualTo(now);
+    assertThat(model.creationDate()).isEqualTo(now);
+    assertThat(model.completionDate()).isEqualTo(now);
     assertThat(model.assignee()).isEqualTo("assignee");
     assertThat(model.state()).isEqualTo(UserTaskDbModel.UserTaskState.CREATED);
     assertThat(model.formKey()).isEqualTo(2L);
@@ -72,11 +72,11 @@ public class UserTaskDbModelTest {
     final OffsetDateTime now = OffsetDateTime.now();
     final UserTaskDbModel model =
         new UserTaskDbModel.Builder()
-            .key(1L)
-            .flowNodeBpmnId("flowNodeBpmnId")
+            .userTaskKey(1L)
+            .elementId("flowNodeBpmnId")
             .processDefinitionId("processDefinitionId")
-            .creationTime(now)
-            .completionTime(now)
+            .creationDate(now)
+            .completionDate(now)
             .assignee("assignee")
             .state(UserTaskDbModel.UserTaskState.CREATED)
             .formKey(2L)
@@ -98,11 +98,11 @@ public class UserTaskDbModelTest {
     final UserTaskDbModel newModel = builder.priority(20).build();
 
     assertThat(newModel).isNotNull();
-    assertThat(newModel.key()).isEqualTo(1L);
-    assertThat(newModel.flowNodeBpmnId()).isEqualTo("flowNodeBpmnId");
+    assertThat(newModel.userTaskKey()).isEqualTo(1L);
+    assertThat(newModel.elementId()).isEqualTo("flowNodeBpmnId");
     assertThat(newModel.processDefinitionId()).isEqualTo("processDefinitionId");
-    assertThat(newModel.creationTime()).isEqualTo(now);
-    assertThat(newModel.completionTime()).isEqualTo(now);
+    assertThat(newModel.creationDate()).isEqualTo(now);
+    assertThat(newModel.completionDate()).isEqualTo(now);
     assertThat(newModel.assignee()).isEqualTo("assignee");
     assertThat(newModel.state()).isEqualTo(UserTaskDbModel.UserTaskState.CREATED);
     assertThat(newModel.formKey()).isEqualTo(2L);

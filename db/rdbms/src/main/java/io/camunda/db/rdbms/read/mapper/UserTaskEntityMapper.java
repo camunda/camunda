@@ -15,11 +15,11 @@ public class UserTaskEntityMapper {
 
   public static UserTaskEntity toEntity(final UserTaskDbModel dbModel) {
     return new UserTaskEntity(
-        dbModel.key(),
-        dbModel.flowNodeBpmnId(),
+        dbModel.userTaskKey(),
+        dbModel.elementId(),
         dbModel.processDefinitionId(),
-        dbModel.creationTime(),
-        dbModel.completionTime(),
+        dbModel.creationDate(),
+        dbModel.completionDate(),
         dbModel.assignee(),
         UserTaskState.valueOf(dbModel.state().name()),
         dbModel.formKey(),
