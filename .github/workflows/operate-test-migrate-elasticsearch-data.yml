@@ -1,8 +1,11 @@
 name: Operate Run Test Migrate Elasticsearch Data
 on:
-  schedule:
-    - cron: "0 5 * * *"
-  workflow_dispatch:
+  push:
+    branches:
+      - stable/8.7
+    paths:
+      - '.github/workflows/operate-*'
+      - 'operate/**'
 jobs:
   run-migration-tests:
     uses: ./.github/workflows/operate-run-tests.yml
