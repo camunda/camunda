@@ -45,7 +45,8 @@ public class JobUpdateBehaviour {
 
   public Either<Rejection, JobRecord> getJob(
       final long jobKey, final TypedRecord<JobRecord> command) {
-    final var job = jobState.getJob(jobKey, command.getAuthorizations());
+    final var authorizedTenantIds = authCheckBehavior.getAuthorizedTenantIds(command);
+    final var job = jobState.getJob(jobKey, authorizedTenantIds);
 
     if (job != null) {
       return Either.right(job);

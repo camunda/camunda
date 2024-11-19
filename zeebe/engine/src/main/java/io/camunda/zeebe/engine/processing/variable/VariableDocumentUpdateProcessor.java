@@ -81,14 +81,6 @@ public final class VariableDocumentUpdateProcessor
       return;
     }
 
-//    if (!TenantAuthorizationCheckerImpl.fromAuthorizationMap(record.getAuthorizations())
-//        .isAuthorized(scope.getValue().getTenantId())) {
-//      final String reason = String.format(ERROR_MESSAGE_SCOPE_NOT_FOUND, value.getScopeKey());
-//      writers.rejection().appendRejection(record, RejectionType.NOT_FOUND, reason);
-//      writers.response().writeRejectionOnCommand(record, RejectionType.NOT_FOUND, reason);
-//      return;
-//    }
-
     final long processDefinitionKey = scope.getValue().getProcessDefinitionKey();
     final long processInstanceKey = scope.getValue().getProcessInstanceKey();
     final DirectBuffer bpmnProcessId = scope.getValue().getBpmnProcessIdBuffer();

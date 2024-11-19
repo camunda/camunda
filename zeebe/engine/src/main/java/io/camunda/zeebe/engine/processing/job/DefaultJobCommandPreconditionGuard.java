@@ -50,10 +50,14 @@ public final class DefaultJobCommandPreconditionGuard {
       final List<JobCommandCheck> customChecks) {
     this.state = state;
     this.acceptCommand = acceptCommand;
+    this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
         new JobCommandPreconditionChecker(
-            state, intent, List.of(State.ACTIVATABLE, State.ACTIVATED), customChecks);
-    this.authCheckBehavior = authCheckBehavior;
+            state,
+            intent,
+            List.of(State.ACTIVATABLE, State.ACTIVATED),
+            customChecks,
+            authCheckBehavior);
   }
 
   public boolean onCommand(

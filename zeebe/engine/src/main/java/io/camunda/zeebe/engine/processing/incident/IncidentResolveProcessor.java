@@ -75,8 +75,8 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
   @Override
   public void processRecord(final TypedRecord<IncidentRecord> command) {
     final long key = command.getKey();
-
-    final var incident = incidentState.getIncidentRecord(key, command.getAuthorizations());
+    final var authorizedTenantIds = authCheckBehavior.getAuthorizedTenantIds(command);
+    final var incident = incidentState.getIncidentRecord(key, authorizedTenantIds);
     if (incident == null) {
       final var errorMessage = String.format(NO_INCIDENT_FOUND_MSG, key);
       rejectResolveCommand(command, errorMessage, RejectionType.NOT_FOUND);

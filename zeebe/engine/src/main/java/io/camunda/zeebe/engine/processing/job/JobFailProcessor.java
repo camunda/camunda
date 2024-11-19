@@ -88,7 +88,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
         new JobCommandPreconditionChecker(
-            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED));
+            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED), authCheckBehavior);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;

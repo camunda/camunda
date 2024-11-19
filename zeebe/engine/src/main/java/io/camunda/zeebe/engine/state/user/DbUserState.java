@@ -153,4 +153,15 @@ public class DbUserState implements UserState, MutableUserState {
     }
     return Optional.of(persistedUser.copy());
   }
+
+  @Override
+  public List<String> getTenantIds(final long userKey) {
+    this.userKey.wrapLong(userKey);
+    final var persistedUser = userByUserKeyColumnFamily.get(this.userKey);
+
+    if (persistedUser == null) {
+      return List.of();
+    }
+    return persistedUser.getTenantIdsList();
+  }
 }

@@ -113,7 +113,8 @@ public final class MessageCorrelationCorrelateProcessor
     correlateBehavior.correlateToMessageStartEvents(messageData, correlatingSubscriptions);
 
     final var authorizationRejectionOptional =
-        isAuthorizedForAllSubscriptions(command, correlatingSubscriptions, messageCorrelationRecord.getTenantId());
+        isAuthorizedForAllSubscriptions(
+            command, correlatingSubscriptions, messageCorrelationRecord.getTenantId());
     if (authorizationRejectionOptional.isPresent()) {
       final var rejection = authorizationRejectionOptional.get();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
@@ -178,7 +179,10 @@ public final class MessageCorrelationCorrelateProcessor
 
               request.set(
                   new AuthorizationRequest(
-                      command, AuthorizationResourceType.PROCESS_DEFINITION, permissionType, tenantId));
+                      command,
+                      AuthorizationResourceType.PROCESS_DEFINITION,
+                      permissionType,
+                      tenantId));
 
               final var processIdString = bufferAsString(subscription.getBpmnProcessId());
               request.get().addResourceId(processIdString);

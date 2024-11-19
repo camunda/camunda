@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.resource;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.CatchEventBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
@@ -356,10 +355,8 @@ public class ResourceDeletionDeleteProcessor
   private List<String> getAuthorizedTenants(final TypedRecord<ResourceDeletionRecord> command) {
     final String tenantId = command.getValue().getTenantId();
     if (tenantId.isEmpty()) {
-      return (List)
-          command.getAuthorizations().getOrDefault(Authorization.AUTHORIZED_TENANTS, List.of());
+      return authCheckBehavior.getAuthorizedTenantIds(command);
     }
-
     return List.of(tenantId);
   }
 

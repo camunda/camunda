@@ -11,12 +11,14 @@ import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -86,8 +88,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   private static Optional<Long> getUserKey(final AuthorizationRequest request) {
-    return Optional.ofNullable(
-        (Long) request.getCommand().getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
+    return getUserKey(request.getCommand());
   }
 
   private boolean isUserAuthorizedForTenant(
@@ -199,6 +200,25 @@ public final class AuthorizationCheckBehavior {
     return authorizedResourceIdentifiers.anyMatch(requiredResourceIdentifiers::contains);
   }
 
+  public List<String> getAuthorizedTenantIds(final TypedRecord<?> command) {
+    final var userKey = getUserKey(command);
+    final List<String> authorizedTenantIds = new ArrayList<>();
+    authorizedTenantIds.add(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+    return userKey
+        .map(
+            key ->
+                userState
+                    .getUser(key)
+                    .map(PersistedUser::getTenantIdsList)
+                    .orElse(authorizedTenantIds))
+        .orElse(authorizedTenantIds);
+  }
+
+  private static Optional<Long> getUserKey(final TypedRecord<?> command) {
+    return Optional.ofNullable(
+        (Long) command.getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
+  }
+
   public static final class AuthorizationRequest {
     private final TypedRecord<?> command;
     private final AuthorizationResourceType resourceType;
@@ -218,7 +238,6 @@ public final class AuthorizationCheckBehavior {
       resourceIds.add(WILDCARD_PERMISSION);
       this.tenantId = tenantId;
     }
-
 
     public AuthorizationRequest(
         final TypedRecord<?> command,

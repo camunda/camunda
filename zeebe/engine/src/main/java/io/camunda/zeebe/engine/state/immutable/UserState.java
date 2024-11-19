@@ -8,7 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.user.PersistedUser;
-import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import java.util.List;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
@@ -25,4 +25,6 @@ public interface UserState {
    * @return An optional containing the user if it was found, otherwise an empty optional
    */
   Optional<PersistedUser> getUser(final long userKey);
+
+  List<String> getTenantIds(final long userKey);
 }
