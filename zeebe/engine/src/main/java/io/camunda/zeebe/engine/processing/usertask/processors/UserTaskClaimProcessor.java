@@ -70,19 +70,21 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
   }
 
-  /*
-   Note: This method finalizes the `CLAIM` command only when there are no `assignment` listeners
-   for the user task. If `assignment` listeners are defined, the `onFinalizeCommand` method
-   from `UserTaskAssignProcessor` will handle this logic instead.
-
-   This occurs because both `CLAIM` and `ASSIGN` commands transition the user task to the
-   `ASSIGNING` lifecycle state, making it indistinguishable which command initially led to this state.
-   Therefore, `UserTaskAssignProcessor` is selected to finalize the command after all task listeners
-   are processed when the user task is in the `ASSIGNING` state.
-
-   This approach is acceptable as long as `CLAIM` and `ASSIGN` share identical finalization logic.
-   Any need for distinct handling would require a further update to this behavior.
-  */
+  /// {@inheritDoc}
+  ///
+  /// @apiNote This method finalizes the [UserTaskIntent#CLAIM] command only when there are no
+  /// `assignment` listeners for the user task. If `assignment` listeners are defined,
+  /// [UserTaskAssignProcessor#onFinalizeCommand(TypedRecord, UserTaskRecord)] method will handle
+  /// this logic instead.
+  ///
+  /// This occurs because both `CLAIM` and `ASSIGN` commands transition the user task to the
+  /// `ASSIGNING` lifecycle state, making it indistinguishable which command initially led to this
+  /// state. Therefore, [UserTaskAssignProcessor] is selected to finalize the command after all task
+  /// listeners are processed when the user task is in the [LifecycleState#ASSIGNING] state.
+  ///
+  /// This approach is acceptable as long as `CLAIM` and `ASSIGN` commands share identical
+  /// finalization logic. Any need for distinct handling would require a further update to this
+  /// behavior.
   @Override
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
