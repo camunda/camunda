@@ -163,7 +163,8 @@ public class OpensearchImportStore implements ImportStore {
       int partitionId,
       long position,
       Long postImporterPosition,
-      long sequence) {
+      long sequence,
+      boolean completed) {
     public static ImportPositionUpdate fromImportPositionEntity(
         final ImportPositionEntity position) {
       return new ImportPositionUpdate(
@@ -173,7 +174,8 @@ public class OpensearchImportStore implements ImportStore {
           position.getPartitionId(),
           position.getPosition(),
           position.getPostImporterPosition(),
-          position.getSequence());
+          position.getSequence(),
+          position.getCompleted());
     }
   }
 
