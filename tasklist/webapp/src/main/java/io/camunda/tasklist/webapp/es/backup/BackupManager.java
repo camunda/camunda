@@ -16,14 +16,12 @@ import io.camunda.tasklist.schema.backup.Prio3Backup;
 import io.camunda.tasklist.schema.backup.Prio4Backup;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
-import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
-import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
-import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
+import io.camunda.webapps.backup.BackupService;
 import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public abstract class BackupManager {
+public abstract class BackupManager implements BackupService {
 
   @Autowired private List<Prio1Backup> prio1BackupIndices;
   @Autowired private List<Prio2Backup> prio2BackupTemplates;
@@ -33,15 +31,7 @@ public abstract class BackupManager {
 
   private String[][] indexPatternsOrdered;
 
-  public abstract void deleteBackup(Long backupId);
-
-  public abstract TakeBackupResponseDto takeBackup(TakeBackupRequestDto request);
-
-  public abstract GetBackupStateResponseDto getBackupState(Long backupId);
-
-  public abstract List<GetBackupStateResponseDto> getBackups();
-
-  protected String getFullQualifiedName(BackupPriority index) {
+  protected String getFullQualifiedName(final BackupPriority index) {
     if (index instanceof IndexDescriptor) {
       return ((IndexDescriptor) index).getFullQualifiedName();
     } else if (index instanceof TemplateDescriptor) {

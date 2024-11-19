@@ -17,13 +17,13 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.es.backup.Metadata;
-import io.camunda.tasklist.webapp.management.dto.BackupStateDto;
-import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDetailDto;
-import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
-import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
-import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.backup.BackupStateDto;
+import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
+import io.camunda.webapps.backup.GetBackupStateResponseDto;
+import io.camunda.webapps.backup.TakeBackupRequestDto;
+import io.camunda.webapps.backup.TakeBackupResponseDto;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -114,11 +114,11 @@ public class BackupManagerOpenSearch extends BackupManager {
   public TakeBackupResponseDto takeBackup(final TakeBackupRequestDto request) {
     validateRepositoryExists();
     validateNoDuplicateBackupId(request.getBackupId());
-    if (requestsQueue.size() > 0) {
+    if (!requestsQueue.isEmpty()) {
       throw new InvalidRequestException("Another backup is running at the moment");
     }
     synchronized (requestsQueue) {
-      if (requestsQueue.size() > 0) {
+      if (!requestsQueue.isEmpty()) {
         throw new InvalidRequestException("Another backup is running at the moment");
       }
       return scheduleSnapshots(request);
