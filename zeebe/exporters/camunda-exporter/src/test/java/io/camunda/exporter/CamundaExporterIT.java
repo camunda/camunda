@@ -267,7 +267,6 @@ final class CamundaExporterIT {
     final var mappingsBeforeOpen =
         adapter.getSearchEngineClient().getMappings(CONFIG_PREFIX + "*", MappingSource.INDEX);
     assertThat(mappingsBeforeOpen.keySet()).isEmpty();
-    final String[] expectedIndices = getExpectedIndices(config);
 
     // when
     camundaExporter.open(new ExporterTestController());
@@ -276,8 +275,6 @@ final class CamundaExporterIT {
     final var mappingsAfterOpen =
         adapter.getSearchEngineClient().getMappings(CONFIG_PREFIX + "*", MappingSource.INDEX);
     assertThat(mappingsAfterOpen.keySet())
-        .isNotEmpty()
-        .hasSize(expectedIndices.length)
         // we verify the names hard coded on purpose
         // to make sure no index will be accidentally dropped, names are changed or added
         .containsExactlyInAnyOrder(
@@ -304,20 +301,6 @@ final class CamundaExporterIT {
             "custom-prefix-tasklist-form-8.4.0_",
             "custom-prefix-tasklist-metric-8.3.0_",
             "custom-prefix-tasklist-task-8.5.0_");
-  }
-
-  private static String[] getExpectedIndices(final ExporterConfiguration config) {
-    final DefaultExporterResourceProvider defaultExporterResourceProvider =
-        new DefaultExporterResourceProvider();
-    defaultExporterResourceProvider.init(
-        config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
-
-    return Stream.concat(
-            defaultExporterResourceProvider.getIndexTemplateDescriptors().stream()
-                .map(IndexDescriptor::getFullQualifiedName),
-            defaultExporterResourceProvider.getIndexDescriptors().stream()
-                .map(IndexDescriptor::getFullQualifiedName))
-        .toArray(String[]::new);
   }
 
   private static Stream<Arguments> containerProvider() {
