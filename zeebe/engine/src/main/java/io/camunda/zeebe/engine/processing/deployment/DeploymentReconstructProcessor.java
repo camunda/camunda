@@ -124,7 +124,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       case ProcessResource(final var process) -> {
         deploymentRecord.setDeploymentKey(process.getKey());
         deploymentRecord.setTenantId(process.getTenantId());
-        attachResourceToDeployment(deploymentRecord, resource);
+        attachResourceMetadataToDeployment(deploymentRecord, resource);
       }
     }
     return deploymentRecord;
@@ -139,20 +139,15 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     deploymentRecord.setDeploymentKey(deploymentKey);
     deploymentRecord.setTenantId(tenantId);
     for (final var resource : resources) {
-      attachResourceToDeployment(deploymentRecord, resource);
+      attachResourceMetadataToDeployment(deploymentRecord, resource);
     }
     return deploymentRecord;
   }
 
-  private void attachResourceToDeployment(
+  private void attachResourceMetadataToDeployment(
       final DeploymentRecord deploymentRecord, final Resource resource) {
     switch (resource) {
       case ProcessResource(final var process) -> {
-        deploymentRecord
-            .resources()
-            .add()
-            .setResourceName(process.getResourceName())
-            .setResource(process.getResource());
         deploymentRecord
             .processesMetadata()
             .add()
