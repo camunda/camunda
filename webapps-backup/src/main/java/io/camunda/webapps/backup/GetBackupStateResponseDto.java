@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.management.dto;
+package io.camunda.webapps.backup;
 
 import java.util.List;
 import java.util.Objects;
@@ -19,7 +19,7 @@ public class GetBackupStateResponseDto {
 
   public GetBackupStateResponseDto() {}
 
-  public GetBackupStateResponseDto(Long backupId) {
+  public GetBackupStateResponseDto(final Long backupId) {
     this.backupId = backupId;
   }
 
@@ -27,7 +27,7 @@ public class GetBackupStateResponseDto {
     return backupId;
   }
 
-  public GetBackupStateResponseDto setBackupId(Long backupId) {
+  public GetBackupStateResponseDto setBackupId(final Long backupId) {
     this.backupId = backupId;
     return this;
   }
@@ -36,7 +36,7 @@ public class GetBackupStateResponseDto {
     return state;
   }
 
-  public GetBackupStateResponseDto setState(BackupStateDto state) {
+  public GetBackupStateResponseDto setState(final BackupStateDto state) {
     this.state = state;
     return this;
   }
@@ -45,7 +45,7 @@ public class GetBackupStateResponseDto {
     return failureReason;
   }
 
-  public GetBackupStateResponseDto setFailureReason(String failureReason) {
+  public GetBackupStateResponseDto setFailureReason(final String failureReason) {
     this.failureReason = failureReason;
     return this;
   }
@@ -54,7 +54,7 @@ public class GetBackupStateResponseDto {
     return details;
   }
 
-  public GetBackupStateResponseDto setDetails(List<GetBackupStateResponseDetailDto> details) {
+  public GetBackupStateResponseDto setDetails(final List<GetBackupStateResponseDetailDto> details) {
     this.details = details;
     return this;
   }
@@ -65,7 +65,7 @@ public class GetBackupStateResponseDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }

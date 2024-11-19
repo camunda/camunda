@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.backup.Metadata;
-import io.camunda.operate.webapp.management.dto.BackupStateDto;
+import io.camunda.webapps.backup.BackupStateDto;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
