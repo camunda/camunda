@@ -59,9 +59,11 @@ public class CamundaExporterITInvocationProvider
     config.getBulk().setSize(1); // force flushing on the first record
     if (connectionType == ELASTICSEARCH) {
       config.getConnect().setUrl(elsContainer.getHttpHostAddress());
+
     } else if (connectionType == OPENSEARCH) {
       config.getConnect().setUrl(osContainer.getHttpHostAddress());
     }
+    config.getConnect().setClusterName(connectionType.name());
     config.getConnect().setType(connectionType.getType());
     return config;
   }
