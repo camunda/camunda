@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.migration.to_8_3.MultiTenancyProcessStateMi
 import io.camunda.zeebe.engine.state.migration.to_8_3.ProcessInstanceByProcessDefinitionMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_4.MultiTenancySignalSubscriptionStateMigration;
 import io.camunda.zeebe.engine.state.migration.to_8_5.ColumnFamilyPrefixCorrectionMigration;
+import io.camunda.zeebe.engine.state.migration.to_8_6.OrderedCommandDistributionMigration;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.ClusterContext;
 import io.camunda.zeebe.util.VersionUtil;
@@ -58,7 +59,8 @@ public class DbMigratorImpl implements DbMigrator {
           new ColumnFamilyPrefixCorrectionMigration(),
           new MultiTenancySignalSubscriptionStateMigration(),
           new JobBackoffRestoreMigration(),
-          new RoutingInfoMigration());
+          new RoutingInfoMigration(),
+          new OrderedCommandDistributionMigration());
   // Be mindful of https://github.com/camunda/camunda/issues/7248. In particular, that issue
   // should be solved first, before adding any migration that can take a long time
 
