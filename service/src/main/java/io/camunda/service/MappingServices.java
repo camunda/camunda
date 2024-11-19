@@ -9,14 +9,18 @@ package io.camunda.service;
 
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.entities.MappingEntity;
+import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.MappingQuery;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerMappingCreateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class MappingServices
@@ -35,8 +39,11 @@ public class MappingServices
 
   @Override
   public SearchQueryResult<MappingEntity> search(final MappingQuery query) {
-    // TODO - implement this method
-    return null;
+    return mappingSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.mapping().read())))
+        .searchMappings(query);
   }
 
   @Override
@@ -51,6 +58,22 @@ public class MappingServices
             .setMappingKey(request.mappingKey())
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue()));
+  }
+
+  public MappingEntity getRole(final Long mappingKey) {
+    return findMapping(mappingKey)
+        .orElseThrow(
+            () ->
+                new NotFoundException(
+                    "Mapping with mappingKey %d not found".formatted(mappingKey)));
+  }
+
+  public Optional<MappingEntity> findMapping(final Long mappingKey) {
+    return search(
+            SearchQueryBuilders.mappingSearchQuery().filter(f -> f.mappingKey(mappingKey)).build())
+        .items()
+        .stream()
+        .findFirst();
   }
 
   public record MappingDTO(Long mappingKey, String claimName, String claimValue) {}

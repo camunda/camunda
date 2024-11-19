@@ -10,6 +10,7 @@ package io.camunda.security.auth;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
@@ -54,6 +55,10 @@ public record Authorization(AuthorizationResourceType resourceType, PermissionTy
 
     public Builder decisionRequirementsDefinition() {
       return resourceType(DECISION_REQUIREMENTS_DEFINITION);
+    }
+
+    public Builder mapping() {
+      return resourceType(MAPPING_RULE);
     }
 
     public Builder role() {
