@@ -7,6 +7,8 @@
  */
 package io.camunda.migration.process;
 
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -50,5 +52,22 @@ public interface TestData {
             Objects.requireNonNull(classLoader.getResource("migration/process/" + resourceName))
                 .getPath());
     return Files.readString(filePath);
+  }
+
+  static ImportPositionEntity completedImportPosition(final int partition) {
+    return importPosition(true, partition);
+  }
+
+  static ImportPositionEntity notCompletedImportPosition(final int partition) {
+    return importPosition(false, partition);
+  }
+
+  private static ImportPositionEntity importPosition(final boolean completed, final int partition) {
+    return new ImportPositionEntity()
+        .setId(partition + "-" + ProcessIndex.INDEX_NAME)
+        .setPartitionId(partition)
+        .setAliasName(ProcessIndex.INDEX_NAME)
+        .setIndexName(ProcessIndex.INDEX_NAME)
+        .setCompleted(completed);
   }
 }

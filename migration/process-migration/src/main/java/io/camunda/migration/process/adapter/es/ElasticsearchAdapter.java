@@ -27,12 +27,17 @@ import io.camunda.migration.process.ProcessorStep;
 import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +48,7 @@ public class ElasticsearchAdapter implements Adapter {
   private final ProcessMigrationProperties properties;
   private final MigrationRepositoryIndex migrationRepositoryIndex;
   private final ProcessIndex processIndex;
+  private final ImportPositionIndex importPositionIndex;
 
   public ElasticsearchAdapter(
       final ProcessMigrationProperties properties,
@@ -51,6 +57,7 @@ public class ElasticsearchAdapter implements Adapter {
     migrationRepositoryIndex =
         new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);
     processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), true);
+    importPositionIndex = new ImportPositionIndex(connectConfiguration.getIndexPrefix(), true);
     client = new ElasticsearchConnector(connectConfiguration).createClient();
   }
 
@@ -168,6 +175,35 @@ public class ElasticsearchAdapter implements Adapter {
   }
 
   @Override
+  public Set<ImportPositionEntity> readImportPosition() throws MigrationException {
+    final SearchRequest searchRequest =
+        new SearchRequest.Builder()
+            .size(100)
+            .index(importPositionIndex.getFullQualifiedName())
+            .query(
+                q ->
+                    q.wildcard(
+                        w -> w.field(ImportPositionIndex.ID).value("*-" + ProcessIndex.INDEX_NAME)))
+            .build();
+    final SearchResponse<ImportPositionEntity> searchResponse;
+
+    try {
+      searchResponse =
+          doWithRetry(
+              "Fetching import position",
+              () -> client.search(searchRequest, ImportPositionEntity.class),
+              res -> res.timedOut() || Boolean.TRUE.equals(res.terminatedEarly()));
+    } catch (final Exception e) {
+      throw new MigrationException("Failed to fetch import position", e);
+    }
+
+    return searchResponse.hits().hits().stream()
+        .map(Hit::source)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+  }
+
+  @Override
   public void close() throws IOException {
     client._transport().close();
   }
@@ -178,13 +214,13 @@ public class ElasticsearchAdapter implements Adapter {
   }
 
   @Override
-  public int getMinDelayInSeconds() {
-    return properties.getMinRetryDelayInSeconds();
+  public Duration getMinDelay() {
+    return properties.getMinRetryDelay();
   }
 
   @Override
-  public int getMaxDelayInSeconds() {
-    return properties.getMaxRetryDelayInSeconds();
+  public Duration getMaxDelay() {
+    return properties.getMaxRetryDelay();
   }
 
   private void migrateEntity(final ProcessEntity entity, final BulkRequest.Builder bulkRequest) {

@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.process;
 
+import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "camunda.migration.process")
@@ -14,8 +15,9 @@ public class ProcessMigrationProperties {
 
   private int batchSize = 20;
   private int maxRetries = 3;
-  private int minRetryDelayInSeconds = 1;
-  private int maxRetryDelayInSeconds = 60;
+  private Duration minRetryDelay = Duration.ofSeconds(1);
+  private Duration maxRetryDelay = Duration.ofMinutes(1);
+  private Duration postImporterTimeout = Duration.ofMinutes(1);
 
   public int getBatchSize() {
     return batchSize;
@@ -33,19 +35,27 @@ public class ProcessMigrationProperties {
     this.maxRetries = maxRetries;
   }
 
-  public int getMinRetryDelayInSeconds() {
-    return minRetryDelayInSeconds;
+  public Duration getMinRetryDelay() {
+    return minRetryDelay;
   }
 
-  public void setMinRetryDelayInSeconds(final int minRetryDelayInSeconds) {
-    this.minRetryDelayInSeconds = minRetryDelayInSeconds;
+  public void setMinRetryDelay(final Duration minRetryDelay) {
+    this.minRetryDelay = minRetryDelay;
   }
 
-  public int getMaxRetryDelayInSeconds() {
-    return maxRetryDelayInSeconds;
+  public Duration getMaxRetryDelay() {
+    return maxRetryDelay;
   }
 
-  public void setMaxRetryDelayInSeconds(final int maxRetryDelayInSeconds) {
-    this.maxRetryDelayInSeconds = maxRetryDelayInSeconds;
+  public void setMaxRetryDelay(final Duration maxRetryDelay) {
+    this.maxRetryDelay = maxRetryDelay;
+  }
+
+  public Duration getPostImporterTimeout() {
+    return postImporterTimeout;
+  }
+
+  public void setPostImporterTimeout(final Duration postImporterTimeout) {
+    this.postImporterTimeout = postImporterTimeout;
   }
 }

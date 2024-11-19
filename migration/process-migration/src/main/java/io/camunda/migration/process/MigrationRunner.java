@@ -7,18 +7,22 @@
  */
 package io.camunda.migration.process;
 
+import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.process.adapter.os.OpensearchAdapter;
 import io.camunda.migration.process.util.ProcessModelUtil;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +37,12 @@ public class MigrationRunner implements Migrator {
 
   private static final String ELASTICSEARCH = "elasticsearch";
   private final Adapter adapter;
+  private final ProcessMigrationProperties properties;
+  private ScheduledFuture<?> countdownTask;
 
   public MigrationRunner(
       final ProcessMigrationProperties properties, final ConnectConfiguration connect) {
+    this.properties = properties;
     adapter =
         connect.getType().equals(ELASTICSEARCH)
             ? new ElasticsearchAdapter(properties, connect)
@@ -50,8 +57,10 @@ public class MigrationRunner implements Migrator {
     try {
       String lastMigratedProcessDefinitionKey = adapter.readLastMigratedEntity();
       List<ProcessEntity> items = adapter.nextBatch(lastMigratedProcessDefinitionKey);
-      while (!items.isEmpty()) {
-        lastMigratedProcessDefinitionKey = migrateBatch(items);
+      while (shouldContinue(items)) {
+        if (!items.isEmpty()) {
+          lastMigratedProcessDefinitionKey = migrateBatch(items);
+        }
         scheduleNextBatch(scheduler);
         items = adapter.nextBatch(lastMigratedProcessDefinitionKey);
       }
@@ -59,7 +68,15 @@ public class MigrationRunner implements Migrator {
       terminate(scheduler);
       throw e;
     }
+    terminate(scheduler);
     LOG.info("Process Migration completed");
+  }
+
+  private boolean shouldContinue(final List<ProcessEntity> processes) {
+    if (!processes.isEmpty()) {
+      return true;
+    }
+    return countdownTask == null || !countdownTask.isDone();
   }
 
   protected String migrateBatch(final List<ProcessEntity> processes) {
@@ -70,15 +87,39 @@ public class MigrationRunner implements Migrator {
 
   private void scheduleNextBatch(final ScheduledExecutorService scheduler) {
     try {
-      scheduler.schedule(() -> {}, adapter.getMinDelayInSeconds(), TimeUnit.SECONDS).get();
+      if (countdownTask == null && isImporterFinished()) {
+        startCountdown(scheduler);
+      }
+      scheduler.schedule(() -> {}, adapter.getMinDelay().toSeconds(), TimeUnit.SECONDS).get();
     } catch (final ExecutionException | InterruptedException ex) {
       Thread.currentThread().interrupt();
       LOG.error("Schedule interrupted", ex);
     }
   }
 
+  private void startCountdown(final ScheduledExecutorService scheduler) {
+    LOG.info(
+        "Importer finished, migration will keep running for {}",
+        properties.getPostImporterTimeout());
+    countdownTask =
+        scheduler.schedule(
+            () -> {}, properties.getPostImporterTimeout().getSeconds(), TimeUnit.SECONDS);
+  }
+
   private List<ProcessEntity> extractBatchData(final List<ProcessEntity> processDefinitions) {
     return processDefinitions.stream().map(this::map).toList();
+  }
+
+  private boolean isImporterFinished() {
+    final Set<ImportPositionEntity> importPositions;
+    try {
+      importPositions = adapter.readImportPosition();
+      return !importPositions.isEmpty()
+          && importPositions.stream().allMatch(ImportPositionEntity::getCompleted);
+    } catch (final MigrationException e) {
+      LOG.error("Failed to read import position", e);
+      return false;
+    }
   }
 
   private ProcessEntity map(final ProcessEntity entity) {

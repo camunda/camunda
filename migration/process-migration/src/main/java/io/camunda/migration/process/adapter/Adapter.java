@@ -13,6 +13,7 @@ import io.camunda.exporter.utils.RetryOperation.RetryPredicate;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.process.ProcessorStep;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
 import io.camunda.zeebe.util.VersionUtil;
@@ -20,10 +21,10 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
@@ -42,13 +43,15 @@ public interface Adapter {
 
   void writeLastMigratedEntity(final String processDefinitionKey) throws MigrationException;
 
+  Set<ImportPositionEntity> readImportPosition() throws MigrationException;
+
   void close() throws IOException;
 
   int getMaxRetries();
 
-  int getMinDelayInSeconds();
+  Duration getMinDelay();
 
-  int getMaxDelayInSeconds();
+  Duration getMaxDelay();
 
   default Map<String, Object> getUpdateMap(final ProcessEntity entity) {
     final Map<String, Object> updateMap = new HashMap<>();
@@ -79,12 +82,10 @@ public interface Adapter {
       final String message, final Callable<T> callable, final RetryPredicate<T> retryPredicate)
       throws Exception {
     final ExponentialBackoffRetryDelay retryDelay =
-        new ExponentialBackoffRetryDelay(
-            Duration.of(getMaxDelayInSeconds(), ChronoUnit.SECONDS),
-            Duration.of(getMinDelayInSeconds(), ChronoUnit.SECONDS));
+        new ExponentialBackoffRetryDelay(getMaxDelay(), getMinDelay());
     return RetryOperation.<T>newBuilder()
         .noOfRetry(getMaxRetries())
-        .delayInterval(getMinDelayInSeconds(), TimeUnit.SECONDS)
+        .delayInterval(Math.toIntExact(getMinDelay().getSeconds()), TimeUnit.SECONDS)
         .delaySupplier(() -> Math.toIntExact(retryDelay.nextDelay().getSeconds()))
         .retryOn(IOException.class, ElasticsearchException.class)
         .retryPredicate(retryPredicate)

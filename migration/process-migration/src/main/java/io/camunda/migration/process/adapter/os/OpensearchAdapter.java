@@ -14,12 +14,17 @@ import io.camunda.migration.process.ProcessorStep;
 import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -41,6 +46,7 @@ public class OpensearchAdapter implements Adapter {
   private final OpenSearchClient client;
   private final MigrationRepositoryIndex migrationRepositoryIndex;
   private final ProcessIndex processIndex;
+  private final ImportPositionIndex importPositionIndex;
 
   public OpensearchAdapter(
       final ProcessMigrationProperties properties,
@@ -49,6 +55,7 @@ public class OpensearchAdapter implements Adapter {
     migrationRepositoryIndex =
         new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), false);
     processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), false);
+    importPositionIndex = new ImportPositionIndex(connectConfiguration.getIndexPrefix(), false);
     client = new OpensearchConnector(connectConfiguration).createClient();
   }
 
@@ -166,6 +173,34 @@ public class OpensearchAdapter implements Adapter {
   }
 
   @Override
+  public Set<ImportPositionEntity> readImportPosition() throws MigrationException {
+    final SearchRequest request =
+        new SearchRequest.Builder()
+            .index(importPositionIndex.getFullQualifiedName())
+            .query(
+                q ->
+                    q.wildcard(
+                        w -> w.field(ImportPositionIndex.ID).value("*-" + ProcessIndex.INDEX_NAME)))
+            .build();
+
+    final SearchResponse<ImportPositionEntity> searchResponse;
+
+    try {
+      searchResponse =
+          doWithRetry(
+              "Fetching import position",
+              () -> client.search(request, ImportPositionEntity.class),
+              res -> res.timedOut() || Boolean.TRUE.equals(res.terminatedEarly()));
+    } catch (final Exception e) {
+      throw new MigrationException("Failed to fetch import position", e);
+    }
+    return searchResponse.hits().hits().stream()
+        .map(Hit::source)
+        .filter(Objects::nonNull)
+        .collect(Collectors.toSet());
+  }
+
+  @Override
   public void close() throws IOException {
     client._transport().close();
   }
@@ -176,13 +211,13 @@ public class OpensearchAdapter implements Adapter {
   }
 
   @Override
-  public int getMinDelayInSeconds() {
-    return properties.getMinRetryDelayInSeconds();
+  public Duration getMinDelay() {
+    return properties.getMinRetryDelay();
   }
 
   @Override
-  public int getMaxDelayInSeconds() {
-    return properties.getMaxRetryDelayInSeconds();
+  public Duration getMaxDelay() {
+    return properties.getMaxRetryDelay();
   }
 
   private void migrateEntity(final ProcessEntity entity, final BulkRequest.Builder bulkRequest) {

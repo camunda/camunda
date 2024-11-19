@@ -16,6 +16,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
@@ -26,15 +27,22 @@ import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
@@ -62,12 +70,14 @@ public class ElasticsearchMigrationRunnerIT {
   private static ConnectConfiguration connectConfiguration;
   private static ProcessIndex processIndex;
   private static MigrationRepositoryIndex migrationRepositoryIndex;
+  private static ImportPositionIndex importPositionIndex;
 
   @BeforeAll
   public static void setUp() throws IOException {
     properties = new ProcessMigrationProperties();
     properties.setBatchSize(5);
-    properties.setMaxRetryDelayInSeconds(10);
+    properties.setMaxRetryDelay(Duration.ofSeconds(2));
+    properties.setPostImporterTimeout(Duration.ofSeconds(1));
     connectConfiguration = new ConnectConfiguration();
     connectConfiguration.setUrl("http://localhost:" + ES_CONTAINER.getMappedPort(9200));
     esClient = new ElasticsearchConnector(connectConfiguration).createClient();
@@ -79,9 +89,11 @@ public class ElasticsearchMigrationRunnerIT {
     processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), true);
     migrationRepositoryIndex =
         new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);
+    importPositionIndex = new ImportPositionIndex(connectConfiguration.getIndexPrefix(), true);
 
     es.createIndex(processIndex, new IndexSettings());
     es.createIndex(migrationRepositoryIndex, new IndexSettings());
+    es.createIndex(importPositionIndex, new IndexSettings());
   }
 
   @BeforeEach
@@ -100,6 +112,13 @@ public class ElasticsearchMigrationRunnerIT {
                 d.index(migrationRepositoryIndex.getFullQualifiedName())
                     .conflicts(Conflicts.Proceed)
                     .query(q -> q.matchAll(m -> m))));
+    esClient.deleteByQuery(
+        DeleteByQueryRequest.of(
+            d ->
+                d.index(importPositionIndex.getFullQualifiedName())
+                    .conflicts(Conflicts.Proceed)
+                    .query(q -> q.matchAll(m -> m))));
+
     esClient.indices().refresh();
   }
 
@@ -111,6 +130,7 @@ public class ElasticsearchMigrationRunnerIT {
     final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithPublicFormId(2L);
     writeProcessToIndex(entityToBeMigrated);
     writeProcessToIndex(entityNotToBeMigrated);
+    writeImportPositionToIndex(TestData.completedImportPosition(1));
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
 
     // when
@@ -165,6 +185,7 @@ public class ElasticsearchMigrationRunnerIT {
     writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
     writeProcessToIndex(TestData.processEntityWithoutForm(2L));
     writeProcessToIndex(TestData.processEntityWithPublicFormKey(3L));
+    writeImportPositionToIndex(TestData.completedImportPosition(1));
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     // when
     migrator.run();
@@ -210,6 +231,7 @@ public class ElasticsearchMigrationRunnerIT {
     for (int i = 1; i <= 20; i++) {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
+    writeImportPositionToIndex(TestData.completedImportPosition(1));
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
 
     // when
@@ -234,6 +256,7 @@ public class ElasticsearchMigrationRunnerIT {
     for (int i = 1; i <= 9; i++) {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
+    writeImportPositionToIndex(TestData.completedImportPosition(1));
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     writeProcessorStepToIndex("5");
     // when
@@ -283,6 +306,7 @@ public class ElasticsearchMigrationRunnerIT {
     properties.setBatchSize(1);
     final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
     final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithPublicFormId(2L);
+    writeImportPositionToIndex(TestData.completedImportPosition(1));
     writeProcessorStepToIndex("2");
     writeProcessToIndex(entityToBeMigrated);
     writeProcessToIndex(entityNotToBeMigrated);
@@ -306,11 +330,96 @@ public class ElasticsearchMigrationRunnerIT {
   }
 
   @Test
+  public void shouldMigrateDuringCountdown() throws IOException {
+    // given
+    properties.setPostImporterTimeout(Duration.ofSeconds(2));
+    properties.setMinRetryDelay(Duration.ofSeconds(3));
+    properties.setBatchSize(2);
+    writeImportPositionToIndex(TestData.completedImportPosition(1));
+    final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
+    scheduler.schedule(
+        () -> {
+          try {
+            for (int i = 1; i <= 9; i++) {
+              writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
+            }
+          } catch (final IOException e) {
+            throw new RuntimeException(e);
+          }
+        },
+        2,
+        TimeUnit.SECONDS);
+
+    // when
+    migrator.run();
+    scheduler.shutdown();
+    esClient.indices().refresh();
+
+    // then
+    assertProcessorStepContentIsStored("9");
+    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    assertThat(records.size()).isEqualTo(9);
+    assertThat(records.stream().allMatch(r -> r.getIsPublic().equals(Boolean.TRUE))).isTrue();
+    assertThat(records.stream().allMatch(r -> r.getFormId().equals("testForm"))).isTrue();
+  }
+
+  @Test
+  public void shouldRunIndefinitelyWhenANonCompletedImportPositionExists() throws IOException {
+    writeImportPositionToIndex(
+        TestData.notCompletedImportPosition(1), TestData.notCompletedImportPosition(2));
+    esClient.indices().refresh();
+    awaitRecordsArePresent(ImportPositionEntity.class, importPositionIndex.getFullQualifiedName());
+
+    assertThrows(
+        ConditionTimeoutException.class,
+        () ->
+            Awaitility.await()
+                .atMost(Duration.ofSeconds(10))
+                .until(
+                    () -> {
+                      migrator.run();
+                      return true;
+                    }));
+  }
+
+  @Test
+  public void shouldKeepRunningUntilImportPositionTimeout() throws IOException {
+    // given
+    properties.setPostImporterTimeout(Duration.ofSeconds(10));
+    writeProcessToIndex(TestData.processEntityWithPublicFormKey(1L));
+    writeProcessToIndex(TestData.processEntityWithPublicFormKey(2L));
+    writeImportPositionToIndex(TestData.completedImportPosition(1));
+    esClient.indices().refresh();
+    awaitRecordsArePresent(ImportPositionEntity.class, importPositionIndex.getFullQualifiedName());
+
+    // when
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(properties.getPostImporterTimeout().getSeconds() * 2))
+        .atLeast(properties.getPostImporterTimeout())
+        .until(
+            () -> {
+              migrator.run();
+              return true;
+            });
+
+    // then
+    assertProcessorStepContentIsStored("2");
+    final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
+    assertThat(records.size()).isEqualTo(2);
+    assertThat(records.stream().allMatch(r -> r.getIsPublic().equals(Boolean.TRUE))).isTrue();
+    assertThat(records.stream().allMatch(r -> r.getFormKey().equals("camunda-forms:bpmn:testForm")))
+        .isTrue();
+    assertThat(records.stream().allMatch(r -> r.getFormId() == null)).isTrue();
+    assertThat(records.stream().allMatch(r -> r.getIsFormEmbedded().equals(Boolean.TRUE))).isTrue();
+  }
+
+  @Test
   @Order(Integer.MAX_VALUE)
   public void shouldThrowException() {
     ES_CONTAINER.close();
     properties.setMaxRetries(2);
-    properties.setMinRetryDelayInSeconds(1);
+    properties.setMinRetryDelay(Duration.ofSeconds(1));
 
     final var ex = assertThrows(MigrationException.class, migrator::run);
     assertThat(ex.getMessage()).isEqualTo("Failed to fetch last migrated process");
@@ -339,6 +448,24 @@ public class ElasticsearchMigrationRunnerIT {
             .id(PROCESSOR_STEP_ID)
             .refresh(Refresh.True)
             .build());
+  }
+
+  private void writeImportPositionToIndex(final ImportPositionEntity... importPositionEntities)
+      throws IOException {
+    final var req = new BulkRequest.Builder().refresh(Refresh.True);
+
+    Arrays.stream(importPositionEntities)
+        .forEach(
+            imp ->
+                req.operations(
+                    op ->
+                        op.index(
+                            e ->
+                                e.id(imp.getId())
+                                    .document(imp)
+                                    .index(importPositionIndex.getFullQualifiedName()))));
+
+    esClient.bulk(req.build());
   }
 
   private <T> List<T> readRecords(final Class<T> clazz, final String indexName) throws IOException {
