@@ -13,11 +13,11 @@ import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.Collections;
@@ -72,7 +72,7 @@ public class FormStoreOpenSearch implements FormStore {
   private Boolean isFormAssociatedToTask(final String formId, final String processDefinitionId) {
     try {
       final SearchRequest.Builder searchRequest =
-          OpenSearchUtil.createSearchRequest(taskTemplate, OpenSearchUtil.QueryType.ALL)
+          OpenSearchUtil.createSearchRequest(taskTemplate.getAlias())
               .size(1) // only need to know if at least one exists
               .query(
                   b ->

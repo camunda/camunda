@@ -10,7 +10,6 @@ package io.camunda.tasklist.store.opensearch;
 import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
-import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCheck;
 import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithAnd;
@@ -25,7 +24,6 @@ import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.queries.TaskSortFields;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
@@ -33,6 +31,7 @@ import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
@@ -107,7 +106,11 @@ public class TaskStoreOpenSearch implements TaskStore {
   public TaskEntity getTask(final String id) {
     try {
       return getRawResponseWithTenantCheck(
-          id, taskTemplate, ALL, tenantAwareClient, TaskEntity.class);
+          id,
+          taskTemplate.getAlias(),
+          taskTemplate.getIndexName(),
+          tenantAwareClient,
+          TaskEntity.class);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -116,7 +119,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   @Override
   public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
     final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
+        OpenSearchUtil.createSearchRequest(taskTemplate.getAlias())
             .query(
                 q ->
                     q.term(
@@ -136,7 +139,7 @@ public class TaskStoreOpenSearch implements TaskStore {
   public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
       final String processDefinitionId) {
     final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
+        OpenSearchUtil.createSearchRequest(taskTemplate.getAlias())
             .query(
                 q ->
                     q.term(
@@ -346,7 +349,7 @@ public class TaskStoreOpenSearch implements TaskStore {
     // TODO we can play around with query type here (2nd parameter), e.g. when we select for only
     // active tasks
     final SearchRequest.Builder sourceBuilder =
-        OpenSearchUtil.createSearchRequest(taskTemplate, getQueryTypeByTaskState(query.getState()));
+        OpenSearchUtil.createSearchRequest(getQueryTypeByTaskState(query.getState()));
     sourceBuilder.query(esQuery.build());
     applySorting(sourceBuilder, query);
 
@@ -410,10 +413,10 @@ public class TaskStoreOpenSearch implements TaskStore {
         .collect(Collectors.toList());
   }
 
-  private static OpenSearchUtil.QueryType getQueryTypeByTaskState(final TaskState taskState) {
+  private String getQueryTypeByTaskState(final TaskState taskState) {
     return TaskState.CREATED == taskState
-        ? OpenSearchUtil.QueryType.ONLY_RUNTIME
-        : OpenSearchUtil.QueryType.ALL;
+        ? taskTemplate.getFullQualifiedName()
+        : taskTemplate.getAlias();
   }
 
   private boolean checkTaskIsFirst(final TaskQuery query, final String id) {
@@ -820,7 +823,8 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   private Hit getTaskRawResponse(final String id) throws IOException {
     final SearchRequest.Builder request =
-        OpenSearchUtil.createSearchRequest(taskTemplate).query(q -> q.ids(ids -> ids.values(id)));
+        OpenSearchUtil.createSearchRequest(taskTemplate.getAlias())
+            .query(q -> q.ids(ids -> ids.values(id)));
 
     final SearchResponse<TaskEntity> response = osClient.search(request.build(), TaskEntity.class);
 
@@ -835,7 +839,7 @@ public class TaskStoreOpenSearch implements TaskStore {
 
   private List<Hit<TaskEntity>> getTasksRawResponse(final List<String> ids) throws IOException {
     final SearchRequest.Builder request =
-        OpenSearchUtil.createSearchRequest(taskTemplate)
+        OpenSearchUtil.createSearchRequest(taskTemplate.getAlias())
             .source(s -> s.filter(f -> f.includes(ids)));
 
     final SearchResponse<TaskEntity> response = tenantAwareClient.search(request, TaskEntity.class);
