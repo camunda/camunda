@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.sql.VariableMapper.VariableSearchColumn;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.search.sort.VariableSort;
 import java.util.List;
@@ -36,11 +37,11 @@ public class VariableReader extends AbstractEntityReader<VariableEntity> {
                 new Builder().variableKeys(key).build(),
                 VariableSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(1))))
-        .hits
+        .items()
         .getFirst();
   }
 
-  public SearchResult search(final VariableQuery query) {
+  public SearchQueryResult<VariableEntity> search(final VariableQuery query) {
     final var dbSort = convertSort(query.sort(), VariableSearchColumn.VAR_KEY);
     final var dbQuery =
         VariableDbQuery.of(
@@ -48,7 +49,7 @@ public class VariableReader extends AbstractEntityReader<VariableEntity> {
     LOG.trace("[RDBMS DB] Search for variables with filter {}", query);
     final var totalHits = variableMapper.count(dbQuery);
     final var hits = variableMapper.search(dbQuery);
-    return new SearchResult(hits, totalHits.intValue());
+    return new SearchQueryResult<>(totalHits.intValue(), hits, extractSortValues(hits, dbSort));
   }
 
   public record SearchResult(List<VariableEntity> hits, Integer total) {}

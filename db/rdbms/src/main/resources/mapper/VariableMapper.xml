@@ -18,6 +18,7 @@
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.VariableDbQuery"
     resultMap="io.camunda.db.rdbms.sql.VariableMapper.searchResultMap">
+    SELECT * FROM (
     SELECT
       VAR_KEY,
       PROCESS_INSTANCE_KEY,
@@ -30,6 +31,8 @@
     PROCESS_DEFINITION_ID
     FROM VARIABLE
     <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>

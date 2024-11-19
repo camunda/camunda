@@ -86,9 +86,9 @@ public class VariableIT {
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
+    assertThat(searchResult.items()).hasSize(1);
 
-    final var instance = searchResult.hits().getFirst();
+    final var instance = searchResult.items().getFirst();
 
     assertThat(instance).isNotNull();
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
@@ -112,7 +112,7 @@ public class VariableIT {
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
-    assertThat(searchResult.hits()).hasSize(5);
+    assertThat(searchResult.items()).hasSize(5);
   }
 
   @TestTemplate
@@ -134,13 +134,13 @@ public class VariableIT {
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
-    assertThat(searchResult.hits()).hasSize(20);
+    assertThat(searchResult.items()).hasSize(20);
   }
 
   @TestTemplate
   public void shouldFindVariableWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final VariableReader processInstanceReader = rdbmsService.getVariableReader();
+    final VariableReader variableReader = rdbmsService.getVariableReader();
 
     final String varName =
         VariableFixtures.createAndSaveRandomVariablesWithFixedName(rdbmsService).getLast().name();
@@ -149,7 +149,7 @@ public class VariableIT {
     createAndSaveVariable(rdbmsService, randomizedVariable);
 
     final var searchResult =
-        processInstanceReader.search(
+        variableReader.search(
             new VariableQuery(
                 new VariableFilter.Builder()
                     .variableKeys(randomizedVariable.variableKey())
@@ -161,9 +161,47 @@ public class VariableIT {
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().variableKey())
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().variableKey())
         .isEqualTo(randomizedVariable.variableKey());
+  }
+
+  @TestTemplate
+  public void shouldFindVariableWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final VariableReader variableReader = rdbmsService.getVariableReader();
+
+    final String varName =
+        VariableFixtures.createAndSaveRandomVariablesWithFixedName(rdbmsService).getLast().name();
+
+    final var sort =
+        VariableSort.of(s -> s.scopeKey().asc().value().asc().processInstanceKey().desc());
+    final var searchResult =
+        variableReader.search(
+            VariableQuery.of(
+                b -> b.filter(f -> f.names(varName)).sort(sort).page(p -> p.from(0).size(20))));
+
+    final var instanceAfter = searchResult.items().get(9);
+    final var nextPage =
+        variableReader.search(
+            VariableQuery.of(
+                b ->
+                    b.filter(f -> f.names(varName))
+                        .sort(sort)
+                        .page(
+                            p ->
+                                p.size(5)
+                                    .searchAfter(
+                                        new Object[] {
+                                          instanceAfter.scopeKey(),
+                                          instanceAfter.value(),
+                                          instanceAfter.processInstanceKey(),
+                                          instanceAfter.variableKey()
+                                        }))));
+
+    assertThat(nextPage.total()).isEqualTo(20);
+    assertThat(nextPage.items()).hasSize(5);
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
   }
 
   private void assertVariableDbModelEqualToEntity(

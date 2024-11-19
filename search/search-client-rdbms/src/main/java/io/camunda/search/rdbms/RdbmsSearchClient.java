@@ -160,9 +160,7 @@ public class RdbmsSearchClient
   public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery query) {
     LOG.debug("[RDBMS Search Client] Search for variables: {}", query);
 
-    final var searchResult = rdbmsService.getVariableReader().search(query);
-
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
+    return rdbmsService.getVariableReader().search(query);
   }
 
   @Override

@@ -113,7 +113,7 @@ public class VariableSortIT {
                     new VariableFilter.Builder().processInstanceKeys(processInstanceKey).build(),
                     VariableSort.of(b -> b.scopeKey().asc()),
                     SearchQueryPage.of(b -> b)))
-            .hits();
+            .items();
 
     assertThat(searchResult).hasSize(20);
     assertThat(searchResult).isSortedAccordingTo(Comparator.comparing(VariableEntity::scopeKey));
@@ -135,7 +135,7 @@ public class VariableSortIT {
                     new VariableFilter.Builder().processInstanceKeys(processInstanceKey).build(),
                     VariableSort.of(b -> b.scopeKey().desc()),
                     SearchQueryPage.of(b -> b)))
-            .hits();
+            .items();
 
     assertThat(searchResult).hasSize(20);
     assertThat(searchResult)
@@ -159,7 +159,7 @@ public class VariableSortIT {
                     new VariableFilter.Builder().scopeKeys(scopeKey).build(),
                     VariableSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))
-            .hits();
+            .items();
 
     assertThat(searchResult).hasSize(20);
     assertThat(searchResult).isSortedAccordingTo(comparator);
