@@ -20,6 +20,7 @@ import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapp
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -37,6 +38,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
@@ -240,6 +243,18 @@ final class ElasticsearchExporterIT {
         valueType, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
   }
 
+  private <T extends RecordValue> Record<T> generateSupportedRecord(
+      final UnaryOperator<Builder<T>> modifier) {
+    Record<T> record = factory.generateRecord(modifier);
+    while (!TestSupport.provideValueTypes()
+        .collect(Collectors.toSet())
+        .contains(record.getValueType())) {
+      record = factory.generateRecord(modifier);
+    }
+
+    return record;
+  }
+
   @Nested
   final class IndexSettingsTest {
     @Test
@@ -376,7 +391,7 @@ final class ElasticsearchExporterIT {
       CONTAINER.stop();
       Awaitility.await().until(() -> !CONTAINER.isRunning());
 
-      final var record = factory.generateRecord(r -> r.withBrokerVersion("8.6.0"));
+      final var record = generateSupportedRecord(r -> r.withBrokerVersion("8.6.0"));
 
       try (final var mockVersion =
           Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
@@ -393,7 +408,8 @@ final class ElasticsearchExporterIT {
       Awaitility.await().until(CONTAINER::isRunning);
 
       // when
-      final var record2 = factory.generateRecord(r -> r.withBrokerVersion("8.7.0"));
+      final var record2 = generateSupportedRecord(r -> r.withBrokerVersion("8.7.0"));
+
       try (final var mockVersion =
           Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
         mockVersion.when(VersionUtil::getVersionLowerCase).thenReturn("8.7.0");
