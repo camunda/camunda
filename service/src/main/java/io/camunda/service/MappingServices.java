@@ -55,7 +55,6 @@ public class MappingServices
   public CompletableFuture<MappingRecord> createMapping(final MappingDTO request) {
     return sendBrokerRequest(
         new BrokerMappingCreateRequest()
-            .setMappingKey(request.mappingKey())
             .setClaimName(request.claimName())
             .setClaimValue(request.claimValue()));
   }

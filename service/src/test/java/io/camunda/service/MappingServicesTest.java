@@ -63,7 +63,6 @@ public class MappingServicesTest {
     assertThat(request.getIntent()).isEqualTo(MappingIntent.CREATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.MAPPING);
     final MappingRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue.getMappingKey()).isEqualTo(mappingDTO.mappingKey());
     assertThat(brokerRequestValue.getClaimName()).isEqualTo(mappingDTO.claimName());
     assertThat(brokerRequestValue.getClaimValue()).isEqualTo(mappingDTO.claimValue());
   }
