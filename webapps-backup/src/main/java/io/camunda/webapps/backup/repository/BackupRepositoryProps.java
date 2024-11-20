@@ -13,7 +13,15 @@ package io.camunda.webapps.backup.repository;
  */
 public interface BackupRepositoryProps {
 
-  Integer snapshotTimeout();
+  int snapshotTimeout();
 
   Long incompleteCheckTimeoutInSeconds();
+
+  static Integer defaultSnapshotTimeout() {
+    return 0;
+  }
+
+  static Long defaultIncompleteCheckTimeoutInSeconds() {
+    return 5 * 60L;
+  }
 }

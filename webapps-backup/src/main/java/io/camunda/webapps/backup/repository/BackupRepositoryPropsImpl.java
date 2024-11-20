@@ -7,6 +7,5 @@
  */
 package io.camunda.webapps.backup.repository;
 
-public record BackupRepositoryPropsImpl(
-    Integer snapshotTimeout, Long incompleteCheckTimeoutInSeconds)
+public record BackupRepositoryPropsImpl(int snapshotTimeout, Long incompleteCheckTimeoutInSeconds)
     implements BackupRepositoryProps {}

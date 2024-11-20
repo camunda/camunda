@@ -5,24 +5,23 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.opensearch.backup;
+package io.camunda.webapps.backup.repository.opensearch;
 
-import static io.camunda.operate.webapp.opensearch.backup.OpensearchBackupRepository.REPOSITORY_MISSING_EXCEPTION_TYPE;
-import static io.camunda.operate.webapp.opensearch.backup.OpensearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
+import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.REPOSITORY_MISSING_EXCEPTION_TYPE;
+import static io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.property.BackupProperties;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.opensearch.response.SnapshotState;
-import io.camunda.operate.webapp.backup.BackupServiceImpl;
 import io.camunda.webapps.backup.BackupService;
+import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.exceptions.InvalidRequestException;
+import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.GenericBackupException;
+import io.camunda.webapps.backup.repository.elasticsearch.TestSnapshotProvider;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
@@ -50,18 +49,18 @@ class OpensearchBackupRepositoryTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private OpenSearchAsyncClient openSearchAsyncClient;
 
-  @Mock private OperateProperties operateProperties;
+  @Mock private BackupRepositoryProps backupProps;
 
   private OpensearchBackupRepository repository;
   private final long incompleteCheckTimeoutLength =
-      new BackupProperties().getIncompleteCheckTimeoutInSeconds() * 1000;
+      BackupRepositoryProps.defaultIncompleteCheckTimeoutInSeconds() * 1000;
   private long now;
 
   @BeforeEach
   public void setUp() {
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
     repository =
-        new OpensearchBackupRepository(openSearchClient, openSearchAsyncClient, operateProperties);
+        new OpensearchBackupRepository(
+            openSearchClient, openSearchAsyncClient, backupProps, new TestSnapshotProvider());
     now = Instant.now().toEpochMilli();
   }
 
@@ -138,7 +137,7 @@ class OpensearchBackupRepositoryTest {
   @Test
   void failedForExecuteSnapshotting() throws IOException {
     final var snapshotRequest =
-        new BackupServiceImpl.SnapshotRequest(
+        new SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
             List.of("index-1", "index-2"),
@@ -182,6 +181,8 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void getBackupStateShouldBeInProgress() throws IOException {
+    when(backupProps.incompleteCheckTimeoutInSeconds())
+        .thenReturn(BackupRepositoryProps.defaultIncompleteCheckTimeoutInSeconds());
     when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(
             GetSnapshotResponse.of(
@@ -332,6 +333,8 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void shouldReturnBackupStateInProgressWhenStartIsInTimeoutButEndIsNot() throws IOException {
+    when(backupProps.incompleteCheckTimeoutInSeconds())
+        .thenReturn(BackupRepositoryProps.defaultIncompleteCheckTimeoutInSeconds());
     final var firstSnapshotInfo =
         SnapshotInfo.of(
             bi ->

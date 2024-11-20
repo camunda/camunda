@@ -36,7 +36,7 @@ public class ElasticsearchBackupRepository
   private static BackupRepositoryProps props(final BackupProperties operateProperties) {
     return new BackupRepositoryProps() {
       @Override
-      public Integer snapshotTimeout() {
+      public int snapshotTimeout() {
         return operateProperties.getSnapshotTimeout();
       }
 

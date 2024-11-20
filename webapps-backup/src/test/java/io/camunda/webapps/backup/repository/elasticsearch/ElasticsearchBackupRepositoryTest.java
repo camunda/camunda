@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.backup.elasticsearch;
+package io.camunda.webapps.backup.repository.elasticsearch;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.fail;
@@ -16,8 +16,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.SnapshotNameProvider;
-import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -59,8 +57,6 @@ public class ElasticsearchBackupRepositoryTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private BackupRepositoryProps backupProps;
 
-  private final SnapshotNameProvider snapshotNameProvider = new TestSnapshotProvider();
-
   private ElasticsearchBackupRepository backupRepository;
 
   @BeforeEach
@@ -68,7 +64,7 @@ public class ElasticsearchBackupRepositoryTest {
     backupRepository =
         Mockito.spy(
             new ElasticsearchBackupRepository(
-                esClient, objectMapper, backupProps, snapshotNameProvider));
+                esClient, objectMapper, backupProps, new TestSnapshotProvider()));
   }
 
   @Test
