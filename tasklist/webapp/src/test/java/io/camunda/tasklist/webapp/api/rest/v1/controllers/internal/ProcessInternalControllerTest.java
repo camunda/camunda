@@ -16,7 +16,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -39,6 +38,7 @@ import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -286,7 +286,7 @@ class ProcessInternalControllerTest {
               null))
           .thenReturn(List.of(providedProcessEntity));
       when(formStore.getForm("userTaskForm_111", "2251799813685257", null))
-          .thenReturn(new FormEntity().setId("task").setBpmnId("task"));
+          .thenReturn(new FormEntity().setId("task").setFormId("task"));
 
       // when
       final var responseAsString =

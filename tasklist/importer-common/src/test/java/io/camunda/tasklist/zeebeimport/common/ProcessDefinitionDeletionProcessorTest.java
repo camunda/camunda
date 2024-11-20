@@ -10,12 +10,12 @@ package io.camunda.tasklist.zeebeimport.common;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
-import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import java.util.LinkedHashMap;
 import java.util.List;

@@ -83,14 +83,24 @@ public abstract class ElasticsearchUtil {
 
   public static SearchHit getRawResponseWithTenantCheck(
       final String id,
-      IndexDescriptor descriptor,
-      QueryType queryType,
-      TenantAwareElasticsearchClient tenantAwareClient)
+      final IndexDescriptor descriptor,
+      final QueryType queryType,
+      final TenantAwareElasticsearchClient tenantAwareClient)
+      throws IOException {
+    return getRawResponseWithTenantCheck(
+        id, whereToSearch(descriptor, queryType), descriptor.getIndexName(), tenantAwareClient);
+  }
+
+  public static SearchHit getRawResponseWithTenantCheck(
+      final String id,
+      final String index,
+      final String entityName,
+      final TenantAwareElasticsearchClient tenantAwareClient)
       throws IOException {
     final QueryBuilder query = idsQuery().addIds(id);
 
     final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(descriptor, queryType)
+        ElasticsearchUtil.createSearchRequest(index)
             .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
 
     final SearchResponse response = tenantAwareClient.search(request);
@@ -98,10 +108,9 @@ public abstract class ElasticsearchUtil {
       return response.getHits().getHits()[0];
     } else if (response.getHits().getTotalHits().value > 1) {
       throw new NotFoundException(
-          String.format("Unique %s with id %s was not found", descriptor.getIndexName(), id));
+          String.format("Unique %s with id %s was not found", entityName, id));
     } else {
-      throw new NotFoundException(
-          String.format("%s with id %s was not found", descriptor.getIndexName(), id));
+      throw new NotFoundException(String.format("%s with id %s was not found", entityName, id));
     }
   }
 
@@ -156,7 +165,11 @@ public abstract class ElasticsearchUtil {
   /* CREATE QUERIES */
 
   public static SearchRequest createSearchRequest(IndexDescriptor descriptor, QueryType queryType) {
-    return new SearchRequest(whereToSearch(descriptor, queryType));
+    return createSearchRequest(whereToSearch(descriptor, queryType));
+  }
+
+  public static SearchRequest createSearchRequest(final String index) {
+    return new SearchRequest(index);
   }
 
   public static String whereToSearch(IndexDescriptor descriptor, QueryType queryType) {

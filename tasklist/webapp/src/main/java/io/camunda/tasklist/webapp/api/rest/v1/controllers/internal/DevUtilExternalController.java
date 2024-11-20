@@ -9,12 +9,12 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.se.SearchEngineUserDetailsService;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;

@@ -8,8 +8,8 @@
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.entities.ProcessEntity;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -146,7 +146,7 @@ public class FormResponse {
 
   public static FormResponse fromFormEntity(FormEntity form) {
     return new FormResponse()
-        .setId(form.getBpmnId())
+        .setId(form.getFormId())
         .setProcessDefinitionKey(form.getProcessDefinitionId())
         .setSchema(form.getSchema())
         .setVersion(form.getVersion())
@@ -156,7 +156,7 @@ public class FormResponse {
 
   public static FormResponse fromFormEntity(FormEntity form, ProcessEntity processEntity) {
     return new FormResponse()
-        .setId(form.getBpmnId())
+        .setId(form.getFormId())
         .setProcessDefinitionKey(form.getProcessDefinitionId())
         .setTitle(
             processEntity.getName() != null
