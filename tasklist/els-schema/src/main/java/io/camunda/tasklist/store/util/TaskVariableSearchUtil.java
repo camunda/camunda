@@ -11,9 +11,9 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.util.CollectionUtil;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,7 +112,7 @@ public class TaskVariableSearchUtil {
         variableStore.getVariablesByFlowNodeInstanceIds(flowNodeInstanceIds, varNames, fieldNames);
 
     return variables.stream()
-        .collect(groupingBy(VariableEntity::getScopeFlowNodeId, getVariableMapCollector()));
+        .collect(groupingBy(v -> String.valueOf(v.getScopeKey()), getVariableMapCollector()));
   }
 
   private Collector<VariableEntity, VariableStore.VariableMap, VariableStore.VariableMap>
