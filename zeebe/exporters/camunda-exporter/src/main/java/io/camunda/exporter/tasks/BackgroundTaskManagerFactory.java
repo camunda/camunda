@@ -20,6 +20,8 @@ import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
+import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
@@ -74,6 +76,8 @@ public final class BackgroundTaskManagerFactory {
     final List<Runnable> tasks = new ArrayList<>();
     int threadCount = 0;
 
+    tasks.add(buildIncidentMarkerTask());
+
     if (config.getArchiver().isRolloverEnabled()) {
       threadCount = 1;
       tasks.add(buildProcessInstanceArchiverJob());
@@ -86,6 +90,22 @@ public final class BackgroundTaskManagerFactory {
 
     executor.setCorePoolSize(threadCount);
     return tasks;
+  }
+
+  private ReschedulingTask buildIncidentMarkerTask() {
+    final var repository = new NoopIncidentUpdateRepository();
+    final var postExport = config.getPostExport();
+    return new ReschedulingTask(
+        new IncidentUpdateTask(
+            metadata,
+            repository,
+            postExport.isIgnoreMissingData(),
+            postExport.getBatchSize(),
+            logger),
+        1,
+        postExport.getDelayBetweenRuns(),
+        executor,
+        logger);
   }
 
   private ReschedulingTask buildProcessInstanceArchiverJob() {
