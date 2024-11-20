@@ -22,6 +22,8 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
@@ -111,5 +113,25 @@ public class GroupServiceTest {
 
     // when / then
     assertThat(services.findGroup(key)).isEmpty();
+  }
+
+  @Test
+  public void shouldUpdateGroup() {
+    // given
+    final var groupKey = 100L;
+    final var name = "UpdatedName";
+
+    // when
+    services.updateGroup(groupKey, name);
+
+    // then
+    final BrokerGroupUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.UPDATE);
+    assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
+    assertThat(request.getKey()).isEqualTo(groupKey);
+    final GroupRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue).hasName(name);
+    assertThat(brokerRequestValue).hasGroupKey(groupKey);
   }
 }
