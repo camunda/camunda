@@ -13,15 +13,16 @@ import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAnd
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
+import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import java.time.temporal.ChronoUnit;
 import org.assertj.core.data.TemporalUnitWithinOffset;
@@ -59,7 +60,7 @@ public class FlowNodeInstanceIT {
 
     final var searchResult =
         reader.search(
-            new FlowNodeInstanceDbQuery(
+            new FlowNodeInstanceQuery(
                 new FlowNodeInstanceFilter.Builder()
                     .processDefinitionIds(flowNodeInstance.processDefinitionId())
                     .build(),
@@ -68,9 +69,9 @@ public class FlowNodeInstanceIT {
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
+    assertThat(searchResult.items()).hasSize(1);
 
-    compareFlowNodeInstance(searchResult.hits().getFirst(), flowNodeInstance);
+    compareFlowNodeInstance(searchResult.items().getFirst(), flowNodeInstance);
   }
 
   @TestTemplate
@@ -85,7 +86,7 @@ public class FlowNodeInstanceIT {
         rdbmsWriter, b -> b.processDefinitionId(processDefinitionId));
     final var searchResult =
         reader.search(
-            new FlowNodeInstanceDbQuery(
+            new FlowNodeInstanceQuery(
                 new FlowNodeInstanceFilter.Builder()
                     .processDefinitionIds(processDefinitionId)
                     .build(),
@@ -94,7 +95,7 @@ public class FlowNodeInstanceIT {
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
-    assertThat(searchResult.hits()).hasSize(5);
+    assertThat(searchResult.items()).hasSize(5);
   }
 
   @TestTemplate
@@ -110,7 +111,7 @@ public class FlowNodeInstanceIT {
 
     final var searchResult =
         reader.search(
-            new FlowNodeInstanceDbQuery(
+            new FlowNodeInstanceQuery(
                 new FlowNodeInstanceFilter.Builder()
                     .processDefinitionIds(processDefinitionId)
                     .build(),
@@ -119,7 +120,7 @@ public class FlowNodeInstanceIT {
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
-    assertThat(searchResult.hits()).hasSize(20);
+    assertThat(searchResult.items()).hasSize(20);
   }
 
   @TestTemplate
@@ -134,7 +135,7 @@ public class FlowNodeInstanceIT {
 
     final var searchResult =
         reader.search(
-            new FlowNodeInstanceDbQuery(
+            new FlowNodeInstanceQuery(
                 new FlowNodeInstanceFilter.Builder()
                     .flowNodeInstanceKeys(instance.flowNodeInstanceKey())
                     .processInstanceKeys(instance.processInstanceKey())
@@ -151,8 +152,8 @@ public class FlowNodeInstanceIT {
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertThat(searchResult.hits().getFirst().key()).isEqualTo(instance.flowNodeInstanceKey());
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(instance.flowNodeInstanceKey());
   }
 
   private static void compareFlowNodeInstance(
@@ -178,5 +179,52 @@ public class FlowNodeInstanceIT {
         .isCloseTo(expected.startDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(actual.endDate())
         .isCloseTo(expected.endDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldFindFlowNodeInstanceWithSearchAfter(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceReader flowNodeInstanceReader = rdbmsService.getFlowNodeInstanceReader();
+
+    final var processDefinition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriter, b -> b);
+    createAndSaveRandomFlowNodeInstances(
+        rdbmsWriter,
+        b ->
+            b.processDefinitionKey(processDefinition.processDefinitionKey())
+                .processDefinitionId(processDefinition.processDefinitionId()));
+    final var sort =
+        FlowNodeInstanceSort.of(s -> s.type().asc().tenantId().asc().startDate().desc());
+    final var searchResult =
+        flowNodeInstanceReader.search(
+            FlowNodeInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
+                        .sort(sort)
+                        .page(p -> p.from(0).size(20))));
+
+    final var instanceAfter = searchResult.items().get(9);
+    final var nextPage =
+        flowNodeInstanceReader.search(
+            FlowNodeInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinition.processDefinitionId()))
+                        .sort(sort)
+                        .page(
+                            p ->
+                                p.size(5)
+                                    .searchAfter(
+                                        new Object[] {
+                                          instanceAfter.type(),
+                                          instanceAfter.tenantId(),
+                                          instanceAfter.startDate(),
+                                          instanceAfter.key()
+                                        }))));
+
+    assertThat(nextPage.total()).isEqualTo(20);
+    assertThat(nextPage.items()).hasSize(5);
+    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
   }
 }
