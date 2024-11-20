@@ -9,6 +9,8 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -53,7 +55,9 @@ public class GroupDeletedHandler implements ExportHandler<GroupEntity, GroupReco
   @Override
   public void updateEntity(final Record<GroupRecordValue> record, final GroupEntity entity) {
     final GroupRecordValue value = record.getValue();
-    entity.setGroupKey(value.getGroupKey()).setName(value.getName());
+    final var joinRelation =
+        new EntityJoinRelation().setName(IdentityJoinRelationshipType.GROUP.getType());
+    entity.setGroupKey(value.getGroupKey()).setName(value.getName()).setJoin(joinRelation);
   }
 
   @Override
