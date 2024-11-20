@@ -13,6 +13,7 @@ import io.camunda.search.query.UserQuery;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -45,7 +46,8 @@ public class UserQueryController {
 
   private ResponseEntity<UserSearchResponse> search(final UserQuery query) {
     try {
-      final var result = userServices.search(query);
+      final var result =
+          userServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
