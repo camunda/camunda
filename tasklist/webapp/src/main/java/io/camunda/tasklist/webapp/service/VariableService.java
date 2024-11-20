@@ -12,7 +12,6 @@ import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -31,6 +30,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
@@ -350,7 +350,7 @@ public class VariableService {
         variableStore.getVariablesByFlowNodeInstanceIds(flowNodeInstanceIds, varNames, fieldNames);
 
     return variables.stream()
-        .collect(groupingBy(VariableEntity::getScopeFlowNodeId, getVariableMapCollector()));
+        .collect(groupingBy(v -> String.valueOf(v.getScopeKey()), getVariableMapCollector()));
   }
 
   @NotNull

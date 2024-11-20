@@ -17,12 +17,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.property.ImportProperties;
 import io.camunda.tasklist.qa.migration.util.AbstractMigrationTest;
 import io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenerator;
 import io.camunda.tasklist.qa.util.VariablesUtil;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;

@@ -10,6 +10,7 @@ package io.camunda.tasklist.store;
 import io.camunda.tasklist.entities.*;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
