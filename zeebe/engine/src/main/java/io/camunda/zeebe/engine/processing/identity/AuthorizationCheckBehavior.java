@@ -201,7 +201,8 @@ public final class AuthorizationCheckBehavior {
   }
 
   public List<String> getAuthorizedTenantIds(final TypedRecord<?> command) {
-    // todo: this is a temporary solution until we adjust all the tests to fetch the tenant from the state
+    // todo: this is a temporary solution until we adjust all the tests to fetch the tenant from the
+    // state
     if (command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS) != null) {
       return (List<String>) command.getAuthorizations().get(Authorization.AUTHORIZED_TENANTS);
     }

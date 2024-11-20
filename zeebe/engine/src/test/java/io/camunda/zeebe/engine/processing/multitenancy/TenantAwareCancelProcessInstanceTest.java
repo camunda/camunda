@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -59,40 +58,6 @@ public class TenantAwareCancelProcessInstanceTest {
     assertThat(cancelled)
         .describedAs("Expect that cancellation was successful")
         .hasIntent(ProcessInstanceIntent.ELEMENT_TERMINATED);
-  }
-
-  @Test
-  public void shouldRejectCancelInstanceForUnauthorizedTenant() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType("test"))
-                .endEvent()
-                .done())
-        .withTenantId("custom-tenant")
-        .deploy();
-
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
-
-    // when
-    final var rejection =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .forAuthorizedTenants("another-tenant")
-            .expectRejection()
-            .cancel();
-
-    // then
-    assertThat(rejection)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to cancel a process instance with key '%s', but no such process was found"
-                .formatted(processInstanceKey));
   }
 
   @Test

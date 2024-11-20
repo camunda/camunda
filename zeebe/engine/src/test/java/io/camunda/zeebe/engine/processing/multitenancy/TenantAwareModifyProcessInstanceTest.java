@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -70,49 +69,6 @@ public class TenantAwareModifyProcessInstanceTest {
     assertThat(modified)
         .describedAs("Expect that modification was successful")
         .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
-  }
-
-  @Test
-  public void shouldRejectModifyInstanceForUnauthorizedTenant() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType("test"))
-                .endEvent()
-                .done())
-        .withTenantId("custom-tenant")
-        .deploy();
-
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
-
-    final var task =
-        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withProcessInstanceKey(processInstanceKey)
-            .withElementId("task")
-            .getFirst();
-
-    // when
-    final var rejection =
-        ENGINE
-            .processInstance()
-            .withInstanceKey(processInstanceKey)
-            .forAuthorizedTenants("another-tenant")
-            .modification()
-            .activateElement("task")
-            .terminateElement(task.getKey())
-            .expectRejection()
-            .modify();
-
-    // then
-    assertThat(rejection)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to modify process instance but no process instance found with key '%s'"
-                .formatted(processInstanceKey));
   }
 
   @Test

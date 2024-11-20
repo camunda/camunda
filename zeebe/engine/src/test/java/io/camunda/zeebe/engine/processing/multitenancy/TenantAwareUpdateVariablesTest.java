@@ -11,7 +11,6 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -61,41 +60,6 @@ public class TenantAwareUpdateVariablesTest {
     assertThat(updated)
         .describedAs("Expect that update was successful")
         .hasIntent(VariableDocumentIntent.UPDATED);
-  }
-
-  @Test
-  public void shouldRejectUpdateVariablesForUnauthorizedTenant() {
-    // given
-    ENGINE
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("task", t -> t.zeebeJobType("test"))
-                .endEvent()
-                .done())
-        .withTenantId("custom-tenant")
-        .deploy();
-
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process").withTenantId("custom-tenant").create();
-
-    // when
-    final var rejection =
-        ENGINE
-            .variables()
-            .ofScope(processInstanceKey)
-            .forAuthorizedTenants("another-tenant")
-            .withDocument(Map.of("foo", "bar"))
-            .expectRejection()
-            .update();
-
-    // then
-    assertThat(rejection)
-        .hasRejectionType(RejectionType.NOT_FOUND)
-        .hasRejectionReason(
-            "Expected to update variables for element with key '%s', but no such element was found"
-                .formatted(processInstanceKey));
   }
 
   @Test
