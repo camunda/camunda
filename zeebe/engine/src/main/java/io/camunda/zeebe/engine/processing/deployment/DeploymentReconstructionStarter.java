@@ -41,6 +41,11 @@ public final class DeploymentReconstructionStarter implements StreamProcessorLif
   @Override
   public TaskResult execute(final TaskResultBuilder taskResultBuilder) {
     LOG.debug("Not all deployments are stored, starting reconstruction");
+    // There's a chance that this command is written more than once, for example when the broker is
+    // restarted before the first command is processed.
+    // This is fine as long as the command is idempotent and does not contain any state. Do not
+    // start to add more state to the command or make the command non-idempotent unless you also
+    // find a way to prevent that this initial command is written more than once.
     taskResultBuilder.appendCommandRecord(DeploymentIntent.RECONSTRUCT, new DeploymentRecord());
     return taskResultBuilder.build();
   }
