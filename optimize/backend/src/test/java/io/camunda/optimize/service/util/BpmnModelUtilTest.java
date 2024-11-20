@@ -28,24 +28,24 @@ public class BpmnModelUtilTest {
 
   @Test
   void testParseBpmnModel() throws IOException {
-    BpmnModelInstance modelInstance = BpmnModelUtil.parseBpmnModel(getBpmnXml());
+    final BpmnModelInstance modelInstance = BpmnModelUtil.parseBpmnModel(getBpmnXml());
     assertNotNull(modelInstance, "BPMN model should be parsed correctly.");
   }
 
   @Test
   void testExtractFlowNodeData() throws IOException {
-    List<FlowNodeDataDto> flowNodeData = BpmnModelUtil.extractFlowNodeData(getBpmnXml());
+    final List<FlowNodeDataDto> flowNodeData = BpmnModelUtil.extractFlowNodeData(getBpmnXml());
     assertNotNull(flowNodeData, "FlowNodeData list should not be null.");
     assertFalse(flowNodeData.isEmpty(), "FlowNodeData list should not be empty.");
 
-    FlowNodeDataDto firstNode = flowNodeData.get(0);
+    final FlowNodeDataDto firstNode = flowNodeData.get(0);
     assertNotNull(firstNode.getId(), "FlowNode ID should not be null.");
     assertNotNull(firstNode.getName(), "FlowNode name should not be null.");
   }
 
   @Test
   void testExtractUserTaskNames() throws IOException {
-    Map<String, String> userTaskNames = BpmnModelUtil.extractUserTaskNames(getBpmnXml());
+    final Map<String, String> userTaskNames = BpmnModelUtil.extractUserTaskNames(getBpmnXml());
     assertNotNull(userTaskNames, "UserTask names map should not be null.");
     assertFalse(userTaskNames.isEmpty(), "UserTask names map should not be empty.");
 
@@ -60,7 +60,7 @@ public class BpmnModelUtilTest {
 
   @Test
   void testExtractProcessDefinitionName() throws IOException {
-    Optional<String> processName =
+    final Optional<String> processName =
         BpmnModelUtil.extractProcessDefinitionName("customer_onboarding_en", getBpmnXml());
     assertTrue(processName.isPresent(), "Process name should be present.");
     assertEquals(
@@ -69,8 +69,8 @@ public class BpmnModelUtilTest {
 
   @Test
   void testExtractFlowNodeNames() throws IOException {
-    List<FlowNodeDataDto> flowNodeData = BpmnModelUtil.extractFlowNodeData(getBpmnXml());
-    Map<String, String> flowNodeNames = BpmnModelUtil.extractFlowNodeNames(flowNodeData);
+    final List<FlowNodeDataDto> flowNodeData = BpmnModelUtil.extractFlowNodeData(getBpmnXml());
+    final Map<String, String> flowNodeNames = BpmnModelUtil.extractFlowNodeNames(flowNodeData);
     assertNotNull(flowNodeNames, "FlowNode names map should not be null.");
     assertFalse(flowNodeNames.isEmpty(), "FlowNode names map should not be empty.");
 
@@ -84,7 +84,7 @@ public class BpmnModelUtilTest {
 
   @Test
   void testGetCollapsedSubprocessElementIds() throws IOException {
-    Set<String> collapsedSubprocessIds =
+    final Set<String> collapsedSubprocessIds =
         BpmnModelUtil.getCollapsedSubprocessElementIds(getBpmnXml());
     assertNotNull(collapsedSubprocessIds, "Collapsed subprocess IDs should not be null.");
     assertTrue(
