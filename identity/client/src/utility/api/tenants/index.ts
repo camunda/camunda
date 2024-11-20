@@ -9,10 +9,9 @@ import { EntityData } from "src/components/entityList/EntityList";
 export const TENANTS_ENDPOINT = "/tenants";
 
 export type Tenant = EntityData & {
-  id: string;
+  tenantKey: string;
   tenantId: string;
   name: string;
-  permissions: string[];
 };
 
 export const searchTenant: ApiDefinition<SearchResponse<Tenant>> = () =>
@@ -31,7 +30,7 @@ export const getTenantDetails: ApiDefinition<
     filter: { ...(tenantId && { tenantId }), ...(name && { name }) },
   });
 
-type CreateTenantParams = Omit<Tenant, "id" | "permissions">;
+type CreateTenantParams = Omit<Tenant, "tenantKey">;
 
 export const createTenant: ApiDefinition<undefined, CreateTenantParams> = (
   tenant,
