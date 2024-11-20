@@ -75,7 +75,7 @@ public class UpgradeElasticsearchSchemaIT
     for (Entry<String, TemplateMapping> stringTemplateMappingEntry :
         newDatabaseSchemaClient.getTemplates().entrySet()) {
       assertThat(expectedTemplates.get(stringTemplateMappingEntry.getKey()))
-          .isEqualToComparingFieldByFieldRecursively(stringTemplateMappingEntry.getValue());
+          .isEqualToComparingFieldByField(stringTemplateMappingEntry.getValue());
     }
   }
 
