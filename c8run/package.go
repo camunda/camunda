@@ -45,7 +45,7 @@ func PackageWindows(camundaVersion string, elasticsearchVersion string) error {
 	camundaFilePath := "camunda-zeebe-" + camundaVersion + ".zip"
 	camundaUrl := "https://github.com/camunda/camunda/releases/download/" + camundaVersion + "/" + camundaFilePath
 	connectorsFilePath := "connector-runtime-bundle-" + camundaVersion + "-with-dependencies.jar"
-	connectorsUrl := "https://repo1.maven.org/maven2/io/camunda/connector/connector-runtime-bundle/" + camundaVersion + "/" + connectorsFilePath
+	connectorsUrl := "https://artifacts.camunda.com/artifactory/connectors/io/camunda/connector/connector-runtime-bundle/" + camundaVersion + "/" + connectorsFilePath
 
 	Clean(camundaVersion, elasticsearchVersion)
 
