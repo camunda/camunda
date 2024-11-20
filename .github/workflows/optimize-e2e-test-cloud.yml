@@ -1,5 +1,5 @@
 # NOTE:
-# This pipeline is currently not enabled. For more info, see:
+# This pipeline is currently not active. For more info, see:
 # https://github.com/camunda/camunda/issues/24886
 
 name: Optimize e2e cloud test
@@ -31,6 +31,7 @@ on:
 
 jobs:
   e2e-cloud-test:
+    if: false # This deactivates the pipeline
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:

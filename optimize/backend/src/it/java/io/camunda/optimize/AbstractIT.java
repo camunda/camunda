@@ -107,7 +107,7 @@ public abstract class AbstractIT {
     return getArg(
         portKey,
         String.valueOf(
-            embeddedOptimizeExtension.getBean(TomcatConfig.class).getPort(portKey) + 100));
+            embeddedOptimizeExtension.getBean(OptimizeTomcatConfig.class).getPort(portKey) + 100));
   }
 
   private String getArg(final String key, final String value) {

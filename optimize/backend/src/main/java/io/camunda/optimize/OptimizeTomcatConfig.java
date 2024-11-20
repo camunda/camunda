@@ -44,10 +44,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
 @Configuration
-public class TomcatConfig {
+public class OptimizeTomcatConfig {
 
   public static final String EXTERNAL_SUB_PATH = "/external";
-  private static final Logger LOG = LoggerFactory.getLogger(TomcatConfig.class);
+  private static final Logger LOG = LoggerFactory.getLogger(OptimizeTomcatConfig.class);
 
   private static final String[] COMPRESSED_MIME_TYPES = {
     "application/json", "text/html", "application/x-font-ttf", "image/svg+xml"
@@ -72,7 +72,7 @@ public class TomcatConfig {
             CCSaasAuth0WebSecurityConfig.AUTH0_USERINFO_ENDPOINT,
             HealthRestService.READYZ_PATH,
             LocalizationRestService.LOCALIZATION_PATH,
-            TomcatConfig.EXTERNAL_SUB_PATH,
+            OptimizeTomcatConfig.EXTERNAL_SUB_PATH,
             OptimizeResourceConstants.REST_API_PATH,
             OptimizeResourceConstants.STATIC_RESOURCE_PATH,
             OptimizeResourceConstants.ACTUATOR_ENDPOINT,

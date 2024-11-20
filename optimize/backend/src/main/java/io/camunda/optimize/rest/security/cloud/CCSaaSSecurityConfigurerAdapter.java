@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.rest.security.cloud;
 
-import static io.camunda.optimize.TomcatConfig.EXTERNAL_SUB_PATH;
+import static io.camunda.optimize.OptimizeTomcatConfig.EXTERNAL_SUB_PATH;
 import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
@@ -32,7 +32,7 @@ import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
-import io.camunda.optimize.tomcat.SaasRequestAdjustmentFilter;
+import io.camunda.optimize.tomcat.CCSaasRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.MediaType;
@@ -114,16 +114,16 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
 
   @Bean
   @Order(Ordered.HIGHEST_PRECEDENCE) /* order of loading */
-  FilterRegistrationBean<SaasRequestAdjustmentFilter> requestAdjuster() {
+  FilterRegistrationBean<CCSaasRequestAdjustmentFilter> requestAdjuster() {
     LOG.debug("Registering filter 'requestAdjuster' (SaaS)...");
-    final SaasRequestAdjustmentFilter saasRequestAdjustmentFilter =
-        new SaasRequestAdjustmentFilter(
+    final CCSaasRequestAdjustmentFilter CCSaasRequestAdjustmentFilter =
+        new CCSaasRequestAdjustmentFilter(
             configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId());
-    final FilterRegistrationBean<SaasRequestAdjustmentFilter> registration =
+    final FilterRegistrationBean<CCSaasRequestAdjustmentFilter> registration =
         new FilterRegistrationBean<>();
     registration.setOrder(Ordered.HIGHEST_PRECEDENCE); /* position in the chain */
     registration.addUrlPatterns("/*");
-    registration.setFilter(saasRequestAdjustmentFilter);
+    registration.setFilter(CCSaasRequestAdjustmentFilter);
     return registration;
   }
 

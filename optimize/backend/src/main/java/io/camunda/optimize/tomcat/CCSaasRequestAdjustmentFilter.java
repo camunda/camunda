@@ -17,11 +17,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class SaasRequestAdjustmentFilter implements Filter {
+public class CCSaasRequestAdjustmentFilter implements Filter {
 
   private final String clusterId;
 
-  public SaasRequestAdjustmentFilter(final String clusterId) {
+  public CCSaasRequestAdjustmentFilter(final String clusterId) {
     String cid = clusterId;
     if (cid == null) {
       cid = "";
