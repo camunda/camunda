@@ -29,6 +29,8 @@ import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GroupDeletedHandler;
+import io.camunda.exporter.handlers.GroupEntityAddedHandler;
+import io.camunda.exporter.handlers.GroupEntityRemovedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
@@ -193,6 +195,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new TenantCreateUpdateHandler(
                 indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
             new GroupCreatedUpdatedHandler(
+                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
+            new GroupEntityAddedHandler(
+                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
+            new GroupEntityRemovedHandler(
                 indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
             new GroupDeletedHandler(
                 indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
