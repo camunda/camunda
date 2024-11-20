@@ -12,6 +12,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemp
 import io.camunda.zeebe.util.FunctionUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
@@ -37,11 +38,11 @@ public class BatchOperationArchiverJob implements ArchiverJob {
   }
 
   @Override
-  public CompletableFuture<Integer> archiveNextBatch() {
+  public CompletionStage<Integer> archiveNextBatch() {
     return repository.getBatchOperationsNextBatch().thenComposeAsync(this::archiveBatch, executor);
   }
 
-  public CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch) {
+  private CompletableFuture<Integer> archiveBatch(final ArchiveBatch archiveBatch) {
 
     if (archiveBatch != null) {
       logger.trace("Following batch operations are found for archiving: {}", archiveBatch);
