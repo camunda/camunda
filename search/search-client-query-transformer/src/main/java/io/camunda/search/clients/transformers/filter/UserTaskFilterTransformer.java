@@ -31,7 +31,6 @@ import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTempla
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.transformers.CamundaApplicationEnum;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
@@ -110,18 +109,18 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
     if (isCamundaExporterEnabled) {
-      final String prefix =
-          (!globalPrefix.isEmpty() && !globalPrefix.isBlank()) ? globalPrefix + "-" : "";
-      final String fullIndexName =
+      final String indexName =
           String.format(
               TaskTemplate.FULL_QUALIFIED_INDEX_NAME_PATTERN,
-              prefix,
-              CamundaApplicationEnum.TASKLIST.getApplicationName(),
+              TaskTemplate.formatIndexPrefix(globalPrefix),
+              TaskTemplate.COMPONENT_NAME,
               TaskTemplate.INDEX_NAME,
               TaskTemplate.INDEX_VERSION);
-      return List.of(fullIndexName);
+
+      return List.of(indexName);
     }
-    return List.of("tasklist-8.3.0_alias");
+    // TDB - The listview is used when the exporter is not enabled, this will be removed in 8.8
+    return List.of("tasklist-list-view-8.6.0_");
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
