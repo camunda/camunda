@@ -7,11 +7,14 @@
  */
 package io.camunda.document.api;
 
-public interface DocumentStoreRegistry {
+import java.util.List;
+import java.util.Map;
 
-  DocumentStoreConfiguration getConfiguration();
+public record DocumentStoreConfiguration(
+    String defaultDocumentStoreId, List<DocumentStoreConfigurationRecord> documentStores) {
 
-  DocumentStoreRecord getDocumentStore(final String id);
-
-  DocumentStoreRecord getDefaultDocumentStore();
+  public record DocumentStoreConfigurationRecord(
+      String id,
+      Class<? extends DocumentStoreProvider> providerClass,
+      Map<String, String> properties) {}
 }
