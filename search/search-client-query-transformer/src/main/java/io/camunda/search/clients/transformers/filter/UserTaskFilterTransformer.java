@@ -31,10 +31,12 @@ import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTempla
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.transformers.CamundaApplicationEnum;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,11 +45,15 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   private final ServiceTransformers transformers;
   private final boolean isCamundaExporterEnabled;
+  private final String globalPrefix;
 
   public UserTaskFilterTransformer(
-      final ServiceTransformers transformers, final boolean isCamundaExporterEnabled) {
+      final ServiceTransformers transformers,
+      final boolean isCamundaExporterEnabled,
+      final String globalPrefix) {
     this.transformers = transformers;
     this.isCamundaExporterEnabled = isCamundaExporterEnabled;
+    this.globalPrefix = globalPrefix;
   }
 
   @Override
@@ -104,9 +110,18 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
     if (isCamundaExporterEnabled) {
-      return List.of("tasklist-task-8.5.0_");
+      final String prefix =
+          (!globalPrefix.isEmpty() && !globalPrefix.isBlank()) ? globalPrefix + "-" : "";
+      final String fullIndexName =
+          String.format(
+              TaskTemplate.FULL_QUALIFIED_INDEX_NAME_PATTERN,
+              prefix,
+              CamundaApplicationEnum.TASKLIST.getApplicationName(),
+              TaskTemplate.INDEX_NAME,
+              TaskTemplate.INDEX_VERSION);
+      return List.of(fullIndexName);
     }
-    return List.of("tasklist-list-view-8.6.0_");
+    return List.of("tasklist-8.3.0_alias");
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
