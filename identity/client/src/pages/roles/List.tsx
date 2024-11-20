@@ -36,7 +36,7 @@ const List: FC = () => {
     <Page>
       <EntityList
         title={t("Roles")}
-        data={roles?.items}
+        data={roles?.items ?? []}
         headers={[
           { header: t("Name"), key: "name" },
           { header: t("Description"), key: "description" },

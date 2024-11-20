@@ -17,19 +17,19 @@ export const getUserRoles: ApiDefinition<Role[], GetUserRolesParams> = ({
 }) => apiGet(path(id, "roles"));
 
 export type AssignUserRoleParams = GetUserRolesParams & {
-  roleId: Role["key"];
+  roleKey: Role["key"];
 };
 
 export const assignUserRole: ApiDefinition<undefined, AssignUserRoleParams> = ({
   id,
-  roleId,
-}) => apiPost(path(id, "roles"), { roleId: roleId });
+  roleKey,
+}) => apiPost(path(id, "roles"), { roleId: roleKey });
 
 export type RemoveUserRoleParams = GetUserRolesParams & {
-  roleId: Role["key"];
+  roleKey: Role["key"];
 };
 
 export const removeUserRole: ApiDefinition<undefined, RemoveUserRoleParams> = ({
   id,
-  roleId,
-}) => apiDelete(path(id, "roles", roleId));
+  roleKey,
+}) => apiDelete(path(id, "roles", roleKey));
