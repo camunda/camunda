@@ -41,7 +41,7 @@ import org.springframework.security.web.servletapi.SecurityContextHolderAwareReq
 @EnableWebSecurity
 @EnableMethodSecurity
 @Configuration(proxyBeanMethods = false)
-public final class SecurityConfiguration {
+public class SecurityConfiguration {
 
   @Bean
   @Order(Ordered.HIGHEST_PRECEDENCE)

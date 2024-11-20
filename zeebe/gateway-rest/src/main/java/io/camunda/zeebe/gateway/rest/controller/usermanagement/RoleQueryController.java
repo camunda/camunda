@@ -11,6 +11,7 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -55,7 +56,8 @@ public class RoleQueryController {
 
   private ResponseEntity<RoleSearchQueryResponse> search(final RoleQuery query) {
     try {
-      final var result = roleServices.search(query);
+      final var result =
+          roleServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toRoleSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);

@@ -52,15 +52,15 @@ public final class SearchQueryBuilders {
     return bool().mustNot(List.of(queries)).build().toSearchQuery();
   }
 
-  private static SearchQuery map(
-      final List<SearchQuery> queries, final Function<List<SearchQuery>, SearchQuery> mapper) {
+  private static SearchQuery combine(
+      final List<SearchQuery> queries, final Function<List<SearchQuery>, SearchQuery> combiner) {
     final var nonNullQueries = withoutNull(queries);
     if (nonNullQueries == null || nonNullQueries.isEmpty()) {
       return null;
     } else if (nonNullQueries.size() == 1) {
       return nonNullQueries.getFirst();
     } else {
-      return mapper.apply(nonNullQueries);
+      return combiner.apply(nonNullQueries);
     }
   }
 
@@ -78,7 +78,7 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery and(final List<SearchQuery> queries) {
-    return map(queries, SearchQueryBuilders::must);
+    return combine(queries, SearchQueryBuilders::must);
   }
 
   public static SearchQuery not(final SearchQuery query, final SearchQuery... queries) {
@@ -98,7 +98,7 @@ public final class SearchQueryBuilders {
   }
 
   public static SearchQuery or(final List<SearchQuery> queries) {
-    return map(queries, SearchQueryBuilders::should);
+    return combine(queries, SearchQueryBuilders::should);
   }
 
   public static SearchConstantScoreQuery.Builder constantScore() {
