@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.TenantQuery;
 import io.camunda.service.TenantServices;
+import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -28,6 +29,18 @@ public class TenantQueryController {
 
   public TenantQueryController(final TenantServices tenantServices) {
     this.tenantServices = tenantServices;
+  }
+
+  @GetMapping(
+      path = "/{tenantKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<TenantItem> getTenant(@PathVariable final long tenantKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(SearchQueryResponseMapper.toTenant(tenantServices.getTenant(tenantKey)));
+    } catch (final Exception exception) {
+      return RestErrorMapper.mapErrorToResponse(exception);
+    }
   }
 
   @PostMapping(

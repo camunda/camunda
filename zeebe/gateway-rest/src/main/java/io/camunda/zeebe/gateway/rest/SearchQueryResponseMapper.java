@@ -260,7 +260,7 @@ public final class SearchQueryResponseMapper {
     return tenants.stream().map(SearchQueryResponseMapper::toTenant).toList();
   }
 
-  private static TenantItem toTenant(final TenantEntity tenantEntity) {
+  public static TenantItem toTenant(final TenantEntity tenantEntity) {
     return new TenantItem()
         .key(tenantEntity.key())
         .name(tenantEntity.name())

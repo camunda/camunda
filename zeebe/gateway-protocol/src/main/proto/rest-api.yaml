@@ -430,6 +430,48 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+    get:
+      tags:
+        - Tenant
+      operationId: getTenant
+      summary: Get tenant
+      description: Retrieves a single tenant by tenant Key.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The tenant was retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantItem"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Tenant not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
     delete:
       tags:
         - Tenant

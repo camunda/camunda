@@ -9,10 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
@@ -38,9 +40,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
 
   private static final List<TenantEntity> TENANT_ENTITIES =
       List.of(
-          new TenantEntity(100L, "Tenant 1", "tenant-id-1", Set.of()),
-          new TenantEntity(200L, "Tenant 2", "tenant-id-2", Set.of(1L, 2L)),
-          new TenantEntity(300L, "Tenant 12", "tenant-id-3", Set.of(3L)));
+          new TenantEntity(100L, "tenant-id-1", "Tenant 1", Set.of()),
+          new TenantEntity(200L, "tenant-id-2", "Tenant 2", Set.of(1L, 2L)),
+          new TenantEntity(300L, "tenant-id-3", "Tenant 12", Set.of(3L)));
 
   private static final String EXPECTED_RESPONSE =
       """
@@ -49,16 +51,19 @@ public class TenantQueryControllerTest extends RestControllerTest {
            {
              "key": %d,
              "name": "%s",
+             "tenantId": "%s",
              "assignedMemberKeys": %s
            },
            {
              "key": %d,
              "name": "%s",
+             "tenantId": "%s",
              "assignedMemberKeys": %s
            },
            {
              "key": %d,
              "name": "%s",
+             "tenantId": "%s",
              "assignedMemberKeys": %s
            }
          ],
@@ -72,12 +77,15 @@ public class TenantQueryControllerTest extends RestControllerTest {
           .formatted(
               TENANT_ENTITIES.get(0).key(),
               TENANT_ENTITIES.get(0).name(),
+              TENANT_ENTITIES.get(0).tenantId(),
               formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys()),
               TENANT_ENTITIES.get(1).key(),
               TENANT_ENTITIES.get(1).name(),
+              TENANT_ENTITIES.get(1).tenantId(),
               formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys()),
               TENANT_ENTITIES.get(2).key(),
               TENANT_ENTITIES.get(2).name(),
+              TENANT_ENTITIES.get(2).tenantId(),
               formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys()),
               TENANT_ENTITIES.size());
 
@@ -90,6 +98,69 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @BeforeEach
   void setup() {
     when(tenantServices.withAuthentication(any(Authentication.class))).thenReturn(tenantServices);
+  }
+
+  @Test
+  void getTenantShouldReturnOk() {
+    // given
+    final var tenantName = "Tenant Name";
+    final var tenantId = "tenant-id";
+    final var tenant = new TenantEntity(100L, tenantId, tenantName, Set.of());
+    when(tenantServices.getTenant(tenant.key())).thenReturn(tenant);
+
+    // when
+    webClient
+        .get()
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.key()))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+              "key": %d,
+              "name": "%s",
+              "tenantId": "%s",
+              "assignedMemberKeys": []
+            }
+            """
+                .formatted(tenant.key(), tenantName, tenantId));
+
+    // then
+    verify(tenantServices, times(1)).getTenant(tenant.key());
+  }
+
+  @Test
+  void getNonExistingTenantShouldReturnNotFound() {
+    // given
+    final var tenantKey = 100L;
+    final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantKey);
+    when(tenantServices.getTenant(tenantKey)).thenThrow(new NotFoundException("tenant not found"));
+
+    // when
+    webClient
+        .get()
+        .uri(path)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound()
+        .expectBody()
+        .json(
+            """
+            {
+              "type": "about:blank",
+              "title": "NOT_FOUND",
+              "status": 404,
+              "detail": "tenant not found",
+              "instance": "%s"
+            }"""
+                .formatted(path));
+
+    // then
+    verify(tenantServices, times(1)).getTenant(tenantKey);
   }
 
   @Test
