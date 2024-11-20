@@ -8,7 +8,6 @@
   "baseBranches": [
     "/^stable\\/8\\..*/",
     "stable/operate-8.5",
-    "stable/optimize-8.6",
     "main"
   ],
   "dependencyDashboard": true,
