@@ -108,8 +108,10 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
-      final DecisionDefinitionQuery filter) {
-    return null;
+      final DecisionDefinitionQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for decisionDefinition: {}", query);
+
+    return rdbmsService.getDecisionDefinitionReader().search(query);
   }
 
   @Override

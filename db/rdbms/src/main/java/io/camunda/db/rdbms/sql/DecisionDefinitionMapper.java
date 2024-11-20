@@ -7,16 +7,16 @@
  */
 package io.camunda.db.rdbms.sql;
 
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
-import io.camunda.db.rdbms.write.domain.ProcessDefinitionDbModel;
-import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery;
+import io.camunda.db.rdbms.write.domain.DecisionDefinitionDbModel;
+import io.camunda.search.entities.DecisionDefinitionEntity;
 import java.util.List;
 
-public interface ProcessDefinitionMapper {
+public interface DecisionDefinitionMapper {
 
-  void insert(ProcessDefinitionDbModel processDeployment);
+  void insert(DecisionDefinitionDbModel processDeployment);
 
-  Long count(ProcessDefinitionDbQuery filter);
+  Long count(DecisionDefinitionDbQuery filter);
 
-  List<ProcessDefinitionEntity> search(ProcessDefinitionDbQuery filter);
+  List<DecisionDefinitionEntity> search(DecisionDefinitionDbQuery filter);
 }

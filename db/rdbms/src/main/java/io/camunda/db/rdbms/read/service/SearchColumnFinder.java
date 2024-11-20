@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import io.camunda.db.rdbms.sql.SearchColumn;
+import io.camunda.db.rdbms.sql.columns.SearchColumn;
 
 public interface SearchColumnFinder<T> {
 
