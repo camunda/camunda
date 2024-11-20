@@ -12,35 +12,31 @@ import static io.camunda.operate.webapp.opensearch.backup.OpensearchBackupReposi
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.opensearch.client.async.OpenSearchAsyncSnapshotOperations;
-import io.camunda.operate.store.opensearch.client.sync.OpenSearchSnapshotOperations;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.store.opensearch.response.OpenSearchGetSnapshotResponse;
-import io.camunda.operate.store.opensearch.response.OpenSearchSnapshotInfo;
 import io.camunda.operate.store.opensearch.response.SnapshotState;
 import io.camunda.operate.webapp.backup.BackupServiceImpl;
-import io.camunda.operate.webapp.backup.Metadata;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
+import io.camunda.webapps.backup.Metadata;
+import io.camunda.webapps.backup.exceptions.InvalidRequestException;
+import io.camunda.webapps.backup.repository.GenericBackupException;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -48,15 +44,11 @@ import org.opensearch.client.opensearch.snapshot.*;
 
 @ExtendWith(MockitoExtension.class)
 class OpensearchBackupRepositoryTest {
-  @Mock private RichOpenSearchClient richOpenSearchClient;
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private OpenSearchClient openSearchClient;
 
-  @Mock private RichOpenSearchClient.Async richOpenSearchClientAsync;
-
-  @Mock private OpenSearchSnapshotOperations openSearchSnapshotOperations;
-
-  @Mock private OpenSearchAsyncSnapshotOperations openSearchAsyncSnapshotOperations;
-
-  @Mock private ObjectMapper objectMapper;
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  private OpenSearchAsyncClient openSearchAsyncClient;
 
   @Mock private OperateProperties operateProperties;
 
@@ -67,49 +59,36 @@ class OpensearchBackupRepositoryTest {
 
   @BeforeEach
   public void setUp() {
+    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
     repository =
-        new OpensearchBackupRepository(richOpenSearchClient, objectMapper, operateProperties);
+        new OpensearchBackupRepository(openSearchClient, openSearchAsyncClient, operateProperties);
     now = Instant.now().toEpochMilli();
   }
 
-  private void mockAsynchronSnapshotOperations() {
-    when(richOpenSearchClient.async()).thenReturn(richOpenSearchClientAsync);
-    when(richOpenSearchClientAsync.snapshot()).thenReturn(openSearchAsyncSnapshotOperations);
-  }
-
-  private void mockObjectMapperForMetadata(final Metadata metadata) {
-    when(objectMapper.convertValue(any(), eq(Metadata.class))).thenReturn(metadata);
-  }
-
-  private void mockSynchronSnapshotOperations() {
-    when(richOpenSearchClient.snapshot()).thenReturn(openSearchSnapshotOperations);
-  }
-
   @Test
-  void getBackupsReturnsEmptyListOfBackups() {
-    mockSynchronSnapshotOperations();
+  void getBackupsReturnsEmptyListOfBackups() throws IOException {
 
-    final var response = new OpenSearchGetSnapshotResponse();
-    when(openSearchSnapshotOperations.get(any())).thenReturn(response);
+    final var response = emptyResponse();
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any())).thenReturn(response);
 
     assertThat(repository.getBackups("repo")).isEmpty();
   }
 
   @Test
-  void getBackupsReturnsNotEmptyListOfBackups() {
-    final var metadata =
-        new Metadata().setBackupId(5L).setVersion("1").setPartNo(1).setPartCount(3);
+  void getBackupsReturnsNotEmptyListOfBackups() throws IOException {
+    final var metadata = new Metadata(5L, "1", 1, 3);
     final var snapshotInfos =
         List.of(
-            new OpenSearchSnapshotInfo()
-                .setSnapshot("test-snapshot")
-                .setState(SnapshotState.STARTED)
-                .setStartTimeInMillis(23L));
-    final var response = new OpenSearchGetSnapshotResponse(snapshotInfos);
+            SnapshotInfo.of(
+                bi ->
+                    defaultFields(bi, metadata)
+                        .snapshot("test-snapshot")
+                        .state(SnapshotState.STARTED.name())
+                        .startTimeInMillis("23")));
+    final var response =
+        GetSnapshotResponse.of(b -> defaultFields(b).total(1).snapshots(snapshotInfos));
 
-    mockObjectMapperForMetadata(metadata);
-    when(openSearchSnapshotOperations.get(any())).thenReturn(response);
-    mockSynchronSnapshotOperations();
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any())).thenReturn(response);
 
     final var snapshotDtoList = repository.getBackups("repo");
     assertThat(snapshotDtoList).hasSize(1);
@@ -128,15 +107,14 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void successForExecuteSnapshotting() {
-    mockAsynchronSnapshotOperations();
+  void successForExecuteSnapshotting() throws IOException {
 
     final var snapshotRequest =
         new BackupService.SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
             List.of("index-1", "index-2"),
-            new Metadata().toCommon());
+            new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> {};
     final Runnable onFailure = () -> fail("Should execute snapshot successfully.");
 
@@ -151,35 +129,32 @@ class OpensearchBackupRepositoryTest {
                     .state(SnapshotState.SUCCESS.toString())
                     .build())
             .build();
-    when(openSearchAsyncSnapshotOperations.create(any()))
+    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
         .thenReturn(CompletableFuture.completedFuture(createSnapShotResponse));
 
     repository.executeSnapshotting(snapshotRequest, onSuccess, onFailure);
   }
 
   @Test
-  void failedForExecuteSnapshotting() {
+  void failedForExecuteSnapshotting() throws IOException {
     final var snapshotRequest =
         new BackupServiceImpl.SnapshotRequest(
             "repo",
             "camunda_operate_1_2",
             List.of("index-1", "index-2"),
-            new Metadata().toCommon());
+            new Metadata(1L, "1", 1, 1));
     final Runnable onSuccess = () -> fail("Should execute snapshot with failures.");
     final Runnable onFailure = () -> {};
 
-    mockAsynchronSnapshotOperations();
-    when(openSearchAsyncSnapshotOperations.create(any()))
+    when(openSearchAsyncClient.snapshot().create((CreateSnapshotRequest) any()))
         .thenReturn(CompletableFuture.failedFuture(new SocketTimeoutException("no internet")));
 
     repository.executeSnapshotting(snapshotRequest, onSuccess, onFailure);
   }
 
   @Test
-  void deleteSnapshotSucceed() {
-    mockAsynchronSnapshotOperations();
-
-    when(openSearchAsyncSnapshotOperations.delete(any()))
+  void deleteSnapshotSucceed() throws IOException {
+    when(openSearchAsyncClient.snapshot().delete((DeleteSnapshotRequest) any()))
         .thenReturn(
             CompletableFuture.completedFuture(
                 new DeleteSnapshotResponse.Builder().acknowledged(true).build()));
@@ -187,10 +162,9 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void deleteSnapshotFails() {
-    mockAsynchronSnapshotOperations();
+  void deleteSnapshotFails() throws IOException {
 
-    when(openSearchAsyncSnapshotOperations.delete(any()))
+    when(openSearchAsyncClient.snapshot().delete((DeleteSnapshotRequest) any()))
         .thenReturn(
             CompletableFuture.failedFuture(
                 new OpenSearchException(
@@ -207,20 +181,23 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void getBackupStateShouldBeInProgress() {
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
-    mockSynchronSnapshotOperations();
-    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
-
-    when(openSearchSnapshotOperations.get(any()))
+  void getBackupStateShouldBeInProgress() throws IOException {
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(
-            new OpenSearchGetSnapshotResponse(
-                List.of(
-                    new OpenSearchSnapshotInfo()
-                        .setSnapshot("snapshot")
-                        .setState(SnapshotState.SUCCESS)
-                        .setStartTimeInMillis(now - (incompleteCheckTimeoutLength / 2))
-                        .setEndTimeInMillis(now))));
+            GetSnapshotResponse.of(
+                b ->
+                    defaultFields(b)
+                        .snapshots(
+                            List.of(
+                                SnapshotInfo.of(
+                                    bi ->
+                                        defaultFields(bi, new Metadata(5L, "1", 1, 3))
+                                            .snapshot("snapshot")
+                                            .state(SnapshotState.SUCCESS.name())
+                                            .startTimeInMillis(
+                                                Long.toString(
+                                                    now - (incompleteCheckTimeoutLength / 2)))
+                                            .endTimeInMillis(Long.toString(now)))))));
 
     final var response = repository.getBackupState("repo", 5L);
 
@@ -236,23 +213,23 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void getBackupStateShouldBeIncompleteDueToTimeout() {
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
-    mockSynchronSnapshotOperations();
-    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
+  void getBackupStateShouldBeIncompleteDueToTimeout() throws IOException {
 
     final long endtime = now - (incompleteCheckTimeoutLength * 2);
 
-    when(openSearchSnapshotOperations.get(any()))
-        .thenReturn(
-            new OpenSearchGetSnapshotResponse(
-                List.of(
-                    new OpenSearchSnapshotInfo()
-                        .setSnapshot("snapshot")
-                        .setState(SnapshotState.SUCCESS)
-                        .setStartTimeInMillis(endtime - 20)
+    final var snapshotInfos =
+        List.of(
+            SnapshotInfo.of(
+                bi ->
+                    defaultFields(bi, new Metadata(5L, "1", 1, 3))
+                        .snapshot("snapshot")
+                        .state(SnapshotState.SUCCESS.name())
+                        .startTimeInMillis(Long.toString(endtime - 20))
                         // end time was double the timeout from now
-                        .setEndTimeInMillis(endtime))));
+                        .endTimeInMillis(Long.toString(endtime))));
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
+        .thenReturn(
+            GetSnapshotResponse.of(b -> defaultFields(b).total(1).snapshots(snapshotInfos)));
 
     final var response = repository.getBackupState("repo", 5L);
 
@@ -268,17 +245,16 @@ class OpensearchBackupRepositoryTest {
   }
 
   @Test
-  void validateRepositoryExistsSuccess() {
-    mockSynchronSnapshotOperations();
-    when(openSearchSnapshotOperations.getRepository(any())).thenReturn(Map.of());
+  void validateRepositoryExistsSuccess() throws IOException {
+    when(openSearchClient.snapshot().getRepository((GetRepositoryRequest) any()))
+        .thenReturn(GetRepositoryResponse.of(b -> b));
 
     repository.validateRepositoryExists("repo");
   }
 
   @Test
-  void validateRepositoryExistsFailed() {
-    mockSynchronSnapshotOperations();
-    when(openSearchSnapshotOperations.getRepository(any()))
+  void validateRepositoryExistsFailed() throws IOException {
+    when(openSearchClient.snapshot().getRepository((GetRepositoryRequest) any()))
         .thenThrow(
             new OpenSearchException(
                 new ErrorResponse.Builder()
@@ -292,25 +268,31 @@ class OpensearchBackupRepositoryTest {
 
     final var exception =
         assertThrows(
-            OperateRuntimeException.class, () -> repository.validateRepositoryExists("repo"));
+            GenericBackupException.class, () -> repository.validateRepositoryExists("repo"));
     assertThat(exception.getMessage()).isEqualTo("No repository with name [repo] could be found.");
   }
 
   @Test
-  void validateNoDuplicateBackupIdSuccess() {
-    mockSynchronSnapshotOperations();
-    when(openSearchSnapshotOperations.get(any())).thenReturn(new OpenSearchGetSnapshotResponse());
+  void validateNoDuplicateBackupIdSuccess() throws IOException {
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any())).thenReturn(emptyResponse());
 
     repository.validateNoDuplicateBackupId("repo", 42L);
   }
 
   @Test
-  void validateNoDuplicateBackupIdFailed() {
-    mockSynchronSnapshotOperations();
-    when(openSearchSnapshotOperations.get(any()))
+  void validateNoDuplicateBackupIdFailed() throws IOException {
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(
-            new OpenSearchGetSnapshotResponse(
-                List.of(new OpenSearchSnapshotInfo().setUuid("test"))));
+            GetSnapshotResponse.of(
+                b ->
+                    defaultFields(b)
+                        .total(1)
+                        .snapshots(
+                            List.of(
+                                SnapshotInfo.of(
+                                    bi ->
+                                        defaultFields(bi, new Metadata(42L, "1", 1, 3))
+                                            .uuid("test"))))));
 
     final var exception =
         assertThrows(
@@ -322,25 +304,27 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void shouldReturnBackupStateIncompleteWhenEndIsInTimeout() throws IOException {
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
-    mockSynchronSnapshotOperations();
-    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
     final long timeoutTime = now - incompleteCheckTimeoutLength * 2;
     final var firstSnapshotInfo =
-        new OpenSearchSnapshotInfo()
-            .setUuid("uuid")
-            .setState(SnapshotState.SUCCESS)
-            .setStartTimeInMillis(timeoutTime - 50)
-            .setEndTimeInMillis(timeoutTime - 40);
+        SnapshotInfo.of(
+            bi ->
+                defaultFields(bi, new Metadata(5L, "1", 1, 3))
+                    .uuid("uuid")
+                    .state(SnapshotState.SUCCESS.name())
+                    .startTimeInMillis(Long.toString(timeoutTime - 50))
+                    .endTimeInMillis(Long.toString(timeoutTime - 40)));
     final var lastSnapshotInfo =
-        new OpenSearchSnapshotInfo()
-            .setUuid("uuid")
-            .setState(SnapshotState.SUCCESS)
-            .setStartTimeInMillis(timeoutTime - 30)
-            .setEndTimeInMillis(timeoutTime - 20);
-    when(openSearchSnapshotOperations.get(any()))
+        SnapshotInfo.of(
+            bi ->
+                defaultFields(bi, new Metadata(5L, "1", 2, 3))
+                    .uuid("uuid")
+                    .state(SnapshotState.SUCCESS.name())
+                    .startTimeInMillis(Long.toString(timeoutTime - 30))
+                    .endTimeInMillis(Long.toString(timeoutTime - 20)));
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(
-            new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo, lastSnapshotInfo)));
+            GetSnapshotResponse.of(
+                b -> defaultFields(b).snapshots(List.of(firstSnapshotInfo, lastSnapshotInfo))));
     // Test
     final var backupState = repository.getBackupState("repository-name", 5L);
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
@@ -348,18 +332,17 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void shouldReturnBackupStateInProgressWhenStartIsInTimeoutButEndIsNot() throws IOException {
-    when(operateProperties.getBackup()).thenReturn(new BackupProperties());
-    mockSynchronSnapshotOperations();
-    mockObjectMapperForMetadata(new Metadata().setPartCount(3));
-
     final var firstSnapshotInfo =
-        new OpenSearchSnapshotInfo()
-            .setUuid("uuid")
-            .setState(SnapshotState.SUCCESS)
-            .setStartTimeInMillis(now - incompleteCheckTimeoutLength)
-            .setEndTimeInMillis(now - 20);
-    when(openSearchSnapshotOperations.get(any()))
-        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+        SnapshotInfo.of(
+            bi ->
+                defaultFields(bi, new Metadata(5L, "1", 1, 3))
+                    .uuid("uuid")
+                    .state(SnapshotState.SUCCESS.name())
+                    .startTimeInMillis(Long.toString(now - incompleteCheckTimeoutLength))
+                    .endTimeInMillis(Long.toString(now - 20)));
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
+        .thenReturn(
+            GetSnapshotResponse.of(b -> defaultFields(b).snapshots(List.of(firstSnapshotInfo))));
     // Test
     final var backupState = repository.getBackupState("repository-name", 5L);
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.IN_PROGRESS);
@@ -367,15 +350,16 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void shouldReturnBackupStateFailedWhenSnapshotIsPartialCompleted() throws IOException {
-    mockSynchronSnapshotOperations();
-    mockObjectMapperForMetadata(new Metadata().setPartCount(1));
     final var firstSnapshotInfo =
-        new OpenSearchSnapshotInfo()
-            .setUuid("uuid")
-            .setState(SnapshotState.PARTIAL)
-            .setStartTimeInMillis(Instant.now().toEpochMilli());
-    when(openSearchSnapshotOperations.get(any()))
-        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+        SnapshotInfo.of(
+            bi ->
+                defaultFields(bi)
+                    .uuid("uuid")
+                    .state(SnapshotState.PARTIAL.name())
+                    .startTimeInMillis(Long.toString(Instant.now().toEpochMilli())));
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
+        .thenReturn(
+            GetSnapshotResponse.of(b -> defaultFields(b).snapshots(List.of(firstSnapshotInfo))));
     // Test
     final var backupState = repository.getBackupState("repository-name", 5L);
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.FAILED);
@@ -383,21 +367,24 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void shouldReturnBackupStateFailedCompleted() throws IOException {
-    mockSynchronSnapshotOperations();
-    mockObjectMapperForMetadata(new Metadata().setPartCount(2));
     final var firstSnapshotInfo =
-        new OpenSearchSnapshotInfo()
-            .setUuid("uuid")
-            .setState(SnapshotState.SUCCESS)
-            .setStartTimeInMillis(Instant.now().toEpochMilli());
+        SnapshotInfo.of(
+            bi ->
+                defaultFields(bi, new Metadata(5L, "1", 1, 2))
+                    .uuid("uuid")
+                    .state(SnapshotState.SUCCESS.name())
+                    .startTimeInMillis(Long.toString(Instant.now().toEpochMilli())));
     final var lastSnapshotInfo =
-        new OpenSearchSnapshotInfo()
-            .setUuid("uuid")
-            .setState(SnapshotState.SUCCESS)
-            .setStartTimeInMillis(Instant.now().toEpochMilli());
-    when(openSearchSnapshotOperations.get(any()))
+        SnapshotInfo.of(
+            bi ->
+                defaultFields(bi, new Metadata(5L, "1", 2, 2))
+                    .uuid("uuid")
+                    .state(SnapshotState.SUCCESS.name())
+                    .startTimeInMillis(Long.toString(Instant.now().toEpochMilli())));
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
         .thenReturn(
-            new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo, lastSnapshotInfo)));
+            GetSnapshotResponse.of(
+                b -> defaultFields(b).snapshots(List.of(firstSnapshotInfo, lastSnapshotInfo))));
     // Test
     final var backupState = repository.getBackupState("repository-name", 5L);
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.COMPLETED);
@@ -405,17 +392,39 @@ class OpensearchBackupRepositoryTest {
 
   @Test
   void shouldReturnBackupStateFailedWhenSnapshotIsFailed() throws IOException {
-    mockSynchronSnapshotOperations();
-    mockObjectMapperForMetadata(new Metadata().setPartCount(1));
     final var firstSnapshotInfo =
-        new OpenSearchSnapshotInfo()
-            .setUuid("uuid")
-            .setState(SnapshotState.FAILED)
-            .setStartTimeInMillis(Instant.now().toEpochMilli());
-    when(openSearchSnapshotOperations.get(any()))
-        .thenReturn(new OpenSearchGetSnapshotResponse(List.of(firstSnapshotInfo)));
+        SnapshotInfo.of(
+            bi ->
+                defaultFields(bi)
+                    .uuid("uuid")
+                    .state(SnapshotState.FAILED.name())
+                    .startTimeInMillis(Long.toString(Instant.now().toEpochMilli())));
+    when(openSearchClient.snapshot().get((GetSnapshotRequest) any()))
+        .thenReturn(
+            GetSnapshotResponse.of(b -> defaultFields(b).snapshots(List.of(firstSnapshotInfo))));
     // Test
     final var backupState = repository.getBackupState("repository-name", 5L);
     assertThat(backupState.getState()).isEqualTo(BackupStateDto.FAILED);
+  }
+
+  private SnapshotInfo.Builder defaultFields(final SnapshotInfo.Builder b) {
+    return defaultFields(b, new Metadata(1L, "1", 1, 1));
+  }
+
+  private SnapshotInfo.Builder defaultFields(
+      final SnapshotInfo.Builder b, final Metadata metadata) {
+    return b.dataStreams(List.of())
+        .indices(List.of())
+        .snapshot("snapshot")
+        .uuid("uuid")
+        .metadata(metadata.asJson(new JacksonJsonpMapper()));
+  }
+
+  private GetSnapshotResponse.Builder defaultFields(final GetSnapshotResponse.Builder b) {
+    return b.total(0).remaining(0);
+  }
+
+  private GetSnapshotResponse emptyResponse() {
+    return GetSnapshotResponse.of(this::defaultFields);
   }
 }

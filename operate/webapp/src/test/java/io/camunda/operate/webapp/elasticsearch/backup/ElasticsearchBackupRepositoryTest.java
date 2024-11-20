@@ -23,8 +23,8 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.backup.Metadata;
 import io.camunda.webapps.backup.BackupStateDto;
+import io.camunda.webapps.backup.Metadata;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -160,7 +160,7 @@ public class ElasticsearchBackupRepositoryTest {
     when(esClient.snapshot()).thenReturn(snapshotClient);
     // Set up Snapshot details
     final Map<String, Object> metadata =
-        objectMapper.convertValue(new Metadata().setPartCount(1), Map.class);
+        objectMapper.convertValue(new Metadata(1L, "1", 1, 1), Map.class);
     when(firstSnapshotInfo.userMetadata()).thenReturn(metadata);
     when(firstSnapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshot-name", "uuid"));
     when(firstSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
@@ -188,7 +188,7 @@ public class ElasticsearchBackupRepositoryTest {
         .thenReturn(incompleteCheckTimeoutLengthSeconds);
     // Set up first Snapshot details
     final Map<String, Object> metadata =
-        objectMapper.convertValue(new Metadata().setPartCount(3), Map.class);
+        objectMapper.convertValue(new Metadata(1L, "1", 1, 3), Map.class);
     when(firstSnapshotInfo.userMetadata()).thenReturn(metadata);
     when(firstSnapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshot-name", "uuid"));
     when(firstSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
@@ -223,7 +223,7 @@ public class ElasticsearchBackupRepositoryTest {
         .thenReturn(incompleteCheckTimeoutLengthSeconds);
     // Set up first Snapshot details
     final Map<String, Object> metadata =
-        objectMapper.convertValue(new Metadata().setPartCount(3), Map.class);
+        objectMapper.convertValue(new Metadata(1L, "1", 1, 3), Map.class);
     when(firstSnapshotInfo.userMetadata()).thenReturn(metadata);
     when(firstSnapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshot-name", "uuid"));
     when(firstSnapshotInfo.state()).thenReturn(SnapshotState.SUCCESS);
@@ -259,7 +259,7 @@ public class ElasticsearchBackupRepositoryTest {
         .thenReturn(incompleteCheckTimeoutLengthSeconds);
     // Set up Snapshot details
     final Map<String, Object> metadata =
-        objectMapper.convertValue(new Metadata().setPartCount(3), Map.class);
+        objectMapper.convertValue(new Metadata(1L, "1", 1, 3), Map.class);
     when(firstSnapshotInfo.userMetadata()).thenReturn(metadata);
     when(firstSnapshotInfo.snapshotId())
         .thenReturn(new SnapshotId("first-snapshot-name", "uuid-first"));
