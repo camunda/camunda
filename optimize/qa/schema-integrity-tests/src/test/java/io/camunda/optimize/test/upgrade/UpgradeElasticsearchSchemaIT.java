@@ -74,8 +74,8 @@ public class UpgradeElasticsearchSchemaIT
     LOG.info("Actual templates size: {}, names: {}", newTemplates.size(), newTemplates.keySet());
     for (Entry<String, TemplateMapping> stringTemplateMappingEntry :
         newDatabaseSchemaClient.getTemplates().entrySet()) {
-      assertThat(expectedTemplates.get(stringTemplateMappingEntry.getKey()))
-          .isEqualToComparingFieldByField(stringTemplateMappingEntry.getValue());
+      assertThat(expectedTemplates.get(stringTemplateMappingEntry.getKey()).toString())
+          .isEqualTo(stringTemplateMappingEntry.getValue().toString());
     }
   }
 
