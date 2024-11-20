@@ -31,7 +31,7 @@ public class BrokerAdminServiceEndpointTest {
   static RequestSpecification brokerServerSpec;
 
   @TestZeebe
-  private static TestStandaloneBroker broker =
+  private static final TestStandaloneBroker broker =
       new TestStandaloneBroker().withProperty("management.server.base-path", "/foo");
 
   private static final String EXPECTED_PARTITIONS_JSON =
@@ -40,7 +40,7 @@ public class BrokerAdminServiceEndpointTest {
       {
         "1": {
           "role": "LEADER",
-          "processedPosition": -1,
+          "processedPosition": 1,
           "snapshotId": null,
           "processedPositionInSnapshot": null,
           "streamProcessorPhase": "PROCESSING",
@@ -97,7 +97,7 @@ public class BrokerAdminServiceEndpointTest {
       """
       {
         "role": "LEADER",
-        "processedPosition": -1,
+        "processedPosition": 1,
         "snapshotId": null,
         "processedPositionInSnapshot": null,
         "streamProcessorPhase": "PROCESSING",
