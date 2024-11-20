@@ -88,7 +88,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
         });
 
     if (foundProcess.get() != null) {
-      new ProcessResource(foundProcess.get());
+      return new ProcessResource(foundProcess.get());
     }
     // TODO: Continue with formState and decisionState
 
