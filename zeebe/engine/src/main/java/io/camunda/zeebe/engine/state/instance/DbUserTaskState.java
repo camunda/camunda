@@ -119,6 +119,15 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
+  public void storeIntermediateState(final UserTaskRecord record, final LifecycleState lifecycle) {
+    userTaskIntermediateStateKey.wrapLong(record.getUserTaskKey());
+    userTaskIntermediateStateToWrite.setRecord(record);
+    userTaskIntermediateStateToWrite.setLifecycleState(lifecycle);
+    userTasksIntermediateStatesColumnFamily.insert(
+        userTaskIntermediateStateKey, userTaskIntermediateStateToWrite);
+  }
+
+  @Override
   public void updateIntermediateState(
       final long key, final Consumer<UserTaskIntermediateStateValue> updater) {
     userTaskIntermediateStateKey.wrapLong(key);
@@ -131,6 +140,25 @@ public class DbUserTaskState implements MutableUserTaskState {
     userTaskIntermediateStateToWrite.setLifecycleState(intermediateState.getLifecycleState());
     userTasksIntermediateStatesColumnFamily.update(
         userTaskIntermediateStateKey, userTaskIntermediateStateToWrite);
+  }
+
+  @Override
+  public void deleteIntermediateState(final long key) {
+    userTaskIntermediateStateKey.wrapLong(key);
+    userTasksIntermediateStatesColumnFamily.deleteExisting(userTaskIntermediateStateKey);
+  }
+
+  @Override
+  public void storeRecordRequestMetadata(
+      final long key, final UserTaskRecordRequestMetadata recordRequestMetadata) {
+    userTaskKey.wrapLong(key);
+    userTasksRecordRequestMetadataColumnFamily.insert(userTaskKey, recordRequestMetadata);
+  }
+
+  @Override
+  public void deleteRecordRequestMetadata(final long key) {
+    userTaskKey.wrapLong(key);
+    userTasksRecordRequestMetadataColumnFamily.deleteIfExists(userTaskKey);
   }
 
   @Override
@@ -168,37 +196,9 @@ public class DbUserTaskState implements MutableUserTaskState {
   }
 
   @Override
-  public void storeIntermediateState(final UserTaskRecord record, final LifecycleState lifecycle) {
-    userTaskIntermediateStateKey.wrapLong(record.getUserTaskKey());
-    userTaskIntermediateStateToWrite.setRecord(record);
-    userTaskIntermediateStateToWrite.setLifecycleState(lifecycle);
-    userTasksIntermediateStatesColumnFamily.insert(
-        userTaskIntermediateStateKey, userTaskIntermediateStateToWrite);
-  }
-
-  @Override
-  public void deleteIntermediateState(final long key) {
-    userTaskIntermediateStateKey.wrapLong(key);
-    userTasksIntermediateStatesColumnFamily.deleteExisting(userTaskIntermediateStateKey);
-  }
-
-  @Override
   public Optional<UserTaskRecordRequestMetadata> findRecordRequestMetadata(final long key) {
     userTaskKey.wrapLong(key);
     return Optional.ofNullable(userTasksRecordRequestMetadataColumnFamily.get(userTaskKey));
-  }
-
-  @Override
-  public void storeRecordRequestMetadata(
-      final long key, final UserTaskRecordRequestMetadata recordRequestMetadata) {
-    userTaskKey.wrapLong(key);
-    userTasksRecordRequestMetadataColumnFamily.insert(userTaskKey, recordRequestMetadata);
-  }
-
-  @Override
-  public void deleteRecordRequestMetadata(final long key) {
-    userTaskKey.wrapLong(key);
-    userTasksRecordRequestMetadataColumnFamily.deleteIfExists(userTaskKey);
   }
 
   private List<String> getAuthorizedTenantIds(final Map<String, Object> authorizations) {
