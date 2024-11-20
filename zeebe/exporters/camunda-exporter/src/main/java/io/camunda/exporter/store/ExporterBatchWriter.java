@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -50,7 +50,7 @@ public class ExporterBatchWriter {
             cacheKey,
             (k) -> {
               final ExporterEntity entity = handler.createNewEntity(id);
-              return new EntityAndHandlers(entity, new HashSet<>());
+              return new EntityAndHandlers(entity, new LinkedHashSet<>());
             });
 
     final var entity = entityAndHandlers.entity;
