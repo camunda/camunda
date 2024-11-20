@@ -17,6 +17,8 @@ runs:
   using: composite
   steps:
   - id: detect-fork
+    env:
+      GH_EVENT_PR_FORK: ${{ github.event.pull_request.head.repo.fork }}
     shell: bash
     run: |
-      echo is-fork="${{ github.event.pull_request.head.repo.fork }}" | tee -a $GITHUB_OUTPUT
+      echo is-fork="$GH_EVENT_PR_FORK" | tee -a $GITHUB_OUTPUT
