@@ -18,7 +18,6 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.sortOptions;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.zeebeimport.ReadBatchErrorMessage.READ_BATCH_ERROR_MESSAGE;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -76,6 +75,8 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class OpensearchRecordsReader implements RecordsReader {
 
+  private static final String READ_BATCH_ERROR_MESSAGE =
+      "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchRecordsReader.class);
 
   /** Partition id. */
@@ -285,7 +286,7 @@ public class OpensearchRecordsReader implements RecordsReader {
         throw new NoSuchIndexException();
       } else {
         throw new OperateRuntimeException(
-            READ_BATCH_ERROR_MESSAGE.apply(aliasName, ex.getMessage()), ex);
+            String.format(READ_BATCH_ERROR_MESSAGE, aliasName, ex.getMessage()), ex);
       }
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
@@ -298,7 +299,7 @@ public class OpensearchRecordsReader implements RecordsReader {
         return readNextBatchBySequence(sequence, lastSequence);
       } else {
         throw new OperateRuntimeException(
-            READ_BATCH_ERROR_MESSAGE.apply(aliasName, e.getMessage()), e);
+            String.format(READ_BATCH_ERROR_MESSAGE, aliasName, e.getMessage()), e);
       }
     }
   }
@@ -355,7 +356,7 @@ public class OpensearchRecordsReader implements RecordsReader {
         throw new NoSuchIndexException();
       } else {
         throw new OperateRuntimeException(
-            READ_BATCH_ERROR_MESSAGE.apply(aliasName, ex.getMessage()), ex);
+            String.format(READ_BATCH_ERROR_MESSAGE, aliasName, ex.getMessage()), ex);
       }
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
@@ -363,7 +364,7 @@ public class OpensearchRecordsReader implements RecordsReader {
         return readNextBatchByPositionAndPartition(positionFrom, positionTo);
       } else {
         throw new OperateRuntimeException(
-            READ_BATCH_ERROR_MESSAGE.apply(aliasName, e.getMessage()), e);
+            String.format(READ_BATCH_ERROR_MESSAGE, aliasName, e.getMessage()), e);
       }
     }
   }
