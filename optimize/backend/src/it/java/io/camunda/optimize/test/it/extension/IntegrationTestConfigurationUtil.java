@@ -7,9 +7,9 @@
  */
 package io.camunda.optimize.test.it.extension;
 
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
-import io.camunda.optimize.JettyConfig;
+import io.camunda.optimize.TomcatConfig;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
@@ -36,9 +36,9 @@ public class IntegrationTestConfigurationUtil {
   public static String getEmbeddedOptimizeEndpoint(final ApplicationContext applicationContext) {
     return "http://localhost:"
         + applicationContext
-            .getBean(JettyConfig.class)
+            .getBean(TomcatConfig.class)
             .getPort(EnvironmentPropertiesConstants.HTTP_PORT_KEY)
-        + applicationContext.getBean(JettyConfig.class).getContextPath().orElse("");
+        + applicationContext.getBean(TomcatConfig.class).getContextPath().orElse("");
   }
 
   public static String getEmbeddedOptimizeRestApiEndpoint(

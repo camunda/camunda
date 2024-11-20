@@ -7,16 +7,16 @@
  */
 package io.camunda.optimize;
 
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
 import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
 import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTPS_PORT_KEY;
 import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
 import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.INTEGRATION_TESTS;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_PORT_PROPERTY_KEY;
 
-import io.camunda.optimize.jetty.OptimizeResourceConstants;
 import io.camunda.optimize.test.it.extension.DatabaseIntegrationTestExtension;
 import io.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import io.camunda.optimize.test.optimize.VariablesClient;
+import io.camunda.optimize.tomcat.OptimizeResourceConstants;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -107,7 +107,7 @@ public abstract class AbstractIT {
     return getArg(
         portKey,
         String.valueOf(
-            embeddedOptimizeExtension.getBean(JettyConfig.class).getPort(portKey) + 100));
+            embeddedOptimizeExtension.getBean(TomcatConfig.class).getPort(portKey) + 100));
   }
 
   private String getArg(final String key, final String value) {
