@@ -68,7 +68,8 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     } else {
       deploymentRecord = createNewDeploymentForResource(resource);
     }
-    stateWriter.appendFollowUpEvent(key, DeploymentIntent.RECONSTRUCTED, deploymentRecord);
+    stateWriter.appendFollowUpEvent(
+        deploymentRecord.getDeploymentKey(), DeploymentIntent.RECONSTRUCTED, deploymentRecord);
   }
 
   private Resource findNextResource() {
