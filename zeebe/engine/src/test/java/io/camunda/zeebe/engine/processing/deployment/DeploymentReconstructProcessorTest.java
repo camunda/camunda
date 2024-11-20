@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.deployment;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -25,7 +25,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
-import org.assertj.core.api.Assertions;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,12 +60,10 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    Assertions.assertThat(resultBuilder.getFollowupRecords())
+    assertThat(resultBuilder.getFollowupRecords())
         .singleElement()
         .satisfies(
-            record ->
-                Assertions.assertThat(record.getIntent())
-                    .isEqualTo(DeploymentIntent.RECONSTRUCTED_ALL));
+            record -> assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED_ALL));
   }
 
   @Test
@@ -91,16 +89,50 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    Assertions.assertThat(resultBuilder.getFollowupRecords())
+    assertThat(resultBuilder.getFollowupRecords())
         .singleElement()
         .satisfies(
-            record ->
-                Assertions.assertThat(record.getIntent())
-                    .isEqualTo(DeploymentIntent.RECONSTRUCTED_ALL));
+            record -> assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED_ALL));
   }
 
   @Test
   void shouldReconstructForSingleProcessWithoutDeploymentKey() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+
+    final var processKey = Protocol.encodePartitionId(1, 2);
+    state
+        .getProcessState()
+        .putProcess(
+            processKey,
+            new ProcessRecord()
+                .setBpmnProcessId("process")
+                .setResourceName("process.bpmn")
+                .setVersion(1));
+
+    // when
+    processor.processRecord(command);
+
+    // then
+    assertThat(resultBuilder.getFollowupRecords())
+        .singleElement()
+        .satisfies(
+            record -> {
+              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+              assertThat(record.getKey()).isEqualTo(processKey);
+              assertThat(record.getValue())
+                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+                  .satisfies(
+                      deploymentRecord -> {
+                        assertThat(deploymentRecord.getProcessesMetadata()).hasSize(1);
+                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(processKey);
+                      });
+            });
+  }
+
+  @Test
+  void shouldReconstructForSingleProcessWithDeploymentKey() {
     // given
     final var command = mock(TypedRecord.class);
     when(command.getValue()).thenReturn(new DeploymentRecord());
@@ -121,11 +153,67 @@ final class DeploymentReconstructProcessorTest {
     processor.processRecord(command);
 
     // then
-    Assertions.assertThat(resultBuilder.getFollowupRecords())
+    assertThat(resultBuilder.getFollowupRecords())
         .singleElement()
         .satisfies(
-            record ->
-                Assertions.assertThat(record.getIntent())
-                    .isEqualTo(DeploymentIntent.RECONSTRUCTED));
+            record -> {
+              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+              assertThat(record.getKey()).isEqualTo(deploymentKey);
+              assertThat(record.getValue())
+                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+                  .satisfies(
+                      deploymentRecord -> {
+                        assertThat(deploymentRecord.getProcessesMetadata()).hasSize(1);
+                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                      });
+            });
+  }
+
+  @Test
+  void shouldIncludeAllProcessesOfDeployment() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+
+    final var deploymentKey = Protocol.encodePartitionId(1, 1);
+    final var processKey1 = Protocol.encodePartitionId(1, 2);
+    final var processKey2 = Protocol.encodePartitionId(1, 3);
+    state
+        .getProcessState()
+        .putProcess(
+            processKey1,
+            new ProcessRecord()
+                .setDeploymentKey(deploymentKey)
+                .setBpmnProcessId("process1")
+                .setResourceName("process1.bpmn")
+                .setVersion(1));
+    state
+        .getProcessState()
+        .putProcess(
+            processKey2,
+            new ProcessRecord()
+                .setDeploymentKey(deploymentKey)
+                .setBpmnProcessId("process2")
+                .setResourceName("process2.bpmn")
+                .setVersion(1));
+
+    // when
+    processor.processRecord(command);
+
+    // then
+    assertThat(resultBuilder.getFollowupRecords())
+        .singleElement()
+        .satisfies(
+            record -> {
+              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+              assertThat(record.getKey()).isEqualTo(deploymentKey);
+              assertThat(record.getValue())
+                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+                  .satisfies(
+                      deploymentRecord -> {
+                        assertThat(deploymentRecord.getProcessesMetadata()).hasSize(2);
+                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                      });
+            });
   }
 }
