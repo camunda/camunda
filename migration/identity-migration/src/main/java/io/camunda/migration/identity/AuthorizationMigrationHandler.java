@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.identity.migration;
+package io.camunda.migration.identity;
 
-import io.camunda.identity.migration.dto.UserResourceAuthorization;
+import io.camunda.migration.identity.dto.UserResourceAuthorization;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;

@@ -22,6 +22,7 @@
   <modules>
     <module>migration-api</module>
     <module>process-migration</module>
+    <module>identity-migration</module>
   </modules>
 
   <properties>

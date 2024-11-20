@@ -10,18 +10,27 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>io.camunda</groupId>
-    <artifactId>identity-parent</artifactId>
+    <artifactId>migration</artifactId>
     <version>8.7.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
+  <groupId>io.camunda.migration</groupId>
   <artifactId>identity-migration</artifactId>
-  <name>Identity Migration</name>
+  <name>Identity Migrator</name>
 
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -32,8 +41,19 @@
       <artifactId>camunda-security-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>migration-api</artifactId>
+    </dependency>
+
+    <!-- Test -->
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.jupiter</groupId>
@@ -43,16 +63,6 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.hamcrest</groupId>
-      <artifactId>hamcrest</artifactId>
-      <version>3.0</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
