@@ -14,7 +14,7 @@ import {
   apiPost,
   pathBuilder,
 } from "src/utility/api/request";
-import {SearchResponse} from "src/utility/api";
+import { SearchResponse } from "src/utility/api";
 
 const path = pathBuilder("/roles");
 
@@ -25,7 +25,8 @@ export type Role = {
   permissions: string[];
 };
 
-export const searchRoles: ApiDefinition<SearchResponse<Role>> = () => apiPost(path('search'), {});
+export const searchRoles: ApiDefinition<SearchResponse<Role>> = () =>
+  apiPost(path("search"), {});
 
 type GetRoleParams = {
   key: number;
@@ -44,8 +45,7 @@ type UpdateRoleParams = Role;
 export const updateRole: ApiDefinition<Role, UpdateRoleParams> = ({
   key,
   ...role
-}) => apiPatch(path(key), {changeset: role});
-
+}) => apiPatch(path(key), { changeset: role });
 
 interface DeleteRoleParams {
   key: number;

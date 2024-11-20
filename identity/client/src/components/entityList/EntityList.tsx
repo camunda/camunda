@@ -34,7 +34,7 @@ import useTranslate from "../../utility/localization";
 import { DocumentationLink } from "src/components/documentation";
 import LateLoading from "src/components/layout/LateLoading";
 import Flex from "src/components/layout/Flex";
-import {ButtonKind} from "@carbon/react/lib/components/Button/Button";
+import { ButtonKind } from "@carbon/react/lib/components/Button/Button";
 
 const ToolbarMultiSelect = styled(MultiSelect)`
   grid-gap: 0;
@@ -399,7 +399,9 @@ const EntityList = <D extends EntityData>({
                                   } = menuItem as MenuItem<D>;
 
                                   const kind: ButtonKind =
-                                      !icon && isDangerous ? "danger--ghost" : "ghost";
+                                    !icon && isDangerous
+                                      ? "danger--ghost"
+                                      : "ghost";
 
                                   return (
                                     <Button

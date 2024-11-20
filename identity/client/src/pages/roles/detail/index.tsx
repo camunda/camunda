@@ -18,13 +18,13 @@ import RolePermissions from "src/pages/roles/detail/RolePermissions";
 
 const Details: FC = () => {
   const navigate = useNavigate();
-  const {t} = useTranslate();
-  const {id, tab = "details"} = useParams<{
+  const { t } = useTranslate();
+  const { id, tab = "details" } = useParams<{
     id: string;
     tab: string;
   }>();
 
-  const {data: role, loading} = useApi(getRole, {
+  const { data: role, loading } = useApi(getRole, {
     key: id ? parseInt(id, 10) : -1,
   });
 
