@@ -22,7 +22,6 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
-import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -41,6 +40,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.util.Set;
 import org.agrona.CloseHelper;
@@ -58,7 +58,7 @@ public class CamundaExporter implements Exporter {
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
-  private final ExporterMetadata metadata = new ExporterMetadata();
+  private final ExporterMetadata metadata;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -66,7 +66,13 @@ public class CamundaExporter implements Exporter {
 
   @VisibleForTesting
   public CamundaExporter(final ExporterResourceProvider provider) {
+    this(provider, new ExporterMetadata());
+  }
+
+  @VisibleForTesting
+  public CamundaExporter(final ExporterResourceProvider provider, final ExporterMetadata metadata) {
     this.provider = provider;
+    this.metadata = metadata;
   }
 
   @Override
