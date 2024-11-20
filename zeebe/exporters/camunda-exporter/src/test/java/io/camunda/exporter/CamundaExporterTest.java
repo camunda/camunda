@@ -23,6 +23,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ final class CamundaExporterTest {
   private final ExporterTestContext testContext =
       new ExporterTestContext()
           .setConfiguration(new ExporterTestConfiguration<>("test", configuration));
+  private final ExporterTestController testController = new ExporterTestController();
 
   @SuppressWarnings("FieldCanBeLocal")
   @AutoCloseResource
@@ -97,8 +99,6 @@ final class CamundaExporterTest {
 
   @Nested
   final class OpenTest {
-    private final ExporterTestController testController = new ExporterTestController();
-
     @Test
     void shouldDeserializeMetadataOnOpen() {
       // given
@@ -115,6 +115,27 @@ final class CamundaExporterTest {
 
       // then
       assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(3);
+    }
+  }
+
+  @Nested
+  final class FlushTest {
+    @Test
+    void shouldUpdateMetadataOnFlush() {
+      // given
+      final var expected = new ExporterMetadata();
+      exporter = new CamundaExporter(resourceProvider, expected);
+      expected.setLastIncidentUpdatePosition(5);
+
+      // when
+      exporter.configure(testContext);
+      exporter.open(testController);
+      testController.runScheduledTasks(Duration.ofHours(1));
+
+      // then
+      final var actual = new ExporterMetadata();
+      testController.readMetadata().ifPresent(actual::deserialize);
+      assertThat(actual.getLastIncidentUpdatePosition()).isEqualTo(5);
     }
   }
 }

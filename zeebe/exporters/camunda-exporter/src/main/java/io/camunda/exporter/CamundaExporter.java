@@ -203,7 +203,8 @@ public class CamundaExporter implements Exporter {
   }
 
   private void updateLastExportedPosition() {
-    controller.updateLastExportedRecordPosition(lastPosition);
+    final var serialized = metadata.serialize();
+    controller.updateLastExportedRecordPosition(lastPosition, serialized);
   }
 
   private record CamundaExporterRecordFilter() implements RecordFilter {
