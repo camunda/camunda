@@ -67,7 +67,7 @@ public class IncidentServices
     final var incidentEntity = getSingleResultOrThrow(result, key, "Incident");
     final var authorization = Authorization.of(a -> a.processDefinition().readInstance());
     if (!securityContextProvider.isAuthorized(
-        incidentEntity.bpmnProcessId(), authentication, authorization)) {
+        incidentEntity.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
     return incidentEntity;
