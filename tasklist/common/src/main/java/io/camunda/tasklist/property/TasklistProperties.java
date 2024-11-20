@@ -46,6 +46,7 @@ public class TasklistProperties {
   private String readerPassword = "view";
   private String readerDisplayName = "view";
   private String database = ELASTIC_SEARCH;
+  private String exporterClassName = "";
 
   private List<String> roles = List.of("OWNER");
 
@@ -427,5 +428,13 @@ public class TasklistProperties {
       return openSearch.getIndexPrefix();
     }
     return null;
+  }
+
+  public String getExporterClassName() {
+    return exporterClassName;
+  }
+
+  public void setExporterClassName(final String exporterClassName) {
+    this.exporterClassName = exporterClassName;
   }
 }

@@ -13,6 +13,7 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
@@ -26,6 +27,7 @@ import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.DeployedProc
 import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.FormRecordImpl;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import jakarta.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -56,11 +58,21 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
 
   @Autowired private UserTaskZeebeRecordProcessorElasticSearch userTaskZeebeRecordProcessor;
 
+  @Autowired private TasklistProperties tasklistProperties;
+
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
   @Autowired private Metrics metrics;
+
+  private boolean isCamundaExporterEnabled;
+
+  @PostConstruct
+  public void init() {
+    isCamundaExporterEnabled =
+        "io.camunda.exporter.CamundaExporter".equals(tasklistProperties.getExporterClassName());
+  }
 
   @Override
   protected void processZeebeRecords(
@@ -97,10 +109,16 @@ public class BulkProcessorElasticSearch extends AbstractImportBatchProcessorElas
           processZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
           break;
         case FORM:
-          formZeebeRecordProcessor.processFormRecord(record, bulkRequest);
+          // TODO: skip form record importing when Camunda exporter is enabled
+          if (!isCamundaExporterEnabled) {
+            formZeebeRecordProcessor.processFormRecord(record, bulkRequest);
+          }
           break;
         case USER_TASK:
-          userTaskZeebeRecordProcessor.processUserTaskRecord(record, bulkRequest);
+          // TODO: skip user task record importing when Camunda exporter is enabled
+          if (!isCamundaExporterEnabled) {
+            userTaskZeebeRecordProcessor.processUserTaskRecord(record, bulkRequest);
+          }
           break;
         default:
           LOGGER.debug("Default case triggered for type {}", importValueType);
