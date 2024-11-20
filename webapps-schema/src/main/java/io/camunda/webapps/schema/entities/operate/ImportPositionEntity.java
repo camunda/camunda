@@ -30,14 +30,15 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
       final long sequence,
       final ImportPositionEntity importPositionEntity,
       final long newPosition,
-      final String indexName) {
+      final String indexName,
+      final boolean completed) {
     return new ImportPositionEntity()
         .setSequence(sequence)
         .setAliasName(importPositionEntity.getAliasName())
         .setPartitionId(importPositionEntity.getPartitionId())
         .setIndexName(indexName)
         .setPosition(newPosition)
-        .setCompleted(false);
+        .setCompleted(completed);
   }
 
   public String getAliasName() {
@@ -156,6 +157,8 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
         + postImporterPosition
         + ", indexName='"
         + indexName
+        + ", completed='"
+        + completed
         + '\''
         + '}';
   }

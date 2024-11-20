@@ -235,7 +235,8 @@ public class ImportJob implements Callable<Boolean> {
                 lastSequence,
                 previousPosition,
                 lastRecordPosition,
-                importBatch.getLastRecordIndexName());
+                importBatch.getLastRecordIndexName(),
+                previousPosition.getCompleted());
       } else {
         lastProcessedPosition = previousPosition;
       }

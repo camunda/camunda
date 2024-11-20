@@ -179,6 +179,47 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
         .until(() -> isRecordReaderIsCompleted("2-process-instance"));
   }
 
+  @Test
+  public void shouldNotSetCompletedToFalseForSubsequentRecordsAfterImportingDone()
+      throws IOException {
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    EXPORTER.export(record);
+    osClient.index().refresh("*");
+
+    zeebeImporter.performOneRoundOfImport();
+
+    // when
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record2);
+    osClient.index().refresh("*");
+
+    // receives 8.7 record and marks partition as finished importing
+    zeebeImporter.performOneRoundOfImport();
+
+    // then
+    // require multiple checks to avoid race condition. If records are written to zeebe indices and
+    // before a refresh, the record reader pulls the import batch is empty so it then says that the
+    // record reader is done when it is not.
+    for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+
+    final var record3 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record3);
+    osClient.index().refresh("*");
+
+    zeebeImporter.performOneRoundOfImport();
+
+    Awaitility.await()
+        .during(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(12))
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+  }
+
   private boolean isRecordReaderIsCompleted(final String partitionIdFieldValue) throws IOException {
     final var hits =
         osClient
