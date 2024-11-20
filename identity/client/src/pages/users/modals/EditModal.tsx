@@ -18,12 +18,12 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
   onSuccess,
   entity,
 }) => {
-  const {t} = useTranslate();
+  const { t } = useTranslate();
   const [callUpdateUser, { loading, namedErrors }] = useApiCall(updateUser);
   const [user, setUser] = useState<User>(entity);
 
   const handleSubmit = async () => {
-    const {success} = await callUpdateUser(user);
+    const { success } = await callUpdateUser(user);
     if (success) {
       onSuccess();
     }
@@ -43,7 +43,7 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
         label={t("Name")}
         value={user.name}
         placeholder={t("Name")}
-        onChange={name => setUser({...user, name})}
+        onChange={(name) => setUser({ ...user, name })}
         errors={namedErrors?.name}
         autoFocus
       />
@@ -51,7 +51,7 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
         label={t("Email")}
         value={user.email}
         placeholder={t("Email")}
-        onChange={email => setUser({...user, email})}
+        onChange={(email) => setUser({ ...user, email })}
         errors={namedErrors?.email}
       />
       <TextField
@@ -65,7 +65,7 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
         label={t("Password")}
         value={user.password}
         placeholder={t("Password")}
-        onChange={password => setUser({...user, password})}
+        onChange={(password) => setUser({ ...user, password })}
         errors={namedErrors?.password}
         type="password"
         helperText={t("Leave empty to keep current password")}
