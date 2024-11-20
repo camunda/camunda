@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,9 +88,8 @@ public class RecordsReaderHolder {
     if (hasPartitionCompletedImporting(partitionId)) {
 
       final var reader = getRecordsReader(partitionId, importValueType);
-      return Objects.equals(
-          countEmptyBatchesAfterImportingDone.get(reader),
-          MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER);
+      return countEmptyBatchesAfterImportingDone.get(reader)
+          >= MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
     }
 
     return false;
