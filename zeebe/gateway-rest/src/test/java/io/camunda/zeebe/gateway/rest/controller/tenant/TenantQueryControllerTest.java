@@ -1,0 +1,267 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.gateway.rest.controller.tenant;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantQuery;
+import io.camunda.search.sort.TenantSort;
+import io.camunda.security.auth.Authentication;
+import io.camunda.service.TenantServices;
+import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+
+@WebMvcTest(value = TenantQueryController.class, properties = "camunda.rest.query.enabled=true")
+public class TenantQueryControllerTest extends RestControllerTest {
+  private static final String TENANT_BASE_URL = "/v2/tenants";
+  private static final String SEARCH_TENANT_URL = "%s/search".formatted(TENANT_BASE_URL);
+
+  private static final List<TenantEntity> TENANT_ENTITIES =
+      List.of(
+          new TenantEntity(100L, "Tenant 1", "tenant-id-1", Set.of()),
+          new TenantEntity(200L, "Tenant 2", "tenant-id-2", Set.of(1L, 2L)),
+          new TenantEntity(300L, "Tenant 12", "tenant-id-3", Set.of(3L)));
+
+  private static final String EXPECTED_RESPONSE =
+      """
+      {
+         "items": [
+           {
+             "key": %d,
+             "name": "%s",
+             "assignedMemberKeys": %s
+           },
+           {
+             "key": %d,
+             "name": "%s",
+             "assignedMemberKeys": %s
+           },
+           {
+             "key": %d,
+             "name": "%s",
+             "assignedMemberKeys": %s
+           }
+         ],
+         "page": {
+           "totalItems": %d,
+           "firstSortValues": [],
+           "lastSortValues": []
+         }
+       }
+      """
+          .formatted(
+              TENANT_ENTITIES.get(0).key(),
+              TENANT_ENTITIES.get(0).name(),
+              formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys()),
+              TENANT_ENTITIES.get(1).key(),
+              TENANT_ENTITIES.get(1).name(),
+              formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys()),
+              TENANT_ENTITIES.get(2).key(),
+              TENANT_ENTITIES.get(2).name(),
+              formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys()),
+              TENANT_ENTITIES.size());
+
+  @MockBean private TenantServices tenantServices;
+
+  private static String formatSet(final Set<Long> set) {
+    return set.isEmpty() ? "[]" : set.toString();
+  }
+
+  @BeforeEach
+  void setup() {
+    when(tenantServices.withAuthentication(any(Authentication.class))).thenReturn(tenantServices);
+  }
+
+  @Test
+  void shouldSearchTenantsWithEmptyQuery() {
+    // given
+    when(tenantServices.search(any(TenantQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<TenantEntity>()
+                .total(3)
+                .sortValues(new Object[] {})
+                .items(TENANT_ENTITIES)
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(SEARCH_TENANT_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_RESPONSE);
+
+    verify(tenantServices).search(new TenantQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSearchTenantsWithSorting() {
+    // given
+    when(tenantServices.search(any(TenantQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<TenantEntity>()
+                .total(TENANT_ENTITIES.size())
+                .items(TENANT_ENTITIES)
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri(SEARCH_TENANT_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort": [{"field": "tenantId", "order": "asc"}]
+            }
+            """)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_RESPONSE);
+
+    verify(tenantServices)
+        .search(
+            new TenantQuery.Builder()
+                .sort(TenantSort.of(builder -> builder.tenantId().asc()))
+                .build());
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidTenantSearchQueries")
+  void shouldInvalidateTenantsSearchQueryWithBadQueries(
+      final String request, final String expectedResponse) {
+    // when / then
+    webClient
+        .post()
+        .uri(SEARCH_TENANT_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(tenantServices, never()).search(any(TenantQuery.class));
+  }
+
+  public static Stream<Arguments> invalidTenantSearchQueries() {
+    return Stream.of(
+        Arguments.of(
+            // invalid sort order
+            """
+                {
+                    "sort": [
+                        {
+                            "field": "name",
+                            "order": "dsc"
+                        }
+                    ]
+                }""",
+            String.format(
+                """
+                    {
+                      "type": "about:blank",
+                      "title": "INVALID_ARGUMENT",
+                      "status": 400,
+                      "detail": "Unknown sortOrder: dsc.",
+                      "instance": "%s"
+                    }""",
+                SEARCH_TENANT_URL)),
+        Arguments.of(
+            // unknown field
+            """
+                {
+                    "sort": [
+                        {
+                            "field": "unknownField",
+                            "order": "asc"
+                        }
+                    ]
+                }""",
+            String.format(
+                """
+                    {
+                      "type": "about:blank",
+                      "title": "INVALID_ARGUMENT",
+                      "status": 400,
+                      "detail": "Unknown sortBy: unknownField.",
+                      "instance": "%s"
+                    }""",
+                SEARCH_TENANT_URL)),
+        Arguments.of(
+            // missing sort field
+            """
+                {
+                    "sort": [
+                        {
+                            "order": "asc"
+                        }
+                    ]
+                }""",
+            String.format(
+                """
+                    {
+                      "type": "about:blank",
+                      "title": "INVALID_ARGUMENT",
+                      "status": 400,
+                      "detail": "Sort field must not be null.",
+                      "instance": "%s"
+                    }""",
+                SEARCH_TENANT_URL)),
+        Arguments.of(
+            // conflicting pagination
+            """
+                {
+                    "page": {
+                        "searchAfter": ["a"],
+                        "searchBefore": ["b"]
+                    }
+                }""",
+            String.format(
+                """
+                    {
+                      "type": "about:blank",
+                      "title": "INVALID_ARGUMENT",
+                      "status": 400,
+                      "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
+                      "instance": "%s"
+                    }""",
+                SEARCH_TENANT_URL)));
+  }
+}

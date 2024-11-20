@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateReq
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public class TenantServices extends SearchQueryService<TenantServices, TenantQuery, TenantEntity> {
@@ -65,14 +66,17 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return sendBrokerRequest(new BrokerTenantDeleteRequest(key).setTenantKey(key));
   }
 
-  public TenantEntity getByKey(final Long key) {
-    final SearchQueryResult<TenantEntity> result =
-        search(SearchQueryBuilders.tenantSearchQuery().filter(f -> f.key(key)).build());
-    if (result.total() < 1) {
-      throw new NotFoundException(String.format("Tenant with key %d not found", key));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
-    }
+  public TenantEntity getTenant(final Long tenantKey) {
+    return findTenant(tenantKey)
+        .orElseThrow(
+            () -> new NotFoundException("Tenant with key %d not found".formatted(tenantKey)));
+  }
+
+  public Optional<TenantEntity> findTenant(final Long tenantKey) {
+    return search(SearchQueryBuilders.tenantSearchQuery().filter(f -> f.key(tenantKey)).build())
+        .items()
+        .stream()
+        .findFirst();
   }
 
   public record TenantDTO(Long key, String tenantId, String name) {}
