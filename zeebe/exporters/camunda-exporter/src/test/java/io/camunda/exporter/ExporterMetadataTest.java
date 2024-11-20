@@ -25,6 +25,6 @@ final class ExporterMetadataTest {
     destination.deserialize(bytes);
 
     // then
-    assertThat(destination.lastIncidentUpdatePosition()).isEqualTo(3);
+    assertThat(destination.getLastIncidentUpdatePosition()).isEqualTo(3);
   }
 }
