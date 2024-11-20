@@ -2875,7 +2875,7 @@ components:
       properties:
         tenantId:
           type: string
-          description: The unique system-generated internal tenant ID
+          description: The unique external tenant ID
         name:
           type: string
           description: The name of the tenant.
@@ -2904,11 +2904,11 @@ components:
       properties:
         key:
           type: integer
-          description: The unique external tenant ID
+          description: The unique system-generated internal tenant ID
           format: int64
         tenantId:
           type: string
-          description: The unique system-generated internal tenant ID
+          description: The unique external tenant ID
         name:
           type: string
           description: The name of the tenant.
