@@ -5,26 +5,19 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.elasticsearch.backup;
+package io.camunda.webapps.backup.elasticsearch;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.atLeast;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.fail;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.property.BackupProperties;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
+import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.backup.repository.SnapshotNameProvider;
+import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -41,11 +34,13 @@ import org.elasticsearch.client.SnapshotClient;
 import org.elasticsearch.snapshots.SnapshotId;
 import org.elasticsearch.snapshots.SnapshotInfo;
 import org.elasticsearch.snapshots.SnapshotState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -55,19 +50,26 @@ public class ElasticsearchBackupRepositoryTest {
   private final String repositoryName = "repo1";
   private final long backupId = 555;
   private final String snapshotName = "camunda_operate_" + backupId + "_8.6_part_1_of_6";
-
-  private final long incompleteCheckTimeoutLengthSeconds =
-      new BackupProperties().getIncompleteCheckTimeoutInSeconds();
+  private final long incompleteCheckTimeoutLengthSeconds = 5 * 60L; // 5 minutes
   private final long incompleteCheckTimeoutLength = incompleteCheckTimeoutLengthSeconds * 1000;
-
   @Mock private RestHighLevelClient esClient;
   @Mock private SnapshotClient snapshotClient;
   @Spy private ObjectMapper objectMapper = new ObjectMapper();
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-  private OperateProperties operateProperties;
+  private BackupRepositoryProps backupProps;
 
-  @InjectMocks @Spy private ElasticsearchBackupRepository backupRepository;
+  private final SnapshotNameProvider snapshotNameProvider = new TestSnapshotProvider();
+
+  private ElasticsearchBackupRepository backupRepository;
+
+  @BeforeEach
+  public void setup() {
+    backupRepository =
+        Mockito.spy(
+            new ElasticsearchBackupRepository(
+                esClient, objectMapper, backupProps, snapshotNameProvider));
+  }
 
   @Test
   public void testWaitingForSnapshotWithTimeout() {
@@ -75,17 +77,19 @@ public class ElasticsearchBackupRepositoryTest {
     final SnapshotState snapshotState = SnapshotState.IN_PROGRESS;
 
     // mock calls to `findSnapshot` and `operateProperties`
-    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+    final SnapshotInfo snapshotInfo = Mockito.mock(SnapshotInfo.class, Mockito.RETURNS_DEEP_STUBS);
     when(snapshotInfo.state()).thenReturn(snapshotState);
     when(snapshotInfo.snapshotId().getName()).thenReturn(snapshotName);
-    when(operateProperties.getBackup().getSnapshotTimeout()).thenReturn(timeout);
-    doReturn(List.of(snapshotInfo)).when(backupRepository).findSnapshots(any(), any());
+    when(backupProps.snapshotTimeout()).thenReturn(timeout);
+    doReturn(List.of(snapshotInfo))
+        .when(backupRepository)
+        .findSnapshots(ArgumentMatchers.any(), ArgumentMatchers.any());
 
     final boolean finished =
         backupRepository.isSnapshotFinishedWithinTimeout(repositoryName, snapshotName);
 
-    assertFalse(finished);
-    verify(backupRepository, atLeast(5)).findSnapshots(repositoryName, backupId);
+    assertThat(finished).isFalse();
+    Mockito.verify(backupRepository, Mockito.atLeast(5)).findSnapshots(repositoryName, backupId);
   }
 
   @Test
@@ -93,20 +97,22 @@ public class ElasticsearchBackupRepositoryTest {
     final int timeout = 0;
 
     // mock calls to `findSnapshot` and `operateProperties`
-    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+    final SnapshotInfo snapshotInfo = Mockito.mock(SnapshotInfo.class, Mockito.RETURNS_DEEP_STUBS);
     when(snapshotInfo.state())
         .thenReturn(SnapshotState.IN_PROGRESS)
         .thenReturn(SnapshotState.IN_PROGRESS)
         .thenReturn(SnapshotState.SUCCESS);
     when(snapshotInfo.snapshotId().getName()).thenReturn(snapshotName);
-    when(operateProperties.getBackup().getSnapshotTimeout()).thenReturn(timeout);
-    doReturn(List.of(snapshotInfo)).when(backupRepository).findSnapshots(any(), any());
+    when(backupProps.snapshotTimeout()).thenReturn(timeout);
+    doReturn(List.of(snapshotInfo))
+        .when(backupRepository)
+        .findSnapshots(ArgumentMatchers.any(), ArgumentMatchers.any());
 
     final boolean finished =
         backupRepository.isSnapshotFinishedWithinTimeout(repositoryName, snapshotName);
 
-    assertTrue(finished);
-    verify(backupRepository, times(3)).findSnapshots(repositoryName, backupId);
+    assertThat(finished).isTrue();
+    Mockito.verify(backupRepository, Mockito.times(3)).findSnapshots(repositoryName, backupId);
   }
 
   @Test
@@ -115,11 +121,13 @@ public class ElasticsearchBackupRepositoryTest {
     final SnapshotState snapshotState = SnapshotState.IN_PROGRESS;
 
     // mock calls to `findSnapshot` and `operateProperties`
-    final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class, RETURNS_DEEP_STUBS);
+    final SnapshotInfo snapshotInfo = Mockito.mock(SnapshotInfo.class, Mockito.RETURNS_DEEP_STUBS);
     when(snapshotInfo.state()).thenReturn(snapshotState);
     when(snapshotInfo.snapshotId().getName()).thenReturn(snapshotName);
-    when(operateProperties.getBackup().getSnapshotTimeout()).thenReturn(timeout);
-    doReturn(List.of(snapshotInfo)).when(backupRepository).findSnapshots(any(), any());
+    when(backupProps.snapshotTimeout()).thenReturn(timeout);
+    doReturn(List.of(snapshotInfo))
+        .when(backupRepository)
+        .findSnapshots(ArgumentMatchers.any(), ArgumentMatchers.any());
 
     // we expect infinite loop, so we call snapshotting in separate thread
     final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -152,9 +160,9 @@ public class ElasticsearchBackupRepositoryTest {
 
   @Test
   void shouldReturnBackupStateCompleted() throws IOException {
-    final var snapshotClient = mock(SnapshotClient.class);
-    final var firstSnapshotInfo = mock(SnapshotInfo.class);
-    final var snapshotResponse = mock(GetSnapshotsResponse.class);
+    final var snapshotClient = Mockito.mock(SnapshotClient.class);
+    final var firstSnapshotInfo = Mockito.mock(SnapshotInfo.class);
+    final var snapshotResponse = Mockito.mock(GetSnapshotsResponse.class);
 
     // Set up Snapshot client
     when(esClient.snapshot()).thenReturn(snapshotClient);
@@ -167,7 +175,8 @@ public class ElasticsearchBackupRepositoryTest {
 
     // Set up Snapshot response
     when(snapshotResponse.getSnapshots()).thenReturn(List.of(firstSnapshotInfo));
-    when(snapshotClient.get(any(), any())).thenReturn(snapshotResponse);
+    when(snapshotClient.get(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(snapshotResponse);
 
     // Test
     final var backupState = backupRepository.getBackupState("repository-name", 5L);
@@ -176,15 +185,15 @@ public class ElasticsearchBackupRepositoryTest {
 
   @Test
   void shouldReturnBackupStateIncomplete() throws IOException {
-    final var snapshotClient = mock(SnapshotClient.class);
-    final var firstSnapshotInfo = mock(SnapshotInfo.class);
-    final var snapshotResponse = mock(GetSnapshotsResponse.class);
-    final var lastSnapshotInfo = mock(SnapshotInfo.class);
+    final var snapshotClient = Mockito.mock(SnapshotClient.class);
+    final var firstSnapshotInfo = Mockito.mock(SnapshotInfo.class);
+    final var snapshotResponse = Mockito.mock(GetSnapshotsResponse.class);
+    final var lastSnapshotInfo = Mockito.mock(SnapshotInfo.class);
 
     // Set up Snapshot client
     when(esClient.snapshot()).thenReturn(snapshotClient);
     // Set up operate properties
-    when(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+    when(backupProps.incompleteCheckTimeoutInSeconds())
         .thenReturn(incompleteCheckTimeoutLengthSeconds);
     // Set up first Snapshot details
     final Map<String, Object> metadata =
@@ -201,25 +210,27 @@ public class ElasticsearchBackupRepositoryTest {
 
     // Set up Snapshot response
     when(snapshotResponse.getSnapshots()).thenReturn(List.of(firstSnapshotInfo, lastSnapshotInfo));
-    when(snapshotClient.get(any(), any())).thenReturn(snapshotResponse);
+    when(snapshotClient.get(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(snapshotResponse);
 
     // Test
     final var backupState = backupRepository.getBackupState("repository-name", 5L);
-    assertThat(backupState.getState()).isEqualTo(BackupStateDto.INCOMPLETE);
+    org.assertj.core.api.Assertions.assertThat(backupState.getState())
+        .isEqualTo(BackupStateDto.INCOMPLETE);
   }
 
   @Test
   void shouldReturnBackupStateIncompleteWhenLastSnapshotEndTimeIsTimedOut() throws IOException {
-    final var snapshotClient = mock(SnapshotClient.class);
-    final var firstSnapshotInfo = mock(SnapshotInfo.class);
-    final var snapshotResponse = mock(GetSnapshotsResponse.class);
-    final var lastSnapshotInfo = mock(SnapshotInfo.class);
+    final var snapshotClient = Mockito.mock(SnapshotClient.class);
+    final var firstSnapshotInfo = Mockito.mock(SnapshotInfo.class);
+    final var snapshotResponse = Mockito.mock(GetSnapshotsResponse.class);
+    final var lastSnapshotInfo = Mockito.mock(SnapshotInfo.class);
     final long now = Instant.now().toEpochMilli();
 
     // Set up Snapshot client
     when(esClient.snapshot()).thenReturn(snapshotClient);
     // Set up operate properties
-    when(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+    when(backupProps.incompleteCheckTimeoutInSeconds())
         .thenReturn(incompleteCheckTimeoutLengthSeconds);
     // Set up first Snapshot details
     final Map<String, Object> metadata =
@@ -237,7 +248,8 @@ public class ElasticsearchBackupRepositoryTest {
 
     // Set up Snapshot response
     when(snapshotResponse.getSnapshots()).thenReturn(List.of(firstSnapshotInfo, lastSnapshotInfo));
-    when(snapshotClient.get(any(), any())).thenReturn(snapshotResponse);
+    when(snapshotClient.get(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(snapshotResponse);
 
     // Test
     final var backupState = backupRepository.getBackupState("repository-name", 5L);
@@ -246,16 +258,16 @@ public class ElasticsearchBackupRepositoryTest {
 
   @Test
   void shouldReturnBackupStateProgress() throws IOException {
-    final var snapshotClient = mock(SnapshotClient.class);
-    final var firstSnapshotInfo = mock(SnapshotInfo.class);
-    final var lastSnapshotInfo = mock(SnapshotInfo.class);
-    final var snapshotResponse = mock(GetSnapshotsResponse.class);
+    final var snapshotClient = Mockito.mock(SnapshotClient.class);
+    final var firstSnapshotInfo = Mockito.mock(SnapshotInfo.class);
+    final var lastSnapshotInfo = Mockito.mock(SnapshotInfo.class);
+    final var snapshotResponse = Mockito.mock(GetSnapshotsResponse.class);
     final long now = Instant.now().toEpochMilli();
 
     // Set up Snapshot client
     when(esClient.snapshot()).thenReturn(snapshotClient);
     // Set up operate properties
-    when(operateProperties.getBackup().getIncompleteCheckTimeoutInSeconds())
+    when(backupProps.incompleteCheckTimeoutInSeconds())
         .thenReturn(incompleteCheckTimeoutLengthSeconds);
     // Set up Snapshot details
     final Map<String, Object> metadata =
@@ -272,7 +284,8 @@ public class ElasticsearchBackupRepositoryTest {
     when(lastSnapshotInfo.endTime()).thenReturn(now - 5);
     // Set up Snapshot response
     when(snapshotResponse.getSnapshots()).thenReturn(List.of(firstSnapshotInfo, lastSnapshotInfo));
-    when(snapshotClient.get(any(), any())).thenReturn(snapshotResponse);
+    when(snapshotClient.get(ArgumentMatchers.any(), ArgumentMatchers.any()))
+        .thenReturn(snapshotResponse);
 
     // Test
     final var backupState = backupRepository.getBackupState("repository-name", 5L);
