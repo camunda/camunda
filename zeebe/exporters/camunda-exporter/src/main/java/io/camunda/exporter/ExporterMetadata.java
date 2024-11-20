@@ -26,12 +26,12 @@ public final class ExporterMetadata {
   // if you ever need to do any comparisons, make sure to use a better approach (e.g. CAS)
   private volatile long lastIncidentUpdatePosition = UNSET_POSITION;
 
-  public void setLastIncidentUpdatePosition(final long lastIncidentUpdatePosition) {
-    this.lastIncidentUpdatePosition = lastIncidentUpdatePosition;
+  public long getLastIncidentUpdatePosition() {
+    return lastIncidentUpdatePosition;
   }
 
-  public long lastIncidentUpdatePosition() {
-    return lastIncidentUpdatePosition;
+  public void setLastIncidentUpdatePosition(final long lastIncidentUpdatePosition) {
+    this.lastIncidentUpdatePosition = lastIncidentUpdatePosition;
   }
 
   public void deserialize(final byte[] bytes) {
