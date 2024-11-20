@@ -15,7 +15,7 @@ import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.Operator;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting;
 import io.camunda.db.rdbms.read.domain.DbQuerySorting.SortingEntry;
-import io.camunda.db.rdbms.sql.SearchColumn;
+import io.camunda.db.rdbms.sql.columns.SearchColumn;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOption.FieldSorting;

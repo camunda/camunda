@@ -39,11 +39,9 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = {"spring.liquibase.enabled=false", "camunda.database.type=rdbms"})
 public class DecisionRequirementsSpecificFilterIT {
 
-  @Autowired
-  private RdbmsService rdbmsService;
+  @Autowired private RdbmsService rdbmsService;
 
-  @Autowired
-  private DecisionRequirementsReader decisionRequirementsReader;
+  @Autowired private DecisionRequirementsReader decisionRequirementsReader;
 
   private RdbmsWriter rdbmsWriter;
 
@@ -54,8 +52,7 @@ public class DecisionRequirementsSpecificFilterIT {
 
   @ParameterizedTest
   @MethodSource("shouldFindWithSpecificFilterParameters")
-  public void shouldFindWithSpecificFilter(
-      final DecisionRequirementsFilter filter) {
+  public void shouldFindWithSpecificFilter(final DecisionRequirementsFilter filter) {
     createAndSaveRandomDecisionRequirements(rdbmsWriter);
     createAndSaveDecisionRequirement(
         rdbmsWriter,
@@ -80,8 +77,7 @@ public class DecisionRequirementsSpecificFilterIT {
     assertThat(searchResult.items().getFirst().decisionRequirementsKey()).isEqualTo(1337L);
   }
 
-  static List<DecisionRequirementsFilter>
-  shouldFindWithSpecificFilterParameters() {
+  static List<DecisionRequirementsFilter> shouldFindWithSpecificFilterParameters() {
     return List.of(
         new DecisionRequirementsFilter.Builder().decisionRequirementsKeys(1337L).build(),
         new DecisionRequirementsFilter.Builder()

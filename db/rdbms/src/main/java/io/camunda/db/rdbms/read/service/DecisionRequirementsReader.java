@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
-import io.camunda.db.rdbms.sql.DecisionRequirementsMapper.DecisionRequirementsSearchColumn;
+import io.camunda.db.rdbms.sql.columns.DecisionRequirementsSearchColumn;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.SearchQueryResult;

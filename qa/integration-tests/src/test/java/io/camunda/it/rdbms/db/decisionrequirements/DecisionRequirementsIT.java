@@ -35,8 +35,7 @@ public class DecisionRequirementsIT {
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
   @TestTemplate
-  public void shouldSaveAndFindByKey(
-      final CamundaRdbmsTestApplication testApplication) {
+  public void shouldSaveAndFindByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsReader decisionRequirementsReader =
@@ -62,8 +61,7 @@ public class DecisionRequirementsIT {
   }
 
   @TestTemplate
-  public void shouldFindById(
-      final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindById(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsReader decisionRequirementsReader =
@@ -101,8 +99,7 @@ public class DecisionRequirementsIT {
   }
 
   @TestTemplate
-  public void shouldFindAllPaged(
-      final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindAllPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsReader decisionRequirementsReader =
@@ -135,8 +132,7 @@ public class DecisionRequirementsIT {
   }
 
   @TestTemplate
-  public void shouldFindWithFullFilter(
-      final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsReader decisionRequirementsReader =
@@ -169,8 +165,7 @@ public class DecisionRequirementsIT {
   }
 
   @TestTemplate
-  public void shouldFindWithSearchAfter(
-      final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindWithSearchAfter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final DecisionRequirementsReader decisionRequirementsReader =
@@ -198,11 +193,11 @@ public class DecisionRequirementsIT {
                             p ->
                                 p.size(5)
                                     .searchAfter(
-                                        new Object[]{
-                                            instanceAfter.name(),
-                                            instanceAfter.version(),
-                                            instanceAfter.tenantId(),
-                                            instanceAfter.decisionRequirementsKey()
+                                        new Object[] {
+                                          instanceAfter.name(),
+                                          instanceAfter.version(),
+                                          instanceAfter.tenantId(),
+                                          instanceAfter.decisionRequirementsKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

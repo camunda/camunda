@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
-import io.camunda.db.rdbms.sql.DecisionDefinitionMapper.DecisionDefinitionSearchColumn;
+import io.camunda.db.rdbms.sql.columns.DecisionDefinitionSearchColumn;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
