@@ -15,10 +15,7 @@ type UserDetailsProps = {
   loading: boolean;
 };
 
-const UserDetails: FC<UserDetailsProps> = ({
-  user,
-  loading,
-}) => {
+const UserDetails: FC<UserDetailsProps> = ({ user, loading }) => {
   const { t } = useTranslate();
 
   return (

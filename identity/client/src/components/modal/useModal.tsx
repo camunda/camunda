@@ -1,6 +1,6 @@
-import {ComponentType, ReactNode, useCallback, useState} from "react";
+import { ComponentType, ReactNode, useCallback, useState } from "react";
 import useDebounce from "react-debounced";
-import {modalFadeDurationMs} from "src/utility/style";
+import { modalFadeDurationMs } from "src/utility/style";
 
 export type UseModalProps = {
   open: boolean;

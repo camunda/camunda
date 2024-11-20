@@ -1,6 +1,6 @@
-import {ApiDefinition, apiDelete, apiPatch, apiPost} from "../request";
-import {SearchResponse} from "src/utility/api";
-import {EntityData} from "src/components/entityList/EntityList";
+import { ApiDefinition, apiDelete, apiPatch, apiPost } from "../request";
+import { SearchResponse } from "src/utility/api";
+import { EntityData } from "src/components/entityList/EntityList";
 
 export const USERS_ENDPOINT = "/users";
 
@@ -31,9 +31,9 @@ export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
   apiPost(USERS_ENDPOINT, { ...user, enabled: true });
 
 export const updateUser: ApiDefinition<undefined, User> = (user) => {
-  const {key, name, email, username, password} = user;
+  const { key, name, email, username, password } = user;
   return apiPatch(`${USERS_ENDPOINT}/${key}`, {
-    changeset: {name, email, username, password: password ?? ""}
+    changeset: { name, email, username, password: password ?? "" },
   });
 };
 
