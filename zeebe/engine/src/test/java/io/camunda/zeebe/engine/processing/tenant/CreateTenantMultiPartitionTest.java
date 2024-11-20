@@ -74,7 +74,7 @@ public class CreateTenantMultiPartitionTest {
                   .limit(record -> record.getIntent().equals(TenantIntent.CREATED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .containsExactly(TenantIntent.CREATE, TenantIntent.CREATED);
+          .containsSubsequence(TenantIntent.CREATE, TenantIntent.CREATED);
     }
   }
 

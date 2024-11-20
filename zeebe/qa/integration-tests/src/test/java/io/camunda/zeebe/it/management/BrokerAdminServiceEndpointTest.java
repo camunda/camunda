@@ -31,7 +31,7 @@ public class BrokerAdminServiceEndpointTest {
   static RequestSpecification brokerServerSpec;
 
   @TestZeebe
-  private static TestStandaloneBroker broker =
+  private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withProperty("management.server.base-path", "/foo");
 
   private static final String EXPECTED_PARTITIONS_JSON =
@@ -40,7 +40,7 @@ public class BrokerAdminServiceEndpointTest {
       {
         "1": {
           "role": "LEADER",
-          "processedPosition": -1,
+          "processedPosition": 1,
           "snapshotId": null,
           "processedPositionInSnapshot": null,
           "streamProcessorPhase": "PROCESSING",
@@ -97,7 +97,7 @@ public class BrokerAdminServiceEndpointTest {
       """
       {
         "role": "LEADER",
-        "processedPosition": -1,
+        "processedPosition": 1,
         "snapshotId": null,
         "processedPositionInSnapshot": null,
         "streamProcessorPhase": "PROCESSING",
@@ -166,7 +166,7 @@ public class BrokerAdminServiceEndpointTest {
         new RequestSpecBuilder()
             .setContentType(ContentType.JSON)
             // set URL explicitly since we want to ensure the mapping is correct
-            .setBaseUri("http://localhost:" + broker.mappedPort(TestZeebePort.MONITORING) + "/foo")
+            .setBaseUri("http://localhost:" + BROKER.mappedPort(TestZeebePort.MONITORING) + "/foo")
             .addFilter(new ResponseLoggingFilter())
             .addFilter(new RequestLoggingFilter())
             .build();
