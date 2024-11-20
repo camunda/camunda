@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.jetty;
+package io.camunda.optimize.tomcat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
@@ -22,12 +22,12 @@ import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import org.eclipse.jetty.http.MimeTypes;
 import org.slf4j.Logger;
 
 public class MaxRequestSizeFilter implements Filter {
 
   public static final String MESSAGE_NO_CONTENT_LENGTH = "No Content-Length header in request.";
+  private static final String APPLICATION_JSON_UTF_8 = "application/json; charset=UTF-8";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MaxRequestSizeFilter.class);
 
   private final Callable<ObjectMapper> objectMapperProvider;
@@ -89,7 +89,7 @@ public class MaxRequestSizeFilter implements Filter {
   public void writeErrorResponse(
       final HttpServletResponse httpResponse, final String errorMessage, final int statusCode) {
     httpResponse.reset();
-    httpResponse.setContentType(MimeTypes.Type.APPLICATION_JSON_UTF_8.toString());
+    httpResponse.setContentType(APPLICATION_JSON_UTF_8);
     try {
       httpResponse
           .getWriter()

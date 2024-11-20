@@ -7,10 +7,7 @@
  */
 package io.camunda.optimize.rest.security.ccsm;
 
-import static io.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_ENDPOINT;
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
+import static io.camunda.optimize.TomcatConfig.EXTERNAL_SUB_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
@@ -18,6 +15,9 @@ import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
 import static io.camunda.optimize.rest.LocalizationRestService.LOCALIZATION_PATH;
 import static io.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATION_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_ENDPOINT;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 
 import io.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
@@ -28,10 +28,13 @@ import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
+import io.camunda.optimize.tomcat.CcsmRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -55,6 +58,8 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 @EnableWebSecurity
 @Conditional(CCSMCondition.class)
 public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(CCSMSecurityConfigurerAdapter.class);
 
   private final CCSMTokenService ccsmTokenService;
 
@@ -88,6 +93,16 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
         http.getSharedObject(AuthenticationManagerBuilder.class)
             .authenticationProvider(preAuthenticatedAuthenticationProvider)
             .build());
+  }
+
+  @Bean
+  FilterRegistrationBean<CcsmRequestAdjustmentFilter> requestAdjuster() {
+    LOG.debug("Registering filter 'requestAdjuster' (CCSM)...");
+    final FilterRegistrationBean<CcsmRequestAdjustmentFilter> registration =
+        new FilterRegistrationBean<>();
+    registration.setFilter(new CcsmRequestAdjustmentFilter());
+    registration.addUrlPatterns("/*");
+    return registration;
   }
 
   @Bean
@@ -130,7 +145,8 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
                       // public share related resources (API)
                       .requestMatchers(
                           new AntPathRequestMatcher(
-                              createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)))
+                              createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)),
+                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/api/**"))
                       .permitAll()
                       // common public api resources
                       .requestMatchers(

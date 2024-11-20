@@ -7,10 +7,10 @@
  */
 package io.camunda.optimize.service.dashboard;
 
-import static io.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
+import static io.camunda.optimize.TomcatConfig.EXTERNAL_SUB_PATH;
 import static io.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static io.camunda.optimize.dto.optimize.query.dashboard.InstantDashboardDataDto.INSTANT_DASHBOARD_DEFAULT_TEMPLATE;
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 
 import io.camunda.optimize.dto.optimize.query.EntityIdResponseDto;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;

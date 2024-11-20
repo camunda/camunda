@@ -7,10 +7,7 @@
  */
 package io.camunda.optimize.rest.security.cloud;
 
-import static io.camunda.optimize.OptimizeJettyServerCustomizer.EXTERNAL_SUB_PATH;
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.ACTUATOR_ENDPOINT;
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
+import static io.camunda.optimize.TomcatConfig.EXTERNAL_SUB_PATH;
 import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
@@ -19,6 +16,9 @@ import static io.camunda.optimize.rest.UIConfigurationRestService.UI_CONFIGURATI
 import static io.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.AUTH_0_CLIENT_REGISTRATION_ID;
 import static io.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_AUTH_ENDPOINT;
 import static io.camunda.optimize.rest.security.cloud.CCSaasAuth0WebSecurityConfig.OAUTH_REDIRECT_ENDPOINT;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.ACTUATOR_ENDPOINT;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 
 import io.camunda.optimize.rest.security.AbstractSecurityConfigurerAdapter;
 import io.camunda.optimize.rest.security.AuthenticationCookieFilter;
@@ -32,6 +32,7 @@ import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSaaSCondition;
 import io.camunda.optimize.service.util.configuration.security.CloudAuthConfiguration;
+import io.camunda.optimize.tomcat.SaasRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.core.MediaType;
@@ -43,9 +44,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -76,6 +81,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerAdapter {
 
   public static final String CAMUNDA_CLUSTER_ID_CLAIM_NAME = "https://camunda.com/clusterId";
+
+  private static final Logger LOG = LoggerFactory.getLogger(CCSaaSSecurityConfigurerAdapter.class);
   private final ClientRegistrationRepository clientRegistrationRepository;
   private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 
@@ -106,6 +113,21 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   }
 
   @Bean
+  @Order(Ordered.HIGHEST_PRECEDENCE) /* order of loading */
+  FilterRegistrationBean<SaasRequestAdjustmentFilter> requestAdjuster() {
+    LOG.debug("Registering filter 'requestAdjuster' (SaaS)...");
+    final SaasRequestAdjustmentFilter saasRequestAdjustmentFilter =
+        new SaasRequestAdjustmentFilter(
+            configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId());
+    final FilterRegistrationBean<SaasRequestAdjustmentFilter> registration =
+        new FilterRegistrationBean<>();
+    registration.setOrder(Ordered.HIGHEST_PRECEDENCE); /* position in the chain */
+    registration.addUrlPatterns("/*");
+    registration.setFilter(saasRequestAdjustmentFilter);
+    return registration;
+  }
+
+  @Bean
   @Order(1)
   protected SecurityFilterChain configurePublicApi(final HttpSecurity http) {
     final HttpSecurity httpSecurityBuilder =
@@ -125,14 +147,16 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
           // Then we configure the specific web security for CCSaaS
           .authorizeHttpRequests(
               httpRequests ->
-                  // ready endpoint is public for infra
                   httpRequests
+                      // ready endpoint is public for infra
                       .requestMatchers(new AntPathRequestMatcher(createApiPath(READYZ_PATH)))
                       .permitAll()
                       // public share resources
                       .requestMatchers(
                           new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/"),
+                          new AntPathRequestMatcher("/index*"),
                           new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/index*"),
+                          new AntPathRequestMatcher(STATIC_RESOURCE_PATH + "/**"),
                           new AntPathRequestMatcher(
                               EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
                           new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.js"),
@@ -141,7 +165,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                       // public share related resources (API)
                       .requestMatchers(
                           new AntPathRequestMatcher(
-                              createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)))
+                              createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)),
+                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + REST_API_PATH + "/**"))
                       .permitAll()
                       // common public api resources
                       .requestMatchers(
