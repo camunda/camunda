@@ -1,0 +1,75 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.exporter;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Objects;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(Include.NON_DEFAULT)
+public final class ExporterMetadata {
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final int UNSET_POSITION = -1;
+
+  // this is written/read from the exporter actor AND also from the background task threads
+  // if you ever need to do any comparisons, make sure to use a better approach (e.g. CAS)
+  private volatile long lastIncidentUpdatePosition = UNSET_POSITION;
+
+  public void setLastIncidentUpdatePosition(final long lastIncidentUpdatePosition) {
+    this.lastIncidentUpdatePosition = lastIncidentUpdatePosition;
+  }
+
+  public long lastIncidentUpdatePosition() {
+    return lastIncidentUpdatePosition;
+  }
+
+  public void deserialize(final byte[] bytes) {
+    try {
+      MAPPER.readerForUpdating(this).readValue(bytes);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  // TODO: cache serialized version and only re-serialize if values have changed
+  public byte[] serialize() {
+    try {
+      return MAPPER.writeValueAsBytes(this);
+    } catch (final JsonProcessingException e) {
+      throw new UncheckedIOException(e);
+    }
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(lastIncidentUpdatePosition);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ExporterMetadata that = (ExporterMetadata) o;
+    return lastIncidentUpdatePosition == that.lastIncidentUpdatePosition;
+  }
+
+  @Override
+  public String toString() {
+    return "ExporterMetadata{" + "lastIncidentUpdatePosition=" + lastIncidentUpdatePosition + '}';
+  }
+}

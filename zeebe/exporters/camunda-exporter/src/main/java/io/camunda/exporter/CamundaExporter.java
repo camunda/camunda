@@ -57,8 +57,8 @@ public class CamundaExporter implements Exporter {
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
-  private Logger logger;
   private BackgroundTaskManager taskManager;
+  private final ExporterMetadata metadata = new ExporterMetadata();
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -71,7 +71,6 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
-    logger = context.getLogger();
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
@@ -87,7 +86,8 @@ public class CamundaExporter implements Exporter {
                 configuration,
                 provider,
                 metrics,
-                logger)
+                context.getLogger(),
+                metadata)
             .build();
     LOG.debug("Exporter configured with {}", configuration);
   }
@@ -108,6 +108,7 @@ public class CamundaExporter implements Exporter {
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
+    controller.readMetadata().ifPresent(metadata::deserialize);
     taskManager.start();
 
     LOG.info("Exporter opened");
