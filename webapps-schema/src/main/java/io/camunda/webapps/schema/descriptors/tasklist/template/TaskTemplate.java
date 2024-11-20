@@ -16,6 +16,7 @@ public class TaskTemplate extends TasklistTemplateDescriptor
 
   public static final String INDEX_NAME = "task";
   public static final String INDEX_VERSION = "8.5.0";
+  public static final String COMPONENT_NAME = "tasklist";
 
   /* User Task Fields*/
   public static final String ID = "id";
