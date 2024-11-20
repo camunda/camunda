@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public class DbUserTaskState implements MutableUserTaskState {
 
@@ -115,6 +116,21 @@ public class DbUserTaskState implements MutableUserTaskState {
     userTaskKey.wrapLong(key);
     userTasksColumnFamily.deleteExisting(userTaskKey);
     statesUserTaskColumnFamily.deleteExisting(fkUserTask);
+  }
+
+  @Override
+  public void updateIntermediateState(
+      final long key, final Consumer<UserTaskIntermediateStateValue> updater) {
+    userTaskIntermediateStateKey.wrapLong(key);
+    final var intermediateState =
+        userTasksIntermediateStatesColumnFamily.get(userTaskIntermediateStateKey);
+
+    updater.accept(intermediateState);
+
+    userTaskIntermediateStateToWrite.setRecord(intermediateState.getRecord());
+    userTaskIntermediateStateToWrite.setLifecycleState(intermediateState.getLifecycleState());
+    userTasksIntermediateStatesColumnFamily.update(
+        userTaskIntermediateStateKey, userTaskIntermediateStateToWrite);
   }
 
   @Override
