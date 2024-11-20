@@ -17,6 +17,7 @@
 
   <groupId>io.camunda.migration</groupId>
   <artifactId>migration-api</artifactId>
+  <name>Migration API</name>
 
   <properties>
     <maven.compiler.source>21</maven.compiler.source>
