@@ -75,5 +75,5 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     }
   }
 
-  public record TenantDTO(long key, String tenantId, String name) {}
+  public record TenantDTO(Long key, String tenantId, String name) {}
 }
