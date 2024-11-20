@@ -7,17 +7,16 @@
  */
 package io.camunda.optimize.service.util;
 
-import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
+import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.junit.jupiter.api.Test;
 
 public class BpmnModelUtilTest {
 
@@ -50,17 +49,22 @@ public class BpmnModelUtilTest {
     assertNotNull(userTaskNames, "UserTask names map should not be null.");
     assertFalse(userTaskNames.isEmpty(), "UserTask names map should not be empty.");
 
-    assertTrue(userTaskNames.containsKey("UserTask_DecideOnApplication"),
+    assertTrue(
+        userTaskNames.containsKey("UserTask_DecideOnApplication"),
         "Map should contain expected UserTask ID.");
-    assertEquals("Decide on application", userTaskNames.get("UserTask_DecideOnApplication"),
+    assertEquals(
+        "Decide on application",
+        userTaskNames.get("UserTask_DecideOnApplication"),
         "UserTask name should match expected value.");
   }
 
   @Test
   void testExtractProcessDefinitionName() throws IOException {
-    Optional<String> processName = BpmnModelUtil.extractProcessDefinitionName("customer_onboarding_en", getBpmnXml());
+    Optional<String> processName =
+        BpmnModelUtil.extractProcessDefinitionName("customer_onboarding_en", getBpmnXml());
     assertTrue(processName.isPresent(), "Process name should be present.");
-    assertEquals("Customer Onboarding", processName.get(), "Process name should match expected value.");
+    assertEquals(
+        "Customer Onboarding", processName.get(), "Process name should match expected value.");
   }
 
   @Test
@@ -70,16 +74,21 @@ public class BpmnModelUtilTest {
     assertNotNull(flowNodeNames, "FlowNode names map should not be null.");
     assertFalse(flowNodeNames.isEmpty(), "FlowNode names map should not be empty.");
 
-    assertTrue(flowNodeNames.containsKey("StartEvent_1"), "Map should contain expected FlowNode ID.");
-    assertEquals("Application received", flowNodeNames.get("StartEvent_1"),
+    assertTrue(
+        flowNodeNames.containsKey("StartEvent_1"), "Map should contain expected FlowNode ID.");
+    assertEquals(
+        "Application received",
+        flowNodeNames.get("StartEvent_1"),
         "FlowNode name should match expected value.");
   }
 
   @Test
   void testGetCollapsedSubprocessElementIds() throws IOException {
-    Set<String> collapsedSubprocessIds = BpmnModelUtil.getCollapsedSubprocessElementIds(getBpmnXml());
+    Set<String> collapsedSubprocessIds =
+        BpmnModelUtil.getCollapsedSubprocessElementIds(getBpmnXml());
     assertNotNull(collapsedSubprocessIds, "Collapsed subprocess IDs should not be null.");
-    assertTrue(collapsedSubprocessIds.isEmpty(), "No collapsed subprocesses should be present in this BPMN model.");
+    assertTrue(
+        collapsedSubprocessIds.isEmpty(),
+        "No collapsed subprocesses should be present in this BPMN model.");
   }
-
 }
