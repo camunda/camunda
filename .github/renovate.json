@@ -36,8 +36,7 @@
       "description": "Only patch updates for our maintenance branches to avoid breaking changes.",
       "matchBaseBranches": [
         "/^stable\\/8\\..*/",
-        "stable/operate-8.5",
-        "stable/optimize-8.6"
+        "stable/operate-8.5"
       ],
       "matchUpdateTypes": ["minor", "major"],
       "enabled": false
