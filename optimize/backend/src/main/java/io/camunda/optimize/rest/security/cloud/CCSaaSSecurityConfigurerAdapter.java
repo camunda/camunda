@@ -116,14 +116,14 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   @Order(Ordered.HIGHEST_PRECEDENCE) /* order of loading */
   FilterRegistrationBean<CCSaasRequestAdjustmentFilter> requestAdjuster() {
     LOG.debug("Registering filter 'requestAdjuster' (SaaS)...");
-    final CCSaasRequestAdjustmentFilter CCSaasRequestAdjustmentFilter =
+    final CCSaasRequestAdjustmentFilter ccsaasRequestAdjustmentFilter =
         new CCSaasRequestAdjustmentFilter(
             configurationService.getAuthConfiguration().getCloudAuthConfiguration().getClusterId());
     final FilterRegistrationBean<CCSaasRequestAdjustmentFilter> registration =
         new FilterRegistrationBean<>();
     registration.setOrder(Ordered.HIGHEST_PRECEDENCE); /* position in the chain */
     registration.addUrlPatterns("/*");
-    registration.setFilter(CCSaasRequestAdjustmentFilter);
+    registration.setFilter(ccsaasRequestAdjustmentFilter);
     return registration;
   }
 
