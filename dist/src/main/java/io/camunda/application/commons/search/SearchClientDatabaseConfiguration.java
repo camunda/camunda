@@ -64,14 +64,17 @@ public class SearchClientDatabaseConfiguration {
   public SearchClients searchClients(
       final DocumentBasedSearchClient searchClient,
       // TODO: Temporary solution to change index reference for tasklist-task
-      @Autowired(required = false) final BrokerBasedProperties brokerProperties) {
+      @Autowired(required = false) final BrokerBasedProperties brokerProperties,
+      final ConnectConfiguration connectConfiguration) {
     if (brokerProperties == null) {
-      return new SearchClients(searchClient, false);
+      return new SearchClients(searchClient, false, connectConfiguration.getIndexPrefix());
     }
     final boolean isCamundaExporterEnabled =
         brokerProperties.getExporters().values().stream()
             .anyMatch(v -> "io.camunda.exporter.CamundaExporter".equals(v.getClassName()));
-    return new SearchClients(searchClient, isCamundaExporterEnabled);
+
+    return new SearchClients(
+        searchClient, isCamundaExporterEnabled, connectConfiguration.getIndexPrefix());
   }
 
   @ConfigurationProperties("camunda.database")

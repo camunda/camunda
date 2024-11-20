@@ -16,7 +16,7 @@ import java.util.List;
 
 public class AbstractSortTransformerTest {
 
-  private final ServiceTransformers transformers = ServiceTransformers.newInstance(false);
+  private final ServiceTransformers transformers = ServiceTransformers.newInstance(false, null);
 
   protected List<SearchSortOptions> transformRequest(
       final TypedSearchQuery<? extends FilterBase, ? extends SortOption> request) {
