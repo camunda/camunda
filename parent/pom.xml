@@ -2268,6 +2268,13 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda.migration</groupId>
+        <artifactId>process-migration</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+
     </dependencies>
   </dependencyManagement>
 
