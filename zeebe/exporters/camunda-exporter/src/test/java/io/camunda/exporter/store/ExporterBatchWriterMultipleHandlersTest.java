@@ -26,6 +26,8 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.List;
 import java.util.function.Function;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.mockito.Mockito;
 
 /** Integration test with actual exporter handlers */
 public class ExporterBatchWriterMultipleHandlersTest {
@@ -124,6 +126,53 @@ public class ExporterBatchWriterMultipleHandlersTest {
     verify(batchRequest)
         .update(eq("indexB"), eq(Long.toString(record.getKey())), any(TestEntity.class));
     verify(batchRequest).execute();
+  }
+
+  @Test
+  public void shouldFlushMultiHandlersInOrder() throws PersistenceException {
+    // given
+    final var writer =
+        Builder.begin()
+            .withHandler(TestExportHandler.handlerForIndex("indexA"))
+            .withHandler(TestExportHandler.handlerForIndex("indexB"))
+            .withHandler(TestExportHandler.handlerForIndex("indexC"))
+            .withHandler(TestExportHandler.handlerForIndex("indexD"))
+            .withHandler(TestExportHandler.handlerForIndex("indexE"))
+            .withHandler(TestExportHandler.handlerForIndex("indexF"))
+            .build();
+
+    final var record =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            builder -> builder.withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED));
+    writer.addRecord(record);
+
+    final BatchRequest batchRequest = mock(BatchRequest.class);
+
+    // when
+    writer.flush(batchRequest);
+
+    // then
+    final InOrder inOrder = Mockito.inOrder(batchRequest);
+    inOrder
+        .verify(batchRequest)
+        .update(eq("indexA"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+    inOrder
+        .verify(batchRequest)
+        .update(eq("indexB"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+    inOrder
+        .verify(batchRequest)
+        .update(eq("indexC"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+    inOrder
+        .verify(batchRequest)
+        .update(eq("indexD"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+    inOrder
+        .verify(batchRequest)
+        .update(eq("indexE"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+    inOrder
+        .verify(batchRequest)
+        .update(eq("indexF"), eq(Long.toString(record.getKey())), any(TestEntity.class));
+    inOrder.verify(batchRequest).execute();
   }
 
   @Test
