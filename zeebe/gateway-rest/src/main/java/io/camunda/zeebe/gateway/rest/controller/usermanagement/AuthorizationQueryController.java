@@ -15,6 +15,7 @@ import io.camunda.zeebe.gateway.protocol.rest.AuthorizationFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -64,7 +65,8 @@ public class AuthorizationQueryController {
 
   private ResponseEntity<AuthorizationSearchResponse> search(final AuthorizationQuery query) {
     try {
-      final var result = authorizationServices.search(query);
+      final var result =
+          authorizationServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
     } catch (final Exception e) {
