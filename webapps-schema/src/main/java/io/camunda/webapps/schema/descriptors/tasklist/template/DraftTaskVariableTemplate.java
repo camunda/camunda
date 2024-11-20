@@ -5,13 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.schema.templates;
+package io.camunda.webapps.schema.descriptors.tasklist.template;
 
-import io.camunda.tasklist.schema.backup.Prio3Backup;
-import org.springframework.stereotype.Component;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 
-@Component
-public class DraftTaskVariableTemplate extends AbstractTemplateDescriptor implements Prio3Backup {
+public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "draft-task-variable";
   public static final String INDEX_VERSION = "8.3.0";
@@ -24,6 +23,10 @@ public class DraftTaskVariableTemplate extends AbstractTemplateDescriptor implem
   public static final String FULL_VALUE = "fullValue";
   public static final String IS_PREVIEW = "isPreview";
   public static final String TENANT_ID = "tenantId";
+
+  public DraftTaskVariableTemplate(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
 
   @Override
   public String getIndexName() {

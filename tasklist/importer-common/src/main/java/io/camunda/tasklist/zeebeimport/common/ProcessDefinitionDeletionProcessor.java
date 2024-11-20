@@ -9,11 +9,11 @@ package io.camunda.tasklist.zeebeimport.common;
 
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.schema.templates.DraftTaskVariableTemplate;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
+import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;

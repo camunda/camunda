@@ -1,33 +1,35 @@
 {
-  "dynamic": "strict",
-  "properties": {
-    "key": {
-      "type": "long"
-    },
-    "id": {
-      "type": "keyword"
-    },
-    "processDefinitionId": {
-      "type": "keyword"
-    },
-    "bpmnId": {
-      "type": "keyword"
-    },
-    "version": {
-      "type": "long"
-    },
-    "embedded": {
-      "type": "boolean"
-    },
-    "tenantId": {
-      "type": "keyword"
-    },
-    "isDeleted": {
-      "type": "boolean"
-    },
-    "schema": {
-      "type": "text",
-      "index": false
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "key": {
+        "type": "long"
+      },
+      "id": {
+        "type": "keyword"
+      },
+      "processDefinitionId": {
+        "type": "keyword"
+      },
+      "bpmnId": {
+        "type": "keyword"
+      },
+      "version": {
+        "type": "long"
+      },
+      "embedded": {
+        "type": "boolean"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "isDeleted": {
+        "type": "boolean"
+      },
+      "schema": {
+        "type": "text",
+        "index": false
+      }
     }
   }
 }

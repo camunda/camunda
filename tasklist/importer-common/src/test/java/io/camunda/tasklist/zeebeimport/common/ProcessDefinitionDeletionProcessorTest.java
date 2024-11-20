@@ -12,11 +12,11 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.schema.templates.DraftTaskVariableTemplate;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
+import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;

@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.entities;
 
+import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
 import java.util.Objects;
 
 /** Represents variable with its value at the moment when task was completed. */
