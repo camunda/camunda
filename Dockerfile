@@ -5,7 +5,7 @@
 # Both ubuntu and eclipse-temurin are pinned via digest and not by a strict version tag, as Renovate
 # has trouble with custom versioning schemes
 ARG BASE_IMAGE="ubuntu:noble"
-ARG BASE_DIGEST="sha256:99c35190e22d294cdace2783ac55effc69d32896daaa265f0bbedbcde4fbe3e5"
+ARG BASE_DIGEST="sha256:278628f08d4979fb9af9ead44277dbc9c92c2465922310916ad0c46ec9999295"
 ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
 ARG JDK_DIGEST="sha256:397ce4722066bed7fa96f171e0c3c252bf509347da854ec4e9ca5664a00038c1"
 
