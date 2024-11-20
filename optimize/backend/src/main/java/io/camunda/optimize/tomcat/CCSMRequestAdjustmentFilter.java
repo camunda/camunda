@@ -16,7 +16,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
-public class CcsmRequestAdjustmentFilter implements Filter {
+public class CCSMRequestAdjustmentFilter implements Filter {
 
   @Override
   public void doFilter(

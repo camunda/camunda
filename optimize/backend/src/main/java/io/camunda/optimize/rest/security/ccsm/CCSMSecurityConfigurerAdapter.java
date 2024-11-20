@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.rest.security.ccsm;
 
-import static io.camunda.optimize.TomcatConfig.EXTERNAL_SUB_PATH;
+import static io.camunda.optimize.OptimizeTomcatConfig.EXTERNAL_SUB_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
@@ -28,7 +28,7 @@ import io.camunda.optimize.service.security.CCSMTokenService;
 import io.camunda.optimize.service.security.SessionService;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.CCSMCondition;
-import io.camunda.optimize.tomcat.CcsmRequestAdjustmentFilter;
+import io.camunda.optimize.tomcat.CCSMRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -96,11 +96,11 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
   }
 
   @Bean
-  FilterRegistrationBean<CcsmRequestAdjustmentFilter> requestAdjuster() {
+  FilterRegistrationBean<CCSMRequestAdjustmentFilter> requestAdjuster() {
     LOG.debug("Registering filter 'requestAdjuster' (CCSM)...");
-    final FilterRegistrationBean<CcsmRequestAdjustmentFilter> registration =
+    final FilterRegistrationBean<CCSMRequestAdjustmentFilter> registration =
         new FilterRegistrationBean<>();
-    registration.setFilter(new CcsmRequestAdjustmentFilter());
+    registration.setFilter(new CCSMRequestAdjustmentFilter());
     registration.addUrlPatterns("/*");
     return registration;
   }
