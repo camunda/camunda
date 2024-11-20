@@ -24,8 +24,9 @@ import org.opensearch.client.transport.rest_client.RestClientTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class OpenSearchRepositoryTest {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchRepositoryTest.class);
+final class OpenSearchArchiverRepositoryTest {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ElasticsearchArchiverRepositoryTest.class);
 
   private final RestClientTransport transport = Mockito.spy(createRestClient());
   private final RetentionConfiguration retention = new RetentionConfiguration();
@@ -57,11 +58,11 @@ final class OpenSearchRepositoryTest {
         .succeedsWithin(Duration.ZERO);
   }
 
-  private OpenSearchRepository createRepository() {
+  private OpenSearchArchiverRepository createRepository() {
     final var client = new OpenSearchAsyncClient(transport);
     final var metrics = new CamundaExporterMetrics(new SimpleMeterRegistry());
 
-    return new OpenSearchRepository(
+    return new OpenSearchArchiverRepository(
         1,
         new ArchiverConfiguration(),
         retention,

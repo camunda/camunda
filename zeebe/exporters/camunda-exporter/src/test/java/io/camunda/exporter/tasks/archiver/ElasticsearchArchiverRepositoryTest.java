@@ -25,8 +25,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("resource")
-final class ElasticsearchRepositoryTest {
-  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchRepositoryTest.class);
+final class ElasticsearchArchiverRepositoryTest {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(ElasticsearchArchiverRepositoryTest.class);
 
   private final RestClientTransport transport = Mockito.spy(createRestClient());
   private final RetentionConfiguration retention = new RetentionConfiguration();
@@ -58,11 +59,11 @@ final class ElasticsearchRepositoryTest {
         .succeedsWithin(Duration.ZERO);
   }
 
-  private ElasticsearchRepository createRepository() {
+  private ElasticsearchArchiverRepository createRepository() {
     final var client = new ElasticsearchAsyncClient(transport);
     final var metrics = new CamundaExporterMetrics(new SimpleMeterRegistry());
 
-    return new ElasticsearchRepository(
+    return new ElasticsearchArchiverRepository(
         1,
         new ArchiverConfiguration(),
         retention,

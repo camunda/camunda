@@ -7,69 +7,70 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
-import co.elastic.clients.elasticsearch._types.Conflicts;
-import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.Slices;
-import co.elastic.clients.elasticsearch._types.SlicesCalculation;
-import co.elastic.clients.elasticsearch._types.SortOrder;
-import co.elastic.clients.elasticsearch._types.Time;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.AggregationBuilders;
-import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
-import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
-import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
-import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
-import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
-import co.elastic.clients.elasticsearch.core.ReindexRequest;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
-import co.elastic.clients.elasticsearch.core.reindex.Source;
-import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
-import co.elastic.clients.json.JsonData;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch._types.Conflicts;
+import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.AggregationBuilders;
+import org.opensearch.client.opensearch._types.aggregations.CalendarInterval;
+import org.opensearch.client.opensearch._types.aggregations.DateHistogramBucket;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
+import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
+import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
+import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.ReindexRequest;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.reindex.Source;
+import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
+import org.opensearch.client.opensearch.generic.Requests;
 import org.slf4j.Logger;
 
-public final class ElasticsearchRepository implements ArchiverRepository {
+public final class OpenSearchArchiverRepository implements ArchiverRepository {
   private static final String DATES_AGG = "datesAgg";
   private static final String INSTANCES_AGG = "instancesAgg";
   private static final String DATES_SORTED_AGG = "datesSortedAgg";
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
-  private static final Slices AUTO_SLICES =
-      Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
+  private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
 
   private final int partitionId;
   private final ArchiverConfiguration config;
   private final RetentionConfiguration retention;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
-  private final ElasticsearchAsyncClient client;
+  private final OpenSearchAsyncClient client;
   private final Executor executor;
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
-
+  private final OpenSearchGenericClient genericClient;
   private final CalendarInterval rolloverInterval;
 
-  public ElasticsearchRepository(
+  public OpenSearchArchiverRepository(
       final int partitionId,
       final ArchiverConfiguration config,
       final RetentionConfiguration retention,
       final String processInstanceIndex,
       final String batchOperationIndex,
-      @WillCloseWhenClosed final ElasticsearchAsyncClient client,
+      @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
@@ -83,6 +84,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
     this.metrics = metrics;
     this.logger = logger;
 
+    genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
     rolloverInterval = mapCalendarInterval(config.getRolloverInterval());
   }
 
@@ -90,11 +92,10 @@ public final class ElasticsearchRepository implements ArchiverRepository {
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
     final var aggregation =
         createFinishedEntityAggregation(ListViewTemplate.END_DATE, ListViewTemplate.ID);
-    final var searchRequest = createFinishedInstancesSearchRequest(aggregation);
+    final var request = createFinishedInstancesSearchRequest(aggregation);
 
     final var timer = Timer.start();
-    return client
-        .search(searchRequest, Object.class)
+    return sendRequestAsync(() -> client.search(request, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenApplyAsync(this::createArchiveBatch, executor);
   }
@@ -106,8 +107,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
     final var searchRequest = createFinishedBatchOperationsSearchRequest(aggregation);
 
     final var timer = Timer.start();
-    return client
-        .search(searchRequest, Object.class)
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenApplyAsync(this::createArchiveBatch, executor);
   }
@@ -118,17 +118,29 @@ public final class ElasticsearchRepository implements ArchiverRepository {
       return CompletableFuture.completedFuture(null);
     }
 
-    final var settingsRequest =
-        new PutIndicesSettingsRequest.Builder()
-            .settings(
-                settings ->
-                    settings.lifecycle(lifecycle -> lifecycle.name(retention.getPolicyName())))
-            .index(destinationIndexName)
-            .allowNoIndices(true)
-            .ignoreUnavailable(true)
-            .build();
+    final AddPolicyRequestBody value = new AddPolicyRequestBody(retention.getPolicyName());
+    final var request =
+        Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + destinationIndexName);
 
-    return client.indices().putSettings(settingsRequest).thenApplyAsync(ok -> null, executor);
+    return sendRequestAsync(
+            () ->
+                genericClient.executeAsync(
+                    request.json(value, genericClient._transport().jsonpMapper()).build()))
+        .thenComposeAsync(
+            response -> {
+              if (response.getStatus() >= 400) {
+                return CompletableFuture.failedFuture(
+                    new ExporterException(
+                        "Failed to set index lifecycle policy for index: "
+                            + destinationIndexName
+                            + ".\n"
+                            + "Status: "
+                            + response.getStatus()
+                            + ", Reason: "
+                            + response.getReason()));
+              }
+              return CompletableFuture.completedFuture(null);
+            });
   }
 
   @Override
@@ -151,8 +163,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
             .build();
 
     final var timer = Timer.start();
-    return client
-        .deleteByQuery(request)
+    return sendRequestAsync(() -> client.deleteByQuery(request))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverDelete(timer), executor)
         .thenApplyAsync(DeleteByQueryResponse::total, executor)
         .thenApplyAsync(ok -> null, executor);
@@ -179,8 +190,7 @@ public final class ElasticsearchRepository implements ArchiverRepository {
             .build();
 
     final var timer = Timer.start();
-    return client
-        .reindex(request)
+    return sendRequestAsync(() -> client.reindex(request))
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverReindex(timer), executor)
         .thenApplyAsync(ignored -> null, executor);
   }
@@ -190,33 +200,24 @@ public final class ElasticsearchRepository implements ArchiverRepository {
     client._transport().close();
   }
 
-  private SearchRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {
+  private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
     final var endDateQ =
-        QueryBuilders.range(
-            q ->
-                q.field(ListViewTemplate.END_DATE)
-                    .lte(JsonData.of(config.getArchivingTimePoint())));
-    final var isProcessInstanceQ =
-        QueryBuilders.term(
-            q ->
-                q.field(ListViewTemplate.JOIN_RELATION)
-                    .value(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
-    final var partitionQ =
-        QueryBuilders.term(q -> q.field(ListViewTemplate.PARTITION_ID).value(partitionId));
-    final var combinedQuery =
-        QueryBuilders.bool(q -> q.must(endDateQ, isProcessInstanceQ, partitionQ));
+        QueryBuilders.range()
+            .field(BatchOperationTemplate.END_DATE)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build();
 
     return createSearchRequest(
-        processInstanceIndex, combinedQuery, aggregation, ListViewTemplate.END_DATE);
+        batchOperationIndex, endDateQ.toQuery(), aggregation, BatchOperationTemplate.END_DATE);
   }
 
   private ArchiveBatch createArchiveBatch(final SearchResponse<?> search) {
-    final var aggregate = search.aggregations().get(DATES_AGG);
-    if (aggregate == null) {
+    final var aggregation = search.aggregations().get(DATES_AGG);
+    if (aggregation == null) {
       return null;
     }
 
-    final List<DateHistogramBucket> buckets = aggregate.dateHistogram().buckets().array();
+    final List<DateHistogramBucket> buckets = aggregation.dateHistogram().buckets().array();
     if (buckets.isEmpty()) {
       return null;
     }
@@ -245,6 +246,41 @@ public final class ElasticsearchRepository implements ArchiverRepository {
         .orElseThrow();
   }
 
+  private <T> CompletableFuture<T> sendRequestAsync(final RequestSender<T> sender) {
+    try {
+      return sender.sendRequest();
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(
+          new ExporterException(
+              "Failed to send request, likely because we failed to parse the request", e));
+    }
+  }
+
+  private SearchRequest createFinishedInstancesSearchRequest(final Aggregation aggregation) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(ListViewTemplate.END_DATE)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build();
+    final var isProcessInstanceQ =
+        QueryBuilders.term()
+            .field(ListViewTemplate.JOIN_RELATION)
+            .value(FieldValue.of(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION))
+            .build();
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(ListViewTemplate.PARTITION_ID)
+            .value(FieldValue.of(partitionId))
+            .build();
+    final var combinedQuery =
+        QueryBuilders.bool()
+            .must(endDateQ.toQuery(), isProcessInstanceQ.toQuery(), partitionQ.toQuery())
+            .build();
+
+    return createSearchRequest(
+        processInstanceIndex, combinedQuery.toQuery(), aggregation, ListViewTemplate.END_DATE);
+  }
+
   private Aggregation createFinishedEntityAggregation(final String endDate, final String id) {
     final var dateAggregation =
         AggregationBuilders.dateHistogram()
@@ -271,17 +307,6 @@ public final class ElasticsearchRepository implements ArchiverRepository {
         .build();
   }
 
-  private SearchRequest createFinishedBatchOperationsSearchRequest(final Aggregation aggregation) {
-    final var endDateQ =
-        QueryBuilders.range(
-            q ->
-                q.field(BatchOperationTemplate.END_DATE)
-                    .lte(JsonData.of(config.getArchivingTimePoint())));
-
-    return createSearchRequest(
-        batchOperationIndex, endDateQ, aggregation, BatchOperationTemplate.END_DATE);
-  }
-
   private SearchRequest createSearchRequest(
       final String indexName,
       final Query filterQuery,
@@ -303,5 +328,12 @@ public final class ElasticsearchRepository implements ArchiverRepository {
         .sort(sort -> sort.field(field -> field.field(sortField).order(SortOrder.Asc)))
         .size(0)
         .build();
+  }
+
+  private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {}
+
+  @FunctionalInterface
+  private interface RequestSender<T> {
+    CompletableFuture<T> sendRequest() throws IOException;
   }
 }
