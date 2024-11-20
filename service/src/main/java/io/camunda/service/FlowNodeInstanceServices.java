@@ -66,7 +66,7 @@ public final class FlowNodeInstanceServices
     final var flowNodeInstance = getSingleResultOrThrow(result, key, "Flow node instance");
     final var authorization = Authorization.of(a -> a.processDefinition().readInstance());
     if (!securityContextProvider.isAuthorized(
-        flowNodeInstance.bpmnProcessId(), authentication, authorization)) {
+        flowNodeInstance.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
     return flowNodeInstance;

@@ -23,7 +23,6 @@ public record FlowNodeInstanceDbModel(
     FlowNodeType type,
     FlowNodeState state,
     Long incidentKey,
-    Long scopeKey,
     String tenantId) {
 
   public static class FlowNodeInstanceDbModelBuilder {
@@ -39,13 +38,12 @@ public record FlowNodeInstanceDbModel(
     private FlowNodeType type;
     private FlowNodeState state;
     private Long incidentKey;
-    private Long scopeKey;
     private String tenantId;
 
     // Public constructor to initialize the builder
     public FlowNodeInstanceDbModelBuilder() {}
 
-    public static FlowNodeInstanceDbModelBuilder of(FlowNodeInstanceDbModel model) {
+    public static FlowNodeInstanceDbModelBuilder of(final FlowNodeInstanceDbModel model) {
       return new FlowNodeInstanceDbModelBuilder()
           .flowNodeInstanceKey(model.flowNodeInstanceKey)
           .processInstanceKey(model.processInstanceKey())
@@ -58,7 +56,6 @@ public record FlowNodeInstanceDbModel(
           .type(model.type)
           .state(model.state)
           .incidentKey(model.incidentKey)
-          .scopeKey(model.scopeKey)
           .tenantId(model.tenantId);
     }
 
@@ -113,11 +110,6 @@ public record FlowNodeInstanceDbModel(
       return this;
     }
 
-    public FlowNodeInstanceDbModelBuilder scopeKey(final Long scopeKey) {
-      this.scopeKey = scopeKey;
-      return this;
-    }
-
     public FlowNodeInstanceDbModelBuilder processDefinitionId(final String bpmnProcessId) {
       processDefinitionId = bpmnProcessId;
       return this;
@@ -142,7 +134,6 @@ public record FlowNodeInstanceDbModel(
           type,
           state,
           incidentKey,
-          scopeKey,
           tenantId);
     }
   }

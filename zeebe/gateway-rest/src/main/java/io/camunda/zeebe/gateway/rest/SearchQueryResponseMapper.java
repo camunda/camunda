@@ -259,13 +259,13 @@ public final class SearchQueryResponseMapper {
 
   public static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
     return new FlowNodeInstanceItem()
-        .flowNodeInstanceKey(instance.key())
+        .flowNodeInstanceKey(instance.flowNodeInstanceKey())
         .flowNodeId(instance.flowNodeId())
         .processDefinitionKey(instance.processDefinitionKey())
-        .processDefinitionId(instance.bpmnProcessId())
+        .processDefinitionId(instance.processDefinitionId())
         .processInstanceKey(instance.processInstanceKey())
         .incidentKey(instance.incidentKey())
-        .hasIncident(instance.incident())
+        .hasIncident(instance.hasIncident())
         .startDate(formatDate(instance.startDate()))
         .endDate(formatDate(instance.endDate()))
         .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))

@@ -41,7 +41,7 @@ public class FlowNodeInstanceSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.flowNodeInstanceKey().asc(),
-        Comparator.comparing(FlowNodeInstanceEntity::key));
+        Comparator.comparing(FlowNodeInstanceEntity::flowNodeInstanceKey));
   }
 
   @TestTemplate
@@ -50,7 +50,7 @@ public class FlowNodeInstanceSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.flowNodeInstanceKey().desc(),
-        Comparator.comparing(FlowNodeInstanceEntity::key).reversed());
+        Comparator.comparing(FlowNodeInstanceEntity::flowNodeInstanceKey).reversed());
   }
 
   @TestTemplate
