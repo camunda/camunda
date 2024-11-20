@@ -311,7 +311,8 @@ public class DbDistributionState implements MutableDistributionState {
           }
 
           final var commandDistributionRecord = new CommandDistributionRecord();
-          commandDistributionRecord.wrap(lastCommandDistribution.get()).setPartitionId(partitionId);
+          commandDistributionRecord.copyFrom(lastCommandDistribution.get());
+          commandDistributionRecord.setPartitionId(partitionId);
           return visitor.visit(distributionKey, commandDistributionRecord);
         });
   }
