@@ -68,4 +68,22 @@ public interface CompleteJobCommandStep1
    *     to the broker.
    */
   CompleteJobCommandStep1 variable(String key, Object value);
+
+  /**
+   * Set the result of the job.
+   *
+   * @return the builder for this command.
+   */
+  CompleteJobCommandStep2 result();
+
+  interface CompleteJobCommandStep2 extends FinalCommandStep<CompleteJobResponse> {
+
+    /**
+     * Set if the job was denied by the worker.
+     *
+     * @param denied indicates if the worker has denied the reason for the job
+     * @return the builder for this command.
+     */
+    CompleteJobCommandStep2 denied(boolean denied);
+  }
 }
