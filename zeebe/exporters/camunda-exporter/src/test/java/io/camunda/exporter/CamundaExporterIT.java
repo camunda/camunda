@@ -318,7 +318,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
     // given
     final var valueType = ValueType.VARIABLE;
-    final Record record = factory.generateRecord(valueType, r -> r.withBrokerVersion("8.7.0"));
+    final Record record = generateRecordWithSupportedBrokerVersion(valueType);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
