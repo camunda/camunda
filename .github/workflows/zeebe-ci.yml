@@ -761,7 +761,6 @@ jobs:
         run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker
   deploy-snyk-projects:
     name: Deploy Snyk development projects
-    timeout-minutes: 15
     needs: [ test-summary ]
     if: |
       github.repository == 'camunda/camunda' &&
