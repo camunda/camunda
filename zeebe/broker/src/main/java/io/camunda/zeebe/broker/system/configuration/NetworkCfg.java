@@ -20,16 +20,16 @@ public final class NetworkCfg implements ConfigurationEntry {
   private static final String DEFAULT_HOST = "0.0.0.0";
   private static final String DEFAULT_ADVERTISED_HOST =
       Address.defaultAdvertisedHost().getHostAddress();
-  private static final int DEFAULT_BROKER_SO_SNDBUF = 1024;
-  private static final int DEFAULT_BROKER_SO_RCVBUF = 1024;
+  private static final DataSize DEFAULT_BROKER_SOSNDBUF = DataSize.ofMegabytes(1);
+  private static final DataSize DEFAULT_BROKER_SORCVBUF = DataSize.ofMegabytes(1);
 
   // leave host and advertised host to null, so we can distinguish if they are set explicitly or not
   private String host = null;
   private String advertisedHost = null;
   private int portOffset = 0;
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
-  private int soSndbuf = DEFAULT_BROKER_SO_SNDBUF;
-  private int soRcvbuf = DEFAULT_BROKER_SO_RCVBUF;
+  private DataSize soSndbuf = DEFAULT_BROKER_SOSNDBUF;
+  private DataSize soRcvbuf = DEFAULT_BROKER_SORCVBUF;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -90,19 +90,19 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.maxMessageSize = maxMessageSize;
   }
 
-  public int getSoSndbuf() {
+  public DataSize getSoSndbuf() {
     return soSndbuf;
   }
 
-  public void setSoSndbuf(final int soSndbuf) {
+  public void setSoSndbuf(final DataSize soSndbuf) {
     this.soSndbuf = soSndbuf;
   }
 
-  public int getSoRcvbuf() {
+  public DataSize getSoRcvbuf() {
     return soRcvbuf;
   }
 
-  public void setSoRcvbuf(final int soRcvbuf) {
+  public void setSoRcvbuf(final DataSize soRcvbuf) {
     this.soRcvbuf = soRcvbuf;
   }
 

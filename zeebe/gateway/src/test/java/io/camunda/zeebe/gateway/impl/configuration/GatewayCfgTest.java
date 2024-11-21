@@ -176,8 +176,8 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.filters.0.id", "overwrittenFilter");
     setEnv("zeebe.gateway.filters.0.className", "OverwrittenFilter");
     setEnv("zeebe.gateway.filters.0.jarPath", "./overwrittenFilter.jar");
-    setEnv("zeebe.gateway.network.so_sndbuf", String.valueOf(DEFAULT_GATEWAY_SO_SNDBUF));
-    setEnv("zeebe.gateway.network.so_rcvbuf", String.valueOf(DEFAULT_GATEWAY_SO_RCVBUF));
+    setEnv("zeebe.gateway.network.soSndbuf", DEFAULT_GATEWAY_SO_SNDBUF.toString());
+    setEnv("zeebe.gateway.network.soRcvbuf", DEFAULT_GATEWAY_SO_RCVBUF.toString());
 
     final GatewayCfg expected = new GatewayCfg();
     expected

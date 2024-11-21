@@ -22,8 +22,8 @@ public final class NetworkCfg {
   private int port = DEFAULT_PORT;
   private Duration minKeepAliveInterval = Duration.ofSeconds(30);
   private DataSize maxMessageSize = DataSize.ofMegabytes(4);
-  private int so_sndbuf = DEFAULT_GATEWAY_SO_SNDBUF;
-  private int so_rcvbuf = DEFAULT_GATEWAY_SO_RCVBUF;
+  private DataSize soSndbuf = DEFAULT_GATEWAY_SO_SNDBUF;
+  private DataSize soRcvbuf = DEFAULT_GATEWAY_SO_RCVBUF;
 
   public void init(final String defaultHost) {
     if (host == null) {
@@ -67,21 +67,21 @@ public final class NetworkCfg {
     return this;
   }
 
-  public int getSoSndbuf() {
-    return so_sndbuf;
+  public DataSize getSoSndbuf() {
+    return soSndbuf;
   }
 
-  public NetworkCfg setSoSndbuf(final int soSndbuf) {
-    so_sndbuf = soSndbuf;
+  public NetworkCfg setSoSndbuf(final DataSize soSndbuf) {
+    this.soSndbuf = soSndbuf;
     return this;
   }
 
-  public int getSoRcvbuf() {
-    return so_rcvbuf;
+  public DataSize getSoRcvbuf() {
+    return soRcvbuf;
   }
 
-  public NetworkCfg setSoRcvbuf(final int soRcvbuf) {
-    so_rcvbuf = soRcvbuf;
+  public NetworkCfg setSoRcvbuf(final DataSize soRcvbuf) {
+    this.soRcvbuf = soRcvbuf;
     return this;
   }
 
@@ -91,7 +91,7 @@ public final class NetworkCfg {
 
   @Override
   public int hashCode() {
-    return Objects.hash(host, port);
+    return Objects.hash(host, port, soSndbuf, soRcvbuf);
   }
 
   @Override
@@ -103,7 +103,10 @@ public final class NetworkCfg {
       return false;
     }
     final NetworkCfg that = (NetworkCfg) o;
-    return port == that.port && Objects.equals(host, that.host);
+    return port == that.port
+        && Objects.equals(host, that.host)
+        && Objects.equals(soRcvbuf, that.soRcvbuf)
+        && Objects.equals(soSndbuf, that.soSndbuf);
   }
 
   @Override
@@ -117,9 +120,9 @@ public final class NetworkCfg {
         + ", minKeepAliveInterval="
         + minKeepAliveInterval
         + ", so_sndbuf="
-        + so_sndbuf
+        + soSndbuf
         + ", so_rcvbuf="
-        + so_rcvbuf
+        + soRcvbuf
         + '}';
   }
 }

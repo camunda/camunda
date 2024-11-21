@@ -21,6 +21,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.util.unit.DataSize;
 
 /** Messaging configuration. */
 public class MessagingConfig implements Config {
@@ -35,8 +36,8 @@ public class MessagingConfig implements Config {
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
   private File keyStore;
   private String keyStorePassword;
-  private Integer brokerSoSndbuf = 1024;
-  private Integer brokerSoRcvbuf = 1024;
+  private DataSize brokerSoSndbuf = DataSize.ofMegabytes(1);
+  private DataSize brokerSoRcvbuf = DataSize.ofMegabytes(1);
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -252,20 +253,20 @@ public class MessagingConfig implements Config {
     return keyStorePassword;
   }
 
-  public Integer getBrokerSoSndbuf() {
+  public DataSize getBrokerSoSndbuf() {
     return brokerSoSndbuf;
   }
 
-  public MessagingConfig setBrokerSoSndbuf(final Integer brokerSoSndbuf) {
+  public MessagingConfig setBrokerSoSndbuf(final DataSize brokerSoSndbuf) {
     this.brokerSoSndbuf = brokerSoSndbuf;
     return this;
   }
 
-  public Integer getBrokerSoRcvbuf() {
+  public DataSize getBrokerSoRcvbuf() {
     return brokerSoRcvbuf;
   }
 
-  public MessagingConfig setBrokerSoRcvbuf(final Integer brokerSoRcvbuf) {
+  public MessagingConfig setBrokerSoRcvbuf(final DataSize brokerSoRcvbuf) {
     this.brokerSoRcvbuf = brokerSoRcvbuf;
     return this;
   }

@@ -260,8 +260,8 @@ public final class Gateway implements CloseableSilently {
         .maxInboundMessageSize(maxMessageSize)
         .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
         .permitKeepAliveWithoutCalls(false)
-        .withOption(ChannelOption.SO_RCVBUF, cfg.getSoRcvbuf())
-        .withOption(ChannelOption.SO_SNDBUF, cfg.getSoSndbuf());
+        .withOption(ChannelOption.SO_RCVBUF, (int) cfg.getSoRcvbuf().toBytes())
+        .withOption(ChannelOption.SO_SNDBUF, (int) cfg.getSoSndbuf().toBytes());
   }
 
   private void setSecurityConfig(
