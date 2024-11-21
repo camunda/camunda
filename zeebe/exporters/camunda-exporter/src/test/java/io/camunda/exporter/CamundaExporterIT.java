@@ -43,7 +43,6 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -52,6 +51,8 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,7 +110,7 @@ final class CamundaExporterIT {
     exporter.open(exporterController);
 
     // when
-    final Record<UserRecordValue> record = factory.generateRecord(ValueType.AUTHORIZATION);
+    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
     assertThat(exporterController.getPosition()).isEqualTo(-1);
 
     exporter.export(record);
@@ -131,8 +132,8 @@ final class CamundaExporterIT {
     exporter.open(controllerSpy);
 
     // when
-    final var record = factory.generateRecord(ValueType.AUTHORIZATION);
-    final var record2 = factory.generateRecord(ValueType.AUTHORIZATION);
+    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
+    final var record2 = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
 
     exporter.export(record);
     exporter.export(record2);
@@ -162,7 +163,7 @@ final class CamundaExporterIT {
     container.stop();
     Awaitility.await().until(() -> !container.isRunning());
 
-    final Record<UserRecordValue> record = factory.generateRecord(ValueType.AUTHORIZATION);
+    final var record = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
 
     assertThatThrownBy(() -> exporter.export(record))
         .isInstanceOf(ExporterException.class)
@@ -174,7 +175,7 @@ final class CamundaExporterIT {
         .setPortBindings(List.of(currentPort + ":9200"));
     container.start();
 
-    final Record<UserRecordValue> record2 = factory.generateRecord(ValueType.AUTHORIZATION);
+    final var record2 = generateRecordWithSupportedBrokerVersion(ValueType.AUTHORIZATION);
     exporter.export(record2);
 
     Awaitility.await()
@@ -318,7 +319,7 @@ final class CamundaExporterIT {
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
     // given
     final var valueType = ValueType.VARIABLE;
-    final Record record = factory.generateRecord(valueType);
+    final Record record = generateRecordWithSupportedBrokerVersion(valueType);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
@@ -364,6 +365,60 @@ final class CamundaExporterIT {
         });
   }
 
+  @TestTemplate
+  void shouldNotExport860RecordButStillUpdateLastExportedPosition(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    final var recordPosition = 123456789L;
+    final var record =
+        factory.generateRecord(
+            ValueType.AUTHORIZATION,
+            r -> r.withBrokerVersion("8.6.0").withPosition(recordPosition));
+
+    final CamundaExporter camundaExporter = new CamundaExporter();
+    final var controller = new ExporterTestController();
+    camundaExporter.configure(getContextFromConfig(config));
+    camundaExporter.open(controller);
+
+    // when
+    camundaExporter.export(record);
+
+    // then
+    assertThat(controller.getPosition()).isEqualTo(recordPosition);
+
+    final var handlersForRecordAndExpectedEntityId =
+        getHandlers(config).stream()
+            .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
+            .filter(handler -> handler.handlesRecord(record))
+            .collect(
+                Collectors.toMap(
+                    Function.identity(), handler -> handler.generateIds(record).getFirst()));
+
+    assertThat(handlersForRecordAndExpectedEntityId).isNotEmpty();
+
+    for (final var entry : handlersForRecordAndExpectedEntityId.entrySet()) {
+      final var handler = entry.getKey();
+      final var entityId = entry.getValue();
+
+      assertThat(clientAdapter.get(entityId, handler.getIndexName(), handler.getEntityType()))
+          .isNull();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private <T extends ExporterEntity<T>, R extends RecordValue> Set<ExportHandler<T, R>> getHandlers(
+      final ExporterConfiguration config) {
+    final DefaultExporterResourceProvider defaultExporterResourceProvider =
+        new DefaultExporterResourceProvider();
+    defaultExporterResourceProvider.init(
+        config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
+
+    return defaultExporterResourceProvider.getExportHandlers().stream()
+        .map(handler -> (ExportHandler<T, R>) handler)
+        .collect(Collectors.toSet());
+  }
+
   private <S extends ExporterEntity<S>, T extends RecordValue> S getExpectedEntity(
       final io.camunda.zeebe.protocol.record.Record<T> record, final ExportHandler<S, T> handler) {
     final var entityId = handler.generateIds(record).getFirst();
@@ -371,6 +426,10 @@ final class CamundaExporterIT {
     handler.updateEntity(record, expectedEntity);
 
     return expectedEntity;
+  }
+
+  private Record<?> generateRecordWithSupportedBrokerVersion(final ValueType valueType) {
+    return factory.generateRecord(valueType, r -> r.withBrokerVersion("8.7.0"));
   }
 
   private static Stream<Arguments> containerProvider() {
