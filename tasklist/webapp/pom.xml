@@ -13,6 +13,15 @@
   <name>Tasklist Webapp</name>
 
   <dependencies>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-backup</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>

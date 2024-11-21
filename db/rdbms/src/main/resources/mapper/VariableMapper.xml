@@ -16,8 +16,9 @@
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
-  <select id="search" parameterType="io.camunda.search.query.VariableQuery"
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.VariableDbQuery"
     resultMap="io.camunda.db.rdbms.sql.VariableMapper.searchResultMap">
+    SELECT * FROM (
     SELECT
       VAR_KEY,
       PROCESS_INSTANCE_KEY,
@@ -30,13 +31,10 @@
     PROCESS_DEFINITION_ID
     FROM VARIABLE
     <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
-    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
-      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        <include refid="io.camunda.db.rdbms.sql.VariableMapper.variableSortMapper"/>
-        ${item.order}
-      </foreach>
-    </if>
-    ${paging.after}
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
   <sql id="searchFilter">
@@ -210,7 +208,7 @@
     INSERT INTO VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
                           LONG_VALUE,
                           VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW)
-    VALUES (#{key}, #{processInstanceKey}, #{processDefinitionId}, #{scopeKey}, #{type}, #{name}, #{doubleValue},
+    VALUES (#{variableKey}, #{processInstanceKey}, #{processDefinitionId}, #{scopeKey}, #{type}, #{name}, #{doubleValue},
             #{longValue},
             #{value}, #{fullValue}, #{tenantId}, #{isPreview})
   </insert>

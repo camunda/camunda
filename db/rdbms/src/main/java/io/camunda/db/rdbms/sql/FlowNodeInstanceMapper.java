@@ -10,10 +10,8 @@ package io.camunda.db.rdbms.sql;
 import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
-import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.function.Function;
 
 public interface FlowNodeInstanceMapper {
 
@@ -29,64 +27,4 @@ public interface FlowNodeInstanceMapper {
       long flowNodeInstanceKey,
       FlowNodeInstanceEntity.FlowNodeState state,
       OffsetDateTime endDate) {}
-
-  enum FlowNodeInstanceSearchColumn implements SearchColumn<FlowNodeInstanceEntity> {
-    FLOW_NODE_INSTANCE_KEY("flowNodeInstanceKey", FlowNodeInstanceEntity::flowNodeInstanceKey),
-    FLOW_NODE_ID("flowNodeId", FlowNodeInstanceEntity::flowNodeId),
-    PROCESS_INSTANCE_KEY("processInstanceKey", FlowNodeInstanceEntity::processInstanceKey),
-    PROCESS_DEFINITION_KEY("processDefinitionKey", FlowNodeInstanceEntity::processDefinitionKey),
-    PROCESS_DEFINITION_ID("processDefinitionId", FlowNodeInstanceEntity::processDefinitionId),
-    START_DATE("startDate", FlowNodeInstanceEntity::startDate, DateUtil::fuzzyToOffsetDateTime),
-    END_DATE("endDate", FlowNodeInstanceEntity::endDate, DateUtil::fuzzyToOffsetDateTime),
-    STATE("state", FlowNodeInstanceEntity::state),
-    TYPE("type", FlowNodeInstanceEntity::type),
-    TENANT_ID("tenantId", FlowNodeInstanceEntity::tenantId),
-    TREE_PATH("treePath", FlowNodeInstanceEntity::treePath),
-    INCIDENT_KEY("incidentKey", FlowNodeInstanceEntity::incidentKey),
-    INCIDENT("hasIncident", FlowNodeInstanceEntity::hasIncident);
-
-    private final String property;
-    private final Function<FlowNodeInstanceEntity, Object> propertyReader;
-    private final Function<Object, Object> sortOptionConverter;
-
-    FlowNodeInstanceSearchColumn(
-        final String property, final Function<FlowNodeInstanceEntity, Object> propertyReader) {
-      this(property, propertyReader, Function.identity());
-    }
-
-    FlowNodeInstanceSearchColumn(
-        final String property,
-        final Function<FlowNodeInstanceEntity, Object> propertyReader,
-        final Function<Object, Object> sortOptionConverter) {
-      this.property = property;
-      this.propertyReader = propertyReader;
-      this.sortOptionConverter = sortOptionConverter;
-    }
-
-    @Override
-    public Object getPropertyValue(final FlowNodeInstanceEntity entity) {
-      return propertyReader.apply(entity);
-    }
-
-    @Override
-    public Object convertSortOption(final Object object) {
-      if (object == null) {
-        return null;
-      }
-
-      return sortOptionConverter.apply(object);
-    }
-
-    public static FlowNodeInstanceMapper.FlowNodeInstanceSearchColumn findByProperty(
-        final String property) {
-      for (final FlowNodeInstanceMapper.FlowNodeInstanceSearchColumn column :
-          FlowNodeInstanceMapper.FlowNodeInstanceSearchColumn.values()) {
-        if (column.property.equals(property)) {
-          return column;
-        }
-      }
-
-      return null;
-    }
-  }
 }

@@ -15,13 +15,13 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
-import io.camunda.tasklist.entities.FormEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.FormIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import org.apache.lucene.search.TotalHits;
 import org.elasticsearch.action.get.GetRequest;
@@ -44,7 +44,7 @@ import org.mockito.quality.Strictness;
 class FormStoreElasticSearchTest {
 
   private static final String FORM_INDEX_NAME = "tasklist-form-x.0.0";
-  @Mock private FormIndex formIndex = new FormIndex();
+  @Mock private FormIndex formIndex = new FormIndex("test", true);
   @Mock private TaskTemplate taskTemplate = new TaskTemplate();
   @Mock private ProcessIndex processIndex = new ProcessIndex();
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
@@ -95,7 +95,7 @@ class FormStoreElasticSearchTest {
         new FormEntity()
             .setId("id3")
             .setProcessDefinitionId("processDefId3")
-            .setBpmnId("bpmnId3")
+            .setFormId("bpmnId3")
             .setSchema("");
 
     final var responseAsstring = objectMapper.writeValueAsString(providedFormEntity);

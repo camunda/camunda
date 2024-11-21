@@ -167,9 +167,9 @@
   </insert>
 
   <update
-    id="update"
+    id="updateStateAndEndDate"
     statementType="PREPARED"
-    parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel"
+    parameterType="io.camunda.db.rdbms.sql.ProcessInstanceMapper$EndProcessInstanceDto"
     flushCache="true">
     UPDATE PROCESS_INSTANCE p
     SET STATE    = #{state},
@@ -177,13 +177,5 @@
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
-  <update
-    id="updateCurrentElementId"
-    statementType="PREPARED"
-    parameterType="hashMap"
-    flushCache="true">
-    UPDATE PROCESS_INSTANCE p
-    SET ELEMENT_ID = #{elementId}
-    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
-  </update>
+
 </mapper>

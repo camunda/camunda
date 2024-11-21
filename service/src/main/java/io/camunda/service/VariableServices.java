@@ -65,7 +65,7 @@ public final class VariableServices
     final var variableEntity = getSingleResultOrThrow(result, key, "Variable");
     final var authorization = Authorization.of(a -> a.processDefinition().readInstance());
     if (!securityContextProvider.isAuthorized(
-        variableEntity.bpmnProcessId(), authentication, authorization)) {
+        variableEntity.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
     return variableEntity;

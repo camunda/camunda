@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
-import io.camunda.db.rdbms.sql.ProcessDefinitionMapper.ProcessDefinitionSearchColumn;
+import io.camunda.db.rdbms.sql.columns.ProcessDefinitionSearchColumn;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -24,7 +24,7 @@ public class ProcessDefinitionReader extends AbstractEntityReader<ProcessDefinit
   private final ProcessDefinitionMapper processDefinitionMapper;
 
   public ProcessDefinitionReader(final ProcessDefinitionMapper processDefinitionMapper) {
-    super(ProcessDefinitionMapper.ProcessDefinitionSearchColumn::findByProperty);
+    super(ProcessDefinitionSearchColumn::findByProperty);
     this.processDefinitionMapper = processDefinitionMapper;
   }
 

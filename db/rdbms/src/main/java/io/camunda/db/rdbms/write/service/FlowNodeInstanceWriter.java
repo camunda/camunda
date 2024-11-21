@@ -9,17 +9,16 @@ package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.EndFlowNodeDto;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import java.time.OffsetDateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.function.Function;
 
 public class FlowNodeInstanceWriter {
-
-  private static final Logger LOG = LoggerFactory.getLogger(FlowNodeInstanceWriter.class);
 
   private final ExecutionQueue executionQueue;
 
@@ -36,13 +35,26 @@ public class FlowNodeInstanceWriter {
             flowNode));
   }
 
-  public void end(final long flowNodeKey, final FlowNodeState state, final OffsetDateTime endDate) {
-    final var dto = new EndFlowNodeDto(flowNodeKey, state, endDate);
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.FLOW_NODE,
-            flowNodeKey,
-            "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateStateAndEndDate",
-            dto));
+  public void finish(final long key, final FlowNodeState state, final OffsetDateTime endDate) {
+    final boolean wasMerged = mergeToQueue(key, b -> b.state(state).endDate(endDate));
+
+    if (!wasMerged) {
+      final var dto = new EndFlowNodeDto(key, state, endDate);
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.FLOW_NODE,
+              key,
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateStateAndEndDate",
+              dto));
+    }
+  }
+
+  private boolean mergeToQueue(
+      final long key,
+      final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder>
+          mergeFunction) {
+    return executionQueue.tryMergeWithExistingQueueItem(
+        new UpsertMerger<>(
+            ContextType.FLOW_NODE, key, FlowNodeInstanceDbModel.class, mergeFunction));
   }
 }

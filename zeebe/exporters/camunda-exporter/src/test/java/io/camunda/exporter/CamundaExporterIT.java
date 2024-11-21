@@ -22,9 +22,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
+import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
@@ -252,6 +254,54 @@ final class CamundaExporterIT {
                 retrievedIndexTemplate.at("/index_template/template/mappings"),
                 "/mappings-added-property.json"))
         .isTrue();
+  }
+
+  @TestTemplate
+  void shouldCreateHarmonizedSchemaEagerlyOnOpen(
+      final ExporterConfiguration config, final SearchClientAdapter ignored) {
+    // given
+    final CamundaExporter camundaExporter = new CamundaExporter();
+    camundaExporter.configure(getContextFromConfig(config));
+
+    final var adapter = ClientAdapter.of(config);
+    final var mappingsBeforeOpen =
+        adapter.getSearchEngineClient().getMappings(CONFIG_PREFIX + "*", MappingSource.INDEX);
+    assertThat(mappingsBeforeOpen.keySet()).isEmpty();
+
+    // when
+    camundaExporter.open(new ExporterTestController());
+
+    // then
+    final var mappingsAfterOpen =
+        adapter.getSearchEngineClient().getMappings(CONFIG_PREFIX + "*", MappingSource.INDEX);
+    assertThat(mappingsAfterOpen.keySet())
+        // we verify the names hard coded on purpose
+        // to make sure no index will be accidentally dropped, names are changed or added
+        .containsExactlyInAnyOrder(
+            "custom-prefix-identity-authorizations-8.7.0_",
+            "custom-prefix-identity-groups-8.7.0_",
+            "custom-prefix-identity-mappings-8.7.0_",
+            "custom-prefix-identity-role-8.7.0_",
+            "custom-prefix-identity-tenants-8.7.0_",
+            "custom-prefix-identity-users-8.7.0_",
+            "custom-prefix-operate-batch-operation-1.0.0_",
+            "custom-prefix-operate-decision-8.3.0_",
+            "custom-prefix-operate-decision-instance-8.3.0_",
+            "custom-prefix-operate-decision-requirements-8.3.0_",
+            "custom-prefix-operate-event-8.3.0_",
+            "custom-prefix-operate-flownode-instance-8.3.1_",
+            "custom-prefix-operate-incident-8.3.1_",
+            "custom-prefix-operate-list-view-8.3.0_",
+            "custom-prefix-operate-metric-8.3.0_",
+            "custom-prefix-operate-operation-8.4.1_",
+            "custom-prefix-operate-post-importer-queue-8.3.0_",
+            "custom-prefix-operate-process-8.3.0_",
+            "custom-prefix-operate-sequence-flow-8.3.0_",
+            "custom-prefix-operate-variable-8.3.0_",
+            "custom-prefix-tasklist-draft-task-variable-8.3.0_",
+            "custom-prefix-tasklist-form-8.4.0_",
+            "custom-prefix-tasklist-metric-8.3.0_",
+            "custom-prefix-tasklist-task-8.5.0_");
   }
 
   private static Stream<Arguments> containerProvider() {

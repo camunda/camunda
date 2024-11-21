@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
-import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.FlowNodeInstanceSearchColumn;
+import io.camunda.db.rdbms.sql.columns.FlowNodeInstanceSearchColumn;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -24,7 +24,7 @@ public class FlowNodeInstanceReader extends AbstractEntityReader<FlowNodeInstanc
   private final FlowNodeInstanceMapper flowNodeInstanceMapper;
 
   public FlowNodeInstanceReader(final FlowNodeInstanceMapper flowNodeInstanceMapper) {
-    super(FlowNodeInstanceMapper.FlowNodeInstanceSearchColumn::findByProperty);
+    super(FlowNodeInstanceSearchColumn::findByProperty);
     this.flowNodeInstanceMapper = flowNodeInstanceMapper;
   }
 

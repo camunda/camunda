@@ -8,7 +8,10 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
+import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex.BPMN_ID;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex.KEY;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
@@ -37,15 +40,11 @@ public class FormFilterTransformer implements FilterTransformer<FormFilter> {
     return Arrays.asList("tasklist-form-8.4.0_");
   }
 
-  private SearchQuery getFormByKeysQuery(final List<Long> formKey) {
-    final List<String> formKeyAsString = formKey.stream().map(String::valueOf).toList();
-
-    return stringTerms("id", formKeyAsString);
+  private SearchQuery getFormByKeysQuery(final List<Long> formKeys) {
+    return longTerms(KEY, formKeys);
   }
 
-  private SearchQuery getFormByIdQuery(final List<String> formId) {
-    final List<String> formKeyAsString = formId.stream().map(String::valueOf).toList();
-
-    return stringTerms("bpmnId", formKeyAsString);
+  private SearchQuery getFormByIdQuery(final List<String> formIds) {
+    return stringTerms(BPMN_ID, formIds);
   }
 }

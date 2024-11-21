@@ -22,13 +22,13 @@ import io.camunda.operate.store.opensearch.response.OpenSearchSnapshotInfo;
 import io.camunda.operate.store.opensearch.response.SnapshotState;
 import io.camunda.operate.util.ThreadUtil;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.backup.BackupRepository;
-import io.camunda.operate.webapp.backup.BackupService;
+import io.camunda.operate.webapp.backup.BackupServiceImpl;
 import io.camunda.operate.webapp.backup.Metadata;
-import io.camunda.operate.webapp.management.dto.BackupStateDto;
-import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDetailDto;
-import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.webapps.backup.BackupRepository;
+import io.camunda.webapps.backup.BackupStateDto;
+import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
+import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -196,17 +196,17 @@ public class OpensearchBackupRepository implements BackupRepository {
 
   @Override
   public void executeSnapshotting(
-      final BackupService.SnapshotRequest snapshotRequest,
+      final BackupServiceImpl.SnapshotRequest snapshotRequest,
       final Runnable onSuccess,
       final Runnable onFailure) {
     final Long backupId = backupId(snapshotRequest);
     final var metadata = snapshotRequest.metadata();
     final Map<String, JsonData> metadataJson =
         Map.of(
-            "backupId", JsonData.of(metadata.getBackupId()),
-            "version", JsonData.of(metadata.getVersion()),
-            "partNo", JsonData.of(metadata.getPartNo()),
-            "partCount", JsonData.of(metadata.getPartCount()));
+            "backupId", JsonData.of(metadata.backupId()),
+            "version", JsonData.of(metadata.version()),
+            "partNo", JsonData.of(metadata.partNo()),
+            "partCount", JsonData.of(metadata.partCount()));
     final var requestBuilder =
         createSnapshotRequestBuilder(
                 snapshotRequest.repositoryName(),
@@ -285,7 +285,7 @@ public class OpensearchBackupRepository implements BackupRepository {
     return format("No repository with name [%s] could be found.", repositoryName);
   }
 
-  private Long backupId(final BackupService.SnapshotRequest snapshotRequest) {
+  private Long backupId(final BackupServiceImpl.SnapshotRequest snapshotRequest) {
     return Metadata.extractBackupIdFromSnapshotName(snapshotRequest.snapshotName());
   }
 

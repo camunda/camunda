@@ -105,6 +105,15 @@ public final class SearchQueryBuilders {
     return fn.apply(userSearchQuery()).build();
   }
 
+  public static MappingQuery.Builder mappingSearchQuery() {
+    return new MappingQuery.Builder();
+  }
+
+  public static MappingQuery mappingSearchQuery(
+      final Function<MappingQuery.Builder, ObjectBuilder<MappingQuery>> fn) {
+    return fn.apply(mappingSearchQuery()).build();
+  }
+
   public static RoleQuery.Builder roleSearchQuery() {
     return new RoleQuery.Builder();
   }
