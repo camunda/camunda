@@ -20,7 +20,7 @@ import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants;
 import io.camunda.optimize.tomcat.ExternalHomeServlet;
 import io.camunda.optimize.tomcat.OptimizeResourceConstants;
-import io.camunda.optimize.tomcat.ResponseHeadersFilter;
+import io.camunda.optimize.tomcat.ResponseSecurityHeaderFilter;
 import io.camunda.optimize.tomcat.URLRedirectFilter;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
@@ -160,14 +160,14 @@ public class OptimizeTomcatConfig {
   }
 
   @Bean
-  FilterRegistrationBean<ResponseHeadersFilter> responseHeadersInjector() {
+  FilterRegistrationBean<ResponseSecurityHeaderFilter> responseHeadersInjector() {
     LOG.debug("Registering filter 'responseHeadersInjector'...");
-    final ResponseHeadersFilter responseHeadersFilter =
-        new ResponseHeadersFilter(configurationService);
-    final FilterRegistrationBean<ResponseHeadersFilter> registrationBean =
+    final ResponseSecurityHeaderFilter responseSecurityHeaderFilter =
+        new ResponseSecurityHeaderFilter(configurationService);
+    final FilterRegistrationBean<ResponseSecurityHeaderFilter> registrationBean =
         new FilterRegistrationBean<>();
     registrationBean.addUrlPatterns("/*");
-    registrationBean.setFilter(responseHeadersFilter);
+    registrationBean.setFilter(responseSecurityHeaderFilter);
     return registrationBean;
   }
 

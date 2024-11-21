@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.util.configuration.security;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.net.HttpHeaders;
 import io.camunda.optimize.util.SuppressionConstants;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,13 +25,13 @@ public class ResponseHeadersConfiguration {
   @JsonProperty("HSTS.includeSubDomains")
   private Boolean httpStrictTransportSecurityIncludeSubdomains;
 
-  @JsonProperty("X-XSS-Protection")
+  @JsonProperty(HttpHeaders.X_XSS_PROTECTION)
   private String xsssProtection;
 
-  @JsonProperty("X-Content-Type-Options")
+  @JsonProperty(HttpHeaders.X_CONTENT_TYPE_OPTIONS)
   private Boolean xContentTypeOptions;
 
-  @JsonProperty("Content-Security-Policy")
+  @JsonProperty(HttpHeaders.CONTENT_SECURITY_POLICY)
   private String contentSecurityPolicy;
 
   public ResponseHeadersConfiguration() {}
@@ -66,7 +67,7 @@ public class ResponseHeadersConfiguration {
     return xsssProtection;
   }
 
-  @JsonProperty("X-XSS-Protection")
+  @JsonProperty(HttpHeaders.X_XSS_PROTECTION)
   public void setXsssProtection(final String xsssProtection) {
     this.xsssProtection = xsssProtection;
   }
@@ -75,7 +76,7 @@ public class ResponseHeadersConfiguration {
     return xContentTypeOptions;
   }
 
-  @JsonProperty("X-Content-Type-Options")
+  @JsonProperty(HttpHeaders.X_CONTENT_TYPE_OPTIONS)
   public void setXContentTypeOptions(final Boolean xContentTypeOptions) {
     this.xContentTypeOptions = xContentTypeOptions;
   }
@@ -84,7 +85,7 @@ public class ResponseHeadersConfiguration {
     return contentSecurityPolicy;
   }
 
-  @JsonProperty("Content-Security-Policy")
+  @JsonProperty(HttpHeaders.CONTENT_SECURITY_POLICY)
   public void setContentSecurityPolicy(final String contentSecurityPolicy) {
     this.contentSecurityPolicy = contentSecurityPolicy;
   }
@@ -135,15 +136,15 @@ public class ResponseHeadersConfiguration {
     }
 
     if (getXsssProtection() != null && getXsssProtection().length() > 0) {
-      headers.put("X-XSS-Protection", getXsssProtection());
+      headers.put(HttpHeaders.X_XSS_PROTECTION, getXsssProtection());
     }
 
     if (getXContentTypeOptions()) {
-      headers.put("X-Content-Type-Options", "nosniff");
+      headers.put(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
     }
 
     if (getContentSecurityPolicy() != null && getContentSecurityPolicy().length() > 0) {
-      headers.put("Content-Security-Policy", getContentSecurityPolicy());
+      headers.put(HttpHeaders.CONTENT_SECURITY_POLICY, getContentSecurityPolicy());
     }
 
     return headers;

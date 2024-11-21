@@ -15,16 +15,13 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Map;
 
-public class ResponseHeadersFilter implements Filter {
+public class ResponseSecurityHeaderFilter implements Filter {
 
   private final ConfigurationService configurationService;
 
-  public ResponseHeadersFilter(final ConfigurationService configurationService) {
-    if (configurationService == null) {
-      throw new IllegalArgumentException("configurationService cannot be null");
-    }
-
+  public ResponseSecurityHeaderFilter(final ConfigurationService configurationService) {
     this.configurationService = configurationService;
   }
 
@@ -34,7 +31,7 @@ public class ResponseHeadersFilter implements Filter {
       throws IOException, ServletException {
     final HttpServletResponse httpResponse = (HttpServletResponse) response;
 
-    final var headers =
+    final Map<String, String> headers =
         configurationService.getSecurityConfiguration().getResponseHeaders().getHeadersWithValues();
 
     for (final String key : headers.keySet()) {
