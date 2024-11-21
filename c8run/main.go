@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/tls"
 	"errors"
 	"flag"
 	"fmt"
@@ -42,8 +43,15 @@ func queryElasticsearchHealth(name string, url string) {
 	fmt.Println(name + " has successfully been started.")
 }
 
-func queryCamundaHealth(c8 C8Run, name string, url string) error {
+func queryCamundaHealth(c8 C8Run, name string, settings C8RunSettings) error {
 	healthy := false
+
+	protocol := "http"
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	if settings.keystore != "" && settings.keystorePassword != "" {
+		protocol = "https"
+	}
+	url := protocol + "://localhost:8080/operate/login"
 	for retries := 24; retries >= 0; retries-- {
 		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
 		time.Sleep(14 * time.Second)
@@ -60,7 +68,7 @@ func queryCamundaHealth(c8 C8Run, name string, url string) error {
 		return fmt.Errorf("Error: %s did not start!", name)
 	}
 	fmt.Println(name + " has successfully been started.")
-	err := c8.OpenBrowser()
+	err := c8.OpenBrowser(protocol)
 	if err != nil {
 		// failing to open the browser is not a critical error. It could simply be a sign the script is running in a CI node without a browser installed, or a docker image.
 		fmt.Println("Failed to open browser")
@@ -152,9 +160,24 @@ func main() {
 	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
 	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
 	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
+	startFlagSet.StringVar(&settings.keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
+	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
+
 	switch baseCommand {
 	case "start":
 		startFlagSet.Parse(os.Args[2:])
+	}
+
+	if settings.keystore != "" {
+		if settings.keystorePassword == "" {
+			fmt.Println("You must provide a password with --keystorePassword to unlock your keystore.")
+			os.Exit(1)
+		}
+		if settings.keystore != "" {
+			if !strings.HasPrefix(settings.keystore, "/") {
+				settings.keystore = filepath.Join(parentDir, settings.keystore)
+			}
+		}
 	}
 
 	javaHome := os.Getenv("JAVA_HOME")
@@ -233,6 +256,9 @@ func main() {
 		if javaOpts != "" {
 			fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
 		}
+		if settings.keystore != "" && settings.keystorePassword != "" {
+			javaOpts = javaOpts + " -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword
+		}
 
 		os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
 
@@ -291,7 +317,7 @@ func main() {
 		} else {
 			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
 		}
-		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs)
+		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs, javaOpts)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
@@ -311,7 +337,8 @@ func main() {
 			os.Exit(1)
 		}
 		camundaPidFile.Write([]byte(strconv.Itoa(camundaCmd.Process.Pid)))
-		err = queryCamundaHealth(c8, "Camunda", "http://localhost:8080/operate/login")
+
+		err = queryCamundaHealth(c8, "Camunda", settings)
 		if err != nil {
 			fmt.Printf("%+v", err)
 			os.Exit(1)
