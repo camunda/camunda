@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -20,7 +20,7 @@ public class TenantProcessors {
 
   public static void addTenantProcessors(
       final TypedRecordProcessors typedRecordProcessors,
-      final ProcessingState processingState,
+      final MutableProcessingState processingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
@@ -70,6 +70,7 @@ public class TenantProcessors {
                 authCheckBehavior,
                 keyGenerator,
                 writers,
-                commandDistributionBehavior));
+                commandDistributionBehavior))
+        .withListener(new DefaultTenantCreator(processingState));
   }
 }
