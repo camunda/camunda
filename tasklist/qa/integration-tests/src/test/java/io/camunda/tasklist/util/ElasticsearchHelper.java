@@ -14,8 +14,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
@@ -57,7 +57,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
-  @Autowired private VariableIndex variableIndex;
+  @Autowired private VariableTemplate variableIndex;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -137,10 +137,10 @@ public class ElasticsearchHelper implements NoSqlHelper {
   @Override
   public boolean checkVariablesExist(final String[] varNames) {
     final SearchRequest searchRequest =
-        new SearchRequest(variableIndex.getAlias())
+        new SearchRequest(variableIndex.getFullQualifiedName())
             .source(
                 new SearchSourceBuilder()
-                    .query(constantScoreQuery(termsQuery(VariableIndex.NAME, varNames))));
+                    .query(constantScoreQuery(termsQuery(VariableTemplate.NAME, varNames))));
     try {
       final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
       return response.getHits().getTotalHits().value == varNames.length;

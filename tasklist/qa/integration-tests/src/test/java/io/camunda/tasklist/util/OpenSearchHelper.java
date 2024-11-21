@@ -11,8 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
@@ -157,7 +157,7 @@ public class OpenSearchHelper implements NoSqlHelper {
                                           filter.terms(
                                               terms ->
                                                   terms
-                                                      .field(VariableIndex.NAME)
+                                                      .field(VariableTemplate.NAME)
                                                       .terms(
                                                           tv ->
                                                               tv.value(
