@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
@@ -14,14 +15,6 @@ import (
 	"strings"
 	"time"
 )
-
-func printHelp() {
-	optionsHelp := `Options:
-   --config     - Applies the specified configuration file.
-   --detached   - Starts Camunda Run as a detached process
-`
-	fmt.Print(optionsHelp)
-}
 
 func printStatus() {
 	endpoints, _ := os.ReadFile("endpoints.txt")
@@ -100,31 +93,6 @@ func stopProcess(c8 C8Run, pidfile string) {
 
 }
 
-func parseCommandLineOptions(args []string, settings *C8RunSettings) *C8RunSettings {
-	if len(args) == 0 {
-		return settings
-	}
-	argsToPop := 0
-	switch args[0] {
-	case "--config":
-		if len(args) > 1 {
-			argsToPop = 2
-			settings.config = args[1]
-		} else {
-			printHelp()
-			os.Exit(1)
-		}
-	case "--detached":
-		settings.detached = true
-	default:
-		argsToPop = 2
-		printHelp()
-		os.Exit(1)
-
-	}
-	return parseCommandLineOptions(args[argsToPop:], settings)
-}
-
 func getC8RunPlatform() C8Run {
 	if runtime.GOOS == "windows" {
 		return &windows.WindowsC8Run{}
@@ -172,14 +140,21 @@ func main() {
 		baseCommand = "package"
 	} else if os.Args[1] == "clean" {
 		baseCommand = "clean"
+	} else if os.Args[1] == "-h" || os.Args[1] == "--help" {
+		fmt.Println("Usage: c8run [command] [options]\nCommands:\n  start\n  stop\n  package\n")
+		os.Exit(0)
 	} else {
 		panic("Unsupported operation")
 	}
 	fmt.Print("Command: " + baseCommand + "\n")
 
 	var settings C8RunSettings
-	if len(os.Args) > 2 {
-		parseCommandLineOptions(os.Args[2:], &settings)
+	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
+	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
+	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
+	switch baseCommand {
+	case "start":
+		startFlagSet.Parse(os.Args[2:])
 	}
 
 	javaHome := os.Getenv("JAVA_HOME")
