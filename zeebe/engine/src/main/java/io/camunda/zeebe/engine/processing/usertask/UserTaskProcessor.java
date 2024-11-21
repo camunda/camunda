@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
@@ -49,7 +48,6 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private final ElementInstanceState elementInstanceState;
 
   private final BpmnJobBehavior jobBehavior;
-  private final BpmnIncidentBehavior incidentBehavior;
 
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
@@ -70,7 +68,6 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     elementInstanceState = state.getElementInstanceState();
 
     jobBehavior = bpmnBehaviors.jobBehavior();
-    incidentBehavior = bpmnBehaviors.incidentBehavior();
 
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
@@ -98,7 +95,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
         .ifPresentOrElse(
-            listener -> createTaskListenerJob(listener, context, persistedRecord),
+            listener -> jobBehavior.createNewTaskListenerJob(context, persistedRecord, listener),
             () -> finalizeCommand(command, lifecycleState, persistedRecord));
   }
 
@@ -165,7 +162,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final var listener = userTaskElement.getTaskListeners(eventType).getFirst();
       final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
       final var context = buildContext(userTaskElementInstance);
-      createTaskListenerJob(listener, context, persistedRecord);
+      jobBehavior.createNewTaskListenerJob(context, persistedRecord, listener);
     } else {
       processor.onFinalizeCommand(command, persistedRecord);
     }
@@ -195,20 +192,6 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var listeners = userTask.getTaskListeners(eventType);
     final int currentListenerIndex = userTaskElementInstance.getTaskListenerIndex(eventType);
     return listeners.stream().skip(currentListenerIndex).findFirst();
-  }
-
-  private void createTaskListenerJob(
-      final TaskListener listener,
-      final BpmnElementContext context,
-      final UserTaskRecord taskRecordValue) {
-    jobBehavior
-        .evaluateTaskListenerJobExpressions(
-            listener.getJobWorkerProperties(), context, taskRecordValue)
-        .thenDo(
-            listenerJobProperties ->
-                jobBehavior.createNewTaskListenerJob(
-                    context, listenerJobProperties, listener, taskRecordValue))
-        .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
   }
 
   private void writeRejectionForCommand(
