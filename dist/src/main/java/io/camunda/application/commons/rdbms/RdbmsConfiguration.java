@@ -9,6 +9,7 @@ package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
+import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
@@ -16,6 +17,7 @@ import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
+import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
@@ -44,6 +46,12 @@ public class RdbmsConfiguration {
   public DecisionDefinitionReader decisionDefinitionReader(
       final DecisionDefinitionMapper decisionDefinitionMapper) {
     return new DecisionDefinitionReader(decisionDefinitionMapper);
+  }
+
+  @Bean
+  public DecisionInstanceReader decisionInstanceReader(
+      final DecisionInstanceMapper decisionInstanceMapper) {
+    return new DecisionInstanceReader(decisionInstanceMapper);
   }
 
   @Bean
@@ -87,6 +95,7 @@ public class RdbmsConfiguration {
       final RdbmsWriterFactory rdbmsWriterFactory,
       final VariableReader variableReader,
       final DecisionDefinitionReader decisionDefinitionReader,
+      final DecisionInstanceReader decisionInstanceReader,
       final DecisionRequirementsReader decisionRequirementsReader,
       final FlowNodeInstanceReader flowNodeInstanceReader,
       final ProcessDefinitionReader processDefinitionReader,
@@ -95,6 +104,7 @@ public class RdbmsConfiguration {
     return new RdbmsService(
         rdbmsWriterFactory,
         decisionDefinitionReader,
+        decisionInstanceReader,
         decisionRequirementsReader,
         flowNodeInstanceReader,
         processDefinitionReader,
