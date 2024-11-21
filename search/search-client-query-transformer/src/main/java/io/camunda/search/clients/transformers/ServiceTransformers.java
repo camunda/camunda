@@ -107,9 +107,10 @@ public final class ServiceTransformers {
 
   private ServiceTransformers() {}
 
-  public static ServiceTransformers newInstance(final boolean isCamundaExporterEnabled) {
+  public static ServiceTransformers newInstance(
+      final boolean isCamundaExporterEnabled, final String prefix) {
     final var serviceTransformers = new ServiceTransformers();
-    initializeTransformers(serviceTransformers, isCamundaExporterEnabled);
+    initializeTransformers(serviceTransformers, isCamundaExporterEnabled, prefix);
     return serviceTransformers;
   }
 
@@ -134,7 +135,9 @@ public final class ServiceTransformers {
   }
 
   public static void initializeTransformers(
-      final ServiceTransformers mappers, final boolean isCamundaExporterEnabled) {
+      final ServiceTransformers mappers,
+      final boolean isCamundaExporterEnabled,
+      final String prefix) {
     // query -> request
     mappers.put(ProcessInstanceQuery.class, new TypedSearchQueryTransformer<>(mappers));
     mappers.put(UserTaskQuery.class, new TypedSearchQueryTransformer<>(mappers));
