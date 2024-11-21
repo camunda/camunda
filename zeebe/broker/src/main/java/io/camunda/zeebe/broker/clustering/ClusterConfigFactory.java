@@ -82,8 +82,8 @@ public final class ClusterConfigFactory {
             .setPort(network.getInternalApi().getPort())
             .setHeartbeatTimeout(network.getHeartbeatTimeout())
             .setHeartbeatInterval(network.getHeartbeatInterval());
-            .setBrokerSoRcvbuf(network.getSoRcvbuf())
-            .setBrokerSoSndbuf(network.getSoSndbuf());
+            .setSoRcvbuf((int) network.getSoRcvbuf().toBytes())
+            .setSoSndbuf((int) network.getSoSndbuf().toBytes());
 
     if (network.getSecurity().isEnabled()) {
       messaging
