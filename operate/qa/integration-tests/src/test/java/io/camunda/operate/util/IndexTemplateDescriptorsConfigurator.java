@@ -260,7 +260,7 @@ public class IndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean
+  @Bean("operateVariableTemplate")
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,

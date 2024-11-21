@@ -27,10 +27,15 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class BatchModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstractIT {
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
-  @Autowired private VariableTemplate variableTemplate;
+
+  @Autowired
+  @Qualifier("operateVariableTemplate")
+  private VariableTemplate variableTemplate;
+
   @Autowired private ModifyProcessInstanceHandler modifyProcessInstanceHandler;
 
   @Override

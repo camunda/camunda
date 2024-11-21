@@ -665,7 +665,10 @@ public class VariableService {
         .setName(variableEntity.getName())
         .setValue(variableEntity.getValue())
         .setIsPreview(variableEntity.getIsPreview())
-        .setFullValue(variableEntity.getFullValue())
+        .setFullValue(
+            variableEntity.getIsPreview()
+                ? variableEntity.getFullValue()
+                : variableEntity.getValue())
         .setTenantId(variableEntity.getTenantId());
   }
 

@@ -155,7 +155,7 @@ public class IndexTemplateDescriptorsConfigurator {
         databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
+  @Bean("operateVariableTemplate")
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate(

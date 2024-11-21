@@ -53,6 +53,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -77,7 +78,9 @@ public class OpensearchChecks {
 
   @Autowired private EventTemplate eventTemplate;
 
-  @Autowired private VariableTemplate variableTemplate;
+  @Autowired
+  @Qualifier("operateVariableTemplate")
+  private VariableTemplate variableTemplate;
 
   @Autowired private IncidentTemplate incidentTemplate;
 

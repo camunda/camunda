@@ -26,6 +26,7 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,9 @@ public class VariableZeebeRecordProcessorOpenSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(VariableZeebeRecordProcessorOpenSearch.class);
 
-  @Autowired private VariableTemplate variableIndex;
+  @Autowired
+  @Qualifier("tasklistVariableTemplate")
+  private VariableTemplate variableIndex;
 
   @Autowired private TasklistProperties tasklistProperties;
 

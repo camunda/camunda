@@ -88,7 +88,11 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
-  @Autowired private VariableTemplate variableIndex;
+
+  @Autowired
+  @Qualifier("tasklistVariableTemplate")
+  private VariableTemplate variableIndex;
+
   @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
 

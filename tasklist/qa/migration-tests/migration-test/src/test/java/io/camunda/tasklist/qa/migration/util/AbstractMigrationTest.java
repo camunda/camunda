@@ -22,6 +22,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -45,7 +46,9 @@ public abstract class AbstractMigrationTest {
 
   @Autowired protected TaskTemplate taskTemplate;
 
-  @Autowired protected VariableTemplate variableIndex;
+  @Autowired
+  @Qualifier("tasklistVariableTemplate")
+  protected VariableTemplate variableIndex;
 
   @Autowired protected ProcessIndex processIndex;
 

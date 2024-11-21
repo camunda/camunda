@@ -57,7 +57,9 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
-  @Autowired private VariableTemplate variableIndex;
+  @Autowired
+  @Qualifier("tasklistVariableTemplate")
+  private VariableTemplate variableIndex;
 
   @Autowired
   @Qualifier("tasklistEsClient")
