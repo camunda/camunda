@@ -115,7 +115,7 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   public void shouldMarkMultiplePositionIndexAsCompletedIf870RecordReceived() throws IOException {
     final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
     final var jobRecord = generateRecord(ValueType.JOB, "8.6.0", 1);
-    final var variableRecord = generateRecord(ValueType.VARIABLE, "8.6.0", 1);
+    final var variableRecord = generateRecord(ValueType.VARIABLE, "8.6.0", 2);
     EXPORTER.export(processInstanceRecord);
     EXPORTER.export(jobRecord);
     EXPORTER.export(variableRecord);
@@ -132,7 +132,7 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
 
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       // simulate existing variable records left to process so it is not marked as completed
-      final var decisionRecord2 = generateRecord(ValueType.VARIABLE, "8.6.0", 1);
+      final var decisionRecord2 = generateRecord(ValueType.VARIABLE, "8.6.0", 2);
       EXPORTER.export(decisionRecord2);
       tasklistEsClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
 
@@ -145,7 +145,7 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
             () ->
                 isRecordReaderIsCompleted("1-process-instance")
                     && isRecordReaderIsCompleted("1-job")
-                    && !isRecordReaderIsCompleted("1-variable"));
+                    && !isRecordReaderIsCompleted("2-variable"));
   }
 
   @Test
