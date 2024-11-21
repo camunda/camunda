@@ -7,7 +7,7 @@
     "@bpmn-io/element-template-icon-renderer": "0.5.2",
     "@camunda/camunda-composite-components": "0.11.0",
     "@carbon/elements": "11.54.0",
-    "@carbon/react": "1.57.0",
+    "@carbon/react": "1.70.0",
     "@devbookhq/splitter": "1.4.2",
     "@floating-ui/react-dom": "2.1.2",
     "@loadable/component": "^5.15.3",
