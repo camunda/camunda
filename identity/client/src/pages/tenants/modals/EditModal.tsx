@@ -10,15 +10,20 @@ import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
-import { UpdateTenantParams, updateTenant } from "src/utility/api/tenants";
+import {
+  UpdateDeleteTenantParams,
+  updateTenant,
+} from "src/utility/api/tenants";
+import { useNotifications } from "src/components/notifications";
 
-const EditTenantModal: FC<UseEntityModalProps<UpdateTenantParams>> = ({
+const EditTenantModal: FC<UseEntityModalProps<UpdateDeleteTenantParams>> = ({
   open,
   onClose,
   onSuccess,
   entity: { tenantKey, name: currentName },
 }) => {
   const { t } = useTranslate();
+  const { enqueueNotification } = useNotifications();
   const [apiCall, { loading, namedErrors }] = useApiCall(updateTenant);
   const [name, setName] = useState(currentName);
 
@@ -29,6 +34,13 @@ const EditTenantModal: FC<UseEntityModalProps<UpdateTenantParams>> = ({
     });
 
     if (success) {
+      enqueueNotification({
+        kind: "success",
+        title: t("Tenant update"),
+        subtitle: t("You have successfully updated tenant {{ name }}", {
+          name,
+        }),
+      });
       onSuccess();
     }
   };

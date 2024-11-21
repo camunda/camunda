@@ -11,9 +11,11 @@ import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { createTenant } from "src/utility/api/tenants";
+import { useNotifications } from "src/components/notifications";
 
 const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("tenants");
+  const { enqueueNotification } = useNotifications();
   const [apiCall, { loading, namedErrors }] = useApiCall(createTenant);
   const [name, setName] = useState("");
   const [tenantId, setTenantId] = useState("");
@@ -27,6 +29,13 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     });
 
     if (success) {
+      enqueueNotification({
+        kind: "success",
+        title: t("Tenant created"),
+        subtitle: t("You have successfully created tenant {{ name }}", {
+          name,
+        }),
+      });
       onSuccess();
     }
   };
