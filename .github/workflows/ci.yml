@@ -780,11 +780,3 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
           push: true
-      - uses: ./.github/actions/build-platform-docker
-        id: build-operate-docker
-        with:
-          repository: camunda/operate
-          version: SNAPSHOT
-          push: true
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: operate.Dockerfile
