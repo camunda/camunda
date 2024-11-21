@@ -3025,16 +3025,20 @@ components:
         - $ref: "#/components/schemas/SearchQueryRequest"
       properties:
         filter:
+          description: The tenant search filters.
           allOf:
             - $ref: "#/components/schemas/TenantFilterRequest"
 
     TenantFilterRequest:
+      description: Tenant filter request
       type: object
       properties:
         tenantId:
           type: string
+          description: The ID of the tenant.
         name:
           type: string
+          description: The name of the tenant.
 
     TenantSearchQueryResponse:
       description: Tenant search response.
@@ -3043,6 +3047,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching tenants.
           type: array
           items:
             $ref: "#/components/schemas/TenantItem"
