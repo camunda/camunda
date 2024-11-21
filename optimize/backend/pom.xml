@@ -477,7 +477,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <version>8.6.3</version>
+      <version>8.6.5</version>
       <scope>test</scope>
     </dependency>
 
