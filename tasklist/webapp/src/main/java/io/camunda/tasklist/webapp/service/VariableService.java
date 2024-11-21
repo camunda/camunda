@@ -105,7 +105,12 @@ public class VariableService {
                   currentOriginalVariables.get(draftVariable.getName());
               // Persist new draft variables based on the input if value `name` is the same as
               // original and `value` property is different
-              if (!variableEntity.getFullValue().equals(draftVariable.getValue())) {
+
+              final var fullValue =
+                  variableEntity.getIsPreview()
+                      ? variableEntity.getFullValue()
+                      : variableEntity.getValue();
+              if (!fullValue.equals(draftVariable.getValue())) {
                 toPersist.put(
                     draftVariable.getName(),
                     VariableService.createDraftVariableFrom(
