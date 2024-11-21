@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks;
 
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
+import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -39,6 +40,7 @@ public final class BackgroundTaskManagerFactory {
   private final ExporterResourceProvider resourceProvider;
   private final CamundaExporterMetrics metrics;
   private final Logger logger;
+  private final ExporterMetadata metadata;
 
   private ScheduledThreadPoolExecutor executor;
   private ArchiverRepository repository;
@@ -49,13 +51,15 @@ public final class BackgroundTaskManagerFactory {
       final ExporterConfiguration config,
       final ExporterResourceProvider resourceProvider,
       final CamundaExporterMetrics metrics,
-      final Logger logger) {
+      final Logger logger,
+      final ExporterMetadata metadata) {
     this.partitionId = partitionId;
     this.exporterId = exporterId;
     this.config = config;
     this.resourceProvider = resourceProvider;
     this.metrics = metrics;
     this.logger = logger;
+    this.metadata = metadata;
   }
 
   public BackgroundTaskManager build() {

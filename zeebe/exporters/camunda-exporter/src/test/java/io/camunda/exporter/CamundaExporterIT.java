@@ -132,8 +132,10 @@ final class CamundaExporterIT {
     exporter.export(record);
     exporter.export(record2);
     // then
-    verify(controllerSpy, never()).updateLastExportedRecordPosition(record.getPosition());
-    verify(controllerSpy).updateLastExportedRecordPosition(record2.getPosition());
+    verify(controllerSpy, never())
+        .updateLastExportedRecordPosition(Mockito.eq(record.getPosition()), Mockito.any());
+    verify(controllerSpy)
+        .updateLastExportedRecordPosition(Mockito.eq(record2.getPosition()), Mockito.any());
   }
 
   @ParameterizedTest
