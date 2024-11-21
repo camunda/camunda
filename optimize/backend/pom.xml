@@ -21,11 +21,9 @@
   <dependencies>
     <!-- Logging dependencies -->
 
-    <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
-      <groupId>net.logstash.logback</groupId>
-      <artifactId>logstash-logback-encoder</artifactId>
-      <version>8.0</version>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
     </dependency>
 
     <!-- this is necessary. Dependency:analyze error suppressed -->
@@ -96,12 +94,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-starter</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-slf4j2-impl</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- Spring -->
@@ -813,7 +805,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <ignoredUnusedDeclaredDependencies>
-            <dep>net.logstash.logback:logstash-logback-encoder</dep>
             <dep>org.codehaus.janino:janino</dep>
             <dep>io.camunda:identity-spring-boot-starter</dep>
             <dep>org.springframework:spring-tx</dep>

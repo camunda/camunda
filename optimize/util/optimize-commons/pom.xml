@@ -75,26 +75,25 @@
       <version>${jsonpath.version}</version>
     </dependency>
 
-    <!-- Logging -->
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-classic</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-    </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>${slf4j.version}</version>
     </dependency>
 
-    <!-- needed for elasticsearch logs to be available over slf4j. Dependency:analyze error suppressed. -->
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-to-slf4j</artifactId>
-      <version>${elasticsearch.log4j.version}</version>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-api</artifactId>
     </dependency>
 
     <!-- Utilities -->
@@ -282,7 +281,6 @@
           <version>3.8.1</version>
           <configuration>
             <ignoredUnusedDeclaredDependencies combine.children="append">
-              <dep>org.apache.logging.log4j:log4j-to-slf4j</dep>
               <dep>software.amazon.awssdk:sdk-core</dep>
               <dep>software.amazon.awssdk:sts</dep>
             </ignoredUnusedDeclaredDependencies>
