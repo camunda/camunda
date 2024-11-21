@@ -33,6 +33,7 @@ import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -127,6 +128,7 @@ public final class EventAppliers implements EventApplier {
     registerScalingAppliers(state);
     registerTenantAppliers(state);
     registerMappingAppliers(state);
+    registerIdentitySetupAppliers();
 
     return this;
   }
@@ -537,6 +539,10 @@ public final class EventAppliers implements EventApplier {
         MappingIntent.CREATED,
         new MappingCreatedApplier(state.getMappingState(), state.getAuthorizationState()));
     register(MappingIntent.DELETED, new MappingDeletedApplier(state));
+  }
+
+  private void registerIdentitySetupAppliers() {
+    register(IdentitySetupIntent.INITIALIZED, NOOP_EVENT_APPLIER);
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
