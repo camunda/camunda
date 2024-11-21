@@ -37,13 +37,18 @@ const DecisionsFormGroup: React.FC = observer(() => {
               <ComboBox
                 id="decisionName"
                 aria-label="Select a Decision"
-                items={decisions.map(({id, label, tenantId}) => ({
-                  label:
-                    isMultiTenancyEnabled && !isSpecificTenantSelected
-                      ? `${label} - ${authenticationStore.tenantsById?.[tenantId]}`
-                      : label,
-                  id,
-                }))}
+                itemToString={(item) => {
+                  if (item === null) {
+                    return '';
+                  }
+
+                  const {label, tenantId} = item;
+
+                  return isMultiTenancyEnabled && !isSpecificTenantSelected
+                    ? `${label} - ${authenticationStore.tenantsById?.[tenantId]}`
+                    : label;
+                }}
+                items={decisions}
                 onChange={({selectedItem}) => {
                   const decisionKey = selectedItem?.id;
 

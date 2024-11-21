@@ -36,6 +36,15 @@ const ProcessField: React.FC = observer(() => {
           id="processName"
           aria-label="Select a Process"
           placeholder="Search by Process Name"
+          itemToString={(item) => {
+            if (item === null) {
+              return '';
+            }
+            const {label, tenantId} = item;
+            return isMultiTenancyEnabled && !isSpecificTenantSelected
+              ? `${label} - ${authenticationStore.tenantsById?.[tenantId]}`
+              : label;
+          }}
           onChange={({selectedItem}) => {
             const versions = selectedItem
               ? versionsByProcessAndTenant[selectedItem.id]
@@ -60,15 +69,7 @@ const ProcessField: React.FC = observer(() => {
               }
             }
           }}
-          items={processes.map(({id, label, tenantId}) => {
-            return {
-              label:
-                isMultiTenancyEnabled && !isSpecificTenantSelected
-                  ? `${label} - ${authenticationStore.tenantsById?.[tenantId]}`
-                  : label,
-              id,
-            };
-          })}
+          items={processes}
           value={input.value}
           disabled={isDisabled}
           title={

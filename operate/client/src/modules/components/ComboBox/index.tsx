@@ -10,7 +10,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {ComboBox as BaseComboBox} from '@carbon/react';
 
-type Item = {id: string; label: string};
+type Item = {id: string; label: string; [key: string]: any};
 type Props = {
   id: string;
   value: string;
@@ -20,20 +20,19 @@ type Props = {
   items: Item[];
   disabled?: boolean;
   title?: string;
+  itemToString?: (item: Item | null) => string;
 };
 
 const ComboBox: React.FC<Props> = observer(
   ({id, items, onChange, value, disabled, ...props}) => {
-    const getItemById = (id: string) => {
-      return items.find((item) => item.id === id);
-    };
+    const selectedItem = items.find((item) => item.id === value) ?? null;
 
     return (
       <BaseComboBox
         id={id}
         items={items}
         onChange={onChange}
-        selectedItem={getItemById(value) ?? null}
+        selectedItem={selectedItem}
         disabled={disabled || items.length === 0}
         shouldFilterItem={(data) => {
           const {inputValue, item} = data;
