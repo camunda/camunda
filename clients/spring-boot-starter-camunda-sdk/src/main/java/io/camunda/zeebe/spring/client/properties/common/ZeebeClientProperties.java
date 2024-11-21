@@ -29,8 +29,8 @@ public class ZeebeClientProperties extends ApiProperties {
   private String caCertificatePath;
   private Duration keepAlive;
   private String overrideAuthority;
-  private ZeebeWorkerValue defaults;
-  private Map<String, ZeebeWorkerValue> override;
+  @NestedConfigurationProperty private ZeebeWorkerValue defaults;
+  @NestedConfigurationProperty private Map<String, ZeebeWorkerValue> override;
   private boolean preferRestOverGrpc;
   private URI grpcAddress;
   private URI restAddress;
