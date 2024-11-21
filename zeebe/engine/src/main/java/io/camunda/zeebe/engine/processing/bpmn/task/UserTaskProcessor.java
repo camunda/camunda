@@ -20,7 +20,9 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.util.Either;
+import org.apache.commons.lang3.StringUtils;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
 
@@ -83,6 +85,15 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
                   userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
               userTaskBehavior.userTaskCreated(userTaskRecord);
               stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+
+              if (StringUtils.isNotEmpty(userTaskProperties.getAssignee())
+                  && element.hasTaskListeners(ZeebeTaskListenerEventType.assignment)) {
+                userTaskBehavior.userTaskAssigning(userTaskRecord);
+                jobBehavior.createTaskListenerJob(
+                    element.getTaskListeners(ZeebeTaskListenerEventType.assignment).getFirst(),
+                    context,
+                    userTaskRecord);
+              }
             });
   }
 
