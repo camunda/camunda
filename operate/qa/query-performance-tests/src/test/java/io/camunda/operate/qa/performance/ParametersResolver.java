@@ -40,6 +40,7 @@ import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -74,7 +75,11 @@ public class ParametersResolver {
 
   @Autowired private ProcessIndex processIndex;
   @Autowired private ListViewTemplate listViewTemplate;
-  @Autowired private VariableTemplate variableTemplate;
+
+  @Autowired
+  @Qualifier("operateVariableTemplate")
+  private VariableTemplate variableTemplate;
+
   private List<String> processInstanceIds = new ArrayList<>();
   private String processInstanceIdWithLotsOfVariables;
   private List<String> processIds = new ArrayList<>();

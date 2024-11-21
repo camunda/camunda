@@ -73,7 +73,11 @@ public class VariableStoreOpenSearch implements VariableStore {
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
-  @Autowired private VariableTemplate variableIndex;
+
+  @Autowired
+  @Qualifier("tasklistVariableTemplate")
+  private VariableTemplate variableIndex;
+
   @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
 

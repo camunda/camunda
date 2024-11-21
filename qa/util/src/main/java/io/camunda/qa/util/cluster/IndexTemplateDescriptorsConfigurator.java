@@ -130,7 +130,7 @@ public class IndexTemplateDescriptorsConfigurator {
     return new JobTemplate("", databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
+  @Bean("operateVariableTemplate")
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate("", databaseInfo.isElasticsearchDb());
@@ -175,5 +175,11 @@ public class IndexTemplateDescriptorsConfigurator {
   public TaskTemplate getTaskTemplate(final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new TaskTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean("tasklistVariableTemplate")
+  public VariableTemplate getTasklistVariableTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new VariableTemplate("", databaseInfo.isElasticsearchDb());
   }
 }
