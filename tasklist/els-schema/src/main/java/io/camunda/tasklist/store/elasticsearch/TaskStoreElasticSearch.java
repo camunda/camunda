@@ -27,7 +27,6 @@ import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.queries.TaskSortFields;
-import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
@@ -721,8 +720,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     for (int i = 0; i < varNames.size(); i++) {
       final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-      boolQuery.must(QueryBuilders.termQuery(VariableIndex.NAME, varNames.get(i)));
-      boolQuery.must(QueryBuilders.termQuery(VariableIndex.VALUE, varValues.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(SnapshotTaskVariableTemplate.NAME, varNames.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(SnapshotTaskVariableTemplate.VALUE, varValues.get(i)));
 
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
