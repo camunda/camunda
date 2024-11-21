@@ -85,7 +85,7 @@ public class FlowNodeInstanceSpecificFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().key()).isEqualTo(42L);
+    assertThat(searchResult.items().getFirst().flowNodeInstanceKey()).isEqualTo(42L);
   }
 
   static List<FlowNodeInstanceFilter> shouldFindFlowNodeInstanceWithSpecificFilterParameters() {

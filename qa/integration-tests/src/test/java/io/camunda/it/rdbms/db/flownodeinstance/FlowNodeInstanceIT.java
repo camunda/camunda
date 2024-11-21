@@ -153,7 +153,8 @@ public class FlowNodeInstanceIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().key()).isEqualTo(instance.flowNodeInstanceKey());
+    assertThat(searchResult.items().getFirst().flowNodeInstanceKey())
+        .isEqualTo(instance.flowNodeInstanceKey());
   }
 
   private static void compareFlowNodeInstance(
@@ -163,18 +164,17 @@ public class FlowNodeInstanceIT {
         .ignoringFields(
             "startDate",
             "endDate",
-            "incident",
+            "hasIncident",
             "incidentKey",
             "treePath",
-            "scopeKey",
             "processDefinitionId",
             "bpmnProcessId",
             "flowNodeInstanceKey",
             "key")
         .isEqualTo(expected);
 
-    assertThat(actual.key()).isEqualTo(expected.flowNodeInstanceKey());
-    assertThat(actual.bpmnProcessId()).isEqualTo(expected.processDefinitionId());
+    assertThat(actual.flowNodeInstanceKey()).isEqualTo(expected.flowNodeInstanceKey());
+    assertThat(actual.processDefinitionId()).isEqualTo(expected.processDefinitionId());
     assertThat(actual.startDate())
         .isCloseTo(expected.startDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(actual.endDate())
@@ -220,7 +220,7 @@ public class FlowNodeInstanceIT {
                                           instanceAfter.type(),
                                           instanceAfter.tenantId(),
                                           instanceAfter.startDate(),
-                                          instanceAfter.key()
+                                          instanceAfter.flowNodeInstanceKey()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

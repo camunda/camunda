@@ -12,11 +12,11 @@ import io.camunda.zeebe.util.DateUtil;
 import java.util.function.Function;
 
 public enum FlowNodeInstanceSearchColumn implements SearchColumn<FlowNodeInstanceEntity> {
-  FLOW_NODE_INSTANCE_KEY("key", FlowNodeInstanceEntity::key),
+  FLOW_NODE_INSTANCE_KEY("flowNodeInstanceKey", FlowNodeInstanceEntity::flowNodeInstanceKey),
   FLOW_NODE_ID("flowNodeId", FlowNodeInstanceEntity::flowNodeId),
   PROCESS_INSTANCE_KEY("processInstanceKey", FlowNodeInstanceEntity::processInstanceKey),
   PROCESS_DEFINITION_KEY("processDefinitionKey", FlowNodeInstanceEntity::processDefinitionKey),
-  PROCESS_DEFINITION_ID("bpmnProcessId", FlowNodeInstanceEntity::bpmnProcessId),
+  PROCESS_DEFINITION_ID("processDefinitionId", FlowNodeInstanceEntity::processDefinitionId),
   START_DATE("startDate", FlowNodeInstanceEntity::startDate, DateUtil::fuzzyToOffsetDateTime),
   END_DATE("endDate", FlowNodeInstanceEntity::endDate, DateUtil::fuzzyToOffsetDateTime),
   STATE("state", FlowNodeInstanceEntity::state),
@@ -24,7 +24,7 @@ public enum FlowNodeInstanceSearchColumn implements SearchColumn<FlowNodeInstanc
   TENANT_ID("tenantId", FlowNodeInstanceEntity::tenantId),
   TREE_PATH("treePath", FlowNodeInstanceEntity::treePath),
   INCIDENT_KEY("incidentKey", FlowNodeInstanceEntity::incidentKey),
-  INCIDENT("incident", FlowNodeInstanceEntity::incident);
+  INCIDENT("hasIncident", FlowNodeInstanceEntity::hasIncident);
 
   private final String property;
   private final Function<FlowNodeInstanceEntity, Object> propertyReader;
