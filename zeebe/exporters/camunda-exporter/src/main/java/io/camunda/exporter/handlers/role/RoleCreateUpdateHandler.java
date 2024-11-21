@@ -5,24 +5,22 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.handlers;
+package io.camunda.exporter.handlers.role;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
-import java.util.Set;
 
-public class RoleDeletedHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
-  private static final Set<Intent> SUPPORTED_INTENTS = Set.of(RoleIntent.DELETED);
+public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
   private final String indexName;
 
-  public RoleDeletedHandler(final String indexName) {
+  public RoleCreateUpdateHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -39,7 +37,8 @@ public class RoleDeletedHandler implements ExportHandler<RoleEntity, RoleRecordV
   @Override
   public boolean handlesRecord(final Record<RoleRecordValue> record) {
     return getHandledValueType().equals(record.getValueType())
-        && SUPPORTED_INTENTS.contains(record.getIntent());
+        && (record.getIntent().equals(RoleIntent.CREATED)
+            || record.getIntent().equals(RoleIntent.UPDATED));
   }
 
   @Override
@@ -61,7 +60,7 @@ public class RoleDeletedHandler implements ExportHandler<RoleEntity, RoleRecordV
   @Override
   public void flush(final RoleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.add(indexName, entity);
   }
 
   @Override
