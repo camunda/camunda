@@ -68,4 +68,8 @@ public final class Permission extends ObjectValue implements PermissionValue {
     resourceIdsProp.add().wrap(BufferUtil.wrapString(resourceId));
     return this;
   }
+
+  public Permission addResourceId(final long key) {
+    return addResourceId(Long.toString(key));
+  }
 }

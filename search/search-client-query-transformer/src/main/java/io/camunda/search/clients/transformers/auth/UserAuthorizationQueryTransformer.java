@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.U
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
@@ -24,7 +25,7 @@ public class UserAuthorizationQueryTransformer implements AuthorizationQueryTran
       final PermissionType permissionType,
       final List<String> resourceKeys) {
     if (resourceType == USER && permissionType == READ) {
-      return stringTerms("username", resourceKeys);
+      return stringTerms(UserIndex.KEY, resourceKeys);
     }
     throw new IllegalArgumentException(
         "Unsupported authorizations with resource:%s and permission:%s: "

@@ -87,7 +87,7 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     command.getValue().setUserKey(key);
 
     stateWriter.appendFollowUpEvent(key, UserIntent.CREATED, command.getValue());
-    addUserPermissions(key, username);
+    addUserPermissions(key);
     responseWriter.writeEventOnCommand(key, UserIntent.CREATED, command.getValue(), command);
 
     distributionBehavior
@@ -103,16 +103,16 @@ public class UserCreateProcessor implements DistributedTypedRecordProcessor<User
     distributionBehavior.acknowledgeCommand(command);
   }
 
-  private void addUserPermissions(final long key, final String username) {
+  private void addUserPermissions(final long key) {
     final var authorizationRecord =
         new AuthorizationRecord()
             .setOwnerKey(key)
             .setOwnerType(AuthorizationOwnerType.USER)
             .setResourceType(AuthorizationResourceType.USER)
             .addPermission(
-                new Permission().setPermissionType(PermissionType.READ).addResourceId(username))
+                new Permission().setPermissionType(PermissionType.READ).addResourceId(key))
             .addPermission(
-                new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(username));
+                new Permission().setPermissionType(PermissionType.UPDATE).addResourceId(key));
     commandWriter.appendFollowUpCommand(
         key, AuthorizationIntent.ADD_PERMISSION, authorizationRecord);
   }
