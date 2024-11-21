@@ -91,7 +91,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByVariableKeyDESC() {
     // given
-    final var variableFilter = FilterBuilders.variable((f) -> f.names("varKey"));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("variableKey"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.variableKey().desc()));
@@ -106,7 +106,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
     final boolean sortByVariableKeyConditionCheck =
         sort.stream()
             .anyMatch(
-                s -> s.field().field().equals("key") && s.field().order().equals(SortOrder.DESC));
+                s -> s.field().field().equals("variableKey") && s.field().order().equals(SortOrder.DESC));
 
     assertThat(sortByVariableKeyConditionCheck).isTrue();
   }
