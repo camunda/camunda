@@ -9,10 +9,10 @@ package io.camunda.tasklist.zeebeimport.v870.processors.common;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.zeebeimport.v870.record.Intent;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.util.ArrayList;
@@ -33,8 +33,8 @@ public class UserTaskRecordToVariableEntityMapper {
 
   @Autowired private ObjectMapper objectMapper;
 
-  public List<TaskVariableEntity> mapVariables(final Record<UserTaskRecordValue> record) {
-    final List<TaskVariableEntity> variables = new ArrayList<>();
+  public List<SnapshotTaskVariableEntity> mapVariables(final Record<UserTaskRecordValue> record) {
+    final List<SnapshotTaskVariableEntity> variables = new ArrayList<>();
 
     if (record.getIntent().equals(Intent.COMPLETED)) {
       final UserTaskRecordValue recordValue = record.getValue();
@@ -47,10 +47,9 @@ public class UserTaskRecordToVariableEntityMapper {
         } catch (final JsonProcessingException e) {
           throw new TasklistRuntimeException("Failed to parse variable %s".formatted(varMap), e);
         }
-        final TaskVariableEntity variableEntity = new TaskVariableEntity();
+        final SnapshotTaskVariableEntity variableEntity = new SnapshotTaskVariableEntity();
         variableEntity.setId(
-            TaskVariableEntity.getIdBy(
-                String.valueOf(recordValue.getUserTaskKey()), varMap.getKey()));
+            String.format("%s-%s", String.valueOf(recordValue.getUserTaskKey()), varMap.getKey()));
         variableEntity.setName(varMap.getKey());
         variableEntity.setTaskId(String.valueOf(recordValue.getUserTaskKey()));
         variableEntity.setPartitionId(record.getPartitionId());

@@ -309,7 +309,8 @@ final class CamundaExporterIT {
             "custom-prefix-tasklist-draft-task-variable-8.3.0_",
             "custom-prefix-tasklist-form-8.4.0_",
             "custom-prefix-tasklist-metric-8.3.0_",
-            "custom-prefix-tasklist-task-8.5.0_");
+            "custom-prefix-tasklist-task-8.5.0_",
+            "custom-prefix-tasklist-task-variable-8.3.0_");
   }
 
   @TestTemplate
