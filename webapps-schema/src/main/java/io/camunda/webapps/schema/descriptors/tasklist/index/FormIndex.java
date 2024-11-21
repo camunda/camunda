@@ -31,6 +31,10 @@ public class FormIndex extends TasklistIndexDescriptor implements Prio4Backup {
     super(indexPrefix, isElasticsearch);
   }
 
+  public static String getIndexNameWithPrefix(final String prefix) {
+    return new FormIndex(prefix, false).getFullQualifiedName();
+  }
+
   @Override
   public String getVersion() {
     return INDEX_VERSION;

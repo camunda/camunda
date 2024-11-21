@@ -35,6 +35,7 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,11 +44,15 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   private final ServiceTransformers transformers;
   private final boolean isCamundaExporterEnabled;
+  private final String prefix;
 
   public UserTaskFilterTransformer(
-      final ServiceTransformers transformers, final boolean isCamundaExporterEnabled) {
+      final ServiceTransformers transformers,
+      final boolean isCamundaExporterEnabled,
+      final String prefix) {
     this.transformers = transformers;
     this.isCamundaExporterEnabled = isCamundaExporterEnabled;
+    this.prefix = prefix;
   }
 
   @Override
@@ -103,8 +108,9 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
+    final String indexName = TaskTemplate.getIndexNameWithPrefix(prefix);
     if (isCamundaExporterEnabled) {
-      return List.of("tasklist-task-8.5.0_");
+      return List.of(indexName);
     }
     return List.of("tasklist-list-view-8.6.0_");
   }

@@ -64,6 +64,10 @@ public class TaskTemplate extends TasklistTemplateDescriptor
     super(indexPrefix, isElasticsearch);
   }
 
+  public static String getIndexNameWithPrefix(final String prefix) {
+    return new TaskTemplate(prefix, false).getFullQualifiedName();
+  }
+
   @Override
   public String getIndexName() {
     return INDEX_NAME;

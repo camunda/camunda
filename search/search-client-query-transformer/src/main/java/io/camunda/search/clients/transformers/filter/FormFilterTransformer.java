@@ -16,15 +16,18 @@ import static io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex.KEY
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.FormFilter;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import java.util.Arrays;
 import java.util.List;
 
 public class FormFilterTransformer implements FilterTransformer<FormFilter> {
 
   private final ServiceTransformers serviceTransformers;
+  private final String prefix;
 
-  public FormFilterTransformer(final ServiceTransformers transformers) {
+  public FormFilterTransformer(final ServiceTransformers transformers, final String prefix) {
     serviceTransformers = transformers;
+    this.prefix = prefix;
   }
 
   @Override
@@ -37,7 +40,9 @@ public class FormFilterTransformer implements FilterTransformer<FormFilter> {
 
   @Override
   public List<String> toIndices(final FormFilter filter) {
-    return Arrays.asList("tasklist-form-8.4.0_");
+    final String indexName = FormIndex.getIndexNameWithPrefix(prefix);
+    System.out.println(indexName);
+    return Arrays.asList(indexName);
   }
 
   private SearchQuery getFormByKeysQuery(final List<Long> formKeys) {
