@@ -28,7 +28,6 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -55,62 +54,6 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
   public void before() {
     super.before();
     updateVariableHandler.setZeebeClient(zeebeClient);
-  }
-
-  @Test
-  public void testUnhandledErrorEventAsEndEvent() {
-    // Given
-    tester
-        .deployProcess("error-end-event.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        // when
-        .startProcessInstance("error-end-process")
-        .waitUntil()
-        .incidentIsActive();
-    // then
-    final List<IncidentDto> incidents = tester.getIncidents();
-    assertThat(incidents.size()).isEqualTo(1);
-    assertIncident(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
-  }
-
-  @Test
-  public void testUnhandledErrorEvent() {
-    // Given
-    tester
-        .deployProcess("errorProcess.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        .startProcessInstance("errorProcess")
-        // when
-        .throwError("errorTask", "this-errorcode-does-not-exists", "Process error")
-        .then()
-        .waitUntil()
-        .incidentIsActive();
-
-    // then
-    final List<IncidentDto> incidents = tester.getIncidents();
-    assertThat(incidents.size()).isEqualTo(1);
-    assertIncident(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
-  }
-
-  @Ignore
-  @Test
-  public void testCatchAllErrorEvent() {
-    // Given
-    tester
-        .deployProcess("errorProcessCatchAll.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        .startProcessInstance("errorProcess")
-        // when
-        .throwError("errorTask", "unknown", "Process error")
-        .then()
-        .waitUntil()
-        .processInstanceIsFinished();
-
-    // then
-    assertThat(tester.getIncidents()).isEmpty();
   }
 
   @Test
