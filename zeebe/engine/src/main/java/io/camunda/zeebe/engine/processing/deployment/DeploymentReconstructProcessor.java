@@ -8,10 +8,12 @@
 package io.camunda.zeebe.engine.processing.deployment;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.FormResource;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.ProcessResource;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
@@ -93,7 +95,25 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     if (foundProcess.get() != null) {
       return new ProcessResource(foundProcess.get());
     }
-    // TODO: Continue with formState and decisionState
+
+    final var foundForm = new MutableReference<PersistedForm>();
+    formState.forEachForm(
+        null, // TODO: Continue where we left off
+        form -> {
+          final var deploymentKey = form.getDeploymentKey();
+          if (deploymentKey != NO_DEPLOYMENT_KEY
+              && deploymentState.hasStoredDeploymentRecord(deploymentKey)) {
+            return true;
+          }
+          final var copy = new PersistedForm();
+          BufferUtil.copy(form, copy);
+          foundForm.set(copy);
+          return false;
+        });
+    if (foundForm.get() != null) {
+      return new FormResource(foundForm.get());
+    }
+    // TODO: Continue with decisionState
 
     return null;
   }
@@ -119,7 +139,20 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           // key.
           return process.getTenantId().equals(tenantId) && processDeploymentKey == deploymentKey;
         });
-    // TODO: Continue with formState and decisionState
+
+    formState.forEachForm(
+        null,
+        form -> {
+          final var formDeploymentKey = form.getDeploymentKey();
+          if (formDeploymentKey == deploymentKey) {
+            final var copy = new PersistedForm();
+            BufferUtil.copy(form, copy);
+            resources.add(new FormResource(copy));
+          }
+          return true;
+        });
+
+    // TODO: Continue with decisionState
     return resources;
   }
 
@@ -129,13 +162,9 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
    */
   private DeploymentRecord createNewDeploymentForResource(final Resource resource) {
     final var deploymentRecord = new DeploymentRecord();
-    switch (resource) {
-      case ProcessResource(final var process) -> {
-        deploymentRecord.setDeploymentKey(process.getKey());
-        deploymentRecord.setTenantId(process.getTenantId());
-        attachResourceMetadataToDeployment(deploymentRecord, resource);
-      }
-    }
+    deploymentRecord.setDeploymentKey(resource.key());
+    deploymentRecord.setTenantId(resource.tenantId());
+    attachResourceMetadataToDeployment(deploymentRecord, resource);
     return deploymentRecord;
   }
 
@@ -167,15 +196,34 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
             .setChecksum(checksumGenerator.checksum(process.getResource()))
             .setTenantId(process.getTenantId());
       }
+      case FormResource(final var form) -> {
+        deploymentRecord
+            .formMetadata()
+            .add()
+            .setFormKey(form.getFormKey())
+            .setFormId(BufferUtil.bufferAsString(form.getFormId()))
+            .setVersion(form.getVersion())
+            .setResourceName(BufferUtil.bufferAsString(form.getResourceName()))
+            .setChecksum(checksumGenerator.checksum(form.getResource()))
+            .setTenantId(form.getTenantId());
+      }
     }
   }
 
   sealed interface Resource {
+    long key();
+
     long deploymentKey();
 
     String tenantId();
 
     record ProcessResource(PersistedProcess process) implements Resource {
+
+      @Override
+      public long key() {
+        return process.getKey();
+      }
+
       @Override
       public long deploymentKey() {
         return process.getDeploymentKey();
@@ -184,6 +232,24 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       @Override
       public String tenantId() {
         return process.getTenantId();
+      }
+    }
+
+    record FormResource(PersistedForm form) implements Resource {
+
+      @Override
+      public long key() {
+        return form.getFormKey();
+      }
+
+      @Override
+      public long deploymentKey() {
+        return form.getDeploymentKey();
+      }
+
+      @Override
+      public String tenantId() {
+        return form.getTenantId();
       }
     }
   }
