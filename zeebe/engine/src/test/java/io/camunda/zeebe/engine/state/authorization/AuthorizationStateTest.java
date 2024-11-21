@@ -146,24 +146,6 @@ public class AuthorizationStateTest {
   }
 
   @Test
-  void shouldRemovePermissionsResourceIdentifiers() {
-    // given
-    final var ownerKey = 1L;
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
-    final var permissionType = PermissionType.CREATE;
-    final var resourceIds = List.of("foo", "bar");
-    authorizationState.createOrAddPermission(ownerKey, resourceType, permissionType, resourceIds);
-
-    // when
-    authorizationState.removePermission(ownerKey, resourceType, permissionType, List.of("bar"));
-
-    // then
-    final var resourceIdentifiers =
-        authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
-    assertThat(resourceIdentifiers).containsExactlyInAnyOrder("foo");
-  }
-
-  @Test
   void shouldInsertOwnerTypeByKey() {
     // given
     final var ownerKey = 1L;

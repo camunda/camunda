@@ -36,14 +36,14 @@ public final class AuthorizationClient {
     private static final Function<Long, Record<AuthorizationRecordValue>> ADD_SUCCESS_SUPPLIER =
         (position) ->
             RecordingExporter.authorizationRecords()
-                .withIntent(AuthorizationIntent.PERMISSION_UPDATED)
+                .withIntent(AuthorizationIntent.PERMISSION_ADDED)
                 .withSourceRecordPosition(position)
                 .getFirst();
     private static final Function<Long, Record<AuthorizationRecordValue>> ADD_REJECTION_SUPPLIER =
         (position) ->
             RecordingExporter.authorizationRecords()
                 .onlyCommandRejections()
-                .withIntent(AuthorizationIntent.UPDATE_PERMISSION)
+                .withIntent(AuthorizationIntent.ADD_PERMISSION)
                 .withSourceRecordPosition(position)
                 .getFirst();
     private static final Function<Long, Record<AuthorizationRecordValue>> REMOVE_SUCCESS_SUPPLIER =
@@ -102,7 +102,7 @@ public final class AuthorizationClient {
     public Record<AuthorizationRecordValue> add() {
       expectation = expectRejection ? ADD_REJECTION_SUPPLIER : ADD_SUCCESS_SUPPLIER;
       final long position =
-          writer.writeCommand(AuthorizationIntent.UPDATE_PERMISSION, authorizationCreationRecord);
+          writer.writeCommand(AuthorizationIntent.ADD_PERMISSION, authorizationCreationRecord);
       return expectation.apply(position);
     }
 

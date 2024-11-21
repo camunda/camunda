@@ -12,14 +12,13 @@ import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 
-public final class AuthorizationPermissionUpdatedApplier
+public final class AuthorizationPermissionAddedApplier
     implements TypedEventApplier<AuthorizationIntent, AuthorizationRecord> {
 
   private final MutableAuthorizationState authorizationState;
 
-  public AuthorizationPermissionUpdatedApplier(final MutableProcessingState state) {
+  public AuthorizationPermissionAddedApplier(final MutableProcessingState state) {
     authorizationState = state.getAuthorizationState();
   }
 
@@ -28,22 +27,13 @@ public final class AuthorizationPermissionUpdatedApplier
     final var ownerKey = value.getOwnerKey();
     final var resourceType = value.getResourceType();
     final var permissions = value.getPermissions();
-    if (PermissionAction.ADD == value.getAction()) {
-      permissions.forEach(
-          permission ->
-              authorizationState.createOrAddPermission(
-                  ownerKey,
-                  resourceType,
-                  permission.getPermissionType(),
-                  permission.getResourceIds()));
-    } else if (PermissionAction.REMOVE == value.getAction()) {
-      permissions.forEach(
-          permission ->
-              authorizationState.removePermission(
-                  ownerKey,
-                  resourceType,
-                  permission.getPermissionType(),
-                  permission.getResourceIds()));
-    }
+
+    permissions.forEach(
+        permission ->
+            authorizationState.createOrAddPermission(
+                ownerKey,
+                resourceType,
+                permission.getPermissionType(),
+                permission.getResourceIds()));
   }
 }
