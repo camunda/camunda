@@ -1,8 +1,7 @@
 /*
  * Copyright © Camunda Services GmbH
  */
-
-import { ApiDefinition, apiPost } from "src/utility/api/request";
+import { ApiDefinition, apiPost, apiPatch } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
 import { EntityData } from "src/components/entityList/EntityList";
 
@@ -35,3 +34,13 @@ type CreateTenantParams = Omit<Tenant, "tenantKey">;
 export const createTenant: ApiDefinition<undefined, CreateTenantParams> = (
   tenant,
 ) => apiPost(TENANTS_ENDPOINT, tenant);
+
+export type UpdateTenantParams = {
+  tenantKey: string;
+  name: string;
+};
+
+export const updateTenant: ApiDefinition<undefined, UpdateTenantParams> = ({
+  tenantKey,
+  name,
+}) => apiPatch(`${TENANTS_ENDPOINT}/${tenantKey}`, { name });

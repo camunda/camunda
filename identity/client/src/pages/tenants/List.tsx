@@ -19,9 +19,11 @@ import {
 import { searchTenant, Tenant } from "src/utility/api/tenants";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
-import useModal from "src/components/modal/useModal";
+import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
+import EditModal from "src/pages/tenants/modals/EditModal";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
+import { Edit } from "@carbon/react/icons";
 
 const List: FC = () => {
   const { t, Translate } = useTranslate();
@@ -33,7 +35,9 @@ const List: FC = () => {
     reload,
     success,
   } = useApi(searchTenant);
+
   const [addTenant, addTenantModal] = useModal(AddModal, reload);
+  const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
 
   const showDetails = ({ tenantId }: Tenant) => navigate(`${tenantId}`);
 
@@ -77,6 +81,14 @@ const List: FC = () => {
         onAddEntity={addTenant}
         onSearch={setSearch}
         loading={loading}
+        menuItems={[
+          {
+            label: t("Rename"),
+            icon: Edit,
+            onClick: (tenant) =>
+              editTenant({ tenantKey: tenant.tenantKey, name: tenant.name }),
+          },
+        ]}
       />
       {success && (
         <DocumentationDescription>
@@ -91,6 +103,7 @@ const List: FC = () => {
         />
       )}
       {addTenantModal}
+      {editTenantModal}
     </Page>
   );
 };
