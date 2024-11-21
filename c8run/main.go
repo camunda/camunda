@@ -110,6 +110,13 @@ func getC8RunPlatform() C8Run {
 	panic("Unsupported operating system")
 }
 
+func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
+	if settings.keystore != "" && settings.keystorePassword != "" {
+		javaOpts = javaOpts + " -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword
+	}
+	return javaOpts
+}
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
@@ -149,7 +156,7 @@ func main() {
 	} else if os.Args[1] == "clean" {
 		baseCommand = "clean"
 	} else if os.Args[1] == "-h" || os.Args[1] == "--help" {
-		fmt.Println("Usage: c8run [command] [options]\nCommands:\n  start\n  stop\n  package\n")
+		fmt.Println("Usage: c8run [command] [options]\nCommands:\n  start\n  stop\n  package")
 		os.Exit(0)
 	} else {
 		panic("Unsupported operation")
@@ -256,9 +263,7 @@ func main() {
 		if javaOpts != "" {
 			fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
 		}
-		if settings.keystore != "" && settings.keystorePassword != "" {
-			javaOpts = javaOpts + " -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword
-		}
+		javaOpts = adjustJavaOpts(javaOpts, settings)
 
 		os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
 
