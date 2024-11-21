@@ -162,7 +162,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             entry(MappingIndex.class, new MappingIndex(globalPrefix, isElasticsearch)),
             entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
             entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)),
-            entry(ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)));
+            entry(
+                ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)));
 
     final var processCache =
         new ExporterEntityCacheImpl<>(
