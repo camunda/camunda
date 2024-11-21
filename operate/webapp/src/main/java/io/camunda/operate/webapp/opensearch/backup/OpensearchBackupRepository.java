@@ -22,8 +22,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchBackupRepository
     extends io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository {
-  public static final String SNAPSHOT_MISSING_EXCEPTION_TYPE = "snapshot_missing_exception";
-  public static final String REPOSITORY_MISSING_EXCEPTION_TYPE = "repository_missing_exception";
 
   public OpensearchBackupRepository(
       final OpenSearchClient openSearchClient,
