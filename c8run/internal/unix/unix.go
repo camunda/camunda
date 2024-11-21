@@ -12,8 +12,8 @@ import (
 	"syscall"
 )
 
-func (w *UnixC8Run) OpenBrowser() error {
-	operateUrl := "http://localhost:8080/operate/login"
+func (w *UnixC8Run) OpenBrowser(protocol string) error {
+	operateUrl := protocol + "://localhost:8080/operate/login"
 	var openBrowserCmdString string
 	if runtime.GOOS == "darwin" {
 		openBrowserCmdString = "open"
@@ -58,9 +58,12 @@ func (w *UnixC8Run) ConnectorsCmd(javaBinary string, parentDir string, camundaVe
 	return connectorsCmd
 }
 
-func (w *UnixC8Run) CamundaCmd(camundaVersion string, parentDir string, extraArgs string) *exec.Cmd {
+func (w *UnixC8Run) CamundaCmd(camundaVersion string, parentDir string, extraArgs string, javaOpts string) *exec.Cmd {
 	camundaCmdString := parentDir + "/camunda-zeebe-" + camundaVersion + "/bin/camunda"
 	camundaCmd := exec.Command(camundaCmdString, extraArgs)
+	if javaOpts != "" {
+		camundaCmd.Env = append(os.Environ(), "JAVA_OPTS="+javaOpts)
+	}
 	camundaCmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	return camundaCmd
 }

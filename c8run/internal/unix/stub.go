@@ -7,7 +7,7 @@ import (
 	"os/exec"
 )
 
-func (w *UnixC8Run) OpenBrowser() error {
+func (w *UnixC8Run) OpenBrowser(protocol string) error {
 	panic("Platform was not built for unix")
 }
 
@@ -28,6 +28,6 @@ func (w *UnixC8Run) ConnectorsCmd(javaBinary string, parentDir string, camundaVe
 
 }
 
-func (w *UnixC8Run) CamundaCmd(camundaVersion string, parentDir string, extraArgs string) *exec.Cmd {
+func (w *UnixC8Run) CamundaCmd(camundaVersion string, parentDir string, extraArgs string, javaOpts string) *exec.Cmd {
 	panic("Platform was not built for unix")
 }

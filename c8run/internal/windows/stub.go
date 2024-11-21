@@ -7,7 +7,7 @@ import (
 	"os/exec"
 )
 
-func (w *WindowsC8Run) OpenBrowser() error {
+func (w *WindowsC8Run) OpenBrowser(protocol string) error {
 	panic("Platform was not built for windows")
 }
 
@@ -28,6 +28,6 @@ func (w *WindowsC8Run) ConnectorsCmd(javaBinary string, parentDir string, camund
 
 }
 
-func (w *WindowsC8Run) CamundaCmd(camundaVersion string, parentDir string, extraArgs string) *exec.Cmd {
+func (w *WindowsC8Run) CamundaCmd(camundaVersion string, parentDir string, extraArgs string, javaOpts string) *exec.Cmd {
 	panic("Platform was not built for windows")
 }
