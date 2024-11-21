@@ -22,7 +22,6 @@ import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
-import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -41,6 +40,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.util.Set;
 import org.agrona.CloseHelper;
@@ -57,8 +57,8 @@ public class CamundaExporter implements Exporter {
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
-  private Logger logger;
   private BackgroundTaskManager taskManager;
+  private final ExporterMetadata metadata;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -66,12 +66,17 @@ public class CamundaExporter implements Exporter {
 
   @VisibleForTesting
   public CamundaExporter(final ExporterResourceProvider provider) {
+    this(provider, new ExporterMetadata());
+  }
+
+  @VisibleForTesting
+  public CamundaExporter(final ExporterResourceProvider provider, final ExporterMetadata metadata) {
     this.provider = provider;
+    this.metadata = metadata;
   }
 
   @Override
   public void configure(final Context context) {
-    logger = context.getLogger();
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
@@ -87,7 +92,8 @@ public class CamundaExporter implements Exporter {
                 configuration,
                 provider,
                 metrics,
-                logger)
+                context.getLogger(),
+                metadata)
             .build();
     LOG.debug("Exporter configured with {}", configuration);
   }
@@ -108,6 +114,7 @@ public class CamundaExporter implements Exporter {
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
+    controller.readMetadata().ifPresent(metadata::deserialize);
     taskManager.start();
 
     LOG.info("Exporter opened");
@@ -196,7 +203,8 @@ public class CamundaExporter implements Exporter {
   }
 
   private void updateLastExportedPosition() {
-    controller.updateLastExportedRecordPosition(lastPosition);
+    final var serialized = metadata.serialize();
+    controller.updateLastExportedRecordPosition(lastPosition, serialized);
   }
 
   private record CamundaExporterRecordFilter() implements RecordFilter {
