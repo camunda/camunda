@@ -105,7 +105,10 @@ public class VariableSearchResponse {
     return new VariableSearchResponse()
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())
-        .setValue(variableEntity.getFullValue())
+        .setValue(
+            variableEntity.getIsPreview()
+                ? variableEntity.getFullValue()
+                : variableEntity.getValue())
         .setIsValueTruncated(variableEntity.getIsPreview())
         .setPreviewValue(variableEntity.getValue());
   }

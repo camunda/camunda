@@ -49,7 +49,7 @@ public class VariableListViewEntity {
   public VariableListViewEntity(final VariableEntity entity) {
     setKey(entity.getKey());
     setValue(entity.getValue());
-    setFullValue(entity.getFullValue());
+    setFullValue(entity.getIsPreview() ? entity.getFullValue() : entity.getValue());
     setName(entity.getName());
     setIsPreview(entity.getIsPreview());
     setScopeKey(String.valueOf(entity.getScopeKey()));
