@@ -22,8 +22,9 @@ import { TranslatedErrorInlineNotification } from "src/components/notifications/
 import useModal, { useEntityModal } from "src/components/modal/useModal";
 import AddModal from "src/pages/tenants/modals/AddModal";
 import EditModal from "src/pages/tenants/modals/EditModal";
+import DeleteModal from "src/pages/tenants/modals/DeleteModal";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
-import { Edit } from "@carbon/react/icons";
+import { Edit, TrashCan } from "@carbon/react/icons";
 
 const List: FC = () => {
   const { t, Translate } = useTranslate();
@@ -38,6 +39,7 @@ const List: FC = () => {
 
   const [addTenant, addTenantModal] = useModal(AddModal, reload);
   const [editTenant, editTenantModal] = useEntityModal(EditModal, reload);
+  const [deleteTenant, deleteTenantModal] = useEntityModal(DeleteModal, reload);
 
   const showDetails = ({ tenantId }: Tenant) => navigate(`${tenantId}`);
 
@@ -88,6 +90,13 @@ const List: FC = () => {
             onClick: (tenant) =>
               editTenant({ tenantKey: tenant.tenantKey, name: tenant.name }),
           },
+          {
+            label: t("Delete"),
+            icon: TrashCan,
+            isDangerous: true,
+            onClick: (tenant) =>
+              deleteTenant({ tenantKey: tenant.tenantKey, name: tenant.name }),
+          },
         ]}
       />
       {success && (
@@ -104,6 +113,7 @@ const List: FC = () => {
       )}
       {addTenantModal}
       {editTenantModal}
+      {deleteTenantModal}
     </Page>
   );
 };
