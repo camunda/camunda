@@ -188,6 +188,31 @@ public class IncidentHandlerTest {
   }
 
   @Test
+  void shouldTrimIncidentErrorMessage() {
+    // given
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withErrorMessage(
+                """
+   Message with Whitespaces
+   """)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(incidentRecordValue));
+
+    // when
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getErrorMessage()).isEqualTo("Message with Whitespaces");
+  }
+
+  @Test
   void shouldUpdateTreePathForCallActivitiesCase() {
     // given
     final long processDefinitionKey1 = 999L;
