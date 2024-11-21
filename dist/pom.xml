@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -657,6 +659,14 @@
       <scope>test</scope>
     </dependency>
 
+    <!-- optimize -->
+
+    <dependency>
+      <groupId>io.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>8.7.0-SNAPSHOT</version>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -671,7 +681,8 @@
           <configurationDirectory>config</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
-            -Dfile.encoding=UTF-8 -Xshare:auto</extraJvmArguments>
+            -Dfile.encoding=UTF-8 -Xshare:auto
+          </extraJvmArguments>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
@@ -753,12 +764,18 @@
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>org.agrona:agrona</ignoredNonTestScopedDependency>
             <ignoredNonTestScopedDependency>io.netty:netty-handler</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>io.camunda:zeebe-protocol</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-core</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-databind</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>org.apache.httpcomponents.client5:httpclient5</ignoredNonTestScopedDependency>
-            <ignoredNonTestScopedDependency>org.apache.httpcomponents.core5:httpcore5</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>io.camunda:zeebe-protocol
+            </ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-core
+            </ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>com.fasterxml.jackson.datatype:jackson-datatype-jsr310
+            </ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>com.fasterxml.jackson.core:jackson-databind
+            </ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.apache.httpcomponents.client5:httpclient5
+            </ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.apache.httpcomponents.core5:httpcore5
+            </ignoredNonTestScopedDependency>
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
@@ -803,7 +820,8 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml</inputSpec>
+              <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml
+              </inputSpec>
               <modelPackage>io.camunda.zeebe.management.backups</modelPackage>
             </configuration>
           </execution>
@@ -813,7 +831,8 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/api/cluster/cluster-api.yaml</inputSpec>
+              <inputSpec>${project.basedir}/src/main/resources/api/cluster/cluster-api.yaml
+              </inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
             </configuration>
           </execution>
@@ -823,7 +842,8 @@
               <goal>generate</goal>
             </goals>
             <configuration>
-              <inputSpec>${project.basedir}/src/main/resources/api/cluster/exporter-api.yaml</inputSpec>
+              <inputSpec>${project.basedir}/src/main/resources/api/cluster/exporter-api.yaml
+              </inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
             </configuration>
           </execution>
