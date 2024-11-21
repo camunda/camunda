@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProces
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.state.deployment.DeploymentResourceUtil;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
@@ -33,7 +34,7 @@ import org.agrona.collections.MutableReference;
 @ExcludeAuthorizationCheck
 public class DeploymentReconstructProcessor implements TypedRecordProcessor<DeploymentRecord> {
   private static final long NO_DEPLOYMENT_KEY = -1;
-  private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
+  private final DeploymentResourceUtil resourceUtil = new DeploymentResourceUtil();
   private final KeyGenerator keyGenerator;
   private final DeploymentState deploymentState;
   private final ProcessState processState;
@@ -186,26 +187,12 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       final DeploymentRecord deploymentRecord, final Resource resource) {
     switch (resource) {
       case ProcessResource(final var process) -> {
-        deploymentRecord
-            .processesMetadata()
-            .add()
-            .setBpmnProcessId(process.getBpmnProcessId())
-            .setVersion(process.getVersion())
-            .setKey(process.getKey())
-            .setResourceName(process.getResourceName())
-            .setChecksum(checksumGenerator.checksum(process.getResource()))
-            .setTenantId(process.getTenantId());
+        final var metadata = deploymentRecord.processesMetadata().add();
+        resourceUtil.applyProcessMetadata(process, metadata);
       }
       case FormResource(final var form) -> {
-        deploymentRecord
-            .formMetadata()
-            .add()
-            .setFormKey(form.getFormKey())
-            .setFormId(BufferUtil.bufferAsString(form.getFormId()))
-            .setVersion(form.getVersion())
-            .setResourceName(BufferUtil.bufferAsString(form.getResourceName()))
-            .setChecksum(checksumGenerator.checksum(form.getResource()))
-            .setTenantId(form.getTenantId());
+        final var metadata = deploymentRecord.formMetadata().add();
+        resourceUtil.applyFormMetadata(form, metadata);
       }
     }
   }
