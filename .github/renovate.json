@@ -92,14 +92,10 @@
       "enabled": false
     },
     {
-      "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844, #18851)",
+      "description": "Exclude frontend deps until migration is done in Operate (see issues #17736, #17844)",
       "matchManagers": ["npm", "nvm"],
       "matchFileNames": ["operate/**"],
-      "matchPackagePatterns": [
-        "react-router-dom",
-        "msw",
-        "@carbon/react"
-      ],
+      "matchPackagePatterns": ["react-router-dom", "msw"],
       "enabled": false
     },
     {
