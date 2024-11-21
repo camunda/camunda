@@ -200,6 +200,55 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldTriggerAssignmentListenersAfterUserTaskCreationWithDefinedAssigneeProperty() {
+    // given
+    final var assignee = "peregrin";
+
+    // when: process instance is created with a UT having an `assignee` and `assignment` listeners
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                task ->
+                    task.zeebeAssignee(assignee)
+                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE))
+                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_2"))
+                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_3"))));
+
+    // then: verify the UT is created with the expected `assignee`
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.CREATED,
+        userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction(""));
+
+    // when
+    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+
+    // then: verify the task listener completion sequence for the assignment event
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.ASSIGNMENT,
+        LISTENER_TYPE,
+        LISTENER_TYPE + "_2",
+        LISTENER_TYPE + "_3");
+
+    // verify that UT intents follows the expected sequence from `CREATING` to `ASSIGNED`
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.CREATING,
+        UserTaskIntent.CREATED,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.ASSIGNED);
+
+    // then: verify the UT was assigned with the expected `assignee` and default `action` values
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.ASSIGNED,
+        userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction("assign"));
+  }
+
+  @Test
   public void shouldRetryTaskListenerWhenListenerJobFailed() {
     // given
     final long processInstanceKey =
