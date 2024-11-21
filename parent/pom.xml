@@ -2261,6 +2261,25 @@
         <version>${version.caffeine}</version>
       </dependency>
 
+      <!-- Migration Module -->
+      <dependency>
+        <groupId>io.camunda.migration</groupId>
+        <artifactId>migration-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda.migration</groupId>
+        <artifactId>process-migration</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda.migration</groupId>
+        <artifactId>identity-migration</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
     </dependencies>
   </dependencyManagement>
 
