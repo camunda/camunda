@@ -25,6 +25,10 @@ public class DecisionIndex extends OperateIndexDescriptor implements Prio4Backup
     super(indexPrefix, isElasticsearch);
   }
 
+  public static String getIndexNameWithPrefix(final String prefix) {
+    return new DecisionIndex(prefix, false).getAlias();
+  }
+
   @Override
   public String getIndexName() {
     return INDEX_NAME;

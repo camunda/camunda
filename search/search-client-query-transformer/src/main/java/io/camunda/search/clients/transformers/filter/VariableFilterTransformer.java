@@ -26,11 +26,18 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.VariableFilter;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class VariableFilterTransformer implements FilterTransformer<VariableFilter> {
+
+  final String prefix;
+
+  public VariableFilterTransformer(final String prefix) {
+    this.prefix = prefix;
+  }
 
   @Override
   public SearchQuery toSearchQuery(final VariableFilter filter) {
@@ -48,7 +55,8 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
 
   @Override
   public List<String> toIndices(final VariableFilter filter) {
-    return Arrays.asList("operate-variable-8.3.0_alias");
+    final String indexName = VariableTemplate.getIndexNameWithPrefix(prefix);
+    return Arrays.asList(indexName);
   }
 
   private List<SearchQuery> getVariablesQuery(final List<UntypedOperation> variableFilters) {

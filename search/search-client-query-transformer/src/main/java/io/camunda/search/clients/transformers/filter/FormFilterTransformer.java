@@ -41,7 +41,6 @@ public class FormFilterTransformer implements FilterTransformer<FormFilter> {
   @Override
   public List<String> toIndices(final FormFilter filter) {
     final String indexName = FormIndex.getIndexNameWithPrefix(prefix);
-    System.out.println(indexName);
     return Arrays.asList(indexName);
   }
 

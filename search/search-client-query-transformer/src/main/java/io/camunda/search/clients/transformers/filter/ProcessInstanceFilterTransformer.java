@@ -33,11 +33,18 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class ProcessInstanceFilterTransformer
     implements FilterTransformer<ProcessInstanceFilter> {
+
+  private final String prefix;
+
+  public ProcessInstanceFilterTransformer(final String prefix) {
+    this.prefix = prefix;
+  }
 
   @Override
   public SearchQuery toSearchQuery(final ProcessInstanceFilter filter) {
@@ -76,7 +83,8 @@ public final class ProcessInstanceFilterTransformer
 
   @Override
   public List<String> toIndices(final ProcessInstanceFilter filter) {
-    return List.of("operate-list-view-8.3.0_alias");
+    final String indexName = ListViewTemplate.getIndexNameWithPrefix(prefix);
+    return List.of(indexName);
   }
 
   private SearchQuery getIsProcessInstanceQuery() {

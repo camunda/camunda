@@ -177,14 +177,14 @@ public final class ServiceTransformers {
     mappers.put(VariableSort.class, new VariableFieldSortingTransformer());
 
     // filters -> search query
-    mappers.put(ProcessInstanceFilter.class, new ProcessInstanceFilterTransformer());
+    mappers.put(ProcessInstanceFilter.class, new ProcessInstanceFilterTransformer(prefix));
     mappers.put(
         UserTaskFilter.class,
         new UserTaskFilterTransformer(mappers, isCamundaExporterEnabled, prefix));
     mappers.put(VariableValueFilter.class, new VariableValueFilterTransformer());
     mappers.put(DateValueFilter.class, new DateValueFilterTransformer());
-    mappers.put(VariableFilter.class, new VariableFilterTransformer());
-    mappers.put(DecisionDefinitionFilter.class, new DecisionDefinitionFilterTransformer());
+    mappers.put(VariableFilter.class, new VariableFilterTransformer(prefix));
+    mappers.put(DecisionDefinitionFilter.class, new DecisionDefinitionFilterTransformer(prefix));
     mappers.put(DecisionRequirementsFilter.class, new DecisionRequirementsFilterTransformer());
     mappers.put(DecisionInstanceFilter.class, new DecisionInstanceFilterTransformer());
     mappers.put(UserFilter.class, new UserFilterTransformer());

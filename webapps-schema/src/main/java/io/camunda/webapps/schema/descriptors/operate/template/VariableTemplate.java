@@ -31,6 +31,10 @@ public class VariableTemplate extends OperateTemplateDescriptor
     super(indexPrefix, isElasticsearch);
   }
 
+  public static String getIndexNameWithPrefix(final String prefix) {
+    return new VariableTemplate(prefix, false).getAlias();
+  }
+
   @Override
   public String getIndexName() {
     return INDEX_NAME;

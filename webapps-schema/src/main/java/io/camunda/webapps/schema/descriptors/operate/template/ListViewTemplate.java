@@ -57,6 +57,10 @@ public class ListViewTemplate extends OperateTemplateDescriptor implements Prio2
     super(indexPrefix, isElasticsearch);
   }
 
+  public static String getIndexNameWithPrefix(final String prefix) {
+    return new ListViewTemplate(prefix, false).getAlias();
+  }
+
   @Override
   public String getIndexName() {
     return INDEX_NAME;

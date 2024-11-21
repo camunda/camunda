@@ -20,10 +20,17 @@ import static io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex.
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionDefinitionFilter;
+import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import java.util.List;
 
 public final class DecisionDefinitionFilterTransformer
     implements FilterTransformer<DecisionDefinitionFilter> {
+
+  private final String prefix;
+
+  public DecisionDefinitionFilterTransformer(final String prefix) {
+    this.prefix = prefix;
+  }
 
   @Override
   public SearchQuery toSearchQuery(final DecisionDefinitionFilter filter) {
@@ -51,7 +58,8 @@ public final class DecisionDefinitionFilterTransformer
 
   @Override
   public List<String> toIndices(final DecisionDefinitionFilter filter) {
-    return List.of("operate-decision-8.3.0_alias");
+    String indexPrefix = DecisionIndex.getIndexNameWithPrefix(prefix);
+    return List.of(indexPrefix);
   }
 
   private SearchQuery getDecisionDefinitionKeysQuery(final List<Long> keys) {
