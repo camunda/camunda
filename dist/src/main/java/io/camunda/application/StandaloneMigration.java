@@ -9,8 +9,6 @@ package io.camunda.application;
 
 import io.camunda.application.commons.migration.MigrationsModuleConfiguration;
 import io.camunda.application.listeners.ApplicationErrorListener;
-import java.util.Arrays;
-import java.util.regex.Pattern;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
@@ -21,8 +19,6 @@ import org.springframework.context.ApplicationListener;
 @SpringBootConfiguration(proxyBeanMethods = false)
 public class StandaloneMigration {
 
-  private static final Pattern MIGRATION_PROFILE_REGEX = Pattern.compile("^(.+-)?migration$");
-
   public static void main(final String[] args) {
     MainSupport.putSystemPropertyIfAbsent(
         "java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
@@ -32,39 +28,17 @@ public class StandaloneMigration {
         "spring.config.location",
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
 
-    final String[] profiles = enrichProfiles();
-
     final SpringApplication application =
         new SpringApplicationBuilder()
             .logStartupInfo(true)
             .web(WebApplicationType.NONE)
             .sources(MigrationsModuleConfiguration.class)
-            .profiles(profiles)
+            .profiles(Profile.MIGRATION.getId())
             .addCommandLineProperties(true)
-            .listeners(new ApplicationErrorListener(), new ApplicationTerminateListener(profiles))
+            .listeners(new ApplicationErrorListener(), new ApplicationTerminateListener())
             .build(args);
 
     application.run(args);
-  }
-
-  private static String[] enrichProfiles() {
-    String[] profiles = System.getProperty("spring.profiles.active").split(",");
-    if (Arrays.stream(profiles).noneMatch(p -> MIGRATION_PROFILE_REGEX.matcher(p).matches())) {
-      profiles = appendProfile(profiles, Profile.MIGRATION.getId());
-    }
-
-    if (Arrays.asList(profiles).contains(Profile.MIGRATION.getId())) {
-      profiles = appendProfile(profiles, Profile.IDENTITY_MIGRATION.getId());
-      profiles = appendProfile(profiles, Profile.PROCESS_MIGRATION.getId());
-    }
-
-    return profiles;
-  }
-
-  private static String[] appendProfile(final String[] profiles, final String profile) {
-    final String[] modifiedProfiles = Arrays.copyOf(profiles, profiles.length + 1);
-    modifiedProfiles[modifiedProfiles.length - 1] = profile;
-    return modifiedProfiles;
   }
 
   public static class ApplicationTerminateListener
@@ -72,22 +46,12 @@ public class StandaloneMigration {
 
     private int exitCode = 0;
     private int arrivedEvents = 0;
-    private final int awaitEvents;
-
-    public ApplicationTerminateListener(final String[] profiles) {
-      if (Arrays.asList(profiles).contains(Profile.MIGRATION.getId())) {
-        awaitEvents = 2;
-      } else {
-        awaitEvents =
-            (int)
-                Arrays.stream(profiles)
-                    .filter(p -> MIGRATION_PROFILE_REGEX.matcher(p).matches())
-                    .count();
-      }
-    }
 
     @Override
     public void onApplicationEvent(final MigrationFinishedEvent event) {
+      // Since this will always be running with the full Migration profile we can safely assume that
+      // we await for 2 events
+      final int awaitEvents = 2;
       final int errorCode = (int) event.getSource();
       if (errorCode < exitCode) {
         exitCode = errorCode;
