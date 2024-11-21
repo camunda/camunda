@@ -7,8 +7,8 @@
  */
 package io.camunda.it.utils;
 
-import static io.camunda.zeebe.engine.processing.user.DefaultUserCreator.DEFAULT_USER_PASSWORD;
-import static io.camunda.zeebe.engine.processing.user.DefaultUserCreator.DEFAULT_USER_USERNAME;
+import static io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer.DEFAULT_USER_PASSWORD;
+import static io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer.DEFAULT_USER_USERNAME;
 
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
