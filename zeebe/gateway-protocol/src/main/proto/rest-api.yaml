@@ -4039,6 +4039,7 @@ components:
         - READ
         - READ_PROCESS_INSTANCE
         - READ_USER_TASK
+        - READ_DECISION_INSTANCE
         - UPDATE
         - UPDATE_PROCESS_INSTANCE
         - UPDATE_USER_TASK

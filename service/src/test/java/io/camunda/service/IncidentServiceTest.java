@@ -69,7 +69,9 @@ public final class IncidentServiceTest {
     when(client.searchIncidents(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     when(securityContextProvider.isAuthorized(
-            processId, authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+            processId,
+            authentication,
+            Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .thenReturn(true);
     // when
     final var searchQueryResult = services.getByKey(1L);
@@ -87,7 +89,9 @@ public final class IncidentServiceTest {
     when(client.searchIncidents(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     when(securityContextProvider.isAuthorized(
-            processId, authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+            processId,
+            authentication,
+            Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .thenReturn(false);
     // when
     final Executable executeGetByKey = () -> services.getByKey(1L);

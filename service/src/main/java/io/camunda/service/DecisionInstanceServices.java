@@ -56,7 +56,8 @@ public final class DecisionInstanceServices
     return decisionInstanceSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.decisionDefinition().readInstance())))
+                authentication,
+                Authorization.of(a -> a.decisionDefinition().readDecisionInstance())))
         .searchDecisionInstances(
             decisionInstanceSearchQuery(
                 q ->
@@ -85,7 +86,7 @@ public final class DecisionInstanceServices
                     q -> q.filter(f -> f.decisionInstanceIds(decisionInstanceId))));
     final var decisionInstanceEntity =
         getSingleResultOrThrow(result, decisionInstanceId, "Decision instance");
-    final var authorization = Authorization.of(a -> a.decisionDefinition().readInstance());
+    final var authorization = Authorization.of(a -> a.decisionDefinition().readDecisionInstance());
     if (!securityContextProvider.isAuthorized(
         decisionInstanceEntity.decisionDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
