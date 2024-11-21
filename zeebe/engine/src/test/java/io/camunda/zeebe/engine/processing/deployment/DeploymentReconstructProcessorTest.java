@@ -21,6 +21,7 @@ import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -212,6 +213,128 @@ final class DeploymentReconstructProcessorTest {
                   .satisfies(
                       deploymentRecord -> {
                         assertThat(deploymentRecord.getProcessesMetadata()).hasSize(2);
+                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                      });
+            });
+  }
+
+  @Test
+  void shouldReconstructForSingleFormWithoutDeploymentKey() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+
+    final var formKey = Protocol.encodePartitionId(1, 2);
+    state
+        .getFormState()
+        .storeFormInFormColumnFamily(
+            new FormRecord()
+                .setFormKey(formKey)
+                .setFormId("form")
+                .setResourceName("form.form")
+                .setVersion(1));
+
+    // when
+    processor.processRecord(command);
+
+    // then
+    assertThat(resultBuilder.getFollowupRecords())
+        .singleElement()
+        .satisfies(
+            record -> {
+              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+              assertThat(record.getKey()).isEqualTo(formKey);
+              assertThat(record.getValue())
+                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+                  .satisfies(
+                      deploymentRecord -> {
+                        assertThat(deploymentRecord.getFormMetadata()).hasSize(1);
+                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(formKey);
+                      });
+            });
+  }
+
+  @Test
+  void shouldReconstructForSingleFormWithDeploymentKey() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+
+    final var deploymentKey = Protocol.encodePartitionId(1, 1);
+    final var formKey = Protocol.encodePartitionId(1, 2);
+    state
+        .getFormState()
+        .storeFormInFormColumnFamily(
+            new FormRecord()
+                .setDeploymentKey(deploymentKey)
+                .setFormKey(formKey)
+                .setFormId("form")
+                .setResourceName("form.form")
+                .setVersion(1));
+
+    // when
+    processor.processRecord(command);
+
+    // then
+    assertThat(resultBuilder.getFollowupRecords())
+        .singleElement()
+        .satisfies(
+            record -> {
+              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+              assertThat(record.getKey()).isEqualTo(deploymentKey);
+              assertThat(record.getValue())
+                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+                  .satisfies(
+                      deploymentRecord -> {
+                        assertThat(deploymentRecord.getFormMetadata()).hasSize(1);
+                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                      });
+            });
+  }
+
+  @Test
+  void shouldIncludeAllFormsOfDeployment() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+
+    final var deploymentKey = Protocol.encodePartitionId(1, 1);
+    final var formKey1 = Protocol.encodePartitionId(1, 2);
+    final var formKey2 = Protocol.encodePartitionId(1, 3);
+    state
+        .getFormState()
+        .storeFormInFormColumnFamily(
+            new FormRecord()
+                .setDeploymentKey(deploymentKey)
+                .setFormKey(formKey1)
+                .setFormId("form1")
+                .setResourceName("form1.form")
+                .setVersion(1));
+    state
+        .getFormState()
+        .storeFormInFormColumnFamily(
+            new FormRecord()
+                .setDeploymentKey(deploymentKey)
+                .setFormKey(formKey2)
+                .setFormId("form2")
+                .setResourceName("form2.form")
+                .setVersion(1));
+
+    // when
+    processor.processRecord(command);
+
+    // then
+    assertThat(resultBuilder.getFollowupRecords())
+        .singleElement()
+        .satisfies(
+            record -> {
+              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+              assertThat(record.getKey()).isEqualTo(deploymentKey);
+              assertThat(record.getValue())
+                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+                  .satisfies(
+                      deploymentRecord -> {
+                        assertThat(deploymentRecord.getFormMetadata()).hasSize(2);
                         assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
                       });
             });
