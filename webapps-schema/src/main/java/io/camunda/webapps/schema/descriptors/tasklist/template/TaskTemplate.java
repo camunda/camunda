@@ -79,4 +79,8 @@ public class TaskTemplate extends TasklistTemplateDescriptor
   public String getProcessInstanceDependantField() {
     return PROCESS_INSTANCE_ID;
   }
+
+  public static String getIndexNameWithPrefix(final String prefix) {
+    return new TaskTemplate(prefix, false).getFullQualifiedName();
+  }
 }

@@ -64,10 +64,10 @@ public class SearchClients
   public SearchClients(
       final DocumentBasedSearchClient searchClient,
       final boolean isCamundaExporterEnabled,
-      final String globalPrefix) {
+      final String prefix) {
     this(
         searchClient,
-        ServiceTransformers.newInstance(isCamundaExporterEnabled, globalPrefix),
+        ServiceTransformers.newInstance(isCamundaExporterEnabled, prefix),
         SecurityContext.withoutAuthentication());
   }
 

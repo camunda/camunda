@@ -13,7 +13,7 @@ import io.camunda.search.filter.FilterBase;
 
 public class AbstractTransformerTest {
 
-  private final ServiceTransformers transformers = ServiceTransformers.newInstance(false, null);
+  private final ServiceTransformers transformers = ServiceTransformers.newInstance(false, "");
 
   protected <F extends FilterBase> SearchQuery transformQuery(final F filter) {
     return transformers.getFilterTransformer(filter.getClass()).apply(filter);
