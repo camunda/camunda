@@ -65,7 +65,7 @@ public interface Adapter {
     return updateMap;
   }
 
-  default ProcessorStep upsertProcessorStep(final String processDefinitionKey) {
+  default ProcessorStep processorStepForKey(final String processDefinitionKey) {
     final ProcessorStep step = new ProcessorStep();
     step.setContent(processDefinitionKey);
     step.setApplied(true);

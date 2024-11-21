@@ -154,12 +154,13 @@ public class OpensearchAdapter implements Adapter {
 
   @Override
   public void writeLastMigratedEntity(final String processDefinitionKey) throws MigrationException {
+    final ProcessorStep currentStep = processorStepForKey(processDefinitionKey);
     final UpdateRequest<ProcessorStep, ProcessorStep> updateRequest =
         new UpdateRequest.Builder<ProcessorStep, ProcessorStep>()
             .index(migrationRepositoryIndex.getFullQualifiedName())
             .id(PROCESSOR_STEP_ID)
             .docAsUpsert(true)
-            .doc(upsertProcessorStep(processDefinitionKey))
+            .doc(currentStep)
             .build();
 
     try {

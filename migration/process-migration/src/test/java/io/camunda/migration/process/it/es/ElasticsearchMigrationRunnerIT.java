@@ -85,7 +85,7 @@ public class ElasticsearchMigrationRunnerIT {
     properties = new ProcessMigrationProperties();
     properties.setBatchSize(5);
     properties.setMaxRetryDelay(Duration.ofSeconds(2));
-    properties.setPostImporterTimeout(Duration.ofSeconds(1));
+    properties.setImporterFinishedTimeout(Duration.ofSeconds(1));
     connectConfiguration = new ConnectConfiguration();
     connectConfiguration.setUrl("http://localhost:" + ES_CONTAINER.getMappedPort(9200));
     esClient = new ElasticsearchConnector(connectConfiguration).createClient();
@@ -344,7 +344,7 @@ public class ElasticsearchMigrationRunnerIT {
   @Test
   public void shouldMigrateDuringCountdown() throws IOException {
     // given
-    properties.setPostImporterTimeout(Duration.ofSeconds(2));
+    properties.setImporterFinishedTimeout(Duration.ofSeconds(2));
     properties.setMinRetryDelay(Duration.ofSeconds(3));
     properties.setMaxRetryDelay(Duration.ofSeconds(3));
     properties.setBatchSize(4);
@@ -403,7 +403,7 @@ public class ElasticsearchMigrationRunnerIT {
   @Test
   public void shouldKeepRunningUntilImportPositionTimeout() throws IOException {
     // given
-    properties.setPostImporterTimeout(Duration.ofSeconds(10));
+    properties.setImporterFinishedTimeout(Duration.ofSeconds(10));
     writeProcessToIndex(TestData.processEntityWithPublicFormKey(1L));
     writeProcessToIndex(TestData.processEntityWithPublicFormKey(2L));
     writeImportPositionToIndex(TestData.completedImportPosition(1));
@@ -412,8 +412,8 @@ public class ElasticsearchMigrationRunnerIT {
 
     // when
     Awaitility.await()
-        .atMost(Duration.ofSeconds(properties.getPostImporterTimeout().getSeconds() * 2))
-        .atLeast(properties.getPostImporterTimeout())
+        .atMost(Duration.ofSeconds(properties.getImporterFinishedTimeout().getSeconds() * 2))
+        .atLeast(properties.getImporterFinishedTimeout())
         .until(
             () -> {
               migrator.run();

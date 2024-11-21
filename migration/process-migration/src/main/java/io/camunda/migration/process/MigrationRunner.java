@@ -102,10 +102,10 @@ public class MigrationRunner implements Migrator {
   private void startCountdown(final ScheduledExecutorService scheduler) {
     LOG.info(
         "Importer finished, migration will keep running for {}",
-        properties.getPostImporterTimeout());
+        properties.getImporterFinishedTimeout());
     countdownTask =
         scheduler.schedule(
-            () -> {}, properties.getPostImporterTimeout().getSeconds(), TimeUnit.SECONDS);
+            () -> {}, properties.getImporterFinishedTimeout().getSeconds(), TimeUnit.SECONDS);
   }
 
   private boolean isImporterFinished() {

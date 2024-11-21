@@ -17,7 +17,7 @@ public class ProcessMigrationProperties {
   private int maxRetries = 3;
   private Duration minRetryDelay = Duration.ofSeconds(1);
   private Duration maxRetryDelay = Duration.ofMinutes(1);
-  private Duration postImporterTimeout = Duration.ofMinutes(1);
+  private Duration importerFinishedTimeout = Duration.ofMinutes(1);
 
   public int getBatchSize() {
     return batchSize;
@@ -51,11 +51,11 @@ public class ProcessMigrationProperties {
     this.maxRetryDelay = maxRetryDelay;
   }
 
-  public Duration getPostImporterTimeout() {
-    return postImporterTimeout;
+  public Duration getImporterFinishedTimeout() {
+    return importerFinishedTimeout;
   }
 
-  public void setPostImporterTimeout(final Duration postImporterTimeout) {
-    this.postImporterTimeout = postImporterTimeout;
+  public void setImporterFinishedTimeout(final Duration importerFinishedTimeout) {
+    this.importerFinishedTimeout = importerFinishedTimeout;
   }
 }
