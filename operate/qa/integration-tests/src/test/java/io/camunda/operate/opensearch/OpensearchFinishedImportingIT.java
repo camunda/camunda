@@ -114,7 +114,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   public void shouldMarkMultiplePositionIndexAsCompletedIf870RecordReceived() throws IOException {
     final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
     final var decisionEvalRecord = generateRecord(ValueType.DECISION_EVALUATION, "8.6.0", 1);
-    final var decisionRecord = generateRecord(ValueType.DECISION, "8.6.0", 1);
+    final var decisionRecord = generateRecord(ValueType.DECISION, "8.6.0", 2);
     EXPORTER.export(processInstanceRecord);
     EXPORTER.export(decisionEvalRecord);
     EXPORTER.export(decisionRecord);
@@ -132,7 +132,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
 
     for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       // simulate existing decision records left to process so it is not marked as completed
-      final var decisionRecord2 = generateRecord(ValueType.DECISION, "8.6.0", 1);
+      final var decisionRecord2 = generateRecord(ValueType.DECISION, "8.6.0", 2);
       EXPORTER.export(decisionRecord2);
       osClient.index().refresh("*");
 
@@ -145,7 +145,7 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
             () ->
                 isRecordReaderIsCompleted("1-process-instance")
                     && isRecordReaderIsCompleted("1-decision-evaluation")
-                    && !isRecordReaderIsCompleted("1-decision"));
+                    && !isRecordReaderIsCompleted("2-decision"));
   }
 
   @Test
