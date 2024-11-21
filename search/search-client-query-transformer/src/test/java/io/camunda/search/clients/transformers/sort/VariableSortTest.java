@@ -106,7 +106,9 @@ public class VariableSortTest extends AbstractSortTransformerTest {
     final boolean sortByVariableKeyConditionCheck =
         sort.stream()
             .anyMatch(
-                s -> s.field().field().equals("variableKey") && s.field().order().equals(SortOrder.DESC));
+                s ->
+                    s.field().field().equals("variableKey")
+                        && s.field().order().equals(SortOrder.DESC));
 
     assertThat(sortByVariableKeyConditionCheck).isTrue();
   }
