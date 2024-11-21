@@ -72,8 +72,6 @@ const Decision: React.FC = observer(() => {
             isDismissable: true,
           });
         }
-      } else {
-        decisionXmlStore.fetchDiagramXml(decisionDefinitionId);
       }
     }
   }, [
@@ -85,6 +83,12 @@ const Decision: React.FC = observer(() => {
     location,
     navigate,
   ]);
+
+  useEffect(() => {
+    if (decisionDefinitionId !== null) {
+      decisionXmlStore.fetchDiagramXml(decisionDefinitionId);
+    }
+  }, [decisionDefinitionId]);
 
   useEffect(() => {
     const disposer = reaction(
