@@ -22,18 +22,14 @@ public class CCSaasRequestAdjustmentFilter implements Filter {
   private final String clusterId;
 
   public CCSaasRequestAdjustmentFilter(final String clusterId) {
-    String cid = clusterId;
-    if (cid == null) {
-      cid = "";
-    }
-    this.clusterId = cid;
+    this.clusterId = clusterId == null ? "" : clusterId;
   }
 
   @Override
   public void doFilter(
       final ServletRequest request, final ServletResponse response, final FilterChain chain)
       throws IOException, ServletException {
-    boolean forward = false;
+    boolean shallForward = false;
     final HttpServletRequest httpRequest = (HttpServletRequest) request;
     final HttpServletResponse httpResponse = (HttpServletResponse) response;
     String requestURI = httpRequest.getRequestURI();
@@ -47,16 +43,16 @@ public class CCSaasRequestAdjustmentFilter implements Filter {
     /* Strip cluster ID subpath */
     if (!clusterId.isEmpty() && requestURI.startsWith(clusterIdPath())) {
       requestURI = requestURI.substring(clusterIdPath().length());
-      forward = true;
+      shallForward = true;
     }
 
     /* transform /external/api -> /api/external */
     if (requestURI.startsWith("/external/api/")) {
       requestURI = requestURI.replaceFirst("/external/api/", "/api/external/");
-      forward = true;
+      shallForward = true;
     }
 
-    if (forward) {
+    if (shallForward) {
       final RequestDispatcher dispatcher = request.getRequestDispatcher(requestURI);
       dispatcher.forward(request, response);
       return;

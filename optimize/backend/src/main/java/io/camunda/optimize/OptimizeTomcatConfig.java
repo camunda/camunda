@@ -152,7 +152,7 @@ public class OptimizeTomcatConfig {
     // handle the home page URL: that is handled explicitly from within the URLRedirectFilter.
     final String regex = "^(?!" + "(" + contextPath + ALLOWED_URL_EXTENSION + ")).+";
 
-    final URLRedirectFilter filter = new URLRedirectFilter(regex, contextPath + "/#");
+    final URLRedirectFilter filter = new URLRedirectFilter(regex, contextPath + URL_BASE);
     final FilterRegistrationBean<URLRedirectFilter> registration = new FilterRegistrationBean<>();
     registration.addUrlPatterns("/*");
     registration.setFilter(filter);
