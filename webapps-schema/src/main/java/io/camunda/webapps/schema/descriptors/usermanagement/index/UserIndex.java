@@ -24,6 +24,10 @@ public class UserIndex extends UserManagementIndexDescriptor {
     super(indexPrefix, isElasticsearch);
   }
 
+  public static String getIndexNameWithPrefix(final String prefix) {
+    return new UserIndex(prefix, false).getAlias();
+  }
+
   @Override
   public String getVersion() {
     return INDEX_VERSION;

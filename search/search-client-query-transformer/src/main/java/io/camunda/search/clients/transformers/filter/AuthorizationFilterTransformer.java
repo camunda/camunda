@@ -14,10 +14,17 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.AuthorizationFilter;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import java.util.List;
 
 public final class AuthorizationFilterTransformer
     implements FilterTransformer<AuthorizationFilter> {
+
+  private final String prefix;
+
+  public AuthorizationFilterTransformer(final String prefix) {
+    this.prefix = prefix;
+  }
 
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
@@ -33,6 +40,7 @@ public final class AuthorizationFilterTransformer
 
   @Override
   public List<String> toIndices(final AuthorizationFilter filter) {
-    return List.of("identity-authorizations-8.7.0_alias");
+    String indexName = AuthorizationIndex.getIndexNameWithPrefix(prefix);
+    return List.of(indexName);
   }
 }

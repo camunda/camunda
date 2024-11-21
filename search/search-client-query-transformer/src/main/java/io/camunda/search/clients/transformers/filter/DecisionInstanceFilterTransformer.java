@@ -33,12 +33,19 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.Operation;
+import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public final class DecisionInstanceFilterTransformer
     implements FilterTransformer<DecisionInstanceFilter> {
+
+  private final String prefix;
+
+  public DecisionInstanceFilterTransformer(final String prefix) {
+    this.prefix = prefix;
+  }
 
   @Override
   public SearchQuery toSearchQuery(final DecisionInstanceFilter filter) {
@@ -67,7 +74,8 @@ public final class DecisionInstanceFilterTransformer
 
   @Override
   public List<String> toIndices(final DecisionInstanceFilter filter) {
-    return List.of("operate-decision-instance-8.3.0_alias");
+    final String indexName = DecisionInstanceTemplate.getIndexNameWithPrefix(prefix);
+    return List.of(indexName);
   }
 
   private SearchQuery getKeysQuery(final List<Long> keys) {

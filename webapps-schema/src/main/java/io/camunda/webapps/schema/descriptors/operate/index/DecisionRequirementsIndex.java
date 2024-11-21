@@ -26,6 +26,10 @@ public class DecisionRequirementsIndex extends OperateIndexDescriptor implements
     super(indexPrefix, isElasticsearch);
   }
 
+  public static String getIndexNameWithPrefix(final String prefix) {
+    return new DecisionRequirementsIndex(prefix, false).getAlias();
+  }
+
   @Override
   public String getIndexName() {
     return INDEX_NAME;

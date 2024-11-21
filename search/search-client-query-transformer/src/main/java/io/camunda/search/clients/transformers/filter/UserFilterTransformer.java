@@ -12,9 +12,16 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.UserFilter;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import java.util.List;
 
 public class UserFilterTransformer implements FilterTransformer<UserFilter> {
+
+  private final String prefix;
+
+  public UserFilterTransformer(final String prefix) {
+    this.prefix = prefix;
+  }
 
   @Override
   public SearchQuery toSearchQuery(final UserFilter filter) {
@@ -28,6 +35,7 @@ public class UserFilterTransformer implements FilterTransformer<UserFilter> {
 
   @Override
   public List<String> toIndices(final UserFilter filter) {
-    return List.of("identity-users-8.7.0_alias");
+    final String indexName = UserIndex.getIndexNameWithPrefix(prefix);
+    return List.of(indexName);
   }
 }

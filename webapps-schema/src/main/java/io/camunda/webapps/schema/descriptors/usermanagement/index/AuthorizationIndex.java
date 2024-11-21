@@ -25,6 +25,10 @@ public class AuthorizationIndex extends UserManagementIndexDescriptor {
     super(indexPrefix, isElasticsearch);
   }
 
+  public static String getIndexNameWithPrefix(final String prefix) {
+    return new AuthorizationIndex(prefix, false).getAlias();
+  }
+
   @Override
   public String getVersion() {
     return INDEX_VERSION;

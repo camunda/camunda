@@ -185,10 +185,11 @@ public final class ServiceTransformers {
     mappers.put(DateValueFilter.class, new DateValueFilterTransformer());
     mappers.put(VariableFilter.class, new VariableFilterTransformer(prefix));
     mappers.put(DecisionDefinitionFilter.class, new DecisionDefinitionFilterTransformer(prefix));
-    mappers.put(DecisionRequirementsFilter.class, new DecisionRequirementsFilterTransformer());
-    mappers.put(DecisionInstanceFilter.class, new DecisionInstanceFilterTransformer());
-    mappers.put(UserFilter.class, new UserFilterTransformer());
-    mappers.put(AuthorizationFilter.class, new AuthorizationFilterTransformer());
+    mappers.put(
+        DecisionRequirementsFilter.class, new DecisionRequirementsFilterTransformer(prefix));
+    mappers.put(DecisionInstanceFilter.class, new DecisionInstanceFilterTransformer(prefix));
+    mappers.put(UserFilter.class, new UserFilterTransformer(prefix));
+    mappers.put(AuthorizationFilter.class, new AuthorizationFilterTransformer(prefix));
     mappers.put(ComparableValueFilter.class, new ComparableValueFilterTransformer());
     mappers.put(FlowNodeInstanceFilter.class, new FlownodeInstanceFilterTransformer());
     mappers.put(IncidentFilter.class, new IncidentFilterTransformer(mappers));
