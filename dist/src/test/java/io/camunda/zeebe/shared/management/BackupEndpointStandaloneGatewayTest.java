@@ -9,5 +9,5 @@ package io.camunda.zeebe.shared.management;
 
 import org.springframework.test.context.ActiveProfiles;
 
-@ActiveProfiles({"broker", "standalone"})
-public class BackupEndpointStandaloneBrokerTest extends BackupEndpointStandaloneTest {}
+@ActiveProfiles({"gateway", "standalone"})
+public class BackupEndpointStandaloneGatewayTest extends BackupEndpointStandaloneTest {}
