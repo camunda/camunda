@@ -48,7 +48,7 @@ const selectProcessVersion = async ({user, option}: SelectProps) => {
 };
 
 const selectTenant = async ({user, option}: SelectProps) => {
-  await user.click(screen.getByRole('combobox', {name: 'Tenant'}));
+  await user.click(screen.getByRole('combobox', {name: /Select a tenant/i}));
   await user.click(screen.getByRole('option', {name: option}));
 };
 
@@ -66,18 +66,25 @@ const selectDecision = ({user, option}: SelectProps) => {
     user,
     option,
     fieldName: 'Name',
-    listBoxLabel: 'Select a Decision',
+    listBoxLabel: 'Name',
   });
 };
 
 const selectDecisionVersion = async ({user, option}: SelectProps) => {
-  await user.click(screen.getByLabelText('Version', {selector: 'button'}));
-  await user.selectOptions(
-    within(screen.getByLabelText('Select a Decision Version')).getByRole(
-      'listbox',
-    ),
-    [screen.getByRole('option', {name: option})],
-  );
+  return selectComboBoxOption({
+    user,
+    option,
+    fieldName: 'Select a Decision Version',
+    listBoxLabel: 'Version',
+  });
+
+  // await user.click(
+  //   screen.getByRole('combobox', {name: /Select a decision version/i}),
+  // );
+
+  // await user.selectOptions(screen.getByRole('listbox', {name: 'Version'}), [
+  //   screen.getByRole('option', {name: option}),
+  // ]);
 };
 
 const selectTargetProcess = ({user, option}: SelectProps) => {
@@ -96,7 +103,9 @@ const clearComboBox = async ({
   user: UserEvent;
   fieldName: string;
 }) => {
-  const parentElement = screen.getByLabelText(fieldName).parentElement;
+  const parentElement = screen.getByRole('combobox', {
+    name: fieldName,
+  }).parentElement;
 
   await waitFor(() => expect(parentElement).toBeInTheDocument());
 

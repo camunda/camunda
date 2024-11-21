@@ -55,6 +55,10 @@ global.beforeEach(() => {
       removeEventListener: jest.fn(),
     })),
   });
+
+  // this needs to be mocked, because scrollIntoView is not implemented
+  // in JSDOM, but some Carbon components rely on scrollIntoView
+  window.HTMLElement.prototype.scrollIntoView = jest.fn();
 });
 
 jest.mock('@floating-ui/react-dom', () => {

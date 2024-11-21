@@ -551,7 +551,9 @@ describe('MigrationView/BottomPanel', () => {
     );
 
     // Toggle on unmapped flow nodes
-    await user.click(screen.getByLabelText(/show only not mapped/i));
+    await user.click(
+      screen.getByRole('switch', {name: /show only not mapped/i}),
+    );
 
     // Expect the following rows to be hidden (because they're mapped)
     expect(
@@ -650,11 +652,17 @@ describe('MigrationView/BottomPanel', () => {
       screen.getByText(getMatcherFunction(TaskY.name)),
     ).toBeInTheDocument();
 
-    expect(screen.getByLabelText(/show only not mapped/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/show only not mapped/i)).toBeVisible();
+    expect(
+      screen.getByRole('switch', {name: /show only not mapped/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('switch', {name: /show only not mapped/i}),
+    ).toBeVisible();
 
     // Toggle off unmapped flow nodes
-    await user.click(screen.getByLabelText(/show only not mapped/i));
+    await user.click(
+      screen.getByRole('switch', {name: /show only not mapped/i}),
+    );
 
     // Expect all rows to be visible again
     expect(await screen.findAllByRole('row')).toHaveLength(

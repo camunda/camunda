@@ -163,9 +163,9 @@ describe('<Filters />', () => {
     );
     expectVersion('2');
 
-    expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
-      'Tenant A',
-    );
+    expect(
+      screen.getByRole('combobox', {name: /Select a tenant/i}),
+    ).toHaveTextContent('Tenant A');
 
     window.clientConfig = undefined;
   });
@@ -180,7 +180,7 @@ describe('<Filters />', () => {
     });
 
     expect(
-      screen.queryByRole('combobox', {name: 'Tenant'}),
+      screen.queryByRole('combobox', {name: /Select a tenant/i}),
     ).not.toBeInTheDocument();
   });
 

@@ -96,6 +96,7 @@ const BottomPanel: React.FC = observer(() => {
               <Toggle
                 size="sm"
                 id="not-mapped-toggle"
+                aria-label={TOGGLE_LABEL}
                 labelA={TOGGLE_LABEL}
                 labelB={TOGGLE_LABEL}
                 onToggle={toggleMappedFilter}

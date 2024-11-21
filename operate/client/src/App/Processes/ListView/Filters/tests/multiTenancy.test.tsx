@@ -112,7 +112,7 @@ describe('Filters', () => {
     });
 
     expect(
-      screen.queryByRole('combobox', {name: 'Tenant'}),
+      screen.queryByRole('combobox', {name: /Select a tenant/i}),
     ).not.toBeInTheDocument();
   });
 

@@ -29,12 +29,7 @@ const TargetProcessField: React.FC = observer(() => {
         title="Target"
         id="targetProcess"
         placeholder="Search by process name"
-        items={processes.map(({id, label}) => {
-          return {
-            label,
-            id,
-          };
-        })}
+        items={processes}
         onChange={({selectedItem}) => {
           processInstanceMigrationStore.resetFlowNodeMapping();
 

@@ -57,7 +57,7 @@ describe('Tenant Field', () => {
       wrapper: getWrapper(),
     });
 
-    await user.click(screen.getByRole('combobox', {name: 'Tenant'}));
+    await user.click(screen.getByRole('combobox', {name: /Select a tenant/i}));
 
     expect(screen.getAllByRole('option')).toHaveLength(1);
     expect(
@@ -82,7 +82,7 @@ describe('Tenant Field', () => {
       wrapper: getWrapper(),
     });
 
-    await user.click(screen.getByRole('combobox', {name: 'Tenant'}));
+    await user.click(screen.getByRole('combobox', {name: /Select a tenant/i}));
 
     expect(screen.getAllByRole('option')).toHaveLength(4);
     expect(
@@ -112,8 +112,8 @@ describe('Tenant Field', () => {
       wrapper: getWrapper({tenant: 'invalid-tenant'}),
     });
 
-    expect(screen.getByRole('combobox', {name: 'Tenant'})).toHaveTextContent(
-      'Select a tenant',
-    );
+    expect(
+      screen.getByRole('combobox', {name: /Select a tenant/i}),
+    ).toHaveTextContent('Select a tenant');
   });
 });
