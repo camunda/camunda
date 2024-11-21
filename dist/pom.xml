@@ -817,7 +817,7 @@
             </goals>
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml</inputSpec>
-              <modelPackage>io.camunda.zeebe.management.backups</modelPackage>
+              <modelPackage>io.camunda.management.backups</modelPackage>
             </configuration>
           </execution>
           <execution>
