@@ -190,9 +190,9 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     zeebeImporter.performOneRoundOfImport();
 
     // then
-    // require multiple checks to avoid race condition. If records are written to zeebe indices and
-    // before a refresh, the record reader pulls the import batch is empty so it then says that the
-    // record reader is done when it is not.
+    // Require multiple checks to avoid race condition. 
+    // Otherwise: If records are written to zeebe indices and before a refresh, the record reader pulls an empty import batch, then it might assume falsely
+    // that it is done, while it is not.
     for (int i = 0; i < RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
       zeebeImporter.performOneRoundOfImport();
     }
