@@ -8,6 +8,7 @@
 package io.camunda.optimize.tomcat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.net.MediaType;
 import io.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import jakarta.servlet.Filter;
@@ -27,7 +28,6 @@ import org.slf4j.Logger;
 public class MaxRequestSizeFilter implements Filter {
 
   public static final String MESSAGE_NO_CONTENT_LENGTH = "No Content-Length header in request.";
-  private static final String APPLICATION_JSON_UTF_8 = "application/json; charset=UTF-8";
   private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MaxRequestSizeFilter.class);
 
   private final Callable<ObjectMapper> objectMapperProvider;
@@ -89,7 +89,7 @@ public class MaxRequestSizeFilter implements Filter {
   public void writeErrorResponse(
       final HttpServletResponse httpResponse, final String errorMessage, final int statusCode) {
     httpResponse.reset();
-    httpResponse.setContentType(APPLICATION_JSON_UTF_8);
+    httpResponse.setContentType(MediaType.JSON_UTF_8.type());
     try {
       httpResponse
           .getWriter()
