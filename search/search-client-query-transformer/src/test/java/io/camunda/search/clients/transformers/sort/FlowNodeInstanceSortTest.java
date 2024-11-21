@@ -25,13 +25,13 @@ public class FlowNodeInstanceSortTest extends AbstractSortTransformerTest {
   private static Stream<Arguments> provideSortParameters() {
     return Stream.of(
         new FlowNodeInstanceSortTest.TestArguments(
-            "key", SortOrder.ASC, s -> s.flowNodeInstanceKey().asc()),
+            "flowNodeInstanceKey", SortOrder.ASC, s -> s.flowNodeInstanceKey().asc()),
         new FlowNodeInstanceSortTest.TestArguments(
             "processInstanceKey", SortOrder.ASC, s -> s.processInstanceKey().asc()),
         new FlowNodeInstanceSortTest.TestArguments(
             "processDefinitionKey", SortOrder.ASC, s -> s.processDefinitionKey().asc()),
         new FlowNodeInstanceSortTest.TestArguments(
-            "bpmnProcessId", SortOrder.ASC, s -> s.processDefinitionId().asc()),
+            "processDefinitionId", SortOrder.ASC, s -> s.processDefinitionId().asc()),
         new FlowNodeInstanceSortTest.TestArguments(
             "startDate", SortOrder.ASC, s -> s.startDate().asc()),
         new FlowNodeInstanceSortTest.TestArguments(
