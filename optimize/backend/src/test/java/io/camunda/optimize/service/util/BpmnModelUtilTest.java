@@ -11,7 +11,7 @@ import static io.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -29,24 +29,21 @@ public class BpmnModelUtilTest {
   public static final String SIMPLE_SERVICE_TASK_PROCESS =
       Bpmn.convertToString(createSimpleServiceTaskProcess(CUSTOMER_ONBOARDING));
 
-  public static final String INCLUSIVE_GATEWAY_PROCESS =
-      Bpmn.convertToString(createSimpleServiceTaskProcess(CUSTOMER_ONBOARDING));
-
   @Test
   void shouldParseBpmnModel() {
     final BpmnModelInstance modelInstance =
         BpmnModelUtil.parseBpmnModel(SIMPLE_SERVICE_TASK_PROCESS);
-    assertNotNull(modelInstance);
+    assertThat(modelInstance).isNotNull();
   }
 
   @Test
   void shouldExtractFlowNodeData() {
     final List<FlowNodeDataDto> flowNodeData =
-        BpmnModelUtil.extractFlowNodeData(INCLUSIVE_GATEWAY_PROCESS);
-    assertNotNull(flowNodeData);
-    assertFalse(flowNodeData.isEmpty());
+        BpmnModelUtil.extractFlowNodeData(SIMPLE_SERVICE_TASK_PROCESS);
+    assertThat(flowNodeData).isNotNull();
+    assertThat(flowNodeData.isEmpty()).isFalse();
     for (FlowNodeDataDto node : flowNodeData) {
-      assertNotNull(node.getId());
+      assertThat(node.getId()).isNotNull();
     }
   }
 
@@ -55,10 +52,10 @@ public class BpmnModelUtilTest {
     final String bpmnModelInstance =
         Bpmn.convertToString(createSimpleUserTaskProcess(CUSTOMER_ONBOARDING));
     final Map<String, String> userTaskNames = BpmnModelUtil.extractUserTaskNames(bpmnModelInstance);
-    assertNotNull(userTaskNames);
-    assertFalse(userTaskNames.isEmpty());
+    assertThat(userTaskNames).isNotNull();
+    assertThat(userTaskNames.isEmpty()).isFalse();
 
-    assertTrue(userTaskNames.containsKey(USER_TASK));
+    assertThat(userTaskNames.containsKey(USER_TASK)).isTrue();
   }
 
   @Test
@@ -66,27 +63,27 @@ public class BpmnModelUtilTest {
     final Optional<String> processName =
         BpmnModelUtil.extractProcessDefinitionName(
             CUSTOMER_ONBOARDING, SIMPLE_SERVICE_TASK_PROCESS);
-    assertTrue(processName.isPresent());
-    assertEquals(CUSTOMER_ONBOARDING, processName.get());
+    assertThat(processName.isPresent()).isTrue();
+    assertThat(CUSTOMER_ONBOARDING).isEqualTo(processName.get());
   }
 
   @Test
   void shouldExtractFlowNodeNames() {
     final List<FlowNodeDataDto> flowNodeData =
-        BpmnModelUtil.extractFlowNodeData(INCLUSIVE_GATEWAY_PROCESS);
+        BpmnModelUtil.extractFlowNodeData(SIMPLE_SERVICE_TASK_PROCESS);
     final Map<String, String> flowNodeNames = BpmnModelUtil.extractFlowNodeNames(flowNodeData);
-    assertNotNull(flowNodeNames);
-    assertFalse(flowNodeNames.isEmpty());
+    assertThat(flowNodeNames).isNotNull();
+    assertThat(flowNodeNames.isEmpty()).isFalse();
 
-    assertTrue(flowNodeNames.containsKey(START_EVENT));
-    assertEquals(START_EVENT, flowNodeNames.get(START_EVENT));
+    assertThat(flowNodeNames.containsKey(START_EVENT)).isTrue();
+    assertThat(START_EVENT).isEqualTo(flowNodeNames.get(START_EVENT));
   }
 
   @Test
   void shouldGetCollapsedSubprocessElementIds() {
     final Set<String> collapsedSubprocessIds =
         BpmnModelUtil.getCollapsedSubprocessElementIds(SIMPLE_SERVICE_TASK_PROCESS);
-    assertNotNull(collapsedSubprocessIds);
-    assertTrue(collapsedSubprocessIds.isEmpty());
+    assertThat(collapsedSubprocessIds).isNotNull();
+    assertThat(collapsedSubprocessIds.isEmpty()).isTrue();
   }
 }
