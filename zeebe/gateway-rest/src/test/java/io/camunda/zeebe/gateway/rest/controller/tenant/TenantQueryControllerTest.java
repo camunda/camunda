@@ -49,19 +49,19 @@ public class TenantQueryControllerTest extends RestControllerTest {
       {
          "items": [
            {
-             "key": %d,
+             "tenantKey": %d,
              "name": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
            },
            {
-             "key": %d,
+             "tenantKey": %d,
              "name": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
            },
            {
-             "key": %d,
+             "tenantKey": %d,
              "name": "%s",
              "tenantId": "%s",
              "assignedMemberKeys": %s
@@ -120,7 +120,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "key": %d,
+              "tenantKey": %d,
               "name": "%s",
               "tenantId": "%s",
               "assignedMemberKeys": []
