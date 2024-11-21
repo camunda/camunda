@@ -7,83 +7,155 @@
  */
 import {FC, useEffect, useState} from "react";
 import TextField from "src/components/form/TextField";
-import { useApiCall } from "src/utility/api";
+import {useApiCall} from "src/utility/api";
 import useTranslate from "src/utility/localization";
-import { FormModal, UseEntityModalProps } from "src/components/modal";
+import {FormModal, UseEntityModalProps} from "src/components/modal";
 import {Dropdown, Tag} from "@carbon/react";
 import styled from "styled-components";
 import {
-  addAuthorization,
-  PatchAuthorizationParams,
-  patchAuthorizations
+    Authorization,
+    PatchAuthorizationAction,
+    patchAuthorizations,
+    PermissionType
 } from "src/utility/api/authorizations";
+import {ApiDefinition} from "src/utility/api/request";
+import useDebounce from "react-debounced";
 
 const SelectedResources = styled.div`
-  margin-top: 0;
+    margin-top: 0;
 `;
 
-const PatchModal: FC<UseEntityModalProps<PatchAuthorizationParams>> = ({
-  open,
-  onClose,
-  onSuccess,
-  entity,
-}) => {
-  const { t } = useTranslate();
-  const [addAuthorizationCall, { loading, namedErrors }] = useApiCall(addAuthorization);
-  const [resourceType, setResourceType] = useState("");
-  const [permissionType, setPermissionType] = useState("");
+export enum ResourceType  {
+    AUTHORIZATION = "AUTHORIZATION",
+    MAPPING_RULE = "MAPPING_RULE",
+    MESSAGE = 'MESSAGE',
+    BATCH = 'BATCH',
+    APPLICATION = 'APPLICATION',
+    SYSTEM = 'SYSTEM',
+    TENANT = 'TENANT',
+    DEPLOYMENT = 'DEPLOYMENT',
+    PROCESS_DEFINITION =  'PROCESS_DEFINITION',
+    DECISION_REQUIREMENTS_DEFINITION =  'DECISION_REQUIREMENTS_DEFINITION',
+    DECISION_DEFINITION = 'DECISION_DEFINITION',
+    GROUP =  'GROUP',
+    USER = 'USER',
+    ROLE = 'ROLE'
+}
 
 
-  const handleSubmit = async () => {
+export type PatchAuthorizationUIParams = {
+    ownerKey: number,
+    resourceType: string,
+    permissionType: PermissionType
+    addedResourceIds: string[]
+    removedResourceIds: string[]
+};
 
-    const { success } = await addAuthorizationCall({
-      ownerKey: entity.ownerKey,
-      resourceType: resourceType,
-      permissions: [{permissionType: permissionType, resourceIds: ["1"]}]
-    });
 
-    if (success) {
-      onSuccess();
+export type PatchAuthorizationModalParams = {
+    ownerKey: number,
+    resourceType: ResourceType | null,
+    permissionType: PermissionType | null,
+    currentAuthorizations: Authorization[]
+};
+
+const findAvailableResourceIds = (resourceType: string|null, permissionType: PermissionType|null,
+                                  currentAuthorizations: Authorization[]) => {
+    if ( resourceType && resourceType != ""){
+        if ( permissionType ){
+            return currentAuthorizations
+                .filter((a) => a.resourceType == resourceType)
+                .flatMap( (a) => a.permissions)
+                .filter( (p) => p.permissionType == permissionType )
+                .flatMap( (p) => p.resourceIds);
+        }
     }
-  };
+    return [];
+}
 
-  const actionTypeItems = [
-    { id: "ADD", text: "ADD"},
-    { id: "REMOVE", text: "REMOVE"}
-  ]
-    const resourceTypeItems = [
-        { id: 'AUTHORIZATION', text: 'AUTHORIZATION' },
-        { id: 'MAPPING_RULE', text: 'MAPPING_RULE' },
-        { id: 'MESSAGE', text: 'MESSAGE' },
-        { id: 'BATCH', text: 'BATCH' },
-        { id: 'APPLICATION', text: 'APPLICATION' },
-        { id: 'SYSTEM', text: 'SYSTEM' },
-        { id: 'TENANT', text: 'TENANT' },
-        { id: 'DEPLOYMENT', text: 'DEPLOYMENT' },
-        { id: 'PROCESS_DEFINITION', text: 'PROCESS_DEFINITION' },
-        { id: 'DECISION_REQUIREMENTS_DEFINITION', text: 'DECISION_REQUIREMENTS_DEFINITION' },
-        { id: 'DECISION_DEFINITION', text: 'DECISION_DEFINITION' },
-        { id: 'GROUP', text: 'GROUP' },
-        { id: 'USER', text: 'USER' },
-        { id: 'ROLE', text: 'ROLE' },
-    ];
 
-    const permissionTypeItems = [
-        { id: 'CREATE', text: 'CREATE' },
-        { id: 'READ', text: 'READ' },
-        { id: 'READ_INSTANCE', text: 'READ_INSTANCE' },
-        { id: 'READ_USER_TASK', text: 'READ_USER_TASK' },
-        { id: 'UPDATE', text: 'UPDATE' },
-        { id: 'DELETE', text: 'DELETE' },
-        { id: 'DELETE_PROCESS', text: 'DELETE_PROCESS' },
-        { id: 'DELETE_DRD', text: 'DELETE_DRD' },
-        { id: 'DELETE_FORM', text: 'DELETE_FORM' }
-    ];
+const PatchModal: FC<UseEntityModalProps<PatchAuthorizationModalParams>> = ({
+                                                                                open,
+                                                                                onClose,
+                                                                                onSuccess,
+                                                                                entity,
+                                                                            }) => {
+    const {t} = useTranslate();
 
-    const [selectedResources, setSelectedResources] = useState<string[]>([]);
+    const [resourceType, setResourceType] = useState( entity.resourceType);
+    const [permissionType, setPermissionType] = useState( entity.permissionType);
+    const [selectedResources, setSelectedResources] = useState<string[]>(findAvailableResourceIds(entity.resourceType, entity.permissionType, entity.currentAuthorizations));
+    const [resourceId, setResourceId] = useState<string>("");
 
-   const onSelectResource = (resource: string) => {
-        setSelectedResources([...selectedResources, resource]);
+    const findAddedAndRemoveResourceIds = () => {
+        const currentResourceIds = findAvailableResourceIds(resourceType, permissionType, entity.currentAuthorizations)
+        const removedResourceIds = currentResourceIds.filter((item) => !selectedResources.includes(item));
+        const addedResourceIds = selectedResources.filter((item) => !currentResourceIds.includes(item));
+        return [addedResourceIds, removedResourceIds]
+    }
+
+    const patchRemovedAuthorization: ApiDefinition<undefined, PatchAuthorizationUIParams> = (params) => {
+        return patchAuthorizations({
+            ownerKey: params.ownerKey,
+            action: PatchAuthorizationAction.REMOVE,
+            resourceType: params.resourceType,
+            permissions: [
+                {
+                    permissionType: params.permissionType,
+                    resourceIds: params.removedResourceIds,
+                }
+            ]
+        });
+    };
+
+    const patchAddedAuthorization: ApiDefinition<undefined, PatchAuthorizationUIParams> = (params) => {
+        return patchAuthorizations({
+            ownerKey: params.ownerKey,
+            action: PatchAuthorizationAction.ADD,
+            resourceType: params.resourceType,
+            permissions: [
+                {
+                    permissionType: params.permissionType,
+                    resourceIds: params.addedResourceIds,
+                }
+            ]
+        });
+    };
+
+    const [patchRemovedAuthorizationCall, ] = useApiCall(patchRemovedAuthorization);
+    const [patchAddedAuthorizationCall, {loading, }] = useApiCall(patchAddedAuthorization);
+
+    const handleSubmit = async () => {
+        const [addedResourceIds, removedResourceIds] = findAddedAndRemoveResourceIds();
+        if ( removedResourceIds.length == 0 || await patchRemovedAuthorizationCall({
+            ownerKey: entity.ownerKey,
+            resourceType: resourceType!,
+            permissionType: permissionType!,
+            addedResourceIds: addedResourceIds,
+            removedResourceIds: removedResourceIds
+        })) {
+            if ( addedResourceIds.length == 0 || await patchAddedAuthorizationCall({
+                ownerKey: entity.ownerKey,
+                resourceType: resourceType!,
+                permissionType: permissionType!,
+                addedResourceIds: addedResourceIds,
+                removedResourceIds: removedResourceIds
+            })) {
+                onSuccess();
+            }
+        }
+    };
+
+
+    const resourceTypeItems =
+        Object.values(ResourceType)
+
+
+    const permissionTypeItems = Object.values(PermissionType)
+
+
+    const onSelectResource = (resource: string) => {
+       setSelectedResources([...selectedResources, resource]);
     };
 
     const onUnselectResource =
@@ -93,60 +165,71 @@ const PatchModal: FC<UseEntityModalProps<PatchAuthorizationParams>> = ({
             };
 
     useEffect(() => {
-        if (open) {
-            setSelectedResources([]);
-        }
-    }, [open]);
+        setSelectedResources(findAvailableResourceIds(resourceType, permissionType, entity.currentAuthorizations))
+    }, [resourceType, permissionType, entity.currentAuthorizations]);
 
-  return (
-    <FormModal
-      open={open}
-      headline={t("Edit Authorizations")}
-      onClose={onClose}
-      onSubmit={handleSubmit}
-      loading={loading}
-      loadingDescription={t("Updating authorizations")}
-      confirmLabel={t("Update authorizations")}
-    >
-        <Dropdown
-            id="resource-type-dropdown"
-            label="Select Resource type"
-            items={resourceTypeItems}
-            onChange={({ selectedItem }) => setResourceType(selectedItem.id)}
-            itemToString={(item) => (item ? item.text : '')}
-        />
 
-        <Dropdown
-            id="permission-type-dropdown"
-            label="Select Permission type"
-            onChange={({ selectedItem }) => setPermissionType(selectedItem.id)}
-            items={permissionTypeItems}
-            itemToString={(item) => (item ? item.text : '')}
-        />
+    const debounce = useDebounce();
 
-        <SelectedResources>
-            {selectedResources.map((r) => (
-                <Tag
-                    key={r}
-                    onClose={onUnselectResource(r)}
-                    size="md"
-                    type="blue"
-                    filter
-                >
-                    {r}
-                </Tag>
-            ))}
-        </SelectedResources>
-        <TextField
-            label={t("Resource ID")}
-            placeholder={t("Resource ID")}
-            errors={namedErrors?.name}
-            onChange={onSelectResource}
-            autoFocus
-        />
+    return (
+        <FormModal
+            open={open}
+            headline={t("Edit Authorizations")}
+            onClose={onClose}
+            onSubmit={handleSubmit}
+            loading={loading}
+            loadingDescription={t("Updating authorizations")}
+            confirmLabel={t("Update authorizations")}
+        >
 
-    </FormModal>
-  );
+            <Dropdown
+                id="resource-type-dropdown"
+                label="Select Resource type"
+                items={resourceTypeItems}
+                onChange={(item: { selectedItem: ResourceType }) => setResourceType(item.selectedItem)}
+                itemToString={(item: ResourceType) => (item ? t(item) : '')}
+                selectedItem={resourceTypeItems.find((item) => item === resourceType)}
+            />
+
+            <Dropdown
+                id="permission-type-dropdown"
+                label="Select Permission type"
+                onChange={(item: { selectedItem: PermissionType }) => setPermissionType(item.selectedItem)}
+                items={permissionTypeItems}
+                itemToString={(item: PermissionType) => (item ? t(item) : '')}
+                selectedItem={permissionTypeItems.find((item) => item === permissionType)}
+            />
+
+
+            <SelectedResources>
+                {selectedResources.map((r) => (
+                    <Tag
+                        key={r}
+                        onClose={onUnselectResource(r)}
+                        size="md"
+                        type="blue"
+                        filter
+                    >
+                        {r}
+                    </Tag>
+                ))}
+            </SelectedResources>
+            <TextField
+                label={t("Resource ID")}
+                placeholder={t("Resource ID")}
+                onChange={(newValue: string) => {
+                    setResourceId(newValue)
+                    debounce( () => {
+                        onSelectResource(newValue)
+                        setResourceId("")
+                    })
+                }}
+                autoFocus
+                value={resourceId}
+            />
+
+        </FormModal>
+    );
 };
 
 export default PatchModal;
