@@ -127,6 +127,12 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>

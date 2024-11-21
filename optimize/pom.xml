@@ -85,8 +85,6 @@
     <elasticsearch.test.version>8.13.0</elasticsearch.test.version>
     <!--the ElasticSearch version of the previous Optimize version -->
     <previous.optimize.elasticsearch.version>8.13.0</previous.optimize.elasticsearch.version>
-    <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
-    <elasticsearch.log4j.version>2.24.1</elasticsearch.log4j.version>
     <!--The least supported opensearch version we should test against-->
     <opensearch.test.version>2.10.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
@@ -233,18 +231,6 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>io.github.netmikey.logunit</groupId>
-      <artifactId>logunit-logback</artifactId>
-      <version>2.0.0</version>
-      <scope>test</scope>
-      <exclusions>
-        <exclusion>
-          <groupId>ch.qos.logback</groupId>
-          <artifactId>logback-classic</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpmime</artifactId>
       <version>${httpclient.version}</version>
@@ -352,7 +338,6 @@
               <dep>org.mockito:mockito-junit-jupiter</dep>
               <dep>org.mock-server:mockserver-junit-jupiter</dep>
               <dep>io.github.netmikey.logunit:logunit-core</dep>
-              <dep>io.github.netmikey.logunit:logunit-logback</dep>
               <dep>org.apache.httpcomponents:httpmime</dep>
               <dep>org.awaitility:awaitility</dep>
             </ignoredUnusedDeclaredDependencies>

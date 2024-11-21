@@ -7,14 +7,30 @@
  */
 package io.camunda.optimize.util;
 
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.pattern.CompositeConverter;
+import org.apache.logging.log4j.core.LogEvent;
+import org.apache.logging.log4j.core.pattern.LogEventPatternConverter;
 
-public class LogUtil extends CompositeConverter<ILoggingEvent> {
+public class LogUtil extends LogEventPatternConverter {
 
-  /** Escape any NLF (newline function) and Backspace to prevent log injection attacks. */
+  protected LogUtil(final String name, final String style) {
+    super(name, style);
+  }
+
+  public static LogUtil newInstance() {
+    return new LogUtil("LogUtil", "custom");
+  }
+
   @Override
-  protected String transform(final ILoggingEvent iLoggingEvent, final String s) {
+  public void format(final LogEvent event, final StringBuilder output) {
+    final String message = event.getMessage().getFormattedMessage();
+    output.append(transformString(message));
+  }
+
+  public static String sanitizeLogMessage(final String input) {
+    return input.replaceAll("[\n|\r|\t]", "_");
+  }
+
+  private static String transformString(final String s) {
     return s
         // newline
         .replace("\n", "\\n")
@@ -32,9 +48,5 @@ public class LogUtil extends CompositeConverter<ILoggingEvent> {
         .replace("\u2028", "\\u2028")
         // paragraph separator
         .replace("\u2029", "\\u2029");
-  }
-
-  public static String sanitizeLogMessage(final String input) {
-    return input.replaceAll("[\n|\r|\t]", "_");
   }
 }
