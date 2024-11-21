@@ -15,23 +15,29 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicLongFieldUpdater;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_DEFAULT)
 public final class ExporterMetadata {
+  private static final Logger LOGGER = LoggerFactory.getLogger(ExporterMetadata.class);
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final AtomicLongFieldUpdater<ExporterMetadata> INCIDENT_POSITION_SETTER =
+      AtomicLongFieldUpdater.newUpdater(ExporterMetadata.class, "lastIncidentUpdatePosition");
   private static final int UNSET_POSITION = -1;
 
-  // this is written/read from the exporter actor AND also from the background task threads
-  // if you ever need to do any comparisons, make sure to use a better approach (e.g. CAS)
   private volatile long lastIncidentUpdatePosition = UNSET_POSITION;
 
   public long getLastIncidentUpdatePosition() {
     return lastIncidentUpdatePosition;
   }
 
-  public void setLastIncidentUpdatePosition(final long lastIncidentUpdatePosition) {
-    this.lastIncidentUpdatePosition = lastIncidentUpdatePosition;
+  public void setLastIncidentUpdatePosition(final long newLastIncidentUpdatePosition) {
+    INCIDENT_POSITION_SETTER.updateAndGet(
+        this,
+        prev -> updateLastIncidentUpdatePositionMonotonic(newLastIncidentUpdatePosition, prev));
   }
 
   public void deserialize(final byte[] bytes) {
@@ -71,5 +77,20 @@ public final class ExporterMetadata {
   @Override
   public String toString() {
     return "ExporterMetadata{" + "lastIncidentUpdatePosition=" + lastIncidentUpdatePosition + '}';
+  }
+
+  private long updateLastIncidentUpdatePositionMonotonic(
+      final long newLastIncidentUpdatePosition, final long prev) {
+    if (prev > newLastIncidentUpdatePosition) {
+      LOGGER.warn(
+          """
+          Expected to update the last incident update position {} to a greater value, but got {}; \
+          will ignore this update, but this could indicate a bug""",
+          prev,
+          newLastIncidentUpdatePosition);
+      return prev;
+    }
+
+    return newLastIncidentUpdatePosition;
   }
 }

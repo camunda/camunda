@@ -27,4 +27,17 @@ final class ExporterMetadataTest {
     // then
     assertThat(destination.getLastIncidentUpdatePosition()).isEqualTo(3);
   }
+
+  @Test
+  void shouldNotUpdateIncidentPositionWithALowerValue() {
+    // given
+    final var metadata = new ExporterMetadata();
+    metadata.setLastIncidentUpdatePosition(3);
+
+    // when
+    metadata.setLastIncidentUpdatePosition(2);
+
+    // then
+    assertThat(metadata.getLastIncidentUpdatePosition()).isEqualTo(3);
+  }
 }
