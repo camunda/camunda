@@ -44,15 +44,15 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   private final ServiceTransformers transformers;
   private final boolean isCamundaExporterEnabled;
-  private final String globalPrefix;
+  private final String prefix;
 
   public UserTaskFilterTransformer(
       final ServiceTransformers transformers,
       final boolean isCamundaExporterEnabled,
-      final String globalPrefix) {
+      final String prefix) {
     this.transformers = transformers;
     this.isCamundaExporterEnabled = isCamundaExporterEnabled;
-    this.globalPrefix = globalPrefix;
+    this.prefix = prefix;
   }
 
   @Override
@@ -109,15 +109,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
     if (isCamundaExporterEnabled) {
-      final String indexName =
-          String.format(
-              TaskTemplate.FULL_QUALIFIED_INDEX_NAME_PATTERN,
-              TaskTemplate.formatIndexPrefix(globalPrefix),
-              TaskTemplate.COMPONENT_NAME,
-              TaskTemplate.INDEX_NAME,
-              TaskTemplate.INDEX_VERSION);
-
-      return List.of(indexName);
+      ;
+      return List.of(TaskTemplate.getIndexNameWithPrefix(prefix));
     }
     // TDB - The listview is used when the exporter is not enabled, this will be removed in 8.8
     return List.of("tasklist-list-view-8.6.0_");
