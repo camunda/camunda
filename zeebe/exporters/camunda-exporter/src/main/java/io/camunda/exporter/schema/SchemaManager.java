@@ -51,17 +51,17 @@ public class SchemaManager {
     initialiseResources();
 
     //  used to update existing indices/templates
-    LOG.info("Update index schema. {} indices need to be updated", newIndexProperties.size());
+    LOG.info("Update index schema. '{}' indices need to be updated", newIndexProperties.size());
     updateSchema(newIndexProperties);
     LOG.info(
-        "Update index template schema. {} index templates need to be updated",
+        "Update index template schema. '{}' index templates need to be updated",
         newIndexProperties.size());
     updateSchema(newIndexTemplateProperties);
 
     final RetentionConfiguration retention = config.getRetention();
     if (retention.isEnabled()) {
       LOG.info(
-          "Retention is enabled. Create ILM policy [name: {}, retention: {}]",
+          "Retention is enabled. Create ILM policy [name: '{}', retention: '{}']",
           retention.getPolicyName(),
           retention.getMinimumAge());
       searchEngineClient.putIndexLifeCyclePolicy(
@@ -85,14 +85,14 @@ public class SchemaManager {
         searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX).keySet();
 
     LOG.info(
-        "Create missing indices. [existing: {}, missing: {}]",
+        "Found '{}' existing indices. Create missing index templates based on '{}' descriptors.",
         existingIndexNames.size(),
-        indexDescriptors.size() - existingIndexNames.size());
+        indexTemplateDescriptors.size());
     indexDescriptors.stream()
         .filter(descriptor -> !existingIndexNames.contains(descriptor.getFullQualifiedName()))
         .forEach(
             descriptor -> {
-              LOG.info("Create missing index {}", descriptor.getFullQualifiedName());
+              LOG.info("Create missing index '{}'", descriptor.getFullQualifiedName());
               searchEngineClient.createIndex(
                   descriptor, getIndexSettings(descriptor.getIndexName()));
             });
@@ -110,18 +110,18 @@ public class SchemaManager {
             .keySet();
 
     LOG.info(
-        "Create missing index templates. [existing: {}, missing: {}]",
+        "Found '{}' existing index templates. Create missing index templates based on '{}' descriptors.",
         existingTemplateNames.size(),
-        indexTemplateDescriptors.size() - existingTemplateNames.size());
+        indexTemplateDescriptors.size());
     indexTemplateDescriptors.stream()
         .filter(descriptor -> !existingTemplateNames.contains(descriptor.getTemplateName()))
         .forEach(
             descriptor -> {
-              LOG.info("Create missing index template {}", descriptor.getTemplateName());
+              LOG.info("Create missing index template '{}'", descriptor.getTemplateName());
               searchEngineClient.createIndexTemplate(
                   descriptor, getIndexSettings(descriptor.getIndexName()), true);
               LOG.info(
-                  "Create missing index {} for template {}",
+                  "Create missing index '{}', for template '{}'",
                   descriptor.getFullQualifiedName(),
                   descriptor.getTemplateName());
               searchEngineClient.createIndex(
@@ -135,14 +135,15 @@ public class SchemaManager {
       final var newProperties = newFieldEntry.getValue();
 
       if (descriptor instanceof IndexTemplateDescriptor) {
-        LOG.info("Updating template: {}", ((IndexTemplateDescriptor) descriptor).getTemplateName());
+        LOG.info(
+            "Updating template: '{}'", ((IndexTemplateDescriptor) descriptor).getTemplateName());
         searchEngineClient.createIndexTemplate(
             (IndexTemplateDescriptor) descriptor,
             getIndexSettings(descriptor.getIndexName()),
             false);
       } else {
         LOG.info(
-            "Index alias: {}. New fields will be added {}",
+            "Index alias: '{}'. New fields will be added '{}'",
             descriptor.getFullQualifiedName(),
             newProperties);
 
@@ -179,7 +180,7 @@ public class SchemaManager {
 
     final var currentIndices = searchEngineClient.getMappings(allIndexNames(), MappingSource.INDEX);
     LOG.info(
-        "Validate {} existing indices based on {} descriptors",
+        "Validate '{}' existing indices based on '{}' descriptors",
         currentIndices.size(),
         indexDescriptors.size());
     return schemaValidator.validateIndexMappings(currentIndices, indexDescriptors);
@@ -197,7 +198,7 @@ public class SchemaManager {
             config.getIndex().getPrefix() + "*", MappingSource.INDEX_TEMPLATE);
 
     LOG.info(
-        "Validate {} existing index templates based on {} template descriptors",
+        "Validate '{}' existing index templates based on '{}' template descriptors",
         currentTemplates.size(),
         indexTemplateDescriptors.size());
     return schemaValidator.validateIndexMappings(
