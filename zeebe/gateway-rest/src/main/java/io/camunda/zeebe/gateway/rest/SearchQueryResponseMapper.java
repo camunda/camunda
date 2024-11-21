@@ -259,13 +259,13 @@ public final class SearchQueryResponseMapper {
 
   public static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
     return new FlowNodeInstanceItem()
-        .flowNodeInstanceKey(instance.key())
+        .flowNodeInstanceKey(instance.flowNodeInstanceKey())
         .flowNodeId(instance.flowNodeId())
         .processDefinitionKey(instance.processDefinitionKey())
-        .processDefinitionId(instance.bpmnProcessId())
+        .processDefinitionId(instance.processDefinitionId())
         .processInstanceKey(instance.processInstanceKey())
         .incidentKey(instance.incidentKey())
-        .hasIncident(instance.incident())
+        .hasIncident(instance.hasIncident())
         .startDate(formatDate(instance.startDate()))
         .endDate(formatDate(instance.endDate()))
         .state(FlowNodeInstanceItem.StateEnum.fromValue(instance.state().name()))
@@ -347,8 +347,8 @@ public final class SearchQueryResponseMapper {
 
   public static FormItem toFormItem(final FormEntity f) {
     return new FormItem()
-        .formKey(Long.valueOf(f.id()))
-        .bpmnId(f.bpmnId())
+        .formKey(f.formKey())
+        .bpmnId(f.formId())
         .version(f.version())
         .schema(f.schema())
         .tenantId(f.tenantId());
@@ -495,7 +495,7 @@ public final class SearchQueryResponseMapper {
 
   public static VariableItem toVariable(final VariableEntity variableEntity) {
     return new VariableItem()
-        .variableKey(variableEntity.key())
+        .variableKey(variableEntity.variableKey())
         .name(variableEntity.name())
         .value(variableEntity.value())
         .fullValue(variableEntity.fullValue())

@@ -25,11 +25,7 @@ import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
-import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.time.OffsetDateTime;
@@ -205,15 +201,15 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     // given
     final long processInstanceKey =
         PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
-    final var longFilter = new LongFilterProperty();
-    longFilter.set$Gt(processInstanceKey - 1);
-    longFilter.set$Lt(processInstanceKey + 1);
 
     // when
     final var result =
         zeebeClient
             .newProcessInstanceQuery()
-            .filter(f -> f.processInstanceKey(longFilter))
+            .filter(
+                f ->
+                    f.processInstanceKey(
+                        b -> b.gt(processInstanceKey - 1).lt(processInstanceKey + 1)))
             .send()
             .join();
 
@@ -227,15 +223,13 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     // given
     final long processInstanceKey =
         PROCESS_INSTANCES.stream().findFirst().orElseThrow().getProcessInstanceKey();
-    final var longFilter = new LongFilterProperty();
-    longFilter.set$Gte(processInstanceKey);
-    longFilter.set$Lte(processInstanceKey);
 
     // when
     final var result =
         zeebeClient
             .newProcessInstanceQuery()
-            .filter(f -> f.processInstanceKey(longFilter))
+            .filter(
+                f -> f.processInstanceKey(b -> b.gte(processInstanceKey).lte(processInstanceKey)))
             .send()
             .join();
 
@@ -251,14 +245,12 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
         PROCESS_INSTANCES.subList(0, 2).stream()
             .map(ProcessInstanceEvent::getProcessInstanceKey)
             .toList();
-    final var longFilter = new LongFilterProperty();
-    longFilter.set$In(processInstanceKeys);
 
     // when
     final var result =
         zeebeClient
             .newProcessInstanceQuery()
-            .filter(f -> f.processInstanceKey(longFilter))
+            .filter(f -> f.processInstanceKey(b -> b.in(processInstanceKeys)))
             .send()
             .join();
 
@@ -284,7 +276,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     final var result =
         zeebeClient
             .newProcessInstanceQuery()
-            .filter(f -> f.processDefinitionId(bpmnProcessId))
+            .filter(f -> f.processDefinitionId(b -> b.eq(bpmnProcessId)))
             .send()
             .join();
 
@@ -303,14 +295,12 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .findFirst()
             .orElseThrow()
             .getProcessInstanceKey();
-    final var filter = new StringFilterProperty();
-    filter.$in(List.of("not-found", bpmnProcessId));
 
     // when
     final var result =
         zeebeClient
             .newProcessInstanceQuery()
-            .filter(f -> f.processDefinitionId(filter))
+            .filter(f -> f.processDefinitionId(b -> b.in("not-found", bpmnProcessId)))
             .send()
             .join();
 
@@ -328,14 +318,12 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .filter(p -> p.getBpmnProcessId().startsWith(bpmnProcessId))
             .map(ProcessInstanceEvent::getProcessInstanceKey)
             .toList();
-    final var stringFilter = new StringFilterProperty();
-    stringFilter.$like(bpmnProcessId.replace("_", "?") + "*");
 
     // when
     final var result =
         zeebeClient
             .newProcessInstanceQuery()
-            .filter(f -> f.processDefinitionId(stringFilter))
+            .filter(f -> f.processDefinitionId(b -> b.like(bpmnProcessId.replace("_", "?") + "*")))
             .send()
             .join();
 
@@ -357,14 +345,20 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join()
             .items()
             .getFirst();
-    final var filter = new DateTimeFilterProperty();
     final var startDate = OffsetDateTime.parse(pi.getStartDate());
-    filter.set$Gt(startDate.minus(1, ChronoUnit.MILLIS).toString());
-    filter.set$Lt(startDate.plus(1, ChronoUnit.MILLIS).toString());
 
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.startDate(filter)).send().join();
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(
+                f ->
+                    f.startDate(
+                        b ->
+                            b.gt(startDate.minus(1, ChronoUnit.MILLIS))
+                                .lt(startDate.plus(1, ChronoUnit.MILLIS))))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);
@@ -383,14 +377,15 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
             .join()
             .items()
             .getFirst();
-    final var filter = new DateTimeFilterProperty();
     final var startDate = OffsetDateTime.parse(pi.getStartDate());
-    filter.set$Gte(startDate.toString());
-    filter.set$Lte(startDate.toString());
 
     // when
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.startDate(filter)).send().join();
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.startDate(b -> b.gte(startDate).lte(startDate)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);
@@ -438,10 +433,12 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   @Test
   void shouldQueryProcessInstancesByStateFilterLike() {
     // when
-    final var filter = new ProcessInstanceStateFilterProperty();
-    filter.$like("ACT*");
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.state(filter)).send().join();
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.state(b -> b.like("ACT*")))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -452,10 +449,12 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   @Test
   void shouldQueryProcessInstancesByStateFilterNeq() {
     // when
-    final var filter = new ProcessInstanceStateFilterProperty();
-    filter.$neq(ProcessInstanceStateEnum.ACTIVE);
     final var result =
-        zeebeClient.newProcessInstanceQuery().filter(f -> f.state(filter)).send().join();
+        zeebeClient
+            .newProcessInstanceQuery()
+            .filter(f -> f.state(b -> b.neq(ProcessInstanceStateEnum.ACTIVE)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -776,7 +775,7 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     // then
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
-    assertThat(result.items().get(0).getFlowNodeId()).isEqualTo(flowNodeId);
+    assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
   }
 
   @Test

@@ -22,7 +22,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.DraftTaskVariableEntity;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
@@ -43,6 +42,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -204,13 +204,13 @@ class VariableServiceTest {
                 variableSizeThreshold)));
     final var numDraftVariable =
         new DraftTaskVariableEntity()
-            .setId(DraftTaskVariableEntity.getIdBy(taskId, "A_numVar"))
+            .setId(VariableService.getDraftVariableId(taskId, "A_numVar"))
             .setName("A_numVar")
             .setValue("456")
             .setFullValue("456");
     final var strDraftVariable =
         new DraftTaskVariableEntity()
-            .setId(DraftTaskVariableEntity.getIdBy(taskId, "B_strVar"))
+            .setId(VariableService.getDraftVariableId(taskId, "B_strVar"))
             .setName("B_strVar")
             .setValue("\"strVarValue\"")
             .setFullValue("\"strVarValue\"");
@@ -233,7 +233,7 @@ class VariableServiceTest {
                         .setPreviewValue("456")
                         .setValue("456")),
             new VariableSearchResponse()
-                .setId(DraftTaskVariableEntity.getIdBy(taskId, "B_strVar"))
+                .setId(VariableService.getDraftVariableId(taskId, "B_strVar"))
                 .setName("B_strVar")
                 .setDraft(
                     new VariableSearchResponse.DraftSearchVariableValue()

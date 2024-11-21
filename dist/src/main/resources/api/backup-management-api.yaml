@@ -2,9 +2,9 @@ openapi: "3.0.2"
 info:
   title: Backup Management API
   version: "1.0"
-  description: Management endpoint to query, take, and delete backups of Zeebe.
+  description: Management endpoint to query, take, and delete backups of Camunda.
 servers:
-  - url: "{schema}://{host}:{port}/actuator/backups"
+  - url: "{schema}://{host}:{port}/actuator/"
     variables:
       host:
         default: localhost
@@ -16,22 +16,23 @@ servers:
         default: http
         description: Management server schema
 paths:
-  /:
+  # Runtime backups
+  /backup-runtime:
     post:
-      summary: Takes a backup
+      summary: Takes a backup of runtime data
       description: Start taking a backup with the given backupId
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TakeBackupRequest'
+              $ref: '#/components/schemas/TakeBackupRuntimeRequest'
       responses:
         '202':
           description: A backup has been successfully scheduled
-          $ref: '#/components/responses/TakeBackupResponse'
+          $ref: '#/components/responses/TakeBackupRuntimeResponse'
         '400':
-          description: Backup is not enabled or configured on the brokers. Or the given BackupId is not valid.
+          description: Backup is not enabled or configured on the brokers or the given BackupId is not valid.
           $ref: '#/components/responses/Error'
         '409':
           description: A backup with same or higher id already exists
@@ -46,7 +47,7 @@ paths:
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
     get:
-      summary: Lists all available backups
+      summary: Lists all available runtime backups
       description: |
         Returns a list of all available backups with their state and additional info,
         sorted in descending order of backupId.
@@ -66,9 +67,9 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
-  /{backupId}:
+  /backup-runtime/{backupId}:
     get:
-      summary: Get information of a backup
+      summary: Get information of a runtime backup
       description: A detailed information of the backup with the give backup id.
       parameters:
         - $ref: '#/components/parameters/BackupId'
@@ -92,7 +93,7 @@ paths:
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
     delete:
-      summary: Delete a backup
+      summary: Delete a runtime backup
       description: Delete a backup with the given id
       parameters:
         - $ref: '#/components/parameters/BackupId'
@@ -108,6 +109,73 @@ paths:
         '504':
           description: Request from gateway to broker timed out
           $ref: '#/components/responses/Error'
+
+  # Section on historic backups
+  /backup-history:
+    post:
+      summary: Takes a backup of history data
+      description: Start taking a backup with the given backupId
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TakeBackupHistoryRequest'
+      responses:
+        '202':
+          description: A backup has been successfully scheduled
+          $ref: '#/components/responses/TakeBackupHistoryResponse'
+        '400':
+          description: In case something is wrong with backupId, e.g. the same backup ID already exists.
+        '500':
+          description: All other errors, e.g. ES returned error response when attempting to create a snapshot.
+        '502':
+          description: Elasticsearch is not accessible, the request can be retried when it is back.
+    get:
+      summary: Lists all available historic backups
+      description: |
+        Returns a list of all available backups with their state and additional info,
+        sorted in descending order of backupId.
+      responses:
+        '200':
+          description: OK
+          $ref: '#/components/responses/HistoryBackupList'
+        '404':
+          description: Backup repository is not configured.
+        '500':
+          description: Elasticsearch is not accessible, the request can be retried when it is back.
+        '502':
+          description: Elasticsearch is not accessible, the request can be retried when it is back.
+  /backup-history/{backupId}:
+    get:
+      summary: Get information of a historic backup
+      description: A detailed information of the backup with the give backup id.
+      parameters:
+        - $ref: '#/components/parameters/BackupId'
+      responses:
+        '200':
+          description: OK
+          $ref: '#/components/responses/HistoryBackupDetail'
+        '404':
+          description: Backup with given ID does not exist.
+        '500':
+          description: All other errors, e.g. ES returned error response when attempting to create a snapshot.
+        '502':
+          description: Elasticsearch is not accessible, the request can be retried when it is back.
+    delete:
+      summary: Delete a historic backup
+      description: Delete a backup with the given id
+      parameters:
+        - $ref: '#/components/parameters/BackupId'
+      responses:
+        '204':
+          description: Backup is deleted
+        '404':
+          description: Not a single snapshot corresponding to given ID exist.
+        '500':
+          description: All other errors, e.g. ES returned error response when attempting to create a snapshot.
+        '502':
+          description: Elasticsearch is not accessible, the request can be retried when it is back.
 
 components:
   parameters:
@@ -134,6 +202,13 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/BackupList'
+    HistoryBackupList:
+      description: |
+        List of all available backups.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HistoryBackupList'
 
     BackupInfo:
       description: Detailed information of a backup
@@ -142,13 +217,26 @@ components:
           schema:
             $ref: '#/components/schemas/BackupInfo'
 
-    TakeBackupResponse:
+    HistoryBackupDetail:
+      description: Detailed information of a backup
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HistoryBackupDetail'
+
+    TakeBackupRuntimeResponse:
       description: Response for take backup request
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/TakeBackupResponse'
+            $ref: '#/components/schemas/TakeBackupRuntimeResponse'
 
+    TakeBackupHistoryResponse:
+      description: Response for take backup request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TakeBackupHistoryResponse'
   schemas:
     Error:
       title: Error response
@@ -181,7 +269,7 @@ components:
       example: 3
 
     StateCode:
-      title: Backup State
+      title: Runtime Backup State
       description: The state of the backup.
       type: string
       enum:
@@ -193,6 +281,17 @@ components:
         - INCOMPATIBLE
       example: IN_PROGRESS
 
+    HistoryStateCode:
+      title: History Backup State
+      description: The state of the backup.
+      type: string
+      enum:
+        - IN_PROGRESS
+        - SUCCESS
+        - FAILED
+        - INCOMPATIBLE
+        - INCOMPLETE
+      example: IN_PROGRESS
     BackupList:
       title: List of backups
       description: List of backups with their state and additional info
@@ -293,7 +392,7 @@ components:
         - partitionId
         - state
 
-    TakeBackupRequest:
+    TakeBackupRuntimeRequest:
       title: TakeBackupRequest
       description: Request body for take backup
       type: object
@@ -305,11 +404,83 @@ components:
           allOf:
             - $ref: '#/components/schemas/BackupId'
 
-    TakeBackupResponse:
+    TakeBackupRuntimeResponse:
+      title: TakeBackupRuntimeResponse
+      description: Response body for take backup
+      type: object
+      properties:
+        message:
+           description: A message indicating backup has been triggered
+           type: string
+
+    TakeBackupHistoryRequest:
+      title: TakeBackupRequest
+      description: Request body for take backup
+      type: object
+      required:
+        - backupId
+      properties:
+        backupId:
+          description: The ID of the backup to be taken
+          allOf:
+            - $ref: '#/components/schemas/BackupId'
+
+    TakeBackupHistoryResponse:
       title: TakeBackupResponse
       description: Request body for take backup
       type: object
       properties:
-        message:
-          description: A message indicating backup has been triggered
+        scheduledSnapshots:
+          type: array
+          items:
+            type: string
+            description: Snapshot identifier following the pattern camunda_operate_[id]_[version]_part_[current]_of_[total]
+            example: "camunda_operate_123_8.2.0_part_1_of_6"
+
+    HistoryBackupDetail:
+      type: object
+      properties:
+        snapshotName:
           type: string
+          description: Name of the snapshot
+          example: "backup-snapshot-001"
+        state:
+          type: string
+          description: Current state of the backup
+          $ref: '#/components/schemas/HistoryStateCode'
+          example: "SUCCESS"
+        startTime:
+          type: string
+          format: date-time
+          description: Timestamp when the backup started
+          example: "2023-01-01T10:10:10.100+0000"
+        failures:
+          type: array
+          items:
+            type: string
+          description: List of failure messages
+      required:
+        - snapshotName
+        - state
+        - startTime
+        - failures
+
+    HistoryBackupList:
+      type: object
+      properties:
+        backupId:
+          type: number
+          description: Id of the backup
+        state:
+          $ref: '#/components/schemas/HistoryStateCode'
+        failureReason:
+          type: string
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryBackupDetail'
+      required:
+        - backupId
+        - state
+        - details
+

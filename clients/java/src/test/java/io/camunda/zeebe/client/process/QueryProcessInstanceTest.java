@@ -101,12 +101,9 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchProcessInstanceByProcessInstanceKeyLongFilter() {
     // when
-    final LongFilterProperty filterProperty = new LongFilterProperty();
-    filterProperty.$gt(1L);
-    filterProperty.$lt(10L);
     client
         .newProcessInstanceQuery()
-        .filter(f -> f.processInstanceKey(filterProperty))
+        .filter(f -> f.processInstanceKey(b -> b.gt(1L).lt(10L)))
         .send()
         .join();
 
@@ -124,11 +121,9 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchProcessInstanceByProcessDefinitionIdStringFilter() {
     // when
-    final StringFilterProperty filterProperty = new StringFilterProperty();
-    filterProperty.$like("string");
     client
         .newProcessInstanceQuery()
-        .filter(f -> f.processDefinitionId(filterProperty))
+        .filter(f -> f.processDefinitionId(b -> b.like("string")))
         .send()
         .join();
 
@@ -145,10 +140,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchProcessInstanceByStartDateDateTimeFilter() {
     // when
-    final DateTimeFilterProperty filterProperty = new DateTimeFilterProperty();
-    final String dateTime = OffsetDateTime.now().toString();
-    filterProperty.$gt(dateTime);
-    client.newProcessInstanceQuery().filter(f -> f.startDate(filterProperty)).send().join();
+    final OffsetDateTime now = OffsetDateTime.now();
+    client.newProcessInstanceQuery().filter(f -> f.startDate(b -> b.gt(now))).send().join();
 
     // then
     final ProcessInstanceSearchQueryRequest request =
@@ -157,7 +150,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final DateTimeFilterProperty startDate = filter.getStartDate();
     assertThat(startDate).isNotNull();
-    assertThat(startDate.get$Gt()).isEqualTo(dateTime);
+    assertThat(startDate.get$Gt()).isEqualTo(now.toString());
   }
 
   @Test

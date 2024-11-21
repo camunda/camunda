@@ -65,7 +65,7 @@ public final class FlowNodeInstanceServiceTest {
     // given
     final var entity = mock(FlowNodeInstanceEntity.class);
     final var processId = "processId";
-    when(entity.bpmnProcessId()).thenReturn(processId);
+    when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchFlowNodeInstances(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     when(securityContextProvider.isAuthorized(
@@ -83,7 +83,7 @@ public final class FlowNodeInstanceServiceTest {
     // given
     final var entity = mock(FlowNodeInstanceEntity.class);
     final var processId = "processId";
-    when(entity.bpmnProcessId()).thenReturn(processId);
+    when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchFlowNodeInstances(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     when(securityContextProvider.isAuthorized(

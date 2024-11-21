@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.qa.util.cluster.TestStandaloneCamunda;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.ProblemException;
-import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -127,11 +126,12 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByPriorityFilterGtLt() {
     // when
-    final var filter = new IntegerFilterProperty();
-    filter.set$Gt(29);
-    filter.set$Lt(31);
     final var result =
-        camundaClient.newUserTaskQuery().filter(f -> f.priority(filter)).send().join();
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.priority(b -> b.gt(29).lt(31)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);
@@ -140,11 +140,12 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByPriorityFilterGteLte() {
     // when
-    final var filter = new IntegerFilterProperty();
-    filter.set$Gte(30);
-    filter.set$Lte(30);
     final var result =
-        camundaClient.newUserTaskQuery().filter(f -> f.priority(filter)).send().join();
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.priority(b -> b.gte(30).lte(30)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);
@@ -153,10 +154,12 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByPriorityFilterIn() {
     // when
-    final var filter = new IntegerFilterProperty();
-    filter.set$In(List.of(Integer.MAX_VALUE, 30));
     final var result =
-        camundaClient.newUserTaskQuery().filter(f -> f.priority(filter)).send().join();
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.priority(b -> b.in(Integer.MAX_VALUE, 30)))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);
@@ -219,10 +222,12 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByAssigneeFilterIn() {
     // when
-    final var filter = new StringFilterProperty();
-    filter.$in(List.of("not-found", "demo"));
     final var result =
-        camundaClient.newUserTaskQuery().filter(f -> f.assignee(filter)).send().join();
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.assignee(b -> b.in("not-found", "demo")))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);
@@ -296,10 +301,12 @@ class UserTaskQueryTest {
   @Test
   public void shouldRetrieveTaskByCandidateUserFilterIn() {
     // when
-    final var filter = new StringFilterProperty();
-    filter.$in(List.of("not-found", "user"));
     final var result =
-        camundaClient.newUserTaskQuery().filter(f -> f.candidateUser(filter)).send().join();
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.candidateUser(b -> b.in("not-found", "user")))
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);

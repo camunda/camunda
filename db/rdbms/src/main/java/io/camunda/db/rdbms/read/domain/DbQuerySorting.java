@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
-import io.camunda.db.rdbms.sql.SearchColumn;
+import io.camunda.db.rdbms.sql.columns.SearchColumn;
 import io.camunda.search.sort.SortOrder;
 import io.camunda.util.ObjectBuilder;
 import java.util.ArrayList;

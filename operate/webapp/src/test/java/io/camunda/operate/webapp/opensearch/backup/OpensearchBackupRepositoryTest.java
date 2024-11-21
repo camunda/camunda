@@ -25,10 +25,11 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.response.OpenSearchGetSnapshotResponse;
 import io.camunda.operate.store.opensearch.response.OpenSearchSnapshotInfo;
 import io.camunda.operate.store.opensearch.response.SnapshotState;
-import io.camunda.operate.webapp.backup.BackupService;
+import io.camunda.operate.webapp.backup.BackupServiceImpl;
 import io.camunda.operate.webapp.backup.Metadata;
-import io.camunda.operate.webapp.management.dto.BackupStateDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.webapps.backup.BackupService;
+import io.camunda.webapps.backup.BackupStateDto;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.time.Instant;
@@ -132,7 +133,10 @@ class OpensearchBackupRepositoryTest {
 
     final var snapshotRequest =
         new BackupService.SnapshotRequest(
-            "repo", "camunda_operate_1_2", List.of("index-1", "index-2"), new Metadata());
+            "repo",
+            "camunda_operate_1_2",
+            List.of("index-1", "index-2"),
+            new Metadata().toCommon());
     final Runnable onSuccess = () -> {};
     final Runnable onFailure = () -> fail("Should execute snapshot successfully.");
 
@@ -156,8 +160,11 @@ class OpensearchBackupRepositoryTest {
   @Test
   void failedForExecuteSnapshotting() {
     final var snapshotRequest =
-        new BackupService.SnapshotRequest(
-            "repo", "camunda_operate_1_2", List.of("index-1", "index-2"), new Metadata());
+        new BackupServiceImpl.SnapshotRequest(
+            "repo",
+            "camunda_operate_1_2",
+            List.of("index-1", "index-2"),
+            new Metadata().toCommon());
     final Runnable onSuccess = () -> fail("Should execute snapshot with failures.");
     final Runnable onFailure = () -> {};
 

@@ -32,6 +32,7 @@ import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
+import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -80,13 +81,14 @@ public class CamundaExporter implements Exporter {
         configuration, clientAdapter.getExporterEntityCacheProvider(), context.getMeterRegistry());
 
     taskManager =
-        BackgroundTaskManager.create(
-            context.getPartitionId(),
-            context.getConfiguration().getId().toLowerCase(),
-            configuration,
-            provider,
-            metrics,
-            logger);
+        new BackgroundTaskManagerFactory(
+                context.getPartitionId(),
+                context.getConfiguration().getId().toLowerCase(),
+                configuration,
+                provider,
+                metrics,
+                logger)
+            .build();
     LOG.debug("Exporter configured with {}", configuration);
   }
 
@@ -106,11 +108,7 @@ public class CamundaExporter implements Exporter {
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
-
-    // // start archiver after the schema has been created to avoid transient errors
-    if (configuration.getArchiver().isRolloverEnabled()) {
-      taskManager.start();
-    }
+    taskManager.start();
 
     LOG.info("Exporter opened");
   }

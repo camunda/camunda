@@ -24,5 +24,5 @@ public interface MutableDeploymentState extends DeploymentState {
    * Marks all deployments as stored. After this has been called, {@link
    * DeploymentState#hasStoredAllDeployments()} returns true.
    */
-  void markALlDeploymentsAsStored();
+  void markAllDeploymentsAsStored();
 }

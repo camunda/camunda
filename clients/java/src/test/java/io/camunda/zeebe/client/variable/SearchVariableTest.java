@@ -18,7 +18,6 @@ package io.camunda.zeebe.client.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.VariableFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.VariableSearchQueryRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
@@ -63,9 +62,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByNameStringFilter() {
     // when
-    final StringFilterProperty filterProperty = new StringFilterProperty();
-    filterProperty.$in(Arrays.asList("this", "that"));
-    client.newVariableQuery().filter(f -> f.name(filterProperty)).send().join();
+    client.newVariableQuery().filter(f -> f.name(b -> b.in("this", "that"))).send().join();
 
     // then
     final VariableSearchQueryRequest request =
@@ -98,10 +95,12 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByProcessInstanceKeyLongFilter() {
     // when
-    final LongFilterProperty filterProperty = new LongFilterProperty();
-    filterProperty.$gt(1L);
-    filterProperty.$lt(10L);
-    client.newVariableQuery().filter(f -> f.processInstanceKey(filterProperty)).send().join();
+    client
+        .newVariableQuery()
+        .sort(s -> s.processInstanceKey().asc().variableKey())
+        .filter(f -> f.processInstanceKey(b -> b.gt(1L).lt(10L)))
+        .send()
+        .join();
 
     // then
     final VariableSearchQueryRequest request =

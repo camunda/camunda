@@ -82,7 +82,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                       FlowNodeState.ACTIVE,
                       false,
                       null,
-                      null,
                       "bpmnProcessId",
                       "<default>")))
           .sortValues(new Object[] {"v"})
@@ -120,7 +119,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
           FlowNodeState.ACTIVE,
           true,
           1234L,
-          null,
           "complexProcess",
           "tenantId");
 

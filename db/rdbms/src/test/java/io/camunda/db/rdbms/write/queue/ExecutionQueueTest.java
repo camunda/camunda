@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.write.queue;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,7 +38,7 @@ class ExecutionQueueTest {
             ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED))
         .thenReturn(session);
 
-    executionQueue = new ExecutionQueue(sqlSessionFactory, 1, 2);
+    executionQueue = new ExecutionQueue(sqlSessionFactory, 1, 5);
   }
 
   @Test
@@ -50,8 +52,14 @@ class ExecutionQueueTest {
   public void whenFlushLimitIsActivatedFlushShouldHappen() {
     final var item1 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", "parameter1");
     final var item2 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement2", "parameter2");
+    final var item3 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement3", "parameter3");
+    final var item4 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement4", "parameter4");
+    final var item5 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement5", "parameter5");
     executionQueue.executeInQueue(item1);
     executionQueue.executeInQueue(item2);
+    executionQueue.executeInQueue(item3);
+    executionQueue.executeInQueue(item4);
+    executionQueue.executeInQueue(item5);
 
     verify(sqlSessionFactory)
         .openSession(ExecutorType.BATCH, TransactionIsolationLevel.READ_UNCOMMITTED);
@@ -113,15 +121,71 @@ class ExecutionQueueTest {
     executionQueue.registerPreFlushListener(preFlushListener);
     executionQueue.registerPostFlushListener(postFlushListener);
 
-    when(session.flushStatements()).thenThrow(new RuntimeException("Some error"));
+    final var e = new RuntimeException("Some error");
+    when(session.flushStatements()).thenThrow(e);
 
     // when
-    executionQueue.flush();
+    assertThatThrownBy(() -> executionQueue.flush()).isEqualTo(e);
 
     verify(preFlushListener).onPreFlush();
     verify(session).rollback();
     verify(session).close();
     verify(session, never()).commit();
     verify(postFlushListener, never()).onPostFlush();
+  }
+
+  @Test
+  public void whenMatchingItemFoundShouldMergeItems() {
+    final var item1 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", "parameter1");
+    final var item2 = new QueueItem(ContextType.PROCESS_INSTANCE, 2L, "statement2", "parameter2");
+    executionQueue.executeInQueue(item1);
+    executionQueue.executeInQueue(item2);
+
+    final var result =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new QueueItemMerger() {
+              @Override
+              public boolean canBeMerged(final QueueItem queueItem) {
+                return queueItem.id().equals(1L);
+              }
+
+              @Override
+              public QueueItem merge(final QueueItem originalItem) {
+                return new QueueItem(originalItem.contextType(), 1L, "statement1", "parameter1+");
+              }
+            });
+
+    assertThat(result).isTrue();
+    assertThat(executionQueue.getQueue()).hasSize(2);
+    assertThat(executionQueue.getQueue().get(0)).isNotSameAs(item1);
+    assertThat(executionQueue.getQueue().get(0).parameter()).isEqualTo("parameter1+");
+    assertThat(executionQueue.getQueue().get(1)).isSameAs(item2);
+  }
+
+  @Test
+  public void whenNoMatchingItemFoundShouldNotMergeItems() {
+    final var item1 = new QueueItem(ContextType.PROCESS_INSTANCE, 1L, "statement1", "parameter1");
+    final var item2 = new QueueItem(ContextType.PROCESS_INSTANCE, 2L, "statement2", "parameter2");
+    executionQueue.executeInQueue(item1);
+    executionQueue.executeInQueue(item2);
+
+    final var result =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new QueueItemMerger() {
+              @Override
+              public boolean canBeMerged(final QueueItem queueItem) {
+                return queueItem.id().equals(3L);
+              }
+
+              @Override
+              public QueueItem merge(final QueueItem originalItem) {
+                return new QueueItem(originalItem.contextType(), 1L, "statement1", "parameter1+");
+              }
+            });
+
+    assertThat(result).isFalse();
+    assertThat(executionQueue.getQueue()).hasSize(2);
+    assertThat(executionQueue.getQueue().get(0)).isSameAs(item1);
+    assertThat(executionQueue.getQueue().get(1)).isSameAs(item2);
   }
 }

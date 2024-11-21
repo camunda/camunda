@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
@@ -55,9 +54,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByAssigneeStringFilter() {
     // when
-    final StringFilterProperty filterProperty = new StringFilterProperty();
-    filterProperty.$neq("that");
-    client.newUserTaskQuery().filter(f -> f.assignee(filterProperty)).send().join();
+    client.newUserTaskQuery().filter(f -> f.assignee(b -> b.neq("that"))).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
@@ -167,10 +164,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByPriorityLongFilter() {
     // when
-    final IntegerFilterProperty filterProperty = new IntegerFilterProperty();
-    filterProperty.$gt(1);
-    filterProperty.$lt(10);
-    client.newUserTaskQuery().filter(f -> f.priority(filterProperty)).send().join();
+    client.newUserTaskQuery().filter(f -> f.priority(b -> b.gt(1).lt(10))).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =

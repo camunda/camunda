@@ -97,7 +97,8 @@ public class MultiPartitionDeploymentLifecycleTest {
                 .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED))
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
-        .containsExactly(DeploymentIntent.CREATE, ProcessIntent.CREATED, DeploymentIntent.CREATED);
+        .containsSubsequence(
+            DeploymentIntent.CREATE, ProcessIntent.CREATED, DeploymentIntent.CREATED);
 
     assertThat(
             RecordingExporter.records()
@@ -105,7 +106,8 @@ public class MultiPartitionDeploymentLifecycleTest {
                 .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED))
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
-        .containsExactly(DeploymentIntent.CREATE, ProcessIntent.CREATED, DeploymentIntent.CREATED);
+        .containsSubsequence(
+            DeploymentIntent.CREATE, ProcessIntent.CREATED, DeploymentIntent.CREATED);
   }
 
   @Test
@@ -137,7 +139,7 @@ public class MultiPartitionDeploymentLifecycleTest {
                 .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED)))
         .describedAs("Has created DMN resources on partition 2")
         .extracting(Record::getIntent)
-        .containsExactly(
+        .containsSubsequence(
             DeploymentIntent.CREATE,
             DecisionRequirementsIntent.CREATED,
             DecisionIntent.CREATED,
@@ -149,7 +151,7 @@ public class MultiPartitionDeploymentLifecycleTest {
                 .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED)))
         .describedAs("Has created DMN resources on partition 3")
         .extracting(Record::getIntent)
-        .containsExactly(
+        .containsSubsequence(
             DeploymentIntent.CREATE,
             DecisionRequirementsIntent.CREATED,
             DecisionIntent.CREATED,

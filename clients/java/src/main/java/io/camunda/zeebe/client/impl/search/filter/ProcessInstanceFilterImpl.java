@@ -16,16 +16,21 @@
 package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.zeebe.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.IntegerProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.LongProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.ProcessInstanceStateProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.impl.util.FilterUtil;
-import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import io.camunda.zeebe.client.impl.search.filter.builder.DateTimePropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.IntegerPropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.LongPropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.ProcessInstanceStatePropertyImpl;
+import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateFilterProperty;
-import io.camunda.zeebe.client.protocol.rest.StringFilterProperty;
 import java.time.OffsetDateTime;
+import java.util.function.Consumer;
 
 public class ProcessInstanceFilterImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceFilterRequest>
@@ -39,160 +44,169 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter processInstanceKey(final Long processInstanceKey) {
-    filter.setProcessInstanceKey(FilterUtil.longFilterProperty(processInstanceKey));
+    processInstanceKey(b -> b.eq(processInstanceKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processInstanceKey(
-      final LongFilterProperty processInstanceKeyFilter) {
-    filter.setProcessInstanceKey(processInstanceKeyFilter);
+  public ProcessInstanceFilter processInstanceKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessInstanceKey(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionId(final String processDefinitionId) {
-    filter.processDefinitionId(FilterUtil.stringFilterProperty(processDefinitionId));
+    processDefinitionId(b -> b.eq(processDefinitionId));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionId(final StringFilterProperty processDefinitionId) {
-    filter.processDefinitionId(processDefinitionId);
+  public ProcessInstanceFilter processDefinitionId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.processDefinitionId(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionName(final String processDefinitionName) {
-    filter.setProcessDefinitionName(FilterUtil.stringFilterProperty(processDefinitionName));
+    processDefinitionName(b -> b.eq(processDefinitionName));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionName(
-      final StringFilterProperty processDefinitionName) {
-    filter.setProcessDefinitionName(processDefinitionName);
+  public ProcessInstanceFilter processDefinitionName(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionName(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionVersion(final Integer processDefinitionVersion) {
-    filter.setProcessDefinitionVersion(FilterUtil.integerFilterProperty(processDefinitionVersion));
+    processDefinitionVersion(b -> b.eq(processDefinitionVersion));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionVersion(
-      final IntegerFilterProperty processDefinitionVersion) {
-    filter.setProcessDefinitionVersion(processDefinitionVersion);
+  public ProcessInstanceFilter processDefinitionVersion(final Consumer<IntegerProperty> fn) {
+    final IntegerPropertyImpl property = new IntegerPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionVersion(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionVersionTag(
       final String processDefinitionVersionTag) {
-    filter.setProcessDefinitionVersionTag(
-        FilterUtil.stringFilterProperty(processDefinitionVersionTag));
+    processDefinitionVersionTag(b -> b.eq(processDefinitionVersionTag));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionVersionTag(
-      final StringFilterProperty processDefinitionVersionTag) {
-    filter.setProcessDefinitionVersionTag(processDefinitionVersionTag);
+  public ProcessInstanceFilter processDefinitionVersionTag(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionVersionTag(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter processDefinitionKey(final Long processDefinitionKey) {
-    filter.setProcessDefinitionKey(FilterUtil.longFilterProperty(processDefinitionKey));
+    processDefinitionKey(b -> b.eq(processDefinitionKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter processDefinitionKey(final LongFilterProperty processDefinitionKey) {
-    filter.setProcessDefinitionKey(processDefinitionKey);
+  public ProcessInstanceFilter processDefinitionKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionKey(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter parentProcessInstanceKey(final Long parentProcessInstanceKey) {
-    filter.setParentProcessInstanceKey(FilterUtil.longFilterProperty(parentProcessInstanceKey));
+    parentProcessInstanceKey(b -> b.eq(parentProcessInstanceKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter parentProcessInstanceKey(
-      final LongFilterProperty parentProcessInstanceKey) {
-    filter.setParentProcessInstanceKey(parentProcessInstanceKey);
+  public ProcessInstanceFilter parentProcessInstanceKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setParentProcessInstanceKey(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter parentFlowNodeInstanceKey(final Long parentFlowNodeInstanceKey) {
-    filter.setParentFlowNodeInstanceKey(FilterUtil.longFilterProperty(parentFlowNodeInstanceKey));
+    parentFlowNodeInstanceKey(b -> b.eq(parentFlowNodeInstanceKey));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter parentFlowNodeInstanceKey(
-      final LongFilterProperty parentFlowNodeInstanceKey) {
-    filter.setParentFlowNodeInstanceKey(parentFlowNodeInstanceKey);
+  public ProcessInstanceFilter parentFlowNodeInstanceKey(final Consumer<LongProperty> fn) {
+    final LongProperty property = new LongPropertyImpl();
+    fn.accept(property);
+    filter.setParentFlowNodeInstanceKey(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter treePath(final String treePath) {
-    filter.setTreePath(FilterUtil.stringFilterProperty(treePath));
+    treePath(b -> b.eq(treePath));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter treePath(final StringFilterProperty treePath) {
-    filter.setTreePath(treePath);
+  public ProcessInstanceFilter treePath(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setTreePath(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter startDate(final OffsetDateTime startDate) {
-    filter.setStartDate(FilterUtil.dateTimeFilterProperty(startDate));
+    startDate(b -> b.eq(startDate));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter startDate(final DateTimeFilterProperty startDate) {
-    filter.setStartDate(startDate);
+  public ProcessInstanceFilter startDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setStartDate(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter endDate(final OffsetDateTime endDate) {
-    filter.setEndDate(FilterUtil.dateTimeFilterProperty(endDate));
+    endDate(b -> b.eq(endDate));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter endDate(final DateTimeFilterProperty endDate) {
-    filter.setEndDate(endDate);
+  public ProcessInstanceFilter endDate(final Consumer<DateTimeProperty> fn) {
+    final DateTimeProperty property = new DateTimePropertyImpl();
+    fn.accept(property);
+    filter.setEndDate(property.build());
     return this;
   }
 
   @Override
   public ProcessInstanceFilter state(final String state) {
-    if (state != null) {
-      final ProcessInstanceStateFilterProperty stateFilter =
-          new ProcessInstanceStateFilterProperty();
-      stateFilter.$eq(ProcessInstanceStateEnum.fromValue(state));
-      filter.setState(stateFilter);
-    } else {
-      filter.setState(null);
-    }
-    return this;
+    return state(b -> b.eq(ProcessInstanceStateEnum.fromValue(state)));
   }
 
   @Override
-  public ProcessInstanceFilter state(final ProcessInstanceStateFilterProperty state) {
-    filter.setState(state);
+  public ProcessInstanceFilter state(final Consumer<ProcessInstanceStateProperty> fn) {
+    final ProcessInstanceStateProperty property = new ProcessInstanceStatePropertyImpl();
+    fn.accept(property);
+    filter.setState(property.build());
     return this;
   }
 
@@ -204,13 +218,15 @@ public class ProcessInstanceFilterImpl
 
   @Override
   public ProcessInstanceFilter tenantId(final String tenantId) {
-    filter.setTenantId(FilterUtil.stringFilterProperty(tenantId));
+    tenantId(b -> b.eq(tenantId));
     return this;
   }
 
   @Override
-  public ProcessInstanceFilter tenantId(final StringFilterProperty tenantId) {
-    filter.setTenantId(tenantId);
+  public ProcessInstanceFilter tenantId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setTenantId(property.build());
     return this;
   }
 

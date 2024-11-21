@@ -15,6 +15,11 @@
 
   <dependencies>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+    </dependency>
+
     <!-- ZEEBE -->
     <dependency>
       <groupId>io.camunda</groupId>

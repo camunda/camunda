@@ -32,7 +32,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.LONG);
     assertThat(model.doubleValue()).isNull();
@@ -63,7 +63,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.LONG);
     assertThat(model.doubleValue()).isNull();
@@ -94,7 +94,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.DOUBLE);
     assertThat(model.doubleValue()).isEqualTo(123.456);
@@ -125,7 +125,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.DOUBLE);
     assertThat(model.doubleValue()).isEqualTo(-123.456);
@@ -156,7 +156,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.STRING);
     assertThat(model.doubleValue()).isNull();
@@ -188,7 +188,7 @@ public class VariableDbModelTest {
             .build();
 
     // then
-    assertThat(model.key()).isEqualTo(1L);
+    assertThat(model.variableKey()).isEqualTo(1L);
     assertThat(model.name()).isEqualTo("test");
     assertThat(model.type()).isEqualTo(ValueTypeEnum.STRING);
     assertThat(model.doubleValue()).isNull();
