@@ -416,7 +416,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   deploy-snyk-projects:
     name: Deploy Snyk development projects
-    timeout-minutes: 15
     needs: [ test-summary ]
     if: |
       github.repository == 'camunda/camunda' &&
