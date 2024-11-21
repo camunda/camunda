@@ -8,11 +8,14 @@
 
 import {expect} from '@playwright/test';
 import {test} from '@/test-fixtures';
-import * as zeebeClient from '@/utils/zeebeClient';
+import {deploy} from '@/utils/zeebeClient';
 
 test.describe('public start process', () => {
   test('should submit form', async ({makeAxeBuilder, publicFormsPage}) => {
-    await zeebeClient.deploy(['./e2e/resources/subscribeFormProcess.bpmn']);
+    await deploy([
+      './e2e/resources/subscribeFormProcess.bpmn',
+      './e2e/resources/subscribeForm.form',
+    ]);
     await publicFormsPage.goToPublicForm('subscribeFormProcess');
 
     await expect(publicFormsPage.nameInput).toBeVisible();

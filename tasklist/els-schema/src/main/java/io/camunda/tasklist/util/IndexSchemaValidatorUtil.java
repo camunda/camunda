@@ -7,6 +7,8 @@
  */
 package io.camunda.tasklist.util;
 
+import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatTasklistIndexPattern;
+
 import com.google.common.collect.Maps;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -141,7 +143,7 @@ public class IndexSchemaValidatorUtil {
       final Set<IndexDescriptor> indexDescriptors) throws IOException {
     final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields = new HashMap<>();
     final Map<String, IndexMapping> indexMappings =
-        schemaManager.getIndexMappings(schemaManager.getIndexPrefix() + "*");
+        schemaManager.getIndexMappings(formatTasklistIndexPattern(schemaManager.getIndexPrefix()));
     for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       final Map<String, IndexMapping> indexMappingsGroup =
           filterIndexMappings(indexMappings, indexDescriptor);

@@ -124,14 +124,18 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final TypedRecord<SignalRecord> command,
       final boolean isStartEvent,
       final SignalSubscriptionRecord subscriptionRecord) {
-    final var permissionType = isStartEvent ? PermissionType.CREATE : PermissionType.UPDATE;
+    final var permissionType =
+        isStartEvent
+            ? PermissionType.CREATE_PROCESS_INSTANCE
+            : PermissionType.UPDATE_PROCESS_INSTANCE;
     final var authRequest =
         new AuthorizationRequest(
                 command, AuthorizationResourceType.PROCESS_DEFINITION, permissionType)
             .addResourceId(subscriptionRecord.getBpmnProcessId());
 
     if (!authCheckBehavior.isAuthorized(authRequest)) {
-      throw new UnauthorizedException(authRequest);
+      throw new UnauthorizedException(
+          authRequest, "BPMN process id '%s'".formatted(subscriptionRecord.getBpmnProcessId()));
     }
   }
 

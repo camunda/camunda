@@ -8,9 +8,7 @@
 package io.camunda.search.rdbms;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
-import io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery;
-import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
+import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
@@ -21,6 +19,7 @@ import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
+import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
@@ -34,6 +33,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -48,6 +48,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -69,7 +70,8 @@ public class RdbmsSearchClient
         UserTaskSearchClient,
         UserSearchClient,
         VariableSearchClient,
-        RoleSearchClient {
+        RoleSearchClient,
+        TenantSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -84,14 +86,7 @@ public class RdbmsSearchClient
       final ProcessInstanceQuery query) {
     LOG.debug("[RDBMS Search Client] Search for processInstance: {}", query);
 
-    final var searchResult =
-        rdbmsService
-            .getProcessInstanceReader()
-            .search(
-                ProcessInstanceDbQuery.of(
-                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
-
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
+    return rdbmsService.getProcessInstanceReader().search(query);
   }
 
   @Override
@@ -112,8 +107,10 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
-      final DecisionDefinitionQuery filter) {
-    return null;
+      final DecisionDefinitionQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for decisionDefinition: {}", query);
+
+    return rdbmsService.getDecisionDefinitionReader().search(query);
   }
 
   @Override
@@ -131,14 +128,7 @@ public class RdbmsSearchClient
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
       final FlowNodeInstanceQuery query) {
-    final var searchResult =
-        rdbmsService
-            .getFlowNodeInstanceReader()
-            .search(
-                FlowNodeInstanceDbQuery.of(
-                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
-
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
+    return rdbmsService.getFlowNodeInstanceReader().search(query);
   }
 
   @Override
@@ -157,13 +147,22 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
-    return null;
+  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery query) {
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                UserTaskDbQuery.of(
+                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
+
+    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
   }
 
   @Override
-  public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
-    return null;
+  public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for variables: {}", query);
+
+    return rdbmsService.getVariableReader().search(query);
   }
 
   @Override
@@ -172,17 +171,15 @@ public class RdbmsSearchClient
   }
 
   @Override
+  public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
+    return null;
+  }
+
+  @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
       final ProcessDefinitionQuery query) {
     LOG.debug("[RDBMS Search Client] Search for processDefinition: {}", query);
 
-    final var searchResult =
-        rdbmsService
-            .getProcessDefinitionReader()
-            .search(
-                ProcessDefinitionDbQuery.of(
-                    b -> b.filter(query.filter()).sort(query.sort()).page(query.page())));
-
-    return new SearchQueryResult<>(searchResult.total(), searchResult.hits(), null);
+    return rdbmsService.getProcessDefinitionReader().search(query);
   }
 }

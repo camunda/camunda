@@ -41,5 +41,36 @@ public class GroupProcessors {
             authCheckBehavior,
             writers,
             commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.GROUP,
+        GroupIntent.ADD_ENTITY,
+        new GroupAddEntityProcessor(
+            processingState.getGroupState(),
+            processingState.getUserState(),
+            processingState.getMappingState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.GROUP,
+        GroupIntent.REMOVE_ENTITY,
+        new GroupRemoveEntityProcessor(
+            processingState.getGroupState(),
+            processingState.getUserState(),
+            processingState.getMappingState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
+    typedRecordProcessors.onCommand(
+        ValueType.GROUP,
+        GroupIntent.DELETE,
+        new GroupDeleteProcessor(
+            processingState.getGroupState(),
+            authCheckBehavior,
+            keyGenerator,
+            writers,
+            commandDistributionBehavior));
   }
 }

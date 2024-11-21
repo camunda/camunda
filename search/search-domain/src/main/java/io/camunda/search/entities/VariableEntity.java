@@ -11,11 +11,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final record VariableEntity(
-    Long key,
+    Long variableKey,
     String name,
     String value,
     String fullValue,
-    boolean isPreview,
+    Boolean isPreview,
     Long scopeKey,
     Long processInstanceKey,
+    String processDefinitionId,
     String tenantId) {}

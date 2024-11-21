@@ -52,6 +52,11 @@ self-hosted-runner:
   - gcp-perf-core-4-default
   - gcp-perf-core-8-default
   - gcp-perf-core-16-default
-  # by Zeebe team, to be deprecated after https://github.com/camunda/camunda/issues/18212
-  - amd64
-  - '16'
+  - gcp-perf-core-2-release
+  - gcp-perf-core-4-release
+  - gcp-perf-core-8-release
+  - gcp-perf-core-16-release
+  - gcp-perf-core-2-longrunning
+  - gcp-perf-core-4-longrunning
+  - gcp-perf-core-8-longrunning
+  - gcp-perf-core-16-longrunning

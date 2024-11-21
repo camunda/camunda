@@ -18,7 +18,6 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.Au
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -182,12 +181,7 @@ public class AuthorizationCheckBehaviorTest {
       final PermissionType permissionType,
       final String... resourceIds) {
     final var client =
-        engine
-            .authorization()
-            .permission()
-            .withAction(PermissionAction.ADD)
-            .withOwnerKey(userKey)
-            .withResourceType(resourceType);
+        engine.authorization().permission().withOwnerKey(userKey).withResourceType(resourceType);
 
     for (final String resourceId : resourceIds) {
       client.withPermission(permissionType, resourceId);

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceSearchQueryRequest;
@@ -15,7 +17,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -49,13 +50,8 @@ public class ProcessInstanceQueryController {
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceSearchQueryResponse(result));
-    } catch (final Throwable e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Failed to execute Process Instance Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
     }
   }
 
@@ -69,12 +65,11 @@ public class ProcessInstanceQueryController {
       return ResponseEntity.ok()
           .body(
               SearchQueryResponseMapper.toProcessInstance(
-                  processInstanceServices.getByKey(processInstanceKey)));
-    } catch (final Exception exc) {
-      // Error case: Return the right side with ProblemDetail
-      final var problemDetail =
-          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+                  processInstanceServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(processInstanceKey)));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
     }
   }
 }

@@ -15,14 +15,21 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
+import io.camunda.zeebe.client.api.search.filter.builder.BasicLongProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
+import java.time.OffsetDateTime;
+import java.util.function.Consumer;
 
 public interface DecisionInstanceFilter extends SearchRequestFilter {
 
   /** Filter by decisionInstanceKey */
   DecisionInstanceFilter decisionInstanceKey(long decisionInstanceKey);
+
+  /** Filter by decisionInstanceId */
+  DecisionInstanceFilter decisionInstanceId(String decisionInstanceId);
 
   /** Filter by state */
   DecisionInstanceFilter state(DecisionInstanceState state);
@@ -31,7 +38,10 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
   DecisionInstanceFilter evaluationFailure(String evaluationFailure);
 
   /** Filter by evaluationDate */
-  DecisionInstanceFilter evaluationDate(String evaluationDate);
+  DecisionInstanceFilter evaluationDate(OffsetDateTime evaluationDate);
+
+  /** Filter by evaluationDate using {@link DateTimeProperty} consumer */
+  DecisionInstanceFilter evaluationDate(Consumer<DateTimeProperty> callback);
 
   /** Filter by processDefinitionKey */
   DecisionInstanceFilter processDefinitionKey(long processDefinitionKey);
@@ -41,6 +51,9 @@ public interface DecisionInstanceFilter extends SearchRequestFilter {
 
   /** Filter by decisionDefinitionKey */
   DecisionInstanceFilter decisionDefinitionKey(long decisionDefinitionKey);
+
+  /** Filter by decisionDefinitionKey using {@link BasicLongProperty} consumer */
+  DecisionInstanceFilter decisionDefinitionKey(Consumer<BasicLongProperty> fn);
 
   /** Filter by decisionDefinitionId */
   DecisionInstanceFilter decisionDefinitionId(String decisionDefinitionId);

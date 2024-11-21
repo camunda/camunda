@@ -7,6 +7,9 @@
  */
 package io.camunda.tasklist.schema.manager;
 
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -18,8 +21,11 @@ import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import io.camunda.tasklist.schema.templates.AbstractTemplateDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.ElasticsearchJSONUtil;
+import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -27,6 +33,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.alias.Alias;
@@ -79,9 +86,15 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private List<AbstractIndexDescriptor> indexDescriptors;
+  @Autowired private List<AbstractIndexDescriptor> tasklistIndexDescriptors;
 
-  @Autowired private List<TemplateDescriptor> templateDescriptors;
+  @Autowired(required = false)
+  private List<TasklistIndexDescriptor> commonIndexDescriptors;
+
+  @Autowired private List<TemplateDescriptor> tasklistTemplateDescriptors;
+
+  @Autowired(required = false)
+  private List<TasklistTemplateDescriptor> commonTemplateDescriptors;
 
   @Override
   public void createSchema() {
@@ -165,7 +178,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
 
   private String settingsTemplateName() {
     final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
-    return String.format("%s_template", elsConfig.getIndexPrefix());
+    return String.format("%s%s_template", formatIndexPrefix(elsConfig.getIndexPrefix()), TASK_LIST);
   }
 
   private Settings getIndexSettings() {
@@ -215,11 +228,106 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private void createIndices() {
-    indexDescriptors.forEach(this::createIndex);
+    tasklistIndexDescriptors.forEach(this::createIndex);
+    // Note: While migrating the entities and index descriptors
+    // to the harmonized webapps-schema module, this intermediate
+    // HACK is required to ensure that the necessary templates are
+    // created so that the integration tests can run.
+    // Once all entities and index descriptors have been moved,
+    // this code snippet will be deleted and adjusted as necessary!
+    Optional.ofNullable(commonIndexDescriptors)
+        .ifPresent(
+            l ->
+                l.stream()
+                    .map(
+                        i ->
+                            new AbstractIndexDescriptor() {
+
+                              @Override
+                              public String getIndexName() {
+                                return i.getIndexName();
+                              }
+
+                              @Override
+                              public String getAlias() {
+                                return i.getAlias();
+                              }
+
+                              @Override
+                              public String getFullQualifiedName() {
+                                return i.getFullQualifiedName();
+                              }
+
+                              @Override
+                              public String getSchemaClasspathFilename() {
+                                return i.getMappingsClasspathFilename();
+                              }
+
+                              @Override
+                              protected String getIndexPrefix() {
+                                return tasklistProperties.getElasticsearch().getIndexPrefix();
+                              }
+
+                              @Override
+                              public String getVersion() {
+                                return i.getVersion();
+                              }
+                            })
+                    .forEach(this::createIndex));
   }
 
   private void createTemplates() {
-    templateDescriptors.forEach(this::createTemplate);
+    tasklistTemplateDescriptors.forEach(this::createTemplate);
+    // Note: While migrating the entities and index descriptors
+    // to the harmonized webapps-schema module, this intermediate
+    // HACK is required to ensure that the necessary templates are
+    // created so that the integration tests can run.
+    // Once all entities and index descriptors have been moved,
+    // this code snippet will be deleted and adjusted as necessary!
+    Optional.ofNullable(commonTemplateDescriptors)
+        .ifPresent(
+            l ->
+                l.stream()
+                    .map(
+                        t ->
+                            new AbstractTemplateDescriptor() {
+
+                              @Override
+                              public String getSchemaClasspathFilename() {
+                                return t.getMappingsClasspathFilename();
+                              }
+
+                              @Override
+                              protected String getIndexPrefix() {
+                                return tasklistProperties.getElasticsearch().getIndexPrefix();
+                              }
+
+                              @Override
+                              public String getIndexName() {
+                                return t.getIndexName();
+                              }
+
+                              @Override
+                              public String getAlias() {
+                                return t.getAlias();
+                              }
+
+                              @Override
+                              public String getTemplateName() {
+                                return t.getTemplateName();
+                              }
+
+                              @Override
+                              public String getIndexPattern() {
+                                return t.getIndexPattern();
+                              }
+
+                              @Override
+                              public String getVersion() {
+                                return t.getVersion();
+                              }
+                            })
+                    .forEach(this::createTemplate));
   }
 
   private void createIndex(

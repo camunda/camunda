@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.store;
 
-import io.camunda.tasklist.entities.DraftTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;

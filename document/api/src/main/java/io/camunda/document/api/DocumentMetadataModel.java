@@ -7,12 +7,12 @@
  */
 package io.camunda.document.api;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 public record DocumentMetadataModel(
     String contentType,
     String fileName,
-    ZonedDateTime expiresAt,
+    OffsetDateTime expiresAt,
     Long size,
     Map<String, Object> customProperties) {}

@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.store;
 
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.util.Either;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.util.List;
 
@@ -20,7 +20,7 @@ public interface ImportStore {
   Either<Throwable, Boolean> updateImportPositions(
       List<ImportPositionEntity> positions, List<ImportPositionEntity> postImportPositionUpdates);
 
-  void setConcurrencyMode(boolean concurrencyMode);
-
   boolean getConcurrencyMode();
+
+  void setConcurrencyMode(boolean concurrencyMode);
 }

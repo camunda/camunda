@@ -11,7 +11,7 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
+import java.util.Set;
 
 public interface MutableAuthorizationState extends AuthorizationState {
 
@@ -24,14 +24,29 @@ public interface MutableAuthorizationState extends AuthorizationState {
    *     a groupKey
    * @param resourceType the type of resource the permissions are for (Eg. Process definition, Job)
    * @param permissionType The type of permission being granted (Eg. READ, WRITE)
-   * @param resourceIds A list of resourceIds the permissions are granted for (Eg.
-   *     bpmnProcessId:foo, *)
+   * @param resourceIds A set of resourceIds the permissions are granted for (Eg. bpmnProcessId, *)
    */
   void createOrAddPermission(
       long ownerKey,
       AuthorizationResourceType resourceType,
       PermissionType permissionType,
-      List<String> resourceIds);
+      Set<String> resourceIds);
+
+  /**
+   * Removes the resource ids for the provided ownerKey, resourceType, permissionType. If there are
+   * no other resourceIds left for this entry, the entire entry will be deleted.
+   *
+   * @param ownerKey the key of the owner of the permissions. This could be a userKey, a roleKey or
+   *     a groupKey
+   * @param resourceType the type of resource the permissions are for (Eg. Process definition, Job)
+   * @param permissionType The type of permission being granted (Eg. READ, WRITE)
+   * @param resourceIds A set of resourceIds the permissions are granted for (Eg. bpmnProcessId, *)
+   */
+  void removePermission(
+      long ownerKey,
+      AuthorizationResourceType resourceType,
+      PermissionType permissionType,
+      Set<String> resourceIds);
 
   /**
    * Checks if a Permission exists for the provided ownerKey, resourceType and permissionType. If it

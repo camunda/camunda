@@ -9,14 +9,17 @@ package io.camunda.zeebe.engine.scaling;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -26,16 +29,18 @@ import java.util.Optional;
 
 public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
   private final KeyGenerator keyGenerator;
+  private final TypedCommandWriter commandWriter;
   private final StateWriter stateWriter;
-  private final RoutingState routingState;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final RoutingState routingState;
 
   public ScaleUpProcessor(
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ProcessingState processingState) {
     this.keyGenerator = keyGenerator;
+    commandWriter = writers.command();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
     stateWriter = writers.state();
@@ -57,8 +62,8 @@ public class ScaleUpProcessor implements TypedRecordProcessor<ScaleRecord> {
     final var scalingKey = keyGenerator.nextKey();
     stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALING_UP, scaleUp);
     responseWriter.writeEventOnCommand(scalingKey, ScaleIntent.SCALING_UP, scaleUp, command);
-
-    stateWriter.appendFollowUpEvent(scalingKey, ScaleIntent.SCALED_UP, new ScaleRecord());
+    commandWriter.appendFollowUpCommand(
+        scalingKey, RedistributionIntent.START, new RedistributionRecord());
   }
 
   private Optional<Rejection> validateCommand(final TypedRecord<ScaleRecord> command) {

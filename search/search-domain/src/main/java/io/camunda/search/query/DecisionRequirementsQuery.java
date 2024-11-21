@@ -41,8 +41,6 @@ public record DecisionRequirementsQuery(
         FilterBuilders.decisionRequirements().build();
     private static final DecisionRequirementsSort EMPTY_SORT =
         SortOptionBuilders.decisionRequirements().build();
-    private static final DecisionRequirementsQueryResultConfig EXCLUDE_XML_RESULT_CONFIG =
-        QueryResultConfigBuilders.decisionRequirements(r -> r.xml().exclude());
 
     private DecisionRequirementsFilter filter;
     private DecisionRequirementsSort sort;
@@ -95,7 +93,6 @@ public record DecisionRequirementsQuery(
     public DecisionRequirementsQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, EMPTY_SORT);
-      resultConfig = Objects.requireNonNullElse(resultConfig, EXCLUDE_XML_RESULT_CONFIG);
       return new DecisionRequirementsQuery(filter, sort, page(), resultConfig);
     }
   }

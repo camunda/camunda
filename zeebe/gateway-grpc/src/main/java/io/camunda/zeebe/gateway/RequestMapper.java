@@ -53,6 +53,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ThrowErrorRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobTimeoutRequest;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -154,8 +155,18 @@ public final class RequestMapper extends RequestUtil {
 
   public static BrokerCompleteJobRequest toCompleteJobRequest(
       final CompleteJobRequest grpcRequest) {
+
     return new BrokerCompleteJobRequest(
-        grpcRequest.getJobKey(), ensureJsonSet(grpcRequest.getVariables()));
+        grpcRequest.getJobKey(),
+        ensureJsonSet(grpcRequest.getVariables()),
+        getJobResultOrDefault(grpcRequest));
+  }
+
+  private static JobResult getJobResultOrDefault(final CompleteJobRequest request) {
+    if (!request.hasResult()) {
+      return null;
+    }
+    return new JobResult().setDenied(request.getResult().getDenied());
   }
 
   public static BrokerCreateProcessInstanceRequest toCreateProcessInstanceRequest(

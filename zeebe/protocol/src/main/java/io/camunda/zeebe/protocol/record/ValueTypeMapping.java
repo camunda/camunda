@@ -58,6 +58,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
@@ -101,6 +102,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRec
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
+import io.camunda.zeebe.protocol.record.value.scaling.RedistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.util.Collections;
 import java.util.EnumMap;
@@ -252,6 +254,9 @@ public final class ValueTypeMapping {
     mapping.put(ValueType.ROLE, new Mapping<>(RoleRecordValue.class, RoleIntent.class));
     mapping.put(ValueType.TENANT, new Mapping<>(TenantRecordValue.class, TenantIntent.class));
     mapping.put(ValueType.SCALE, new Mapping<>(ScaleRecordValue.class, ScaleIntent.class));
+    mapping.put(
+        ValueType.REDISTRIBUTION,
+        new Mapping<>(RedistributionRecordValue.class, RedistributionIntent.class));
     mapping.put(ValueType.GROUP, new Mapping<>(GroupRecordValue.class, GroupIntent.class));
     mapping.put(ValueType.MAPPING, new Mapping<>(MappingRecordValue.class, MappingIntent.class));
     return mapping;

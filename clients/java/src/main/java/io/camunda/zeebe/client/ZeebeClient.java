@@ -36,6 +36,7 @@ import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
@@ -1032,13 +1033,13 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   DecisionInstanceQuery newDecisionInstanceQuery();
 
   /**
-   * Retrieves a decision instance by key.
+   * Retrieves a decision instance by id.
    *
    * <pre>
-   * long decisionInstanceKey = ...;
+   * String decisionInstanceId = ...;
    *
    * zeebeClient
-   * .newDecisionInstanceGetQuery(decisionInstanceKey)
+   * .newDecisionInstanceGetQuery(decisionInstanceId)
    * .send();
    * </pre>
    *
@@ -1048,11 +1049,11 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
-   * @param decisionInstanceKey
+   * @param decisionInstanceId
    * @return a builder for the request to get a decision instance
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  DecisionInstanceGetRequest newDecisionInstanceGetRequest(long decisionInstanceKey);
+  DecisionInstanceGetRequest newDecisionInstanceGetRequest(String decisionInstanceId);
 
   /*
    * Executes a search request to query decision definitions.
@@ -1145,6 +1146,29 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   AddPermissionsCommandStep1 newAddPermissionsCommand(long ownerKey);
+
+  /**
+   * Command to remove permissions from an owner.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newRemovePermissionsCommand(ownerKey)
+   *  .resourceType(resourceType)
+   *  .permission(permissionType)
+   *  .resourceIds(resourceIds)
+   *  .permission(permissionType)
+   *  .resourceId(resourceId)
+   *  .resourceId(resourceId)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   * <br>
+   *
+   * @param ownerKey the key of the owner
+   * @return a builder for the command
+   */
+  RemovePermissionsCommandStep1 newRemovePermissionsCommand(long ownerKey);
 
   /*
    * Retrieves the XML representation of a decision requirements.

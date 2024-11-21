@@ -31,10 +31,10 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,7 +64,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   void patchAuthorizationShouldReturnNoContent() {
     final var ownerKey = 1L;
     final var action = ActionEnum.ADD;
-    final var resourceIds = List.of("permission1", "permission2");
+    final var resourceIds = Set.of("permission1", "permission2");
     final var permissions =
         new PermissionDTO().permissionType(PermissionTypeEnum.CREATE).resourceIds(resourceIds);
     final var request =
@@ -79,7 +79,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
         new AuthorizationRecord()
             .setOwnerKey(ownerKey)
             .setOwnerType(AuthorizationOwnerType.USER)
-            .setAction(PermissionAction.valueOf(request.getAction().name()))
             .setResourceType(AuthorizationResourceType.valueOf(request.getResourceType().name()))
             .addPermission(permission);
 
@@ -100,7 +99,6 @@ public class AuthorizationControllerTest extends RestControllerTest {
     verify(authorizationServices, times(1)).patchAuthorization(captor.capture());
     final var capturedRequest = captor.getValue();
     assertEquals(capturedRequest.ownerKey(), authorizationRecord.getOwnerKey());
-    assertEquals(capturedRequest.action(), authorizationRecord.getAction());
     assertEquals(capturedRequest.resourceType(), authorizationRecord.getResourceType());
     assertEquals(capturedRequest.permissions().size(), 1);
     assertEquals(
@@ -112,7 +110,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   void patchAuthorizationThrowsExceptionWhenServiceThrowsException() {
     final var ownerKey = 1L;
     final var action = ActionEnum.ADD;
-    final var resourceIds = List.of("permission1", "permission2");
+    final var resourceIds = Set.of("permission1", "permission2");
     final var permissions =
         new PermissionDTO().permissionType(PermissionTypeEnum.CREATE).resourceIds(resourceIds);
     final var request =
@@ -171,7 +169,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
   }
 
   private static Stream<Arguments> provideInvalidRequests() {
-    final var resourceIds = List.of("permission1", "permission2");
+    final var resourceIds = Set.of("permission1", "permission2");
     final var validPermissions =
         List.of(
             new PermissionDTO().permissionType(PermissionTypeEnum.CREATE).resourceIds(resourceIds));
@@ -200,7 +198,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
             new AuthorizationPatchRequest()
                 .action(ActionEnum.ADD)
                 .resourceType(ResourceTypeEnum.DEPLOYMENT)
-                .permissions(List.of(new PermissionDTO().resourceIds(List.of("resourceId")))),
+                .permissions(List.of(new PermissionDTO().resourceIds(Set.of("resourceId")))),
             "No permissionType provided."),
         Arguments.of(
             new AuthorizationPatchRequest()
@@ -217,7 +215,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                     List.of(
                         new PermissionDTO()
                             .permissionType(PermissionTypeEnum.CREATE)
-                            .resourceIds(List.of()))),
+                            .resourceIds(Set.of()))),
             "No resourceIds provided in 'CREATE'."),
         Arguments.of(
             new AuthorizationPatchRequest()
@@ -227,7 +225,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                     List.of(
                         new PermissionDTO()
                             .permissionType(PermissionTypeEnum.DELETE_PROCESS)
-                            .resourceIds(List.of("resourceId")))),
+                            .resourceIds(Set.of("resourceId")))),
             "Permission type 'DELETE_PROCESS' is allowed for resource type 'USER'."),
         Arguments.of(
             new AuthorizationPatchRequest()
@@ -237,7 +235,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                     List.of(
                         new PermissionDTO()
                             .permissionType(PermissionTypeEnum.DELETE_DRD)
-                            .resourceIds(List.of("resourceId")))),
+                            .resourceIds(Set.of("resourceId")))),
             "Permission type 'DELETE_DRD' is allowed for resource type 'USER'."),
         Arguments.of(
             new AuthorizationPatchRequest()
@@ -247,7 +245,7 @@ public class AuthorizationControllerTest extends RestControllerTest {
                     List.of(
                         new PermissionDTO()
                             .permissionType(PermissionTypeEnum.DELETE_FORM)
-                            .resourceIds(List.of("resourceId")))),
+                            .resourceIds(Set.of("resourceId")))),
             "Permission type 'DELETE_FORM' is allowed for resource type 'USER'."));
   }
 }

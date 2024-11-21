@@ -39,5 +39,12 @@ public enum JobListenerEventType {
    * Represents the `complete` event for a task listener. This event type is used to indicate that
    * the listener should be triggered after a user task complete operation was invoked.
    */
-  COMPLETE
+  COMPLETE,
+
+  /**
+   * Represents the `assignment` event for a task listener. This event type is used to indicate that
+   * the listener should be triggered when a user task is assigned, claimed (assigned to the current
+   * user), or unassigned.
+   */
+  ASSIGNMENT
 }

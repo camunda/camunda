@@ -19,13 +19,20 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SearchQueryResult.Builder;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.FormServices;
 import io.camunda.service.ProcessDefinitionServices;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatchers;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -190,6 +197,47 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
     verify(processDefinitionServices).getByKey(23L);
   }
 
+  @ParameterizedTest
+  @MethodSource("getProcessDefinitionTestCasesParameters")
+  public void shouldReturn403ForForbiddenProcessDefinitionKey(
+      final Pair<String, BiFunction<ProcessDefinitionServices, Long, ?>> testParameter) {
+    // given
+    final var url = testParameter.getLeft();
+    final var service = testParameter.getRight();
+    final long processDefinitionKey = 17L;
+    when(service.apply(processDefinitionServices, processDefinitionKey))
+        .thenThrow(new ForbiddenException(Authorization.of(a -> a.processDefinition().read())));
+    // when / then
+    webClient
+        .get()
+        .uri(url.formatted(processDefinitionKey))
+        .exchange()
+        .expectStatus()
+        .isForbidden()
+        .expectBody()
+        .json(
+            """
+                    {
+                      "type": "about:blank",
+                      "status": 403,
+                      "title": "io.camunda.service.exception.ForbiddenException",
+                      "detail": "Unauthorized to perform operation 'READ' on resource 'PROCESS_DEFINITION'"
+                    }
+                """);
+
+    // Verify that the service was called with the invalid key
+    service.apply(verify(processDefinitionServices), processDefinitionKey);
+  }
+
+  private static Stream<Pair<String, BiFunction<ProcessDefinitionServices, Long, ?>>>
+      getProcessDefinitionTestCasesParameters() {
+    return Stream.of(
+        Pair.of(PROCESS_DEFINITION_URL + "%d", ProcessDefinitionServices::getByKey),
+        Pair.of(
+            PROCESS_DEFINITION_URL + "%d/xml", ProcessDefinitionServices::getProcessDefinitionXml),
+        Pair.of(PROCESS_DEFINITION_URL + "%d/form", ProcessDefinitionServices::getByKey));
+  }
+
   @Test
   public void shouldGetProcessDefinitionXml() {
     // given
@@ -231,7 +279,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             new ProcessDefinitionEntity(
                 1L, "name", "id", "xml", "resource", 1, "tag", "tenant", "formId"));
     when(formServices.getLatestVersionByFormId("formId"))
-        .thenReturn(Optional.of(new FormEntity("0", "tenant-1", "formId", "schema", 1L)));
+        .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "formId", "schema", 1L)));
 
     webClient
         .get()

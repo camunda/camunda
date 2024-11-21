@@ -7,9 +7,12 @@
  */
 package io.camunda.search.clients;
 
+import static io.camunda.search.clients.transformers.ServiceTransformer.identity;
+
 import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.clients.transformers.filter.AuthenticationTransformer;
 import io.camunda.search.clients.transformers.query.SearchQueryResultTransformer;
@@ -21,6 +24,7 @@ import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.security.auth.SecurityContext;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public final class SearchClientBasedQueryExecutor {
@@ -41,16 +45,24 @@ public final class SearchClientBasedQueryExecutor {
     this.securityContext = securityContext;
   }
 
-  public <T extends FilterBase, S extends SortOption, R> SearchQueryResult<R> search(
-      final TypedSearchQuery<T, S> query, final Class<R> documentClass) {
-    final SearchQueryResultTransformer<R> responseTransformer = getSearchResultTransformer();
+  public <F extends FilterBase, S extends SortOption, T, R> SearchQueryResult<R> search(
+      final TypedSearchQuery<F, S> query, final Class<T> documentClass) {
+    final SearchQueryResultTransformer<T, R> responseTransformer =
+        (SearchQueryResultTransformer<T, R>) getSearchResultTransformer(documentClass);
     return executeSearch(
         query, q -> responseTransformer.apply(searchClient.search(q, documentClass)));
   }
 
-  public <T extends FilterBase, S extends SortOption, R> List<R> findAll(
-      final TypedSearchQuery<T, S> query, final Class<R> documentClass) {
-    return executeSearch(query, q -> searchClient.findAll(q, documentClass));
+  public <F extends FilterBase, S extends SortOption, T, R> List<R> findAll(
+      final TypedSearchQuery<F, S> query, final Class<T> documentClass) {
+    final ServiceTransformer<T, R> documentTransformer =
+        (ServiceTransformer<T, R>) getDocumentTransformer(documentClass);
+    return executeSearch(
+        query,
+        q ->
+            searchClient.findAll(q, documentClass).stream()
+                .map(documentTransformer::apply)
+                .toList());
   }
 
   private <T extends FilterBase, S extends SortOption, R> R executeSearch(
@@ -77,8 +89,15 @@ public final class SearchClientBasedQueryExecutor {
     return transformers.getTypedSearchQueryTransformer(query.getClass());
   }
 
-  private <R> SearchQueryResultTransformer<R> getSearchResultTransformer() {
-    return new SearchQueryResultTransformer<R>();
+  private <T, R> SearchQueryResultTransformer<T, R> getSearchResultTransformer(
+      final Class<R> documentClass) {
+    return new SearchQueryResultTransformer<>(getDocumentTransformer(documentClass));
+  }
+
+  private <T, R> ServiceTransformer<T, R> getDocumentTransformer(final Class<R> documentClass) {
+    // TODO remove the fallback to identity() once all document transformers are implemented
+    return Objects.requireNonNullElseGet(
+        transformers.getTransformer(documentClass), () -> (ServiceTransformer<T, R>) identity());
   }
 
   private SearchQueryExecutionException rethrowRuntimeException(final Exception e) {

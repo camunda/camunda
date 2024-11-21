@@ -171,4 +171,25 @@ const mockListenerInstances: ListenerEntity[] = [
   },
 ];
 
-export {mockListenerInstances};
+const mockListenerInstancesShort: ListenerEntity[] = [
+  {
+    listenerType: 'EXECUTION_LISTENER',
+    listenerKey: 'FLOW NODE',
+    state: 'ACTIVE',
+    event: 'START',
+    jobType: 'EVENT',
+    time: '2024-01-02 10:52:16',
+    sortValues: ['1'],
+  },
+  {
+    listenerType: 'USER_TASK_LISTENER',
+    listenerKey: 'INSTANCE',
+    state: 'ACTIVE',
+    event: 'START',
+    jobType: 'EVENT',
+    time: '2024-01-02 10:53:16',
+    sortValues: ['2'],
+  },
+];
+
+export {mockListenerInstances, mockListenerInstancesShort};

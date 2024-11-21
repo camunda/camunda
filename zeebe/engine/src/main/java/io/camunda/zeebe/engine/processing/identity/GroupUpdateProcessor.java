@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
@@ -54,11 +54,12 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
   @Override
   public void processNewCommand(final TypedRecord<GroupRecord> command) {
     final var record = command.getValue();
-    final var persistedRecord = groupState.get(record.getGroupKey());
+    final var groupKey = record.getGroupKey();
+    final var persistedRecord = groupState.get(groupKey);
     if (persistedRecord.isEmpty()) {
       final var errorMessage =
           "Expected to update group with key '%s', but a group with this key does not exist."
-              .formatted(record.getGroupKey());
+              .formatted(groupKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -67,17 +68,19 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
     final var updatedGroupName = record.getName();
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.UPDATE)
-            .addResourceId(updatedGroupName);
+            .addResourceId(persistedRecord.get().getName());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authorizationRequest.getPermissionType(),
+              authorizationRequest.getResourceType(),
+              "group name '%s'".formatted(persistedRecord.get().getName()));
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return;
     }
 
-    if (updatedGroupName.equals(persistedRecord.get().getName())) {
+    if (groupState.getGroupKeyByName(updatedGroupName).isPresent()) {
       final var errorMessage =
           "Expected to update group with name '%s', but a group with this name already exists."
               .formatted(updatedGroupName);
@@ -86,8 +89,8 @@ public class GroupUpdateProcessor implements DistributedTypedRecordProcessor<Gro
       return;
     }
 
-    stateWriter.appendFollowUpEvent(record.getGroupKey(), GroupIntent.UPDATED, record);
-    responseWriter.writeEventOnCommand(record.getGroupKey(), GroupIntent.UPDATED, record, command);
+    stateWriter.appendFollowUpEvent(groupKey, GroupIntent.UPDATED, record);
+    responseWriter.writeEventOnCommand(groupKey, GroupIntent.UPDATED, record, command);
 
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior

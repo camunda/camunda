@@ -18,6 +18,16 @@ public class RequestMapperTest {
   private static final String INVALID_VARIABLES =
       "{ \"test\": \"value\", \"error\": \"errorrvalue }";
 
+  // missing closing quote in "denied"
+  private static final String INVALID_RESULT =
+      """
+        {
+          "result": {
+            "denied: true
+          }
+        }
+      """;
+
   // BigInteger larger than 2^64-1
   private static final String BIG_INTEGER =
       "{\"mybigintistoolong\": 123456789012345678901234567890}";
@@ -28,6 +38,16 @@ public class RequestMapperTest {
     assertThatThrownBy(() -> RequestMapper.ensureJsonSet(INVALID_VARIABLES))
         .isInstanceOf(JsonParseException.class)
         .hasMessageContaining("Invalid JSON", INVALID_VARIABLES)
+        .cause()
+        .isInstanceOf(JsonParseException.class);
+  }
+
+  @Test
+  public void shouldThrowHelpfulExceptionIfJsonIsInvalidForResult() {
+    // when + then
+    assertThatThrownBy(() -> RequestMapper.ensureJsonSet(INVALID_RESULT))
+        .isInstanceOf(JsonParseException.class)
+        .hasMessageContaining("Invalid JSON", INVALID_RESULT)
         .cause()
         .isInstanceOf(JsonParseException.class);
   }

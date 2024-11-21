@@ -92,13 +92,13 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void addTenant(final long mappingKey, final String tenantId) {
+  public void addTenant(final long mappingKey, final long tenantKey) {
     this.mappingKey.wrapLong(mappingKey);
     final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
-      persistedMapping.addTenantId(tenantId);
+      persistedMapping.addTenantKey(tenantKey);
       mappingColumnFamily.update(claim, persistedMapping);
     }
   }
@@ -118,16 +118,40 @@ public class DbMappingState implements MutableMappingState {
   }
 
   @Override
-  public void removeTenant(final long mappingKey, final String tenantId) {
+  public void removeGroup(final long mappingKey, final long groupKey) {
     this.mappingKey.wrapLong(mappingKey);
     final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
     if (fkClaim != null) {
       final var claim = fkClaim.inner();
       final var persistedMapping = mappingColumnFamily.get(claim);
-      final List<String> tenantIds = persistedMapping.getTenantIdsList();
-      tenantIds.remove(tenantId);
-      persistedMapping.setTenantIdsList(tenantIds);
+      final List<Long> groupKeys = persistedMapping.getGroupKeysList();
+      groupKeys.remove(groupKey);
+      persistedMapping.setGroupKeysList(groupKeys);
       mappingColumnFamily.update(claim, persistedMapping);
+    }
+  }
+
+  @Override
+  public void removeTenant(final long mappingKey, final long tenantKey) {
+    this.mappingKey.wrapLong(mappingKey);
+    final var fkClaim = claimByKeyColumnFamily.get(this.mappingKey);
+    if (fkClaim != null) {
+      final var claim = fkClaim.inner();
+      final var persistedMapping = mappingColumnFamily.get(claim);
+      final List<Long> tenantKeys = persistedMapping.getTenantKeysList();
+      tenantKeys.remove(tenantKey);
+      persistedMapping.setTenantKeysList(tenantKeys);
+      mappingColumnFamily.update(claim, persistedMapping);
+    }
+  }
+
+  @Override
+  public void delete(final long key) {
+    mappingKey.wrapLong(key);
+    final var claimKey = claimByKeyColumnFamily.get(mappingKey);
+    if (claimKey != null) {
+      claimByKeyColumnFamily.deleteExisting(mappingKey);
+      mappingColumnFamily.deleteExisting(claimKey.inner());
     }
   }
 

@@ -11,11 +11,11 @@ import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -27,6 +27,8 @@ public final class AuthorizationCheckBehavior {
 
   public static final String UNAUTHORIZED_ERROR_MESSAGE =
       "Unauthorized to perform operation '%s' on resource '%s'";
+  public static final String UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE =
+      UNAUTHORIZED_ERROR_MESSAGE + " with %s";
   public static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
   private final UserState userState;
@@ -62,11 +64,13 @@ public final class AuthorizationCheckBehavior {
       return true;
     }
 
-    Set<String> authorizedResourceIdentifiers = Collections.emptySet();
+    Set<String> authorizedResourceIdentifiers = new HashSet<>();
 
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
-      authorizedResourceIdentifiers = getUserAuthorizedResourceIdentifiers(userKey.get(), request);
+      authorizedResourceIdentifiers =
+          getUserAuthorizedResourceIdentifiers(
+              userKey.get(), request.getResourceType(), request.getPermissionType());
     }
 
     // Check if authorizations contain a resource identifier that matches the required resource
@@ -86,33 +90,50 @@ public final class AuthorizationCheckBehavior {
 
     final var userKey = getUserKey(request);
     if (userKey.isEmpty()) {
-      return Collections.emptySet();
+      return new HashSet<>();
     }
 
-    return getUserAuthorizedResourceIdentifiers(userKey.get(), request);
+    return getUserAuthorizedResourceIdentifiers(
+        userKey.get(), request.getResourceType(), request.getPermissionType());
+  }
+
+  public Set<String> getAuthorizedResourceIdentifiers(
+      final long ownerKey,
+      final AuthorizationOwnerType ownerType,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    return switch (ownerType) {
+      case USER -> getUserAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType);
+      case ROLE ->
+          getRoleAuthorizedResourceIdentifiers(List.of(ownerKey), resourceType, permissionType);
+      // TODO add MAPPING
+      // TODO add GROUP
+      default -> new HashSet<>();
+    };
   }
 
   private Set<String> getUserAuthorizedResourceIdentifiers(
-      final long userKey, final AuthorizationRequest request) {
+      final long userKey,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
-      return Collections.emptySet();
+      return new HashSet<>();
     }
     final var user = userOptional.get();
 
     // The default user has all permissions
     if (user.getUserType().equals(UserType.DEFAULT)) {
       // TODO this should change when we introduce a default "admin" role to the default user
-      return Set.of(WILDCARD_PERMISSION);
+      return new HashSet<>(Set.of(WILDCARD_PERMISSION));
     }
 
     // Get resource identifiers for this user
     final var userAuthorizedResourceIdentifiers =
-        authorizationState.getResourceIdentifiers(
-            userKey, request.getResourceType(), request.getPermissionType());
+        authorizationState.getResourceIdentifiers(userKey, resourceType, permissionType);
     // Get resource identifiers for the user's roles
     final var roleAuthorizedResourceIdentifiers =
-        getRoleAuthorizedResourceIdentifiers(user.getRoleKeysList(), request);
+        getRoleAuthorizedResourceIdentifiers(user.getRoleKeysList(), resourceType, permissionType);
 
     return Stream.concat(
             userAuthorizedResourceIdentifiers.stream(), roleAuthorizedResourceIdentifiers.stream())
@@ -120,13 +141,14 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Set<String> getRoleAuthorizedResourceIdentifiers(
-      final List<Long> roleKeys, final AuthorizationRequest request) {
+      final List<Long> roleKeys,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
     return roleKeys.stream()
         .flatMap(
             roleKey ->
                 authorizationState
-                    .getResourceIdentifiers(
-                        roleKey, request.getResourceType(), request.getPermissionType())
+                    .getResourceIdentifiers(roleKey, resourceType, permissionType)
                     .stream())
         .collect(Collectors.toSet());
   }
@@ -178,10 +200,11 @@ public final class AuthorizationCheckBehavior {
 
   public static class UnauthorizedException extends RuntimeException {
 
-    public UnauthorizedException(final AuthorizationRequest authRequest) {
+    public UnauthorizedException(
+        final AuthorizationRequest authRequest, final String resourceMessage) {
       super(
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType()));
+          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+              authRequest.getPermissionType(), authRequest.getResourceType(), resourceMessage));
     }
   }
 }

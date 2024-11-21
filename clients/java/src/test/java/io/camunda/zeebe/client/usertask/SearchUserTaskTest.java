@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
+import io.camunda.zeebe.client.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.UserTaskVariableFilterRequest;
@@ -47,7 +48,18 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getAssignee()).isEqualTo("demo");
+    assertThat(request.getFilter().getAssignee().get$Eq()).isEqualTo("demo");
+  }
+
+  @Test
+  void shouldSearchUserTaskByAssigneeStringFilter() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.assignee(b -> b.neq("that"))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getAssignee().get$Neq()).isEqualTo("that");
   }
 
   @Test
@@ -91,7 +103,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getCandidateGroup()).isEqualTo("group1");
+    assertThat(request.getFilter().getCandidateGroup().get$Eq()).isEqualTo("group1");
   }
 
   @Test
@@ -102,7 +114,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getCandidateUser()).isEqualTo("user1");
+    assertThat(request.getFilter().getCandidateUser().get$Eq()).isEqualTo("user1");
   }
 
   @Test
@@ -136,6 +148,33 @@ public final class SearchUserTaskTest extends ClientRestTest {
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
     assertThat(request.getFilter().getTenantId()).isEqualTo("tenant1");
+  }
+
+  @Test
+  void shouldSearchUserTaskByPriority() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.priority(10)).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getPriority().get$Eq()).isEqualTo(10);
+  }
+
+  @Test
+  void shouldSearchUserTaskByPriorityLongFilter() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.priority(b -> b.gt(1).lt(10))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    final UserTaskFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final IntegerFilterProperty priority = filter.getPriority();
+    assertThat(priority).isNotNull();
+    assertThat(priority.get$Gt()).isEqualTo(1);
+    assertThat(priority.get$Lt()).isEqualTo(10);
   }
 
   @Test

@@ -62,6 +62,9 @@ public record Operation<T>(Operator operator, List<T> values) {
   }
 
   public T value() {
+    if (values == null || values.isEmpty()) {
+      return null;
+    }
     return values.getFirst();
   }
 

@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.VariableQuery;
 import io.camunda.service.VariableServices;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryRequest;
@@ -14,8 +16,6 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import jakarta.validation.ValidationException;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -49,20 +49,8 @@ public class VariableQueryController {
       final var result =
           variableServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toVariableSearchQueryResponse(result));
-    } catch (final ValidationException e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST,
-              e.getMessage(),
-              "Validation failed for Variable Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
     } catch (final Exception e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.INTERNAL_SERVER_ERROR,
-              e.getMessage(),
-              "Failed to execute Variable Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+      return mapErrorToResponse(e);
     }
   }
 
@@ -73,12 +61,13 @@ public class VariableQueryController {
     try {
       // Success case: Return the left side with the VariableItem wrapped in ResponseEntity
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toVariable(variableServices.getByKey(variableKey)));
-    } catch (final Exception exc) {
-      // Error case: Return the right side with ProblemDetail
-      final var problemDetail =
-          RestErrorMapper.mapErrorToProblem(exc, RestErrorMapper.DEFAULT_REJECTION_MAPPER);
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+          .body(
+              SearchQueryResponseMapper.toVariable(
+                  variableServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(variableKey)));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
     }
   }
 }

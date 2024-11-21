@@ -103,6 +103,27 @@ public class ElasticsearchEngineClientIT {
   }
 
   @Test
+  void shouldNotThrowIfTryingToCreateExistingTemplate() {
+    // given
+    final var indexTemplate =
+        SchemaTestUtil.mockIndexTemplate(
+            "index_name",
+            "test*",
+            "alias",
+            Collections.emptyList(),
+            "template_name",
+            "/mappings.json");
+
+    final var settings = new IndexSettings();
+    elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
+
+    // when, then
+    assertThatNoException()
+        .describedAs("Creating an already existing template should not throw")
+        .isThrownBy(() -> elsEngineClient.createIndexTemplate(indexTemplate, settings, true));
+  }
+
+  @Test
   void shouldCreateIndexCorrectly() throws IOException {
     // given
     final var qualifiedIndexName = "full_name";

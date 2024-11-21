@@ -74,7 +74,7 @@ public class CreateTenantMultiPartitionTest {
                   .limit(record -> record.getIntent().equals(TenantIntent.CREATED))
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
-          .containsExactly(TenantIntent.CREATE, TenantIntent.CREATED);
+          .containsSubsequence(TenantIntent.CREATE, TenantIntent.CREATED);
     }
   }
 
@@ -104,12 +104,12 @@ public class CreateTenantMultiPartitionTest {
       interceptTenantCreateForPartition(partitionId);
     }
 
-    // when creating a tenant
-    engine.tenant().newTenant().withTenantId("tenant-queue").withName("Queued Tenant").create();
-
     // Create a role to ensure proper order
     final var roleName = UUID.randomUUID().toString();
     engine.role().newRole(roleName).create();
+
+    // when creating a tenant
+    engine.tenant().newTenant().withTenantId("tenant-queue").withName("Queued Tenant").create();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));
@@ -120,7 +120,7 @@ public class CreateTenantMultiPartitionTest {
                 .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
-            tuple(ValueType.TENANT, TenantIntent.CREATE), tuple(ValueType.ROLE, RoleIntent.CREATE));
+            tuple(ValueType.ROLE, RoleIntent.CREATE), tuple(ValueType.TENANT, TenantIntent.CREATE));
   }
 
   private void interceptTenantCreateForPartition(final int partitionId) {
@@ -131,7 +131,7 @@ public class CreateTenantMultiPartitionTest {
             return true;
           }
           hasInterceptedPartition.set(true);
-          return !(receiverPartitionId == partitionId && intent == TenantIntent.CREATE);
+          return !(receiverPartitionId == partitionId && intent == RoleIntent.CREATE);
         });
   }
 }

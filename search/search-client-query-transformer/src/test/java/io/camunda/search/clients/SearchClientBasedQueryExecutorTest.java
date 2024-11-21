@@ -20,7 +20,9 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,7 +44,7 @@ class SearchClientBasedQueryExecutorTest {
           null,
           null,
           "default",
-          "2024-01-01T00:00:00Z",
+          OffsetDateTime.parse("2024-01-01T00:00:00Z"),
           null,
           ProcessInstanceState.ACTIVE,
           false,
@@ -80,12 +82,14 @@ class SearchClientBasedQueryExecutorTest {
         .thenAnswer(i -> i.getArgument(0));
 
     // When we search
-    final var searchResult = queryExecutor.search(searchAllQuery, ProcessInstanceEntity.class);
+    final SearchQueryResult<ProcessInstanceEntity> searchResult =
+        queryExecutor.search(searchAllQuery, ProcessInstanceEntity.class);
 
     assertThat(searchResult.total()).isEqualTo(1);
     final List<ProcessInstanceEntity> items = searchResult.items();
     assertThat(items).hasSize(1);
-    assertThat(items.getFirst().key()).isEqualTo(demoProcessInstance.key());
+    assertThat(items.getFirst().processInstanceKey())
+        .isEqualTo(demoProcessInstance.processInstanceKey());
   }
 
   @Test
@@ -103,10 +107,12 @@ class SearchClientBasedQueryExecutorTest {
         .thenAnswer(i -> i.getArgument(0));
 
     // When we search
-    final var searchResult = queryExecutor.findAll(searchAllQuery, ProcessInstanceEntity.class);
+    final List<ProcessInstanceEntity> searchResult =
+        queryExecutor.findAll(searchAllQuery, ProcessInstanceEntity.class);
 
     assertThat(searchResult).hasSize(1);
-    assertThat(searchResult.getFirst().key()).isEqualTo(demoProcessInstance.key());
+    assertThat(searchResult.getFirst().processInstanceKey())
+        .isEqualTo(demoProcessInstance.processInstanceKey());
   }
 
   private SearchQueryResponse<ProcessInstanceEntity> createProcessInstanceEntityResponse(

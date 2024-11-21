@@ -8,46 +8,8 @@
 package io.camunda.search.clients.transformers.result;
 
 import io.camunda.search.clients.source.SearchSourceConfig;
-import io.camunda.search.clients.source.SearchSourceFilter;
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.result.QueryResultConfig;
-import io.camunda.search.result.QueryResultConfig.FieldFilter;
-import java.util.List;
-import java.util.stream.Collectors;
 
-public final class ResultConfigTransformer
-    implements ServiceTransformer<QueryResultConfig, SearchSourceConfig> {
-
-  @Override
-  public SearchSourceConfig apply(final QueryResultConfig value) {
-    if (value != null) {
-      final var builder = new SearchSourceConfig.Builder();
-      final List<FieldFilter> fieldFilters = value.getFieldFilters();
-      if (fieldFilters != null && !fieldFilters.isEmpty()) {
-        builder.filter(toSearchSourceFilter(fieldFilters));
-      }
-      return builder.build();
-    }
-    return null;
-  }
-
-  private SearchSourceFilter toSearchSourceFilter(final List<FieldFilter> value) {
-    final var includedVsExcludedMap =
-        value.stream()
-            .collect(
-                Collectors.partitioningBy(
-                    FieldFilter::include,
-                    Collectors.mapping(FieldFilter::field, Collectors.toList())));
-    final List<String> includes = includedVsExcludedMap.get(true);
-    final List<String> excludes = includedVsExcludedMap.get(false);
-
-    final var builder = new SearchSourceFilter.Builder();
-    if (!includes.isEmpty()) {
-      builder.includes(includes);
-    }
-    if (!excludes.isEmpty()) {
-      builder.excludes(excludes);
-    }
-    return builder.build();
-  }
-}
+public interface ResultConfigTransformer<T extends QueryResultConfig>
+    extends ServiceTransformer<T, SearchSourceConfig> {}

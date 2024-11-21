@@ -9,11 +9,11 @@ package io.camunda.operate.webapp.rest.dto.listview;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.util.TreePath;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;

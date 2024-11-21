@@ -11,6 +11,11 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
+import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.VERSION;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.DecisionRequirementsFilter;
@@ -37,22 +42,22 @@ public final class DecisionRequirementsFilterTransformer
   }
 
   private SearchQuery getKeysQuery(final List<Long> keys) {
-    return longTerms("key", keys);
+    return longTerms(KEY, keys);
   }
 
   private SearchQuery getNamesQuery(final List<String> names) {
-    return stringTerms("name", names);
+    return stringTerms(NAME, names);
   }
 
   private SearchQuery getVersionsQuery(final List<Integer> versions) {
-    return intTerms("version", versions);
+    return intTerms(VERSION, versions);
   }
 
   private SearchQuery getDecisionRequirementsIdsQuery(final List<String> decisionRequirementsIds) {
-    return stringTerms("decisionRequirementsId", decisionRequirementsIds);
+    return stringTerms(DECISION_REQUIREMENTS_ID, decisionRequirementsIds);
   }
 
   private SearchQuery getTenantIdsQuery(final List<String> tenantIds) {
-    return stringTerms("tenantId", tenantIds);
+    return stringTerms(TENANT_ID, tenantIds);
   }
 }

@@ -14,9 +14,9 @@ import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Set;
 import java.util.function.Function;
 
 public final class AuthorizationClient {
@@ -27,77 +27,95 @@ public final class AuthorizationClient {
     this.writer = writer;
   }
 
-  public AuthorizationAddPermissionClient permission() {
-    return new AuthorizationAddPermissionClient(writer);
+  public AuthorizationPermissionClient permission() {
+    return new AuthorizationPermissionClient(writer);
   }
 
-  public static class AuthorizationAddPermissionClient {
+  public static class AuthorizationPermissionClient {
 
-    private static final Function<Long, Record<AuthorizationRecordValue>> SUCCESS_SUPPLIER =
+    private static final Function<Long, Record<AuthorizationRecordValue>> ADD_SUCCESS_SUPPLIER =
         (position) ->
             RecordingExporter.authorizationRecords()
                 .withIntent(AuthorizationIntent.PERMISSION_UPDATED)
                 .withSourceRecordPosition(position)
                 .getFirst();
-    private static final Function<Long, Record<AuthorizationRecordValue>> REJECTION_SUPPLIER =
+    private static final Function<Long, Record<AuthorizationRecordValue>> ADD_REJECTION_SUPPLIER =
         (position) ->
             RecordingExporter.authorizationRecords()
                 .onlyCommandRejections()
                 .withIntent(AuthorizationIntent.UPDATE_PERMISSION)
                 .withSourceRecordPosition(position)
                 .getFirst();
+    private static final Function<Long, Record<AuthorizationRecordValue>> REMOVE_SUCCESS_SUPPLIER =
+        (position) ->
+            RecordingExporter.authorizationRecords()
+                .withIntent(AuthorizationIntent.PERMISSION_REMOVED)
+                .withSourceRecordPosition(position)
+                .getFirst();
+    private static final Function<Long, Record<AuthorizationRecordValue>>
+        REMOVE_REJECTION_SUPPLIER =
+            (position) ->
+                RecordingExporter.authorizationRecords()
+                    .onlyCommandRejections()
+                    .withIntent(AuthorizationIntent.REMOVE_PERMISSION)
+                    .withSourceRecordPosition(position)
+                    .getFirst();
 
-    private Function<Long, Record<AuthorizationRecordValue>> expectation = SUCCESS_SUPPLIER;
+    private Function<Long, Record<AuthorizationRecordValue>> expectation = ADD_SUCCESS_SUPPLIER;
     private final CommandWriter writer;
     private final AuthorizationRecord authorizationCreationRecord;
+    private boolean expectRejection = false;
 
-    public AuthorizationAddPermissionClient(final CommandWriter writer) {
+    public AuthorizationPermissionClient(final CommandWriter writer) {
       this.writer = writer;
       authorizationCreationRecord = new AuthorizationRecord();
     }
 
-    public AuthorizationAddPermissionClient withOwnerKey(final Long ownerKey) {
+    public AuthorizationPermissionClient withOwnerKey(final Long ownerKey) {
       authorizationCreationRecord.setOwnerKey(ownerKey);
       return this;
     }
 
-    public AuthorizationAddPermissionClient withAction(final PermissionAction action) {
-      authorizationCreationRecord.setAction(action);
-      return this;
-    }
-
-    public AuthorizationAddPermissionClient withOwnerType(final AuthorizationOwnerType ownerType) {
+    public AuthorizationPermissionClient withOwnerType(final AuthorizationOwnerType ownerType) {
       authorizationCreationRecord.setOwnerType(ownerType);
       return this;
     }
 
-    public AuthorizationAddPermissionClient withResourceType(
+    public AuthorizationPermissionClient withResourceType(
         final AuthorizationResourceType resourceType) {
       authorizationCreationRecord.setResourceType(resourceType);
       return this;
     }
 
-    public AuthorizationAddPermissionClient withPermission(
-        final PermissionType permissionType, final String resourceId) {
+    public AuthorizationPermissionClient withPermission(
+        final PermissionType permissionType, final String... resourceIds) {
       authorizationCreationRecord.addPermission(
-          new Permission().setPermissionType(permissionType).addResourceId(resourceId));
+          new Permission().setPermissionType(permissionType).addResourceIds(Set.of(resourceIds)));
       return this;
     }
 
-    public AuthorizationAddPermissionClient withPermission(final Permission permission) {
+    public AuthorizationPermissionClient withPermission(final Permission permission) {
       authorizationCreationRecord.addPermission(permission);
       return this;
     }
 
     public Record<AuthorizationRecordValue> add() {
+      expectation = expectRejection ? ADD_REJECTION_SUPPLIER : ADD_SUCCESS_SUPPLIER;
       final long position =
           writer.writeCommand(AuthorizationIntent.UPDATE_PERMISSION, authorizationCreationRecord);
       return expectation.apply(position);
     }
 
-    public AuthorizationAddPermissionClient expectRejection() {
-      expectation = REJECTION_SUPPLIER;
+    public AuthorizationPermissionClient expectRejection() {
+      expectRejection = true;
       return this;
+    }
+
+    public Record<AuthorizationRecordValue> remove() {
+      expectation = expectRejection ? REMOVE_REJECTION_SUPPLIER : REMOVE_SUCCESS_SUPPLIER;
+      final long position =
+          writer.writeCommand(AuthorizationIntent.REMOVE_PERMISSION, authorizationCreationRecord);
+      return expectation.apply(position);
     }
   }
 }

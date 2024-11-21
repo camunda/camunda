@@ -7,8 +7,8 @@
  */
 package io.camunda.optimize.service.db.repository.es;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.async.OpenSearchAsyncSnapshotOperations.SnaphotStatus.FAILED;
-import static io.camunda.optimize.service.db.os.externalcode.client.async.OpenSearchAsyncSnapshotOperations.SnaphotStatus.SUCCESS;
+import static io.camunda.optimize.service.db.os.client.async.OpenSearchAsyncSnapshotOperations.SnapshotStatus.FAILED;
+import static io.camunda.optimize.service.db.os.client.async.OpenSearchAsyncSnapshotOperations.SnapshotStatus.SUCCESS;
 import static io.camunda.optimize.service.util.SnapshotUtil.getSnapshotPrefixWithBackupId;
 import static java.lang.String.format;
 

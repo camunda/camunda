@@ -10,6 +10,7 @@ import {shallow} from 'enzyme';
 import {runLastEffect} from '__mocks__/react';
 
 import {loadEntities} from 'services';
+import {EntityListEntity} from 'types';
 
 import MoveCopy from './MoveCopy';
 
@@ -81,7 +82,11 @@ jest.mock('hooks', () => ({
 }));
 
 const props = {
-  entity: {name: 'Test Dashboard', entityType: 'dashboard', data: {subEntityCounts: {report: 2}}},
+  entity: {
+    name: 'Test Dashboard',
+    entityType: 'dashboard',
+    data: {subEntityCounts: {report: 2}},
+  } as EntityListEntity,
   collection: null,
   moving: true,
   setMoving: jest.fn(),

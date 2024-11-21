@@ -12,7 +12,9 @@ import io.camunda.webapps.schema.entities.operate.ProcessFlowNodeEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.instance.CallActivity;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.Process;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,6 +56,21 @@ public class XMLUtil {
     }
   }
 
+  public Optional<ProcessModelReader> createProcessModelReader(
+      final byte[] byteArray, final String bpmnProcessId) {
+    try {
+      final var is = new ByteArrayInputStream(byteArray);
+      final var bpmnModelInstance = Bpmn.readModelFromStream(is);
+      final var processModelInstance = bpmnModelInstance.getModelElementById(bpmnProcessId);
+      if (processModelInstance instanceof final Process process) {
+        return Optional.of(new ProcessModelReader(process));
+      }
+    } catch (final Exception e) {
+      LOGGER.warn("Unable to parse diagram: " + e.getMessage(), e);
+    }
+    return Optional.empty();
+  }
+
   public Optional<ProcessEntity> extractDiagramData(
       final byte[] byteArray, final String bpmnProcessId) {
     InputStream is = new ByteArrayInputStream(byteArray);
@@ -65,9 +82,7 @@ public class XMLUtil {
         return Optional.empty();
       }
       final ProcessEntity processEntity = processEntityOpt.get();
-      processEntity.setVersionTag(handler.versionTag);
       processEntity.setIsPublic(handler.isPublic);
-      processEntity.setFormId(handler.formId);
       final Set<String> processChildrenIds = handler.getProcessChildrenIds(bpmnProcessId);
       is = new ByteArrayInputStream(byteArray);
       final BpmnModelInstance modelInstance = Bpmn.readModelFromStream(is);
@@ -80,6 +95,15 @@ public class XMLUtil {
                   processEntity
                       .getFlowNodes()
                       .add(new ProcessFlowNodeEntity(x.getId(), x.getName())));
+      // collect call activity ids
+      final Collection<CallActivity> callActivities =
+          modelInstance.getModelElementsByType(CallActivity.class);
+      processEntity.setCallActivityIds(
+          callActivities.stream()
+              .map(CallActivity::getId)
+              .filter(id -> processChildrenIds.contains(id))
+              .sorted()
+              .toList());
       return Optional.of(processEntity);
     } catch (final ParserConfigurationException | SAXException | IOException | ModelException e) {
       LOGGER.warn("Unable to parse diagram: " + e.getMessage(), e);
@@ -91,15 +115,12 @@ public class XMLUtil {
 
     private final String processElement = "process";
     private final String startEventElement = "startEvent";
-    private final String formDefinitionProperty = "formDefinition";
     private final String publicAccess = "publicAccess";
     private final List<ProcessEntity> processEntities = new ArrayList<>();
     private final Map<String, Set<String>> processChildrenIds = new LinkedHashMap<>();
     private String currentProcessId = null;
     private boolean isStartEvent = false;
-    private String versionTag = null;
     private boolean isPublic = false;
-    private String formId = null;
 
     @Override
     public void startElement(
@@ -118,14 +139,8 @@ public class XMLUtil {
         isStartEvent = true;
       } else if (currentProcessId != null && elementId != null) {
         processChildrenIds.get(currentProcessId).add(elementId);
-      } else if ("versionTag".equalsIgnoreCase(localName)) {
-        versionTag = attributes.getValue("value");
       } else if (isStartEvent) {
-        if (formDefinitionProperty.equalsIgnoreCase(localName)) {
-          if (attributes.getValue("formKey") != null) {
-            formId = attributes.getValue("formKey");
-          }
-        } else if ("property".equalsIgnoreCase(localName)) {
+        if ("property".equalsIgnoreCase(localName)) {
           final String name = attributes.getValue("name");
           final String value = attributes.getValue("value");
           if (publicAccess.equalsIgnoreCase(name)

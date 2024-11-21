@@ -56,13 +56,7 @@ public class RangeQueryTransformerTest {
             "Query: {'range':{'foo':{'gt':1234}}}"),
         Arguments.arguments(
             SearchQueryBuilders.range().field("foo").format("format").build(),
-            "Query: {'range':{'foo':{'format':'format'}}}"),
-        Arguments.arguments(
-            SearchQueryBuilders.range().field("foo").to("toBar").build(),
-            "Query: {'range':{'foo':{'to':'toBar'}}}"),
-        Arguments.arguments(
-            SearchQueryBuilders.range().field("foo").from("fromBar").build(),
-            "Query: {'range':{'foo':{'from':'fromBar'}}}"));
+            "Query: {'range':{'foo':{'format':'format'}}}"));
   }
 
   @ParameterizedTest

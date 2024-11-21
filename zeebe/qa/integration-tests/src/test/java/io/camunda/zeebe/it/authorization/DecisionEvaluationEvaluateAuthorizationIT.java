@@ -22,11 +22,12 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -42,26 +43,25 @@ public class DecisionEvaluationEvaluateAuthorizationIT {
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static final String DECISION_ID = "jedi_or_sith";
+  private static AuthorizationsUtil authUtil;
+  @AutoCloseResource private static ZeebeClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
-  private static final TestStandaloneBroker BROKER =
+  private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withBrokerConfig(
               b -> b.getExperimental().getEngine().getAuthorizations().setEnableAuthorization(true))
           .withAdditionalProfile(Profile.AUTH_BASIC);
 
-  private static AuthorizationsUtil authUtil;
-  private static ZeebeClient defaultUserClient;
-
-  @BeforeAll
-  static void beforeAll() {
-    BROKER.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    BROKER.start();
+  @BeforeEach
+  void beforeEach() {
+    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    broker.start();
 
     final var defaultUsername = "demo";
-    defaultUserClient = createClient(BROKER, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(BROKER, defaultUserClient, CONTAINER.getHttpHostAddress());
+    defaultUserClient = createClient(broker, defaultUsername, "demo");
+    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
     defaultUserClient
@@ -95,7 +95,9 @@ public class DecisionEvaluationEvaluateAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.DECISION_DEFINITION, PermissionTypeEnum.CREATE, List.of(DECISION_ID)));
+            ResourceTypeEnum.DECISION_DEFINITION,
+            PermissionTypeEnum.CREATE_DECISION_INSTANCE,
+            List.of(DECISION_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when
@@ -134,7 +136,8 @@ public class DecisionEvaluationEvaluateAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'CREATE' on resource 'DECISION_DEFINITION'");
+              "Unauthorized to perform operation 'CREATE_DECISION_INSTANCE' on resource 'DECISION_DEFINITION' with decision id '%s'",
+              DECISION_ID);
     }
   }
 }

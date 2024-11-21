@@ -15,6 +15,11 @@ import {
 
 type FetchType = 'initial' | 'prev' | 'next';
 
+type CurrentId = {
+  type: 'flowNode' | 'flowNodeInstance' | null;
+  value: string;
+};
+
 type State = {
   listenersCount: number;
   listeners: ListenersDto['listeners'];
@@ -32,7 +37,7 @@ type State = {
     | 'fetched'
     | 'error';
   currentProcessInstanceId: ProcessInstanceEntity['id'];
-  currentFlowNodeId: string;
+  currentId: CurrentId;
 };
 
 const DEFAULT_STATE: State = {
@@ -42,14 +47,16 @@ const DEFAULT_STATE: State = {
   latestFetch: {fetchType: null, itemsCount: 0},
   status: 'initial',
   currentProcessInstanceId: '',
-  currentFlowNodeId: '',
+  currentId: {
+    type: null,
+    value: '',
+  },
 };
 
 const MAX_LISTENERS_STORED = 200;
 const MAX_LISTENERS_PER_REQUEST = 50;
 
 const DEFAULT_PAYLOAD: ListenerPayload = {
-  flowNodeId: '',
   pageSize: MAX_LISTENERS_PER_REQUEST,
   searchAfter: [],
   searchBefore: [],
@@ -172,28 +179,44 @@ class ProcessInstanceListeners {
     );
   };
 
-  fetchPreviousInstances = async () => {
+  fetchPreviousListeners = async () => {
     this.startFetchingPrev();
+
+    let payloadId = {};
+
+    if (this.state.currentId.type === 'flowNode') {
+      payloadId = {flowNodeId: this.state.currentId.value};
+    } else if (this.state.currentId.type === 'flowNodeInstance') {
+      payloadId = {flowNodeInstanceId: this.state.currentId.value};
+    }
 
     return this.fetchListeners({
       fetchType: 'prev',
       processInstanceId: this.state.currentProcessInstanceId,
       payload: {
-        flowNodeId: this.state.currentFlowNodeId,
+        ...payloadId,
         searchBefore: this.state.listeners[0]?.sortValues,
         pageSize: MAX_LISTENERS_PER_REQUEST,
       },
     });
   };
 
-  fetchNextInstances = async () => {
+  fetchNextListeners = async () => {
     this.startFetchingNext();
+
+    let payloadId = {};
+
+    if (this.state.currentId.type === 'flowNode') {
+      payloadId = {flowNodeId: this.state.currentId.value};
+    } else if (this.state.currentId.type === 'flowNodeInstance') {
+      payloadId = {flowNodeInstanceId: this.state.currentId.value};
+    }
 
     return this.fetchListeners({
       fetchType: 'next',
       processInstanceId: this.state.currentProcessInstanceId,
       payload: {
-        flowNodeId: this.state.currentFlowNodeId,
+        ...payloadId,
         searchAfter:
           this.state.listeners[this.state.listeners.length - 1]?.sortValues,
         pageSize: MAX_LISTENERS_PER_REQUEST,
@@ -211,14 +234,19 @@ class ProcessInstanceListeners {
     payload: ListenerPayload;
   }) => {
     this.state.currentProcessInstanceId = processInstanceId;
-    this.state.currentFlowNodeId = payload.flowNodeId;
+
+    if (payload.flowNodeId) {
+      this.state.currentId.value = payload.flowNodeId;
+      this.state.currentId.type = 'flowNode';
+    }
+
+    if (payload.flowNodeInstanceId) {
+      this.state.currentId.value = payload.flowNodeInstanceId;
+      this.state.currentId.type = 'flowNodeInstance';
+    }
 
     if (fetchType === 'initial') {
       this.startFetching();
-    }
-
-    if (!payload.flowNodeId) {
-      payload.flowNodeId = DEFAULT_PAYLOAD.flowNodeId;
     }
 
     if (!payload.pageSize) {

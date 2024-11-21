@@ -24,6 +24,9 @@ public class FormIndex extends TasklistIndexDescriptor implements Prio4Backup {
   public static final String VERSION = "version";
   public static final String IS_DELETED = "isDeleted";
 
+  public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
+  public static final String EMBEDDED = "embedded";
+
   public FormIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }

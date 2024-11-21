@@ -9,31 +9,34 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
-import static io.camunda.search.clients.query.SearchQueryBuilders.or;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.search.clients.query.SearchQueryBuilders.variableOperations;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.IS_PREVIEW;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.NAME;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.SCOPE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.VALUE;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
-import io.camunda.search.clients.query.SearchQueryBuilders;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.UntypedOperation;
 import io.camunda.search.filter.VariableFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class VariableFilterTransformer implements FilterTransformer<VariableFilter> {
-
-  public static final String VAR_NAME = "name";
-  public static final String VAR_VALUE = "value";
 
   @Override
   public SearchQuery toSearchQuery(final VariableFilter filter) {
     final var queries = new ArrayList<SearchQuery>();
-    ofNullable(getVariablesQuery(filter.variableOperations())).ifPresent(queries::add);
+    ofNullable(stringOperations(NAME, filter.nameOperations())).ifPresent(queries::addAll);
+    ofNullable(getVariablesQuery(filter.valueOperations())).ifPresent(queries::addAll);
     ofNullable(getScopeKeyQuery(filter.scopeKeyOperations())).ifPresent(queries::addAll);
     ofNullable(getProcessInstanceKeyQuery(filter.processInstanceKeyOperations()))
         .ifPresent(queries::addAll);
@@ -48,36 +51,31 @@ public class VariableFilterTransformer implements FilterTransformer<VariableFilt
     return Arrays.asList("operate-variable-8.3.0_alias");
   }
 
-  private SearchQuery getVariablesQuery(
-      final Map<String, List<Operation<Object>>> variableFilters) {
-    return or(
-        variableFilters.entrySet().stream()
-            .map(entry -> variableOperations(VAR_NAME, VAR_VALUE, entry.getKey(), entry.getValue()))
-            .map(SearchQueryBuilders::and)
-            .collect(Collectors.toList()));
+  private List<SearchQuery> getVariablesQuery(final List<UntypedOperation> variableFilters) {
+    return variableOperations(VALUE, variableFilters);
   }
 
   private List<SearchQuery> getScopeKeyQuery(final List<Operation<Long>> scopeKey) {
-    return longOperations("scopeKey", scopeKey);
+    return longOperations(SCOPE_KEY, scopeKey);
   }
 
   private List<SearchQuery> getProcessInstanceKeyQuery(
       final List<Operation<Long>> processInstanceKey) {
-    return longOperations("processInstanceKey", processInstanceKey);
+    return longOperations(PROCESS_INSTANCE_KEY, processInstanceKey);
   }
 
   private List<SearchQuery> getVariableKeyQuery(final List<Operation<Long>> variableKeys) {
-    return longOperations("key", variableKeys);
+    return longOperations(KEY, variableKeys);
   }
 
   private SearchQuery getTenantIdQuery(final List<String> tenant) {
-    return stringTerms("tenantId", tenant);
+    return stringTerms(TENANT_ID, tenant);
   }
 
   private SearchQuery getIsTruncatedQuery(final Boolean isTruncated) {
     if (isTruncated == null) {
       return null;
     }
-    return term("isPreview", isTruncated);
+    return term(IS_PREVIEW, isTruncated);
   }
 }

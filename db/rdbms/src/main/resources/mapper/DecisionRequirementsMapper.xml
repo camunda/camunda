@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.DecisionRequirementsMapper">
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery">
+    SELECT COUNT(*)
+    FROM DECISION_REQUIREMENTS
+    <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT DECISION_REQUIREMENTS_KEY,
+    DECISION_REQUIREMENTS_ID,
+    NAME,
+    TENANT_ID,
+    VERSION,
+    <if test="resultConfig.includeXml">XML,</if>
+    <if test="!resultConfig.includeXml">NULL AS XML,</if>
+    RESOURCE_NAME
+    FROM DECISION_REQUIREMENTS
+    <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.decisionRequirementsKeys != null and !filter.decisionRequirementsKeys.isEmpty()">
+      AND DECISION_REQUIREMENTS_KEY IN
+      <foreach collection="filter.decisionRequirementsKeys" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.decisionRequirementsIds != null and !filter.decisionRequirementsIds.isEmpty()">
+      AND DECISION_REQUIREMENTS_ID IN
+      <foreach collection="filter.decisionRequirementsIds" item="value" open="(" separator=", "
+        close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.names != null and !filter.names.isEmpty()">
+      AND name IN
+      <foreach collection="filter.names" item="value" open="(" separator=", " close=")">#{value}
+      </foreach>
+    </if>
+    <if test="filter.versions != null and !filter.versions.isEmpty()">
+      AND VERSION IN
+      <foreach collection="filter.versions" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+    <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">
+        #{value}
+      </foreach>
+    </if>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.DecisionRequirementsEntity">
+    <constructor>
+      <idArg column="DECISION_REQUIREMENTS_KEY" javaType="java.lang.Long"/>
+      <arg column="DECISION_REQUIREMENTS_ID" javaType="java.lang.String"/>
+      <arg column="NAME" javaType="java.lang.String"/>
+      <arg column="VERSION" javaType="java.lang.Integer"/>
+      <arg column="RESOURCE_NAME" javaType="java.lang.String"/>
+      <arg column="XML" javaType="java.lang.String"/>
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel"
+    flushCache="true">
+    INSERT INTO DECISION_REQUIREMENTS (DECISION_REQUIREMENTS_KEY, DECISION_REQUIREMENTS_ID, NAME, TENANT_ID, VERSION, RESOURCE_NAME, XML)
+    VALUES (#{decisionRequirementsKey}, #{decisionRequirementsId}, #{name},
+            #{tenantId}, #{version}, #{resourceName}, #{xml})
+  </insert>
+</mapper>

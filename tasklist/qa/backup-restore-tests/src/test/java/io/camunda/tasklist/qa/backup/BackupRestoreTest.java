@@ -16,7 +16,7 @@ import io.camunda.tasklist.qa.backup.generator.BackupRestoreDataGenerator;
 import io.camunda.tasklist.qa.util.ContainerVersionsUtil;
 import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
+import io.camunda.webapps.backup.TakeBackupResponseDto;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.io.IOException;

@@ -18,7 +18,6 @@ import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -62,10 +61,9 @@ public class AddPermissionsTest {
     final var recordValue =
         RecordingExporter.authorizationRecords(AuthorizationIntent.PERMISSION_UPDATED)
             .withOwnerKey(ownerKey)
-            .limit(1)
-            .getFirst()
+            .limit(2)
+            .getLast()
             .getValue();
-    assertThat(recordValue.getAction()).isEqualTo(PermissionAction.ADD);
     assertThat(recordValue.getResourceType()).isEqualTo(AuthorizationResourceType.DEPLOYMENT);
     assertThat(recordValue.getOwnerType()).isEqualTo(AuthorizationOwnerType.USER);
     final var permission = recordValue.getPermissions().getFirst();

@@ -9,8 +9,12 @@ package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate.*;
 
+import io.camunda.exporter.cache.ExporterEntityCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.exporter.utils.ProcessCacheUtil;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.entities.operate.ErrorType;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
@@ -34,10 +38,15 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   private final Map<String, Record<IncidentRecordValue>> recordsMap = new HashMap<>();
   private final String indexName;
   private final boolean concurrencyMode;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
 
-  public IncidentHandler(final String indexName, final boolean concurrencyMode) {
+  public IncidentHandler(
+      final String indexName,
+      final boolean concurrencyMode,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.indexName = indexName;
     this.concurrencyMode = concurrencyMode;
+    this.processCache = processCache;
   }
 
   @Override
@@ -52,8 +61,8 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
 
   @Override
   public boolean handlesRecord(final Record<IncidentRecordValue> record) {
-    final String intentStr = record.getIntent().name();
-    return !intentStr.equals(IncidentIntent.RESOLVED.toString());
+    final var intent = record.getIntent();
+    return !intent.equals(IncidentIntent.RESOLVED);
   }
 
   @Override
@@ -101,6 +110,8 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
             OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC))
         .setTenantId(ExporterUtil.tenantOrDefault(recordValue.getTenantId()));
 
+    entity.setTreePath(buildTreePath(record));
+
     recordsMap.put(entity.getId(), record);
   }
 
@@ -125,6 +136,51 @@ public class IncidentHandler implements ExportHandler<IncidentEntity, IncidentRe
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private String buildTreePath(final Record<IncidentRecordValue> record) {
+
+    final IncidentRecordValue value = record.getValue();
+    final List<List<Long>> elementInstancePath = value.getElementInstancePath();
+    final List<Integer> callingElementPath = value.getCallingElementPath();
+    final List<Long> processDefinitionPath = value.getProcessDefinitionPath();
+
+    final Long processInstanceKey = Long.valueOf(value.getProcessInstanceKey());
+
+    // example of how the tree path is built when current instance is on the third level of calling
+    // hierarchy:
+    // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/
+    // PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>/
+    // PI_<currentProcessInstanceKey>/FN_<flowNodeId>/FNI_<flowNodeInstanceId>
+    final TreePath treePath = new TreePath();
+    for (int i = 0; i < elementInstancePath.size(); i++) {
+      final List<Long> keysWithinOnePI = elementInstancePath.get(i);
+      treePath.appendProcessInstance(keysWithinOnePI.get(0));
+      if (keysWithinOnePI.get(0).equals(processInstanceKey)) {
+        // when we reached current processInstanceKey, we build the last peace of tree path
+        treePath
+            .appendFlowNode(value.getElementId())
+            .appendFlowNodeInstance(value.getElementInstanceKey());
+        break;
+      } else {
+        final var callActivityId =
+            ProcessCacheUtil.getCallActivityId(
+                processCache, processDefinitionPath.get(i), callingElementPath.get(i));
+        if (callActivityId.isPresent()) {
+          treePath.appendFlowNode(callActivityId.get());
+        } else {
+          LOGGER.warn(
+              "No process found in cache. TreePath won't contain proper callActivityId. processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}",
+              processInstanceKey,
+              processDefinitionPath.get(i),
+              record.getKey());
+          treePath.appendFlowNode(String.valueOf(callingElementPath.get(i)));
+        }
+        treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.get(1)));
+      }
+    }
+
+    return treePath.toString();
   }
 
   private static Map<String, Object> getUpdateFieldsMapByIntent(

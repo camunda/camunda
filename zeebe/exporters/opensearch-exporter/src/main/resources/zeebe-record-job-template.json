@@ -81,6 +81,38 @@
             },
             "changedAttributes": {
               "type": "text"
+            },
+            "result": {
+              "properties": {
+                "denied": {
+                  "type": "boolean"
+                },
+                "correctedAttributes": {
+                  "type": "text"
+                },
+                "corrections": {
+                  "properties": {
+                    "assignee": {
+                      "type": "keyword"
+                    },
+                    "dueDate": {
+                      "type": "keyword"
+                    },
+                    "followUpDate": {
+                      "type": "keyword"
+                    },
+                    "candidateGroups": {
+                      "type": "text"
+                    },
+                    "candidateUsers": {
+                      "type": "text"
+                    },
+                    "priority": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
             }
           }
         }

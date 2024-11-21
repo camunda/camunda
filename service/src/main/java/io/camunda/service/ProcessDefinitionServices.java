@@ -7,15 +7,15 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearchQuery;
+
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.ProcessDefinitionQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -52,21 +52,20 @@ public class ProcessDefinitionServices
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {
-    final SearchQueryResult<ProcessDefinitionEntity> result =
-        search(
-            SearchQueryBuilders.processDefinitionSearchQuery()
-                .filter(f -> f.processDefinitionKeys(processDefinitionKey))
-                .build());
-    if (result.total() < 1) {
-      throw new NotFoundException(
-          String.format("Process definition with key %d not found", processDefinitionKey));
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          String.format(
-              "Found Process definition with key %d more than once", processDefinitionKey));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
+    final var result =
+        processDefinitionSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchProcessDefinitions(
+                processDefinitionSearchQuery(
+                    q -> q.filter(f -> f.processDefinitionKeys(processDefinitionKey))));
+    final var processDefinitionEntity =
+        getSingleResultOrThrow(result, processDefinitionKey, "Process definition");
+    final var authorization = Authorization.of(a -> a.processDefinition().read());
+    if (!securityContextProvider.isAuthorized(
+        processDefinitionEntity.processDefinitionId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
     }
+    return processDefinitionEntity;
   }
 
   public Optional<String> getProcessDefinitionXml(final Long processDefinitionKey) {

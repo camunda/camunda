@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -83,6 +84,11 @@ public final class JobClient {
 
   public JobClient withVariables(final Map<String, Object> variables) {
     jobRecord.setVariables(MsgPackUtil.asMsgPack(variables));
+    return this;
+  }
+
+  public JobClient withResult(final JobResult result) {
+    jobRecord.setResult(result);
     return this;
   }
 

@@ -22,16 +22,18 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import org.springframework.beans.factory.annotation.Qualifier;
+import java.util.List;
+import java.util.function.Consumer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
-import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
 @Configuration
 public class JacksonConfig {
-  @Bean("operateObjectMapper")
-  public ObjectMapper objectMapper(final OperateDateTimeFormatter dateTimeFormatter) {
+
+  @Bean("operateObjectMapperCustomizer")
+  public Consumer<Jackson2ObjectMapperBuilder> operateObjectMapperCustomizer(
+      final OperateDateTimeFormatter dateTimeFormatter) {
 
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(
@@ -42,22 +44,29 @@ public class JacksonConfig {
         new CustomOffsetDateTimeDeserializer(dateTimeFormatter.getGeneralDateTimeFormatter()));
     javaTimeModule.addDeserializer(Instant.class, new CustomInstantDeserializer());
 
-    return Jackson2ObjectMapperBuilder.json()
-        .modules(javaTimeModule, new Jdk8Module())
-        .featuresToDisable(
-            SerializationFeature.INDENT_OUTPUT,
-            SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
-            DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-            DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-            DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
-        .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS)
-        // make sure that Jackson uses setters and getters, not fields
-        .visibility(PropertyAccessor.GETTER, Visibility.ANY)
-        .visibility(PropertyAccessor.IS_GETTER, Visibility.ANY)
-        .visibility(PropertyAccessor.SETTER, Visibility.ANY)
-        .visibility(PropertyAccessor.FIELD, Visibility.NONE)
-        .visibility(PropertyAccessor.CREATOR, Visibility.ANY)
-        .build();
+    return builder ->
+        builder
+            .modulesToInstall(modules -> modules.addAll(List.of(javaTimeModule, new Jdk8Module())))
+            .featuresToDisable(
+                SerializationFeature.INDENT_OUTPUT,
+                SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+                DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+                DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+                DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+            .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS)
+            // make sure that Jackson uses setters and getters, not fields
+            .visibility(PropertyAccessor.GETTER, Visibility.ANY)
+            .visibility(PropertyAccessor.IS_GETTER, Visibility.ANY)
+            .visibility(PropertyAccessor.SETTER, Visibility.ANY)
+            .visibility(PropertyAccessor.FIELD, Visibility.NONE)
+            .visibility(PropertyAccessor.CREATOR, Visibility.ANY);
+  }
+
+  @Bean("operateObjectMapper")
+  public ObjectMapper objectMapper(final OperateDateTimeFormatter dateTimeFormatter) {
+    final var builder = Jackson2ObjectMapperBuilder.json();
+    operateObjectMapperCustomizer(dateTimeFormatter).accept(builder);
+    return builder.build();
   }
 
   // Some common components autowire the datetime formatter directly. To avoid potentially impacting
@@ -67,11 +76,5 @@ public class JacksonConfig {
   @Bean
   public DateTimeFormatter dateTimeFormatter(final OperateDateTimeFormatter dateTimeFormatter) {
     return dateTimeFormatter.getGeneralDateTimeFormatter();
-  }
-
-  @Bean
-  public MappingJackson2HttpMessageConverter mappingJackson2HttpMessageConverter(
-      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
-    return new MappingJackson2HttpMessageConverter(objectMapper);
   }
 }

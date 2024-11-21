@@ -7,10 +7,13 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.cache.ExporterEntityCache;
+import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
@@ -40,9 +43,12 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           UserTaskIntent.ASSIGNED,
           UserTaskIntent.UPDATED);
   private final String indexName;
+  private final ExporterEntityCache<String, CachedFormEntity> formCache;
 
-  public UserTaskHandler(final String indexName) {
+  public UserTaskHandler(
+      final String indexName, final ExporterEntityCache<String, CachedFormEntity> formCache) {
     this.indexName = indexName;
+    this.formCache = formCache;
   }
 
   @Override
@@ -192,7 +198,11 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   }
 
   private void createTaskEntity(final TaskEntity entity, final Record<UserTaskRecordValue> record) {
+    final var formKey =
+        record.getValue().getFormKey() > 0 ? String.valueOf(record.getValue().getFormKey()) : null;
+
     entity
+        .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
         .setId(String.valueOf(record.getValue().getElementInstanceKey()))
         .setKey(record.getKey())
         .setState(TaskState.CREATED)
@@ -208,10 +218,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
         .setBpmnProcessId(record.getValue().getBpmnProcessId())
         .setProcessDefinitionId(String.valueOf(record.getValue().getProcessDefinitionKey()))
         .setProcessDefinitionVersion(record.getValue().getProcessDefinitionVersion())
-        .setFormKey(
-            record.getValue().getFormKey() > 0
-                ? String.valueOf(record.getValue().getFormKey())
-                : null)
+        .setFormKey(!ExporterUtil.isEmpty(formKey) ? formKey : null)
         .setExternalFormReference(
             ExporterUtil.isEmpty(record.getValue().getExternalFormReference())
                 ? null
@@ -234,6 +241,12 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
     if (!record.getValue().getCandidateUsersList().isEmpty()) {
       entity.setCandidateUsers(record.getValue().getCandidateUsersList().toArray(new String[0]));
+    }
+
+    if (!ExporterUtil.isEmpty(formKey)) {
+      formCache
+          .get(formKey)
+          .ifPresent(c -> entity.setFormId(c.formId()).setFormVersion(c.formVersion()));
     }
   }
 }

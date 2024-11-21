@@ -19,10 +19,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.client.api.search.response.DecisionDefinitionType;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
+import io.camunda.zeebe.client.protocol.rest.BasicLongFilterProperty;
+import io.camunda.zeebe.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.DecisionInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceSearchQueryRequest;
 import io.camunda.zeebe.client.protocol.rest.DecisionInstanceStateEnum;
 import io.camunda.zeebe.client.util.ClientRestTest;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
 class SearchDecisionInstanceTest extends ClientRestTest {
@@ -69,11 +74,46 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         .isEqualTo(DecisionDefinitionTypeEnum.DECISION_TABLE);
     assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo(2L);
     assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo(3L);
-    assertThat(request.getFilter().getDecisionDefinitionKey()).isEqualTo(4L);
+    assertThat(request.getFilter().getDecisionDefinitionKey().get$Eq()).isEqualTo(4L);
     assertThat(request.getFilter().getDecisionDefinitionId()).isEqualTo("ddi");
     assertThat(request.getFilter().getDecisionDefinitionName()).isEqualTo("ddm");
     assertThat(request.getFilter().getDecisionDefinitionVersion()).isEqualTo(5);
     assertThat(request.getFilter().getTenantId()).isEqualTo("t");
+  }
+
+  @Test
+  void shouldSearchDecisionInstanceByDecisionDefinitionKeyLongProperty() {
+    // when
+    client
+        .newDecisionInstanceQuery()
+        .filter(f -> f.decisionDefinitionKey(b -> b.in(1L, 10L)))
+        .send()
+        .join();
+
+    // then
+    final DecisionInstanceSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
+    final DecisionInstanceFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final BasicLongFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
+    assertThat(decisionDefinitionKey).isNotNull();
+    assertThat(decisionDefinitionKey.get$In()).isEqualTo(Arrays.asList(1L, 10L));
+  }
+
+  @Test
+  void shouldSearchDecisionInstanceByEvaluationDateDateTimeProperty() {
+    // when
+    final OffsetDateTime now = OffsetDateTime.now();
+    client.newDecisionInstanceQuery().filter(f -> f.evaluationDate(b -> b.neq(now))).send().join();
+
+    // then
+    final DecisionInstanceSearchQueryRequest request =
+        gatewayService.getLastRequest(DecisionInstanceSearchQueryRequest.class);
+    final DecisionInstanceFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    final DateTimeFilterProperty evaluationDate = filter.getEvaluationDate();
+    assertThat(evaluationDate).isNotNull();
+    assertThat(evaluationDate.get$Neq()).isEqualTo(now.toString());
   }
 
   @Test

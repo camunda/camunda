@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class OperateOpensearchProperties extends OpensearchProperties {
 
-  public static final String DEFAULT_INDEX_PREFIX = "operate";
+  public static final String DEFAULT_INDEX_PREFIX = "";
   private static final int DEFAULT_NUMBER_OF_SHARDS = 1;
   private static final int DEFAULT_NUMBER_OF_REPLICAS = 0;
   private static final String DEFAULT_REFRESH_INTERVAL = "1s";
@@ -27,7 +27,7 @@ public class OperateOpensearchProperties extends OpensearchProperties {
     return indexPrefix;
   }
 
-  public void setIndexPrefix(String indexPrefix) {
+  public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
   }
 
@@ -55,7 +55,7 @@ public class OperateOpensearchProperties extends OpensearchProperties {
     return refreshInterval;
   }
 
-  public void setRefreshInterval(String refreshInterval) {
+  public void setRefreshInterval(final String refreshInterval) {
     this.refreshInterval = refreshInterval;
   }
 
@@ -63,7 +63,7 @@ public class OperateOpensearchProperties extends OpensearchProperties {
     return numberOfShardsForIndices;
   }
 
-  public void setNumberOfShardsForIndices(Map<String, Integer> numberOfShardsForIndices) {
+  public void setNumberOfShardsForIndices(final Map<String, Integer> numberOfShardsForIndices) {
     this.numberOfShardsForIndices = numberOfShardsForIndices;
   }
 
@@ -71,7 +71,7 @@ public class OperateOpensearchProperties extends OpensearchProperties {
     return numberOfReplicasForIndices;
   }
 
-  public void setNumberOfReplicasForIndices(Map<String, Integer> numberOfReplicasForIndices) {
+  public void setNumberOfReplicasForIndices(final Map<String, Integer> numberOfReplicasForIndices) {
     this.numberOfReplicasForIndices = numberOfReplicasForIndices;
   }
 }

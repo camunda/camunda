@@ -14,26 +14,20 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import io.camunda.zeebe.protocol.record.value.PermissionAction;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class BrokerAuthorizationPatchRequest extends BrokerExecuteCommand<AuthorizationRecord> {
   private final AuthorizationRecord requestDto = new AuthorizationRecord();
 
-  public BrokerAuthorizationPatchRequest() {
-    super(ValueType.AUTHORIZATION, AuthorizationIntent.UPDATE_PERMISSION);
+  public BrokerAuthorizationPatchRequest(final AuthorizationIntent intent) {
+    super(ValueType.AUTHORIZATION, intent);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
   public BrokerAuthorizationPatchRequest setOwnerKey(final Long ownerKey) {
     requestDto.setOwnerKey(ownerKey);
-    return this;
-  }
-
-  public BrokerAuthorizationPatchRequest setAction(final PermissionAction action) {
-    requestDto.setAction(action);
     return this;
   }
 
@@ -44,7 +38,7 @@ public class BrokerAuthorizationPatchRequest extends BrokerExecuteCommand<Author
   }
 
   public BrokerAuthorizationPatchRequest addPermissions(
-      final PermissionType permissionType, final List<String> resourceIds) {
+      final PermissionType permissionType, final Set<String> resourceIds) {
     requestDto.addPermission(
         new Permission().setPermissionType(permissionType).addResourceIds(resourceIds));
     return this;

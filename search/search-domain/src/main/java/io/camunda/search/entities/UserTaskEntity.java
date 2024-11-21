@@ -8,25 +8,26 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final record UserTaskEntity(
-    Long key,
-    String flowNodeBpmnId,
-    String bpmnProcessId,
-    String creationTime,
-    String completionTime,
+    Long userTaskKey,
+    String elementId,
+    String processDefinitionId,
+    OffsetDateTime creationDate,
+    OffsetDateTime completionDate,
     String assignee,
     UserTaskState state,
     Long formKey,
-    Long processDefinitionId, // equivalent to processKey
-    Long processInstanceId, // equivalent to processInstanceKey
-    Long flowNodeInstanceId,
+    Long processDefinitionKey,
+    Long processInstanceKey,
+    Long elementInstanceKey,
     String tenantId,
-    String dueDate,
-    String followUpDate,
+    OffsetDateTime dueDate,
+    OffsetDateTime followUpDate,
     List<String> candidateGroups,
     List<String> candidateUsers,
     String externalFormReference,
