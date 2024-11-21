@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -92,31 +93,40 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
     testProcessRetrieval("shouldNotReturn", 0);
   }
 
-  private String longestCommonSubstring(
-      final String firstProcessId, final String secondProcessId, final String thirdProcessId) {
+  private String longestCommonSubstring(final String... strings) {
+
+    final int numStrings = strings.length;
+    final int[] stringLengths = Arrays.stream(strings).mapToInt(String::length).toArray();
     int maxLength = 0;
     int endIndex = 0;
 
-    final int[][][] charIndex =
-        new int[firstProcessId.length() + 1][secondProcessId.length() + 1]
-            [thirdProcessId.length() + 1];
+    final int[][] stringIndices = new int[stringLengths[0] + 1][numStrings];
 
-    for (int i = 1; i <= firstProcessId.length(); i++) {
-      for (int j = 1; j <= secondProcessId.length(); j++) {
-        for (int k = 1; k <= thirdProcessId.length(); k++) {
-          if (firstProcessId.charAt(i - 1) == secondProcessId.charAt(j - 1)
-              && firstProcessId.charAt(i - 1) == thirdProcessId.charAt(k - 1)) {
-            charIndex[i][j][k] = charIndex[i - 1][j - 1][k - 1] + 1;
-            if (charIndex[i][j][k] > maxLength) {
-              maxLength = charIndex[i][j][k];
-              endIndex = i;
-            }
-          }
+    for (int i = 1; i <= stringLengths[0]; i++) {
+      final boolean allMatch = stringsMatchAtChar(strings, numStrings, i, stringLengths);
+      if (allMatch) {
+        stringIndices[i][0] = stringIndices[i - 1][0] + 1;
+        if (stringIndices[i][0] > maxLength) {
+          maxLength = stringIndices[i][0];
+          endIndex = i;
         }
+      } else {
+        stringIndices[i][0] = 0;
       }
     }
 
-    return firstProcessId.substring(endIndex - maxLength, endIndex);
+    return strings[0].substring(endIndex - maxLength, endIndex);
+  }
+
+  private static boolean stringsMatchAtChar(
+      final String[] strings, final int numStrings, final int index, final int[] stringLengths) {
+    for (int j = 1; j < numStrings; j++) {
+      if (index > stringLengths[j]
+          || strings[0].charAt(index - 1) != strings[j].charAt(index - 1)) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private GraphQLResponse testProcessRetrieval(final String query, final int expectedCount)
