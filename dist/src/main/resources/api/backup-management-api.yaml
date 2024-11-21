@@ -147,7 +147,7 @@ paths:
           description: Backup repository is not configured.
           $ref: '#/components/responses/Error'
         '500':
-          description: Elasticsearch is not accessible, the request can be retried when it is back.
+          description: All other errors, e.g. ES returned error response when attempting to create a snapshot.
           $ref: '#/components/responses/Error'
         '502':
           description: Elasticsearch is not accessible, the request can be retried when it is back.
