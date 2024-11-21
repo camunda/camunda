@@ -19,16 +19,16 @@ public final class NetworkCfg implements ConfigurationEntry {
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final DataSize DEFAULT_MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4);
-  private static final int DEFAULT_BROKER_SO_SNDBUF = 1024;
-  private static final int DEFAULT_BROKER_SO_RCVBUF = 1024;
+  private static final DataSize DEFAULT_BROKER_SOSNDBUF = DataSize.ofMegabytes(1);
+  private static final DataSize DEFAULT_BROKER_SORCVBUF = DataSize.ofMegabytes(1);
 
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
-  private int soSndbuf = DEFAULT_BROKER_SO_SNDBUF;
-  private int soRcvbuf = DEFAULT_BROKER_SO_RCVBUF;
+  private DataSize soSndbuf = DEFAULT_BROKER_SOSNDBUF;
+  private DataSize soRcvbuf = DEFAULT_BROKER_SORCVBUF;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -82,6 +82,7 @@ public final class NetworkCfg implements ConfigurationEntry {
   }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   public Duration getHeartbeatTimeout() {
     return heartbeatTimeout;
   }
@@ -98,18 +99,21 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.heartbeatInterval = heartbeatInterval;
 =======
   public int getSoSndbuf() {
+=======
+  public DataSize getSoSndbuf() {
+>>>>>>> fbaf5df281d (refactor: change type of new parameters)
     return soSndbuf;
   }
 
-  public void setSoSndbuf(final int soSndbuf) {
+  public void setSoSndbuf(final DataSize soSndbuf) {
     this.soSndbuf = soSndbuf;
   }
 
-  public int getSoRcvbuf() {
+  public DataSize getSoRcvbuf() {
     return soRcvbuf;
   }
 
-  public void setSoRcvbuf(final int soRcvbuf) {
+  public void setSoRcvbuf(final DataSize soRcvbuf) {
     this.soRcvbuf = soRcvbuf;
 >>>>>>> fccda7f6c48 (feat: added socket buffers size parameters to config)
   }
