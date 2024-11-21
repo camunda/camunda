@@ -162,29 +162,53 @@ public class IncidentHandlerTest {
     underTest.updateEntity(incidentRecord, incidentEntity);
 
     // then
-    assertThat(incidentEntity.getId()).isEqualTo(String.valueOf(recordKey));
-    assertThat(incidentEntity.getKey()).isEqualTo(123L);
-    assertThat(incidentEntity.getPartitionId()).isEqualTo(incidentRecord.getPartitionId());
-    assertThat(incidentEntity.getPosition()).isEqualTo(incidentRecord.getPosition());
-    assertThat(incidentEntity.getFlowNodeId()).isEqualTo(incidentRecordValue.getElementId());
-    assertThat(incidentEntity.getErrorMessage())
-        .isEqualTo(ExporterUtil.trimWhitespace(incidentRecordValue.getErrorMessage()));
-    assertThat(incidentEntity.getErrorType().name())
-        .isEqualTo(incidentRecordValue.getErrorType().name());
-    assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(incidentRecordValue.getBpmnProcessId());
-    assertThat(incidentEntity.getProcessDefinitionKey())
-        .isEqualTo(incidentRecordValue.getProcessDefinitionKey());
-    assertThat(incidentEntity.getJobKey()).isEqualTo(incidentRecordValue.getJobKey());
-    assertThat(incidentEntity.getCreationTime())
-        .isEqualTo(
-            OffsetDateTime.ofInstant(
-                Instant.ofEpochMilli(incidentRecord.getTimestamp()), ZoneOffset.UTC));
-    assertThat(incidentEntity.getErrorMessage())
-        .isEqualTo(ExporterUtil.trimWhitespace(incidentRecordValue.getErrorMessage()));
-    assertThat(incidentEntity.getFlowNodeInstanceKey())
-        .isEqualTo(incidentRecordValue.getElementInstanceKey());
-    assertThat(incidentEntity.getErrorMessageHash())
-        .isEqualTo(incidentRecordValue.getErrorMessage().hashCode());
+    assertEntityFields(incidentEntity, recordKey, incidentRecord, incidentRecordValue);
+  }
+
+  @Test
+  void shouldUpdateEntityFromFollowUpRecord() {
+    // given
+    final long recordKey = 123L;
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r ->
+                r.withIntent(IncidentIntent.CREATED)
+                    .withValue(incidentRecordValue)
+                    .withKey(recordKey)
+                    .withPartitionId(2)
+                    .withPosition(100)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    final IncidentEntity incidentEntity = new IncidentEntity();
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    final IncidentRecordValue migratedIncidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .build();
+    final Record<IncidentRecordValue> migratedIncidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r ->
+                r.withIntent(IncidentIntent.MIGRATED)
+                    .withValue(migratedIncidentRecordValue)
+                    .withKey(recordKey)
+                    .withPartitionId(2)
+                    .withPosition(123)
+                    .withTimestamp(System.currentTimeMillis()));
+
+    // when
+    underTest.updateEntity(migratedIncidentRecord, incidentEntity);
+
+    // then
+    assertEntityFields(
+        incidentEntity, recordKey, migratedIncidentRecord, migratedIncidentRecordValue);
   }
 
   @Test
@@ -391,5 +415,35 @@ public class IncidentHandlerTest {
         BPMN_PROCESS_ID,
         FLOW_NODE_ID,
         FLOW_NODE_ID);
+  }
+
+  private static void assertEntityFields(
+      final IncidentEntity incidentEntity,
+      final long recordKey,
+      final Record<IncidentRecordValue> incidentRecord,
+      final IncidentRecordValue incidentRecordValue) {
+    assertThat(incidentEntity.getId()).isEqualTo(String.valueOf(recordKey));
+    assertThat(incidentEntity.getKey()).isEqualTo(123L);
+    assertThat(incidentEntity.getPartitionId()).isEqualTo(incidentRecord.getPartitionId());
+    assertThat(incidentEntity.getPosition()).isEqualTo(incidentRecord.getPosition());
+    assertThat(incidentEntity.getFlowNodeId()).isEqualTo(incidentRecordValue.getElementId());
+    assertThat(incidentEntity.getErrorMessage())
+        .isEqualTo(ExporterUtil.trimWhitespace(incidentRecordValue.getErrorMessage()));
+    assertThat(incidentEntity.getErrorType().name())
+        .isEqualTo(incidentRecordValue.getErrorType().name());
+    assertThat(incidentEntity.getBpmnProcessId()).isEqualTo(incidentRecordValue.getBpmnProcessId());
+    assertThat(incidentEntity.getProcessDefinitionKey())
+        .isEqualTo(incidentRecordValue.getProcessDefinitionKey());
+    assertThat(incidentEntity.getJobKey()).isEqualTo(incidentRecordValue.getJobKey());
+    assertThat(incidentEntity.getCreationTime())
+        .isEqualTo(
+            OffsetDateTime.ofInstant(
+                Instant.ofEpochMilli(incidentRecord.getTimestamp()), ZoneOffset.UTC));
+    assertThat(incidentEntity.getErrorMessage())
+        .isEqualTo(ExporterUtil.trimWhitespace(incidentRecordValue.getErrorMessage()));
+    assertThat(incidentEntity.getFlowNodeInstanceKey())
+        .isEqualTo(incidentRecordValue.getElementInstanceKey());
+    assertThat(incidentEntity.getErrorMessageHash())
+        .isEqualTo(incidentRecordValue.getErrorMessage().hashCode());
   }
 }
