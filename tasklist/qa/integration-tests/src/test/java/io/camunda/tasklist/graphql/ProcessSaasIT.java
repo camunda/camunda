@@ -13,6 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +26,7 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessSaasIT.class);
 
   @DynamicPropertySource
-  static void registerProperties(DynamicPropertyRegistry registry) {
+  static void registerProperties(final DynamicPropertyRegistry registry) {
     registry.add("camunda.tasklist.cloud.clusterId", () -> "449ac2ad-d3c6-4c73-9c68-7752e39ae616");
     registry.add("camunda.tasklist.client.clusterId", () -> "449ac2ad-d3c6-4c73-9c68-7752e39ae616");
   }
@@ -51,35 +53,74 @@ public class ProcessSaasIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void shouldReturnAllProcessesBasedOnQueries() throws IOException {
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("simple_process_2.bpmn").waitUntil().processIsDeployed();
     tester.deployProcess("userTaskForm.bpmn").waitUntil().processIsDeployed();
+    final var response = tester.getAllProcesses("");
+    final List<Map<String, Object>> processes =
+        (List<Map<String, Object>>) response.getRaw("$.data.processes");
+    final List<String> processIds = processes.stream().map(p -> (String) p.get("id")).toList();
 
+    assertEquals(3, processIds.size());
     LOGGER.info("Should return all processes based on empty search query");
     testProcessRetrieval("", 3);
 
-    LOGGER.info("Should return all process based on Process named query");
+    LOGGER.info("Should return process based on Process named query");
     final GraphQLResponse responseProcessNamed = testProcessRetrieval("iMpLe", 1);
     assertEquals("Simple process", responseProcessNamed.get("$.data.processes[0].name"));
 
-    LOGGER.info("Should return all process based on Process definition id query");
+    LOGGER.info("Should return process based on Process definition id query");
     final GraphQLResponse responseProcessDefinition = testProcessRetrieval("FoRm", 1);
     assertEquals(
         "userTaskFormProcess",
         responseProcessDefinition.get("$.data.processes[0].processDefinitionId"));
 
-    LOGGER.info("Should return all process based on Process id query");
-    testProcessRetrieval("2251799813685250", 1);
+    LOGGER.info("Should return process based on Process id query");
+    for (final String processId : processIds) {
+      final GraphQLResponse processResponse = testProcessRetrieval(processId, 1);
+      assertEquals(processId, processResponse.get("$.data.processes[0].id"));
+    }
 
-    LOGGER.info("Should return all process based on partial Process id query");
-    testProcessRetrieval("799813685", 0);
+    LOGGER.info("Should not return all process based on partial Process id query");
+    final String commonProcessSubstring =
+        longestCommonSubstring(processIds.get(0), processIds.get(1), processIds.get(2));
+    testProcessRetrieval(commonProcessSubstring, 0);
 
     LOGGER.info("Should not return");
     testProcessRetrieval("shouldNotReturn", 0);
   }
 
-  private GraphQLResponse testProcessRetrieval(String query, int expectedCount) throws IOException {
+  private String longestCommonSubstring(
+      final String firstProcessId, final String secondProcessId, final String thirdProcessId) {
+    int maxLength = 0;
+    int endIndex = 0;
+
+    final int[][][] charIndex =
+        new int[firstProcessId.length() + 1][secondProcessId.length() + 1]
+            [thirdProcessId.length() + 1];
+
+    for (int i = 1; i <= firstProcessId.length(); i++) {
+      for (int j = 1; j <= secondProcessId.length(); j++) {
+        for (int k = 1; k <= thirdProcessId.length(); k++) {
+          if (firstProcessId.charAt(i - 1) == secondProcessId.charAt(j - 1)
+              && firstProcessId.charAt(i - 1) == thirdProcessId.charAt(k - 1)) {
+            charIndex[i][j][k] = charIndex[i - 1][j - 1][k - 1] + 1;
+            if (charIndex[i][j][k] > maxLength) {
+              maxLength = charIndex[i][j][k];
+              endIndex = i;
+            }
+          }
+        }
+      }
+    }
+
+    return firstProcessId.substring(endIndex - maxLength, endIndex);
+  }
+
+  private GraphQLResponse testProcessRetrieval(final String query, final int expectedCount)
+      throws IOException {
     final GraphQLResponse response = tester.getAllProcesses(query);
     assertTrue(response.isOk());
     assertEquals(String.valueOf(expectedCount), response.get("$.data.processes.length()"));
