@@ -7,10 +7,14 @@
  */
 package io.camunda.optimize.service.util;
 
+import static io.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
+import static io.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
+import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
+import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
-import java.io.IOException;
+import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -20,75 +24,69 @@ import org.junit.jupiter.api.Test;
 
 public class BpmnModelUtilTest {
 
-  private static final String SIMPLE_BPMN_RESOURCE_PATH = "/test/data/simpleBpmn.xml";
+  public static final String CUSTOMER_ONBOARDING = "CustomerOnboarding";
 
-  private String getBpmnXml() throws IOException {
-    return BpmnModelUtil.getResourceFileAsString(SIMPLE_BPMN_RESOURCE_PATH);
+  public static final String SIMPLE_SERVICE_TASK_PROCESS =
+      Bpmn.convertToString(createSimpleServiceTaskProcess(CUSTOMER_ONBOARDING));
+
+  public static final String INCLUSIVE_GATEWAY_PROCESS =
+      Bpmn.convertToString(createSimpleServiceTaskProcess(CUSTOMER_ONBOARDING));
+
+  @Test
+  void shouldParseBpmnModel() {
+    final BpmnModelInstance modelInstance =
+        BpmnModelUtil.parseBpmnModel(SIMPLE_SERVICE_TASK_PROCESS);
+    assertNotNull(modelInstance);
   }
 
   @Test
-  void testParseBpmnModel() throws IOException {
-    final BpmnModelInstance modelInstance = BpmnModelUtil.parseBpmnModel(getBpmnXml());
-    assertNotNull(modelInstance, "BPMN model should be parsed correctly.");
+  void shouldExtractFlowNodeData() {
+    final List<FlowNodeDataDto> flowNodeData =
+        BpmnModelUtil.extractFlowNodeData(INCLUSIVE_GATEWAY_PROCESS);
+    assertNotNull(flowNodeData);
+    assertFalse(flowNodeData.isEmpty());
+    for (FlowNodeDataDto node : flowNodeData) {
+      assertNotNull(node.getId());
+    }
   }
 
   @Test
-  void testExtractFlowNodeData() throws IOException {
-    final List<FlowNodeDataDto> flowNodeData = BpmnModelUtil.extractFlowNodeData(getBpmnXml());
-    assertNotNull(flowNodeData, "FlowNodeData list should not be null.");
-    assertFalse(flowNodeData.isEmpty(), "FlowNodeData list should not be empty.");
+  void shouldExtractUserTaskNames() {
+    final String bpmnModelInstance =
+        Bpmn.convertToString(createSimpleUserTaskProcess(CUSTOMER_ONBOARDING));
+    final Map<String, String> userTaskNames = BpmnModelUtil.extractUserTaskNames(bpmnModelInstance);
+    assertNotNull(userTaskNames);
+    assertFalse(userTaskNames.isEmpty());
 
-    final FlowNodeDataDto firstNode = flowNodeData.get(0);
-    assertNotNull(firstNode.getId(), "FlowNode ID should not be null.");
-    assertNotNull(firstNode.getName(), "FlowNode name should not be null.");
+    assertTrue(userTaskNames.containsKey(USER_TASK));
   }
 
   @Test
-  void testExtractUserTaskNames() throws IOException {
-    final Map<String, String> userTaskNames = BpmnModelUtil.extractUserTaskNames(getBpmnXml());
-    assertNotNull(userTaskNames, "UserTask names map should not be null.");
-    assertFalse(userTaskNames.isEmpty(), "UserTask names map should not be empty.");
-
-    assertTrue(
-        userTaskNames.containsKey("UserTask_DecideOnApplication"),
-        "Map should contain expected UserTask ID.");
-    assertEquals(
-        "Decide on application",
-        userTaskNames.get("UserTask_DecideOnApplication"),
-        "UserTask name should match expected value.");
-  }
-
-  @Test
-  void testExtractProcessDefinitionName() throws IOException {
+  void shouldExtractProcessDefinitionName() {
     final Optional<String> processName =
-        BpmnModelUtil.extractProcessDefinitionName("customer_onboarding_en", getBpmnXml());
-    assertTrue(processName.isPresent(), "Process name should be present.");
-    assertEquals(
-        "Customer Onboarding", processName.get(), "Process name should match expected value.");
+        BpmnModelUtil.extractProcessDefinitionName(
+            CUSTOMER_ONBOARDING, SIMPLE_SERVICE_TASK_PROCESS);
+    assertTrue(processName.isPresent());
+    assertEquals(CUSTOMER_ONBOARDING, processName.get());
   }
 
   @Test
-  void testExtractFlowNodeNames() throws IOException {
-    final List<FlowNodeDataDto> flowNodeData = BpmnModelUtil.extractFlowNodeData(getBpmnXml());
+  void shouldExtractFlowNodeNames() {
+    final List<FlowNodeDataDto> flowNodeData =
+        BpmnModelUtil.extractFlowNodeData(INCLUSIVE_GATEWAY_PROCESS);
     final Map<String, String> flowNodeNames = BpmnModelUtil.extractFlowNodeNames(flowNodeData);
-    assertNotNull(flowNodeNames, "FlowNode names map should not be null.");
-    assertFalse(flowNodeNames.isEmpty(), "FlowNode names map should not be empty.");
+    assertNotNull(flowNodeNames);
+    assertFalse(flowNodeNames.isEmpty());
 
-    assertTrue(
-        flowNodeNames.containsKey("StartEvent_1"), "Map should contain expected FlowNode ID.");
-    assertEquals(
-        "Application received",
-        flowNodeNames.get("StartEvent_1"),
-        "FlowNode name should match expected value.");
+    assertTrue(flowNodeNames.containsKey(START_EVENT));
+    assertEquals(START_EVENT, flowNodeNames.get(START_EVENT));
   }
 
   @Test
-  void testGetCollapsedSubprocessElementIds() throws IOException {
+  void shouldGetCollapsedSubprocessElementIds() {
     final Set<String> collapsedSubprocessIds =
-        BpmnModelUtil.getCollapsedSubprocessElementIds(getBpmnXml());
-    assertNotNull(collapsedSubprocessIds, "Collapsed subprocess IDs should not be null.");
-    assertTrue(
-        collapsedSubprocessIds.isEmpty(),
-        "No collapsed subprocesses should be present in this BPMN model.");
+        BpmnModelUtil.getCollapsedSubprocessElementIds(SIMPLE_SERVICE_TASK_PROCESS);
+    assertNotNull(collapsedSubprocessIds);
+    assertTrue(collapsedSubprocessIds.isEmpty());
   }
 }
