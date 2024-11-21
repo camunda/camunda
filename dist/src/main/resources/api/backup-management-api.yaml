@@ -161,7 +161,7 @@ paths:
       responses:
         '200':
           description: OK
-          $ref: '#/components/responses/HistoryBackupDetail'
+          $ref: '#/components/responses/HistoryBackupInfo'
         '404':
           description: Backup with given ID does not exist.
           $ref: '#/components/responses/Error'
@@ -477,7 +477,7 @@ components:
         - startTime
         - failures
 
-    HistoryBackupList:
+    HistoryBackupInfo:
       type: object
       properties:
         backupId:
@@ -496,3 +496,7 @@ components:
         - state
         - details
 
+    HistoryBackupList:
+      type: array
+      items:
+        $ref: '#/components/schemas/HistoryBackupInfo'
