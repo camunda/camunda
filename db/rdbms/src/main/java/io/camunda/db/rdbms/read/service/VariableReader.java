@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import io.camunda.db.rdbms.read.domain.VariableDbQuery;
 import io.camunda.db.rdbms.sql.VariableMapper;
-import io.camunda.db.rdbms.sql.VariableMapper.VariableSearchColumn;
+import io.camunda.db.rdbms.sql.columns.VariableSearchColumn;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.filter.VariableFilter.Builder;
 import io.camunda.search.page.SearchQueryPage;
@@ -27,7 +27,7 @@ public class VariableReader extends AbstractEntityReader<VariableEntity> {
   private final VariableMapper variableMapper;
 
   public VariableReader(final VariableMapper variableMapper) {
-    super(VariableMapper.VariableSearchColumn::findByProperty);
+    super(VariableSearchColumn::findByProperty);
     this.variableMapper = variableMapper;
   }
 

@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavio
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
+import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor;
+import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructionStarter;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCompleteProcessor;
@@ -395,6 +397,14 @@ public final class EngineProcessors {
         ValueType.DEPLOYMENT_DISTRIBUTION,
         DeploymentDistributionIntent.COMPLETE,
         completeDeploymentDistributionProcessor);
+
+    typedRecordProcessors.onCommand(
+        ValueType.DEPLOYMENT,
+        DeploymentIntent.RECONSTRUCT,
+        new DeploymentReconstructProcessor(keyGenerator, writers));
+
+    typedRecordProcessors.withListener(
+        new DeploymentReconstructionStarter(processingState.getDeploymentState()));
   }
 
   private static void addIncidentProcessors(

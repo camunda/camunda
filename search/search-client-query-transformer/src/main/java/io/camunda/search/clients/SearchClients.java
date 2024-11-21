@@ -156,7 +156,8 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, FlowNodeInstanceEntity.class);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity.class);
   }
 
   @Override

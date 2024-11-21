@@ -11,7 +11,6 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.DraftTaskVariableEntity;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.entities.TaskState;
@@ -35,6 +34,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -108,7 +108,7 @@ public class VariableService {
               if (!variableEntity.getFullValue().equals(draftVariable.getValue())) {
                 toPersist.put(
                     draftVariable.getName(),
-                    DraftTaskVariableEntity.createFrom(
+                    VariableService.createDraftVariableFrom(
                         // draft variable will have the same Id as original variable
                         variableEntity.getId(),
                         task,
@@ -119,7 +119,7 @@ public class VariableService {
             } else {
               toPersist.put(
                   draftVariable.getName(),
-                  DraftTaskVariableEntity.createFrom(
+                  VariableService.createDraftVariableFrom(
                       task,
                       draftVariable.getName(),
                       draftVariable.getValue(),
@@ -573,5 +573,55 @@ public class VariableService {
    */
   public void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId) {
     listViewStore.removeVariableByFlowNodeInstanceId(flowNodeInstanceId);
+  }
+
+  public static String getDraftVariableId(final String idPrefix, final String name) {
+    return String.format("%s-%s", idPrefix, name);
+  }
+
+  private static DraftTaskVariableEntity createDraftVariableFrom(
+      final TaskEntity taskEntity,
+      final String name,
+      final String value,
+      final int variableSizeThreshold) {
+    return completeVariableSetup(
+        new DraftTaskVariableEntity().setId(getDraftVariableId(taskEntity.getId(), name)),
+        taskEntity,
+        name,
+        value,
+        variableSizeThreshold);
+  }
+
+  private static DraftTaskVariableEntity createDraftVariableFrom(
+      final String draftVariableId,
+      final TaskEntity taskEntity,
+      final String name,
+      final String value,
+      final int variableSizeThreshold) {
+    return completeVariableSetup(
+        new DraftTaskVariableEntity().setId(draftVariableId),
+        taskEntity,
+        name,
+        value,
+        variableSizeThreshold);
+  }
+
+  private static DraftTaskVariableEntity completeVariableSetup(
+      final DraftTaskVariableEntity entity,
+      final TaskEntity taskEntity,
+      final String name,
+      final String value,
+      final int variableSizeThreshold) {
+
+    entity.setTaskId(taskEntity.getId()).setName(name).setTenantId(taskEntity.getTenantId());
+    if (value.length() > variableSizeThreshold) {
+      // store preview
+      entity.setValue(value.substring(0, variableSizeThreshold));
+      entity.setIsPreview(true);
+    } else {
+      entity.setValue(value);
+    }
+    entity.setFullValue(value);
+    return entity;
   }
 }

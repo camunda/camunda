@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
+import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
@@ -75,6 +77,18 @@ public class MyBatisConfiguration {
 
     factoryBean.setConfigurationProperties(p);
     return factoryBean.getObject();
+  }
+
+  @Bean
+  public MapperFactoryBean<DecisionDefinitionMapper> decisionDefinitionMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, DecisionDefinitionMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<DecisionRequirementsMapper> decisionRequirementsMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, DecisionRequirementsMapper.class);
   }
 
   @Bean

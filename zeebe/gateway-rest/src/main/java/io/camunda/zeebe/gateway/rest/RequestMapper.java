@@ -49,6 +49,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
@@ -75,11 +76,13 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
+import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
@@ -639,6 +642,21 @@ public class RequestMapper {
                 tenantId));
   }
 
+  public static Either<ProblemDetail, TenantDTO> toTenantCreateDto(
+      final TenantCreateRequest tenantCreateRequest) {
+    return getResult(
+        TenantRequestValidator.validateTenantCreateRequest(tenantCreateRequest),
+        () ->
+            new TenantDTO(null, tenantCreateRequest.getTenantId(), tenantCreateRequest.getName()));
+  }
+
+  public static Either<ProblemDetail, TenantDTO> toTenantUpdateDto(
+      final Long tenantKey, final TenantCreateRequest tenantCreateRequest) {
+    return getResult(
+        TenantRequestValidator.validateTenantUpdateRequest(tenantCreateRequest),
+        () -> new TenantDTO(tenantKey, null, tenantCreateRequest.getName()));
+  }
+
   private static List<ProcessInstanceModificationActivateInstruction>
       mapProcessInstanceModificationActivateInstruction(
           final List<ModifyProcessInstanceActivateInstruction> instructions) {
@@ -746,4 +764,6 @@ public class RequestMapper {
   public record CreateRoleRequest(String name) {}
 
   public record UpdateRoleRequest(long roleKey, String name) {}
+
+  public record CreateTenantRequest(String tenantId, String name) {}
 }
