@@ -230,6 +230,17 @@ public final class BpmnJobBehavior {
         taskHeaders);
   }
 
+  public void createTaskListenerJob(
+      final TaskListener listener,
+      final BpmnElementContext context,
+      final UserTaskRecord taskRecordValue) {
+    evaluateTaskListenerJobExpressions(listener.getJobWorkerProperties(), context, taskRecordValue)
+        .thenDo(
+            listenerJobProperties ->
+                createNewTaskListenerJob(context, listenerJobProperties, listener, taskRecordValue))
+        .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+  }
+
   private static JobListenerEventType fromExecutionListenerEventType(
       final ZeebeExecutionListenerEventType eventType) {
     return switch (eventType) {
