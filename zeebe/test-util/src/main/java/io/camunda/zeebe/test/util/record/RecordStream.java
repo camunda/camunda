@@ -132,4 +132,9 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
     return new UserRecordStream(
         filter(r -> r.getValueType() == ValueType.USER).map(Record.class::cast));
   }
+
+  public IdentitySetupRecordStream identitySetupRecords() {
+    return new IdentitySetupRecordStream(
+        filter(r -> r.getValueType() == ValueType.IDENTITY_SETUP).map(Record.class::cast));
+  }
 }
