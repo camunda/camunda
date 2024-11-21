@@ -8,8 +8,8 @@
 package io.camunda.search.clients.transformers.auth;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex.DECISION_REQUIREMENTS_ID;
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex.NAME;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -17,16 +17,15 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 
-public class DecisionRequirementsAuthorizationQueryTransformer
-    implements AuthorizationQueryTransformer {
+public class RoleAuthorizationQueryTransformer implements AuthorizationQueryTransformer {
 
   @Override
   public SearchQuery toSearchQuery(
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final List<String> resourceKeys) {
-    if (resourceType == DECISION_REQUIREMENTS_DEFINITION && permissionType == READ) {
-      return stringTerms(DECISION_REQUIREMENTS_ID, resourceKeys);
+    if (resourceType == ROLE && permissionType == READ) {
+      return stringTerms(NAME, resourceKeys);
     }
     throw new IllegalArgumentException(
         "Unsupported authorizations with resource:%s and permission:%s: "

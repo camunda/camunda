@@ -7,6 +7,8 @@
  */
 package io.camunda.search.clients.transformers.auth;
 
+import static java.util.Map.entry;
+
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -14,6 +16,7 @@ import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
@@ -23,27 +26,26 @@ import java.util.Map;
 public final class AuthorizationQueryTransformers {
   private static final Map<Class<? extends SearchQueryBase>, AuthorizationQueryTransformer>
       TRANSFORMERS =
-          Map.of(
-              DecisionDefinitionQuery.class,
-              new DecisionDefinitionAuthorizationQueryTransformer(),
-              DecisionInstanceQuery.class,
-              new DecisionInstanceAuthorizationQueryTransformer(),
-              DecisionRequirementsQuery.class,
-              new DecisionRequirementsAuthorizationQueryTransformer(),
-              FlowNodeInstanceQuery.class,
-              new FlowNodeInstanceAuthorizationQueryTransformer(),
-              IncidentQuery.class,
-              new IncidentAuthorizationQueryTransformer(),
-              ProcessDefinitionQuery.class,
-              new ProcessDefinitionAuthorizationQueryTransformer(),
-              ProcessInstanceQuery.class,
-              new ProcessInstanceAuthorizationQueryTransformer(),
-              UserQuery.class,
-              new UserAuthorizationQueryTransformer(),
-              UserTaskQuery.class,
-              new UserTaskAuthorizationQueryTransformer(),
-              VariableQuery.class,
-              new VariableAuthorizationQueryTransformer());
+          Map.ofEntries(
+              entry(
+                  DecisionDefinitionQuery.class,
+                  new DecisionDefinitionAuthorizationQueryTransformer()),
+              entry(
+                  DecisionInstanceQuery.class, new DecisionInstanceAuthorizationQueryTransformer()),
+              entry(
+                  DecisionRequirementsQuery.class,
+                  new DecisionRequirementsAuthorizationQueryTransformer()),
+              entry(
+                  FlowNodeInstanceQuery.class, new FlowNodeInstanceAuthorizationQueryTransformer()),
+              entry(IncidentQuery.class, new IncidentAuthorizationQueryTransformer()),
+              entry(
+                  ProcessDefinitionQuery.class,
+                  new ProcessDefinitionAuthorizationQueryTransformer()),
+              entry(ProcessInstanceQuery.class, new ProcessInstanceAuthorizationQueryTransformer()),
+              entry(RoleQuery.class, new RoleAuthorizationQueryTransformer()),
+              entry(UserQuery.class, new UserAuthorizationQueryTransformer()),
+              entry(UserTaskQuery.class, new UserTaskAuthorizationQueryTransformer()),
+              entry(VariableQuery.class, new VariableAuthorizationQueryTransformer()));
 
   private AuthorizationQueryTransformers() {}
 

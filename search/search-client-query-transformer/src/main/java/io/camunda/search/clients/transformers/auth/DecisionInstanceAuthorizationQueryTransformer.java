@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.auth;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 
@@ -25,7 +26,7 @@ public class DecisionInstanceAuthorizationQueryTransformer
       final PermissionType permissionType,
       final List<String> resourceKeys) {
     if (resourceType == DECISION_DEFINITION && permissionType == READ_PROCESS_INSTANCE) {
-      return stringTerms("decisionId", resourceKeys);
+      return stringTerms(DECISION_ID, resourceKeys); // decisionDefinitionId
     }
     throw new IllegalArgumentException(
         "Unsupported authorizations with resource:%s and permission:%s: "
