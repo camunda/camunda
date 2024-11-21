@@ -117,6 +117,20 @@ func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
 	return javaOpts
 }
 
+func validateKeystore(settings C8RunSettings, parentDir string) error {
+	if settings.keystore != "" {
+		if settings.keystorePassword == "" {
+			return fmt.Errorf("You must provide a password with --keystorePassword to unlock your keystore.")
+		}
+		if settings.keystore != "" {
+			if !strings.HasPrefix(settings.keystore, "/") {
+				settings.keystore = filepath.Join(parentDir, settings.keystore)
+			}
+		}
+	}
+	return nil
+}
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
@@ -175,16 +189,10 @@ func main() {
 		startFlagSet.Parse(os.Args[2:])
 	}
 
-	if settings.keystore != "" {
-		if settings.keystorePassword == "" {
-			fmt.Println("You must provide a password with --keystorePassword to unlock your keystore.")
-			os.Exit(1)
-		}
-		if settings.keystore != "" {
-			if !strings.HasPrefix(settings.keystore, "/") {
-				settings.keystore = filepath.Join(parentDir, settings.keystore)
-			}
-		}
+	err := validateKeystore(settings, parentDir)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	javaHome := os.Getenv("JAVA_HOME")

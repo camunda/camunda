@@ -25,6 +25,8 @@ func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
 
 	javaOpts := adjustJavaOpts("", settings)
 	c8runPlatform := getC8RunPlatform()
+	err := validateKeystore(settings, "/tmp/camundatest/")
+	assert.Nil(t, err)
 
 	cmd := c8runPlatform.CamundaCmd("8.7.0", "/tmp/camundatest/", "", javaOpts)
 
@@ -49,6 +51,8 @@ func TestCamundaCmdHasNoJavaOpts(t *testing.T) {
 
 	javaOpts := adjustJavaOpts("", settings)
 	c8runPlatform := getC8RunPlatform()
+	err := validateKeystore(settings, "/tmp/camundatest/")
+	assert.Nil(t, err)
 
 	cmd := c8runPlatform.CamundaCmd("8.7.0", "/tmp/camundatest/", "", javaOpts)
 
@@ -57,4 +61,18 @@ func TestCamundaCmdHasNoJavaOpts(t *testing.T) {
 			assert.Fail(t, "JAVA_OPTS should not be set")
 		}
 	}
+}
+
+func TestCamundaCmdKeystoreRequiresPassword(t *testing.T) {
+
+	settings := C8RunSettings{
+		config:           "",
+		detached:         false,
+		keystore:         "/tmp/camundatest/certs/secret.jks",
+		keystorePassword: "",
+	}
+	err := validateKeystore(settings, "/tmp/camundatest/")
+
+	assert.NotNil(t, err)
+	assert.Error(t, err, "You must provide a password with --keystorePassword to unlock your keystore.")
 }
