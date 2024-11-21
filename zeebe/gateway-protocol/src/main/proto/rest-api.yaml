@@ -2986,7 +2986,7 @@ components:
     TenantUpdateResponse:
       type: object
       properties:
-        key:
+        tenantKey:
           type: integer
           description: The unique system-generated internal tenant ID
           format: int64
@@ -3001,7 +3001,7 @@ components:
       description: Tenant search response item.
       type: object
       properties:
-        key:
+        tenantKey:
           type: integer
           description: The unique system-generated internal tenant ID.
           format: int64

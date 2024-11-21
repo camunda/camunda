@@ -262,7 +262,7 @@ public final class SearchQueryResponseMapper {
 
   public static TenantItem toTenant(final TenantEntity tenantEntity) {
     return new TenantItem()
-        .key(tenantEntity.key())
+        .tenantKey(tenantEntity.key())
         .name(tenantEntity.name())
         .tenantId(tenantEntity.tenantId())
         .assignedMemberKeys(
