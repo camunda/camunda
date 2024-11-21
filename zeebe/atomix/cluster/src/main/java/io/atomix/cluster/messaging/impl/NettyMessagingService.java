@@ -813,8 +813,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
     bootstrap.option(
         ChannelOption.WRITE_BUFFER_WATER_MARK,
         new WriteBufferWaterMark(10 * 32 * 1024, 10 * 64 * 1024));
-    bootstrap.option(ChannelOption.SO_RCVBUF, (int) config.getBrokerSoRcvbuf().toBytes());
-    bootstrap.option(ChannelOption.SO_SNDBUF, (int) config.getBrokerSoSndbuf().toBytes());
+    bootstrap.option(ChannelOption.SO_RCVBUF, config.getSoRcvbuf());
+    bootstrap.option(ChannelOption.SO_SNDBUF, config.getSoSndbuf());
     bootstrap.option(ChannelOption.SO_KEEPALIVE, true);
     bootstrap.option(ChannelOption.TCP_NODELAY, true);
     bootstrap.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 1000);
@@ -871,8 +871,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
     b.option(ChannelOption.SO_BACKLOG, 128);
     b.childOption(
         ChannelOption.WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(8 * 1024, 32 * 1024));
-    b.childOption(ChannelOption.SO_RCVBUF, (int) config.getBrokerSoRcvbuf().toBytes());
-    b.childOption(ChannelOption.SO_SNDBUF, (int) config.getBrokerSoSndbuf().toBytes());
+    b.childOption(ChannelOption.SO_RCVBUF, config.getSoRcvbuf());
+    b.childOption(ChannelOption.SO_SNDBUF, config.getSoSndbuf());
     b.childOption(ChannelOption.SO_KEEPALIVE, true);
     b.childOption(ChannelOption.TCP_NODELAY, true);
     b.childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);

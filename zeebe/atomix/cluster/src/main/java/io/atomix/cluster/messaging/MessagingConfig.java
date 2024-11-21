@@ -21,7 +21,6 @@ import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.util.unit.DataSize;
 
 /** Messaging configuration. */
 public class MessagingConfig implements Config {
@@ -36,8 +35,8 @@ public class MessagingConfig implements Config {
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
   private File keyStore;
   private String keyStorePassword;
-  private DataSize brokerSoSndbuf = DataSize.ofMegabytes(1);
-  private DataSize brokerSoRcvbuf = DataSize.ofMegabytes(1);
+  private int soSndbuf = 1024 * 1024;
+  private int soRcvbuf = 1024 * 1024;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -253,21 +252,39 @@ public class MessagingConfig implements Config {
     return keyStorePassword;
   }
 
-  public DataSize getBrokerSoSndbuf() {
-    return brokerSoSndbuf;
+  /**
+   * @return the configured size in bytes for SO_SNDBUF
+   */
+  public int getSoSndbuf() {
+    return soSndbuf;
   }
 
-  public MessagingConfig setBrokerSoSndbuf(final DataSize brokerSoSndbuf) {
-    this.brokerSoSndbuf = brokerSoSndbuf;
+  /**
+   * Sets the size of SO_SNDBUF.
+   *
+   * @param soSndbuf the data size in bytes to use for SO_SNDBUF
+   * @return this config for chaining
+   */
+  public MessagingConfig setSoSndbuf(final int soSndbuf) {
+    this.soSndbuf = soSndbuf;
     return this;
   }
 
-  public DataSize getBrokerSoRcvbuf() {
-    return brokerSoRcvbuf;
+  /**
+   * @return the configured size in bytes for SO_RCVBUF
+   */
+  public int getSoRcvbuf() {
+    return soRcvbuf;
   }
 
-  public MessagingConfig setBrokerSoRcvbuf(final DataSize brokerSoRcvbuf) {
-    this.brokerSoRcvbuf = brokerSoRcvbuf;
+  /**
+   * Sets the size of SO_RCVBUF.
+   *
+   * @param soRcvbuf the data size in bytes to use for SO_RCVBUF
+   * @return this config for chaining
+   */
+  public MessagingConfig setSoRcvbuf(final int soRcvbuf) {
+    this.soRcvbuf = soRcvbuf;
     return this;
   }
 
