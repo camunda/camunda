@@ -16,6 +16,7 @@ import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
+import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -67,7 +68,7 @@ public class BackupServiceImpl implements BackupService {
     this.prio2BackupTemplates = prio2BackupTemplates;
     this.prio3BackupTemplates = prio3BackupTemplates;
     this.prio4BackupIndices = prio4BackupIndices;
-    this.repository = repository;
+    this.repository = new BackupRepositoryWrapper(repository);
     this.operateProperties = operateProperties;
   }
 
@@ -79,12 +80,8 @@ public class BackupServiceImpl implements BackupService {
     final String version = getCurrentOperateVersion();
     for (int index = 0; index < count; index++) {
       final String snapshotName =
-          new Metadata()
-              .setVersion(version)
-              .setPartCount(count)
-              .setPartNo(index + 1)
-              .setBackupId(backupId)
-              .buildSnapshotName();
+          new OperateSnapshotNameProvider()
+              .getSnapshotName(new Metadata(backupId, version, index + 1, count));
       repository.deleteSnapshot(repositoryName, snapshotName);
     }
   }
@@ -121,15 +118,10 @@ public class BackupServiceImpl implements BackupService {
     final String version = getCurrentOperateVersion();
     for (int index = 0; index < count; index++) {
       final List<String> indexPattern = Arrays.asList(getIndexPatternsOrdered()[index]);
-      final Metadata metadata =
-          new Metadata()
-              .setVersion(version)
-              .setPartCount(count)
-              .setPartNo(index + 1)
-              .setBackupId(request.getBackupId());
-      final String snapshotName = metadata.buildSnapshotName();
+      final Metadata metadata = new Metadata(request.getBackupId(), version, index + 1, count);
+      final String snapshotName = new OperateSnapshotNameProvider().getSnapshotName(metadata);
       final SnapshotRequest snapshotRequest =
-          new SnapshotRequest(repositoryName, snapshotName, indexPattern, metadata.toCommon());
+          new SnapshotRequest(repositoryName, snapshotName, indexPattern, metadata);
 
       requestsQueue.offer(snapshotRequest);
       LOGGER.debug("Snapshot scheduled: {}", snapshotName);
