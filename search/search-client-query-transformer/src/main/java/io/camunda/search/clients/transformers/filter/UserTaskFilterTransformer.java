@@ -109,7 +109,6 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
     if (isCamundaExporterEnabled) {
-      ;
       return List.of(TaskTemplate.getIndexNameWithPrefix(prefix));
     }
     // TDB - The listview is used when the exporter is not enabled, this will be removed in 8.8
