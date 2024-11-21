@@ -1,0 +1,24 @@
+---
+name: Is Fork
+
+description: |
+  Checks if current job runs on code from a forked repository (via PR).
+  This information can be used to disable certain CI features that are not
+  available on forks (e.g. access to secrets).
+
+inputs: {}
+
+outputs:
+  is-fork:
+    description: Output whether the current job runs on code from a forked repository
+    value: ${{ steps.detect-fork.outputs.is-fork == 'true' }}
+
+runs:
+  using: composite
+  steps:
+  - id: detect-fork
+    env:
+      GH_EVENT_PR_FORK: ${{ github.event.pull_request.head.repo.fork }}
+    shell: bash
+    run: |
+      echo is-fork="$GH_EVENT_PR_FORK" | tee -a $GITHUB_OUTPUT
