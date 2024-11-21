@@ -106,7 +106,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
     final var tenantName = "Tenant Name";
     final var tenantId = "tenant-id";
     final var tenant = new TenantEntity(100L, tenantId, tenantName, Set.of());
-    when(tenantServices.getTenant(tenant.key())).thenReturn(tenant);
+    when(tenantServices.getByKey(tenant.key())).thenReturn(tenant);
 
     // when
     webClient
@@ -129,7 +129,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 .formatted(tenant.key(), tenantName, tenantId));
 
     // then
-    verify(tenantServices, times(1)).getTenant(tenant.key());
+    verify(tenantServices, times(1)).getByKey(tenant.key());
   }
 
   @Test
@@ -137,7 +137,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
     // given
     final var tenantKey = 100L;
     final var path = "%s/%s".formatted(TENANT_BASE_URL, tenantKey);
-    when(tenantServices.getTenant(tenantKey)).thenThrow(new NotFoundException("tenant not found"));
+    when(tenantServices.getByKey(tenantKey)).thenThrow(new NotFoundException("tenant not found"));
 
     // when
     webClient
@@ -160,7 +160,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 .formatted(path));
 
     // then
-    verify(tenantServices, times(1)).getTenant(tenantKey);
+    verify(tenantServices, times(1)).getByKey(tenantKey);
   }
 
   @Test

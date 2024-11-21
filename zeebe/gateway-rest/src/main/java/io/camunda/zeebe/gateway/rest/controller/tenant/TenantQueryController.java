@@ -37,7 +37,7 @@ public class TenantQueryController {
   public ResponseEntity<TenantItem> getTenant(@PathVariable final long tenantKey) {
     try {
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toTenant(tenantServices.getTenant(tenantKey)));
+          .body(SearchQueryResponseMapper.toTenant(tenantServices.getByKey(tenantKey)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
