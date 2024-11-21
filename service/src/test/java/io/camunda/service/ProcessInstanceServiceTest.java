@@ -129,7 +129,9 @@ public final class ProcessInstanceServiceTest {
 
   private void authorizeProcessReadInstance(final boolean authorize, final String processId) {
     when(securityContextProvider.isAuthorized(
-            processId, authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+            processId,
+            authentication,
+            Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .thenReturn(authorize);
   }
 }

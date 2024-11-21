@@ -49,7 +49,7 @@ public class IncidentServices
     return incidentSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .searchIncidents(query);
   }
 
@@ -65,7 +65,7 @@ public class IncidentServices
             .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
             .searchIncidents(incidentSearchQuery(q -> q.filter(f -> f.incidentKeys(key))));
     final var incidentEntity = getSingleResultOrThrow(result, key, "Incident");
-    final var authorization = Authorization.of(a -> a.processDefinition().readInstance());
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
         incidentEntity.bpmnProcessId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
