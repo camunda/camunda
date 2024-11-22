@@ -212,7 +212,7 @@ public final class ServiceTransformers {
     mappers.put(FormFilter.class, new FormFilterTransformer(mappers, prefix));
     mappers.put(
         ProcessDefinitionFilter.class, new ProcessDefinitionFilterTransformer(mappers, prefix));
-    mappers.put(TenantFilter.class, new TenantFilterTransformer());
+    mappers.put(TenantFilter.class, new TenantFilterTransformer(prefix));
 
     // result config -> source config
     mappers.put(

@@ -12,9 +12,16 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import java.util.List;
 
 public class TenantFilterTransformer implements FilterTransformer<TenantFilter> {
+
+  private final String prefix;
+
+  public TenantFilterTransformer(final String prefix) {
+    this.prefix = prefix;
+  }
 
   @Override
   public SearchQuery toSearchQuery(final TenantFilter filter) {
@@ -27,6 +34,7 @@ public class TenantFilterTransformer implements FilterTransformer<TenantFilter> 
 
   @Override
   public List<String> toIndices(final TenantFilter filter) {
-    return List.of("identity-tenant-8.7.0_alias");
+    final String indexName = TenantIndex.getIndexNameWithPrefix(prefix);
+    return List.of(indexName);
   }
 }

@@ -21,6 +21,10 @@ public class TenantIndex extends UserManagementIndexDescriptor {
     super(indexPrefix, isElasticsearch);
   }
 
+  public static String getIndexNameWithPrefix(final String prefix) {
+    return new TenantIndex(prefix, false).getAlias();
+  }
+
   @Override
   public String getVersion() {
     return INDEX_VERSION;
