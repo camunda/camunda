@@ -26,3 +26,7 @@ type C8RunSettings struct {
 type TemplateData struct {
 	ServerPort int
 }
+
+type TemplateData struct {
+	ServerPort int
+}
