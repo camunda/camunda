@@ -1248,9 +1248,9 @@
     "@ibm/telemetry-js" "^1.5.0"
 
 "@carbon/icons-react@^11.41.0", "@carbon/icons-react@^11.52.0":
-  version "11.52.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.52.0.tgz#aab43a82e1ce2ac07d0cb6bd60056142ea0a3acc"
-  integrity sha512-t9fkYEpp7o1Gc7c8WiEszqypbSaxfQLku05h3+IlNRFaUVEwpDMq63tM/RsXvKo7EPYESS6ELKMv7lKCITOBKQ==
+  version "11.53.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons-react/-/icons-react-11.53.0.tgz#b60092a7c80e03abaed7f483c160d09e334bd31c"
+  integrity sha512-OAkUw7NZfBVWxnBL6wTGeOlyn65ieKGhIMJnwYSq5n2J2Ckj3dcKIjtZGib9v5dskjfthXnJngUqI1IlyeS3ew==
   dependencies:
     "@carbon/icon-helpers" "^10.54.0"
     "@ibm/telemetry-js" "^1.5.0"
@@ -1793,9 +1793,9 @@
   integrity sha512-B3uGruTn2rS5gweynLmfSe7yCawSRsJguJJQHVQiqf4rh2RNgJFu8YLE2Zd/JHV0ZXoVMOslcXP2k3hMkxKEyA==
 
 "@ibm/telemetry-js@^1.5.0":
-  version "1.7.1"
-  resolved "https://registry.yarnpkg.com/@ibm/telemetry-js/-/telemetry-js-1.7.1.tgz#31133f7fdfeabaabc43c7b1c31ab91a35b599473"
-  integrity sha512-6S824qKqNr/gGWNkaxQz3c/9Ni5O87CrD289ms3Z/z52oUsHRgB6XYssRrn3wkiIhM9C93en1WJGmFe5nppP0A==
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@ibm/telemetry-js/-/telemetry-js-1.8.0.tgz#d6220d1772d8ea8339aff79340e9591461be5d27"
+  integrity sha512-1u/8f5TtDHXWNQe+YfIESesZGX2PmhEfyU0znlyFvATch+xc5fPYjXj2gWKMTmdKsDawqAm/BkJBQjx2CDlZww==
 
 "@isaacs/cliui@^8.0.2":
   version "8.0.2"
