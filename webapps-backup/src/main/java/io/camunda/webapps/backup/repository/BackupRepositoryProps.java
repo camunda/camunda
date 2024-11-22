@@ -13,6 +13,19 @@ package io.camunda.webapps.backup.repository;
  */
 public interface BackupRepositoryProps {
 
+  BackupRepositoryProps EMPTY =
+      new BackupRepositoryProps() {
+        @Override
+        public String version() {
+          return null;
+        }
+
+        @Override
+        public String repositoryName() {
+          return null;
+        }
+      };
+
   String version();
 
   String repositoryName();
@@ -29,5 +42,7 @@ public interface BackupRepositoryProps {
     return 5 * 60L;
   }
 
-  boolean includeGlobalState();
+  default boolean includeGlobalState() {
+    return true;
+  }
 }
