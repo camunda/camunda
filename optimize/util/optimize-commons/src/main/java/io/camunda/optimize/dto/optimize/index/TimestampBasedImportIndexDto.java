@@ -15,15 +15,15 @@ import java.time.OffsetDateTime;
 public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSourceDto>
     implements OptimizeDto {
 
-  protected String esTypeIndexRefersTo;
+  protected String dbTypeIndexRefersTo;
 
   public TimestampBasedImportIndexDto(
       final OffsetDateTime lastImportExecutionTimestamp,
       final OffsetDateTime timestampOfLastEntity,
-      final String esTypeIndexRefersTo,
+      final String dbTypeIndexRefersTo,
       final IngestedDataSourceDto dataSourceDto) {
     super(lastImportExecutionTimestamp, timestampOfLastEntity, dataSourceDto);
-    this.esTypeIndexRefersTo = esTypeIndexRefersTo;
+    this.dbTypeIndexRefersTo = dbTypeIndexRefersTo;
   }
 
   public TimestampBasedImportIndexDto() {}
@@ -33,12 +33,12 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSou
     return dataSource.getName();
   }
 
-  public String getEsTypeIndexRefersTo() {
-    return esTypeIndexRefersTo;
+  public String getDbTypeIndexRefersTo() {
+    return dbTypeIndexRefersTo;
   }
 
-  public void setEsTypeIndexRefersTo(final String esTypeIndexRefersTo) {
-    this.esTypeIndexRefersTo = esTypeIndexRefersTo;
+  public void setDbTypeIndexRefersTo(final String dbTypeIndexRefersTo) {
+    this.dbTypeIndexRefersTo = dbTypeIndexRefersTo;
   }
 
   @Override
@@ -58,12 +58,13 @@ public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSou
 
   @Override
   public String toString() {
-    return "TimestampBasedImportIndexDto(esTypeIndexRefersTo=" + getEsTypeIndexRefersTo() + ")";
+    return "TimestampBasedImportIndexDto(dbTypeIndexRefersTo=" + getDbTypeIndexRefersTo() + ")";
   }
 
   @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
-
-    public static final String esTypeIndexRefersTo = "esTypeIndexRefersTo";
+    // With the support of Opensearch it was decided to get rid of ES prefixes in variable names.
+    // However, to avoid reindexing it was decided to keep original field names in indices
+    public static final String dbTypeIndexRefersTo = "esTypeIndexRefersTo";
   }
 }
