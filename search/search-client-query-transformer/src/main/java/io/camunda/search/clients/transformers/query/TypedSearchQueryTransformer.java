@@ -8,7 +8,6 @@
 package io.camunda.search.clients.transformers.query;
 
 import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
-import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
@@ -27,7 +26,7 @@ import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
 public final class TypedSearchQueryTransformer<F extends FilterBase, S extends SortOption>
-    implements SearchRequestTransformer<F, S> {
+    implements ServiceTransformer<TypedSearchQuery<F, S>, SearchQueryRequest> {
 
   private final ServiceTransformers transformers;
 
@@ -36,10 +35,9 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
   }
 
   @Override
-  public SearchQueryRequest toSearchQueryRequest(
-      final TypedSearchQuery<F, S> query, final SearchQuery authCheck) {
+  public SearchQueryRequest apply(final TypedSearchQuery<F, S> query) {
     final var filter = query.filter();
-    final var searchQueryFilter = toSearchQuery(filter, authCheck);
+    final var searchQueryFilter = toSearchQuery(filter);
     final var indices = toIndices(filter);
 
     final var page = query.page();
@@ -77,15 +75,12 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
     return resultConfigTransformer.apply(resultConfig);
   }
 
-  private SearchQuery toSearchQuery(final F filter, final SearchQuery authCheck) {
-    final var filterTransformer = getFilterTransformer(filter.getClass());
-    final var transformedQuery = filterTransformer.apply(filter);
-    return and(transformedQuery, authCheck);
+  private SearchQuery toSearchQuery(final F filter) {
+    return getFilterTransformer(filter).apply(filter);
   }
 
   private List<String> toIndices(final F filter) {
-    final var filterTransformer = getFilterTransformer(filter.getClass());
-    return filterTransformer.toIndices(filter);
+    return List.of(getFilterTransformer(filter).getIndex().getAlias());
   }
 
   private List<SearchSortOptions> toSearchSortOptions(final S sort, final boolean reverse) {
@@ -94,8 +89,8 @@ public final class TypedSearchQueryTransformer<F extends FilterBase, S extends S
     return sortingTransformer.apply(Tuple.of(orderings, reverse));
   }
 
-  private FilterTransformer<F> getFilterTransformer(final Class<?> cls) {
-    return transformers.getFilterTransformer(cls);
+  private FilterTransformer<F> getFilterTransformer(final F filter) {
+    return transformers.getFilterTransformer(filter.getClass());
   }
 
   private SortingTransformer getSortingTransformer(final Class<? extends SortOption> cls) {

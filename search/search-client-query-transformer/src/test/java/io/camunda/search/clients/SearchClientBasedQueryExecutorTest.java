@@ -22,6 +22,7 @@ import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -49,7 +50,8 @@ class SearchClientBasedQueryExecutorTest {
 
   @Mock private DocumentBasedSearchClient searchClient;
   @Mock private AuthorizationQueryStrategy authorizationQueryStrategy;
-  private final ServiceTransformers serviceTransformers = ServiceTransformers.newInstance("");
+  private final ServiceTransformers serviceTransformers =
+      ServiceTransformers.newInstance(new IndexDescriptors("", true));
 
   private SearchClientBasedQueryExecutor queryExecutor;
 
