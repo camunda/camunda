@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableDocumentRecordValue;
@@ -390,5 +392,18 @@ public final class ZeebeAssertHelper {
 
     assertThat(user).isNotNull();
     consumer.accept(user);
+  }
+
+  public static void assertTenantCreated(
+      final String tenantId, final Consumer<TenantRecordValue> consumer) {
+    final TenantRecordValue tenantRecordValue =
+        RecordingExporter.tenantRecords()
+            .withIntent(TenantIntent.CREATED)
+            .withTenantId(tenantId)
+            .getFirst()
+            .getValue();
+
+    assertThat(tenantRecordValue).isNotNull();
+    consumer.accept(tenantRecordValue);
   }
 }
