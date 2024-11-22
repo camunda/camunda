@@ -10,7 +10,7 @@ package io.camunda.search.clients.transformers.auth;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -25,7 +25,7 @@ public class DecisionInstanceAuthorizationQueryTransformer
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType,
       final List<String> resourceKeys) {
-    if (resourceType == DECISION_DEFINITION && permissionType == READ_PROCESS_INSTANCE) {
+    if (resourceType == DECISION_DEFINITION && permissionType == READ_DECISION_INSTANCE) {
       return stringTerms(DECISION_ID, resourceKeys); // decisionDefinitionId
     }
     throw new IllegalArgumentException(

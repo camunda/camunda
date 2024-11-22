@@ -18,6 +18,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBase;
+import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -43,6 +44,7 @@ public final class AuthorizationQueryTransformers {
                   new ProcessDefinitionAuthorizationQueryTransformer()),
               entry(ProcessInstanceQuery.class, new ProcessInstanceAuthorizationQueryTransformer()),
               entry(RoleQuery.class, new RoleAuthorizationQueryTransformer()),
+              entry(TenantQuery.class, new TenantAuthorizationQueryTransformer()),
               entry(UserQuery.class, new UserAuthorizationQueryTransformer()),
               entry(UserTaskQuery.class, new UserTaskAuthorizationQueryTransformer()),
               entry(VariableQuery.class, new VariableAuthorizationQueryTransformer()));

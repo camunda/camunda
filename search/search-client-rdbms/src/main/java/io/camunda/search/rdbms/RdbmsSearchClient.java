@@ -115,8 +115,10 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
-      final DecisionInstanceQuery filter) {
-    return null;
+      final DecisionInstanceQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for decisionInstances: {}", query);
+
+    return rdbmsService.getDecisionInstanceReader().search(query);
   }
 
   @Override

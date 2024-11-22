@@ -15,7 +15,7 @@ import io.camunda.search.sort.SortOption;
 
 public class AbstractResultConfigTest {
 
-  private final ServiceTransformers transformers = ServiceTransformers.newInstance(false);
+  private final ServiceTransformers transformers = ServiceTransformers.newInstance(false, "");
 
   protected SearchSourceConfig transformRequest(
       final TypedSearchQuery<? extends FilterBase, ? extends SortOption> request) {

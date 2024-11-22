@@ -29,22 +29,11 @@ public class FormFilterTransformer implements FilterTransformer<FormFilter> {
 
   @Override
   public SearchQuery toSearchQuery(final FormFilter filter) {
-    final var formKeyQuery = getFormByKeysQuery(filter.formKey());
-    final var formIdQuery = getFormByIdQuery(filter.formId());
-
-    return and(formKeyQuery, formIdQuery);
+    return and(longTerms(KEY, filter.formKey()), stringTerms(BPMN_ID, filter.formId()));
   }
 
   @Override
   public List<String> toIndices(final FormFilter filter) {
     return Arrays.asList("tasklist-form-8.4.0_");
-  }
-
-  private SearchQuery getFormByKeysQuery(final List<Long> formKeys) {
-    return longTerms(KEY, formKeys);
-  }
-
-  private SearchQuery getFormByIdQuery(final List<String> formIds) {
-    return stringTerms(BPMN_ID, formIds);
   }
 }

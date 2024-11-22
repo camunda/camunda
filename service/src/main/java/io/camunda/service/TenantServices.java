@@ -9,12 +9,11 @@ package io.camunda.service;
 
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.exception.NotFoundException;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -65,14 +64,19 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return sendBrokerRequest(new BrokerTenantDeleteRequest(key).setTenantKey(key));
   }
 
-  public TenantEntity getByKey(final Long key) {
-    final SearchQueryResult<TenantEntity> result =
-        search(SearchQueryBuilders.tenantSearchQuery().filter(f -> f.key(key)).build());
-    if (result.total() < 1) {
-      throw new NotFoundException(String.format("Tenant with key %d not found", key));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
+  public TenantEntity getByKey(final Long tenantKey) {
+    final var tenantQuery = TenantQuery.of(q -> q.filter(f -> f.key(tenantKey)));
+    final var result =
+        tenantSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchTenants(tenantQuery);
+    final var tenantEntity = getSingleResultOrThrow(result, tenantKey, "Tenant");
+    final var authorization = Authorization.of(a -> a.tenant().read());
+    if (!securityContextProvider.isAuthorized(
+        tenantEntity.tenantId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
     }
+    return tenantEntity;
   }
 
   public record TenantDTO(Long key, String tenantId, String name) {}

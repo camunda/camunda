@@ -292,7 +292,12 @@ public class TaskService {
     try {
       metrics.recordCounts(COUNTER_NAME_COMPLETED_TASKS, 1, getTaskMetricLabels(task));
       assigneeMigrator.migrateUsageMetrics(getCurrentUser().getUserId());
-      taskMetricsStore.registerTaskCompleteEvent(task);
+      // Only write metrics when completing a Job-based User Tasks. With 8.7,
+      // metrics for completed (not Job-based) User Tasks are written by the
+      // handler "TaskCompletedMetricHandler" in the camunda-exporter
+      if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
+        taskMetricsStore.registerTaskCompleteEvent(task);
+      }
     } catch (final Exception e) {
       LOGGER.error("Error updating completed task metric for task with ID: {}", task.getId(), e);
       throw new TasklistRuntimeException(
