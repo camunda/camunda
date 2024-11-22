@@ -1486,7 +1486,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * zeebeClient
-   *  .newTenantCreateCommand()
+   *  .newCreateTenantCommand()
    *  .tenantId("tenant-id")
    *  .name("Tenant Name")
    *  .send();
@@ -1494,5 +1494,5 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  CreateTenantCommandStep1 newTenantCreateCommand();
+  CreateTenantCommandStep1 newCreateTenantCommand();
 }

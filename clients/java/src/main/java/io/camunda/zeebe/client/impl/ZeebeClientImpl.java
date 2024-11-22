@@ -787,7 +787,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public CreateTenantCommandStep1 newTenantCreateCommand() {
+  public CreateTenantCommandStep1 newCreateTenantCommand() {
     return new CreateTenantCommandImpl(httpClient, jsonMapper);
   }
 

@@ -33,7 +33,7 @@ public class CreateTenantTest extends ClientRestTest {
   @Test
   void shouldCreateTenant() {
     // when
-    client.newTenantCreateCommand().tenantId(TENANT_ID).name(NAME).send().join();
+    client.newCreateTenantCommand().tenantId(TENANT_ID).name(NAME).send().join();
 
     // then
     final TenantCreateRequest request = gatewayService.getLastRequest(TenantCreateRequest.class);
@@ -44,7 +44,7 @@ public class CreateTenantTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullTenantId() {
     // when / then
-    assertThatThrownBy(() -> client.newTenantCreateCommand().name(NAME).send().join())
+    assertThatThrownBy(() -> client.newCreateTenantCommand().name(NAME).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
@@ -57,7 +57,7 @@ public class CreateTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newTenantCreateCommand().tenantId(TENANT_ID).name(NAME).send().join())
+            () -> client.newCreateTenantCommand().tenantId(TENANT_ID).name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -65,14 +65,14 @@ public class CreateTenantTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionIfTenantAlreadyExists() {
     // given
-    client.newTenantCreateCommand().tenantId(TENANT_ID).name(NAME).send().join();
+    client.newCreateTenantCommand().tenantId(TENANT_ID).name(NAME).send().join();
 
     gatewayService.errorOnRequest(
         REST_API_PATH + "/tenants", () -> new ProblemDetail().title("Conflict").status(409));
 
     // when / then
     assertThatThrownBy(
-            () -> client.newTenantCreateCommand().tenantId(TENANT_ID).name(NAME).send().join())
+            () -> client.newCreateTenantCommand().tenantId(TENANT_ID).name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
@@ -85,7 +85,7 @@ public class CreateTenantTest extends ClientRestTest {
 
     // when / then
     assertThatThrownBy(
-            () -> client.newTenantCreateCommand().tenantId(TENANT_ID).name(NAME).send().join())
+            () -> client.newCreateTenantCommand().tenantId(TENANT_ID).name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
