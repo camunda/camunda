@@ -8,12 +8,14 @@
 package io.camunda.zeebe.engine.processing.deployment;
 
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.DecisionResource;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.FormResource;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor.Resource.ProcessResource;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.deployment.DeploymentResourceUtil;
+import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
@@ -115,7 +117,26 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     if (foundForm.get() != null) {
       return new FormResource(foundForm.get());
     }
-    // TODO: Continue with decisionState
+
+    final var foundDecision = new MutableReference<PersistedDecision>();
+    decisionState.forEachDecision(
+        null, // TODO: Continue where we left off
+        decision -> {
+          final var deploymentKey = decision.getDeploymentKey();
+          if (deploymentKey != NO_DEPLOYMENT_KEY
+              && deploymentState.hasStoredDeploymentRecord(deploymentKey)) {
+            return true;
+          }
+          final var copy = new PersistedDecision();
+          BufferUtil.copy(decision, copy);
+          foundDecision.set(copy);
+          return false;
+        });
+    if (foundDecision.get() != null) {
+      return new DecisionResource(foundDecision.get());
+    }
+
+    // TODO: Continue with DRGs from decisionState
 
     return null;
   }
@@ -154,7 +175,19 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           return form.getTenantId().equals(tenantId) && formDeploymentKey == deploymentKey;
         });
 
-    // TODO: Continue with decisionState
+    decisionState.forEachDecision(
+        null,
+        decision -> {
+          final var decisionDeploymentKey = decision.getDeploymentKey();
+          if (decisionDeploymentKey == deploymentKey) {
+            final var copy = new PersistedDecision();
+            BufferUtil.copy(decision, copy);
+            resources.add(new DecisionResource(copy));
+          }
+          return true;
+        });
+
+    // TODO: Continue with DRGs from decisionState
     return resources;
   }
 
@@ -194,6 +227,11 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       case FormResource(final var form) -> {
         final var metadata = deploymentRecord.formMetadata().add();
         resourceUtil.applyFormMetadata(form, metadata);
+      }
+      case DecisionResource(
+              final var decision) -> {
+        final var metadata = deploymentRecord.decisionsMetadata().add();
+        resourceUtil.applyDecisionMetadata(decision, metadata);
       }
     }
   }
@@ -238,6 +276,24 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
       @Override
       public String tenantId() {
         return form.getTenantId();
+      }
+    }
+
+    record DecisionResource(PersistedDecision decision) implements Resource {
+
+      @Override
+      public long key() {
+        return decision.getDecisionKey();
+      }
+
+      @Override
+      public long deploymentKey() {
+        return decision.getDeploymentKey();
+      }
+
+      @Override
+      public String tenantId() {
+        return decision.getTenantId();
       }
     }
   }
