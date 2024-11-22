@@ -11,7 +11,10 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 
+import io.camunda.zeebe.engine.state.immutable.DecisionState.DecisionIdentifier;
+import io.camunda.zeebe.engine.state.immutable.DecisionState.PersistedDecisionVisitor;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 
 @ExtendWith(ProcessingStateExtension.class)
 public final class DecisionStateTest {
@@ -952,6 +956,49 @@ public final class DecisionStateTest {
         .isEqualTo(drg1.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg.get().getDecisionRequirementsVersion())
         .isEqualTo(drg1.getDecisionRequirementsVersion());
+  }
+
+  @Test
+  void shouldIterateThroughAllDecisions() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decision1 = sampleDecisionRecord().setDecisionKey(1L);
+    final var decision2 = sampleDecisionRecord().setDecisionKey(2L);
+    final var decision3 = sampleDecisionRecord().setDecisionKey(3L);
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decision1);
+    decisionState.storeDecisionRecord(decision2);
+    decisionState.storeDecisionRecord(decision3);
+
+    // when
+    final var visitor = Mockito.mock(PersistedDecisionVisitor.class);
+    Mockito.when(visitor.visit(any())).thenReturn(true);
+    decisionState.forEachDecision(null, visitor);
+
+    // then
+    Mockito.verify(visitor, Mockito.times(3)).visit(any());
+  }
+
+  @Test
+  void shouldSkipBeforeIteratingThroughDecisions() {
+    // given
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decision1 = sampleDecisionRecord().setDecisionKey(1L);
+    final var decision2 = sampleDecisionRecord().setDecisionKey(2L);
+    final var decision3 = sampleDecisionRecord().setDecisionKey(3L);
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decision1);
+    decisionState.storeDecisionRecord(decision2);
+    decisionState.storeDecisionRecord(decision3);
+
+    // when
+    final var visitor = Mockito.mock(PersistedDecisionVisitor.class);
+    Mockito.when(visitor.visit(any())).thenReturn(true);
+    decisionState.forEachDecision(
+        new DecisionIdentifier(decision1.getTenantId(), decision1.getDecisionKey()), visitor);
+
+    // then
+    Mockito.verify(visitor, Mockito.times(2)).visit(any());
   }
 
   private DecisionRecord sampleDecisionRecord() {
