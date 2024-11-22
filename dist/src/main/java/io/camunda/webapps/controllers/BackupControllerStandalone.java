@@ -7,7 +7,7 @@
  */
 package io.camunda.webapps.controllers;
 
-import io.camunda.webapps.profiles.ProfileOperateStandalone;
+import io.camunda.webapps.profiles.ProfileOperateTasklistStandalone;
 import io.micrometer.common.lang.NonNull;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -18,8 +18,8 @@ import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.stereotype.Component;
 
 @Component
-@WebEndpoint(id = "backup")
-@ProfileOperateStandalone
+@WebEndpoint(id = "backups")
+@ProfileOperateTasklistStandalone
 public class BackupControllerStandalone {
   private final BackupController backupController;
 

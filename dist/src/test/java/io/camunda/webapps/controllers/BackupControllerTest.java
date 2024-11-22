@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.controllers;
 
+import static io.camunda.management.backups.HistoryStateCode.COMPLETED;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -20,21 +21,21 @@ import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
 import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
-import io.camunda.operate.exceptions.OperateElasticsearchConnectionException;
-import io.camunda.operate.exceptions.OperateOpensearchConnectionException;
-import io.camunda.operate.property.BackupProperties;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
+import io.camunda.webapps.backup.exceptions.ResourceNotFoundException;
+import io.camunda.webapps.backup.repository.BackupRepositoryConnectionException;
+import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.zeebe.shared.management.BackupEndpointStandalone;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -44,38 +45,41 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = {BackupEndpointStandalone.class})
-public abstract class BackupControllerTest {
+public abstract sealed class BackupControllerTest {
 
-  private static final OffsetDateTime startTime =
+  private static final OffsetDateTime START_TIME =
       OffsetDateTime.of(2024, 12, 1, 8, 29, 13, 0, ZoneOffset.UTC);
-  private static final GetBackupStateResponseDetailDto detailDTO =
+
+  private static final GetBackupStateResponseDetailDto DETAIL_DTO =
       new GetBackupStateResponseDetailDto()
           .setSnapshotName("snapshot-1")
           .setState("FAILED")
           .setFailures(new String[] {"Out of disk space"})
-          .setStartTime(startTime);
-  private static final HistoryBackupInfo expectedInfo =
+          .setStartTime(START_TIME);
+
+  private static final HistoryBackupInfo EXPECTED_INFO =
       new HistoryBackupInfo(
           new BigDecimal(1L),
           HistoryStateCode.FAILED,
           List.of(
               new HistoryBackupDetail()
                   .snapshotName("snapshot-1")
-                  .state(HistoryStateCode.FAILED)
-                  .failures(Arrays.asList(detailDTO.getFailures()))
-                  .startTime(startTime)));
+                  .state("FAILED")
+                  .failures(Arrays.asList(DETAIL_DTO.getFailures()))
+                  .startTime(START_TIME)));
 
   @Mock private BackupService backupService;
-  @Mock private BackupProperties backupProperties;
+  @Mock private BackupRepositoryProps backupProperties;
   @InjectMocks private BackupController backupController;
 
   @BeforeEach
   public void setup() {
-    when(backupProperties.getRepositoryName()).thenReturn("repo-1");
+    when(backupProperties.repositoryName()).thenReturn("repo-1");
   }
 
   private void mockErrorWith(final Exception e) {
@@ -90,15 +94,15 @@ public abstract class BackupControllerTest {
   }
 
   private void mockESConnectionError() {
-    mockErrorWith(new OperateElasticsearchConnectionException("not found"));
-  }
-
-  private void mockOSConnectionError() {
-    mockErrorWith(new OperateOpensearchConnectionException("not found"));
+    mockErrorWith(new BackupRepositoryConnectionException("not found"));
   }
 
   private void mockGenericException() {
     mockErrorWith(new RuntimeException("generic error"));
+  }
+
+  private void mockRepositoryNotSet() {
+    when(backupProperties.repositoryName()).thenReturn("");
   }
 
   @Test
@@ -136,10 +140,10 @@ public abstract class BackupControllerTest {
                 .setBackupId(1L)
                 .setState(BackupStateDto.FAILED)
                 .setFailureReason("Out of disk space")
-                .setDetails(List.of(detailDTO)));
+                .setDetails(List.of(DETAIL_DTO)));
     final var response = backupController.getBackupState(1L);
     assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(response.getBody()).isEqualTo(expectedInfo);
+    assertThat(response.getBody()).isEqualTo(EXPECTED_INFO);
   }
 
   @Test
@@ -150,34 +154,33 @@ public abstract class BackupControllerTest {
                 new GetBackupStateResponseDto()
                     .setBackupId(1L)
                     .setState(BackupStateDto.FAILED)
-                    .setDetails(List.of(detailDTO))));
+                    .setDetails(List.of(DETAIL_DTO))));
     final var response = backupController.getBackups();
     assertThat(response.getStatus()).isEqualTo(200);
-    assertThat(response.getBody()).isEqualTo(List.of(expectedInfo));
+    assertThat(response.getBody()).isEqualTo(List.of(EXPECTED_INFO));
   }
 
   @EnumSource(BackupStateDto.class)
   @ParameterizedTest
   public void testEnumConversion(final BackupStateDto backupStateDto) {
-    final var mapped = BackupController.mapTo(backupStateDto);
+    final var mapped = BackupController.mapState(backupStateDto);
     if (backupStateDto != BackupStateDto.COMPLETED) {
       assertThat(mapped.name()).isEqualTo(backupStateDto.name());
     } else {
-      assertThat(mapped).isEqualTo(HistoryStateCode.SUCCESS);
+      assertThat(mapped).isEqualTo(COMPLETED);
     }
   }
+
+  @ActiveProfiles("operate")
+  public static final class BackupControllerOperateTest extends BackupControllerTest {}
+
+  @ActiveProfiles("tasklist")
+  public static final class BackupControllerTasklistTest extends BackupControllerTest {}
 
   @Nested
   class ESConnectionError extends ErrorTest {
     ESConnectionError() {
       super(502, BackupControllerTest.this::mockESConnectionError);
-    }
-  }
-
-  @Nested
-  class OSConnectionError extends ErrorTest {
-    OSConnectionError() {
-      super(502, BackupControllerTest.this::mockOSConnectionError);
     }
   }
 
@@ -195,13 +198,26 @@ public abstract class BackupControllerTest {
     }
   }
 
+  @Nested
+  class RepositoryNotSet extends ErrorTest {
+    RepositoryNotSet() {
+      super(400, BackupControllerTest.this::mockRepositoryNotSet);
+    }
+  }
+
   abstract class ErrorTest {
     final int errorCode;
     private final Runnable setupMocks;
+    private final Consumer<Object> checkBody;
 
     ErrorTest(final int errorCode, final Runnable setupMocks) {
+      this(errorCode, null, setupMocks);
+    }
+
+    ErrorTest(final int errorCode, final Consumer<Object> checkBody, final Runnable setupMocks) {
       this.errorCode = errorCode;
       this.setupMocks = setupMocks;
+      this.checkBody = checkBody;
     }
 
     @Test
@@ -212,6 +228,9 @@ public abstract class BackupControllerTest {
       final var response = backupController.getBackups();
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
+      if (checkBody != null) {
+        checkBody.accept(response.getBody());
+      }
     }
 
     @Test
@@ -222,6 +241,9 @@ public abstract class BackupControllerTest {
       final var response = backupController.takeBackup(11L);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
+      if (checkBody != null) {
+        checkBody.accept(response.getBody());
+      }
     }
 
     @Test
@@ -233,16 +255,22 @@ public abstract class BackupControllerTest {
       final var response = backupController.getBackupState(1L);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
+      if (checkBody != null) {
+        checkBody.accept(response.getBody());
+      }
     }
 
     @Test
-    public void shouldReturnCorrecStatusnDelete() {
+    public void shouldReturnCorrectStatusOnDelete() {
       // given
       setupMocks.run();
       // when
       final var response = backupController.takeBackup(11L);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
+      if (errorCode == 200) {
+        assertThat(response.getBody()).isEqualTo(null);
+      }
     }
   }
 }

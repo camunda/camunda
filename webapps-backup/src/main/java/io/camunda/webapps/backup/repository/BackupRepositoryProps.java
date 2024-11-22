@@ -17,17 +17,17 @@ public interface BackupRepositoryProps {
 
   String repositoryName();
 
-  int snapshotTimeout();
-
-  Long incompleteCheckTimeoutInSeconds();
-
-  boolean includeGlobalState();
-
-  static Integer defaultSnapshotTimeout() {
+  default int snapshotTimeout() {
     return 0;
+  }
+
+  default Long incompleteCheckTimeoutInSeconds() {
+    return defaultIncompleteCheckTimeoutInSeconds();
   }
 
   static Long defaultIncompleteCheckTimeoutInSeconds() {
     return 5 * 60L;
   }
+
+  boolean includeGlobalState();
 }

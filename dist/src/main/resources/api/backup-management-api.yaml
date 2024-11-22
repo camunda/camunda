@@ -299,7 +299,7 @@ components:
       type: string
       enum:
         - IN_PROGRESS
-        - SUCCESS
+        - COMPLETED
         - FAILED
         - INCOMPATIBLE
         - INCOMPLETE
@@ -458,8 +458,7 @@ components:
           example: "backup-snapshot-001"
         state:
           type: string
-          description: Current state of the backup
-          $ref: '#/components/schemas/HistoryStateCode'
+          description: Current state of the backup as reported by ElasticSearch/OpenSearch
           example: "SUCCESS"
         startTime:
           type: string
