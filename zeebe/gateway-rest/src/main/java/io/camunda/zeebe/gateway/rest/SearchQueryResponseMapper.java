@@ -335,9 +335,9 @@ public final class SearchQueryResponseMapper {
 
   public static IncidentItem toIncident(final IncidentEntity t) {
     return new IncidentItem()
-        .incidentKey(t.key())
+        .incidentKey(t.incidentKey())
         .processDefinitionKey(t.processDefinitionKey())
-        .processDefinitionId(t.bpmnProcessId())
+        .processDefinitionId(t.processDefinitionId())
         .processInstanceKey(t.processInstanceKey())
         .errorType(IncidentItem.ErrorTypeEnum.fromValue(t.errorType().name()))
         .errorMessage(t.errorMessage())

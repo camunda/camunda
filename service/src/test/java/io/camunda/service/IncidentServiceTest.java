@@ -65,7 +65,7 @@ public final class IncidentServiceTest {
     // given
     final var entity = mock(IncidentEntity.class);
     final var processId = "processId";
-    when(entity.bpmnProcessId()).thenReturn(processId);
+    when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchIncidents(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     when(securityContextProvider.isAuthorized(
@@ -85,7 +85,7 @@ public final class IncidentServiceTest {
     // given
     final var entity = mock(IncidentEntity.class);
     final var processId = "processId";
-    when(entity.bpmnProcessId()).thenReturn(processId);
+    when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchIncidents(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     when(securityContextProvider.isAuthorized(
