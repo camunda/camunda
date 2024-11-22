@@ -219,7 +219,6 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final var processInstanceKey = incident.incident().getProcessInstanceKey();
       final var treePath = data.incidentTreePaths().get(incident.id());
       final var newState = batch.newIncidentStates().get(incident.incident().getKey());
-      final var routing = String.valueOf(processInstanceKey);
 
       if (!data.processInstanceTreePaths().containsKey(processInstanceKey)) {
         if (!ignoreMissingData) {
@@ -242,13 +241,13 @@ public final class IncidentUpdateTask implements BackgroundTask {
         final var piIds = parsedTreePath.extractProcessInstanceIds();
         final var fniIds = parsedTreePath.extractFlowNodeInstanceIds();
 
-        createProcessInstanceUpdates(data, incident, newState, piIds, bulkUpdate, routing);
-        createFlowNodeInstanceUpdates(data, incident, newState, fniIds, bulkUpdate, routing);
+        createProcessInstanceUpdates(data, incident, newState, piIds, bulkUpdate);
+        createFlowNodeInstanceUpdates(data, incident, newState, fniIds, bulkUpdate);
       }
 
       bulkUpdate
           .incidentRequests()
-          .put(incident.id(), newIncidentUpdate(incident, newState, treePath, routing));
+          .put(incident.id(), newIncidentUpdate(incident, newState, treePath));
     }
 
     return repository.bulkUpdate(bulkUpdate).toCompletableFuture().join();
@@ -259,8 +258,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentDocument incident,
       final IncidentState newState,
       final List<String> fniIds,
-      final IncidentBulkUpdate updates,
-      final String routing) {
+      final IncidentBulkUpdate updates) {
     if (!data.flowNodeInstanceIndices().keySet().containsAll(fniIds)) {
       final var documents = repository.getFlowNodeInstances(fniIds).toCompletableFuture().join();
       for (final var document : documents) {
@@ -283,14 +281,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
           && flowNodeIndices != null
           && !flowNodeIndices.isEmpty()) {
         createFlowNodeInstanceUpdate(
-            data,
-            incident.id(),
-            newState,
-            fniId,
-            flowNodeIndices,
-            updates,
-            listViewIndices,
-            routing);
+            data, incident, newState, fniId, flowNodeIndices, updates, listViewIndices);
       } else {
         if (!ignoreMissingData) {
           throw new ExporterException(
@@ -313,27 +304,31 @@ public final class IncidentUpdateTask implements BackgroundTask {
 
   private void createFlowNodeInstanceUpdate(
       final AdditionalData data,
-      final String incidentId,
+      final IncidentDocument incident,
       final IncidentState newState,
       final String fniId,
       final List<String> flowNodeIndices,
       final IncidentBulkUpdate updates,
-      final List<String> listViewIndices,
-      final String routing) {
+      final List<String> listViewIndices) {
     final var hasIncident = IncidentState.ACTIVE == newState;
     final boolean changedState;
     if (hasIncident) {
-      changedState = data.addFniIdsWithIncidentIds(fniId, incidentId);
+      changedState = data.addFniIdsWithIncidentIds(fniId, incident.id());
     } else {
-      changedState = data.removeIncidentIdByFniId(fniId, incidentId);
+      changedState = data.removeIncidentIdByFniId(fniId, incident.id());
     }
 
+    final var treePath = new TreePath(incident.incident().getTreePath());
+    final var routing =
+        treePath
+            .processInstanceForFni(fniId)
+            .orElseGet(() -> String.valueOf(incident.incident().getProcessInstanceKey()));
     if (changedState) {
       flowNodeIndices.forEach(
           index ->
               updates
                   .flowNodeInstanceRequests()
-                  .put(fniId, newFlowNodeInstanceUpdate(fniId, index, hasIncident, routing)));
+                  .put(fniId, newFlowNodeInstanceUpdate(fniId, index, hasIncident)));
       listViewIndices.forEach(
           index ->
               updates
@@ -347,8 +342,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentDocument incident,
       final IncidentState newState,
       final List<String> piIds,
-      final IncidentBulkUpdate updates,
-      final String routing) {
+      final IncidentBulkUpdate updates) {
     if (!data.processInstanceIndices().keySet().containsAll(piIds)) {
       final var processInstances =
           repository.getProcessInstances(piIds).toCompletableFuture().join();
@@ -360,7 +354,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
     for (final var piId : piIds) {
       final var index = data.processInstanceIndices().get(piId);
       if (index != null) {
-        createProcessInstanceUpdate(data, incident.id(), newState, piId, updates, index, routing);
+        createProcessInstanceUpdate(data, incident.id(), newState, piId, updates, index);
       } else {
         if (!ignoreMissingData) {
           throw new ExporterException(
@@ -387,8 +381,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final IncidentState newState,
       final String piId,
       final IncidentBulkUpdate updates,
-      final String index,
-      final String routing) {
+      final String index) {
     final var hasIncident = IncidentState.ACTIVE == newState;
     final boolean changedState;
     if (hasIncident) {
@@ -400,22 +393,19 @@ public final class IncidentUpdateTask implements BackgroundTask {
     if (changedState) {
       updates
           .listViewRequests()
-          .put(piId, newListViewInstanceUpdate(piId, index, hasIncident, routing));
+          .put(piId, newListViewInstanceUpdate(piId, index, hasIncident, piId));
     }
   }
 
   private DocumentUpdate newIncidentUpdate(
-      final IncidentDocument incident,
-      final IncidentState state,
-      final String treePath,
-      final String routing) {
+      final IncidentDocument incident, final IncidentState state, final String treePath) {
     final Map<String, Object> fields = new HashMap<>();
     fields.put(IncidentTemplate.STATE, state);
     if (IncidentState.ACTIVE == state) {
       fields.put(IncidentTemplate.TREE_PATH, treePath);
     }
 
-    return new DocumentUpdate(incident.id(), incident.index(), fields, routing);
+    return new DocumentUpdate(incident.id(), incident.index(), fields, null);
   }
 
   private DocumentUpdate newListViewInstanceUpdate(
@@ -424,9 +414,9 @@ public final class IncidentUpdateTask implements BackgroundTask {
   }
 
   private DocumentUpdate newFlowNodeInstanceUpdate(
-      final String id, final String index, final boolean hasIncident, final String routing) {
+      final String id, final String index, final boolean hasIncident) {
     return new DocumentUpdate(
-        id, index, Map.of(FlowNodeInstanceTemplate.INCIDENT, hasIncident), routing);
+        id, index, Map.of(FlowNodeInstanceTemplate.INCIDENT, hasIncident), null);
   }
 
   private void mapActiveIncidentsToAffectedInstances(final AdditionalData data) {
