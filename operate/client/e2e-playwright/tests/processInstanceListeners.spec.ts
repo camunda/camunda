@@ -153,7 +153,7 @@ test.describe('Process Instance Listeners', () => {
     await expect(
       page.getByTestId('state-overlay-completedEndEvents'),
     ).toBeVisible();
-    expect
+    await expect
       .poll(async () => {
         await processInstancePage.diagram.clickFlowNode('Service Task B');
         await processInstancePage.diagram.moveCanvasHorizontally(-200);

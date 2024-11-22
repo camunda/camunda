@@ -44,6 +44,7 @@ type State = {
 const DEFAULT_STATE: State = {
   listenersCount: 0,
   listeners: [],
+  listenerTypeFilter: undefined,
   page: 1,
   latestFetch: {fetchType: null, itemsCount: 0},
   status: 'initial',

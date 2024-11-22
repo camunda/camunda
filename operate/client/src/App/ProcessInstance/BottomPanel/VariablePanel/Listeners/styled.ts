@@ -41,11 +41,6 @@ const WarningFilled = styled(BaseWarningFilled)`
 
 const Dropdown = styled(BaseDropdown)`
   width: 200px;
-  border-bottom: 1px solid var(--cds-border-strong);
-
-  button {
-    background-color: var(--cds-background);
-  }
 `;
 
 export {Content, StructuredList, CellContainer, WarningFilled, Dropdown};
