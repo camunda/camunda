@@ -77,8 +77,6 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
     },
     {} as { [key: string]: (typeof rows)[0] },
   );
-  console.log("ROWS", rows);
-  console.log("MAP", dataMap);
 
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
@@ -93,9 +91,6 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
 
   const onEditPermission = (rowId: string, permissionIndex: number) => {
     // Find the row by its ID and remove the permission at the given index
-    console.log(
-      `Editing permission at index ${permissionIndex} for row with id: ${rowId}`,
-    );
     // Logic to update state or trigger an API call to remove the permission
     handleOpenPatchModal({
       ownerKey: user.key,
@@ -178,10 +173,6 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                 </TableHead>
                 <TableBody>
                   {rows.map((row) => {
-                    // Log the row object to the console for inspection
-                    console.log("Current Row:");
-                    console.log(row);
-
                     return (
                       <React.Fragment key={row.id}>
                         <TableExpandRow
