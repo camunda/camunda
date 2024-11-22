@@ -18,14 +18,17 @@ import io.camunda.search.entities.IncidentEntity.ErrorType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.DateValueFilter;
 import io.camunda.search.filter.IncidentFilter;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import java.util.List;
 
 public class IncidentFilterTransformer implements FilterTransformer<IncidentFilter> {
 
   private final ServiceTransformers transformers;
+  private final String prefix;
 
-  public IncidentFilterTransformer(final ServiceTransformers transformers) {
+  public IncidentFilterTransformer(final ServiceTransformers transformers, final String prefix) {
     this.transformers = transformers;
+    this.prefix = prefix;
   }
 
   @Override
@@ -63,7 +66,8 @@ public class IncidentFilterTransformer implements FilterTransformer<IncidentFilt
 
   @Override
   public List<String> toIndices(final IncidentFilter filter) {
-    return List.of("operate-incident-8.3.1_alias");
+    final String indexName = IncidentTemplate.getIndexNameWithPrefix(prefix);
+    return List.of(indexName);
   }
 
   private SearchQuery getTenantIdQuery(final List<String> tenantIds) {

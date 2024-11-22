@@ -27,10 +27,17 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import java.util.List;
 
 public class FlownodeInstanceFilterTransformer
     implements FilterTransformer<FlowNodeInstanceFilter> {
+
+  private String prefix;
+
+  public FlownodeInstanceFilterTransformer(final String prefix) {
+    this.prefix = prefix;
+  }
 
   @Override
   public SearchQuery toSearchQuery(final FlowNodeInstanceFilter filter) {
@@ -50,7 +57,8 @@ public class FlownodeInstanceFilterTransformer
 
   @Override
   public List<String> toIndices(final FlowNodeInstanceFilter filter) {
-    return List.of("operate-flownode-instance-8.3.1_alias");
+    final String indexName = FlowNodeInstanceTemplate.getIndexNameWithPrefix(prefix);
+    return List.of(indexName);
   }
 
   private SearchQuery getStateQuery(final List<FlowNodeState> states) {

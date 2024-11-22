@@ -22,15 +22,19 @@ import static io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex.V
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.ProcessDefinitionFilter;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import java.util.List;
 
 public class ProcessDefinitionFilterTransformer
     implements FilterTransformer<ProcessDefinitionFilter> {
 
   private final ServiceTransformers transformers;
+  private final String prexif;
 
-  public ProcessDefinitionFilterTransformer(final ServiceTransformers transformers) {
+  public ProcessDefinitionFilterTransformer(
+      final ServiceTransformers transformers, final String prexif) {
     this.transformers = transformers;
+    this.prexif = prexif;
   }
 
   @Override
@@ -47,6 +51,7 @@ public class ProcessDefinitionFilterTransformer
 
   @Override
   public List<String> toIndices(final ProcessDefinitionFilter filter) {
-    return List.of("operate-process-8.3.0_alias");
+    final String indexName = ProcessIndex.getIndexNameWithPrefix(prexif);
+    return List.of(indexName);
   }
 }
