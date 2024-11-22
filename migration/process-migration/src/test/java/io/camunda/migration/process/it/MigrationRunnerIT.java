@@ -45,8 +45,8 @@ public class MigrationRunnerIT extends AdapterTest {
     properties.setBatchSize(1);
     final Adapter adapter =
         isElasticsearch
-            ? new ElasticsearchAdapter(properties, esConnectConfiguration)
-            : new OpensearchAdapter(properties, osConnectConfiguration);
+            ? new ElasticsearchAdapter(properties, ES_CONFIGURATION)
+            : new OpensearchAdapter(properties, OS_CONFIGURATION);
     final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
     final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithPublicFormId(2L);
     writeProcessToIndex(entityToBeMigrated);

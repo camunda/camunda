@@ -58,8 +58,8 @@ public abstract class AdapterTest {
   protected static ProcessMigrationProperties properties;
   protected static ElasticsearchClient esClient;
   protected static OpenSearchClient osClient;
-  protected static final ConnectConfiguration esConnectConfiguration = new ConnectConfiguration();
-  protected static final ConnectConfiguration osConnectConfiguration = new ConnectConfiguration();
+  protected static final ConnectConfiguration ES_CONFIGURATION = new ConnectConfiguration();
+  protected static final ConnectConfiguration OS_CONFIGURATION = new ConnectConfiguration();
   protected static MigrationRunner osMigrator;
   protected static MigrationRunner esMigrator;
 
@@ -80,31 +80,31 @@ public abstract class AdapterTest {
     properties.setMinRetryDelay(Duration.ofMillis(100));
     properties.setMaxRetryDelay(Duration.ofMillis(500));
     properties.setImporterFinishedTimeout(Duration.ofSeconds(1));
-    esConnectConfiguration.setUrl("http://localhost:" + ES_CONTAINER.getMappedPort(9200));
-    osConnectConfiguration.setType("opensearch");
-    osConnectConfiguration.setUrl("http://localhost:" + OS_CONTAINER.getMappedPort(9200));
-    esClient = new ElasticsearchConnector(esConnectConfiguration).createClient();
-    osClient = new OpensearchConnector(osConnectConfiguration).createClient();
-    esMigrator = new MigrationRunner(properties, esConnectConfiguration);
-    osMigrator = new MigrationRunner(properties, osConnectConfiguration);
+    ES_CONFIGURATION.setUrl("http://localhost:" + ES_CONTAINER.getMappedPort(9200));
+    OS_CONFIGURATION.setType("opensearch");
+    OS_CONFIGURATION.setUrl("http://localhost:" + OS_CONTAINER.getMappedPort(9200));
+    esClient = new ElasticsearchConnector(ES_CONFIGURATION).createClient();
+    osClient = new OpensearchConnector(OS_CONFIGURATION).createClient();
+    esMigrator = new MigrationRunner(properties, ES_CONFIGURATION);
+    osMigrator = new MigrationRunner(properties, OS_CONFIGURATION);
     createIndices();
   }
 
   private static void createIndices() {
     final OpensearchEngineClient osEngine = new OpensearchEngineClient(osClient);
-    processIndex = new ProcessIndex(esConnectConfiguration.getIndexPrefix(), false);
+    processIndex = new ProcessIndex(ES_CONFIGURATION.getIndexPrefix(), false);
     migrationRepositoryIndex =
-        new MigrationRepositoryIndex(esConnectConfiguration.getIndexPrefix(), false);
-    importPositionIndex = new ImportPositionIndex(esConnectConfiguration.getIndexPrefix(), false);
+        new MigrationRepositoryIndex(ES_CONFIGURATION.getIndexPrefix(), false);
+    importPositionIndex = new ImportPositionIndex(ES_CONFIGURATION.getIndexPrefix(), false);
     osEngine.createIndex(processIndex, new IndexSettings());
     osEngine.createIndex(migrationRepositoryIndex, new IndexSettings());
     osEngine.createIndex(importPositionIndex, new IndexSettings());
 
     final ElasticsearchEngineClient esEngine = new ElasticsearchEngineClient(esClient);
-    processIndex = new ProcessIndex(esConnectConfiguration.getIndexPrefix(), true);
+    processIndex = new ProcessIndex(ES_CONFIGURATION.getIndexPrefix(), true);
     migrationRepositoryIndex =
-        new MigrationRepositoryIndex(esConnectConfiguration.getIndexPrefix(), true);
-    importPositionIndex = new ImportPositionIndex(esConnectConfiguration.getIndexPrefix(), true);
+        new MigrationRepositoryIndex(ES_CONFIGURATION.getIndexPrefix(), true);
+    importPositionIndex = new ImportPositionIndex(ES_CONFIGURATION.getIndexPrefix(), true);
     esEngine.createIndex(processIndex, new IndexSettings());
     esEngine.createIndex(migrationRepositoryIndex, new IndexSettings());
     esEngine.createIndex(importPositionIndex, new IndexSettings());
@@ -114,7 +114,7 @@ public abstract class AdapterTest {
   public void cleanUp() throws IOException {
     properties.setBatchSize(5);
     if (isElasticsearch) {
-      esMigrator = new MigrationRunner(properties, esConnectConfiguration);
+      esMigrator = new MigrationRunner(properties, ES_CONFIGURATION);
       esClient.deleteByQuery(
           DeleteByQueryRequest.of(
               d ->
@@ -127,7 +127,7 @@ public abstract class AdapterTest {
       esClient.indices().refresh();
 
     } else {
-      osMigrator = new MigrationRunner(properties, osConnectConfiguration);
+      osMigrator = new MigrationRunner(properties, OS_CONFIGURATION);
       osClient.deleteByQuery(
           org.opensearch.client.opensearch.core.DeleteByQueryRequest.of(
               d ->
