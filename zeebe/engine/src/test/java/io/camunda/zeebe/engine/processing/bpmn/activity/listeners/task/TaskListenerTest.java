@@ -214,11 +214,11 @@ public class TaskListenerTest {
                         .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_2"))
                         .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_3"))));
 
-    // then: verify the UT is created with the expected `assignee`
+    // then: verify the UT was created without the defined `assignee` and without action
     assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.CREATED,
-        userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction(""));
+        userTask -> Assertions.assertThat(userTask).hasAssignee("").hasAction(""));
 
     // when
     completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
@@ -241,7 +241,13 @@ public class TaskListenerTest {
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.ASSIGNED);
 
-    // then: verify the UT was assigned with the expected `assignee` and default `action` values
+    // then: verify the UT was assigning with the provided `assignee` and without action
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.ASSIGNING,
+        userTask -> Assertions.assertThat(userTask).hasAssignee(assignee).hasAction(""));
+
+    // verify the UT was assigned with the provided `assignee` and default `action` values
     assertUserTaskRecordWithIntent(
         processInstanceKey,
         UserTaskIntent.ASSIGNED,
