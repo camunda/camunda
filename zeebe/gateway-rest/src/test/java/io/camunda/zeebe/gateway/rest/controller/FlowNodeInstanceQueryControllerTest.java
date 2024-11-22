@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -23,10 +24,10 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.util.XmlUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -49,6 +50,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                    "startDate": "2023-05-17T00:00:00.000Z",
                    "endDate":"2023-05-23T00:00:00.000Z",
                    "flowNodeId":"flowNodeId",
+                   "flowNodeName":"flowNodeName",
                    "treePath":"processInstanceKey/flowNodeId",
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
@@ -126,11 +128,13 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
   static final String FLOW_NODE_INSTANCES_SEARCH_URL = FLOW_NODE_INSTANCES_URL + "search";
 
   @MockBean FlowNodeInstanceServices flowNodeInstanceServices;
+  @MockBean XmlUtil xmlUtil;
 
   @BeforeEach
   void setupServices() {
     when(flowNodeInstanceServices.withAuthentication(any(Authentication.class)))
         .thenReturn(flowNodeInstanceServices);
+    when(xmlUtil.getFlowNodeName(any())).thenReturn("flowNodeName");
   }
 
   @Test
@@ -151,6 +155,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
+    verify(xmlUtil).getFlowNodeName(any());
   }
 
   @Test
@@ -175,6 +180,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
+    verify(xmlUtil).getFlowNodeName(any());
   }
 
   @Test
@@ -302,6 +308,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .asc()
                         .build())
                 .build());
+    verify(xmlUtil).getFlowNodeName(any());
   }
 
   @Test
@@ -318,9 +325,9 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_GET_RESPONSE);
 
     verify(flowNodeInstanceServices).getByKey(23L);
+    verify(xmlUtil).getFlowNodeName(any());
   }
 
-  @Disabled("Enable when RestErrorMapper handling of not found is in place.")
   @Test
   void shouldThrowNotFoundIfKeyNotExistsForGetFlowNodeInstanceByKey() {
     when(flowNodeInstanceServices.getByKey(any(Long.class))).thenThrow(new NotFoundException(""));
@@ -338,12 +345,13 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
             """
                   {
                       "type":"about:blank",
-                      "title":"Failed to execute Get Flow node instance by key.",
+                      "title":"NOT_FOUND",
                       "status":404,
                       "instance":"/v2/flownode-instances/5"
                   }
                 """);
 
     verify(flowNodeInstanceServices).getByKey(5L);
+    verify(xmlUtil, never()).getFlowNodeName(any());
   }
 }

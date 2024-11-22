@@ -9,12 +9,14 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.search.query.SearchQueryBuilders.variableSearchQuery;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
 import io.camunda.search.entities.VariableEntity;
@@ -28,6 +30,8 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.rest.JacksonConfig;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.gateway.rest.util.XmlUtil;
+import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -69,6 +73,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "candidateGroups": [],
                       "formKey": 0,
                       "elementId": "e",
+                      "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
                       "completionDate": "2020-11-11T00:00:00.000Z",
                       "dueDate": "2020-11-11T00:00:00.000Z",
@@ -128,6 +133,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "candidateGroups": [],
                       "formKey": 0,
                       "elementId": "e",
+                      "name": "name",
                       "creationDate": "2020-11-11T00:00:00.000Z",
                       "completionDate": "2020-11-11T00:00:00.000Z",
                       "dueDate": "2020-11-11T00:00:00.000Z",
@@ -193,9 +199,10 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
           .build();
 
   @MockBean UserTaskServices userTaskServices;
+  @MockBean XmlUtil xmlUtil;
 
   @BeforeEach
-  void setupServices() {
+  void setupServices() throws IOException {
     when(userTaskServices.withAuthentication(any(Authentication.class)))
         .thenReturn(userTaskServices);
 
@@ -228,6 +235,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .thenThrow(
             new NotFoundException(
                 String.format("User Task with key %d not found", INVALID_USER_TASK_KEY)));
+    final ProcessDefinitionEntity processDefinition = mock(ProcessDefinitionEntity.class);
+    when(xmlUtil.getUserTaskName(any())).thenReturn("name");
   }
 
   @Test
@@ -247,6 +256,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
+    verify(xmlUtil).getUserTaskName(any());
   }
 
   @Test
@@ -270,6 +280,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
+    verify(xmlUtil).getUserTaskName(any());
   }
 
   @Test
@@ -311,6 +322,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 .sort(
                     new UserTaskSort.Builder().creationDate().desc().completionDate().asc().build())
                 .build());
+    verify(xmlUtil).getUserTaskName(any());
   }
 
   @Test
@@ -353,6 +365,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(xmlUtil, never()).getUserTaskName(any());
   }
 
   @Test
@@ -395,6 +408,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(xmlUtil, never()).getUserTaskName(any());
   }
 
   @Test
@@ -436,6 +450,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(xmlUtil, never()).getUserTaskName(any());
   }
 
   @Test
@@ -476,6 +491,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(expectedResponse);
 
     verify(userTaskServices, never()).search(any(UserTaskQuery.class));
+    verify(xmlUtil, never()).getUserTaskName(any());
   }
 
   @Test
@@ -493,6 +509,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(VALID_USER_TASK_KEY);
+    verify(xmlUtil).getUserTaskName(any());
   }
 
   @Test
@@ -518,6 +535,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the invalid userTaskKey
     verify(userTaskServices).getByKey(INVALID_USER_TASK_KEY);
+    verify(xmlUtil, never()).getUserTaskName(any());
   }
 
   @Test
@@ -659,5 +677,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().filter(filter).build());
+    verify(xmlUtil).getUserTaskName(any());
   }
 }
