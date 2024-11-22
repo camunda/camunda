@@ -467,7 +467,7 @@ public class RequestMapper {
 
   public static Authentication getAuthentication() {
     Long authenticatedUserKey = null;
-    final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
+    final List<String> authorizedTenants = TenantAttributeHolder.getTenantIds();
 
     final var token =
         Authorization.jwtEncoder()
