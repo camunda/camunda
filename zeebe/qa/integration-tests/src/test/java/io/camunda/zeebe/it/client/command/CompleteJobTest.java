@@ -157,6 +157,51 @@ public final class CompleteJobTest {
 
   @ParameterizedTest
   @ValueSource(booleans = {true, false})
+  public void shouldCompleteJobWithResultDeniedTrue(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
+    // when
+    getCommand(client, useRest, jobKey).result().denied(true).send().join();
+
+    // then
+    ZeebeAssertHelper.assertJobCompleted(
+        jobType, (job) -> assertThat(job.getResult().isDenied()).isTrue());
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCompleteJobWithResultDeniedNotSet(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
+    // when
+    getCommand(client, useRest, jobKey).result().send().join();
+
+    // then
+    ZeebeAssertHelper.assertJobCompleted(
+        jobType, (job) -> assertThat(job.getResult().isDenied()).isFalse());
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCompleteJobWithResultDeniedFalse(
+      final boolean useRest, final TestInfo testInfo) {
+    // given
+    final String jobType = "job-" + testInfo.getDisplayName();
+    final var jobKey = resourcesHelper.createSingleJob(jobType);
+    // when
+    getCommand(client, useRest, jobKey).result().denied(false).send().join();
+
+    // then
+    ZeebeAssertHelper.assertJobCompleted(
+        jobType, (job) -> assertThat(job.getResult().isDenied()).isFalse());
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
   public void shouldThrowErrorWhenTryToCompleteJobWithNullVariable(
       final boolean useRest, final TestInfo testInfo) {
     // given
