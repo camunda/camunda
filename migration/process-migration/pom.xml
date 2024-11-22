@@ -67,12 +67,16 @@
       <artifactId>zeebe-util</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-exporter</artifactId>
-    </dependency>
-    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-retry</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-core</artifactId>
     </dependency>
 
     <!-- Test -->
@@ -118,6 +122,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>operate-schema</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-exporter</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

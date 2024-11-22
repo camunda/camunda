@@ -12,6 +12,7 @@ import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.MigrationRepositoryIndex;
 import io.camunda.migration.process.adapter.ProcessorStep;
 import io.camunda.migration.process.config.ProcessMigrationProperties;
+import io.camunda.migration.process.util.AdapterRetryDecorator;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -19,7 +20,6 @@ import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -36,17 +36,15 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class OpensearchAdapter implements Adapter {
 
-  private static final Logger LOG = LoggerFactory.getLogger(OpensearchAdapter.class);
   private final ProcessMigrationProperties properties;
   private final OpenSearchClient client;
   private final MigrationRepositoryIndex migrationRepositoryIndex;
   private final ProcessIndex processIndex;
   private final ImportPositionIndex importPositionIndex;
+  private final AdapterRetryDecorator retryDecorator;
 
   public OpensearchAdapter(
       final ProcessMigrationProperties properties,
@@ -57,6 +55,7 @@ public class OpensearchAdapter implements Adapter {
     processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), false);
     importPositionIndex = new ImportPositionIndex(connectConfiguration.getIndexPrefix(), false);
     client = new OpensearchConnector(connectConfiguration).createClient();
+    retryDecorator = new AdapterRetryDecorator(properties);
   }
 
   @Override
@@ -68,7 +67,7 @@ public class OpensearchAdapter implements Adapter {
     final BulkResponse response;
     try {
       response =
-          doWithRetry(
+          retryDecorator.decorate(
               "Migrate entities %s".formatted(idList),
               () -> client.bulk(bulkRequest.build()),
               (res) -> res == null || res.errors() || res.items().isEmpty());
@@ -98,7 +97,7 @@ public class OpensearchAdapter implements Adapter {
     final SearchResponse<ProcessEntity> searchResponse;
     try {
       searchResponse =
-          doWithRetry(
+          retryDecorator.decorate(
               "Fetching next process batch",
               () -> client.search(request, ProcessEntity.class),
               res -> res.timedOut() || Boolean.TRUE.equals(res.terminatedEarly()));
@@ -136,7 +135,7 @@ public class OpensearchAdapter implements Adapter {
 
     try {
       searchResponse =
-          doWithRetry(
+          retryDecorator.decorate(
               "Fetching last migrated process",
               () -> client.search(request, ProcessorStep.class),
               res -> res.timedOut() || Boolean.TRUE.equals(res.terminatedEarly()));
@@ -164,7 +163,7 @@ public class OpensearchAdapter implements Adapter {
             .build();
 
     try {
-      doWithRetry(
+      retryDecorator.decorate(
           "Update last migrated process",
           () -> client.update(updateRequest, ProcessorStep.class),
           res -> res.result() == null);
@@ -188,7 +187,7 @@ public class OpensearchAdapter implements Adapter {
 
     try {
       searchResponse =
-          doWithRetry(
+          retryDecorator.decorate(
               "Fetching import position",
               () -> client.search(request, ImportPositionEntity.class),
               res -> res.timedOut() || Boolean.TRUE.equals(res.terminatedEarly()));
@@ -204,21 +203,6 @@ public class OpensearchAdapter implements Adapter {
   @Override
   public void close() throws IOException {
     client._transport().close();
-  }
-
-  @Override
-  public int getMaxRetries() {
-    return properties.getMaxRetries();
-  }
-
-  @Override
-  public Duration getMinDelay() {
-    return properties.getMinRetryDelay();
-  }
-
-  @Override
-  public Duration getMaxDelay() {
-    return properties.getMaxRetryDelay();
   }
 
   private void migrateEntity(final ProcessEntity entity, final BulkRequest.Builder bulkRequest) {
