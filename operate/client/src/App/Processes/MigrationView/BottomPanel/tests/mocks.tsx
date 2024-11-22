@@ -179,6 +179,16 @@ const elements = {
     name: 'Escalation start event',
     type: 'EscalationStartEvent',
   },
+  CompensationTask: {
+    id: 'CompensationTask',
+    name: 'Compensation task',
+    type: 'CompensationTask',
+  },
+  CompensationBoundaryEvent: {
+    id: 'CompensationBoundaryEvent',
+    name: 'Compensation boundary event',
+    type: 'CompensationBoundaryEvent',
+  },
 };
 
 type Props = {
