@@ -16,9 +16,13 @@ import static io.camunda.webapps.schema.descriptors.usermanagement.index.UserInd
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.UserFilter;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
-public class UserFilterTransformer implements FilterTransformer<UserFilter> {
+public class UserFilterTransformer extends IndexFilterTransformer<UserFilter> {
+
+  public UserFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final UserFilter filter) {
@@ -28,10 +32,5 @@ public class UserFilterTransformer implements FilterTransformer<UserFilter> {
         filter.username() == null ? null : term(USERNAME, filter.username()),
         filter.email() == null ? null : term(EMAIL, filter.email()),
         filter.name() == null ? null : term(NAME, filter.name()));
-  }
-
-  @Override
-  public List<String> toIndices(final UserFilter filter) {
-    return List.of("camunda-user-8.7.0_alias");
   }
 }
