@@ -40,7 +40,7 @@ import {
 } from "@carbon/react";
 
 import { useEntityModal } from "src/components/modal";
-import { Authorization, Permission } from "src/utility/api/authorizations";
+import { Authorization } from "src/utility/api/authorizations";
 import { DataTableRenderProps } from "@carbon/react/lib/components/DataTable/DataTable";
 
 type AuthorizationsListProps = {
