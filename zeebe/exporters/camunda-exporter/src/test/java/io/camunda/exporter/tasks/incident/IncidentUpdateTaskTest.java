@@ -505,5 +505,24 @@ final class IncidentUpdateTaskTest {
               "4",
               new DocumentUpdate("4", "list-view", Map.of(ListViewTemplate.INCIDENT, false), "3"));
     }
+
+    @Test
+    void shouldIgnoreDeletedProcessInstance() {
+      // given
+      final var task =
+          new IncidentUpdateTask(metadata, repository, false, 10, LOGGER, Duration.ZERO);
+      repository.processInstances =
+          CompletableFuture.completedFuture(List.of(parentProcessInstance));
+      repository.wasProcessInstanceDeleted = CompletableFuture.completedFuture(true);
+
+      // when
+      final var result = task.execute();
+
+      // then
+      assertThat(result).succeedsWithin(Duration.ZERO);
+      assertThat(repository.updated.listViewRequests()).isEmpty();
+      assertThat(repository.updated.incidentRequests()).isEmpty();
+      assertThat(repository.updated.flowNodeInstanceRequests()).isEmpty();
+    }
   }
 }
