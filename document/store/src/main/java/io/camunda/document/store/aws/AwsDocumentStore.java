@@ -31,12 +31,15 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
+import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -95,7 +98,8 @@ public class AwsDocumentStore implements DocumentStore {
       final String documentId =
           Objects.requireNonNullElse(request.documentId(), UUID.randomUUID().toString());
 
-      if (checkDocumentExists(documentId)) {
+      final HeadObjectResponse documentInfo = getDocumentInfo(documentId);
+      if (documentInfo != null) {
         return Either.left(new DocumentAlreadyExists(documentId));
       }
 
@@ -110,9 +114,15 @@ public class AwsDocumentStore implements DocumentStore {
       final GetObjectRequest getObjectRequest =
           GetObjectRequest.builder().key(documentId).bucket(bucketName).build();
 
-      final InputStream inputStream = client.getObject(getObjectRequest);
+      final HeadObjectResponse documentInfo = getDocumentInfo(documentId);
+      if (documentInfo != null && isDocumentExpired(documentInfo.metadata(), documentId)) {
+        return Either.left(new DocumentNotFound(documentId));
+      }
 
-      return Either.right(inputStream);
+      final ResponseInputStream<GetObjectResponse> responseResponseInputStream =
+          client.getObject(getObjectRequest);
+
+      return Either.right(responseResponseInputStream);
     } catch (final Exception e) {
       return Either.left(getDocumentError(documentId, e));
     }
@@ -135,7 +145,8 @@ public class AwsDocumentStore implements DocumentStore {
         return Either.left(new InvalidInput("Duration must be greater than 0"));
       }
 
-      if (!checkDocumentExists(documentId)) {
+      final HeadObjectResponse documentInfo = getDocumentInfo(documentId);
+      if (documentInfo == null || isDocumentExpired(documentInfo.metadata(), documentId)) {
         return Either.left(new DocumentNotFound(documentId));
       }
 
@@ -160,19 +171,30 @@ public class AwsDocumentStore implements DocumentStore {
     }
   }
 
-  private boolean checkDocumentExists(final String documentId) throws S3Exception {
-    final HeadObjectRequest headObjectRequest =
-        HeadObjectRequest.builder().bucket(bucketName).key(documentId).build();
-
+  private HeadObjectResponse getDocumentInfo(final String documentId) {
     try {
-      client.headObject(headObjectRequest);
-      return true;
+      final HeadObjectRequest headObjectRequest =
+          HeadObjectRequest.builder().bucket(bucketName).key(documentId).build();
+
+      return client.headObject(headObjectRequest);
     } catch (final S3Exception e) {
       if (e.statusCode() == HttpStatusCode.NOT_FOUND) {
-        return false;
+        return null;
       }
       throw e;
     }
+  }
+
+  private boolean isDocumentExpired(final Map<String, String> metadata, final String documentId) {
+    if (metadata != null) {
+      final String expiresAt = metadata.get("expires-at");
+
+      if (expiresAt != null && OffsetDateTime.parse(expiresAt).isBefore(OffsetDateTime.now())) {
+        deleteDocumentInternal(documentId);
+        return true;
+      }
+    }
+    return false;
   }
 
   private Either<DocumentError, DocumentReference> uploadDocument(

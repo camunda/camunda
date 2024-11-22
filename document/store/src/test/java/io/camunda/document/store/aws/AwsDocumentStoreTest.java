@@ -18,7 +18,10 @@ import io.camunda.document.api.DocumentError.UnknownDocumentError;
 import java.io.ByteArrayInputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -149,6 +152,24 @@ class AwsDocumentStoreTest {
   }
 
   @Test
+  void getDocumentShouldFailIfDocumentExpired() {
+    // given
+    final var documentId = "test-document-id";
+    final String expiresAt = OffsetDateTime.now().minus(Duration.ofDays(10)).toString();
+    final var metadata = Map.of("expires-at", expiresAt);
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenReturn(HeadObjectResponse.builder().metadata(metadata).build());
+
+    // when
+    final var result = documentStore.getDocument(documentId).join();
+
+    // then
+    assertTrue(result.isLeft());
+    assertInstanceOf(DocumentNotFound.class, result.getLeft());
+  }
+
+  @Test
   void deleteDocumentShouldSucceed() {
     // given
     final var documentId = "test-document-id";
@@ -184,8 +205,12 @@ class AwsDocumentStoreTest {
     // given
     final var documentId = "test-document-id";
     final var linkUrl = URI.create("http://awsurl/" + documentId).toURL();
+    final String expiresAt = OffsetDateTime.now().plus(Duration.ofDays(10)).toString();
+    final var metadata = Map.of("expires-at", expiresAt);
 
     final var objectRequestMock = mock(PresignedGetObjectRequest.class);
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenReturn(HeadObjectResponse.builder().metadata(metadata).build());
     when(preSigner.presignGetObject(any(GetObjectPresignRequest.class)))
         .thenReturn(objectRequestMock);
     when(objectRequestMock.url()).thenReturn(linkUrl);
@@ -215,7 +240,8 @@ class AwsDocumentStoreTest {
   void createDocumentLinkShouldFailForException() {
     // given
     final var documentId = "test-document-id";
-    when(preSigner.presignGetObject(any(GetObjectPresignRequest.class)))
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
         .thenThrow(new RuntimeException("Something went wrong"));
 
     // when
@@ -224,5 +250,23 @@ class AwsDocumentStoreTest {
     // then
     assertTrue(result.isLeft());
     assertInstanceOf(UnknownDocumentError.class, result.getLeft());
+  }
+
+  @Test
+  void createDocumentLinkShouldFailForExpiredDocument() {
+    // given
+    final var documentId = "test-document-id";
+    final String expiresAt = OffsetDateTime.now().minus(Duration.ofDays(10)).toString();
+    final var metadata = Map.of("expires-at", expiresAt);
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenReturn(HeadObjectResponse.builder().metadata(metadata).build());
+
+    // when
+    final var result = documentStore.createLink(documentId, 10000).join();
+
+    // then
+    assertTrue(result.isLeft());
+    assertInstanceOf(DocumentNotFound.class, result.getLeft());
   }
 }
