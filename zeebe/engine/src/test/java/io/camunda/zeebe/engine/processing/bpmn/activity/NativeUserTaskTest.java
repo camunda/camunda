@@ -682,7 +682,10 @@ public final class NativeUserTaskTest {
             .getFirst()
             .getValue();
 
-    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
             tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNING),
@@ -716,7 +719,10 @@ public final class NativeUserTaskTest {
             .getFirst()
             .getValue();
 
-    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
             tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNING),
@@ -758,7 +764,10 @@ public final class NativeUserTaskTest {
             .getFirst()
             .getValue();
 
-    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.UPDATED))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
             tuple(ValueType.USER_TASK, UserTaskIntent.UPDATING),
@@ -816,7 +825,10 @@ public final class NativeUserTaskTest {
             tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
-    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
             tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETING),
@@ -845,7 +857,10 @@ public final class NativeUserTaskTest {
             tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
 
-    assertThat(RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey))
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.COMPLETED))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
             tuple(ValueType.USER_TASK, UserTaskIntent.COMPLETING),
