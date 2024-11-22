@@ -138,6 +138,14 @@ describe('processInstanceMigrationMappingStore', () => {
         id: 'MultiInstanceSubProcess',
         type: 'bpmn:SubProcess',
       },
+      {
+        id: 'EscalationEventSubProcess',
+        type: 'bpmn:SubProcess',
+      },
+      {
+        id: 'EscalationStartEvent',
+        type: 'bpmn:StartEvent',
+      },
     ]);
 
     expect(isAutoMappable('checkPayment')).toBe(true);
@@ -584,6 +592,30 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'ParallelTask',
             name: 'Parallel task',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'EscalationEventSubProcess',
+          name: 'Escalation event sub process',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'EscalationEventSubProcess',
+            name: 'Escalation event sub process',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'EscalationStartEvent',
+          name: 'Escalation start event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'EscalationStartEvent',
+            name: 'Escalation start event',
           },
         ],
       },

@@ -57,10 +57,12 @@ const {
   ErrorStartEvent,
   MultiInstanceSubProcess,
   MultiInstanceTask,
+  EscalationEventSubProcess,
+  EscalationStartEvent,
 } = elements;
 
 const HEADER_ROW_COUNT = 1;
-const CONTENT_ROW_COUNT = 31;
+const CONTENT_ROW_COUNT = 33;
 
 /**
  * Returns a custom matcher function which ignores all option elements from comboboxes.
@@ -104,6 +106,10 @@ describe('MigrationView/BottomPanel', () => {
     expect(screen.getByText(SignalStartEvent.name)).toBeInTheDocument();
     expect(screen.getByText(ErrorEventSubProcess.name)).toBeInTheDocument();
     expect(screen.getByText(ErrorStartEvent.name)).toBeInTheDocument();
+    expect(
+      screen.getByText(EscalationEventSubProcess.name),
+    ).toBeInTheDocument();
+    expect(screen.getByText(EscalationStartEvent.name)).toBeInTheDocument();
 
     expect(screen.getAllByRole('row')).toHaveLength(
       HEADER_ROW_COUNT + CONTENT_ROW_COUNT,
@@ -128,6 +134,7 @@ describe('MigrationView/BottomPanel', () => {
     {source: TimerStartEvent, target: TimerStartEvent},
     {source: SignalIntermediateCatch, target: SignalIntermediateCatch},
     {source: ErrorEventSubProcess, target: ErrorEventSubProcess},
+    {source: EscalationEventSubProcess, target: EscalationEventSubProcess},
   ])(
     'should allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -294,6 +301,12 @@ describe('MigrationView/BottomPanel', () => {
     const comboboxMultiInstanceSubProcess = await screen.findByLabelText(
       new RegExp(`target flow node for ${MultiInstanceSubProcess.name}`, 'i'),
     );
+    const comboboxEscalationEventSubProcess = await screen.findByLabelText(
+      new RegExp(`target flow node for ${EscalationEventSubProcess.name}`, 'i'),
+    );
+    const comboboxEscalationStartEvent = await screen.findByLabelText(
+      new RegExp(`target flow node for ${EscalationStartEvent.name}`, 'i'),
+    );
 
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
@@ -314,6 +327,9 @@ describe('MigrationView/BottomPanel', () => {
     expect(comboboxTimerStartEvent).toHaveValue(TimerStartEvent.id);
     expect(comboboxSignalStartEvent).toHaveValue(SignalStartEvent.id);
     expect(comboboxErrorStartEvent).toHaveValue(comboboxErrorStartEvent.id);
+    expect(comboboxEscalationStartEvent).toHaveValue(
+      comboboxEscalationStartEvent.id,
+    );
 
     // Expect auto-mapping (same id, boundary event, same event type)
     expect(comboboxMessageInterrupting).toHaveValue(MessageInterrupting.id);
@@ -337,6 +353,9 @@ describe('MigrationView/BottomPanel', () => {
     expect(comboboxTimerEventSubProcess).toHaveValue(TimerEventSubProcess.id);
     expect(comboboxSignalEventSubProcess).toHaveValue(SignalEventSubProcess.id);
     expect(comboboxErrorEventSubProcess).toHaveValue(ErrorEventSubProcess.id);
+    expect(comboboxEscalationEventSubProcess).toHaveValue(
+      EscalationEventSubProcess.id,
+    );
 
     // Expect auto-mapping (same multi instance type)
     expect(comboboxMultiInstanceSubProcess).toHaveValue(
