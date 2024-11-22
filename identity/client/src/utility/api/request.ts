@@ -54,7 +54,8 @@ const apiRequest: <R, P>(
   options: ApiRequestParams<P>,
 ) => ApiPromise<R> = async ({ url, method, headers, params, baseUrl }) => {
   const hasBody =
-    !!params && ["PUT", "POST", "PATCH"].includes(method.toUpperCase());
+    !!params &&
+    ["PUT", "POST", "DELETE", "PATCH"].includes(method.toUpperCase());
   const body = hasBody ? JSON.stringify(params) : undefined;
 
   // default handling for content-type
