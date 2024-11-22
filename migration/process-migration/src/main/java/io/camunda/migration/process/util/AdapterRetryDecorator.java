@@ -36,10 +36,16 @@ public class AdapterRetryDecorator {
       final String message, final Callable<T> callable, final Predicate<T> retryPredicate)
       throws Exception {
 
+    final Retry retry = buildRetry(message, retryPredicate);
+    return Retry.decorateCallable(retry, callable).call();
+  }
+
+  private <T> Retry buildRetry(final String message, final Predicate<T> retryPredicate) {
     final RetryConfig config =
         RetryConfig.<T>custom()
             .maxAttempts(properties.getMaxRetries())
             .waitDuration(properties.getMinRetryDelay())
+            .retryOnResult(retryPredicate)
             .intervalBiFunction(
                 IntervalBiFunction.ofIntervalFunction(
                     IntervalFunction.ofExponentialRandomBackoff(
@@ -52,7 +58,6 @@ public class AdapterRetryDecorator {
                         || throwable instanceof ElasticsearchException
                         || throwable instanceof OpenSearchException
                         || throwable instanceof OpenSearchClientException)
-            .retryOnResult(retryPredicate)
             .build();
 
     final RetryRegistry registry = RetryRegistry.of(config);
@@ -67,7 +72,6 @@ public class AdapterRetryDecorator {
                     "Retrying operation for `{}`: attempt {}",
                     message,
                     event.getNumberOfRetryAttempts()));
-
-    return Retry.decorateCallable(retry, callable).call();
+    return retry;
   }
 }
