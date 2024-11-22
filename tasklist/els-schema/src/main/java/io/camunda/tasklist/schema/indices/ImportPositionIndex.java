@@ -21,6 +21,7 @@ public class ImportPositionIndex extends AbstractIndexDescriptor implements Prio
   public static final String POSITION = "position";
   public static final String SEQUENCE = "sequence";
   public static final String FIELD_INDEX_NAME = "indexName";
+  public static final String COMPLETED = "completed";
 
   @Override
   public String getIndexName() {

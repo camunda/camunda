@@ -20,8 +20,8 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.Either;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,7 +63,7 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -88,7 +88,7 @@ public class TaskArchiverJobElasticSearch extends AbstractArchiverJobElasticSear
       final var moveVariableDocuments =
           archiverUtil.moveDocuments(
               taskVariableTemplate.getFullQualifiedName(),
-              TaskVariableTemplate.TASK_ID,
+              SnapshotTaskVariableTemplate.TASK_ID,
               archiveBatch.getFinishDate(),
               archiveBatch.getIds());
 

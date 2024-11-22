@@ -16,13 +16,13 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.3</version>
+      <version>8.6.5</version>
     </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-plugin</artifactId>
-      <version>8.6.3</version>
+      <version>8.6.5</version>
       <scope>test</scope>
     </dependency>
 
@@ -308,7 +308,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>3.8.0</version>
+          <version>3.8.1</version>
           <configuration>
             <ignoredUnusedDeclaredDependencies combine.children="append">
               <!-- TODO: remove once Zeebe's parent is Optimize's parent,

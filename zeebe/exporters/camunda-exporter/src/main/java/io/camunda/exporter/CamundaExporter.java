@@ -40,6 +40,7 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.util.Set;
@@ -125,7 +126,7 @@ public class CamundaExporter implements Exporter {
     if (writer != null) {
       try {
         flush();
-        updateLastExportedPosition();
+        updateLastExportedPosition(lastPosition);
       } catch (final Exception e) {
         LOG.warn("Failed to flush records before closing exporter.", e);
       }
@@ -149,6 +150,17 @@ public class CamundaExporter implements Exporter {
       metrics.startFlushLatencyMeasurement();
     }
 
+    final var recordVersion = getVersion(record.getBrokerVersion());
+
+    if (recordVersion.major() == 8 && recordVersion.minor() < 7) {
+      LOG.debug(
+          "Skip record with broker version '{}'. Last exported position will be updated to '{}'",
+          record.getBrokerVersion(),
+          record.getPosition());
+      updateLastExportedPosition(record.getPosition());
+      return;
+    }
+
     writer.addRecord(record);
     lastPosition = record.getPosition();
 
@@ -162,8 +174,18 @@ public class CamundaExporter implements Exporter {
       }
       // Update the record counters only after the flush was successful. If the synchronous flush
       // fails then the exporter will be invoked with the same record again.
-      updateLastExportedPosition();
+      updateLastExportedPosition(lastPosition);
     }
+  }
+
+  private SemanticVersion getVersion(final String version) {
+    return SemanticVersion.parse(version)
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Unsupported record broker version: ["
+                        + version
+                        + "] Must be a semantic version."));
   }
 
   private boolean shouldFlush() {
@@ -184,7 +206,7 @@ public class CamundaExporter implements Exporter {
   private void flushAndReschedule() {
     try {
       flush();
-      updateLastExportedPosition();
+      updateLastExportedPosition(lastPosition);
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
@@ -202,7 +224,7 @@ public class CamundaExporter implements Exporter {
     }
   }
 
-  private void updateLastExportedPosition() {
+  private void updateLastExportedPosition(final long lastPosition) {
     final var serialized = metadata.serialize();
     controller.updateLastExportedRecordPosition(lastPosition, serialized);
   }

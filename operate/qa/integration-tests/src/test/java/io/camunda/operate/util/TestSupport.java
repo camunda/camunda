@@ -8,6 +8,7 @@
 package io.camunda.operate.util;
 
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.EnumSet;
@@ -27,6 +28,54 @@ public final class TestSupport {
   @SuppressWarnings("checkstyle:innerassignment")
   public static void setIndexingForValueType(
       final IndexConfiguration config, final ValueType valueType, final boolean value) {
+    switch (valueType) {
+      case JOB -> config.job = value;
+      case DEPLOYMENT -> config.deployment = value;
+      case PROCESS_INSTANCE -> config.processInstance = value;
+      case PROCESS_INSTANCE_BATCH -> config.processInstanceBatch = value;
+      case INCIDENT -> config.incident = value;
+      case MESSAGE -> config.message = value;
+      case MESSAGE_BATCH -> config.messageBatch = value;
+      case MESSAGE_SUBSCRIPTION -> config.messageSubscription = value;
+      case PROCESS_MESSAGE_SUBSCRIPTION -> config.processMessageSubscription = value;
+      case JOB_BATCH -> config.jobBatch = value;
+      case VARIABLE -> config.variable = value;
+      case VARIABLE_DOCUMENT -> config.variableDocument = value;
+      case PROCESS_INSTANCE_CREATION -> config.processInstanceCreation = value;
+      case PROCESS_INSTANCE_MIGRATION -> config.processInstanceMigration = value;
+      case PROCESS_INSTANCE_MODIFICATION -> config.processInstanceModification = value;
+      case ERROR -> config.error = value;
+      case PROCESS -> config.process = value;
+      case DECISION -> config.decision = value;
+      case DECISION_REQUIREMENTS -> config.decisionRequirements = value;
+      case DECISION_EVALUATION -> config.decisionEvaluation = value;
+      case CHECKPOINT -> config.checkpoint = value;
+      case TIMER -> config.timer = value;
+      case MESSAGE_START_EVENT_SUBSCRIPTION -> config.messageStartEventSubscription = value;
+      case PROCESS_EVENT -> config.processEvent = value;
+      case DEPLOYMENT_DISTRIBUTION -> config.deploymentDistribution = value;
+      case ESCALATION -> config.escalation = value;
+      case SIGNAL -> config.signal = value;
+      case SIGNAL_SUBSCRIPTION -> config.signalSubscription = value;
+      case RESOURCE_DELETION -> config.resourceDeletion = value;
+      case COMMAND_DISTRIBUTION -> config.commandDistribution = value;
+      case FORM -> config.form = value;
+      case USER_TASK -> config.userTask = value;
+      case COMPENSATION_SUBSCRIPTION -> config.compensationSubscription = value;
+      case MESSAGE_CORRELATION -> config.messageCorrelation = value;
+      case USER -> config.user = value;
+      case AUTHORIZATION -> config.authorization = value;
+      default ->
+          throw new IllegalArgumentException(
+              "No known indexing configuration option for value type " + valueType);
+    }
+  }
+
+  @SuppressWarnings("checkstyle:innerassignment")
+  public static void setIndexingForValueType(
+      final OpensearchExporterConfiguration.IndexConfiguration config,
+      final ValueType valueType,
+      final boolean value) {
     switch (valueType) {
       case JOB -> config.job = value;
       case DEPLOYMENT -> config.deployment = value;

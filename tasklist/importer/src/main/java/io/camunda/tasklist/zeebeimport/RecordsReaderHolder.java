@@ -7,13 +7,18 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
+import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebe.PartitionHolder;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.util.VisibleForTesting;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,9 +33,15 @@ import org.springframework.stereotype.Component;
 @Component
 public class RecordsReaderHolder {
 
+  public static final Integer MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 5;
+
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordsReaderHolder.class);
 
   private Set<RecordsReader> recordsReader = null;
+
+  private final Set<Integer> partitionsCompletedImporting = new HashSet<>();
+
+  private final Map<RecordsReader, Integer> countEmptyBatchesAfterImportingDone = new HashMap<>();
 
   @Autowired private BeanFactory beanFactory;
 
@@ -47,22 +58,65 @@ public class RecordsReaderHolder {
     // create readers
     final List<Integer> partitionIds = partitionHolder.getPartitionIds();
     LOGGER.info("Starting import for partitions: {}", partitionIds);
-    for (Integer partitionId : partitionIds) {
+    for (final Integer partitionId : partitionIds) {
       // TODO what if it's not the final list of partitions
-      for (ImportValueType importValueType : ImportValueType.values()) {
+      for (final ImportValueType importValueType : ImportValueType.values()) {
         // we load deployments only from deployment partition
         if (!importValueType.equals(ImportValueType.PROCESS)
             || partitionId.equals(Protocol.DEPLOYMENT_PARTITION)) {
-          recordsReader.add(
-              beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
+          final var recordReader =
+              beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize);
+          recordsReader.add(recordReader);
+          countEmptyBatchesAfterImportingDone.put(recordReader, 0);
         }
       }
     }
     return recordsReader;
   }
 
-  public RecordsReader getRecordsReader(int partitionId, ImportValueType importValueType) {
-    for (RecordsReader record : recordsReader) {
+  public void addPartitionCompletedImporting(final int partitionId) {
+    partitionsCompletedImporting.add(partitionId);
+  }
+
+  public boolean hasPartitionCompletedImporting(final int partitionId) {
+    return partitionsCompletedImporting.contains(partitionId);
+  }
+
+  public void incrementEmptyBatches(final int partitionId, final ImportValueType importValueType) {
+    final var reader = getRecordsReader(partitionId, importValueType);
+    countEmptyBatchesAfterImportingDone.merge(reader, 1, Integer::sum);
+  }
+
+  public boolean isRecordReaderCompletedImporting(
+      final int partitionId, final ImportValueType importValueType) {
+    if (hasPartitionCompletedImporting(partitionId)) {
+
+      final var reader = getRecordsReader(partitionId, importValueType);
+      return countEmptyBatchesAfterImportingDone.get(reader)
+          >= MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
+    }
+
+    return false;
+  }
+
+  public void recordLatestLoadedPositionAsCompleted(
+      final ImportPositionHolder importPositionHolder,
+      final String aliasTemplate,
+      final int partitionId)
+      throws IOException {
+    final ImportPositionEntity currentLatestPosition =
+        importPositionHolder.getLatestScheduledPosition(aliasTemplate, partitionId);
+    importPositionHolder.recordLatestLoadedPosition(currentLatestPosition.setCompleted(true));
+  }
+
+  @VisibleForTesting
+  public void resetCountEmptyBatches() {
+    countEmptyBatchesAfterImportingDone.replaceAll((k, v) -> v = 0);
+  }
+
+  public RecordsReader getRecordsReader(
+      final int partitionId, final ImportValueType importValueType) {
+    for (final RecordsReader record : recordsReader) {
       if (record.getPartitionId() == partitionId
           && record.getImportValueType().equals(importValueType)) {
         return record;

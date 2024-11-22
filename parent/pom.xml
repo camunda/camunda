@@ -49,13 +49,13 @@
     <version.commons-codec>1.17.1</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
     <version.commons-validator>1.9.0</version.commons-validator>
-    <version.zstd-jni>1.5.6-6</version.zstd-jni>
+    <version.zstd-jni>1.5.6-7</version.zstd-jni>
     <version.commons-text>1.12.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.4.0</version.docker-java-api>
     <version.elasticsearch>8.13.4</version.elasticsearch>
     <version.error-prone>2.33.0</version.error-prone>
-    <version.grpc>1.68.0</version.grpc>
+    <version.grpc>1.68.1</version.grpc>
     <version.gson>2.11.0</version.gson>
     <version.guava>33.3.1-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
@@ -66,7 +66,7 @@
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.6.1</version.identity>
     <version.surefire>3.5.1</version.surefire>
-    <version.jackson>2.18.0</version.jackson>
+    <version.jackson>2.18.1</version.jackson>
     <version.java-grpc-prometheus>0.6.0</version.java-grpc-prometheus>
     <version.junit>5.11.3</version.junit>
     <version.junit4>4.13.2</version.junit4>
@@ -96,7 +96,7 @@
     <version.mariadb-java-client>3.4.1</version.mariadb-java-client>
     <version.testcontainer-mariadb>1.20.0</version.testcontainer-mariadb>
     <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
-    <version.netflix.concurrency>0.5.2</version.netflix.concurrency>
+    <version.netflix.concurrency>0.5.3</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
     <version.feel-scala>1.18.1</version.feel-scala>
     <version.dmn-scala>1.10.0</version.dmn-scala>
@@ -116,7 +116,7 @@
     <version.resilience4j>2.2.0</version.resilience4j>
     <version.immutables>2.10.1</version.immutables>
     <version.jsr305>3.0.2</version.jsr305>
-    <version.classgraph>4.8.177</version.classgraph>
+    <version.classgraph>4.8.179</version.classgraph>
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
@@ -128,13 +128,13 @@
     <version.zpt>8.5.7</version.zpt>
     <version.feign>13.4</version.feign>
     <version.google-sdk>26.47.0</version.google-sdk>
-    <version.azure-sdk>1.2.28</version.azure-sdk>
+    <version.azure-sdk>1.2.29</version.azure-sdk>
     <version.awssdk>2.28.29</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
-    <version.jackson-annotations>2.18.0</version.jackson-annotations>
+    <version.jackson-annotations>2.18.1</version.jackson-annotations>
     <version.swagger-annotations>2.2.25</version.swagger-annotations>
     <version.checker-qual>3.47.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
@@ -213,10 +213,10 @@
     <plugin.version.checkstyle>3.5.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.13.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.14.1</plugin.version.dependency-analyzer>
-    <plugin.version.dependency>3.8.0</plugin.version.dependency>
+    <plugin.version.dependency>3.8.1</plugin.version.dependency>
     <plugin.version.enforcer>3.5.0</plugin.version.enforcer>
     <plugin.version.exec>3.4.1</plugin.version.exec>
-    <plugin.version.failsafe>3.5.1</plugin.version.failsafe>
+    <plugin.version.failsafe>3.5.2</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
     <plugin.version.maven-jar>3.4.2</plugin.version.maven-jar>
@@ -226,7 +226,7 @@
     <plugin.version.revapi>0.15.0</plugin.version.revapi>
     <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
-    <plugin.version.spotbugs>4.8.6.5</plugin.version.spotbugs>
+    <plugin.version.spotbugs>4.8.6.6</plugin.version.spotbugs>
     <plugin.version.surefire>3.5.1</plugin.version.surefire>
     <plugin.version.versions>2.17.1</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>

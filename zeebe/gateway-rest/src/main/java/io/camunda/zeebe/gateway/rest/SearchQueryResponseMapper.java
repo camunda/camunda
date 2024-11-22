@@ -24,6 +24,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -59,6 +60,8 @@ import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.RoleItem;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
+import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
+import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
@@ -103,6 +106,17 @@ public final class SearchQueryResponseMapper {
         .page(page)
         .items(
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
+  }
+
+  public static TenantSearchQueryResponse toTenantSearchQueryResponse(
+      final SearchQueryResult<TenantEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new TenantSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toTenants)
+                .orElseGet(List::of));
   }
 
   public static DecisionDefinitionSearchQueryResponse toDecisionDefinitionSearchQueryResponse(
@@ -242,6 +256,21 @@ public final class SearchQueryResponseMapper {
                 : roleEntity.assignedMemberKeys().stream().sorted().toList());
   }
 
+  private static List<TenantItem> toTenants(final List<TenantEntity> tenants) {
+    return tenants.stream().map(SearchQueryResponseMapper::toTenant).toList();
+  }
+
+  public static TenantItem toTenant(final TenantEntity tenantEntity) {
+    return new TenantItem()
+        .tenantKey(tenantEntity.key())
+        .name(tenantEntity.name())
+        .tenantId(tenantEntity.tenantId())
+        .assignedMemberKeys(
+            tenantEntity.assignedMemberKeys() == null
+                ? null
+                : tenantEntity.assignedMemberKeys().stream().sorted().toList());
+  }
+
   private static List<DecisionDefinitionItem> toDecisionDefinitions(
       final List<DecisionDefinitionEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
@@ -306,9 +335,9 @@ public final class SearchQueryResponseMapper {
 
   public static IncidentItem toIncident(final IncidentEntity t) {
     return new IncidentItem()
-        .incidentKey(t.key())
+        .incidentKey(t.incidentKey())
         .processDefinitionKey(t.processDefinitionKey())
-        .processDefinitionId(t.bpmnProcessId())
+        .processDefinitionId(t.processDefinitionId())
         .processInstanceKey(t.processInstanceKey())
         .errorType(IncidentItem.ErrorTypeEnum.fromValue(t.errorType().name()))
         .errorMessage(t.errorMessage())

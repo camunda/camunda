@@ -181,7 +181,7 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, IncidentEntity.class);
+    return executor.search(filter, io.camunda.webapps.schema.entities.operate.IncidentEntity.class);
   }
 
   @Override

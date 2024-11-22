@@ -5,11 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.store.opensearch.response;
+package io.camunda.webapps.backup.repository.opensearch;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch.snapshot.SnapshotInfo;
+import org.opensearch.client.opensearch.snapshot.SnapshotShardFailure;
 
 public class OpenSearchSnapshotInfo {
 
@@ -18,13 +21,13 @@ public class OpenSearchSnapshotInfo {
 
   private SnapshotState state;
 
-  private List<Object> failures = List.of();
+  private List<SnapshotShardFailure> failures = List.of();
 
   private Long startTimeInMillis;
 
   private Long endTimeInMillis;
 
-  private Map<String, Object> metadata = Map.of();
+  private Map<String, JsonData> metadata = Map.of();
 
   public String getSnapshot() {
     return snapshot;
@@ -53,11 +56,11 @@ public class OpenSearchSnapshotInfo {
     return this;
   }
 
-  public List<Object> getFailures() {
+  public List<SnapshotShardFailure> getFailures() {
     return failures;
   }
 
-  public OpenSearchSnapshotInfo setFailures(final List<Object> failures) {
+  public OpenSearchSnapshotInfo setFailures(final List<SnapshotShardFailure> failures) {
     this.failures = failures;
     return this;
   }
@@ -80,13 +83,30 @@ public class OpenSearchSnapshotInfo {
     return this;
   }
 
-  public Map<String, Object> getMetadata() {
+  public Map<String, JsonData> getMetadata() {
     return metadata;
   }
 
-  public OpenSearchSnapshotInfo setMetadata(final Map<String, Object> metadata) {
+  public OpenSearchSnapshotInfo setMetadata(final Map<String, JsonData> metadata) {
     this.metadata = metadata;
     return this;
+  }
+
+  public static OpenSearchSnapshotInfo fromResponse(final SnapshotInfo snapshotInfo) {
+    return new OpenSearchSnapshotInfo()
+        .setSnapshot(snapshotInfo.snapshot())
+        .setUuid(snapshotInfo.uuid())
+        .setState(SnapshotState.valueOf(snapshotInfo.state()))
+        .setStartTimeInMillis(
+            snapshotInfo.startTimeInMillis() != null
+                ? Long.parseLong(snapshotInfo.startTimeInMillis())
+                : 0L)
+        .setEndTimeInMillis(
+            snapshotInfo.endTimeInMillis() != null
+                ? Long.parseLong(snapshotInfo.endTimeInMillis())
+                : 0)
+        .setMetadata(snapshotInfo.metadata())
+        .setFailures(snapshotInfo.failures());
   }
 
   @Override
