@@ -7,8 +7,6 @@
  */
 package io.camunda.search.clients;
 
-import static io.camunda.search.clients.transformers.ServiceTransformer.identity;
-
 import io.camunda.search.clients.auth.AuthorizationQueryStrategy;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
@@ -24,7 +22,6 @@ import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.security.auth.SecurityContext;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 
 public final class SearchClientBasedQueryExecutor {
@@ -95,9 +92,7 @@ public final class SearchClientBasedQueryExecutor {
   }
 
   private <T, R> ServiceTransformer<T, R> getDocumentTransformer(final Class<R> documentClass) {
-    // TODO remove the fallback to identity() once all document transformers are implemented
-    return Objects.requireNonNullElseGet(
-        transformers.getTransformer(documentClass), () -> (ServiceTransformer<T, R>) identity());
+    return transformers.getTransformer(documentClass);
   }
 
   private SearchQueryExecutionException rethrowRuntimeException(final Exception e) {

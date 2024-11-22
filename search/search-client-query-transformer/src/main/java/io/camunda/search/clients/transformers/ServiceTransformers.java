@@ -48,6 +48,7 @@ import io.camunda.search.clients.transformers.sort.AuthorizationFieldSortingTran
 import io.camunda.search.clients.transformers.sort.DecisionDefinitionFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.DecisionInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.DecisionRequirementsFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.FieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.FlowNodeInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.FormFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.IncidentFieldSortingTransformer;
@@ -149,7 +150,15 @@ public final class ServiceTransformers {
     return (FilterTransformer<F>) transformer;
   }
 
+  public FieldSortingTransformer getFieldSortingTransformer(final Class<?> cls) {
+    final ServiceTransformer<String, String> fieldSortingTransformer = getTransformer(cls);
+    return (FieldSortingTransformer) fieldSortingTransformer;
+  }
+
   public <T, R> ServiceTransformer<T, R> getTransformer(final Class<?> cls) {
+    if (!transformers.containsKey(cls)) {
+      throw new IllegalArgumentException("No transformer found for class " + cls);
+    }
     return (ServiceTransformer<T, R>) transformers.get(cls);
   }
 
