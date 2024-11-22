@@ -378,6 +378,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   go-lint:
     name: Go linting
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -407,6 +408,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
   go-apidiff:
     name: Go Backward Compatibility
+    timeout-minutes: 5
     runs-on: ubuntu-latest
     env:
       # set the comparison based on the type of workflow trigger:
