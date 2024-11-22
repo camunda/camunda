@@ -19,7 +19,7 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
   private OffsetDateTime endDate;
   private FlowNodeState state;
   private FlowNodeType type;
-  private Long incidentKey;
+  @Deprecated private Long incidentKey;
   private Long processInstanceKey;
 
   /** Attention! This field will be filled in only for data imported after v. 8.2.0. */
@@ -81,10 +81,12 @@ public class FlowNodeInstanceEntity extends OperateZeebeEntity<FlowNodeInstanceE
     return this;
   }
 
+  @Deprecated
   public Long getIncidentKey() {
     return incidentKey;
   }
 
+  @Deprecated
   public FlowNodeInstanceEntity setIncidentKey(final Long incidentKey) {
     this.incidentKey = incidentKey;
     return this;

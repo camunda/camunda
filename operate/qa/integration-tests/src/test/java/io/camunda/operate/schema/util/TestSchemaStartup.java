@@ -7,19 +7,14 @@
  */
 package io.camunda.operate.schema.util;
 
-import io.camunda.operate.exceptions.MigrationException;
 import io.camunda.operate.schema.SchemaStartup;
 
 public class TestSchemaStartup extends SchemaStartup {
 
   @Override
-  public void initializeSchema() throws MigrationException {
+  public void initializeSchema() {
     // Workaround to avoid @PostConstruct logic in #initializeSchema()
     // on test initialization. Test cases will trigger
     // schema initialization manually via #initializeSchemaOnDemand
-  }
-
-  public void initializeSchemaOnDemand() throws MigrationException {
-    super.initializeSchema();
   }
 }

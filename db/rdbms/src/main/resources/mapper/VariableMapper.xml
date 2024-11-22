@@ -16,8 +16,9 @@
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
-  <select id="search" parameterType="io.camunda.search.query.VariableQuery"
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.VariableDbQuery"
     resultMap="io.camunda.db.rdbms.sql.VariableMapper.searchResultMap">
+    SELECT * FROM (
     SELECT
       VAR_KEY,
       PROCESS_INSTANCE_KEY,
@@ -26,16 +27,14 @@
       VAR_VALUE,
     VAR_FULL_VALUE,
       TENANT_ID,
-    IS_PREVIEW
+    IS_PREVIEW,
+    PROCESS_DEFINITION_ID
     FROM VARIABLE
     <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
-    <if test="sort != null and sort.orderings != null and !sort.orderings.isEmpty()">
-      <foreach collection="sort.orderings" open="ORDER BY " separator=", " item="item">
-        <include refid="io.camunda.db.rdbms.sql.VariableMapper.variableSortMapper"/>
-        ${item.order}
-      </foreach>
-    </if>
-    ${paging.after}
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
   <sql id="searchFilter">
@@ -64,20 +63,18 @@
       AND TENANT_ID IN
       <foreach collection="filter.tenantIds" item="value" open="(" separator=", " close=")">#{value}</foreach>
     </if>
-
-    <!-- advanced filters on variable name / values -->
-    <if test="filter.variableOperations != null and !filter.variableOperations.isEmpty()">
-      AND (
-      <foreach collection="filter.variableOperations" index="name" item="operations">
-        (VAR_NAME = #{name}
-        <foreach collection="operations" item="operation">
-          AND
-          <include refid="variableOperationCondition"/>
-        </foreach>
-        )
-        OR
+    <if test="filter.nameOperations != null and !filter.nameOperations.isEmpty()">
+      <foreach collection="filter.nameOperations" item="operation">
+        AND VAR_NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
       </foreach>
-      false )
+    </if>
+    <!-- advanced filters on variable name / values -->
+    <if test="filter.valueOperations != null and !filter.valueOperations.isEmpty()">
+      <foreach collection="filter.valueOperations" item="operation">
+        AND
+        <include refid="variableOperationCondition"/>
+      </foreach>
     </if>
 
   </sql>
@@ -198,6 +195,7 @@
       <arg column="IS_PREVIEW" javaType="java.lang.Boolean"/>
       <arg column="SCOPE_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
@@ -207,10 +205,10 @@
     statementType="PREPARED"
     parameterType="io.camunda.db.rdbms.write.domain.VariableDbModel"
     flushCache="true">
-    INSERT INTO VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
+    INSERT INTO VARIABLE (VAR_KEY, PROCESS_INSTANCE_KEY, PROCESS_DEFINITION_ID, SCOPE_KEY, TYPE, VAR_NAME, DOUBLE_VALUE,
                           LONG_VALUE,
                           VAR_VALUE, VAR_FULL_VALUE, TENANT_ID, IS_PREVIEW)
-    VALUES (#{key}, #{processInstanceKey}, #{scopeKey}, #{type}, #{name}, #{doubleValue},
+    VALUES (#{variableKey}, #{processInstanceKey}, #{processDefinitionId}, #{scopeKey}, #{type}, #{name}, #{doubleValue},
             #{longValue},
             #{value}, #{fullValue}, #{tenantId}, #{isPreview})
   </insert>

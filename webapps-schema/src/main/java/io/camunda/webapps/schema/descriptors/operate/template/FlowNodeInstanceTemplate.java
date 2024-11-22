@@ -25,7 +25,7 @@ public class FlowNodeInstanceTemplate extends OperateTemplateDescriptor
   public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
-  public static final String INCIDENT_KEY = "incidentKey";
+  @Deprecated public static final String INCIDENT_KEY = "incidentKey";
   public static final String STATE = "state";
   public static final String TYPE = "type";
   public static final String TREE_PATH = "treePath";

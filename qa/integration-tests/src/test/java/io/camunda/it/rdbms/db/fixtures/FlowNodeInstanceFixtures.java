@@ -34,7 +34,6 @@ public final class FlowNodeInstanceFixtures extends CommonFixtures {
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .treePath(nextStringId())
             .incidentKey(nextKey())
-            .scopeKey(nextKey())
             .state(randomEnum(FlowNodeState.class))
             .type(randomEnum(FlowNodeType.class))
             .tenantId("tenant-" + RANDOM.nextInt(10000));

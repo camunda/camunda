@@ -8,6 +8,7 @@
 package io.camunda.it.auth;
 
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE;
+import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.CREATE_PROCESS_INSTANCE;
 import static io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum.READ_USER_TASK;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.DEPLOYMENT;
 import static io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum.PROCESS_DEFINITION;
@@ -44,7 +45,7 @@ class UserTaskAuthorizationIT {
           "password",
           List.of(
               new Permissions(DEPLOYMENT, CREATE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, CREATE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*"))));
   private static final User USER1_USER =
       new User(

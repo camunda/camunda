@@ -10,6 +10,7 @@ package io.camunda.zeebe.journal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.file.LogCorrupter;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
@@ -540,7 +541,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldUpdateMetastoreAfterFlush() {
+  void shouldUpdateMetastoreAfterFlush() throws FlushException {
     journal = openJournal();
     journal.append(1, recordDataWriter);
     final var lastWrittenIndex = journal.append(2, recordDataWriter).index();
@@ -557,7 +558,7 @@ final class JournalTest {
     final RecordData data =
         new RecordData(record.index(), record.asqn(), BufferUtil.cloneBuffer(record.data()));
 
-    if (record instanceof PersistedJournalRecord p) {
+    if (record instanceof final PersistedJournalRecord p) {
       return new PersistedJournalRecord(
           p.metadata(), data, BufferUtil.cloneBuffer(p.serializedRecord()));
     }

@@ -15,7 +15,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
-import java.time.Instant;
+import io.camunda.zeebe.util.DateUtil;
 
 public class ProcessInstanceExportHandler
     implements RdbmsExportHandler<ProcessInstanceRecordValue> {
@@ -38,33 +38,15 @@ public class ProcessInstanceExportHandler
     if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_ACTIVATING)) {
       processInstanceWriter.create(map(record));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)) {
-      processInstanceWriter.update(
-          new ProcessInstanceDbModel(
-              value.getProcessInstanceKey(),
-              value.getBpmnProcessId(),
-              value.getProcessDefinitionKey(),
-              ProcessInstanceState.COMPLETED,
-              null,
-              DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
-              value.getTenantId(),
-              value.getParentProcessInstanceKey(),
-              value.getParentElementInstanceKey(),
-              null,
-              value.getVersion()));
+      processInstanceWriter.finish(
+          value.getProcessInstanceKey(),
+          ProcessInstanceState.COMPLETED,
+          DateUtil.toOffsetDateTime(record.getTimestamp()));
     } else if (record.getIntent().equals(ProcessInstanceIntent.ELEMENT_TERMINATED)) {
-      processInstanceWriter.update(
-          new ProcessInstanceDbModel(
-              value.getProcessInstanceKey(),
-              value.getBpmnProcessId(),
-              value.getProcessDefinitionKey(),
-              ProcessInstanceState.CANCELED,
-              null,
-              DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
-              value.getTenantId(),
-              value.getParentProcessInstanceKey(),
-              value.getParentElementInstanceKey(),
-              null,
-              value.getVersion()));
+      processInstanceWriter.finish(
+          value.getProcessInstanceKey(),
+          ProcessInstanceState.CANCELED,
+          DateUtil.toOffsetDateTime(record.getTimestamp()));
     }
   }
 
@@ -75,7 +57,7 @@ public class ProcessInstanceExportHandler
         value.getBpmnProcessId(),
         value.getProcessDefinitionKey(),
         ProcessInstanceState.ACTIVE,
-        DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())),
+        DateUtil.toOffsetDateTime(record.getTimestamp()),
         null,
         value.getTenantId(),
         value.getParentProcessInstanceKey(),

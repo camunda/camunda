@@ -24,7 +24,7 @@ import java.util.List;
  */
 public record UntypedOperation(Operator operator, List<Object> values, ValueTypeEnum type) {
 
-  public static UntypedOperation of(final Operation<Object> operation) {
+  public static UntypedOperation of(final Operation<?> operation) {
     final List<Object> typedValues;
     if (operation.values() != null) {
       typedValues =

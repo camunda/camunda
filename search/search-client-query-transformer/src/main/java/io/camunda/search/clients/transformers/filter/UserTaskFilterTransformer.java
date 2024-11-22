@@ -17,6 +17,17 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.ASSIGNEE;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.BPMN_PROCESS_ID;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.CANDIDATE_GROUPS;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.CANDIDATE_USERS;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.FLOW_NODE_BPMN_ID;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.KEY;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.PRIORITY;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.PROCESS_DEFINITION_ID;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.PROCESS_INSTANCE_ID;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.STATE;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.TENANT_ID;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.search.clients.query.SearchQuery;
@@ -99,47 +110,47 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {
-    return longTerms("processInstanceId", processInstanceKeys);
+    return longTerms(PROCESS_INSTANCE_ID, processInstanceKeys);
   }
 
   private SearchQuery getProcessDefinitionKeyQuery(final List<Long> processDefinitionIds) {
-    return longTerms("processDefinitionId", processDefinitionIds);
+    return longTerms(PROCESS_DEFINITION_ID, processDefinitionIds);
   }
 
   private SearchQuery getUserTaskKeysQuery(final List<Long> userTaskKeys) {
-    return longTerms("key", userTaskKeys);
+    return longTerms(KEY, userTaskKeys);
   }
 
   private List<SearchQuery> getCandidateUsersQuery(final List<Operation<String>> candidateUsers) {
-    return stringOperations("candidateUsers", candidateUsers);
+    return stringOperations(CANDIDATE_USERS, candidateUsers);
   }
 
   private List<SearchQuery> getCandidateGroupsQuery(final List<Operation<String>> candidateGroups) {
-    return stringOperations("candidateGroups", candidateGroups);
+    return stringOperations(CANDIDATE_GROUPS, candidateGroups);
   }
 
   private List<SearchQuery> getAssigneesQuery(final List<Operation<String>> assignees) {
-    return stringOperations("assignee", assignees);
+    return stringOperations(ASSIGNEE, assignees);
   }
 
   private List<SearchQuery> getPrioritiesQuery(final List<Operation<Integer>> priorities) {
-    return intOperations("priority", priorities);
+    return intOperations(PRIORITY, priorities);
   }
 
   private SearchQuery getStateQuery(final List<String> state) {
-    return stringTerms("state", state);
+    return stringTerms(STATE, state);
   }
 
   private SearchQuery getTenantQuery(final List<String> tenant) {
-    return stringTerms("tenantId", tenant);
+    return stringTerms(TENANT_ID, tenant);
   }
 
   private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessId) {
-    return stringTerms("bpmnProcessId", bpmnProcessId);
+    return stringTerms(BPMN_PROCESS_ID, bpmnProcessId);
   }
 
   private SearchQuery getElementIdQuery(final List<String> taskDefinitionId) {
-    return stringTerms("flowNodeBpmnId", taskDefinitionId);
+    return stringTerms(FLOW_NODE_BPMN_ID, taskDefinitionId);
   }
 
   private SearchQuery getProcessVariablesQuery(final List<VariableValueFilter> variableFilters) {

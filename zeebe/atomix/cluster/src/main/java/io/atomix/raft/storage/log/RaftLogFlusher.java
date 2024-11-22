@@ -8,6 +8,7 @@
 package io.atomix.raft.storage.log;
 
 import io.atomix.utils.concurrent.ThreadContextFactory;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.util.CloseableSilently;
 
@@ -37,7 +38,7 @@ public interface RaftLogFlusher extends CloseableSilently {
    *
    * @param journal the journal to flush
    */
-  void flush(final Journal journal);
+  void flush(final Journal journal) throws FlushException;
 
   /**
    * If this returns true, then any calls to {@link #flush(Journal)} are synchronous and immediate,
@@ -69,7 +70,7 @@ public interface RaftLogFlusher extends CloseableSilently {
   final class DirectFlusher implements RaftLogFlusher {
 
     @Override
-    public void flush(final Journal journal) {
+    public void flush(final Journal journal) throws FlushException {
       journal.flush();
     }
 

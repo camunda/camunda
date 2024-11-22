@@ -37,7 +37,7 @@ public record DecisionRequirementsSort(List<FieldSorting> orderings) implements 
     }
 
     public DecisionRequirementsSort.Builder decisionRequirementsKey() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("decisionRequirementsKey", null);
       return this;
     }
 

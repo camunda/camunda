@@ -68,7 +68,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
   static final SearchQueryResult<DecisionDefinitionEntity> SEARCH_QUERY_RESULT =
       new Builder<DecisionDefinitionEntity>()
           .total(1L)
-          .items(List.of(new DecisionDefinitionEntity("t", 0L, "dId", "name", 1, "drId", 2L)))
+          .items(List.of(new DecisionDefinitionEntity(0L, "dId", "name", 1, "drId", 2L, "t")))
           .sortValues(new Object[] {"v"})
           .build();
 
@@ -408,7 +408,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
     // given
     final Long decisionDefinitionKey = 1L;
     final DecisionDefinitionEntity decisionDefinitionEntity =
-        new DecisionDefinitionEntity("t", 0L, "dId", "name", 1, "drId", 2L);
+        new DecisionDefinitionEntity(0L, "dId", "name", 1, "drId", 2L, "t");
     when(decisionDefinitionServices.getByKey(decisionDefinitionKey))
         .thenReturn(decisionDefinitionEntity);
     final var expectedResponse =

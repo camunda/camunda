@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
+import io.camunda.zeebe.engine.scaling.redistribution.RedistributionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 
@@ -63,6 +64,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   AuthorizationState getAuthorizationState();
 
   RoutingState getRoutingState();
+
+  RedistributionState getRedistributionState();
 
   int getPartitionId();
 

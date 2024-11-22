@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.time.Instant;
@@ -36,9 +35,10 @@ public class EngineRuleTest {
     engineRule.awaitProcessingOf(message);
 
     // then
-    final var records = RecordingExporter.getRecords();
+    final var records = RecordingExporter.messageRecords();
     assertThat(records)
-        .extracting(Record::getTimestamp)
-        .containsExactly(expectedTimestamp.toEpochMilli(), expectedTimestamp.toEpochMilli());
+        .allSatisfy(
+            record ->
+                assertThat(record.getTimestamp()).isEqualTo(expectedTimestamp.toEpochMilli()));
   }
 }

@@ -19,6 +19,7 @@ package io.atomix.raft.roles;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import io.atomix.raft.RaftException;
+import io.atomix.raft.RaftException.CommitFailedException;
 import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.cluster.RaftMember;
@@ -560,9 +561,13 @@ final class LeaderAppender {
     // commit.
     // The updated commit index will be sent to passive/reserve members on heartbeats.
     if (raft.getCluster().isSingleMemberCluster()) {
-      raft.setCommitIndex(index);
-      completeCommits(index);
-      return CompletableFuture.completedFuture(index);
+      try {
+        raft.setCommitIndex(index);
+        completeCommits(index);
+        return CompletableFuture.completedFuture(index);
+      } catch (final CommitFailedException e) {
+        return CompletableFuture.failedFuture(e);
+      }
     }
 
     if (!open) {

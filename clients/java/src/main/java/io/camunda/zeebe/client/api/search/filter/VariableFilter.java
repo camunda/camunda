@@ -15,8 +15,10 @@
  */
 package io.camunda.zeebe.client.api.search.filter;
 
+import io.camunda.zeebe.client.api.search.filter.builder.LongProperty;
+import io.camunda.zeebe.client.api.search.filter.builder.StringProperty;
 import io.camunda.zeebe.client.api.search.query.TypedSearchQueryRequest.SearchRequestFilter;
-import io.camunda.zeebe.client.protocol.rest.LongFilterProperty;
+import java.util.function.Consumer;
 
 public interface VariableFilter extends SearchRequestFilter {
 
@@ -29,12 +31,28 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter variableKey(final Long key);
 
   /**
+   * Filters variables by the specified key using {@link LongProperty} consumer.
+   *
+   * @param fn the key {@link LongProperty} consumer of the variable
+   * @return the updated filter
+   */
+  VariableFilter variableKey(final Consumer<LongProperty> fn);
+
+  /**
    * Filters variables by the specified value.
    *
    * @param value the value of the variable
    * @return the updated filter
    */
   VariableFilter value(final String value);
+
+  /**
+   * Filters variables by the specified value using {@link StringProperty} consumer.
+   *
+   * @param fn the value {@link StringProperty} consumer of the variable
+   * @return the updated filter
+   */
+  VariableFilter value(final Consumer<StringProperty> fn);
 
   /**
    * Filters variables by the specified name.
@@ -45,24 +63,28 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter name(final String name);
 
   /**
+   * Filters variables by the specified name using {@link StringProperty} consumer.
+   *
+   * @param fn the name {@link StringProperty} consumer of the variable
+   * @return the updated filter
+   */
+  VariableFilter name(final Consumer<StringProperty> fn);
+
+  /**
    * Filters variables by the specified scope key.
    *
-   * @param scopeKey
-   * @return
    * @param scopeKey the scope key of the variable
    * @return the updated filter
    */
   VariableFilter scopeKey(final Long scopeKey);
 
   /**
-   * Filters variables by the specified scope key using {@link LongFilterProperty}.
+   * Filters variables by the specified scope key using {@link LongProperty} consumer.
    *
-   * @param scopeKey
-   * @return
-   * @param scopeKey the scope key {@link LongFilterProperty} of the variable
+   * @param fn the scope key {@link LongProperty} consumer of the variable
    * @return the updated filter
    */
-  VariableFilter scopeKey(final LongFilterProperty scopeKey);
+  VariableFilter scopeKey(final Consumer<LongProperty> fn);
 
   /**
    * Filters variables by the specified process instance key.
@@ -73,12 +95,12 @@ public interface VariableFilter extends SearchRequestFilter {
   VariableFilter processInstanceKey(final Long processInstanceKey);
 
   /**
-   * Filters variables by the specified process instance key using {@link LongFilterProperty}.
+   * Filters variables by the specified process instance key using {@link LongProperty} consumer.
    *
-   * @param processInstanceKey the process instance key {@link LongFilterProperty} of the variable
+   * @param fn the process instance key {@link LongProperty} consumer of the variable
    * @return the updated filter
    */
-  VariableFilter processInstanceKey(final LongFilterProperty processInstanceKey);
+  VariableFilter processInstanceKey(final Consumer<LongProperty> fn);
 
   /**
    * Filters variables by the specified tenant id.

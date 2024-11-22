@@ -692,6 +692,11 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   }
 
   @Override
+  public String componentName() {
+    return name;
+  }
+
+  @Override
   public HealthReport getHealthReport() {
     return healthReport;
   }

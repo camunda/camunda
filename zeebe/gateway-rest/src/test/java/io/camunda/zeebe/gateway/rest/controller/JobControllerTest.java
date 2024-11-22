@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.Authentication;
@@ -19,10 +20,13 @@ import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -112,7 +116,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).failJob(1L, 0, "", 0L, null);
+    Mockito.verify(jobServices).failJob(1L, 0, "", 0L, Map.of());
   }
 
   @Test
@@ -295,9 +299,8 @@ public class JobControllerTest extends RestControllerTest {
   @Test
   void shouldCompleteJob() {
     // given
-    when(jobServices.completeJob(anyLong(), any()))
+    when(jobServices.completeJob(anyLong(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
-
     // when/then
     webClient
         .post()
@@ -308,22 +311,23 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).completeJob(1L, Map.of());
+    Mockito.verify(jobServices).completeJob(eq(1L), eq(Map.of()), any(JobResult.class));
   }
 
   @Test
-  void shouldCompleteJobWithVariables() {
+  void shouldCompleteJobWithResultDeniedTrue() {
     // given
-    when(jobServices.completeJob(anyLong(), any()))
+    when(jobServices.completeJob(anyLong(), any(), any()))
         .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
 
     final var request =
         """
-            {
-              "variables": {
-                "foo": "bar"
-              }
-            }""";
+          {
+            "result": {
+              "denied": true
+            }
+          }
+        """;
 
     // when/then
     webClient
@@ -336,7 +340,106 @@ public class JobControllerTest extends RestControllerTest {
         .expectStatus()
         .isNoContent();
 
-    Mockito.verify(jobServices).completeJob(1L, Map.of("foo", "bar"));
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+    Assertions.assertTrue(jobResultArgumentCaptor.getValue().isDenied());
+  }
+
+  @Test
+  void shouldCompleteJobWithResultDeniedFalse() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "denied": false
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+    Assertions.assertFalse(jobResultArgumentCaptor.getValue().isDenied());
+  }
+
+  @Test
+  void shouldCompleteJobWithResultAndIgnoreUnknownField() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "result": {
+              "unknownField": true
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
+        ArgumentCaptor.forClass(JobResult.class);
+    Mockito.verify(jobServices)
+        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
+    Assertions.assertFalse(jobResultArgumentCaptor.getValue().isDenied());
+  }
+
+  @Test
+  void shouldCompleteJobWithVariables() {
+    // given
+    when(jobServices.completeJob(anyLong(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
+
+    final var request =
+        """
+          {
+            "variables": {
+              "foo": "bar"
+            }
+          }
+        """;
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/1/completion")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    Mockito.verify(jobServices).completeJob(eq(1L), eq(Map.of("foo", "bar")), any(JobResult.class));
   }
 
   @Test
@@ -347,12 +450,13 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-            {
-              "changeset": {
-                "retries": 5,
-                "timeout": 1000
-              }
-            }""";
+          {
+            "changeset": {
+              "retries": 5,
+              "timeout": 1000
+            }
+          }
+        """;
     // when/then
     webClient
         .patch()
@@ -375,11 +479,12 @@ public class JobControllerTest extends RestControllerTest {
 
     final var request =
         """
-            {
-              "changeset": {
-                "retries": 5
-              }
-            }""";
+          {
+            "changeset": {
+              "retries": 5
+            }
+          }
+        """;
     // when/then
     webClient
         .patch()
@@ -426,9 +531,10 @@ public class JobControllerTest extends RestControllerTest {
     // given
     final var request =
         """
-            {
-              "changeset": {}
-            }""";
+          {
+            "changeset": {}
+          }
+        """;
 
     final var expectedBody =
         """

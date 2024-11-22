@@ -25,6 +25,7 @@ import io.atomix.utils.concurrent.ThreadContext;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -488,6 +489,12 @@ final class RaftClusterContextTest {
   private RaftContext raftWithStoredConfiguration(final Configuration configuration) {
     final var threadContext =
         new ThreadContext() {
+          @Override
+          public Scheduled schedule(
+              final long delay, final TimeUnit timeUnit, final Runnable callback) {
+            throw new UnsupportedOperationException();
+          }
+
           @Override
           public Scheduled schedule(
               final Duration initialDelay, final Duration interval, final Runnable callback) {

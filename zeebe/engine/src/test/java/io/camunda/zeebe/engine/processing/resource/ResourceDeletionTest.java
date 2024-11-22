@@ -210,6 +210,7 @@ public class ResourceDeletionTest {
     assertThat(
             RecordingExporter.records()
                 .onlyEvents()
+                .filter(r -> r.getIntent() != DeploymentIntent.RECONSTRUCTED_ALL)
                 .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED)))
         .describedAs("Should write events in correct order")
         .extracting(Record::getIntent)

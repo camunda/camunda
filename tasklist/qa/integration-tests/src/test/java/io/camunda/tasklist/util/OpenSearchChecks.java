@@ -19,9 +19,9 @@ import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.ProcessStore;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -48,7 +48,7 @@ public class OpenSearchChecks {
 
   @Autowired private ProcessStore processStore;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   /** Checks whether the process of given args[0] processId (Long) is deployed. */
   @Bean(name = PROCESS_IS_DEPLOYED_CHECK)

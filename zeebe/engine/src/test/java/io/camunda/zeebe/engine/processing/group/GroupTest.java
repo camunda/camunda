@@ -86,22 +86,23 @@ public class GroupTest {
   }
 
   @Test
-  public void shouldRejectUpdatedIfSameGroupExists() {
+  public void shouldRejectUpdatedIfSameNameGroupExists() {
     // given
     final var groupName = "yolo";
     final var groupKey = engine.group().newGroup(groupName).create().getKey();
+    final var anotherGroupName = "yolo2";
+    engine.group().newGroup(anotherGroupName).create();
 
     // when
-    final var updatedName = "yolo";
     final var updatedGroupRecord =
-        engine.group().updateGroup(groupKey).withName(updatedName).expectRejection().update();
+        engine.group().updateGroup(groupKey).withName(anotherGroupName).expectRejection().update();
 
     // then
     assertThat(updatedGroupRecord)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
         .hasRejectionReason(
             "Expected to update group with name '%s', but a group with this name already exists."
-                .formatted(updatedName));
+                .formatted(anotherGroupName));
   }
 
   @Test

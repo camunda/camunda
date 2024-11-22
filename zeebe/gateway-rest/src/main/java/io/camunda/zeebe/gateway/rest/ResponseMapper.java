@@ -36,10 +36,14 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.RoleCreateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastResponse;
+import io.camunda.zeebe.gateway.protocol.rest.TenantCreateResponse;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserCreateResponse;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.msgpack.value.ValueArray;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
@@ -51,6 +55,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
@@ -321,6 +326,25 @@ public final class ResponseMapper {
   public static ResponseEntity<Object> toUserCreateResponse(final UserRecord userRecord) {
     final var response = new UserCreateResponse().userKey(userRecord.getUserKey());
     return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+  }
+
+  public static ResponseEntity<Object> toRoleCreateResponse(final RoleRecord roleRecord) {
+    final var response = new RoleCreateResponse().roleKey(roleRecord.getRoleKey());
+    return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+  }
+
+  public static ResponseEntity<Object> toTenantCreateResponse(final TenantRecord record) {
+    final var response = new TenantCreateResponse().tenantKey(record.getTenantKey());
+    return new ResponseEntity<>(response, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toTenantUpdateResponse(final TenantRecord record) {
+    final var response =
+        new TenantUpdateResponse()
+            .tenantKey(record.getTenantKey())
+            .tenantId(record.getTenantId())
+            .name(record.getName());
+    return new ResponseEntity<>(response, HttpStatus.OK);
   }
 
   public static ResponseEntity<Object> toEvaluateDecisionResponse(

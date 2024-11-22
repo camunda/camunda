@@ -23,10 +23,11 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -41,26 +42,25 @@ public class ProcessInstanceCreateAuthorizationIT {
       TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static final String PROCESS_ID = "processId";
+  private static AuthorizationsUtil authUtil;
+  @AutoCloseResource private static ZeebeClient defaultUserClient;
 
   @TestZeebe(autoStart = false)
-  private static final TestStandaloneBroker BROKER =
+  private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withBrokerConfig(
               b -> b.getExperimental().getEngine().getAuthorizations().setEnableAuthorization(true))
           .withAdditionalProfile(Profile.AUTH_BASIC);
 
-  private static AuthorizationsUtil authUtil;
-  private static ZeebeClient defaultUserClient;
-
-  @BeforeAll
-  static void beforeAll() {
-    BROKER.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    BROKER.start();
+  @BeforeEach
+  void beforeEach() {
+    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    broker.start();
 
     final var defaultUsername = "demo";
-    defaultUserClient = createClient(BROKER, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(BROKER, defaultUserClient, CONTAINER.getHttpHostAddress());
+    defaultUserClient = createClient(broker, defaultUsername, "demo");
+    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
     defaultUserClient
@@ -107,7 +107,9 @@ public class ProcessInstanceCreateAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.CREATE, List.of(PROCESS_ID)));
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
+            List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when then
@@ -126,7 +128,9 @@ public class ProcessInstanceCreateAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.CREATE, List.of(PROCESS_ID)));
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.CREATE_PROCESS_INSTANCE,
+            List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when then
@@ -160,7 +164,7 @@ public class ProcessInstanceCreateAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'CREATE' on resource 'PROCESS_DEFINITION'");
+              "Unauthorized to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
     }
   }
 
@@ -187,7 +191,7 @@ public class ProcessInstanceCreateAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'CREATE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
+              "Unauthorized to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
               PROCESS_ID);
     }
   }

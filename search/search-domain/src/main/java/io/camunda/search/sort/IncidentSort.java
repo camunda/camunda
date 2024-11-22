@@ -26,7 +26,7 @@ public record IncidentSort(List<FieldSorting> orderings) implements SortOption {
       implements ObjectBuilder<IncidentSort> {
 
     public Builder incidentKey() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("incidentKey", null);
       return this;
     }
 
@@ -36,7 +36,7 @@ public record IncidentSort(List<FieldSorting> orderings) implements SortOption {
     }
 
     public Builder processDefinitionId() {
-      currentOrdering = new FieldSorting("bpmnProcessId", null);
+      currentOrdering = new FieldSorting("processDefinitionId", null);
       return this;
     }
 

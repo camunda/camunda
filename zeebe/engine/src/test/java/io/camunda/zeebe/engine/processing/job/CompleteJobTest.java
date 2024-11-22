@@ -13,6 +13,7 @@ import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -68,7 +69,8 @@ public final class CompleteJobTest {
         .hasType(job.getType())
         .hasRetries(job.getRetries())
         .hasDeadline(job.getDeadline())
-        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+        .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+        .hasResult(new JobResult().setDenied(false));
   }
 
   @Test
@@ -170,6 +172,50 @@ public final class CompleteJobTest {
     assertThat(throwable.getMessage()).contains("Property 'variables' is invalid");
     assertThat(throwable.getMessage())
         .contains("Expected document to be a root level object, but was 'INTEGER'");
+  }
+
+  @Test
+  public void shouldCompleteJobWithSetResultDeniedFalse() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+
+    // when
+    final Record<JobRecordValue> completedRecord =
+        ENGINE
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withResult(new JobResult().setDenied(false))
+            .complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+
+    Assertions.assertThat(completedRecord.getValue()).hasResult(new JobResult().setDenied(false));
+  }
+
+  @Test
+  public void shouldCompleteJobWithSetResultDeniedTrue() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord = ENGINE.jobs().withType(jobType).activate();
+
+    // when
+    final Record<JobRecordValue> completedRecord =
+        ENGINE
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withResult(new JobResult().setDenied(true))
+            .complete();
+
+    // then
+    Assertions.assertThat(completedRecord)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(JobIntent.COMPLETED);
+
+    Assertions.assertThat(completedRecord.getValue()).hasResult(new JobResult().setDenied(true));
   }
 
   @Test

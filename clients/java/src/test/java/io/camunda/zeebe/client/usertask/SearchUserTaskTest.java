@@ -48,7 +48,18 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getAssignee()).isEqualTo("demo");
+    assertThat(request.getFilter().getAssignee().get$Eq()).isEqualTo("demo");
+  }
+
+  @Test
+  void shouldSearchUserTaskByAssigneeStringFilter() {
+    // when
+    client.newUserTaskQuery().filter(f -> f.assignee(b -> b.neq("that"))).send().join();
+
+    // then
+    final UserTaskSearchQueryRequest request =
+        gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
+    assertThat(request.getFilter().getAssignee().get$Neq()).isEqualTo("that");
   }
 
   @Test
@@ -92,7 +103,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getCandidateGroup()).isEqualTo("group1");
+    assertThat(request.getFilter().getCandidateGroup().get$Eq()).isEqualTo("group1");
   }
 
   @Test
@@ -103,7 +114,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getCandidateUser()).isEqualTo("user1");
+    assertThat(request.getFilter().getCandidateUser().get$Eq()).isEqualTo("user1");
   }
 
   @Test
@@ -153,10 +164,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByPriorityLongFilter() {
     // when
-    final IntegerFilterProperty filterProperty = new IntegerFilterProperty();
-    filterProperty.$gt(1);
-    filterProperty.$lt(10);
-    client.newUserTaskQuery().filter(f -> f.priority(filterProperty)).send().join();
+    client.newUserTaskQuery().filter(f -> f.priority(b -> b.gt(1).lt(10))).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =

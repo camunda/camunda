@@ -61,6 +61,9 @@ const {
   EscalationStartEvent,
 } = elements;
 
+const HEADER_ROW_COUNT = 1;
+const CONTENT_ROW_COUNT = 33;
+
 /**
  * Returns a custom matcher function which ignores all option elements from comboboxes.
  */
@@ -108,8 +111,9 @@ describe('MigrationView/BottomPanel', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(EscalationStartEvent.name)).toBeInTheDocument();
 
-    // expect table to have 1 header + 33 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(34);
+    expect(screen.getAllByRole('row')).toHaveLength(
+      HEADER_ROW_COUNT + CONTENT_ROW_COUNT,
+    );
   });
 
   it.each([
@@ -560,8 +564,10 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeVisible();
 
-    // Expect all 33 rows to be visible (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(34);
+    // Expect all rows to be visible
+    expect(await screen.findAllByRole('row')).toHaveLength(
+      HEADER_ROW_COUNT + CONTENT_ROW_COUNT,
+    );
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
@@ -634,8 +640,11 @@ describe('MigrationView/BottomPanel', () => {
       screen.queryByText(getMatcherFunction(MultiInstanceSubProcess.name)),
     ).not.toBeInTheDocument();
 
-    // Expect 8 not mapped rows (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(9);
+    const UNMAPPED_ROW_COUNT = 8;
+
+    expect(await screen.findAllByRole('row')).toHaveLength(
+      HEADER_ROW_COUNT + UNMAPPED_ROW_COUNT,
+    );
 
     // Expect the following rows to be visible (because they're not mapped)
     expect(
@@ -667,6 +676,8 @@ describe('MigrationView/BottomPanel', () => {
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(await screen.findAllByRole('row')).toHaveLength(34);
+    expect(await screen.findAllByRole('row')).toHaveLength(
+      HEADER_ROW_COUNT + CONTENT_ROW_COUNT,
+    );
   });
 });

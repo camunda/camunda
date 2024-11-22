@@ -215,7 +215,9 @@ public enum ZbColumnFamilies implements EnumValue {
 
   GROUPS(110),
   ENTITY_BY_GROUP(111),
-  GROUP_BY_NAME(112);
+  GROUP_BY_NAME(112),
+
+  REDISTRIBUTION(113);
 
   private final int value;
 

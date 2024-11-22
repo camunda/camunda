@@ -114,7 +114,7 @@ export default function Checklist<
             id="checked"
             key="checked"
             name="checked"
-            ariaLabel="checked"
+            aria-label="checked"
             indeterminate={isSomeSelected}
             checked={isAllSelected}
             onSelect={({target}) => {
@@ -146,7 +146,7 @@ export default function Checklist<
           checked={!!checked}
           id={rowId}
           name={rowId}
-          ariaLabel={rowLabel}
+          aria-label={rowLabel}
           disabled={disabled}
           onSelect={onSelect}
         />,
@@ -171,7 +171,7 @@ export default function Checklist<
           checked={isAllSelectedInSearch}
           id="selectAllInView"
           name="selectAllInView"
-          ariaLabel={t('common.multiSelect.selectAll').toString()}
+          aria-label={t('common.multiSelect.selectAll').toString()}
           onSelect={onSelect}
         />,
         t('common.multiSelect.selectAll'),

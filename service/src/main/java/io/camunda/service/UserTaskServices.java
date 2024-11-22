@@ -130,7 +130,7 @@ public final class UserTaskServices
     final var userTaskEntity = getSingleResultOrThrow(result, userTaskKey, "User task");
     final var authorization = Authorization.of(a -> a.processDefinition().readUserTask());
     if (!securityContextProvider.isAuthorized(
-        userTaskEntity.bpmnProcessId(), authentication, authorization)) {
+        userTaskEntity.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
     return userTaskEntity;
@@ -157,7 +157,7 @@ public final class UserTaskServices
     final var userTask = getByKey(userTaskKey);
 
     // Retrieve the tree path for the flow node instance associated to the user task
-    final String treePath = fetchFlowNodeTreePath(userTask.flowNodeInstanceId());
+    final String treePath = fetchFlowNodeTreePath(userTask.elementInstanceKey());
 
     // Convert the tree path to a list of scope keys
     final List<Long> treePathList =

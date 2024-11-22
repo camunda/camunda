@@ -33,13 +33,13 @@ import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.queries.TaskSortFields;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -103,7 +103,7 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Autowired private VariableStore variableStoreElasticSearch;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -709,7 +709,7 @@ public class TaskStoreElasticSearch implements TaskStore {
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()
               .query(boolQuery)
-              .fetchSource(TaskVariableTemplate.TASK_ID, null);
+              .fetchSource(SnapshotTaskVariableTemplate.TASK_ID, null);
 
       final SearchRequest searchRequest =
           new SearchRequest(taskVariableTemplate.getAlias()).source(searchSourceBuilder);
@@ -723,7 +723,7 @@ public class TaskStoreElasticSearch implements TaskStore {
 
         List<String> scrollTaskIds =
             Arrays.stream(searchResponse.getHits().getHits())
-                .map(hit -> (String) hit.getSourceAsMap().get(TaskVariableTemplate.TASK_ID))
+                .map(hit -> (String) hit.getSourceAsMap().get(SnapshotTaskVariableTemplate.TASK_ID))
                 .collect(Collectors.toList());
 
         taskIds.addAll(scrollTaskIds);
@@ -736,7 +736,9 @@ public class TaskStoreElasticSearch implements TaskStore {
           scrollId = searchResponse.getScrollId();
           scrollTaskIds =
               Arrays.stream(searchResponse.getHits().getHits())
-                  .map(hit -> (String) hit.getSourceAsMap().get(TaskVariableTemplate.TASK_ID))
+                  .map(
+                      hit ->
+                          (String) hit.getSourceAsMap().get(SnapshotTaskVariableTemplate.TASK_ID))
                   .toList();
           taskIds.addAll(scrollTaskIds);
         }

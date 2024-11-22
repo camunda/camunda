@@ -125,6 +125,28 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  void shouldQueryByDecisionInstanceId() {
+    // given
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(f -> f.decisionInstanceIds("12345-1"));
+    final var searchQuery =
+        SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
+
+    // when
+    final var searchRequest = transformQuery(decisionInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("id");
+              assertThat(t.value().stringValue()).isEqualTo("12345-1");
+            });
+  }
+
+  @Test
   void shouldQueryByDmnDecisionName() {
     // given
     final var decisionInstanceFilter =

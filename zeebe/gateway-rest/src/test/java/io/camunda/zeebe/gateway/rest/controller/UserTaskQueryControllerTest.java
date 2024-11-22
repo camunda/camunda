@@ -186,7 +186,9 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
       new Builder<VariableEntity>()
           .total(1L)
           .items(
-              List.of(new VariableEntity(0L, "name", "value", "test", false, 1L, 2L, "<default>")))
+              List.of(
+                  new VariableEntity(
+                      0L, "name", "value", "test", false, 1L, 2L, "bpid", "<default>")))
           .sortValues(new Object[] {"v"})
           .build();
 
@@ -521,7 +523,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   @Test
   public void shouldReturnFormItemForValidFormKey() {
     when(userTaskServices.getUserTaskForm(VALID_FORM_KEY))
-        .thenReturn(Optional.of(new FormEntity("0", "tenant-1", "bpmn-1", "schema", 1L)));
+        .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "bpmn-1", "schema", 1L)));
 
     webClient
         .get()
@@ -611,6 +613,18 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         streamBuilder,
         "priority",
         ops -> new UserTaskFilter.Builder().priorityOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "candidateGroup",
+        ops -> new UserTaskFilter.Builder().candidateGroupOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "candidateUser",
+        ops -> new UserTaskFilter.Builder().candidateUserOperations(ops).build());
+    stringOperationTestCases(
+        streamBuilder,
+        "assignee",
+        ops -> new UserTaskFilter.Builder().assigneeOperations(ops).build());
 
     return streamBuilder.build();
   }

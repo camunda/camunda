@@ -34,7 +34,6 @@ jest.mock('react-router-dom', () => ({
 }));
 
 jest.mock('hooks', () => ({
-  ...jest.requireActual('hooks'),
   useErrorHandling: () => ({
     mightFail: jest.fn().mockImplementation(async (data, cb, _err, finallyFunc) => {
       await cb(data);

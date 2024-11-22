@@ -27,6 +27,7 @@ import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
@@ -1033,13 +1034,13 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   DecisionInstanceQuery newDecisionInstanceQuery();
 
   /**
-   * Retrieves a decision instance by key.
+   * Retrieves a decision instance by id.
    *
    * <pre>
-   * long decisionInstanceKey = ...;
+   * String decisionInstanceId = ...;
    *
    * zeebeClient
-   * .newDecisionInstanceGetQuery(decisionInstanceKey)
+   * .newDecisionInstanceGetQuery(decisionInstanceId)
    * .send();
    * </pre>
    *
@@ -1049,11 +1050,11 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
-   * @param decisionInstanceKey
+   * @param decisionInstanceId
    * @return a builder for the request to get a decision instance
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  DecisionInstanceGetRequest newDecisionInstanceGetRequest(long decisionInstanceKey);
+  DecisionInstanceGetRequest newDecisionInstanceGetRequest(String decisionInstanceId);
 
   /*
    * Executes a search request to query decision definitions.
@@ -1479,4 +1480,19 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(
       DocumentReferenceResponse documentReferenceResponse);
+
+  /**
+   * Command to create a tenant.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newCreateTenantCommand()
+   *  .tenantId("tenant-id")
+   *  .name("Tenant Name")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  CreateTenantCommandStep1 newCreateTenantCommand();
 }

@@ -83,7 +83,6 @@ public class XMLUtil {
       }
       final ProcessEntity processEntity = processEntityOpt.get();
       processEntity.setIsPublic(handler.isPublic);
-      processEntity.setFormId(handler.formId);
       final Set<String> processChildrenIds = handler.getProcessChildrenIds(bpmnProcessId);
       is = new ByteArrayInputStream(byteArray);
       final BpmnModelInstance modelInstance = Bpmn.readModelFromStream(is);
@@ -116,14 +115,12 @@ public class XMLUtil {
 
     private final String processElement = "process";
     private final String startEventElement = "startEvent";
-    private final String formDefinitionProperty = "formDefinition";
     private final String publicAccess = "publicAccess";
     private final List<ProcessEntity> processEntities = new ArrayList<>();
     private final Map<String, Set<String>> processChildrenIds = new LinkedHashMap<>();
     private String currentProcessId = null;
     private boolean isStartEvent = false;
     private boolean isPublic = false;
-    private String formId = null;
 
     @Override
     public void startElement(
@@ -143,11 +140,7 @@ public class XMLUtil {
       } else if (currentProcessId != null && elementId != null) {
         processChildrenIds.get(currentProcessId).add(elementId);
       } else if (isStartEvent) {
-        if (formDefinitionProperty.equalsIgnoreCase(localName)) {
-          if (attributes.getValue("formKey") != null) {
-            formId = attributes.getValue("formKey");
-          }
-        } else if ("property".equalsIgnoreCase(localName)) {
+        if ("property".equalsIgnoreCase(localName)) {
           final String name = attributes.getValue("name");
           final String value = attributes.getValue("value");
           if (publicAccess.equalsIgnoreCase(name)

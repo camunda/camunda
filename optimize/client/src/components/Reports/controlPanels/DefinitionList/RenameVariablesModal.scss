@@ -1,6 +1,9 @@
+@use '@carbon/styles/scss/spacing' as *;
+
 .RenameVariablesModal {
-  .cds--modal-container {
+  .modalContainer {
     height: 100%;
+    gap: $spacing-04;
   }
 
   .cds--modal-content {

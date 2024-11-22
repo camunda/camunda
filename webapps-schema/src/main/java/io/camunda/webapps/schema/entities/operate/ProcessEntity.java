@@ -23,6 +23,8 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
   private List<ProcessFlowNodeEntity> flowNodes = new ArrayList<>();
   @JsonIgnore private List<String> callActivityIds = new ArrayList<>();
   private String formId;
+  private String formKey;
+  private Boolean isFormEmbedded;
   private Boolean isPublic;
   private String tenantId = DEFAULT_TENANT_ID;
 
@@ -56,6 +58,8 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         callActivityIds,
         tenantId,
         formId,
+        formKey,
+        isFormEmbedded,
         isPublic);
   }
 
@@ -81,6 +85,8 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         && Objects.equals(callActivityIds, that.callActivityIds)
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(formId, that.formId)
+        && Objects.equals(formKey, that.formKey)
+        && Objects.equals(isFormEmbedded, that.isFormEmbedded)
         && Objects.equals(isPublic, that.isPublic);
   }
 
@@ -110,6 +116,10 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
         + callActivityIds
         + ", formId="
         + formId
+        + ", formKey="
+        + formKey
+        + ", isFormEmbedded="
+        + isFormEmbedded
         + ", isPublic="
         + isPublic
         + ", tenantId='"
@@ -200,6 +210,24 @@ public class ProcessEntity extends OperateZeebeEntity<ProcessEntity> {
 
   public ProcessEntity setFormId(final String formId) {
     this.formId = formId;
+    return this;
+  }
+
+  public String getFormKey() {
+    return formKey;
+  }
+
+  public ProcessEntity setFormKey(final String formKey) {
+    this.formKey = formKey;
+    return this;
+  }
+
+  public Boolean getIsFormEmbedded() {
+    return isFormEmbedded;
+  }
+
+  public ProcessEntity setIsFormEmbedded(final Boolean isFormEmbedded) {
+    this.isFormEmbedded = isFormEmbedded;
     return this;
   }
 

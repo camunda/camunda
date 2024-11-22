@@ -73,7 +73,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.3</version>
+      <version>8.6.5</version>
     </dependency>
 
     <!-- Zeebe dependencies -->
@@ -391,7 +391,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.177</version>
+      <version>4.8.179</version>
     </dependency>
 
     <!-- used/undeclared block -->
@@ -442,7 +442,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-sdk</artifactId>
-      <version>8.5.6</version>
+      <version>8.5.9</version>
       <scope>compile</scope>
     </dependency>
 
@@ -477,7 +477,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
-      <version>8.6.3</version>
+      <version>8.6.5</version>
       <scope>test</scope>
     </dependency>
 
@@ -597,7 +597,7 @@
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-common</artifactId>
-      <version>4.1.114.Final</version>
+      <version>4.1.115.Final</version>
       <scope>compile</scope>
     </dependency>
 

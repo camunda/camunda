@@ -95,7 +95,7 @@ public class UserTaskServiceTest {
   public void shouldReturnSingleUserTask() {
     // given
     final var entity = mock(UserTaskEntity.class);
-    when(entity.bpmnProcessId()).thenReturn("bpid");
+    when(entity.processDefinitionId()).thenReturn("bpid");
     when(client.searchUserTasks(any())).thenReturn(wrapWithSearchQueryResult(entity));
     authorizeReadUserTasksForProcess(true, "bpid");
 
@@ -111,7 +111,7 @@ public class UserTaskServiceTest {
     // given
     final long formKey = 123L;
     final var entity = mock(UserTaskEntity.class);
-    when(entity.bpmnProcessId()).thenReturn("bpid");
+    when(entity.processDefinitionId()).thenReturn("bpid");
     when(entity.formKey()).thenReturn(formKey);
     final var form = mock(FormEntity.class);
     when(formSearchClient.searchForms(formSearchQuery(q -> q.filter(f -> f.formKeys(formKey)))))
@@ -132,7 +132,7 @@ public class UserTaskServiceTest {
     // given
     final var entity = mock(UserTaskEntity.class);
     when(entity.formKey()).thenReturn(null);
-    when(entity.bpmnProcessId()).thenReturn("bpid");
+    when(entity.processDefinitionId()).thenReturn("bpid");
     when(client.searchUserTasks(any())).thenReturn(wrapWithSearchQueryResult(entity));
     authorizeReadUserTasksForProcess(true, "bpid");
 
@@ -147,7 +147,7 @@ public class UserTaskServiceTest {
   public void getByKeyShouldThrowExceptionWhenNotAuthorized() {
     // given
     final var entity = mock(UserTaskEntity.class);
-    when(entity.bpmnProcessId()).thenReturn("bpid");
+    when(entity.processDefinitionId()).thenReturn("bpid");
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
     when(client.searchUserTasks(any())).thenReturn(result);
     authorizeReadUserTasksForProcess(false, "bpid");
@@ -167,7 +167,7 @@ public class UserTaskServiceTest {
   public void searchVariablesShouldThrowExceptionWhenNotAuthorized() {
     // given
     final var entity = mock(UserTaskEntity.class);
-    when(entity.bpmnProcessId()).thenReturn("bpid");
+    when(entity.processDefinitionId()).thenReturn("bpid");
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
     when(client.searchUserTasks(any())).thenReturn(result);
     authorizeReadUserTasksForProcess(false, "bpid");
@@ -190,9 +190,9 @@ public class UserTaskServiceTest {
   public void shouldReturnUserTaskVariables() {
     // given
     final var entity = mock(UserTaskEntity.class);
-    when(entity.bpmnProcessId()).thenReturn("bpid");
+    when(entity.processDefinitionId()).thenReturn("bpid");
     final long flowNodeInstanceKey = 100L;
-    when(entity.flowNodeInstanceId()).thenReturn(flowNodeInstanceKey);
+    when(entity.elementInstanceKey()).thenReturn(flowNodeInstanceKey);
     final var flowNodeInstanceEntity = mock(FlowNodeInstanceEntity.class);
     when(flowNodeInstanceEntity.treePath()).thenReturn("1/2/3");
     when(client.searchUserTasks(any())).thenReturn(wrapWithSearchQueryResult(entity));

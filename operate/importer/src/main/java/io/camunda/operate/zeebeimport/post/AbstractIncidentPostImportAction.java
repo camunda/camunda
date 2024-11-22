@@ -9,13 +9,13 @@ package io.camunda.operate.zeebeimport.post;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
 
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import java.io.IOException;
 import java.time.Instant;

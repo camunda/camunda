@@ -9,16 +9,17 @@ package io.camunda.service;
 
 import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
-import io.camunda.search.exception.NotFoundException;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import java.util.concurrent.CompletableFuture;
 
@@ -55,15 +56,28 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
         new BrokerTenantCreateRequest().setTenantId(request.tenantId()).setName(request.name()));
   }
 
-  public TenantEntity getByTenantKey(final Long tenantKey) {
-    final SearchQueryResult<TenantEntity> result =
-        search(SearchQueryBuilders.tenantSearchQuery().filter(f -> f.tenantKey(tenantKey)).build());
-    if (result.total() < 1) {
-      throw new NotFoundException(String.format("Tenant with tenantKey %d not found", tenantKey));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
-    }
+  public CompletableFuture<TenantRecord> updateTenant(final TenantDTO request) {
+    return sendBrokerRequest(new BrokerTenantUpdateRequest(request.key()).setName(request.name()));
   }
 
-  public record TenantDTO(long tenantKey, String tenantId, String name) {}
+  public CompletableFuture<TenantRecord> deleteTenant(final long key) {
+    return sendBrokerRequest(new BrokerTenantDeleteRequest(key).setTenantKey(key));
+  }
+
+  public TenantEntity getByKey(final Long tenantKey) {
+    final var tenantQuery = TenantQuery.of(q -> q.filter(f -> f.key(tenantKey)));
+    final var result =
+        tenantSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchTenants(tenantQuery);
+    final var tenantEntity = getSingleResultOrThrow(result, tenantKey, "Tenant");
+    final var authorization = Authorization.of(a -> a.tenant().read());
+    if (!securityContextProvider.isAuthorized(
+        tenantEntity.tenantId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
+    }
+    return tenantEntity;
+  }
+
+  public record TenantDTO(Long key, String tenantId, String name) {}
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="54eb828" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.5.0" camunda:diagramRelationId="4f7b0418-9d14-48bd-b8fd-359ce3c0d6d5">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.30.0-nightly.20241111" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0" camunda:diagramRelationId="4f7b0418-9d14-48bd-b8fd-359ce3c0d6d5">
   <bpmn:process id="processWithDeployedForm" name="processWithDeployedForm" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>Flow_0prs3ev</bpmn:outgoing>
@@ -12,6 +12,7 @@
     <bpmn:userTask id="userTaskWithDeployedForm" name="userTaskWithDeployedForm">
       <bpmn:extensionElements>
         <zeebe:formDefinition formId="Form_Invoice" />
+        <zeebe:userTask />
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0prs3ev</bpmn:incoming>
       <bpmn:outgoing>Flow_0oscp1v</bpmn:outgoing>

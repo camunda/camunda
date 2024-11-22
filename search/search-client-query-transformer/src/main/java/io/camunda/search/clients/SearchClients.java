@@ -62,10 +62,12 @@ public class SearchClients
   private final SecurityContext securityContext;
 
   public SearchClients(
-      final DocumentBasedSearchClient searchClient, final boolean isCamundaExporterEnabled) {
+      final DocumentBasedSearchClient searchClient,
+      final boolean isCamundaExporterEnabled,
+      final String prefix) {
     this(
         searchClient,
-        ServiceTransformers.newInstance(isCamundaExporterEnabled),
+        ServiceTransformers.newInstance(isCamundaExporterEnabled, prefix),
         SecurityContext.withoutAuthentication());
   }
 
@@ -87,7 +89,8 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, AuthorizationEntity.class);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity.class);
   }
 
   @Override
@@ -98,7 +101,8 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.findAll(filter, AuthorizationEntity.class);
+    return executor.findAll(
+        filter, io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity.class);
   }
 
   @Override
@@ -115,7 +119,9 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, DecisionDefinitionEntity.class);
+    return executor.search(
+        filter,
+        io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity.class);
   }
 
   @Override
@@ -127,7 +133,8 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, DecisionInstanceEntity.class);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity.class);
   }
 
   @Override
@@ -139,7 +146,9 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, DecisionRequirementsEntity.class);
+    return executor.search(
+        filter,
+        io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity.class);
   }
 
   @Override
@@ -151,7 +160,8 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, FlowNodeInstanceEntity.class);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity.class);
   }
 
   @Override
@@ -162,7 +172,7 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, FormEntity.class);
+    return executor.search(filter, io.camunda.webapps.schema.entities.tasklist.FormEntity.class);
   }
 
   @Override
@@ -173,7 +183,7 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, IncidentEntity.class);
+    return executor.search(filter, io.camunda.webapps.schema.entities.operate.IncidentEntity.class);
   }
 
   @Override
@@ -185,7 +195,7 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, ProcessDefinitionEntity.class);
+    return executor.search(filter, io.camunda.webapps.schema.entities.operate.ProcessEntity.class);
   }
 
   @Override
@@ -197,7 +207,9 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, ProcessInstanceEntity.class);
+    return executor.search(
+        filter,
+        io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity.class);
   }
 
   @Override
@@ -208,7 +220,8 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, RoleEntity.class);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.usermanagement.RoleEntity.class);
   }
 
   @Override
@@ -218,7 +231,7 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext)
-        .search(filter, TenantEntity.class);
+        .search(filter, io.camunda.webapps.schema.entities.usermanagement.TenantEntity.class);
   }
 
   @Override
@@ -229,7 +242,8 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, UserEntity.class);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
   }
 
   @Override
@@ -240,7 +254,7 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, UserTaskEntity.class);
+    return executor.search(filter, io.camunda.webapps.schema.entities.tasklist.TaskEntity.class);
   }
 
   @Override
@@ -251,6 +265,6 @@ public class SearchClients
             transformers,
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
-    return executor.search(filter, VariableEntity.class);
+    return executor.search(filter, io.camunda.webapps.schema.entities.operate.VariableEntity.class);
   }
 }

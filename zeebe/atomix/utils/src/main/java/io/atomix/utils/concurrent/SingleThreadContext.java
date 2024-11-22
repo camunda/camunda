@@ -134,10 +134,15 @@ public class SingleThreadContext implements ThreadContext {
   }
 
   @Override
-  public Scheduled schedule(final Duration delay, final Runnable runnable) {
+  public Scheduled schedule(final long delay, final TimeUnit timeUnit, final Runnable runnable) {
     final ScheduledFuture<?> future =
-        executor.schedule(new WrappedRunnable(runnable), delay.toMillis(), TimeUnit.MILLISECONDS);
+        executor.schedule(new WrappedRunnable(runnable), delay, timeUnit);
     return new ScheduledFutureImpl<>(future);
+  }
+
+  @Override
+  public Scheduled schedule(final Duration delay, final Runnable runnable) {
+    return schedule(delay.toMillis(), TimeUnit.MILLISECONDS, runnable);
   }
 
   @Override

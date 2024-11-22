@@ -7,9 +7,9 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import io.camunda.tasklist.entities.DraftTaskVariableEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -99,7 +99,7 @@ public class VariableResponse {
             new VariableResponse.DraftVariableValue().setValue(draftTaskVariable.getFullValue()));
   }
 
-  public static VariableResponse createFrom(TaskVariableEntity variableEntity) {
+  public static VariableResponse createFrom(SnapshotTaskVariableEntity variableEntity) {
     return new VariableResponse()
         .setId(variableEntity.getId())
         .setName(variableEntity.getName())

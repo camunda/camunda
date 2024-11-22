@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.management.backups.BackupInfo;
 import io.camunda.zeebe.management.backups.StateCode;
-import io.camunda.zeebe.management.backups.TakeBackupResponse;
+import io.camunda.zeebe.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
@@ -71,7 +71,7 @@ public interface RestoreAcceptance {
                       .flatMap(FileBasedSnapshotId::ofFileName),
               Optional::isPresent);
 
-      assertThat(actuator.take(backupId)).isInstanceOf(TakeBackupResponse.class);
+      assertThat(actuator.take(backupId)).isInstanceOf(TakeBackupRuntimeResponse.class);
       Awaitility.await("until a backup exists with the given ID")
           .atMost(Duration.ofSeconds(60))
           .ignoreExceptions() // 404 NOT_FOUND throws exception

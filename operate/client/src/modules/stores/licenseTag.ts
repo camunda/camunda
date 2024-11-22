@@ -14,12 +14,15 @@ type State = {
   status: 'initial' | 'fetched' | 'error';
   isProductionLicense: boolean;
   isTagVisible: boolean;
+  isCommercial: boolean;
+  expiresAt?: string;
 };
 
 const DEFAULT_STATE: State = {
   status: 'initial',
   isProductionLicense: false,
   isTagVisible: false,
+  isCommercial: false,
 };
 
 class LicenseTag {
@@ -39,10 +42,17 @@ class LicenseTag {
     }
   };
 
-  handleFetchSuccess = ({validLicense, licenseType}: License) => {
+  handleFetchSuccess = ({
+    validLicense,
+    licenseType,
+    isCommercial,
+    expiresAt,
+  }: License) => {
     this.state.status = 'fetched';
     this.state.isProductionLicense = validLicense;
     this.state.isTagVisible = licenseType !== 'saas';
+    this.state.isCommercial = isCommercial;
+    this.state.expiresAt = expiresAt ?? undefined;
   };
 
   handleFetchFailure = () => {
