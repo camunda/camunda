@@ -5,134 +5,48 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.process.it.os;
+package io.camunda.migration.process.it;
 
-import static io.camunda.migration.process.adapter.Adapter.PROCESSOR_STEP_ID;
-import static io.camunda.migration.process.adapter.Adapter.STEP_DESCRIPTION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.process.MigrationRunner;
 import io.camunda.migration.process.TestData;
 import io.camunda.migration.process.adapter.Adapter;
-import io.camunda.migration.process.adapter.MigrationRepositoryIndex;
 import io.camunda.migration.process.adapter.ProcessorStep;
+import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.process.adapter.os.OpensearchAdapter;
-import io.camunda.migration.process.config.ProcessMigrationProperties;
 import io.camunda.migration.process.util.MigrationUtil;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.os.OpensearchConnector;
-import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
-import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
-import org.awaitility.core.ConditionTimeoutException;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.Conflicts;
-import org.opensearch.client.opensearch._types.Refresh;
-import org.opensearch.client.opensearch.core.BulkRequest;
-import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
-import org.opensearch.client.opensearch.core.IndexRequest;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.client.opensearch.core.search.Hit;
-import org.opensearch.testcontainers.OpensearchContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-@Testcontainers
 @TestInstance(Lifecycle.PER_CLASS)
-@TestMethodOrder(OrderAnnotation.class)
-public class OpensearchMigrationRunnerIT {
+public class MigrationRunnerIT extends AdapterTest {
 
-  @Container
-  private static final OpensearchContainer<?> OS_CONTAINER =
-      TestSearchContainers.createDefaultOpensearchContainer();
-
-  private static OpenSearchClient osClient;
-  private static MigrationRunner migrator;
-  private static ProcessMigrationProperties properties;
-  private static ConnectConfiguration connectConfiguration;
-  private static ProcessIndex processIndex;
-  private static MigrationRepositoryIndex migrationRepositoryIndex;
-  private static ImportPositionIndex importPositionIndex;
-
-  @BeforeAll
-  public static void setUp() throws IOException {
-    properties = new ProcessMigrationProperties();
-    properties.setBatchSize(5);
-    properties.setMaxRetryDelay(Duration.ofSeconds(2));
-    properties.setImporterFinishedTimeout(Duration.ofSeconds(1));
-    connectConfiguration = new ConnectConfiguration();
-    connectConfiguration.setType("opensearch");
-    connectConfiguration.setUrl("http://localhost:" + OS_CONTAINER.getMappedPort(9200));
-    osClient = new OpensearchConnector(connectConfiguration).createClient();
-    createIndices();
-  }
-
-  private static void createIndices() {
-    final OpensearchEngineClient es = new OpensearchEngineClient(osClient);
-    processIndex = new ProcessIndex(connectConfiguration.getIndexPrefix(), false);
-    migrationRepositoryIndex =
-        new MigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), false);
-    importPositionIndex = new ImportPositionIndex(connectConfiguration.getIndexPrefix(), false);
-
-    es.createIndex(processIndex, new IndexSettings());
-    es.createIndex(migrationRepositoryIndex, new IndexSettings());
-    es.createIndex(importPositionIndex, new IndexSettings());
-  }
-
-  @BeforeEach
-  public void cleanUp() throws IOException {
-    properties.setBatchSize(5);
-    migrator = new MigrationRunner(properties, connectConfiguration);
-    osClient.deleteByQuery(
-        DeleteByQueryRequest.of(
-            d ->
-                d.index(processIndex.getFullQualifiedName())
-                    .conflicts(Conflicts.Proceed)
-                    .query(q -> q.matchAll(m -> m))));
-    osClient.deleteByQuery(
-        DeleteByQueryRequest.of(
-            d ->
-                d.index(migrationRepositoryIndex.getFullQualifiedName())
-                    .conflicts(Conflicts.Proceed)
-                    .query(q -> q.matchAll(m -> m))));
-    osClient.deleteByQuery(
-        DeleteByQueryRequest.of(
-            d ->
-                d.index(importPositionIndex.getFullQualifiedName())
-                    .conflicts(Conflicts.Proceed)
-                    .query(q -> q.matchAll(m -> m))));
-    osClient.indices().refresh();
-  }
-
-  @Test
-  public void singleMigrationRound() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void singleMigrationRound(final boolean isElasticsearch) throws IOException {
     // given
+    this.isElasticsearch = isElasticsearch;
     properties.setBatchSize(1);
-    final Adapter adapter = new OpensearchAdapter(properties, connectConfiguration);
+    final Adapter adapter =
+        isElasticsearch
+            ? new ElasticsearchAdapter(properties, esConnectConfiguration)
+            : new OpensearchAdapter(properties, osConnectConfiguration);
     final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
     final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithPublicFormId(2L);
     writeProcessToIndex(entityToBeMigrated);
@@ -145,7 +59,7 @@ public class OpensearchMigrationRunnerIT {
         adapter.migrate(MigrationUtil.extractBatchData(List.of(entityToBeMigrated)));
     adapter.writeLastMigratedEntity(migratedEntityId);
     awaitRecordsArePresent(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
-    osClient.indices().refresh();
+    refreshIndices();
 
     // then
     assertProcessorStepContentIsStored("1");
@@ -189,17 +103,20 @@ public class OpensearchMigrationRunnerIT {
     adapter.close();
   }
 
-  @Test
-  public void shouldMigrateSuccessfully() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldMigrateSuccessfully(final boolean isElasticsearch) throws IOException {
     // given
+    this.isElasticsearch = isElasticsearch;
     writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
     writeProcessToIndex(TestData.processEntityWithoutForm(2L));
     writeProcessToIndex(TestData.processEntityWithPublicFormKey(3L));
     writeImportPositionToIndex(TestData.completedImportPosition(1));
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     // when
-    migrator.run();
-    osClient.indices().refresh();
+    runMigration();
+    refreshIndices();
+
     // then
     assertProcessorStepContentIsStored("3");
 
@@ -234,17 +151,21 @@ public class OpensearchMigrationRunnerIT {
         .isTrue();
   }
 
-  @Test
-  public void shouldMigrateSuccessfullyWithMultipleRounds() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldMigrateSuccessfullyWithMultipleRounds(final boolean isElasticsearch)
+      throws IOException {
     // given
+    this.isElasticsearch = isElasticsearch;
     for (int i = 1; i <= 20; i++) {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
     writeImportPositionToIndex(TestData.completedImportPosition(1));
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
+
     // when
-    migrator.run();
-    osClient.indices().refresh();
+    runMigration();
+    refreshIndices();
 
     // then
     final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
@@ -258,9 +179,11 @@ public class OpensearchMigrationRunnerIT {
     assertThat(records.stream().noneMatch(ProcessEntity::getIsFormEmbedded)).isTrue();
   }
 
-  @Test
-  public void shouldMigrateFromStoredId() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldMigrateFromStoredId(final boolean isElasticsearch) throws IOException {
     // given
+    this.isElasticsearch = isElasticsearch;
     for (int i = 1; i <= 9; i++) {
       writeProcessToIndex(TestData.processEntityWithPublicFormId((long) i));
     }
@@ -268,8 +191,8 @@ public class OpensearchMigrationRunnerIT {
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
     writeProcessorStepToIndex("5");
     // when
-    migrator.run();
-    osClient.indices().refresh();
+    runMigration();
+    refreshIndices();
 
     // then
     final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
@@ -308,18 +231,24 @@ public class OpensearchMigrationRunnerIT {
         .isTrue();
   }
 
-  @Test
-  public void shouldNotMigrateWhenFinalStepIsPresent() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldNotMigrateWhenFinalStepIsPresent(final boolean isElasticsearch)
+      throws IOException {
     // given
+    this.isElasticsearch = isElasticsearch;
     properties.setBatchSize(1);
-    writeProcessorStepToIndex("2");
-    writeProcessToIndex(TestData.processEntityWithPublicFormId(1L));
-    writeProcessToIndex(TestData.processEntityWithPublicFormId(2L));
+    final ProcessEntity entityToBeMigrated = TestData.processEntityWithPublicFormId(1L);
+    final ProcessEntity entityNotToBeMigrated = TestData.processEntityWithPublicFormId(2L);
     writeImportPositionToIndex(TestData.completedImportPosition(1));
+    writeProcessorStepToIndex("2");
+    writeProcessToIndex(entityToBeMigrated);
+    writeProcessToIndex(entityNotToBeMigrated);
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
+
     // when
-    migrator.run();
-    osClient.indices().refresh();
+    runMigration();
+    refreshIndices();
 
     // then
     final var records = readRecords(ProcessEntity.class, processIndex.getFullQualifiedName());
@@ -328,16 +257,20 @@ public class OpensearchMigrationRunnerIT {
     assertThat(records.size()).isEqualTo(2);
     assertThat(records.stream().allMatch(r -> r.getIsPublic() == null)).isTrue();
     assertThat(records.stream().allMatch(r -> r.getFormId() == null)).isTrue();
+    assertThat(records.stream().allMatch(r -> r.getFormKey() == null)).isTrue();
+    assertThat(records.stream().allMatch(r -> r.getIsFormEmbedded() == null)).isTrue();
     assertThat(stepRecords.size()).isEqualTo(1);
     assertThat(stepRecords.getFirst().getContent()).isEqualTo("2");
   }
 
-  @Test
-  public void shouldMigrateDuringCountdown() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldMigrateDuringCountdown(final boolean isElasticsearch) throws IOException {
     // given
+    this.isElasticsearch = isElasticsearch;
     properties.setImporterFinishedTimeout(Duration.ofSeconds(2));
-    properties.setMinRetryDelay(Duration.ofSeconds(3));
-    properties.setMaxRetryDelay(Duration.ofSeconds(3));
+    properties.setMinRetryDelay(Duration.ofSeconds(1));
+    properties.setMaxRetryDelay(Duration.ofSeconds(1));
     properties.setBatchSize(4);
     writeImportPositionToIndex(TestData.completedImportPosition(1));
     final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -352,13 +285,13 @@ public class OpensearchMigrationRunnerIT {
             throw new RuntimeException(e);
           }
         },
-        2,
+        1,
         TimeUnit.SECONDS);
 
     // when
-    migrator.run();
+    runMigration();
+    refreshIndices();
     scheduler.shutdown();
-    osClient.indices().refresh();
 
     // then
     assertProcessorStepContentIsStored("9");
@@ -368,37 +301,51 @@ public class OpensearchMigrationRunnerIT {
     assertThat(records.stream().allMatch(r -> r.getFormId().equals("testForm"))).isTrue();
   }
 
-  @Test
-  public void shouldRunIndefinitelyWhenANonCompletedImportPositionExists() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldCompleteWhenImportPositionIsUpdated(final boolean isElasticsearch)
+      throws IOException, InterruptedException {
+    this.isElasticsearch = isElasticsearch;
+    properties.setImporterFinishedTimeout(Duration.ofSeconds(5));
     writeImportPositionToIndex(
-        TestData.notCompletedImportPosition(1), TestData.notCompletedImportPosition(2));
-    osClient.indices().refresh();
+        TestData.completedImportPosition(1), TestData.notCompletedImportPosition(2));
+    esClient.indices().refresh();
     awaitRecordsArePresent(ImportPositionEntity.class, importPositionIndex.getFullQualifiedName());
+    final var latch = new CountDownLatch(1);
 
-    assertThrows(
-        ConditionTimeoutException.class,
-        () ->
-            Awaitility.await()
-                .atMost(Duration.ofSeconds(10))
-                .until(
-                    () -> {
-                      migrator.run();
-                      return true;
-                    }));
+    new Thread(
+            () -> {
+              runMigration();
+              latch.countDown();
+            })
+        .start();
+
+    assertThat(latch.getCount()).isEqualTo(1);
+    writeImportPositionToIndex(TestData.completedImportPosition(2));
+    latch.await();
+    assertThat(latch.getCount()).isEqualTo(0);
 
     final var records =
         readRecords(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
     assertThat(records).isEmpty();
+    final var importPositionRecords =
+        readRecords(ImportPositionEntity.class, importPositionIndex.getFullQualifiedName());
+    assertThat(importPositionRecords.size()).isEqualTo(2);
+    assertThat(importPositionRecords.stream().allMatch(ImportPositionEntity::getCompleted))
+        .isTrue();
   }
 
-  @Test
-  public void shouldKeepRunningUntilImportPositionTimeout() throws IOException {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldKeepRunningUntilImportPositionTimeout(final boolean isElasticsearch)
+      throws IOException {
     // given
-    properties.setImporterFinishedTimeout(Duration.ofSeconds(10));
+    this.isElasticsearch = isElasticsearch;
+    properties.setImporterFinishedTimeout(Duration.ofSeconds(5));
     writeProcessToIndex(TestData.processEntityWithPublicFormKey(1L));
     writeProcessToIndex(TestData.processEntityWithPublicFormKey(2L));
     writeImportPositionToIndex(TestData.completedImportPosition(1));
-    osClient.indices().refresh();
+    refreshIndices();
     awaitRecordsArePresent(ImportPositionEntity.class, importPositionIndex.getFullQualifiedName());
 
     // when
@@ -407,7 +354,7 @@ public class OpensearchMigrationRunnerIT {
         .atLeast(properties.getImporterFinishedTimeout())
         .until(
             () -> {
-              migrator.run();
+              runMigration();
               return true;
             });
 
@@ -422,25 +369,36 @@ public class OpensearchMigrationRunnerIT {
     assertThat(records.stream().allMatch(r -> r.getIsFormEmbedded().equals(Boolean.TRUE))).isTrue();
   }
 
-  @Test
-  @Order(Integer.MAX_VALUE)
-  public void shouldThrowException() {
-    OS_CONTAINER.close();
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void shouldThrowException(final boolean isElasticsearch) {
+    this.isElasticsearch = isElasticsearch;
+    final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
+
+    if (!isElasticsearch) {
+      connectConfiguration.setType("opensearch");
+    }
+    // invalid URL
+    connectConfiguration.setUrl("http://localhost:3333");
+    final var migrator = new MigrationRunner(properties, connectConfiguration);
     properties.setMaxRetries(2);
+    properties.setMinRetryDelay(Duration.ofSeconds(1));
 
     final var ex = assertThrows(MigrationException.class, migrator::run);
     assertThat(ex.getMessage()).isEqualTo("Failed to fetch last migrated process");
   }
 
+  /*  @Override
   private void writeProcessToIndex(final ProcessEntity entity) throws IOException {
-    osClient.index(
-        new IndexRequest.Builder()
+    esClient.index(
+        new IndexRequest.Builder<>()
             .index(processIndex.getFullQualifiedName())
             .document(entity)
             .id(entity.getId())
             .build());
   }
 
+  @Override
   private void writeProcessorStepToIndex(final String processDefinitionId) throws IOException {
     final ProcessorStep step = new ProcessorStep();
     step.setContent(processDefinitionId);
@@ -448,7 +406,7 @@ public class OpensearchMigrationRunnerIT {
     step.setIndexName(ProcessIndex.INDEX_NAME);
     step.setDescription(STEP_DESCRIPTION);
     step.setVersion(VersionUtil.getVersion());
-    osClient.index(
+    esClient.index(
         new IndexRequest.Builder<>()
             .index(migrationRepositoryIndex.getFullQualifiedName())
             .document(step)
@@ -457,6 +415,7 @@ public class OpensearchMigrationRunnerIT {
             .build());
   }
 
+  @Override
   private void writeImportPositionToIndex(final ImportPositionEntity... importPositionEntities)
       throws IOException {
     final var req = new BulkRequest.Builder().refresh(Refresh.True);
@@ -472,29 +431,32 @@ public class OpensearchMigrationRunnerIT {
                                     .document(imp)
                                     .index(importPositionIndex.getFullQualifiedName()))));
 
-    osClient.bulk(req.build());
+    esClient.bulk(req.build());
   }
 
+  @Override
   private <T> List<T> readRecords(final Class<T> clazz, final String indexName) throws IOException {
-    final SearchRequest.Builder searchRequest =
-        new SearchRequest.Builder().index(indexName).size(30).query(q -> q.matchAll(m -> m));
+    final SearchRequest searchRequest =
+        SearchRequest.of(s -> s.size(30).index(indexName).query(Query.of(q -> q.matchAll(m -> m))));
     final SearchResponse<T> searchResponse;
+    searchResponse = esClient.search(searchRequest, clazz);
 
-    searchResponse = osClient.search(searchRequest.build(), clazz);
-    return searchResponse.hits().hits().stream().map(Hit::source).toList();
+    return searchResponse.hits().hits().stream().map(Hit::source).collect(Collectors.toList());
   }
 
+  @Override
   private <T> void awaitRecordsArePresent(final Class<T> clazz, final String indexName) {
     Awaitility.await()
         .timeout(Duration.ofSeconds(10))
         .until(() -> !readRecords(clazz, indexName).isEmpty());
   }
 
+  @Override
   private void assertProcessorStepContentIsStored(final String processDefinitionId)
       throws IOException {
     final var records =
         readRecords(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
     assertThat(records.size()).isEqualTo(1);
     assertThat(records.getFirst().getContent()).isEqualTo(String.valueOf(processDefinitionId));
-  }
+  }*/
 }
