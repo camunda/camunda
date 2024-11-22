@@ -48,11 +48,7 @@ public class BackupComponent {
     this.prio3BackupTemplates = prio3BackupTemplates;
     this.prio4BackupIndices = prio4BackupIndices;
     this.backupRepositoryProps = backupRepositoryProps;
-    if ((backupRepository instanceof BackupRepositoryWrapper)) {
-      this.backupRepository = backupRepository;
-    } else {
-      this.backupRepository = new BackupRepositoryWrapper(backupRepository);
-    }
+    this.backupRepository = backupRepository;
   }
 
   @Bean

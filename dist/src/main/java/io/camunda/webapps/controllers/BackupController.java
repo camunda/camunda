@@ -12,23 +12,21 @@ import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
 import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
-import io.camunda.operate.exceptions.OperateElasticsearchConnectionException;
-import io.camunda.operate.exceptions.OperateOpensearchConnectionException;
-import io.camunda.operate.property.BackupProperties;
-// FIXME this must be from webapps-backup when #24901 is merged
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-// FIXME decide how to unify this
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
-import io.camunda.webapps.profiles.ProfileOperateStandalone;
+import io.camunda.webapps.backup.exceptions.InvalidRequestException;
+import io.camunda.webapps.backup.exceptions.ResourceNotFoundException;
+import io.camunda.webapps.backup.repository.BackupRepositoryConnectionException;
+import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.profiles.ProfileOperateTasklistStandalone;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.common.lang.NonNull;
 import java.math.BigDecimal;
 import java.util.Arrays;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
@@ -40,17 +38,17 @@ import org.springframework.stereotype.Component;
 
 @Component
 @WebEndpoint(id = "backup-history")
-@ProfileOperateStandalone
+@ProfileOperateTasklistStandalone
 public class BackupController {
 
   private final BackupService backupService;
-  // FIXME this should be BackupServiceProps see #24901
-  private final BackupProperties backupProperties;
+  private final BackupRepositoryProps backupRepositoryProps;
 
+  @Autowired
   public BackupController(
-      final BackupService backupService, final BackupProperties backupProperties) {
+      final BackupService backupService, final BackupRepositoryProps backupProperties) {
     this.backupService = backupService;
-    this.backupProperties = backupProperties;
+    backupRepositoryProps = backupProperties;
   }
 
   @WriteOperation
@@ -103,9 +101,9 @@ public class BackupController {
   }
 
   private void validateRepositoryNameIsConfigured() {
-    if (backupProperties == null
-        || backupProperties.getRepositoryName() == null
-        || backupProperties.getRepositoryName().isEmpty()) {
+    if (backupRepositoryProps == null
+        || backupRepositoryProps.repositoryName() == null
+        || backupRepositoryProps.repositoryName().isEmpty()) {
       throw new InvalidRequestException("No backup repository configured.");
     }
   }
@@ -118,11 +116,11 @@ public class BackupController {
   }
 
   @VisibleForTesting
-  public static HistoryStateCode mapTo(final BackupStateDto state) {
+  public static HistoryStateCode mapState(final BackupStateDto state) {
     return switch (state) {
       case IN_PROGRESS -> HistoryStateCode.IN_PROGRESS;
       case INCOMPLETE -> HistoryStateCode.INCOMPLETE;
-      case COMPLETED -> HistoryStateCode.SUCCESS;
+      case COMPLETED -> HistoryStateCode.COMPLETED;
       case FAILED -> HistoryStateCode.FAILED;
       case INCOMPATIBLE -> HistoryStateCode.INCOMPATIBLE;
     };
@@ -132,32 +130,33 @@ public class BackupController {
     // FIXME mapping from string to BackupStateDTO is not expected to be 1:1
     return new HistoryBackupDetail(
         detail.getSnapshotName(),
-        mapTo(BackupStateDto.valueOf(detail.getState())),
+        detail.getState(),
         detail.getStartTime(),
         detail.getFailures() != null ? Arrays.asList(detail.getFailures()) : List.of());
   }
 
   private HistoryBackupInfo mapTo(final GetBackupStateResponseDto detail) {
-    return new HistoryBackupInfo(
-        new BigDecimal(detail.getBackupId()),
-        mapTo(detail.getState()),
-        detail.getDetails().stream().map(this::mapTo).toList());
+    final var info =
+        new HistoryBackupInfo(
+            new BigDecimal(detail.getBackupId()),
+            mapState(detail.getState()),
+            detail.getDetails().stream().map(this::mapTo).toList());
+    if (detail.getFailureReason() != null) {
+      info.setFailureReason(detail.getFailureReason());
+    }
+
+    return info;
   }
 
   private WebEndpointResponse<?> mapErrorResponse(final Exception exception) {
     final String message = exception.getMessage();
-    int errorCode = WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
-    switch (exception) {
-      case final InvalidRequestException ignored -> {
-        errorCode = WebEndpointResponse.STATUS_BAD_REQUEST;
-      }
-      case final ResourceNotFoundException ignored ->
-          errorCode = WebEndpointResponse.STATUS_NOT_FOUND;
-      // FIXME
-      case final OperateElasticsearchConnectionException ignored -> errorCode = 502;
-      case final OperateOpensearchConnectionException ignored -> errorCode = 502;
-      default -> {}
-    }
+    final int errorCode =
+        switch (exception) {
+          case final InvalidRequestException ignored -> WebEndpointResponse.STATUS_BAD_REQUEST;
+          case final ResourceNotFoundException ignored -> WebEndpointResponse.STATUS_NOT_FOUND;
+          case final BackupRepositoryConnectionException ignored -> 502;
+          default -> WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
+        };
     return new WebEndpointResponse<>(new Error().message(message), errorCode);
   }
 }
