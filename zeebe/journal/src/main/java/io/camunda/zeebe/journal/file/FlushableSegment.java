@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.journal.file;
 
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
+
 /** The minimum API a segment has to implement to be flush-able. */
 interface FlushableSegment {
 
@@ -22,7 +24,7 @@ interface FlushableSegment {
    * <p>If the method returns true, then it is guaranteed that the modified pages for this segment *
    * have been flushed to disk (according to the underlying file system).
    *
-   * @return true if the segment flushed successfully, false otherwise
+   * @throws FlushException if for any reason the flush failed
    */
-  boolean flush();
+  void flush() throws FlushException;
 }

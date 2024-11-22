@@ -10,4 +10,5 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record UserEntity(Long key, String username, String name, String email, String password) {}
+public record UserEntity(
+    Long userKey, String username, String name, String email, String password) {}

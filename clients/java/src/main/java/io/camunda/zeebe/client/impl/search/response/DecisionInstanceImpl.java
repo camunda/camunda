@@ -36,6 +36,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
 
   @JsonIgnore private final JsonMapper jsonMapper;
   private final long decisionInstanceKey;
+  private final String decisionInstanceId;
   private final DecisionInstanceState state;
   private final String evaluationDate;
   private final String evaluationFailure;
@@ -54,6 +55,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
     this(
         jsonMapper,
         item.getDecisionInstanceKey(),
+        item.getDecisionInstanceId(),
         toDecisionInstanceState(item.getState()),
         item.getEvaluationDate(),
         item.getEvaluationFailure(),
@@ -74,6 +76,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
     this(
         jsonMapper,
         item.getDecisionInstanceKey(),
+        item.getDecisionInstanceId(),
         toDecisionInstanceState(item.getState()),
         item.getEvaluationDate(),
         item.getEvaluationFailure(),
@@ -96,6 +99,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   public DecisionInstanceImpl(
       final JsonMapper jsonMapper,
       final long decisionInstanceKey,
+      final String decisionInstanceId,
       final DecisionInstanceState state,
       final String evaluationDate,
       final String evaluationFailure,
@@ -111,6 +115,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final List<MatchedDecisionRule> matchedRules) {
     this.jsonMapper = jsonMapper;
     this.decisionInstanceKey = decisionInstanceKey;
+    this.decisionInstanceId = decisionInstanceId;
     this.state = state;
     this.evaluationDate = evaluationDate;
     this.evaluationFailure = evaluationFailure;
@@ -167,6 +172,11 @@ public class DecisionInstanceImpl implements DecisionInstance {
   @Override
   public long getDecisionInstanceKey() {
     return decisionInstanceKey;
+  }
+
+  @Override
+  public String getDecisionInstanceId() {
+    return decisionInstanceId;
   }
 
   @Override
@@ -243,6 +253,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   public int hashCode() {
     return Objects.hash(
         decisionInstanceKey,
+        decisionInstanceId,
         state,
         evaluationDate,
         evaluationFailure,
@@ -271,6 +282,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         && decisionKey == that.decisionKey
         && decisionDefinitionVersion == that.decisionDefinitionVersion
         && state == that.state
+        && Objects.equals(decisionInstanceId, that.decisionInstanceId)
         && Objects.equals(evaluationDate, that.evaluationDate)
         && Objects.equals(evaluationFailure, that.evaluationFailure)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)

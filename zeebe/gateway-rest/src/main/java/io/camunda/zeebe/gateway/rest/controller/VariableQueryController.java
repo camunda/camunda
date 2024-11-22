@@ -61,7 +61,11 @@ public class VariableQueryController {
     try {
       // Success case: Return the left side with the VariableItem wrapped in ResponseEntity
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toVariable(variableServices.getByKey(variableKey)));
+          .body(
+              SearchQueryResponseMapper.toVariable(
+                  variableServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(variableKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

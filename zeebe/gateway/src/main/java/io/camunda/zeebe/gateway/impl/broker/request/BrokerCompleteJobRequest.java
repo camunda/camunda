@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import org.agrona.DirectBuffer;
@@ -17,10 +18,12 @@ public final class BrokerCompleteJobRequest extends BrokerExecuteCommand<JobReco
 
   private final JobRecord requestDto = new JobRecord();
 
-  public BrokerCompleteJobRequest(final long key, final DirectBuffer variables) {
+  public BrokerCompleteJobRequest(
+      final long key, final DirectBuffer variables, final JobResult result) {
     super(ValueType.JOB, JobIntent.COMPLETE);
     request.setKey(key);
     requestDto.setVariables(variables);
+    requestDto.setResult(result);
   }
 
   @Override

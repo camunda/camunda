@@ -8,10 +8,16 @@
 package io.camunda.document.store;
 
 import io.camunda.document.api.DocumentStore;
+import io.camunda.document.api.DocumentStoreConfiguration;
+import io.camunda.document.api.DocumentStoreConfiguration.DocumentStoreConfigurationRecord;
+import io.camunda.document.api.DocumentStoreProvider;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.api.DocumentStoreRegistry;
+import io.camunda.document.store.inmemory.InMemoryDocumentStore;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.ServiceLoader;
 import org.slf4j.Logger;
 
 public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
@@ -19,21 +25,36 @@ public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
   private static final Logger LOG =
       org.slf4j.LoggerFactory.getLogger(SimpleDocumentStoreRegistry.class);
 
-  private static final String GCP_STORE_BUCKET_NAME_VARIABLE = "CAMUNDA_DOCUMENT_STORE_GCP_BUCKET";
+  private static final String FALLBACK_STORE_ID_IN_MEMORY = "in-memory";
 
-  private static final String STORE_ID_GCP = "gcp";
-  private static final String STORE_ID_IN_MEMORY = "in-memory";
-
+  private final DocumentStoreConfiguration configuration;
   private final Map<String, DocumentStore> stores = new HashMap<>();
+  private final String defaultDocumentStoreId;
 
-  public SimpleDocumentStoreRegistry() {
-    final String gcpBucketName = System.getenv(GCP_STORE_BUCKET_NAME_VARIABLE);
-    if (gcpBucketName != null) {
-      stores.put(STORE_ID_GCP, new GcpDocumentStore(gcpBucketName));
-    } else {
-      LOG.warn("No GCP bucket name provided, using in-memory document instance");
+  public SimpleDocumentStoreRegistry(final DocumentStoreConfigurationLoader configurationLoader) {
+    configuration = configurationLoader.loadConfiguration();
+
+    if (configuration.documentStores().isEmpty()) {
+      LOG.warn("No document stores configured. Using fallback in-memory document store.");
+      stores.put(FALLBACK_STORE_ID_IN_MEMORY, new InMemoryDocumentStore());
+      defaultDocumentStoreId = FALLBACK_STORE_ID_IN_MEMORY;
+      return;
     }
-    stores.put(STORE_ID_IN_MEMORY, new InMemoryDocumentStore());
+    if (configuration.defaultDocumentStoreId() == null) {
+      throw new IllegalArgumentException("No default document store ID configured.");
+    }
+    defaultDocumentStoreId = configuration.defaultDocumentStoreId();
+    loadDocumentStores(configuration.documentStores());
+    if (!stores.containsKey(defaultDocumentStoreId)) {
+      throw new IllegalArgumentException(
+          "Default document store ID does not match any configured document store: "
+              + defaultDocumentStoreId);
+    }
+  }
+
+  @Override
+  public DocumentStoreConfiguration getConfiguration() {
+    return configuration;
   }
 
   @Override
@@ -45,13 +66,38 @@ public class SimpleDocumentStoreRegistry implements DocumentStoreRegistry {
     return new DocumentStoreRecord(id, store);
   }
 
-  // TODO: what if the default store is disabled / not available?
-  // should we return e.g. an Either here?
   @Override
   public DocumentStoreRecord getDefaultDocumentStore() {
-    if (stores.containsKey(STORE_ID_GCP)) {
-      return new DocumentStoreRecord(STORE_ID_GCP, stores.get(STORE_ID_GCP));
+    return getDocumentStore(defaultDocumentStoreId);
+  }
+
+  private void loadDocumentStores(final List<DocumentStoreConfigurationRecord> configurations) {
+    final ServiceLoader<DocumentStoreProvider> loader =
+        ServiceLoader.load(DocumentStoreProvider.class);
+
+    for (final DocumentStoreConfigurationRecord configuration : configurations) {
+      final DocumentStoreProvider provider = findProvider(loader, configuration);
+      final DocumentStore store = provider.createDocumentStore(configuration);
+      stores.put(configuration.id(), store);
     }
-    return new DocumentStoreRecord(STORE_ID_IN_MEMORY, stores.get(STORE_ID_IN_MEMORY));
+  }
+
+  private DocumentStoreProvider findProvider(
+      final ServiceLoader<DocumentStoreProvider> loader,
+      final DocumentStoreConfigurationRecord configuration) {
+    final List<DocumentStoreProvider> matchingProviders =
+        loader.stream()
+            .map(ServiceLoader.Provider::get)
+            .filter(provider -> provider.getClass().equals(configuration.providerClass()))
+            .toList();
+
+    if (matchingProviders.isEmpty()) {
+      throw new IllegalArgumentException("No provider found for configuration: " + configuration);
+    }
+    if (matchingProviders.size() > 1) {
+      throw new IllegalArgumentException(
+          "Multiple providers found for configuration: " + configuration);
+    }
+    return matchingProviders.getFirst();
   }
 }

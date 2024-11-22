@@ -18,6 +18,9 @@ public class ExporterConfiguration {
   private BulkConfiguration bulk = new BulkConfiguration();
   private RetentionConfiguration retention = new RetentionConfiguration();
   private ArchiverConfiguration archiver = new ArchiverConfiguration();
+  private CacheConfiguration processCache = new CacheConfiguration();
+  private CacheConfiguration formCache = new CacheConfiguration();
+  private PostExportConfiguration postExport = new PostExportConfiguration();
   private boolean createSchema = true;
 
   public ConnectConfiguration getConnect() {
@@ -60,12 +63,36 @@ public class ExporterConfiguration {
     this.archiver = archiver;
   }
 
+  public CacheConfiguration getProcessCache() {
+    return processCache;
+  }
+
+  public void setProcessCache(final CacheConfiguration processCache) {
+    this.processCache = processCache;
+  }
+
+  public CacheConfiguration getFormCache() {
+    return formCache;
+  }
+
+  public void setFormCache(final CacheConfiguration formCache) {
+    this.formCache = formCache;
+  }
+
   public boolean isCreateSchema() {
     return createSchema;
   }
 
   public void setCreateSchema(final boolean createSchema) {
     this.createSchema = createSchema;
+  }
+
+  public PostExportConfiguration getPostExport() {
+    return postExport;
+  }
+
+  public void setPostExport(final PostExportConfiguration postExport) {
+    this.postExport = postExport;
   }
 
   @Override
@@ -83,6 +110,12 @@ public class ExporterConfiguration {
         + createSchema
         + ", archiver="
         + archiver
+        + ", processCache="
+        + processCache
+        + ", formCache="
+        + formCache
+        + ", postExport="
+        + postExport
         + '}';
   }
 
@@ -319,6 +352,65 @@ public class ExporterConfiguration {
           + ", delayBetweenRuns='"
           + delayBetweenRuns
           + '\''
+          + '}';
+    }
+  }
+
+  public static class CacheConfiguration {
+    private int maxCacheSize = 10000;
+
+    public int getMaxCacheSize() {
+      return maxCacheSize;
+    }
+
+    public void setMaxCacheSize(final int maxCacheSize) {
+      this.maxCacheSize = maxCacheSize;
+    }
+
+    @Override
+    public String toString() {
+      return "CacheConfiguration{" + "cacheSize=" + maxCacheSize + '}';
+    }
+  }
+
+  public static final class PostExportConfiguration {
+    private int batchSize = 100;
+    private int delayBetweenRuns = 2000;
+    private boolean ignoreMissingData = false;
+
+    public int getBatchSize() {
+      return batchSize;
+    }
+
+    public void setBatchSize(final int batchSize) {
+      this.batchSize = batchSize;
+    }
+
+    public int getDelayBetweenRuns() {
+      return delayBetweenRuns;
+    }
+
+    public void setDelayBetweenRuns(final int delayBetweenRuns) {
+      this.delayBetweenRuns = delayBetweenRuns;
+    }
+
+    public boolean isIgnoreMissingData() {
+      return ignoreMissingData;
+    }
+
+    public void setIgnoreMissingData(final boolean ignoreMissingData) {
+      this.ignoreMissingData = ignoreMissingData;
+    }
+
+    @Override
+    public String toString() {
+      return "PostExportConfiguration{"
+          + "batchSize="
+          + batchSize
+          + ", delayBetweenRuns="
+          + delayBetweenRuns
+          + ", ignoreMissingData="
+          + ignoreMissingData
           + '}';
     }
   }

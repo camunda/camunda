@@ -279,7 +279,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             new ProcessDefinitionEntity(
                 1L, "name", "id", "xml", "resource", 1, "tag", "tenant", "formId"));
     when(formServices.getLatestVersionByFormId("formId"))
-        .thenReturn(Optional.of(new FormEntity("0", "tenant-1", "formId", "schema", 1L)));
+        .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "formId", "schema", 1L)));
 
     webClient
         .get()

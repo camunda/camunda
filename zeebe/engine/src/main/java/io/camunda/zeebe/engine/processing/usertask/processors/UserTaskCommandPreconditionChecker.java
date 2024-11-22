@@ -81,7 +81,9 @@ public class UserTaskCommandPreconditionChecker {
 
     final var authRequest =
         new AuthorizationRequest(
-                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_USER_TASK)
             .addResourceId(persistedRecord.getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(authRequest)) {
       return Either.left(

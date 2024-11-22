@@ -8,7 +8,6 @@
 package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
-import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ALL;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
@@ -20,11 +19,10 @@ import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.ProcessInstanceStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
-import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -54,7 +52,7 @@ public class ProcessInstanceStoreElasticSearch implements ProcessInstanceStore {
 
   @Autowired List<ProcessInstanceDependant> processInstanceDependants;
 
-  @Autowired TaskVariableTemplate taskVariableTemplate;
+  @Autowired SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired RetryElasticsearchClient retryElasticsearchClient;
 
@@ -134,7 +132,6 @@ public class ProcessInstanceStoreElasticSearch implements ProcessInstanceStore {
 
   private boolean deleteVariablesFor(final List<String> taskIds) {
     return retryElasticsearchClient.deleteDocumentsByQuery(
-        ElasticsearchUtil.whereToSearch(taskVariableTemplate, ALL),
-        termsQuery(TaskVariableTemplate.TASK_ID, taskIds));
+        taskVariableTemplate.getAlias(), termsQuery(SnapshotTaskVariableTemplate.TASK_ID, taskIds));
   }
 }

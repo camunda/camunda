@@ -11,6 +11,7 @@ import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
+import io.camunda.exporter.utils.ProcessModelReader;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -78,9 +79,12 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
     final String resourceName = process.getResourceName();
     entity.setResourceName(resourceName);
 
-    if (!process.getVersionTag().isEmpty()) {
-      entity.setVersionTag(process.getVersionTag());
+    final var versionTag = process.getVersionTag();
+    if (!ExporterUtil.isEmpty(versionTag)) {
+      entity.setVersionTag(versionTag);
     }
+
+    linkStartFormIfPresent(record, entity);
 
     final Optional<ProcessEntity> diagramData =
         xmlUtil.extractDiagramData(byteArray, process.getBpmnProcessId());
@@ -89,7 +93,6 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
             entity
                 .setName(processEntity.getName())
                 .setFlowNodes(processEntity.getFlowNodes())
-                .setFormId(processEntity.getFormId())
                 .setIsPublic(processEntity.getIsPublic())
                 .setCallActivityIds(processEntity.getCallActivityIds()));
 
@@ -109,5 +112,21 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private void linkStartFormIfPresent(final Record<Process> record, final ProcessEntity entity) {
+    final var process = record.getValue();
+    final var bpmnProcessId = process.getBpmnProcessId();
+    final var byteArray = process.getResource();
+
+    xmlUtil
+        .createProcessModelReader(byteArray, bpmnProcessId)
+        .flatMap(ProcessModelReader::extractStartFormLink)
+        .ifPresent(
+            startFormLink ->
+                entity
+                    .setFormId(startFormLink.formId())
+                    .setFormKey(startFormLink.formKey())
+                    .setIsFormEmbedded(!ExporterUtil.isEmpty(startFormLink.formKey())));
   }
 }

@@ -15,7 +15,7 @@ public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
   public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
 
   private String id;
-  private Long tenantKey;
+  private Long key;
   private String tenantId;
   private String name;
   private Set<Long> assignedMemberKeys;
@@ -31,12 +31,12 @@ public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
     return this;
   }
 
-  public Long getTenantKey() {
-    return tenantKey;
+  public Long getKey() {
+    return key;
   }
 
-  public TenantEntity setTenantKey(final Long tenantKey) {
-    this.tenantKey = tenantKey;
+  public TenantEntity setKey(final Long key) {
+    this.key = key;
     return this;
   }
 

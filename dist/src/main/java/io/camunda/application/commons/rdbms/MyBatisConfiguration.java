@@ -7,10 +7,14 @@
  */
 package io.camunda.application.commons.rdbms;
 
+import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
+import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
+import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
+import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import java.io.IOException;
 import java.util.Properties;
@@ -19,6 +23,7 @@ import liquibase.integration.spring.MultiTenantSpringLiquibase;
 import org.apache.ibatis.mapping.VendorDatabaseIdProvider;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.type.JdbcType;
+import org.apache.ibatis.type.OffsetDateTimeTypeHandler;
 import org.mybatis.spring.SqlSessionFactoryBean;
 import org.mybatis.spring.mapper.MapperFactoryBean;
 import org.slf4j.Logger;
@@ -57,6 +62,7 @@ public class MyBatisConfiguration {
 
     final var configuration = new org.apache.ibatis.session.Configuration();
     configuration.setJdbcTypeForNull(JdbcType.NULL);
+    configuration.getTypeHandlerRegistry().register(OffsetDateTimeTypeHandler.class);
 
     final SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
     factoryBean.setConfiguration(configuration);
@@ -72,6 +78,24 @@ public class MyBatisConfiguration {
 
     factoryBean.setConfigurationProperties(p);
     return factoryBean.getObject();
+  }
+
+  @Bean
+  public MapperFactoryBean<DecisionDefinitionMapper> decisionDefinitionMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, DecisionDefinitionMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<DecisionInstanceMapper> decisionInstanceMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, DecisionInstanceMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<DecisionRequirementsMapper> decisionRequirementsMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, DecisionRequirementsMapper.class);
   }
 
   @Bean
@@ -96,6 +120,12 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<VariableMapper> variableMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, VariableMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<UserTaskMapper> userTaskMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, UserTaskMapper.class);
   }
 
   @Bean

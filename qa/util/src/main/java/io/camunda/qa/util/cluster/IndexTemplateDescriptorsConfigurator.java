@@ -11,6 +11,7 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
@@ -26,6 +27,11 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -50,6 +56,12 @@ public class IndexTemplateDescriptorsConfigurator {
   public MetricIndex getMetricIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new MetricIndex("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public ImportPositionIndex getImportPositionIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new ImportPositionIndex("", databaseInfo.isElasticsearchDb());
   }
 
   @Bean
@@ -132,5 +144,36 @@ public class IndexTemplateDescriptorsConfigurator {
   @Bean
   public BatchOperationTemplate getBatchOperationTemplate(final DatabaseInfo databaseInfo) {
     return new BatchOperationTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public DraftTaskVariableTemplate getDraftTaskVariableTemplate(final DatabaseInfo databaseInfo) {
+    // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
+    return new DraftTaskVariableTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public FormIndex getFormIndex(final DatabaseInfo databaseInfo) {
+    // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
+    return new FormIndex("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public TasklistMetricIndex getTasklistMetricIndex(final DatabaseInfo databaseInfo) {
+    // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
+    return new TasklistMetricIndex("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public SnapshotTaskVariableTemplate getSnapshotTaskVariableTemplate(
+      final DatabaseInfo databaseInfo) {
+    // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
+    return new SnapshotTaskVariableTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public TaskTemplate getTaskTemplate(final DatabaseInfo databaseInfo) {
+    // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
+    return new TaskTemplate("", databaseInfo.isElasticsearchDb());
   }
 }

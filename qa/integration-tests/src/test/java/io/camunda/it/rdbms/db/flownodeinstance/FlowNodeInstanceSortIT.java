@@ -12,7 +12,6 @@ import static io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures.createAnd
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
-import io.camunda.db.rdbms.read.domain.FlowNodeInstanceDbQuery;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -20,6 +19,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.FlowNodeInstanceSort.Builder;
 import io.camunda.util.ObjectBuilder;
@@ -41,7 +41,7 @@ public class FlowNodeInstanceSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.flowNodeInstanceKey().asc(),
-        Comparator.comparing(FlowNodeInstanceEntity::key));
+        Comparator.comparing(FlowNodeInstanceEntity::flowNodeInstanceKey));
   }
 
   @TestTemplate
@@ -50,7 +50,7 @@ public class FlowNodeInstanceSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.flowNodeInstanceKey().desc(),
-        Comparator.comparing(FlowNodeInstanceEntity::key).reversed());
+        Comparator.comparing(FlowNodeInstanceEntity::flowNodeInstanceKey).reversed());
   }
 
   @TestTemplate
@@ -170,13 +170,13 @@ public class FlowNodeInstanceSortIT {
     final var searchResult =
         reader
             .search(
-                new FlowNodeInstanceDbQuery(
+                new FlowNodeInstanceQuery(
                     new FlowNodeInstanceFilter.Builder()
                         .processDefinitionKeys(processDefinitionKey)
                         .build(),
                     FlowNodeInstanceSort.of(sortBuilder),
                     SearchQueryPage.of(b -> b)))
-            .hits();
+            .items();
 
     assertThat(searchResult).hasSize(20);
     assertThat(searchResult).isSortedAccordingTo(comparator);

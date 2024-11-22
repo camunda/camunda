@@ -16,11 +16,12 @@ import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.JOB;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
+import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
 
-import co.elastic.clients.util.VisibleForTesting;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
 import io.camunda.exporter.config.ExporterConfiguration;
@@ -30,6 +31,7 @@ import io.camunda.exporter.schema.SchemaManager;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
+import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -38,6 +40,8 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.SemanticVersion;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.util.Set;
 import org.agrona.CloseHelper;
@@ -47,7 +51,6 @@ import org.slf4j.LoggerFactory;
 public class CamundaExporter implements Exporter {
   private static final Logger LOG = LoggerFactory.getLogger(CamundaExporter.class);
 
-  private Context context;
   private Controller controller;
   private ExporterConfiguration configuration;
   private ClientAdapter clientAdapter;
@@ -55,8 +58,8 @@ public class CamundaExporter implements Exporter {
   private long lastPosition = -1;
   private final ExporterResourceProvider provider;
   private CamundaExporterMetrics metrics;
-  private Logger logger;
   private BackgroundTaskManager taskManager;
+  private final ExporterMetadata metadata;
 
   public CamundaExporter() {
     this(new DefaultExporterResourceProvider());
@@ -64,27 +67,41 @@ public class CamundaExporter implements Exporter {
 
   @VisibleForTesting
   public CamundaExporter(final ExporterResourceProvider provider) {
+    this(provider, new ExporterMetadata());
+  }
+
+  @VisibleForTesting
+  public CamundaExporter(final ExporterResourceProvider provider, final ExporterMetadata metadata) {
     this.provider = provider;
+    this.metadata = metadata;
   }
 
   @Override
   public void configure(final Context context) {
-    this.context = context;
-    logger = context.getLogger();
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
     metrics = new CamundaExporterMetrics(context.getMeterRegistry());
+    clientAdapter = ClientAdapter.of(configuration);
+    provider.init(
+        configuration, clientAdapter.getExporterEntityCacheProvider(), context.getMeterRegistry());
+
+    taskManager =
+        new BackgroundTaskManagerFactory(
+                context.getPartitionId(),
+                context.getConfiguration().getId().toLowerCase(),
+                configuration,
+                provider,
+                metrics,
+                context.getLogger(),
+                metadata)
+            .build();
     LOG.debug("Exporter configured with {}", configuration);
   }
 
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
-    clientAdapter = ClientAdapter.of(configuration);
-
-    provider.init(configuration, clientAdapter.getExporterEntityCacheProvider());
-
     final var searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager =
         new SchemaManager(
@@ -98,20 +115,8 @@ public class CamundaExporter implements Exporter {
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
-
-    // // start archiver after the schema has been created to avoid transient errors
-    if (configuration.getArchiver().isRolloverEnabled()) {
-      // make sure we create a new one in case open is being retried
-      CloseHelper.quietClose(taskManager);
-      taskManager =
-          BackgroundTaskManager.create(
-              context.getPartitionId(),
-              context.getConfiguration().getId().toLowerCase(),
-              configuration,
-              provider,
-              metrics,
-              logger);
-    }
+    controller.readMetadata().ifPresent(metadata::deserialize);
+    taskManager.start();
 
     LOG.info("Exporter opened");
   }
@@ -121,7 +126,7 @@ public class CamundaExporter implements Exporter {
     if (writer != null) {
       try {
         flush();
-        updateLastExportedPosition();
+        updateLastExportedPosition(lastPosition);
       } catch (final Exception e) {
         LOG.warn("Failed to flush records before closing exporter.", e);
       }
@@ -145,6 +150,17 @@ public class CamundaExporter implements Exporter {
       metrics.startFlushLatencyMeasurement();
     }
 
+    final var recordVersion = getVersion(record.getBrokerVersion());
+
+    if (recordVersion.major() == 8 && recordVersion.minor() < 7) {
+      LOG.debug(
+          "Skip record with broker version '{}'. Last exported position will be updated to '{}'",
+          record.getBrokerVersion(),
+          record.getPosition());
+      updateLastExportedPosition(record.getPosition());
+      return;
+    }
+
     writer.addRecord(record);
     lastPosition = record.getPosition();
 
@@ -158,8 +174,18 @@ public class CamundaExporter implements Exporter {
       }
       // Update the record counters only after the flush was successful. If the synchronous flush
       // fails then the exporter will be invoked with the same record again.
-      updateLastExportedPosition();
+      updateLastExportedPosition(lastPosition);
     }
+  }
+
+  private SemanticVersion getVersion(final String version) {
+    return SemanticVersion.parse(version)
+        .orElseThrow(
+            () ->
+                new IllegalArgumentException(
+                    "Unsupported record broker version: ["
+                        + version
+                        + "] Must be a semantic version."));
   }
 
   private boolean shouldFlush() {
@@ -168,7 +194,7 @@ public class CamundaExporter implements Exporter {
 
   private ExporterBatchWriter createBatchWriter() {
     final var builder = ExporterBatchWriter.Builder.begin();
-    provider.getExportHandlers().stream().forEach(builder::withHandler);
+    provider.getExportHandlers().forEach(builder::withHandler);
     return builder.build();
   }
 
@@ -180,7 +206,7 @@ public class CamundaExporter implements Exporter {
   private void flushAndReschedule() {
     try {
       flush();
-      updateLastExportedPosition();
+      updateLastExportedPosition(lastPosition);
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
@@ -198,8 +224,9 @@ public class CamundaExporter implements Exporter {
     }
   }
 
-  private void updateLastExportedPosition() {
-    controller.updateLastExportedRecordPosition(lastPosition);
+  private void updateLastExportedPosition(final long lastPosition) {
+    final var serialized = metadata.serialize();
+    controller.updateLastExportedRecordPosition(lastPosition, serialized);
   }
 
   private record CamundaExporterRecordFilter() implements RecordFilter {
@@ -207,9 +234,11 @@ public class CamundaExporter implements Exporter {
         Set.of(
             USER,
             AUTHORIZATION,
+            TENANT,
             DECISION,
             DECISION_REQUIREMENTS,
             PROCESS_INSTANCE,
+            ROLE,
             VARIABLE,
             JOB,
             INCIDENT,

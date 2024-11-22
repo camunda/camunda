@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.db.os.client;
 
+import static io.camunda.optimize.service.exceptions.ExceptionHelper.safeOS;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_RECORD_TEST_PREFIX;
 
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
@@ -18,7 +19,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.util.ObjectBuilderBase;
 import org.slf4j.Logger;
 
@@ -94,15 +94,6 @@ public class OpenSearchOperation {
 
   protected <R> R safe(
       final ExceptionSupplier<R> supplier, final Function<Exception, String> errorMessage) {
-    try {
-      return supplier.get();
-    } catch (final OpenSearchException e) {
-      // OpenSearch exceptions shall only get re-thrown since they will be logged elsewhere
-      throw e;
-    } catch (final Exception e) {
-      final String message = errorMessage.apply(e);
-      LOG.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
-    }
+    return safeOS(supplier, errorMessage, LOG);
   }
 }

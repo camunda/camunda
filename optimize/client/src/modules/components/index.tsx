@@ -41,6 +41,7 @@ export {ReportRenderer} from './ReportRenderer';
 export {Loading} from './Loading';
 export {EntityList} from './EntityList';
 export {EmptyState} from './EmptyState';
+export {Breadcrumbs} from './Breadcrumbs';
 
 export type {User, Identity} from './UserTypeahead';
 export type {Canvas, ModdleElement, RegistryElement} from './BPMNDiagram';

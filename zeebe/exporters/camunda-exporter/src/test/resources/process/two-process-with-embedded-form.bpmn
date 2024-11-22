@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1s9dezj" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.28.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
   <bpmn:collaboration id="Collaboration_1fpiwsc">
-    <bpmn:participant id="Participant_1u4ys21" name="first-process" processRef="Process_1q87iz8" />
-    <bpmn:participant id="Participant_1t57i5w" name="second-process" processRef="Process_1vct13m" />
+    <bpmn:participant id="Participant_1u4ys21" name="first-process" processRef="testProcessIdOne" />
+    <bpmn:participant id="Participant_1t57i5w" name="second-process" processRef="testProcessIdTwo" />
   </bpmn:collaboration>
   <bpmn:process id="testProcessIdOne" isExecutable="true">
     <bpmn:extensionElements>
@@ -32,6 +32,9 @@
 }</zeebe:userTaskForm>
     </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:my-embedded-form-one" />
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1816u39</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_1816u39" sourceRef="StartEvent_1" targetRef="Activity_079pxpl" />
@@ -75,6 +78,9 @@
 }</zeebe:userTaskForm>
     </bpmn:extensionElements>
     <bpmn:startEvent id="Event_0932d2x">
+      <bpmn:extensionElements>
+        <zeebe:formDefinition formKey="camunda-forms:bpmn:my-embedded-form-two" />
+      </bpmn:extensionElements>
       <bpmn:outgoing>Flow_1mkteeo</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_1mkteeo" sourceRef="Event_0932d2x" targetRef="Activity_1p3y1iq" />

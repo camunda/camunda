@@ -16,7 +16,7 @@ jobs:
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.2.1
+      - uses: google-github-actions/get-gke-credentials@v2.2.2
         with:
           cluster_name: zeebe-cluster
           location: europe-west1-b
@@ -76,6 +76,7 @@ jobs:
       operate-tag: ${{ needs.benchmark-data.outputs.operate }}
       benchmark-load: >
         -f https://raw.githubusercontent.com/zeebe-io/benchmark-helm/refs/heads/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml
+        --set camunda-platform.operate.image.repository=gcr.io/zeebe-io/operate
         --set camunda-platform.operate.image.tag=${{ needs.benchmark-data.outputs.operate }}
   setup-latency-benchmark:
     name: Latency Benchmark

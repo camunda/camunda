@@ -9,12 +9,12 @@ package io.camunda.operate.webapp.management;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.api.v1.rest.ErrorController;
-import io.camunda.operate.webapp.backup.BackupService;
-import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
-import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
-import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.webapps.backup.BackupService;
+import io.camunda.webapps.backup.GetBackupStateResponseDto;
+import io.camunda.webapps.backup.TakeBackupRequestDto;
+import io.camunda.webapps.backup.TakeBackupResponseDto;
 import java.util.List;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +35,7 @@ public class BackupController extends ErrorController {
   @Autowired private OperateProperties operateProperties;
 
   @PostMapping(produces = {MediaType.APPLICATION_JSON_VALUE})
-  public TakeBackupResponseDto takeBackup(@RequestBody TakeBackupRequestDto request) {
+  public TakeBackupResponseDto takeBackup(@RequestBody final TakeBackupRequestDto request) {
     validateRequest(request);
     validateRepositoryNameIsConfigured();
     return backupService.takeBackup(request);
@@ -50,7 +50,7 @@ public class BackupController extends ErrorController {
   }
 
   @GetMapping("/{backupId}")
-  public GetBackupStateResponseDto getBackupState(@PathVariable Long backupId) {
+  public GetBackupStateResponseDto getBackupState(@PathVariable final Long backupId) {
     validateBackupId(backupId);
     validateRepositoryNameIsConfigured();
     return backupService.getBackupState(backupId);
@@ -64,20 +64,20 @@ public class BackupController extends ErrorController {
 
   @DeleteMapping("/{backupId}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deleteBackup(@PathVariable Long backupId) {
+  public void deleteBackup(@PathVariable final Long backupId) {
     validateBackupId(backupId);
     validateRepositoryNameIsConfigured();
     backupService.deleteBackup(backupId);
   }
 
-  private void validateRequest(TakeBackupRequestDto request) {
+  private void validateRequest(final TakeBackupRequestDto request) {
     if (request.getBackupId() == null) {
       throw new InvalidRequestException("BackupId must be provided");
     }
     validateBackupId(request.getBackupId());
   }
 
-  private void validateBackupId(Long backupId) {
+  private void validateBackupId(final Long backupId) {
     if (backupId < 0) {
       throw new InvalidRequestException(
           "BackupId must be a non-negative Integer. Received value: " + backupId);

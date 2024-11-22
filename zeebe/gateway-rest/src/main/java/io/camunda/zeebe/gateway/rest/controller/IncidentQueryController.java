@@ -55,7 +55,11 @@ public class IncidentQueryController {
       @PathVariable("incidentKey") final Long incidentKey) {
     try {
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toIncident(incidentServices.getByKey(incidentKey)));
+          .body(
+              SearchQueryResponseMapper.toIncident(
+                  incidentServices
+                      .withAuthentication(RequestMapper.getAuthentication())
+                      .getByKey(incidentKey)));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

@@ -128,7 +128,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - id: slack-notify
-        uses: slackapi/slack-github-action@v1.27.0
+        uses: slackapi/slack-github-action@v1.27.1
         with:
           # For posting a rich message using Block Kit
           payload: |

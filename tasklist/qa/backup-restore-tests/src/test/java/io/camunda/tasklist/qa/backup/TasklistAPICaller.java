@@ -9,8 +9,7 @@ package io.camunda.tasklist.qa.backup;
 
 import static io.camunda.tasklist.qa.backup.BackupRestoreTest.BACKUP_ID;
 import static io.camunda.tasklist.qa.backup.BackupRestoreTest.ZEEBE_INDEX_PREFIX;
-import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.COMPLETED;
-import static io.camunda.tasklist.webapp.management.dto.BackupStateDto.IN_PROGRESS;
+import static io.camunda.webapps.backup.BackupStateDto.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonParser;
@@ -26,9 +25,9 @@ import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.rest.StatefulRestTemplate;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.management.dto.GetBackupStateResponseDto;
-import io.camunda.tasklist.webapp.management.dto.TakeBackupRequestDto;
-import io.camunda.tasklist.webapp.management.dto.TakeBackupResponseDto;
+import io.camunda.webapps.backup.GetBackupStateResponseDto;
+import io.camunda.webapps.backup.TakeBackupRequestDto;
+import io.camunda.webapps.backup.TakeBackupResponseDto;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;

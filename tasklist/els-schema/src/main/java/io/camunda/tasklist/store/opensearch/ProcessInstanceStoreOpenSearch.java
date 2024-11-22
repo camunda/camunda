@@ -16,12 +16,11 @@ import io.camunda.tasklist.os.RetryOpenSearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
-import io.camunda.tasklist.schema.templates.DraftTaskVariableTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.store.ProcessInstanceStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
-import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -50,7 +49,7 @@ public class ProcessInstanceStoreOpenSearch implements ProcessInstanceStore {
 
   @Autowired List<ProcessInstanceDependant> processInstanceDependants;
 
-  @Autowired TaskVariableTemplate taskVariableTemplate;
+  @Autowired SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired RetryOpenSearchClient retryOpenSearchClient;
 
@@ -105,12 +104,12 @@ public class ProcessInstanceStoreOpenSearch implements ProcessInstanceStore {
 
   private boolean deleteVariablesFor(final List<String> taskIds) {
     return retryOpenSearchClient.deleteDocumentsByQuery(
-        OpenSearchUtil.whereToSearch(taskVariableTemplate, OpenSearchUtil.QueryType.ALL),
+        taskVariableTemplate.getAlias(),
         new Query.Builder()
             .terms(
                 terms ->
                     terms
-                        .field(TaskVariableTemplate.TASK_ID)
+                        .field(SnapshotTaskVariableTemplate.TASK_ID)
                         .terms(
                             v ->
                                 v.value(

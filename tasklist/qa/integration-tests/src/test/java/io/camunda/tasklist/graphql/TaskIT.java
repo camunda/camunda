@@ -19,7 +19,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.util.MockMvcHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
@@ -33,6 +32,7 @@ import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;

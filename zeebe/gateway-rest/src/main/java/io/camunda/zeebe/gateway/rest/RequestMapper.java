@@ -49,6 +49,7 @@ import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyRequest;
 import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
+import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
@@ -71,13 +72,19 @@ import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceActivateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ModifyProcessInstanceRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
+import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
@@ -225,9 +232,10 @@ public class RequestMapper {
 
   public static CompleteJobRequest toJobCompletionRequest(
       final JobCompletionRequest completionRequest, final long jobKey) {
-
     return new CompleteJobRequest(
-        jobKey, getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables));
+        jobKey,
+        getMapOrEmpty(completionRequest, JobCompletionRequest::getVariables),
+        getJobResultOrDefault(completionRequest));
   }
 
   public static Either<ProblemDetail, UpdateJobRequest> toJobUpdateRequest(
@@ -241,6 +249,20 @@ public class RequestMapper {
                 new UpdateJobChangeset(
                     updateRequest.getChangeset().getRetries(),
                     updateRequest.getChangeset().getTimeout())));
+  }
+
+  public static Either<ProblemDetail, UpdateRoleRequest> toRoleUpdateRequest(
+      final RoleUpdateRequest roleUpdateRequest, final long roleKey) {
+    return getResult(
+        RoleRequestValidator.validateUpdateRequest(roleUpdateRequest),
+        () -> new UpdateRoleRequest(roleKey, roleUpdateRequest.getChangeset().getName()));
+  }
+
+  public static Either<ProblemDetail, CreateRoleRequest> toRoleCreateRequest(
+      final RoleCreateRequest roleCreateRequest) {
+    return getResult(
+        RoleRequestValidator.validateCreateRequest(roleCreateRequest),
+        () -> new CreateRoleRequest(roleCreateRequest.getName()));
   }
 
   public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
@@ -620,6 +642,21 @@ public class RequestMapper {
                 tenantId));
   }
 
+  public static Either<ProblemDetail, TenantDTO> toTenantCreateDto(
+      final TenantCreateRequest tenantCreateRequest) {
+    return getResult(
+        TenantRequestValidator.validateTenantCreateRequest(tenantCreateRequest),
+        () ->
+            new TenantDTO(null, tenantCreateRequest.getTenantId(), tenantCreateRequest.getName()));
+  }
+
+  public static Either<ProblemDetail, TenantDTO> toTenantUpdateDto(
+      final Long tenantKey, final TenantCreateRequest tenantCreateRequest) {
+    return getResult(
+        TenantRequestValidator.validateTenantUpdateRequest(tenantCreateRequest),
+        () -> new TenantDTO(tenantKey, null, tenantCreateRequest.getName()));
+  }
+
   private static List<ProcessInstanceModificationActivateInstruction>
       mapProcessInstanceModificationActivateInstruction(
           final List<ModifyProcessInstanceActivateInstruction> instructions) {
@@ -646,7 +683,22 @@ public class RequestMapper {
 
   private static <R> Map<String, Object> getMapOrEmpty(
       final R request, final Function<R, Map<String, Object>> mapExtractor) {
-    return request == null ? Map.of() : mapExtractor.apply(request);
+    final Map<String, Object> value = request == null ? null : mapExtractor.apply(request);
+    return value == null ? Map.of() : value;
+  }
+
+  private static JobResult getJobResultOrDefault(final JobCompletionRequest request) {
+    if (request == null || request.getResult() == null) {
+      return new JobResult();
+    }
+    return new JobResult()
+        .setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
+  }
+
+  private static <R> boolean getBooleanOrDefault(
+      final R request, final Function<R, Boolean> valueExtractor, final boolean defaultValue) {
+    final Boolean value = request == null ? null : valueExtractor.apply(request);
+    return value == null ? defaultValue : value;
   }
 
   private static <R> String getStringOrEmpty(
@@ -699,7 +751,7 @@ public class RequestMapper {
   public record ErrorJobRequest(
       long jobKey, String errorCode, String errorMessage, Map<String, Object> variables) {}
 
-  public record CompleteJobRequest(long jobKey, Map<String, Object> variables) {}
+  public record CompleteJobRequest(long jobKey, Map<String, Object> variables, JobResult result) {}
 
   public record UpdateJobRequest(long jobKey, UpdateJobChangeset changeset) {}
 
@@ -708,4 +760,10 @@ public class RequestMapper {
 
   public record DecisionEvaluationRequest(
       String decisionId, Long decisionKey, Map<String, Object> variables, String tenantId) {}
+
+  public record CreateRoleRequest(String name) {}
+
+  public record UpdateRoleRequest(long roleKey, String name) {}
+
+  public record CreateTenantRequest(String tenantId, String name) {}
 }

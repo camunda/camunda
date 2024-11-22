@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record FlowNodeInstanceEntity(
-    Long key,
+    Long flowNodeInstanceKey,
     Long processInstanceKey,
     Long processDefinitionKey,
     OffsetDateTime startDate,
@@ -21,10 +21,9 @@ public record FlowNodeInstanceEntity(
     String treePath,
     FlowNodeType type,
     FlowNodeState state,
-    Boolean incident,
+    Boolean hasIncident,
     Long incidentKey,
-    Long scopeKey,
-    String bpmnProcessId,
+    String processDefinitionId,
     String tenantId) {
 
   public enum FlowNodeType {

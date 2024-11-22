@@ -29,7 +29,11 @@ public enum DeploymentIntent implements Intent {
   @Deprecated
   DISTRIBUTED((short) 3),
   @Deprecated
-  FULLY_DISTRIBUTED((short) 4);
+  FULLY_DISTRIBUTED((short) 4),
+
+  RECONSTRUCT((short) 5),
+  RECONSTRUCTED((short) 6),
+  RECONSTRUCTED_ALL((short) 7);
 
   private final short value;
 
@@ -53,6 +57,12 @@ public enum DeploymentIntent implements Intent {
         return DISTRIBUTED;
       case 4:
         return FULLY_DISTRIBUTED;
+      case 5:
+        return RECONSTRUCT;
+      case 6:
+        return RECONSTRUCTED;
+      case 7:
+        return RECONSTRUCTED_ALL;
       default:
         return UNKNOWN;
     }
@@ -69,6 +79,8 @@ public enum DeploymentIntent implements Intent {
       case CREATED:
       case DISTRIBUTED:
       case FULLY_DISTRIBUTED:
+      case RECONSTRUCTED:
+      case RECONSTRUCTED_ALL:
         return true;
       default:
         return false;

@@ -13,7 +13,6 @@ import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.kickstart.annotations.GraphQLMutationResolver;
-import io.camunda.tasklist.entities.TaskImplementation;
 import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.ProcessInstanceStore;
@@ -23,6 +22,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.service.ProcessService;
 import io.camunda.tasklist.webapp.service.TaskService;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import java.util.List;
 import java.util.function.Supplier;
 import org.slf4j.Logger;

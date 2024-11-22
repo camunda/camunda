@@ -12,7 +12,6 @@ import static io.camunda.tasklist.util.CollectionUtil.throwAwayNullElements;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.TasklistEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -399,15 +398,29 @@ public abstract class OpenSearchUtil {
 
   public static <T> T getRawResponseWithTenantCheck(
       final String id,
-      IndexDescriptor descriptor,
-      OpenSearchUtil.QueryType queryType,
-      TenantAwareOpenSearchClient tenantAwareClient,
-      Class<T> objectClass)
+      final IndexDescriptor descriptor,
+      final OpenSearchUtil.QueryType queryType,
+      final TenantAwareOpenSearchClient tenantAwareClient,
+      final Class<T> objectClass)
+      throws IOException {
+    return getRawResponseWithTenantCheck(
+        id,
+        whereToSearch(descriptor, queryType),
+        descriptor.getIndexName(),
+        tenantAwareClient,
+        objectClass);
+  }
+
+  public static <T> T getRawResponseWithTenantCheck(
+      final String id,
+      final String index,
+      final String entityName,
+      final TenantAwareOpenSearchClient tenantAwareClient,
+      final Class<T> objectClass)
       throws IOException {
 
     final SearchRequest.Builder request =
-        OpenSearchUtil.createSearchRequest(descriptor, queryType)
-            .query(q -> q.ids(ids -> ids.values(id)));
+        OpenSearchUtil.createSearchRequest(index).query(q -> q.ids(ids -> ids.values(id)));
 
     final SearchResponse<T> response = tenantAwareClient.search(request, objectClass);
 
@@ -415,27 +428,30 @@ public abstract class OpenSearchUtil {
       return response.hits().hits().get(0).source();
     } else if (response.hits().total().value() > 1L) {
       throw new NotFoundException(
-          String.format("Unique %s with id %s was not found", descriptor.getIndexName(), id));
+          String.format("Unique %s with id %s was not found", entityName, id));
     } else {
-      throw new NotFoundException(
-          String.format("%s with id %s was not found", descriptor.getIndexName(), id));
+      throw new NotFoundException(String.format("%s with id %s was not found", entityName, id));
     }
   }
 
   public static SearchRequest.Builder createSearchRequest(
       IndexDescriptor descriptor, OpenSearchUtil.QueryType queryType) {
+    return createSearchRequest(whereToSearch(descriptor, queryType));
+  }
+
+  public static SearchRequest.Builder createSearchRequest(final String index) {
     final SearchRequest.Builder builder = new SearchRequest.Builder();
-    builder.index(whereToSearch(descriptor, queryType));
+    builder.index(index);
     return builder;
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       SearchRequest.Builder searchRequest, Class<T> clazz, OpenSearchClient osClient)
       throws IOException {
     return scroll(searchRequest, clazz, osClient, null);
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       SearchRequest.Builder searchRequest,
       Class<T> clazz,
       OpenSearchClient osClient,

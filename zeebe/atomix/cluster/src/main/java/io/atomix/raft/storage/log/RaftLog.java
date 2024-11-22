@@ -24,6 +24,7 @@ import io.atomix.raft.storage.log.RaftLogFlusher.Factory;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.serializer.RaftEntrySBESerializer;
 import io.atomix.raft.storage.serializer.RaftEntrySerializer;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.Journal;
 import io.camunda.zeebe.journal.JournalRecord;
 import java.io.Closeable;
@@ -183,7 +184,7 @@ public final class RaftLog implements Closeable {
     lastAppendedEntry = null;
   }
 
-  public void deleteAfter(final long index) {
+  public void deleteAfter(final long index) throws FlushException {
     if (index < commitIndex) {
       throw new IllegalStateException(
           String.format(
@@ -205,7 +206,7 @@ public final class RaftLog implements Closeable {
    * Flushes the underlying journal using the configured flushing strategy. For guarantees, refer to
    * the configured {@link RaftLogFlusher}.
    */
-  public void flush() {
+  public void flush() throws FlushException {
     flusher.flush(journal);
   }
 
@@ -216,7 +217,7 @@ public final class RaftLog implements Closeable {
    * <p>NOTE: this bypasses the configured flushing strategy, and is meant to be used when certain
    * guarantees are required.
    */
-  public void forceFlush() {
+  public void forceFlush() throws FlushException {
     Factory.DIRECT.flush(journal);
   }
 

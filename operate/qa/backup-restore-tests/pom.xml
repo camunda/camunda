@@ -59,6 +59,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-backup</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-context</artifactId>
       <scope>test</scope>

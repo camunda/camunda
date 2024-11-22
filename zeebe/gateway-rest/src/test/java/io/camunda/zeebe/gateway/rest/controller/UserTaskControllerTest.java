@@ -142,7 +142,7 @@ public class UserTaskControllerTest extends RestControllerTest {
         .expectBody()
         .isEmpty();
 
-    Mockito.verify(userTaskServices).completeUserTask(1L, null, "customAction");
+    Mockito.verify(userTaskServices).completeUserTask(1L, Map.of(), "customAction");
   }
 
   @ParameterizedTest

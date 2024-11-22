@@ -11,8 +11,8 @@ import static io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenera
 import static io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenerator.SMALL_VAR_NAME;
 import static io.camunda.tasklist.qa.migration.v810.BigVariableProcessDataGenerator.SMALL_VAR_VALUE;
 import static io.camunda.tasklist.schema.indices.VariableIndex.PROCESS_INSTANCE_ID;
-import static io.camunda.tasklist.schema.templates.TaskTemplate.BPMN_PROCESS_ID;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.BPMN_PROCESS_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;

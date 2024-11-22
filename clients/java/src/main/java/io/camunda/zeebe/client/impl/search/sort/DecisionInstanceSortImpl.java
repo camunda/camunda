@@ -32,6 +32,11 @@ public class DecisionInstanceSortImpl extends SearchQuerySortBase<DecisionInstan
   }
 
   @Override
+  public DecisionInstanceSort decisionInstanceId() {
+    return field("decisionInstanceId");
+  }
+
+  @Override
   public DecisionInstanceSort state() {
     return field("state");
   }

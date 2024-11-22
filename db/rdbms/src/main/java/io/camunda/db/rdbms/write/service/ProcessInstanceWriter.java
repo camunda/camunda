@@ -7,16 +7,18 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.ProcessInstanceMapper.EndProcessInstanceDto;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.camunda.db.rdbms.write.queue.UpsertMerger;
+import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
+import java.time.OffsetDateTime;
+import java.util.function.Function;
 
 public class ProcessInstanceWriter {
-
-  private static final Logger LOG = LoggerFactory.getLogger(ProcessInstanceWriter.class);
 
   private final ExecutionQueue executionQueue;
 
@@ -33,12 +35,26 @@ public class ProcessInstanceWriter {
             processInstance));
   }
 
-  public void update(final ProcessInstanceDbModel processInstance) {
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.PROCESS_INSTANCE,
-            processInstance.processInstanceKey(),
-            "io.camunda.db.rdbms.sql.ProcessInstanceMapper.update",
-            processInstance));
+  public void finish(
+      final long key, final ProcessInstanceState state, final OffsetDateTime endDate) {
+    final boolean wasMerged = mergeToQueue(key, b -> b.state(state).endDate(endDate));
+
+    if (!wasMerged) {
+      final var dto = new EndProcessInstanceDto(key, state, endDate);
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.PROCESS_INSTANCE,
+              key,
+              "io.camunda.db.rdbms.sql.ProcessInstanceMapper.updateStateAndEndDate",
+              dto));
+    }
+  }
+
+  private boolean mergeToQueue(
+      final long key,
+      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder> mergeFunction) {
+    return executionQueue.tryMergeWithExistingQueueItem(
+        new UpsertMerger<>(
+            ContextType.PROCESS_INSTANCE, key, ProcessInstanceDbModel.class, mergeFunction));
   }
 }

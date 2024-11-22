@@ -28,6 +28,7 @@ import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.StartEventBuilder;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Consumer;
@@ -154,14 +155,18 @@ class ProcessCacheImplIT {
   static ProcessCacheArgument getESProcessCache(final String indexName) {
     return new ProcessCacheArgument(
         new ExporterEntityCacheImpl(
-            10, new ElasticSearchProcessCacheLoader(elsClient, indexName, new XMLUtil())),
+            10,
+            new ElasticSearchProcessCacheLoader(elsClient, indexName, new XMLUtil()),
+            new ExporterCacheMetrics("ES", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInElasticSearch);
   }
 
   static ProcessCacheArgument getOSProcessCache(final String indexName) {
     return new ProcessCacheArgument(
         new ExporterEntityCacheImpl(
-            10, new OpenSearchProcessCacheLoader(osClient, indexName, new XMLUtil())),
+            10,
+            new OpenSearchProcessCacheLoader(osClient, indexName, new XMLUtil()),
+            new ExporterCacheMetrics("OS", new SimpleMeterRegistry())),
         ProcessCacheImplIT::indexInOpenSearch);
   }
 

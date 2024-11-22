@@ -201,6 +201,11 @@ public final class AsyncSnapshotDirector extends Actor
   }
 
   @Override
+  public String componentName() {
+    return actorName;
+  }
+
+  @Override
   public HealthReport getHealthReport() {
     return healthReport;
   }

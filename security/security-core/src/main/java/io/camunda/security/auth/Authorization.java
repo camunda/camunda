@@ -10,12 +10,14 @@ package io.camunda.security.auth;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUTHORIZATION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.ROLE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.TENANT;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ;
-import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_DECISION_INSTANCE;
+import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_USER_TASK;
 
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -56,6 +58,10 @@ public record Authorization(AuthorizationResourceType resourceType, PermissionTy
       return resourceType(DECISION_REQUIREMENTS_DEFINITION);
     }
 
+    public Builder mapping() {
+      return resourceType(MAPPING_RULE);
+    }
+
     public Builder role() {
       return resourceType(ROLE);
     }
@@ -76,12 +82,16 @@ public record Authorization(AuthorizationResourceType resourceType, PermissionTy
       return permissionType(READ);
     }
 
-    public Builder readInstance() {
-      return permissionType(READ_INSTANCE);
+    public Builder readProcessInstance() {
+      return permissionType(READ_PROCESS_INSTANCE);
     }
 
     public Builder readUserTask() {
       return permissionType(READ_USER_TASK);
+    }
+
+    public Builder readDecisionInstance() {
+      return permissionType(READ_DECISION_INSTANCE);
     }
 
     public Authorization build() {

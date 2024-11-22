@@ -121,7 +121,9 @@ public class ProcessInstanceMigrationMigrateProcessor
 
     final var authorizationRequest =
         new AuthorizationRequest(
-                command, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE)
+                command,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(processInstance.getValue().getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =

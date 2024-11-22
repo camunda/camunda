@@ -96,7 +96,9 @@ final class JobBatchCollector {
     final var authorizedProcessIds =
         authCheckBehavior.getAuthorizedResourceIdentifiers(
             new AuthorizationRequest(
-                record, AuthorizationResourceType.PROCESS_DEFINITION, PermissionType.UPDATE));
+                record,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                PermissionType.UPDATE_PROCESS_INSTANCE));
 
     jobState.forEachActivatableJobs(
         value.getTypeBuffer(),

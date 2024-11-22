@@ -24,7 +24,7 @@ public class VariableWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.VARIABLE,
-            variable.key(),
+            variable.variableKey(),
             "io.camunda.db.rdbms.sql.VariableMapper.insert",
             variable));
   }
@@ -33,7 +33,7 @@ public class VariableWriter {
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.VARIABLE,
-            variable.key(),
+            variable.variableKey(),
             "io.camunda.db.rdbms.sql.VariableMapper.update",
             variable));
   }

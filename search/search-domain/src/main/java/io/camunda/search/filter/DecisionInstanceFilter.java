@@ -19,9 +19,11 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 public record DecisionInstanceFilter(
     List<Long> decisionInstanceKeys,
+    List<String> decisionInstanceIds,
     List<DecisionInstanceState> states,
     List<Operation<OffsetDateTime>> evaluationDateOperations,
     List<String> evaluationFailures,
@@ -35,9 +37,15 @@ public record DecisionInstanceFilter(
     List<String> tenantIds)
     implements FilterBase {
 
+  public static DecisionInstanceFilter of(
+      final Function<DecisionInstanceFilter.Builder, ObjectBuilder<DecisionInstanceFilter>> fn) {
+    return FilterBuilders.decisionInstance(fn);
+  }
+
   public static final class Builder implements ObjectBuilder<DecisionInstanceFilter> {
 
     private List<Long> decisionInstanceKeys;
+    private List<String> decisionInstanceIds;
     private List<DecisionInstanceState> states;
     private List<Operation<OffsetDateTime>> evaluationDateOperations;
     private List<String> evaluationFailures;
@@ -57,6 +65,15 @@ public record DecisionInstanceFilter(
 
     public Builder decisionInstanceKeys(final Long... values) {
       return decisionInstanceKeys(collectValuesAsList(values));
+    }
+
+    public Builder decisionInstanceIds(final List<String> values) {
+      decisionInstanceIds = addValuesToList(decisionInstanceIds, values);
+      return this;
+    }
+
+    public Builder decisionInstanceIds(final String... values) {
+      return decisionInstanceIds(collectValuesAsList(values));
     }
 
     public Builder states(final List<DecisionInstanceState> values) {
@@ -171,6 +188,7 @@ public record DecisionInstanceFilter(
     public DecisionInstanceFilter build() {
       return new DecisionInstanceFilter(
           Objects.requireNonNullElse(decisionInstanceKeys, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionInstanceIds, Collections.emptyList()),
           Objects.requireNonNullElse(states, Collections.emptyList()),
           Objects.requireNonNullElse(evaluationDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(evaluationFailures, Collections.emptyList()),

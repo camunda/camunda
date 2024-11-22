@@ -8,9 +8,9 @@
 package io.camunda.search.entities;
 
 public record ProcessDefinitionEntity(
-    Long key,
+    Long processDefinitionKey,
     String name,
-    String bpmnProcessId,
+    String processDefinitionId,
     String bpmnXml,
     String resourceName,
     Integer version,
