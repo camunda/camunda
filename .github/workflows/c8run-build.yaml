@@ -38,6 +38,10 @@ jobs:
         run: go build
         working-directory: ./c8run
 
+      - name: Unit tests
+        run: go test
+        working-directory: ./c8run
+
       - name: make a package
         run: ./c8run package
         working-directory: ./c8run
@@ -146,6 +150,13 @@ jobs:
 
       - name: Set env
         run: echo "JAVA_HOME=$env:JAVA_HOME_22_x64" >> $env:GITHUB_ENV
+
+      - name: Unit tests
+        run: go test
+        working-directory: .\c8run
+        shell: cmd
+        env:
+          JAVA_VERSION: "22.0.2"
 
       - name: Run c8run
         run: .\c8run.exe start

@@ -77,6 +77,9 @@ outputs: {}
 runs:
   using: composite
   steps:
+  - name: Check for Fork
+    uses: ./.github/actions/is-fork
+    id: is-fork
   - name: Preliminary checks
     id: checks
     env:
@@ -101,17 +104,13 @@ runs:
             "path": "secret/data/products/zeebe/ci/zeebe"
           }
         }
-      IS_FORK: >-
-        ${{ 
-          github.event.name == 'pull_request' &&
-          github.event.pull_request.head.repo.full_name != 'camunda/camunda'
-        }}
       WORKFLOW_REF: ${{ github.workflow_ref }}
+    shell: bash
     run: |
       ## Preliminary checks
 
       # Check if current workflow run is related to a fork PR
-      if [[ "${IS_FORK}" == "true" ]]; then
+      if [[ "${{ steps.is-fork.outputs.is-fork }}" == "true" ]]; then
         echo "The current workflow run is related to a fork PR."
         echo "As a result, Vault secrets cannot be recovered, Camunda Nexus and DockerHub/Harbor login will be disabled."
       fi
@@ -133,11 +132,9 @@ runs:
       dockerhub_vault_path=$(echo ${DOCKERHUB_VAULT_PATHS} | jq -r --arg team "$team" '.[$team].path')
 
       echo dockerhub-vault-path="${dockerhub_vault_path}" | tee -a $GITHUB_OUTPUT
-      echo is-fork="${IS_FORK}" | tee -a $GITHUB_OUTPUT
-    shell: bash
   - name: Import Secrets
     # Secrets are imported only if current workflow run is not related to a fork PR
-    if: steps.checks.outputs.is-fork != 'true'
+    if: steps.is-fork.outputs.is-fork != 'true'
     id: secrets
     uses: hashicorp/vault-action@v3.0.0
     with:
@@ -171,8 +168,8 @@ runs:
     env:
       # Camunda Nexus is disabled for fork PRs
       CAMUNDA_NEXUS_ENABLED: >-
-        ${{ 
-          steps.checks.outputs.is-fork != 'true' &&
+        ${{
+          steps.is-fork.outputs.is-fork != 'true' &&
           inputs.camunda-nexus == 'true'
         }}
       CAMUNDA_NEXUS_MAVEN_MIRROR: >-
@@ -210,7 +207,7 @@ runs:
         --argjson maven_servers "${EXTRA_MAVEN_SERVERS}" \
         '[ $nexus_server + $maven_servers | group_by(.id)[] | add ]'
       )
-      
+
       echo mirrors=$mirrors >> $GITHUB_OUTPUT
       echo servers=$servers >> $GITHUB_OUTPUT
     shell: bash
@@ -227,14 +224,14 @@ runs:
     run: |
       # tzdata is not installed in self-hosted runners
       sudo apt-get update && sudo apt-get install -y tzdata
-      echo ${TZ_IDENTIFIER} | sudo tee /etc/timezone 
+      echo ${TZ_IDENTIFIER} | sudo tee /etc/timezone
       sudo rm -rf /etc/localtime
       sudo ln -s /usr/share/zoneinfo/${TZ_IDENTIFIER} /etc/localtime
     shell: bash
   - name: Logs on to DockerHub
     # DockerHub login is disabled for fork PRs
     if: >-
-      steps.checks.outputs.is-fork != 'true' &&
+      steps.is-fork.outputs.is-fork != 'true' &&
       (
         inputs.dockerhub == 'true' ||
         inputs.dockerhub-readonly == 'true'
@@ -246,7 +243,7 @@ runs:
   - name: Logs on to Harbor
     # Harbor login is disabled for fork PRs
     if: >-
-      steps.checks.outputs.is-fork != 'true' &&
+      steps.is-fork.outputs.is-fork != 'true' &&
       inputs.harbor == 'true'
     uses: docker/login-action@v3
     with:
