@@ -88,9 +88,7 @@ const Listeners: React.FC<Props> = observer(({listeners}) => {
                   ),
                 },
                 {
-                  cellContent: (
-                    <CellContainer>{spaceAndCapitalize(jobType)}</CellContainer>
-                  ),
+                  cellContent: <CellContainer>{jobType}</CellContainer>,
                 },
                 {
                   cellContent: (
