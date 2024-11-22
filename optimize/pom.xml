@@ -20,7 +20,7 @@
     <zeebe.docker.version>${zeebe.version}</zeebe.docker.version>
 
     <!-- maven plugins -->
-    <surefire-plugin.version>3.5.1</surefire-plugin.version>
+    <surefire-plugin.version>3.5.2</surefire-plugin.version>
 
     <!-- maven dependency plugin -->
     <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
