@@ -32,6 +32,7 @@ public final class BackupEndpointStandalone {
     return backupEndpoint.take(backupId);
   }
 
+  @ReadOperation
   public WebEndpointResponse<?> status(@Selector @NonNull final long id) {
     return backupEndpoint.status(id);
   }
