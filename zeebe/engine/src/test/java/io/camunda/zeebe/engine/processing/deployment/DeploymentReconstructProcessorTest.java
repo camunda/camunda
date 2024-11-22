@@ -20,6 +20,8 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
@@ -341,6 +343,147 @@ final class DeploymentReconstructProcessorTest {
                   .satisfies(
                       deploymentRecord -> {
                         assertThat(deploymentRecord.getFormMetadata()).hasSize(2);
+                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                      });
+            });
+  }
+
+  @Test
+  void shouldReconstructForSingleDecisionWithoutDeploymentKey() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+
+    final var decisionRequirementsKey = Protocol.encodePartitionId(1, 2);
+    state
+        .getDecisionState()
+        .storeDecisionRequirements(
+            new DecisionRequirementsRecord().setDecisionRequirementsKey(decisionRequirementsKey));
+    final var decisionKey = Protocol.encodePartitionId(1, 3);
+    state
+        .getDecisionState()
+        .storeDecisionRecord(
+            new DecisionRecord()
+                .setDecisionKey(decisionKey)
+                .setDecisionId("decision")
+                .setDecisionName("decision")
+                .setDecisionRequirementsKey(decisionRequirementsKey)
+                .setVersion(1));
+
+    // when
+    processor.processRecord(command);
+
+    // then
+    assertThat(resultBuilder.getFollowupRecords())
+        .singleElement()
+        .satisfies(
+            record -> {
+              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+              assertThat(record.getKey()).isEqualTo(decisionKey);
+              assertThat(record.getValue())
+                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+                  .satisfies(
+                      deploymentRecord -> {
+                        assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(1);
+                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(decisionKey);
+                      });
+            });
+  }
+
+  @Test
+  void shouldReconstructForSingleDecisionWithDeploymentKey() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+
+    final var deploymentKey = Protocol.encodePartitionId(1, 1);
+    final var decisionRequirementsKey = Protocol.encodePartitionId(1, 2);
+    state
+        .getDecisionState()
+        .storeDecisionRequirements(
+            new DecisionRequirementsRecord().setDecisionRequirementsKey(decisionRequirementsKey));
+    final var decisionKey = Protocol.encodePartitionId(1, 3);
+    state
+        .getDecisionState()
+        .storeDecisionRecord(
+            new DecisionRecord()
+                .setDecisionKey(decisionKey)
+                .setDecisionId("decision")
+                .setDecisionName("decision")
+                .setDecisionRequirementsKey(decisionRequirementsKey)
+                .setDeploymentKey(deploymentKey)
+                .setVersion(1));
+
+    // when
+    processor.processRecord(command);
+
+    // then
+    assertThat(resultBuilder.getFollowupRecords())
+        .singleElement()
+        .satisfies(
+            record -> {
+              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+              assertThat(record.getKey()).isEqualTo(deploymentKey);
+              assertThat(record.getValue())
+                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+                  .satisfies(
+                      deploymentRecord -> {
+                        assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(1);
+                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
+                      });
+            });
+  }
+
+  @Test
+  void shouldIncludeAllDecisionsOfDeployment() {
+    // given
+    final var command = mock(TypedRecord.class);
+    when(command.getValue()).thenReturn(new DeploymentRecord());
+
+    final var deploymentKey = Protocol.encodePartitionId(1, 1);
+    final var decisionRequirementsKey = Protocol.encodePartitionId(1, 2);
+    final var decisionKey1 = Protocol.encodePartitionId(1, 3);
+    final var decisionKey2 = Protocol.encodePartitionId(1, 4);
+    state
+        .getDecisionState()
+        .storeDecisionRequirements(
+            new DecisionRequirementsRecord().setDecisionRequirementsKey(decisionRequirementsKey));
+    state
+        .getDecisionState()
+        .storeDecisionRecord(
+            new DecisionRecord()
+                .setDeploymentKey(deploymentKey)
+                .setDecisionKey(decisionKey1)
+                .setDecisionId("decision1")
+                .setDecisionName("decision1")
+                .setDecisionRequirementsKey(decisionRequirementsKey)
+                .setVersion(1));
+    state
+        .getDecisionState()
+        .storeDecisionRecord(
+            new DecisionRecord()
+                .setDeploymentKey(deploymentKey)
+                .setDecisionKey(decisionKey2)
+                .setDecisionId("decision2")
+                .setDecisionName("decision2")
+                .setDecisionRequirementsKey(decisionRequirementsKey)
+                .setVersion(1));
+
+    // when
+    processor.processRecord(command);
+
+    // then
+    assertThat(resultBuilder.getFollowupRecords())
+        .singleElement()
+        .satisfies(
+            record -> {
+              assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
+              assertThat(record.getKey()).isEqualTo(deploymentKey);
+              assertThat(record.getValue())
+                  .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
+                  .satisfies(
+                      deploymentRecord -> {
+                        assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(2);
                         assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(deploymentKey);
                       });
             });
