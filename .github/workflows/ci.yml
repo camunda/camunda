@@ -58,7 +58,7 @@ jobs:
     timeout-minutes: 5
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
-      ACTIONLINT_VERSION: '1.7.3'
+      ACTIONLINT_VERSION: '1.7.4'
     steps:
       - uses: actions/checkout@v4
       - run: echo "::add-matcher::.github/actionlint-matcher.json"
