@@ -86,12 +86,16 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
               userTaskBehavior.userTaskCreated(userTaskRecord);
               stateTransitionBehavior.transitionToActivated(context, element.getEventType());
 
-              if (StringUtils.isNotEmpty(userTaskProperties.getAssignee())
-                  && element.hasTaskListeners(ZeebeTaskListenerEventType.assignment)) {
-                userTaskBehavior.userTaskAssigning(userTaskRecord);
-                final var listener =
-                    element.getTaskListeners(ZeebeTaskListenerEventType.assignment).getFirst();
-                jobBehavior.createNewTaskListenerJob(context, userTaskRecord, listener);
+              final var assignee = userTaskProperties.getAssignee();
+              if (StringUtils.isNotEmpty(assignee)) {
+                userTaskBehavior.userTaskAssigning(userTaskRecord, assignee);
+                if (element.hasTaskListeners(ZeebeTaskListenerEventType.assignment)) {
+                  final var listener =
+                      element.getTaskListeners(ZeebeTaskListenerEventType.assignment).getFirst();
+                  jobBehavior.createNewTaskListenerJob(context, userTaskRecord, listener);
+                } else {
+                  userTaskBehavior.userTaskAssigned(userTaskRecord, assignee);
+                }
               }
             });
   }

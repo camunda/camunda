@@ -37,6 +37,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,7 +126,7 @@ public final class BpmnUserTaskBehavior {
         new UserTaskRecord()
             .setVariables(DocumentValue.EMPTY_DOCUMENT)
             .setUserTaskKey(userTaskKey)
-            .setAssignee(userTaskProperties.getAssignee())
+            .setAssignee(StringUtils.EMPTY)
             .setCandidateGroupsList(userTaskProperties.getCandidateGroups())
             .setCandidateUsersList(userTaskProperties.getCandidateUsers())
             .setDueDate(userTaskProperties.getDueDate())
@@ -328,9 +329,16 @@ public final class BpmnUserTaskBehavior {
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
   }
 
-  public void userTaskAssigning(final UserTaskRecord userTaskRecord) {
+  public void userTaskAssigning(final UserTaskRecord userTaskRecord, final String assignee) {
     final long userTaskKey = userTaskRecord.getUserTaskKey();
+    userTaskRecord.setAssignee(assignee);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
+  }
+
+  public void userTaskAssigned(final UserTaskRecord userTaskRecord, final String assignee) {
+    final long userTaskKey = userTaskRecord.getUserTaskKey();
+    userTaskRecord.setAssignee(assignee);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
   }
 
   public static final class UserTaskProperties {
