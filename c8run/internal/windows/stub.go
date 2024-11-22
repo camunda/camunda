@@ -7,7 +7,7 @@ import (
 	"os/exec"
 )
 
-func (w *WindowsC8Run) OpenBrowser(protocol string) error {
+func (w *WindowsC8Run) OpenBrowser(protocol string, port int) error {
 	panic("Platform was not built for windows")
 }
 

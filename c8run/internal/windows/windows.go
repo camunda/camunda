@@ -8,11 +8,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"syscall"
 )
 
-func (w *WindowsC8Run) OpenBrowser(protocol string) error {
-	operateUrl := protocol + "://localhost:8080/operate/login"
+func (w *WindowsC8Run) OpenBrowser(protocol string, port int) error {
+	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate/login"
 	openBrowserCmdString := "start " + operateUrl
 	openBrowserCmd := exec.Command("cmd", "/C", openBrowserCmdString)
 	openBrowserCmd.SysProcAttr = &syscall.SysProcAttr{
