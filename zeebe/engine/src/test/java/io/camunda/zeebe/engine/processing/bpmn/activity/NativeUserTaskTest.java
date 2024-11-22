@@ -291,7 +291,7 @@ public final class NativeUserTaskTest {
 
     // then
     final Record<UserTaskRecordValue> userTask =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
@@ -311,7 +311,7 @@ public final class NativeUserTaskTest {
 
     // then
     final Record<UserTaskRecordValue> userTask =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
@@ -333,7 +333,7 @@ public final class NativeUserTaskTest {
 
     // then
     final Record<UserTaskRecordValue> userTask =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst();
 
