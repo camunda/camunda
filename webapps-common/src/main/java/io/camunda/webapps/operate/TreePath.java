@@ -170,7 +170,7 @@ public class TreePath {
   public Optional<String> processInstanceForFni(final String fniId) {
     final var compiled = treePath.toString();
     final var pathSegments = compiled.split("/");
-    final var fniIndex = Arrays.binarySearch(pathSegments, "FNI_" + fniId);
+    final var fniIndex = Arrays.asList(pathSegments).indexOf("FNI_" + fniId);
     for (int index = fniIndex; index >= 0; index--) {
       final var pathSegment = pathSegments[index];
       if (pathSegment.startsWith("PI_")) {
