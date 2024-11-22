@@ -9,14 +9,17 @@
 import {setup} from './processInstanceMigration.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
-import {SETUP_WAITING_TIME} from './constants';
+import {SETUP_WAITING_TIME, SETUP_WAITING_TIME_LONG} from './constants';
 import {config} from '../config';
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
+const {createWorker} = zeebeGrpcApi;
 let initialData: Awaited<ReturnType<typeof setup>>;
 
 test.beforeAll(async ({request}) => {
   initialData = await setup();
+
+  const totalInstances = initialData.processV1Instances.length;
 
   await expect
     .poll(
@@ -35,12 +38,12 @@ test.beforeAll(async ({request}) => {
 
         return await response.json();
       },
-      {timeout: SETUP_WAITING_TIME},
+      {timeout: SETUP_WAITING_TIME_LONG},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', totalInstances);
 
   await Promise.all(
-    [...new Array(10)].map((_, index) =>
+    [...new Array(totalInstances)].map((_, index) =>
       zeebeGrpcApi.zeebe.publishMessage({
         name: 'Message_4',
         correlationKey: `myCorrelationKey${index}`,
@@ -69,7 +72,7 @@ test.beforeAll(async ({request}) => {
       },
       {timeout: SETUP_WAITING_TIME},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', totalInstances);
 
   // Wait until all script tasks are in incident state
   await expect
@@ -94,7 +97,7 @@ test.beforeAll(async ({request}) => {
       },
       {timeout: SETUP_WAITING_TIME},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', totalInstances);
 
   // Wait until all signals have been received
   await expect
@@ -118,7 +121,7 @@ test.beforeAll(async ({request}) => {
       },
       {timeout: SETUP_WAITING_TIME},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', totalInstances);
 
   // Wait until all error event were caught
   await expect
@@ -142,7 +145,7 @@ test.beforeAll(async ({request}) => {
       },
       {timeout: SETUP_WAITING_TIME},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', totalInstances);
 });
 
 test.describe.serial('Process Instance Migration', () => {
@@ -188,7 +191,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(40);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(42);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -654,7 +657,7 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  test.skip('Migrated tasks', async ({
+  test('Migrated tasks', async ({
     processesPage,
     processInstancePage,
     page,
@@ -760,7 +763,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
-    await processInstancePage.diagram.clickFlowNode('Task G'); // deselect Script task 2
+    await processInstancePage.diagram.clickFlowNode('Task G'); // deselect
 
     /**
      * Business rule task
@@ -782,9 +785,31 @@ test.describe.serial('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
+    await processInstancePage.diagram.clickFlowNode('Business rule task 2'); // deselect
+
+    /**
+     * Escalation task
+     */
+    const worker = createWorker('escalationWorker', true, {}, async (job) => {
+      const acknowledgement = await job.complete();
+      await worker.close();
+      return acknowledgement;
+    });
+
+    /**
+     * Expect that the escalation boundary event has been migrated.
+     * In v1 and v2 of the process the escalation boundary event has a different escalation code (123).
+     * Since the escalation code is static, it is expected that the code in the target process (456) is used.
+     *
+     * To test this, an escalation throw event with escalation code (456) is triggered. When the escalation
+     * boundary event becomes selectable, it means it has caught the escalation correctly.
+     */
+    await expect(
+      await processInstancePage.diagram.getLabeledElement('Escalation event'),
+    ).toHaveClass(/op-selectable/, {timeout: 20000});
   });
 
-  test.skip('Migrated message events', async ({
+  test('Migrated message events', async ({
     processesPage,
     processInstancePage,
     page,
@@ -891,7 +916,7 @@ test.describe.serial('Process Instance Migration', () => {
       .click();
   });
 
-  test.skip('Migrated gateways', async ({
+  test('Migrated gateways', async ({
     processesPage,
     processInstancePage,
     page,
@@ -943,10 +968,7 @@ test.describe.serial('Process Instance Migration', () => {
     ).toBeVisible();
   });
 
-  test.skip('Migrated date tag', async ({
-    processesPage,
-    processInstancePage,
-  }) => {
+  test('Migrated date tag', async ({processesPage, processInstancePage}) => {
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
     const targetVersion = initialData.processV3.version.toString();
 
@@ -968,7 +990,7 @@ test.describe.serial('Process Instance Migration', () => {
     ).toBeVisible();
   });
 
-  test.skip('Migrated signal elements', async ({
+  test('Migrated signal elements', async ({
     processesPage,
     processInstancePage,
     request,
