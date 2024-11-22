@@ -7,19 +7,17 @@
  */
 package io.camunda.search.clients.transformers.sort;
 
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.KEY;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.NAME;
-import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex.NAME;
 
-public class TenantFieldSortingTransformer implements FieldSortingTransformer {
+public class RoleFieldSortingTransformer implements FieldSortingTransformer {
 
   @Override
   public String apply(final String domainField) {
     return switch (domainField) {
-      case "tenantKey" -> KEY;
-      case "tenantId" -> TENANT_ID;
+      case "roleKey" -> KEY;
       case "name" -> NAME;
-      default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
+      default -> throw new IllegalArgumentException("Unknown field: " + domainField);
     };
   }
 }

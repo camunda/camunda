@@ -75,15 +75,15 @@ public class TenantQueryControllerTest extends RestControllerTest {
        }
       """
           .formatted(
-              TENANT_ENTITIES.get(0).key(),
+              TENANT_ENTITIES.get(0).tenantKey(),
               TENANT_ENTITIES.get(0).name(),
               TENANT_ENTITIES.get(0).tenantId(),
               formatSet(TENANT_ENTITIES.get(0).assignedMemberKeys()),
-              TENANT_ENTITIES.get(1).key(),
+              TENANT_ENTITIES.get(1).tenantKey(),
               TENANT_ENTITIES.get(1).name(),
               TENANT_ENTITIES.get(1).tenantId(),
               formatSet(TENANT_ENTITIES.get(1).assignedMemberKeys()),
-              TENANT_ENTITIES.get(2).key(),
+              TENANT_ENTITIES.get(2).tenantKey(),
               TENANT_ENTITIES.get(2).name(),
               TENANT_ENTITIES.get(2).tenantId(),
               formatSet(TENANT_ENTITIES.get(2).assignedMemberKeys()),
@@ -106,12 +106,12 @@ public class TenantQueryControllerTest extends RestControllerTest {
     final var tenantName = "Tenant Name";
     final var tenantId = "tenant-id";
     final var tenant = new TenantEntity(100L, tenantId, tenantName, Set.of());
-    when(tenantServices.getByKey(tenant.key())).thenReturn(tenant);
+    when(tenantServices.getByKey(tenant.tenantKey())).thenReturn(tenant);
 
     // when
     webClient
         .get()
-        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.key()))
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.tenantKey()))
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -126,10 +126,10 @@ public class TenantQueryControllerTest extends RestControllerTest {
               "assignedMemberKeys": []
             }
             """
-                .formatted(tenant.key(), tenantName, tenantId));
+                .formatted(tenant.tenantKey(), tenantName, tenantId));
 
     // then
-    verify(tenantServices, times(1)).getByKey(tenant.key());
+    verify(tenantServices, times(1)).getByKey(tenant.tenantKey());
   }
 
   @Test

@@ -37,7 +37,8 @@ public class RoleQueryController {
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
   public ResponseEntity<Object> getRole(@PathVariable final long roleKey) {
     try {
-      return ResponseEntity.ok().body(roleServices.getRole(roleKey));
+      return ResponseEntity.ok()
+          .body(SearchQueryResponseMapper.toRole(roleServices.getRole(roleKey)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }

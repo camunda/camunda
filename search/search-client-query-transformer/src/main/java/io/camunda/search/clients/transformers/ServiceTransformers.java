@@ -9,6 +9,7 @@ package io.camunda.search.clients.transformers;
 
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.clients.transformers.entity.AuthorizationEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionDefinitionEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionInstanceEntityTransformer;
 import io.camunda.search.clients.transformers.entity.DecisionRequirementsEntityTransformer;
@@ -17,7 +18,9 @@ import io.camunda.search.clients.transformers.entity.FormEntityTransformer;
 import io.camunda.search.clients.transformers.entity.IncidentEntityTransformer;
 import io.camunda.search.clients.transformers.entity.ProcessDefinitionEntityTransfomer;
 import io.camunda.search.clients.transformers.entity.ProcessInstanceEntityTransformer;
+import io.camunda.search.clients.transformers.entity.RoleEntityTransformer;
 import io.camunda.search.clients.transformers.entity.TenantEntityTransformer;
+import io.camunda.search.clients.transformers.entity.UserEntityTransformer;
 import io.camunda.search.clients.transformers.entity.UserTaskEntityTransformer;
 import io.camunda.search.clients.transformers.entity.VariableEntityTransformer;
 import io.camunda.search.clients.transformers.filter.AuthorizationFilterTransformer;
@@ -41,6 +44,7 @@ import io.camunda.search.clients.transformers.query.TypedSearchQueryTransformer;
 import io.camunda.search.clients.transformers.result.DecisionInstanceResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.DecisionRequirementsResultConfigTransformer;
 import io.camunda.search.clients.transformers.result.ProcessInstanceResultConfigTransformer;
+import io.camunda.search.clients.transformers.sort.AuthorizationFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.DecisionDefinitionFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.DecisionInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.DecisionRequirementsFieldSortingTransformer;
@@ -49,7 +53,9 @@ import io.camunda.search.clients.transformers.sort.FormFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.IncidentFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessDefinitionFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessInstanceFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.RoleFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.TenantFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.UserFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserTaskFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.VariableFieldSortingTransformer;
 import io.camunda.search.filter.AuthorizationFilter;
@@ -86,6 +92,7 @@ import io.camunda.search.query.VariableQuery;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.search.result.DecisionRequirementsQueryResultConfig;
 import io.camunda.search.result.ProcessInstanceQueryResultConfig;
+import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
@@ -94,8 +101,10 @@ import io.camunda.search.sort.FormSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
+import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.TenantSort;
+import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -108,7 +117,10 @@ import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequire
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity;
+import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
+import io.camunda.webapps.schema.entities.usermanagement.UserEntity;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -175,9 +187,12 @@ public final class ServiceTransformers {
     mappers.put(IncidentEntity.class, new IncidentEntityTransformer());
     mappers.put(FlowNodeInstanceEntity.class, new FlowNodeInstanceEntityTransformer());
     mappers.put(TaskEntity.class, new UserTaskEntityTransformer());
-    mappers.put(TenantEntity.class, new TenantEntityTransformer());
     mappers.put(FormEntity.class, new FormEntityTransformer());
     mappers.put(VariableEntity.class, new VariableEntityTransformer());
+    mappers.put(AuthorizationEntity.class, new AuthorizationEntityTransformer());
+    mappers.put(RoleEntity.class, new RoleEntityTransformer());
+    mappers.put(TenantEntity.class, new TenantEntityTransformer());
+    mappers.put(UserEntity.class, new UserEntityTransformer());
 
     // domain field sorting -> database field sorting
     mappers.put(DecisionDefinitionSort.class, new DecisionDefinitionFieldSortingTransformer());
@@ -191,6 +206,10 @@ public final class ServiceTransformers {
     mappers.put(UserTaskSort.class, new UserTaskFieldSortingTransformer());
     mappers.put(FormSort.class, new FormFieldSortingTransformer());
     mappers.put(VariableSort.class, new VariableFieldSortingTransformer());
+    mappers.put(AuthorizationSort.class, new AuthorizationFieldSortingTransformer());
+    mappers.put(RoleSort.class, new RoleFieldSortingTransformer());
+    mappers.put(TenantSort.class, new TenantFieldSortingTransformer());
+    mappers.put(UserSort.class, new UserFieldSortingTransformer());
 
     // filters -> search query
     mappers.put(ProcessInstanceFilter.class, new ProcessInstanceFilterTransformer());
