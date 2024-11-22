@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -13,11 +15,11 @@
 
   <properties>
     <jersey.version>3.1.3</jersey.version>
-    <spring.security.version>6.3.3</spring.security.version>
+    <spring.security.version>6.3.4</spring.security.version>
     <nimbus.jose.jwt.version>9.41.1</nimbus.jose.jwt.version>
-    <it.test.excludedGroups />
-    <it.test.includedGroups />
-    <test.forkCount />
+    <it.test.excludedGroups/>
+    <it.test.includedGroups/>
+    <test.forkCount/>
   </properties>
 
   <dependencies>
@@ -551,7 +553,8 @@
               <reportsDirectory>target/failsafe-reports/${surefire.forkNumber}</reportsDirectory>
               <systemPropertyVariables>
                 <enginePrefix>${surefire.forkNumber}-</enginePrefix>
-                <prefixedDefaultEngineName>${surefire.forkNumber}-integrationTest</prefixedDefaultEngineName>
+                <prefixedDefaultEngineName>${surefire.forkNumber}-integrationTest
+                </prefixedDefaultEngineName>
                 <indexPrefix>${surefire.forkNumber}-</indexPrefix>
                 <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
                 the property later. If only ${surefire.forkNumber} is used maven will fail to resolve it
