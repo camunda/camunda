@@ -7,6 +7,9 @@
  */
 package io.camunda.operate.elasticsearch;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
+import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
@@ -23,6 +26,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -170,6 +175,104 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("2-process-instance"));
+  }
+
+  @Test
+  public void shouldNotMarkedAsCompletedViaMetricsWhenImportingIsNotDone() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    EXPORTER.export(record);
+    EXPORTER.export(partitionTwoRecord);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    // when
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then
+    final MeterRegistry metrics = beanFactory.getBean(MeterRegistry.class);
+
+    final Gauge partitionOneImportStatus =
+        metrics
+            .get(Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED)
+            .tags(
+                Metrics.TAG_KEY_PARTITION,
+                "1",
+                Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+                "process-instance")
+            .gauge();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(() -> assertThat(partitionOneImportStatus.value()).isEqualTo(0.0));
+
+    final Gauge partitionTwoImportStatus =
+        metrics
+            .get(Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED)
+            .tags(
+                Metrics.TAG_KEY_PARTITION,
+                "2",
+                Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+                "process-instance")
+            .gauge();
+    assertThat(partitionTwoImportStatus.value()).isEqualTo(0.0);
+  }
+
+  @Test
+  public void shouldMarkImporterCompletedViaMetricsAsWell() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    EXPORTER.export(record);
+    EXPORTER.export(partitionTwoRecord);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    zeebeImporter.performOneRoundOfImport();
+
+    // when
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    EXPORTER.export(record2);
+    EXPORTER.export(partitionTwoRecord2);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("2-process-instance"));
+
+    // then
+    final MeterRegistry metrics = beanFactory.getBean(MeterRegistry.class);
+
+    final Gauge partitionOneImportStatus =
+        metrics
+            .get(Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED)
+            .tags(
+                Metrics.TAG_KEY_PARTITION,
+                "1",
+                Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+                "process-instance")
+            .gauge();
+    assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
+
+    final Gauge partitionTwoImportStatus =
+        metrics
+            .get(Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED)
+            .tags(
+                Metrics.TAG_KEY_PARTITION,
+                "2",
+                Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+                "process-instance")
+            .gauge();
+    assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
   }
 
   @Test
