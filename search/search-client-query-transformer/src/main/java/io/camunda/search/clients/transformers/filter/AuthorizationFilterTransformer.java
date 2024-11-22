@@ -30,7 +30,7 @@ public final class AuthorizationFilterTransformer
     return and(
         longTerms(OWNER_KEY, filter.ownerKeys()),
         filter.ownerType() == null ? null : term(OWNER_TYPE, filter.ownerType()),
-        stringTerms("%s.%s".formatted(PERMISSIONS, PERMISSIONS_RESOURCEIDS), filter.resourceKeys()),
+        stringTerms("%s.%s".formatted(PERMISSIONS, PERMISSIONS_RESOURCEIDS), filter.resourceIds()),
         filter.resourceType() == null ? null : term(RESOURCE_TYPE, filter.resourceType()),
         filter.permissionType() == null
             ? null
