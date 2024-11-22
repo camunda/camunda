@@ -13,11 +13,14 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.GroupFilter;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
-import java.util.List;
 
-public class GroupFilterTransformer implements FilterTransformer<GroupFilter> {
+public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> {
+  public GroupFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final GroupFilter filter) {
@@ -31,10 +34,5 @@ public class GroupFilterTransformer implements FilterTransformer<GroupFilter> {
             : hasChildQuery(
                 IdentityJoinRelationshipType.MEMBER.getType(),
                 term(GroupIndex.MEMBER_KEY, filter.memberKey())));
-  }
-
-  @Override
-  public List<String> toIndices(final GroupFilter filter) {
-    return List.of("camunda-group-8.7.0_alias");
   }
 }
