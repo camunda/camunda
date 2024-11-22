@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.junit.jupiter.api.Test;
 
@@ -35,72 +36,76 @@ public class BpmnModelUtilTest {
 
   @Test
   void shouldParseBpmnModel() {
+    // when
     final BpmnModelInstance modelInstance =
         BpmnModelUtil.parseBpmnModel(SIMPLE_SERVICE_TASK_PROCESS);
+
+    // then
     assertThat(modelInstance).isNotNull();
   }
 
   @Test
   void shouldExtractFlowNodeData() {
+    // when
     final List<FlowNodeDataDto> flowNodeData =
         BpmnModelUtil.extractFlowNodeData(SIMPLE_SERVICE_TASK_PROCESS);
-    assertThat(flowNodeData).isNotNull();
-    assertThat(flowNodeData.isEmpty()).isFalse();
-    FlowNodeDataDto endEventflowNodeDataDto = flowNodeData.get(0);
-    assertThat(endEventflowNodeDataDto.getId()).isNotNull();
-    assertThat(endEventflowNodeDataDto.getId()).isEqualTo(END_EVENT);
-    assertThat(endEventflowNodeDataDto.getType()).isEqualTo(END_EVENT_TYPE);
 
-    FlowNodeDataDto serviceTaskflowNodeDataDto = flowNodeData.get(1);
-    assertThat(serviceTaskflowNodeDataDto.getId()).isNotNull();
-    assertThat(serviceTaskflowNodeDataDto.getId()).isEqualTo(SERVICE_TASK);
-    assertThat(serviceTaskflowNodeDataDto.getName()).isEqualTo(SERVICE_TASK);
-    assertThat(serviceTaskflowNodeDataDto.getType()).isEqualTo(SERVICE_TASK_TYPE);
-
-    FlowNodeDataDto startEventflowNodeDataDto = flowNodeData.get(2);
-    assertThat(startEventflowNodeDataDto.getId()).isNotNull();
-    assertThat(startEventflowNodeDataDto.getId()).isEqualTo(START_EVENT);
-    assertThat(startEventflowNodeDataDto.getName()).isEqualTo(START_EVENT);
-    assertThat(startEventflowNodeDataDto.getType()).isEqualTo(START_EVENT);
+    // then
+    assertThat(flowNodeData)
+        .isNotNull()
+        .isNotEmpty()
+        .extracting(FlowNodeDataDto::getId, FlowNodeDataDto::getType, FlowNodeDataDto::getName)
+        .containsExactlyInAnyOrder(
+            Tuple.tuple(START_EVENT, START_EVENT, START_EVENT),
+            Tuple.tuple(SERVICE_TASK, SERVICE_TASK_TYPE, SERVICE_TASK),
+            Tuple.tuple(END_EVENT, END_EVENT_TYPE, null));
   }
 
   @Test
   void shouldExtractUserTaskNames() {
+    // when
     final String bpmnModelInstance =
         Bpmn.convertToString(createSimpleUserTaskProcess(CUSTOMER_ONBOARDING));
     final Map<String, String> userTaskNames = BpmnModelUtil.extractUserTaskNames(bpmnModelInstance);
-    assertThat(userTaskNames).isNotNull();
-    assertThat(userTaskNames.isEmpty()).isFalse();
 
-    assertThat(userTaskNames.containsKey(USER_TASK)).isTrue();
+    // then
+    assertThat(userTaskNames).isNotNull().isNotEmpty().containsKey(USER_TASK);
   }
 
   @Test
   void shouldExtractProcessDefinitionName() {
+    // when
     final Optional<String> processName =
         BpmnModelUtil.extractProcessDefinitionName(
             CUSTOMER_ONBOARDING, SIMPLE_SERVICE_TASK_PROCESS);
-    assertThat(processName.isPresent()).isTrue();
+
+    // then
+    assertThat(processName).isPresent();
     assertThat(CUSTOMER_ONBOARDING).isEqualTo(processName.get());
   }
 
   @Test
   void shouldExtractFlowNodeNames() {
+    // when
     final List<FlowNodeDataDto> flowNodeData =
         BpmnModelUtil.extractFlowNodeData(SIMPLE_SERVICE_TASK_PROCESS);
     final Map<String, String> flowNodeNames = BpmnModelUtil.extractFlowNodeNames(flowNodeData);
-    assertThat(flowNodeNames).isNotNull();
-    assertThat(flowNodeNames.isEmpty()).isFalse();
 
-    assertThat(flowNodeNames.containsKey(START_EVENT)).isTrue();
-    assertThat(START_EVENT).isEqualTo(flowNodeNames.get(START_EVENT));
+    // then
+    assertThat(flowNodeNames)
+        .isNotNull()
+        .isNotEmpty()
+        .containsKey(START_EVENT)
+        .containsValue(START_EVENT);
   }
 
   @Test
   void shouldGetCollapsedSubprocessElementIds() {
+    // when
     final Set<String> collapsedSubprocessIds =
         BpmnModelUtil.getCollapsedSubprocessElementIds(SIMPLE_SERVICE_TASK_PROCESS);
-    assertThat(collapsedSubprocessIds).isNotNull();
-    assertThat(collapsedSubprocessIds.isEmpty()).isTrue();
+
+    // then
+    assertThat(collapsedSubprocessIds).isNotNull().isEmpty();
   }
 }
