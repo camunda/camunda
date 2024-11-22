@@ -20,10 +20,14 @@ import static io.camunda.webapps.schema.descriptors.usermanagement.index.Authori
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.AuthorizationFilter;
-import java.util.List;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 
 public final class AuthorizationFilterTransformer
-    implements FilterTransformer<AuthorizationFilter> {
+    extends IndexFilterTransformer<AuthorizationFilter> {
+
+  public AuthorizationFilterTransformer(final IndexDescriptor indexDescriptor) {
+    super(indexDescriptor);
+  }
 
   @Override
   public SearchQuery toSearchQuery(final AuthorizationFilter filter) {
@@ -36,10 +40,5 @@ public final class AuthorizationFilterTransformer
             ? null
             : term(
                 "%s.%s".formatted(PERMISSIONS, PERMISSIONS_TYPE), filter.permissionType().name()));
-  }
-
-  @Override
-  public List<String> toIndices(final AuthorizationFilter filter) {
-    return List.of("camunda-authorization-8.7.0_alias");
   }
 }
