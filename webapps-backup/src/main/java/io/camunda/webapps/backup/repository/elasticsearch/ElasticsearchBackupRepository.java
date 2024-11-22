@@ -83,6 +83,11 @@ public class ElasticsearchBackupRepository implements BackupRepository {
   }
 
   @Override
+  public SnapshotNameProvider snapshotNameProvider() {
+    return snapshotNameProvider;
+  }
+
+  @Override
   public void deleteSnapshot(final String repositoryName, final String snapshotName) {
     final DeleteSnapshotRequest request = new DeleteSnapshotRequest(repositoryName);
     request.snapshots(snapshotName);

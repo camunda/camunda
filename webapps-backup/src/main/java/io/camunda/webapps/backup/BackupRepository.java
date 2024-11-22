@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.backup;
 
+import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.time.Instant;
 import java.util.List;
 import org.slf4j.Logger;
@@ -15,6 +16,8 @@ import org.slf4j.LoggerFactory;
 public interface BackupRepository {
 
   Logger LOGGER = LoggerFactory.getLogger(BackupRepository.class);
+
+  SnapshotNameProvider snapshotNameProvider();
 
   void deleteSnapshot(String repositoryName, String snapshotName);
 
