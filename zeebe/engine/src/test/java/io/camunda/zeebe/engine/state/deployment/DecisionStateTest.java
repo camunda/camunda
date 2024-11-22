@@ -14,6 +14,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 
 import io.camunda.zeebe.engine.state.immutable.DecisionState.DecisionIdentifier;
+import io.camunda.zeebe.engine.state.immutable.DecisionState.DecisionRequirementsIdentifier;
+import io.camunda.zeebe.engine.state.immutable.DecisionState.PersistedDecisionRequirementsVisitor;
 import io.camunda.zeebe.engine.state.immutable.DecisionState.PersistedDecisionVisitor;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -956,6 +958,46 @@ public final class DecisionStateTest {
         .isEqualTo(drg1.getDecisionRequirementsIdBuffer());
     assertThat(latestDrg.get().getDecisionRequirementsVersion())
         .isEqualTo(drg1.getDecisionRequirementsVersion());
+  }
+
+  @Test
+  void shouldIterateThroughAllDecisionRequirements() {
+    // given
+    final var drg1 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(1L);
+    final var drg2 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(2L);
+    final var drg3 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(3L);
+    decisionState.storeDecisionRequirements(drg1);
+    decisionState.storeDecisionRequirements(drg2);
+    decisionState.storeDecisionRequirements(drg3);
+
+    // when
+    final var visitor = Mockito.mock(PersistedDecisionRequirementsVisitor.class);
+    Mockito.when(visitor.visit(any())).thenReturn(true);
+    decisionState.forEachDecisionRequirements(null, visitor);
+
+    // then
+    Mockito.verify(visitor, Mockito.times(3)).visit(any());
+  }
+
+  @Test
+  void shouldSkipBeforeIteratingThroughDecisionRequirements() {
+    // given
+    final var drg1 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(1L);
+    final var drg2 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(2L);
+    final var drg3 = sampleDecisionRequirementsRecord().setDecisionRequirementsKey(3L);
+    decisionState.storeDecisionRequirements(drg1);
+    decisionState.storeDecisionRequirements(drg2);
+    decisionState.storeDecisionRequirements(drg3);
+
+    // when
+    final var visitor = Mockito.mock(PersistedDecisionRequirementsVisitor.class);
+    Mockito.when(visitor.visit(any())).thenReturn(true);
+    decisionState.forEachDecisionRequirements(
+        new DecisionRequirementsIdentifier(drg1.getTenantId(), drg1.getDecisionRequirementsKey()),
+        visitor);
+
+    // then
+    Mockito.verify(visitor, Mockito.times(2)).visit(any());
   }
 
   @Test

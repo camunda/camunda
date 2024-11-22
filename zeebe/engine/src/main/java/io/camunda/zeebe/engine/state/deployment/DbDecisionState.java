@@ -325,6 +325,28 @@ public final class DbDecisionState implements MutableDecisionState {
   }
 
   @Override
+  public void forEachDecisionRequirements(
+      final DecisionRequirementsIdentifier previousDecisionsRequirements,
+      final PersistedDecisionRequirementsVisitor visitor) {
+    if (previousDecisionsRequirements == null) {
+      decisionRequirementsByKey.whileTrue((key, value) -> visitor.visit(value));
+    } else {
+      tenantIdKey.wrapString(previousDecisionsRequirements.tenantId());
+      dbDecisionRequirementsKey.wrapLong(previousDecisionsRequirements.decisionRequirementsKey());
+      decisionRequirementsByKey.whileTrue(
+          tenantAwareDecisionRequirementsKey,
+          (key, value) -> {
+            if (key.tenantKey().toString().equals(previousDecisionsRequirements.tenantId())
+                && key.wrappedKey().getValue()
+                    == previousDecisionsRequirements.decisionRequirementsKey()) {
+              return true;
+            }
+            return visitor.visit(value);
+          });
+    }
+  }
+
+  @Override
   public void forEachDecision(
       final DecisionIdentifier previousDecision, final PersistedDecisionVisitor visitor) {
     if (previousDecision == null) {
