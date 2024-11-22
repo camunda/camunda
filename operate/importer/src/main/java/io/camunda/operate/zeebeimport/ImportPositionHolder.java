@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
@@ -52,6 +53,8 @@ public class ImportPositionHolder {
   @Autowired
   @Qualifier("importPositionUpdateThreadPoolExecutor")
   private ThreadPoolTaskScheduler importPositionUpdateExecutor;
+
+  @Autowired private Metrics metrics;
 
   @PostConstruct
   private void init() {
@@ -124,6 +127,14 @@ public class ImportPositionHolder {
           ImportPositionEntity importPosition = inflightImportPositions.get(key);
           if (importPosition == null) {
             importPosition = lastProcessedPosition;
+            metrics.registerGauge(
+                Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED,
+                importPosition,
+                (pos) -> pos.getCompleted() ? 1.0 : 0.0,
+                Metrics.TAG_KEY_PARTITION,
+                Integer.toString(partition),
+                Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+                aliasName);
           } else {
             importPosition
                 .setPosition(lastProcessedPosition.getPosition())
