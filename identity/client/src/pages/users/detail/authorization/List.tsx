@@ -253,27 +253,6 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
                                 )}
                               </ul>
                             )}
-                            {/* Add button if not all permissions are present */}
-                            {/*{checkMissingPermissions(dataMap[row.id].permissions).length > 0 && (
-                                                    <div style={{ marginTop: '16px', textAlign: 'right' }}>
-                                                      <button
-                                                          type="button"
-                                                          onClick={() => onAddPermission(row)}
-                                                          style={{
-                                                            border: 'none',
-                                                            background: '#0f62fe',
-                                                            color: 'white',
-                                                            cursor: 'pointer',
-                                                            padding: '8px 16px',
-                                                            borderRadius: '4px',
-                                                          }}
-                                                          aria-label="Add permission"
-                                                      >
-                                                        <Add style={{ marginRight: '8px' }} />
-                                                        Add Permission
-                                                      </button>
-                                                    </div>
-                                                )}*/}
                           </TableExpandedRow>
                         )}
                       </React.Fragment>
