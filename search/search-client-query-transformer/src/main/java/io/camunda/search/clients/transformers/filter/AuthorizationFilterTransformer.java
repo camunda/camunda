@@ -40,7 +40,7 @@ public final class AuthorizationFilterTransformer
 
   @Override
   public List<String> toIndices(final AuthorizationFilter filter) {
-    String indexName = AuthorizationIndex.getIndexNameWithPrefix(prefix);
+    final String indexName = AuthorizationIndex.getIndexNameWithPrefix(prefix);
     return List.of(indexName);
   }
 }

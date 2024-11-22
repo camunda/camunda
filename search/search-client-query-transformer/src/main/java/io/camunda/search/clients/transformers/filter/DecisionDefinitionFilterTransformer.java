@@ -58,7 +58,7 @@ public final class DecisionDefinitionFilterTransformer
 
   @Override
   public List<String> toIndices(final DecisionDefinitionFilter filter) {
-    String indexPrefix = DecisionIndex.getIndexNameWithPrefix(prefix);
+    final String indexPrefix = DecisionIndex.getIndexNameWithPrefix(prefix);
     return List.of(indexPrefix);
   }
 
