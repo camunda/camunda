@@ -69,7 +69,10 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
   // Create a lookup map for rows by ID
   const dataMap = rows.reduce(
     (map, item) => {
-      map[item.key] = item;
+      if (typeof item.key === "string") {
+        map[item.key] = item;
+      }
+
       return map;
     },
     {} as { [key: string]: (typeof rows)[0] },
@@ -77,9 +80,9 @@ const List: FC<AuthorizationsListProps> = ({ user, loadingUser }) => {
   console.log("ROWS", rows);
   console.log("MAP", dataMap);
 
-  const [expandedRows, setExpandedRows] = useState({});
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
-  const handleExpand = (rowId) => {
+  const handleExpand = (rowId: string) => {
     setExpandedRows((prev) => ({
       ...prev,
       [rowId]: !prev[rowId],
