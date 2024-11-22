@@ -19,6 +19,7 @@ import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Map;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class ZeebeClientProperties extends ApiProperties {
   private Integer executionThreads;
