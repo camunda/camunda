@@ -46,8 +46,6 @@ public final class BpmnUserTaskBehavior {
       LoggerFactory.getLogger(BpmnUserTaskBehavior.class.getPackageName());
   private static final Set<LifecycleState> CANCELABLE_LIFECYCLE_STATES =
       EnumSet.complementOf(EnumSet.of(LifecycleState.NOT_FOUND, LifecycleState.CANCELING));
-  private final UserTaskRecord userTaskRecord =
-      new UserTaskRecord().setVariables(DocumentValue.EMPTY_DOCUMENT);
 
   private final HeaderEncoder headerEncoder = new HeaderEncoder(LOGGER);
   private final KeyGenerator keyGenerator;
@@ -123,25 +121,27 @@ public final class BpmnUserTaskBehavior {
     final var encodedHeaders =
         headerEncoder.encode(element.getUserTaskProperties().getTaskHeaders());
 
-    userTaskRecord
-        .setUserTaskKey(userTaskKey)
-        .setAssignee(userTaskProperties.getAssignee())
-        .setCandidateGroupsList(userTaskProperties.getCandidateGroups())
-        .setCandidateUsersList(userTaskProperties.getCandidateUsers())
-        .setDueDate(userTaskProperties.getDueDate())
-        .setFollowUpDate(userTaskProperties.getFollowUpDate())
-        .setFormKey(userTaskProperties.getFormKey())
-        .setExternalFormReference(userTaskProperties.getExternalFormReference())
-        .setCustomHeaders(encodedHeaders)
-        .setBpmnProcessId(context.getBpmnProcessId())
-        .setProcessDefinitionVersion(context.getProcessVersion())
-        .setProcessDefinitionKey(context.getProcessDefinitionKey())
-        .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setElementId(element.getId())
-        .setElementInstanceKey(context.getElementInstanceKey())
-        .setTenantId(context.getTenantId())
-        .setPriority(userTaskProperties.getPriority())
-        .setCreationTimestamp(clock.millis());
+    final var userTaskRecord =
+        new UserTaskRecord()
+            .setVariables(DocumentValue.EMPTY_DOCUMENT)
+            .setUserTaskKey(userTaskKey)
+            .setAssignee(userTaskProperties.getAssignee())
+            .setCandidateGroupsList(userTaskProperties.getCandidateGroups())
+            .setCandidateUsersList(userTaskProperties.getCandidateUsers())
+            .setDueDate(userTaskProperties.getDueDate())
+            .setFollowUpDate(userTaskProperties.getFollowUpDate())
+            .setFormKey(userTaskProperties.getFormKey())
+            .setExternalFormReference(userTaskProperties.getExternalFormReference())
+            .setCustomHeaders(encodedHeaders)
+            .setBpmnProcessId(context.getBpmnProcessId())
+            .setProcessDefinitionVersion(context.getProcessVersion())
+            .setProcessDefinitionKey(context.getProcessDefinitionKey())
+            .setProcessInstanceKey(context.getProcessInstanceKey())
+            .setElementId(element.getId())
+            .setElementInstanceKey(context.getElementInstanceKey())
+            .setTenantId(context.getTenantId())
+            .setPriority(userTaskProperties.getPriority())
+            .setCreationTimestamp(clock.millis());
 
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATING, userTaskRecord);
     return userTaskRecord;
