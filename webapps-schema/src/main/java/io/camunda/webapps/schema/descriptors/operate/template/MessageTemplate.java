@@ -9,6 +9,7 @@ package io.camunda.webapps.schema.descriptors.operate.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
+import java.util.Optional;
 
 public class MessageTemplate extends OperateTemplateDescriptor implements Prio3Backup {
 
@@ -16,6 +17,7 @@ public class MessageTemplate extends OperateTemplateDescriptor implements Prio3B
 
   public static final String ID = "id";
   public static final String KEY = "key";
+  public static final String TENANT_ID = "tenantId";
   public static final String MESSAGE_NAME = "messageName";
   public static final String CORRELATION_KEY = "correlationKey";
   public static final String PUBLISH_DATE = "publishDate";
@@ -32,6 +34,11 @@ public class MessageTemplate extends OperateTemplateDescriptor implements Prio3B
   @Override
   public String getIndexName() {
     return INDEX_NAME;
+  }
+
+  @Override
+  public Optional<String> getTenantIdField() {
+    return Optional.of(TENANT_ID);
   }
 
   @Override
