@@ -40,6 +40,7 @@ public class MigrationRunner implements Migrator {
   private final Adapter adapter;
   private final ProcessMigrationProperties properties;
   private ScheduledFuture<?> countdownTask;
+  private final ScheduledExecutorService scheduler;
 
   public MigrationRunner(
       final ProcessMigrationProperties properties, final ConnectConfiguration connect) {
@@ -48,12 +49,11 @@ public class MigrationRunner implements Migrator {
         connect.getType().equals(ELASTICSEARCH)
             ? new ElasticsearchAdapter(properties, connect)
             : new OpensearchAdapter(properties, connect);
+    scheduler = Executors.newScheduledThreadPool(1);
   }
 
   @Override
   public void run() {
-    final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     LOG.info("Process Migration started");
     try {
       String lastMigratedProcessDefinitionKey = adapter.readLastMigratedEntity();
@@ -62,7 +62,10 @@ public class MigrationRunner implements Migrator {
         if (!items.isEmpty()) {
           lastMigratedProcessDefinitionKey = migrateBatch(items);
         }
-        scheduleNextBatch(scheduler);
+        if (countdownTask == null && isImporterFinished()) {
+          startCountdown();
+        }
+        delayNextRound();
         items = adapter.nextBatch(lastMigratedProcessDefinitionKey);
       }
     } catch (final Exception e) {
@@ -81,31 +84,34 @@ public class MigrationRunner implements Migrator {
   }
 
   private String migrateBatch(final List<ProcessEntity> processes) {
-    final String lastMigratedProcessDefinitionKey =
-        adapter.migrate(MigrationUtil.extractBatchData(processes));
+    final List<ProcessEntity> updatedProcesses = MigrationUtil.extractBatchData(processes);
+    final String lastMigratedProcessDefinitionKey = adapter.migrate(updatedProcesses);
     adapter.writeLastMigratedEntity(lastMigratedProcessDefinitionKey);
     return lastMigratedProcessDefinitionKey;
   }
 
-  private void scheduleNextBatch(final ScheduledExecutorService scheduler) {
+  private void delayNextRound() {
     try {
-      if (countdownTask == null && isImporterFinished()) {
-        startCountdown(scheduler);
-      }
-      scheduler.schedule(() -> {}, adapter.getMinDelay().toSeconds(), TimeUnit.SECONDS).get();
-    } catch (final ExecutionException | InterruptedException ex) {
+      scheduler
+          .schedule(() -> {}, properties.getMinRetryDelay().toSeconds(), TimeUnit.SECONDS)
+          .get();
+    } catch (final InterruptedException | ExecutionException ex) {
       Thread.currentThread().interrupt();
       LOG.error("Schedule interrupted", ex);
     }
   }
 
-  private void startCountdown(final ScheduledExecutorService scheduler) {
+  private void startCountdown() {
     LOG.info(
         "Importer finished, migration will keep running for {}",
         properties.getImporterFinishedTimeout());
     countdownTask =
         scheduler.schedule(
-            () -> {}, properties.getImporterFinishedTimeout().getSeconds(), TimeUnit.SECONDS);
+            () ->
+                LOG.info(
+                    "Importer countdown finished. If more records are present the migration will keep running."),
+            properties.getImporterFinishedTimeout().getSeconds(),
+            TimeUnit.SECONDS);
   }
 
   private boolean isImporterFinished() {
