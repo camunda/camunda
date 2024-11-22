@@ -8,8 +8,8 @@
 package io.camunda.tasklist.util;
 
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
-import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;

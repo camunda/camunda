@@ -14,6 +14,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -45,6 +46,12 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
   @Bean
   public SnapshotTaskVariableTemplate snapshotTaskVariableTemplate() {
     return new SnapshotTaskVariableTemplate(
+        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+  }
+
+  @Bean
+  public TaskTemplate taskTemplate() {
+    return new TaskTemplate(
         getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
   }
 

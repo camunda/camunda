@@ -16,11 +16,11 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import java.util.List;
@@ -210,7 +210,7 @@ public class FormStoreElasticSearch implements FormStore {
       searchSourceBuilder.query(boolQuery);
 
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(taskTemplate, ElasticsearchUtil.QueryType.ALL);
+          ElasticsearchUtil.createSearchRequest(taskTemplate.getAlias());
       searchRequest.source(searchSourceBuilder);
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);

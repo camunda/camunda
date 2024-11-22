@@ -31,6 +31,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -168,5 +169,11 @@ public class IndexTemplateDescriptorsConfigurator {
       final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new SnapshotTaskVariableTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public TaskTemplate getTaskTemplate(final DatabaseInfo databaseInfo) {
+    // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
+    return new TaskTemplate("", databaseInfo.isElasticsearchDb());
   }
 }

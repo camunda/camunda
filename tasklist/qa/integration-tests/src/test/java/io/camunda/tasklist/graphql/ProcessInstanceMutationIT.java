@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.indices.ProcessInstanceDependant;
 import io.camunda.tasklist.schema.indices.VariableIndex;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
@@ -27,7 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class ProcessInstanceMutationIT extends TasklistZeebeIntegrationTest {
 
   private static final List<Class<?>> SHOULD_PROCESS_INSTANCE_DEPENDANTS =
-      List.of(FlowNodeInstanceIndex.class, VariableIndex.class, TaskTemplate.class);
+      List.of(FlowNodeInstanceIndex.class, VariableIndex.class);
 
   @Autowired private List<ProcessInstanceDependant> processInstanceDependants;
 
