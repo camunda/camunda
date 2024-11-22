@@ -38,7 +38,6 @@ export default function Header({noActions}: {noActions?: boolean}) {
     optimizeProfile,
     enterpriseMode,
     webappsLinks,
-    optimizeDatabase,
     optimizeVersion,
     onboarding,
     notificationsUrl,
@@ -65,8 +64,7 @@ export default function Header({noActions}: {noActions?: boolean}) {
   if (!noActions) {
     props.navbar = createNavBarProps(
       {validLicense, licenseType, commercial, expiresAt},
-      location.pathname,
-      optimizeDatabase
+      location.pathname
     );
     props.infoSideBar = createInfoSideBarProps(getBaseDocsUrl(), enterpriseMode);
     props.userSideBar = userSideBar;
@@ -136,8 +134,7 @@ function createWebappLinks(webappLinks: Record<string, string> | null): C3Naviga
 
 function createNavBarProps(
   license: Pick<UiConfig, 'validLicense' | 'licenseType' | 'commercial' | 'expiresAt'>,
-  pathname: string,
-  optimizeDatabase?: string
+  pathname: string
 ): C3NavigationNavBarProps {
   const elements: C3NavigationNavBarProps['elements'] = [
     {
@@ -165,20 +162,6 @@ function createNavBarProps(
     },
   ];
 
-  const tags: C3NavigationNavBarProps['tags'] = [];
-
-  if (optimizeDatabase === 'opensearch') {
-    tags.push({
-      key: 'opensearchWarning',
-      label: t('navigation.opensearchPreview').toString(),
-      tooltip: {
-        content: t('navigation.opensearchWarningText').toString(),
-        buttonLabel: t('navigation.opensearchPreview').toString(),
-      },
-      color: 'red',
-    });
-  }
-
   const licenseTag: C3NavigationNavBarProps['licenseTag'] = {
     show: license.licenseType !== 'saas',
     isProductionLicense: license.validLicense,
@@ -188,7 +171,6 @@ function createNavBarProps(
 
   return {
     elements,
-    tags,
     licenseTag,
   };
 }
