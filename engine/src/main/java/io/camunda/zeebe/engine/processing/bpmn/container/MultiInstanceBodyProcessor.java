@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBeh
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.MultiInstanceOutputCollectionBehavior;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -63,6 +64,11 @@ public final class MultiInstanceBodyProcessor
   private final BpmnStateBehavior stateBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final MultiInstanceOutputCollectionBehavior multiInstanceOutputCollectionBehavior;
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/container/MultiInstanceBodyProcessor.java
+=======
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
+  private final BpmnVariableMappingBehavior variableMappingBehavior;
+>>>>>>> b58060f0 (feat: mappings applied before updating multi instance output collection):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/container/MultiInstanceBodyProcessor.java
 
   public MultiInstanceBodyProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -73,6 +79,11 @@ public final class MultiInstanceBodyProcessor
     expressionBehavior = bpmnBehaviors.expressionBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     multiInstanceOutputCollectionBehavior = bpmnBehaviors.outputCollectionBehavior();
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/container/MultiInstanceBodyProcessor.java
+=======
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
+    variableMappingBehavior = bpmnBehaviors.variableMappingBehavior();
+>>>>>>> b58060f0 (feat: mappings applied before updating multi instance output collection):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/container/MultiInstanceBodyProcessor.java
   }
 
   @Override
@@ -170,6 +181,10 @@ public final class MultiInstanceBodyProcessor
     if (updatedOrFailure.isLeft()) {
       return updatedOrFailure;
     }
+
+    // we modify the output collection variable above
+    // if there is a mapping using this, it should get updated as well
+    variableMappingBehavior.applyOutputMappings(childContext, element.getInnerActivity());
 
     // test that completion condition can be evaluated correctly
     final Either<Failure, Boolean> satisfiesCompletionConditionOrFailure =
