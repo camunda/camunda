@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
+import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
@@ -30,8 +31,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
-import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -77,31 +76,33 @@ public final class IdentitySetupInitializeProcessor
     final var roleRecord = command.getValue().getDefaultRole();
     final var userRecord = command.getValue().getDefaultUser();
 
-    final var roleExists = roleState.getRoleKeyByName(roleRecord.getName()).isPresent();
-    final var userExists = userState.getUser(userRecord.getUsername()).isPresent();
+    final var existingRoleKey = roleState.getRoleKeyByName(roleRecord.getName());
+    final var existingUser = userState.getUser(userRecord.getUsername());
 
-    if (!roleExists) {
+    if (existingRoleKey.isEmpty()) {
       stateWriter.appendFollowUpEvent(commandKey, RoleIntent.CREATED, roleRecord);
       addAllPermissions(roleRecord.getRoleKey());
     }
-    if (!userExists) {
+    if (existingUser.isEmpty()) {
       stateWriter.appendFollowUpEvent(commandKey, UserIntent.CREATED, userRecord);
     }
-    if (!roleExists || !userExists) {
-      assignUserToRole(commandKey, roleRecord, userRecord);
-    }
 
+    assignUserToRole(
+        commandKey,
+        existingRoleKey.orElse(roleRecord.getRoleKey()),
+        existingUser.map(PersistedUser::getUserKey).orElse(userRecord.getUserKey()));
     stateWriter.appendFollowUpEvent(
         commandKey, IdentitySetupIntent.INITIALIZED, command.getValue());
   }
 
-  private void assignUserToRole(
-      final long commandKey, final RoleRecordValue roleRecord, final UserRecordValue userRecord) {
+  private void assignUserToRole(final long commandKey, final long roleKey, final long userKey) {
+    final var isAlreadyAssigned = roleState.getEntityType(roleKey, userKey).isPresent();
+    if (isAlreadyAssigned) {
+      return;
+    }
+
     final var record =
-        new RoleRecord()
-            .setRoleKey(roleRecord.getRoleKey())
-            .setEntityKey(userRecord.getUserKey())
-            .setEntityType(EntityType.USER);
+        new RoleRecord().setRoleKey(roleKey).setEntityKey(userKey).setEntityType(EntityType.USER);
     stateWriter.appendFollowUpEvent(commandKey, RoleIntent.ENTITY_ADDED, record);
   }
 
