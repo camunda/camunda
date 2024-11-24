@@ -38,6 +38,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,6 +76,9 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.open(new ExporterTestController());
 
     recordsReaderHolder.resetCountEmptyBatches();
+
+    final MeterRegistry metrics = beanFactory.getBean(MeterRegistry.class);
+    metrics.clear();
   }
 
   @Test
@@ -193,31 +197,21 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
 
     // then
     final MeterRegistry metrics = beanFactory.getBean(MeterRegistry.class);
-
-    final Gauge partitionOneImportStatus =
-        metrics
-            .get(Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED)
-            .tags(
-                Metrics.TAG_KEY_PARTITION,
-                "1",
-                Metrics.TAG_KEY_IMPORT_POS_ALIAS,
-                "process-instance")
-            .gauge();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final Gauge partitionOneImportStatus = getGauge(metrics, "1");
+              assertThat(partitionOneImportStatus.value()).isEqualTo(0.0);
+            });
 
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
-        .untilAsserted(() -> assertThat(partitionOneImportStatus.value()).isEqualTo(0.0));
-
-    final Gauge partitionTwoImportStatus =
-        metrics
-            .get(Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED)
-            .tags(
-                Metrics.TAG_KEY_PARTITION,
-                "2",
-                Metrics.TAG_KEY_IMPORT_POS_ALIAS,
-                "process-instance")
-            .gauge();
-    assertThat(partitionTwoImportStatus.value()).isEqualTo(0.0);
+        .untilAsserted(
+            () -> {
+              final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
+              assertThat(partitionTwoImportStatus.value()).isEqualTo(0.0);
+            });
   }
 
   @Test
@@ -250,29 +244,38 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .until(() -> isRecordReaderIsCompleted("2-process-instance"));
 
     // then
-    final MeterRegistry metrics = beanFactory.getBean(MeterRegistry.class);
 
-    final Gauge partitionOneImportStatus =
-        metrics
-            .get(Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED)
-            .tags(
-                Metrics.TAG_KEY_PARTITION,
-                "1",
-                Metrics.TAG_KEY_IMPORT_POS_ALIAS,
-                "process-instance")
-            .gauge();
-    assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final MeterRegistry metrics = beanFactory.getBean(MeterRegistry.class);
+              final Gauge partitionOneImportStatus = getGauge(metrics, "1");
+              assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
+            });
 
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final MeterRegistry metrics = beanFactory.getBean(MeterRegistry.class);
+              final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
+              assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
+            });
+  }
+
+  @NotNull
+  private static Gauge getGauge(final MeterRegistry metrics, final String partition) {
     final Gauge partitionTwoImportStatus =
         metrics
             .get(Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED)
             .tags(
                 Metrics.TAG_KEY_PARTITION,
-                "2",
+                partition,
                 Metrics.TAG_KEY_IMPORT_POS_ALIAS,
                 "process-instance")
             .gauge();
-    assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
+    return partitionTwoImportStatus;
   }
 
   @Test
