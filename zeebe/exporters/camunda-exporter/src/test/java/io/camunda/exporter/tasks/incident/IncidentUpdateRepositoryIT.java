@@ -10,6 +10,10 @@ package io.camunda.exporter.tasks.incident;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.adapters.ClientAdapter;
@@ -17,22 +21,28 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
+import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +52,7 @@ import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.apache.http.HttpHost;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.groups.Tuple;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -85,6 +96,10 @@ abstract sealed class IncidentUpdateRepositoryIT {
 
   protected abstract IncidentUpdateRepository createRepository();
 
+  protected abstract <T> Collection<T> search(
+      final String index, final String field, final List<String> terms, final Class<T> documentType)
+      throws IOException;
+
   static final class ElasticsearchIT extends IncidentUpdateRepositoryIT {
     @Container
     private static final ElasticsearchContainer CONTAINER =
@@ -106,6 +121,21 @@ abstract sealed class IncidentUpdateRepositoryIT {
           flowNodeInstanceTemplate.getAlias(),
           new ElasticsearchAsyncClient(transport),
           Runnable::run);
+    }
+
+    @Override
+    protected <T> Collection<T> search(
+        final String index,
+        final String field,
+        final List<String> terms,
+        final Class<T> documentType)
+        throws IOException {
+      final var client = new ElasticsearchClient(transport);
+      final var values = terms.stream().map(FieldValue::of).toList();
+      final var query = QueryBuilders.terms(t -> t.field(field).terms(v -> v.value(values)));
+      return client.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
+          .map(Hit::source)
+          .toList();
     }
 
     private RestClientTransport createTransport() {
@@ -151,7 +181,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
               "1", new IncidentDocument("1", incidentTemplate.getFullQualifiedName(), expected));
     }
 
-    private IncidentEntity createIncident(final long key) throws IOException, PersistenceException {
+    private IncidentEntity createIncident(final long key) throws PersistenceException {
       final var incident = newIncident(key);
 
       indexIncident(incident);
@@ -317,6 +347,180 @@ abstract sealed class IncidentUpdateRepositoryIT {
       final var batchRequest = clientAdapter.createBatchRequest();
       updates.forEach(e -> batchRequest.add(postImporterQueueTemplate.getFullQualifiedName(), e));
       batchRequest.executeWithRefresh();
+    }
+  }
+
+  @Nested
+  final class BulkUpdateIT {
+    @Test
+    void shouldReportError() {
+      // given
+      final var repository = createRepository();
+      final var bulk = new IncidentBulkUpdate();
+
+      // when
+      bulk.incidentRequests().put("2", new DocumentUpdate("2", "doesn't-exist", Map.of(), "3"));
+      final var result = repository.bulkUpdate(bulk);
+
+      // then
+      assertThat(result)
+          .failsWithin(REQUEST_TIMEOUT)
+          .withThrowableThat()
+          .withRootCauseExactlyInstanceOf(ExporterException.class)
+          .withMessageContaining("Failed to update 1 item(s)");
+    }
+
+    @Test
+    void shouldBulkUpdateIncidents() throws PersistenceException, IOException {
+      // given
+      final var repository = createRepository();
+      final var bulk = new IncidentBulkUpdate();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "1",
+          new IncidentEntity()
+              .setKey(1)
+              .setState(IncidentState.PENDING)
+              .setErrorMessage("failure"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "2",
+          new IncidentEntity().setKey(2).setState(IncidentState.ACTIVE).setErrorMessage("failure"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      bulk.incidentRequests()
+          .put(
+              "1",
+              new DocumentUpdate(
+                  "1",
+                  incidentTemplate.getFullQualifiedName(),
+                  Map.of(IncidentTemplate.STATE, IncidentState.ACTIVE),
+                  "1"));
+      bulk.incidentRequests()
+          .put(
+              "2",
+              new DocumentUpdate(
+                  "2",
+                  incidentTemplate.getFullQualifiedName(),
+                  Map.of(IncidentTemplate.STATE, IncidentState.RESOLVED),
+                  "1"));
+      final var result = repository.bulkUpdate(bulk);
+
+      // then
+      assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+      final var incidents =
+          search(
+              incidentTemplate.getFullQualifiedName(),
+              IncidentTemplate.KEY,
+              List.of("1", "2"),
+              IncidentEntity.class);
+      assertThat(incidents)
+          .hasSize(2)
+          .extracting(IncidentEntity::getKey, IncidentEntity::getState)
+          .containsExactlyInAnyOrder(
+              Tuple.tuple(1L, IncidentState.ACTIVE), Tuple.tuple(2L, IncidentState.RESOLVED));
+    }
+
+    @Test
+    void shouldBulkUpdateListView() throws PersistenceException, IOException {
+      // given
+      final var repository = createRepository();
+      final var bulk = new IncidentBulkUpdate();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "1",
+          new ProcessInstanceForListViewEntity().setKey(1).setIncident(false));
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "2",
+          new ProcessInstanceForListViewEntity().setKey(2).setIncident(true));
+      batchRequest.executeWithRefresh();
+
+      // when
+      bulk.listViewRequests()
+          .put(
+              "1",
+              new DocumentUpdate(
+                  "1",
+                  listViewTemplate.getFullQualifiedName(),
+                  Map.of(ListViewTemplate.INCIDENT, true),
+                  "1"));
+      bulk.listViewRequests()
+          .put(
+              "2",
+              new DocumentUpdate(
+                  "2",
+                  listViewTemplate.getFullQualifiedName(),
+                  Map.of(ListViewTemplate.INCIDENT, false),
+                  "2"));
+      final var result = repository.bulkUpdate(bulk);
+
+      // then
+      assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+      final var processInstances =
+          search(
+              listViewTemplate.getFullQualifiedName(),
+              ListViewTemplate.PROCESS_INSTANCE_KEY,
+              List.of("1", "2"),
+              ProcessInstanceForListViewEntity.class);
+      assertThat(processInstances)
+          .hasSize(2)
+          .extracting(
+              ProcessInstanceForListViewEntity::getKey,
+              ProcessInstanceForListViewEntity::isIncident)
+          .containsExactlyInAnyOrder(Tuple.tuple(1L, true), Tuple.tuple(2L, false));
+    }
+
+    @Test
+    void shouldBulkUpdateFlowNodeInstances() throws PersistenceException, IOException {
+      // given
+      final var repository = createRepository();
+      final var bulk = new IncidentBulkUpdate();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          flowNodeInstanceTemplate.getFullQualifiedName(),
+          "1",
+          new FlowNodeInstanceEntity().setKey(1).setIncident(false));
+      batchRequest.addWithId(
+          flowNodeInstanceTemplate.getFullQualifiedName(),
+          "2",
+          new FlowNodeInstanceEntity().setKey(2).setIncident(false));
+      batchRequest.executeWithRefresh();
+
+      // when
+      bulk.flowNodeInstanceRequests()
+          .put(
+              "1",
+              new DocumentUpdate(
+                  "1",
+                  flowNodeInstanceTemplate.getFullQualifiedName(),
+                  Map.of(FlowNodeInstanceTemplate.INCIDENT, true),
+                  "1"));
+      bulk.flowNodeInstanceRequests()
+          .put(
+              "2",
+              new DocumentUpdate(
+                  "2",
+                  flowNodeInstanceTemplate.getFullQualifiedName(),
+                  Map.of(FlowNodeInstanceTemplate.INCIDENT, false),
+                  "2"));
+      final var result = repository.bulkUpdate(bulk);
+
+      // then
+      assertThat(result).succeedsWithin(REQUEST_TIMEOUT);
+      final var flowNodes =
+          search(
+              flowNodeInstanceTemplate.getFullQualifiedName(),
+              FlowNodeInstanceTemplate.KEY,
+              List.of("1", "2"),
+              FlowNodeInstanceEntity.class);
+      assertThat(flowNodes)
+          .hasSize(2)
+          .extracting(FlowNodeInstanceEntity::getKey, FlowNodeInstanceEntity::isIncident)
+          .containsExactlyInAnyOrder(Tuple.tuple(1L, true), Tuple.tuple(2L, false));
     }
   }
 }
