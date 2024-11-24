@@ -17,12 +17,15 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior.UserTaskProperties;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
 
@@ -79,23 +82,15 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     return userTaskBehavior
         .evaluateUserTaskExpressions(element, context)
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
+        .flatMap(userTaskProperties -> createUserTask(element, context, userTaskProperties))
         .thenDo(
-            userTaskProperties -> {
-              final var userTaskRecord =
-                  userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
-              userTaskBehavior.userTaskCreated(userTaskRecord);
-              stateTransitionBehavior.transitionToActivated(context, element.getEventType());
-
-              final var assignee = userTaskProperties.getAssignee();
+            ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()))
+        .thenDo(
+            propertiesToRecordPair -> {
+              final var assignee = propertiesToRecordPair.getLeft().getAssignee();
+              final var userTaskRecord = propertiesToRecordPair.getRight();
               if (StringUtils.isNotEmpty(assignee)) {
-                userTaskBehavior.userTaskAssigning(userTaskRecord, assignee);
-                if (element.hasTaskListeners(ZeebeTaskListenerEventType.assignment)) {
-                  final var listener =
-                      element.getTaskListeners(ZeebeTaskListenerEventType.assignment).getFirst();
-                  jobBehavior.createNewTaskListenerJob(context, userTaskRecord, listener);
-                } else {
-                  userTaskBehavior.userTaskAssigned(userTaskRecord, assignee);
-                }
+                assignUserTask(element, context, userTaskRecord, assignee);
               }
             });
   }
@@ -153,5 +148,28 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
                   stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
+  }
+
+  private Either<Failure, Pair<UserTaskProperties, UserTaskRecord>> createUserTask(
+      final ExecutableUserTask element,
+      final BpmnElementContext context,
+      final UserTaskProperties userTaskProperties) {
+    final var userTaskRecord =
+        userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
+    userTaskBehavior.userTaskCreated(userTaskRecord);
+    return Either.right(Pair.of(userTaskProperties, userTaskRecord));
+  }
+
+  private void assignUserTask(
+      final ExecutableUserTask element,
+      final BpmnElementContext context,
+      final UserTaskRecord userTaskRecord,
+      final String assignee) {
+    userTaskBehavior.userTaskAssigning(userTaskRecord, assignee);
+    element.getTaskListeners(ZeebeTaskListenerEventType.assignment).stream()
+        .findFirst()
+        .ifPresentOrElse(
+            listener -> jobBehavior.createNewTaskListenerJob(context, userTaskRecord, listener),
+            () -> userTaskBehavior.userTaskAssigned(userTaskRecord, assignee));
   }
 }
