@@ -347,7 +347,7 @@
     <dependency>
       <groupId>com.github.wnameless.json</groupId>
       <artifactId>json-flattener</artifactId>
-      <version>0.16.6</version>
+      <version>0.17.1</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
