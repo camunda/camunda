@@ -22,6 +22,7 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -127,11 +128,29 @@ public class GroupServiceTest {
     // then
     final BrokerGroupUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.UPDATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
+    assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.UPDATE);
     assertThat(request.getKey()).isEqualTo(groupKey);
-    final GroupRecord brokerRequestValue = request.getRequestWriter();
-    assertThat(brokerRequestValue).hasName(name);
-    assertThat(brokerRequestValue).hasGroupKey(groupKey);
+    final GroupRecord record = request.getRequestWriter();
+    assertThat(record).hasName(name);
+    assertThat(record).hasGroupKey(groupKey);
+  }
+
+  @Test
+  public void shouldDeleteGroup() {
+    // given
+    final var groupKey = 123L;
+
+    // when
+    services.deleteGroup(groupKey);
+
+    // then
+    final BrokerGroupDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
+    assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.DELETE);
+    assertThat(request.getKey()).isEqualTo(groupKey);
+    final GroupRecord record = request.getRequestWriter();
+    assertThat(record).hasGroupKey(groupKey);
   }
 }
