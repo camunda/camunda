@@ -127,6 +127,7 @@ public class ImportPositionHolder {
           ImportPositionEntity importPosition = inflightImportPositions.get(key);
           if (importPosition == null) {
             importPosition = lastProcessedPosition;
+            LOGGER.error("SET import position {}; NOT EXIST BEFORE", importPosition);
             metrics.registerGauge(
                 Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED,
                 importPosition,
@@ -141,6 +142,7 @@ public class ImportPositionHolder {
                 .setSequence(lastProcessedPosition.getSequence())
                 .setIndexName(lastProcessedPosition.getIndexName())
                 .setCompleted(lastProcessedPosition.getCompleted());
+            LOGGER.error("SET import position {}; HAS EXIST BEFORE", importPosition);
           }
           inflightImportPositions.put(key, importPosition);
         });

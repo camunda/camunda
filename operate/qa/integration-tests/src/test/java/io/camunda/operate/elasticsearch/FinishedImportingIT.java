@@ -76,6 +76,7 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.open(new ExporterTestController());
 
     recordsReaderHolder.resetCountEmptyBatches();
+    importPositionHolder.clearCache();
 
     final MeterRegistry metrics = beanFactory.getBean(MeterRegistry.class);
     metrics.clear();
