@@ -19,6 +19,7 @@ import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import java.util.Optional;
@@ -71,5 +72,9 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
 
   public CompletableFuture<GroupRecord> updateGroup(final long groupKey, final String name) {
     return sendBrokerRequest(new BrokerGroupUpdateRequest(groupKey).setName(name));
+  }
+
+  public CompletableFuture<GroupRecord> deleteGroup(final long groupKey) {
+    return sendBrokerRequest(new BrokerGroupDeleteRequest(groupKey));
   }
 }
