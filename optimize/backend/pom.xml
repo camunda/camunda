@@ -21,6 +21,8 @@
     <version.tomcat>10.1.33</version.tomcat>
   </properties>
 
+  <!-- random comment -->
+
   <dependencies>
     <!-- Logging dependencies -->
 
