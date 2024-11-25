@@ -56,6 +56,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   protected ZeebeContainer zeebeContainer;
   @Autowired private TestContainerUtil testContainerUtil;
+  @Autowired private IndexPrefixHolder indexPrefixHolder;
   private ZeebeClient client;
 
   private String prefix;
@@ -63,9 +64,10 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
 
   @Override
   public void starting(final Description description) {
-    prefix = TestUtil.createRandomString(10);
-    LOGGER.info("Starting Zeebe with ELS prefix: " + prefix);
+    prefix = indexPrefixHolder.createNewIndexPrefix();
+    LOGGER.info("Starting Camunda Exporter with prefix: " + prefix);
     operateProperties.getZeebeElasticsearch().setPrefix(prefix);
+    operateProperties.getElasticsearch().setIndexPrefix(prefix);
 
     startZeebe();
   }

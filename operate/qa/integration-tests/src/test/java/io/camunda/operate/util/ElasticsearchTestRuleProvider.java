@@ -129,15 +129,15 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void starting(final Description description) {
-    if (indexPrefix == null) {
-      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+    final String prefix = operateProperties.getElasticsearch().getIndexPrefix();
+    if (prefix.isBlank()) {
+      if (indexPrefix == null) {
+        indexPrefix = indexPrefixHolder.createNewIndexPrefix();
+      }
+      operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     }
-    operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-    if (operateProperties.getElasticsearch().isCreateSchema()) {
-      schemaManager.createSchema();
-      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
-          .describedAs("Elasticsearch %s (min %d) indices are created", indexPrefix, 5)
-          .isTrue();
+    if (indexPrefix == null) {
+      indexPrefix = prefix;
     }
   }
 
