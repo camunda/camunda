@@ -12,6 +12,8 @@ import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.scaling.redistribution.DbRedistributionState;
+import io.camunda.zeebe.engine.scaling.redistribution.MutableRedistributionState;
 import io.camunda.zeebe.engine.state.authorization.DbAuthorizationState;
 import io.camunda.zeebe.engine.state.authorization.DbMappingState;
 import io.camunda.zeebe.engine.state.authorization.DbRoleState;
@@ -22,6 +24,7 @@ import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbFormState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
+import io.camunda.zeebe.engine.state.group.DbGroupState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
@@ -47,6 +50,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
+import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingState;
@@ -110,8 +114,10 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableClockState clockState;
   private final MutableAuthorizationState authorizationState;
   private final MutableRoutingState routingState;
+  private final MutableRedistributionState redistributionState;
   private final MutableTenantState tenantState;
   private final MutableRoleState roleState;
+  private final MutableGroupState groupState;
   private final MutableMappingState mappingState;
 
   private final int partitionId;
@@ -161,7 +167,9 @@ public class ProcessingDbState implements MutableProcessingState {
     clockState = new DbClockState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
+    redistributionState = new DbRedistributionState(zeebeDb, transactionContext);
     roleState = new DbRoleState(zeebeDb, transactionContext);
+    groupState = new DbGroupState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
     mappingState = new DbMappingState(zeebeDb, transactionContext);
   }
@@ -295,6 +303,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutableRedistributionState getRedistributionState() {
+    return redistributionState;
+  }
+
+  @Override
   public MutableClockState getClockState() {
     return clockState;
   }
@@ -302,6 +315,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableRoleState getRoleState() {
     return roleState;
+  }
+
+  @Override
+  public MutableGroupState getGroupState() {
+    return groupState;
   }
 
   @Override

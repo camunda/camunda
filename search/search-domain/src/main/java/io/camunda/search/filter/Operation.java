@@ -7,17 +7,13 @@
  */
 package io.camunda.search.filter;
 
+import io.camunda.util.CollectionUtil;
 import java.util.List;
 
 public record Operation<T>(Operator operator, List<T> values) {
 
   public Operation(final Operator operator, final T value) {
-    this(operator, List.of(value));
-  }
-
-  public Operation(final Operator operator, final List<T> values) {
-    this.operator = operator;
-    this.values = values;
+    this(operator, CollectionUtil.collectValuesAsList(value));
   }
 
   public static <T> Operation<T> of(final Operator operator, final T value) {
@@ -32,7 +28,7 @@ public record Operation<T>(Operator operator, List<T> values) {
     return new Operation<>(Operator.NOT_EQUALS, value);
   }
 
-  public static Operation<Boolean> exists(final boolean value) {
+  public static <T> Operation<T> exists(final boolean value) {
     return new Operation<>(value ? Operator.EXISTS : Operator.NOT_EXISTS, null);
   }
 
@@ -66,6 +62,9 @@ public record Operation<T>(Operator operator, List<T> values) {
   }
 
   public T value() {
+    if (values == null || values.isEmpty()) {
+      return null;
+    }
     return values.getFirst();
   }
 

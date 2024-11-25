@@ -8,9 +8,11 @@
 package io.camunda.webapps.schema.descriptors.tasklist.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 
-public class TaskTemplate extends TasklistTemplateDescriptor implements Prio3Backup {
+public class TaskTemplate extends TasklistTemplateDescriptor
+    implements Prio3Backup, ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "task";
   public static final String INDEX_VERSION = "8.5.0";
@@ -34,6 +36,7 @@ public class TaskTemplate extends TasklistTemplateDescriptor implements Prio3Bac
   public static final String ACTION = "action";
   public static final String CHANGED_ATTRIBUTES = "changedAttributes";
 
+  public static final String FORM_ID = "formId";
   public static final String FORM_KEY = "formKey";
   public static final String EXTERNAL_FORM_REFERENCE = "externalFormReference";
 
@@ -70,5 +73,10 @@ public class TaskTemplate extends TasklistTemplateDescriptor implements Prio3Bac
   @Override
   public String getVersion() {
     return INDEX_VERSION;
+  }
+
+  @Override
+  public String getProcessInstanceDependantField() {
+    return PROCESS_INSTANCE_ID;
   }
 }

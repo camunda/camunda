@@ -191,21 +191,27 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
-  public String getTenantId() {
-    return tenantId;
-  }
-
-  public void setTenantId(final String tenantId) {
-    this.tenantId = tenantId;
-  }
-
-  @Override
   public Set<String> getChangedAttributes() {
     return changedAttributes;
   }
 
   public void setChangedAttributes(final Set<String> changedAttributes) {
     this.changedAttributes = changedAttributes;
+  }
+
+  @Override
+  public JobResultValue getResult() {
+    // Not used by importer, dummy implementation for compiler
+    return null;
+  }
+
+  @Override
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
   }
 
   @Override

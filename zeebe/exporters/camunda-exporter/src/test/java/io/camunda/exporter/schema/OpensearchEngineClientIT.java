@@ -8,6 +8,7 @@
 package io.camunda.exporter.schema;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,9 +16,10 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
-import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -35,7 +37,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class OpensearchEngineClientIT {
   @Container
   private static final OpensearchContainer<?> CONTAINER =
-      TestSupport.createDefaultOpensearchContainer();
+      TestSearchContainers.createDefaultOpensearchContainer();
 
   private static OpenSearchClient openSearchClient;
   private static OpensearchEngineClient opensearchEngineClient;
@@ -125,19 +127,25 @@ public class OpensearchEngineClientIT {
   }
 
   @Test
-  void shouldFailIndexTemplateUpdateIfCreateTrue() {
+  void shouldNotThrowIfCreatingExistingTemplate() {
     // given
-    final var template =
+    final var indexTemplate =
         SchemaTestUtil.mockIndexTemplate(
-            "index_name", "index_pattern.*", "alias", List.of(), "template_name", "/mappings.json");
-    opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), false);
+            "index_name",
+            "test*",
+            "alias",
+            Collections.emptyList(),
+            "template_name",
+            "/mappings.json");
 
-    // when
-    // then
-    assertThatThrownBy(
-            () -> opensearchEngineClient.createIndexTemplate(template, new IndexSettings(), true))
-        .isInstanceOf(OpensearchExporterException.class)
-        .hasMessageContaining("Cannot update template [template_name] as create = true");
+    final var settings = new IndexSettings();
+    opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true);
+
+    // when, then
+    assertThatNoException()
+        .describedAs("Creating an already existing template should not throw")
+        .isThrownBy(
+            () -> opensearchEngineClient.createIndexTemplate(indexTemplate, settings, true));
   }
 
   @Test
@@ -228,6 +236,22 @@ public class OpensearchEngineClientIT {
                 .name("world")
                 .typeDefinition(Map.of("type", "keyword"))
                 .build());
+  }
+
+  @Test
+  void shouldNotThrowErrorIfRetrievingMappingsWhereOnlySubsetOfIndicesExist() {
+    // given
+    final var index =
+        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
+
+    opensearchEngineClient.createIndex(index, new IndexSettings());
+
+    // when, then
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                opensearchEngineClient.getMappings(
+                    index.getFullQualifiedName() + "*,foo*", MappingSource.INDEX));
   }
 
   @Test

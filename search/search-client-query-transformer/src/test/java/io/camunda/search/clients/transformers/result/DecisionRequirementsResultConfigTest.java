@@ -20,11 +20,11 @@ public class DecisionRequirementsResultConfigTest extends AbstractResultConfigTe
     final var source =
         transformRequest(
             SearchQueryBuilders.decisionRequirementsSearchQuery(
-                q -> q.resultConfig(r -> r.xml().include())));
+                q -> q.resultConfig(r -> r.includeXml(true))));
 
     // then
-    assertThat(source.sourceFilter().includes()).containsExactly("xml");
     assertThat(source.sourceFilter().excludes()).isNull();
+    assertThat(source.sourceFilter().includes()).isNull();
   }
 
   @Test
@@ -33,7 +33,7 @@ public class DecisionRequirementsResultConfigTest extends AbstractResultConfigTe
     final var source =
         transformRequest(
             SearchQueryBuilders.decisionRequirementsSearchQuery(
-                q -> q.resultConfig(r -> r.xml().exclude())));
+                q -> q.resultConfig(r -> r.includeXml(false))));
 
     // then
     assertThat(source.sourceFilter().excludes()).containsExactly("xml");

@@ -17,7 +17,8 @@ public record ProcessDefinitionDbModel(
     String tenantId,
     String versionTag,
     int version,
-    String bpmnXml) {
+    String bpmnXml,
+    String formId) {
 
   public static class ProcessDefinitionDbModelBuilder
       implements ObjectBuilder<ProcessDefinitionDbModel> {
@@ -30,6 +31,7 @@ public record ProcessDefinitionDbModel(
     private String tenantId;
     private String versionTag;
     private int version;
+    private String formId;
 
     // Public constructor to initialize the builder
     public ProcessDefinitionDbModelBuilder() {}
@@ -52,6 +54,11 @@ public record ProcessDefinitionDbModel(
 
     public ProcessDefinitionDbModelBuilder bpmnXml(final String bpmnXml) {
       this.bpmnXml = bpmnXml;
+      return this;
+    }
+
+    public ProcessDefinitionDbModelBuilder formId(final String formId) {
+      this.formId = formId;
       return this;
     }
 
@@ -86,7 +93,8 @@ public record ProcessDefinitionDbModel(
           tenantId,
           versionTag,
           version,
-          bpmnXml);
+          bpmnXml,
+          formId);
     }
   }
 }

@@ -36,6 +36,7 @@ import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
@@ -46,6 +47,7 @@ import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
 import io.camunda.zeebe.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.PublishMessageCommandStep1;
+import io.camunda.zeebe.client.api.command.RemovePermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.zeebe.client.api.command.SetVariablesCommandStep1;
 import io.camunda.zeebe.client.api.command.StreamJobsCommandStep1;
@@ -96,6 +98,7 @@ import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
@@ -108,6 +111,7 @@ import io.camunda.zeebe.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.zeebe.client.impl.command.MigrateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.ModifyProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.PublishMessageCommandImpl;
+import io.camunda.zeebe.client.impl.command.RemovePermissionsCommandImpl;
 import io.camunda.zeebe.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
@@ -671,8 +675,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public DecisionInstanceGetRequest newDecisionInstanceGetRequest(final long decisionInstanceKey) {
-    return new DecisionInstanceGetRequestImpl(httpClient, jsonMapper, decisionInstanceKey);
+  public DecisionInstanceGetRequest newDecisionInstanceGetRequest(final String decisionInstanceId) {
+    return new DecisionInstanceGetRequestImpl(httpClient, jsonMapper, decisionInstanceId);
   }
 
   @Override
@@ -693,6 +697,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public AddPermissionsCommandStep1 newAddPermissionsCommand(final long ownerKey) {
     return new AddPermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
+  }
+
+  @Override
+  public RemovePermissionsCommandStep1 newRemovePermissionsCommand(final long ownerKey) {
+    return new RemovePermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
   }
 
   @Override
@@ -732,6 +741,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new UserTaskVariableQueryImpl(httpClient, jsonMapper, userTaskKey);
   }
 
+  @Override
   public CreateDocumentCommandStep1 newCreateDocumentCommand() {
     return new CreateDocumentCommandImpl(jsonMapper, httpClient, config);
   }
@@ -774,6 +784,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final DocumentReferenceResponse documentReference) {
     return new DeleteDocumentCommandImpl(
         documentReference.getDocumentId(), documentReference.getStoreId(), httpClient, config);
+  }
+
+  @Override
+  public CreateTenantCommandStep1 newCreateTenantCommand() {
+    return new CreateTenantCommandImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

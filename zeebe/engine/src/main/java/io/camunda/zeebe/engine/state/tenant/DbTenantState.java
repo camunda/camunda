@@ -19,6 +19,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public class DbTenantState implements MutableTenantState {
@@ -41,7 +45,7 @@ public class DbTenantState implements MutableTenantState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     tenantsColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.TENANTS, transactionContext, tenantKey, persistedTenant);
+            ZbColumnFamilies.TENANTS, transactionContext, tenantKey, new PersistedTenant());
 
     fkTenantKey = new DbForeignKey<>(tenantKey, ZbColumnFamilies.TENANTS);
 
@@ -102,6 +106,22 @@ public class DbTenantState implements MutableTenantState {
   }
 
   @Override
+  public void delete(final TenantRecord tenantRecord) {
+    tenantKey.wrapLong(tenantRecord.getTenantKey());
+    tenantId.wrapString(tenantRecord.getTenantId());
+
+    tenantByIdColumnFamily.deleteExisting(tenantId);
+
+    entityByTenantColumnFamily.whileEqualPrefix(
+        fkTenantKey,
+        (compositeKey, entityTypeValue) -> {
+          entityByTenantColumnFamily.deleteExisting(compositeKey);
+        });
+
+    tenantsColumnFamily.deleteExisting(tenantKey);
+  }
+
+  @Override
   public Optional<TenantRecord> getTenantByKey(final long tenantKey) {
     this.tenantKey.wrapLong(tenantKey);
     final PersistedTenant persistedTenant = tenantsColumnFamily.get(this.tenantKey);
@@ -153,5 +173,22 @@ public class DbTenantState implements MutableTenantState {
     this.tenantKey.wrapLong(tenantKey);
     this.entityKey.wrapLong(entityKey);
     return entityByTenantColumnFamily.exists(entityByTenantKey);
+  }
+
+  @Override
+  public Map<EntityType, List<Long>> getEntitiesByType(final long tenantKey) {
+    final Map<EntityType, List<Long>> entitiesMap = new HashMap<>();
+    this.tenantKey.wrapLong(tenantKey);
+
+    entityByTenantColumnFamily.whileEqualPrefix(
+        fkTenantKey,
+        (compositeKey, entityTypeValue) -> {
+          final var entityType = entityTypeValue.getEntityType();
+          final var entityKey = compositeKey.second().getValue();
+          entitiesMap.putIfAbsent(entityType, new ArrayList<>());
+          entitiesMap.get(entityType).add(entityKey);
+        });
+
+    return entitiesMap;
   }
 }

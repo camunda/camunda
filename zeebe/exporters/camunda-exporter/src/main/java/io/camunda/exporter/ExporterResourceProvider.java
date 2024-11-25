@@ -7,16 +7,21 @@
  */
 package io.camunda.exporter;
 
+import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Set;
 
 public interface ExporterResourceProvider {
 
-  void init(ExporterConfiguration configuration);
+  void init(
+      final ExporterConfiguration configuration,
+      final ExporterEntityCacheProvider entityCacheProvider,
+      final MeterRegistry meterRegistry);
 
   /**
    * This should return descriptors describing the desired state of all indices provided.
@@ -33,7 +38,14 @@ public interface ExporterResourceProvider {
   Collection<IndexTemplateDescriptor> getIndexTemplateDescriptors();
 
   /**
+   * @param descriptorClass the expected descriptor type
+   * @return the index template descriptor instance for the given class.
+   * @param <T> the expected descriptor type
+   */
+  <T extends IndexTemplateDescriptor> T getIndexTemplateDescriptor(Class<T> descriptorClass);
+
+  /**
    * @return A {@link Set} of {@link ExportHandler} to be registered with the exporter
    */
-  Set<ExportHandler> getExportHandlers();
+  Set<ExportHandler<?, ?>> getExportHandlers();
 }

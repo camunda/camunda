@@ -8,10 +8,16 @@
 package io.camunda.zeebe.scheduler.health;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorControl;
 import io.camunda.zeebe.scheduler.testing.ActorSchedulerRule;
+import io.camunda.zeebe.util.health.ComponentTreeListener;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthIssue;
 import io.camunda.zeebe.util.health.HealthMonitorable;
@@ -19,6 +25,7 @@ import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.health.HealthStatus;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -34,9 +41,12 @@ public class CriticalComponentsHealthMonitorTest {
   @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
   private CriticalComponentsHealthMonitor monitor;
   private ActorControl actorControl;
+  private ComponentTreeListener graphListener;
+  private final String parentComponent = "parent";
 
   @Before
   public void setup() {
+    graphListener = mock();
     final Actor testActor =
         new Actor() {
           @Override
@@ -48,7 +58,11 @@ public class CriticalComponentsHealthMonitorTest {
           protected void onActorStarting() {
             monitor =
                 new CriticalComponentsHealthMonitor(
-                    "TestMonitor", actor, LoggerFactory.getLogger("test"));
+                    "TestMonitor",
+                    actor,
+                    graphListener,
+                    Optional.of(parentComponent),
+                    LoggerFactory.getLogger("test"));
             actorControl = actor;
           }
 
@@ -61,10 +75,15 @@ public class CriticalComponentsHealthMonitorTest {
   }
 
   @Test
+  public void shouldRegisterItselfToTheRegistry() {
+    verify(graphListener, times(1)).registerNode(monitor, Optional.of(parentComponent));
+  }
+
+  @Test
   public void shouldMonitorComponent() {
     // given
-    final ControllableComponent component = new ControllableComponent();
-    monitor.registerComponent("test", component);
+    final ControllableComponent component = new ControllableComponent("test");
+    monitor.registerComponent(component);
 
     // when
     waitUntilAllDone();
@@ -86,7 +105,7 @@ public class CriticalComponentsHealthMonitorTest {
   public void shouldRecover() {
     // given
     final ControllableComponent component = new ControllableComponent("test");
-    monitor.registerComponent("test", component);
+    monitor.registerComponent(component);
     waitUntilAllDone();
     component.setUnhealthy();
     waitUntilAllDone();
@@ -103,11 +122,11 @@ public class CriticalComponentsHealthMonitorTest {
   @Test
   public void shouldMonitorMultipleComponent() {
     // given
-    final ControllableComponent component1 = new ControllableComponent();
-    final ControllableComponent component2 = new ControllableComponent();
+    final ControllableComponent component1 = new ControllableComponent("test1");
+    final ControllableComponent component2 = new ControllableComponent("test2");
 
-    monitor.registerComponent("test1", component1);
-    monitor.registerComponent("test2", component2);
+    monitor.registerComponent(component1);
+    monitor.registerComponent(component2);
 
     waitUntilAllDone();
     Awaitility.await("component is healthy")
@@ -143,12 +162,12 @@ public class CriticalComponentsHealthMonitorTest {
   @Test
   public void shouldRemoveComponent() {
     // given
-    final ControllableComponent component = new ControllableComponent();
-    monitor.registerComponent("test", component);
+    final ControllableComponent component = new ControllableComponent("test");
+    monitor.registerComponent(component);
     Awaitility.await().until(() -> monitor.getHealthReport().getStatus() == HealthStatus.HEALTHY);
 
     // when
-    monitor.removeComponent("test");
+    monitor.removeComponent(component);
     waitUntilAllDone();
     component.setUnhealthy();
     waitUntilAllDone();
@@ -160,11 +179,11 @@ public class CriticalComponentsHealthMonitorTest {
   @Test
   public void shouldMonitorComponentDeath() {
     // given
-    final ControllableComponent component1 = new ControllableComponent();
-    final ControllableComponent component2 = new ControllableComponent();
+    final ControllableComponent component1 = new ControllableComponent("comp1");
+    final ControllableComponent component2 = new ControllableComponent("comp2");
 
-    monitor.registerComponent("comp1", component1);
-    monitor.registerComponent("comp2", component2);
+    monitor.registerComponent(component1);
+    monitor.registerComponent(component2);
     waitUntilAllDone();
 
     // when/then
@@ -189,22 +208,9 @@ public class CriticalComponentsHealthMonitorTest {
     final ControllableComponent[][] components =
         new ControllableComponent[parentComponents.length][children];
 
-    for (int i = 0; i < parentComponents.length; i++) {
-      final var parentComponent =
-          new CriticalComponentsHealthMonitor("parent-%d".formatted(i), actorControl, LOG);
-
-      parentComponents[i] = parentComponent;
-      if (i > 0) {
-        parentComponents[i - 1].registerComponent(parentComponent.getName(), parentComponent);
-      }
-
-      for (int j = 0; j < children; j++) {
-        final var component = new ControllableComponent("child-at-%d-%d".formatted(i, j));
-        components[i][j] = component;
-        parentComponents[i].registerComponent(component.getName(), component);
-      }
-    }
+    setupComponentTree(parentComponents, components);
     waitUntilAllDone();
+    verify(graphListener, atLeast(levels * children)).registerNode(any(), any());
     final var root = parentComponents[0];
 
     // when
@@ -212,8 +218,7 @@ public class CriticalComponentsHealthMonitorTest {
     final var unhealthyFrom = levels - 2;
     components[unhealthyFrom][0].setUnhealthy();
     waitUntilAllDone();
-    final var report = root.getHealthReport();
-    var parentAtLevel = report;
+    var parentAtLevel = root.getHealthReport();
 
     // then
     for (int i = 0; i < levels; i++) {
@@ -234,8 +239,8 @@ public class CriticalComponentsHealthMonitorTest {
   public void shouldTrackRootIssue() {
     // given
     final var issue = HealthIssue.of(new IllegalStateException(), Instant.ofEpochMilli(19201293L));
-    final ControllableComponent component = new ControllableComponent();
-    monitor.registerComponent("component", component);
+    final ControllableComponent component = new ControllableComponent("component");
+    monitor.registerComponent(component);
     waitUntilAllDone();
 
     // when
@@ -256,14 +261,32 @@ public class CriticalComponentsHealthMonitorTest {
     actorControl.call(() -> null).join();
   }
 
+  private void setupComponentTree(
+      final CriticalComponentsHealthMonitor[] parentComponents,
+      final ControllableComponent[][] components) {
+    for (int i = 0; i < parentComponents.length; i++) {
+      final var parentComponent =
+          new CriticalComponentsHealthMonitor(
+              "parent-%d".formatted(i), actorControl, graphListener, Optional.empty(), LOG);
+
+      parentComponents[i] = parentComponent;
+      if (i > 0) {
+        parentComponents[i - 1].registerComponent(parentComponent);
+      }
+
+      for (int j = 0; j < components[i].length; j++) {
+        final var component = new ControllableComponent("child-at-%d-%d".formatted(i, j));
+        components[i][j] = component;
+        parentComponents[i].registerComponent(component);
+      }
+      waitUntilAllDone();
+    }
+  }
+
   private static final class ControllableComponent implements HealthMonitorable {
     private final Set<FailureListener> failureListeners = new HashSet<>();
     private volatile HealthReport healthReport;
     private final String name;
-
-    public ControllableComponent() {
-      this(null);
-    }
 
     public ControllableComponent(final String name) {
       this.name = name;
@@ -271,8 +294,8 @@ public class CriticalComponentsHealthMonitorTest {
     }
 
     @Override
-    public String getName() {
-      return (name != null) ? name : HealthMonitorable.super.getName();
+    public String componentName() {
+      return name;
     }
 
     @Override

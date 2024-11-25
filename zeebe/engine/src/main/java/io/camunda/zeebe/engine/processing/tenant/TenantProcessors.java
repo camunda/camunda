@@ -48,8 +48,7 @@ public class TenantProcessors {
             ValueType.TENANT,
             TenantIntent.ADD_ENTITY,
             new TenantAddEntityProcessor(
-                processingState.getTenantState(),
-                processingState.getUserState(),
+                processingState,
                 authCheckBehavior,
                 keyGenerator,
                 writers,
@@ -58,6 +57,15 @@ public class TenantProcessors {
             ValueType.TENANT,
             TenantIntent.REMOVE_ENTITY,
             new TenantRemoveEntityProcessor(
+                processingState,
+                authCheckBehavior,
+                keyGenerator,
+                writers,
+                commandDistributionBehavior))
+        .onCommand(
+            ValueType.TENANT,
+            TenantIntent.DELETE,
+            new TenantDeleteProcessor(
                 processingState.getTenantState(),
                 authCheckBehavior,
                 keyGenerator,

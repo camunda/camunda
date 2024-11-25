@@ -19,6 +19,7 @@ import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,7 +31,7 @@ public class RdbmsExporter implements Exporter {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsExporter.class);
 
-  private final HashMap<ValueType, RdbmsExportHandler> registeredHandlers = new HashMap<>();
+  private final HashMap<ValueType, List<RdbmsExportHandler>> registeredHandlers = new HashMap<>();
 
   private Controller controller;
 
@@ -96,18 +97,19 @@ public class RdbmsExporter implements Exporter {
         record.getIntent());
 
     if (registeredHandlers.containsKey(record.getValueType())) {
-      final var handler = registeredHandlers.get(record.getValueType());
-      if (handler.canExport(record)) {
-        LOG.debug(
-            "[RDBMS Exporter] Exporting record {} with handler {}",
-            record.getValue(),
-            handler.getClass());
-        handler.export(record);
-      } else {
-        LOG.trace(
-            "[RDBMS Exporter] Handler {} can not export record {}",
-            handler.getClass(),
-            record.getValueType());
+      for (final var handler : registeredHandlers.get(record.getValueType())) {
+        if (handler.canExport(record)) {
+          LOG.debug(
+              "[RDBMS Exporter] Exporting record {} with handler {}",
+              record.getValue(),
+              handler.getClass());
+          handler.export(record);
+        } else {
+          LOG.trace(
+              "[RDBMS Exporter] Handler {} can not export record {}",
+              handler.getClass(),
+              record.getValueType());
+        }
       }
     } else {
       LOG.trace("[RDBMS Exporter] No registered handler found for {}", record.getValueType());
@@ -119,13 +121,28 @@ public class RdbmsExporter implements Exporter {
   private void registerHandler() {
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       registeredHandlers.put(
-          ValueType.PROCESS, new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter()));
+          ValueType.PROCESS,
+          List.of(new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter())));
     }
     registeredHandlers.put(
-        ValueType.PROCESS_INSTANCE,
-        new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()));
+        ValueType.DECISION,
+        List.of(new DecisionDefinitionExportHandler(rdbmsWriter.getDecisionDefinitionWriter())));
     registeredHandlers.put(
-        ValueType.VARIABLE, new VariableExportHandler(rdbmsWriter.getVariableWriter()));
+        ValueType.DECISION_REQUIREMENTS,
+        List.of(
+            new DecisionRequirementsExportHandler(rdbmsWriter.getDecisionRequirementsWriter())));
+    registeredHandlers.put(
+        ValueType.DECISION_EVALUATION,
+        List.of(new DecisionInstanceExportHandler(rdbmsWriter.getDecisionInstanceWriter())));
+    registeredHandlers.put(
+        ValueType.PROCESS_INSTANCE,
+        List.of(
+            new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()),
+            new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter())));
+    registeredHandlers.put(
+        ValueType.VARIABLE, List.of(new VariableExportHandler(rdbmsWriter.getVariableWriter())));
+    registeredHandlers.put(
+        ValueType.USER_TASK, List.of(new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter())));
   }
 
   private void updatePositionInBroker() {

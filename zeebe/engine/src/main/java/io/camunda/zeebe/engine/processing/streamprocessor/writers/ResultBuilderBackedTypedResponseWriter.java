@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -44,6 +45,29 @@ public class ResultBuilderBackedTypedResponseWriter extends AbstractResultBuilde
             command.getIntent(),
             command.getValue(),
             command.getValueType(),
+            type,
+            reason,
+            requestId,
+            requestStreamId);
+  }
+
+  @Override
+  public void writeRejection(
+      final long key,
+      final Intent intent,
+      final UnifiedRecordValue value,
+      final ValueType valueType,
+      final RejectionType type,
+      final String reason,
+      final long requestId,
+      final int requestStreamId) {
+    resultBuilder()
+        .withResponse(
+            RecordType.COMMAND_REJECTION,
+            key,
+            intent,
+            value,
+            valueType,
             type,
             reason,
             requestId,

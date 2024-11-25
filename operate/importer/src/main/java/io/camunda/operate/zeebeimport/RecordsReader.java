@@ -8,8 +8,8 @@
 package io.camunda.operate.zeebeimport;
 
 import io.camunda.operate.exceptions.NoSuchIndexException;
-import io.camunda.operate.schema.indices.ImportPositionIndex;
 import io.camunda.operate.zeebe.ImportValueType;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 

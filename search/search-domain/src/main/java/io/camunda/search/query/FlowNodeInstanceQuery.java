@@ -20,6 +20,11 @@ public record FlowNodeInstanceQuery(
     FlowNodeInstanceFilter filter, FlowNodeInstanceSort sort, SearchQueryPage page)
     implements TypedSearchQuery<FlowNodeInstanceFilter, FlowNodeInstanceSort> {
 
+  public static FlowNodeInstanceQuery of(
+      final Function<FlowNodeInstanceQuery.Builder, ObjectBuilder<FlowNodeInstanceQuery>> fn) {
+    return fn.apply(new FlowNodeInstanceQuery.Builder()).build();
+  }
+
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
       implements TypedSearchQueryBuilder<
           FlowNodeInstanceQuery, Builder, FlowNodeInstanceFilter, FlowNodeInstanceSort> {

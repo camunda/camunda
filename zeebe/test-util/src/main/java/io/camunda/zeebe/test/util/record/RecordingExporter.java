@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -50,9 +51,11 @@ import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
+import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageCorrelationRecordValue;
 import io.camunda.zeebe.protocol.record.value.MessageRecordValue;
@@ -483,6 +486,18 @@ public final class RecordingExporter implements Exporter {
 
   public static TenantRecordStream tenantRecords(final TenantIntent intent) {
     return tenantRecords().withIntent(intent);
+  }
+
+  public static MappingRecordStream mappingRecords() {
+    return new MappingRecordStream(records(ValueType.MAPPING, MappingRecordValue.class));
+  }
+
+  public static GroupRecordStream groupRecords() {
+    return new GroupRecordStream(records(ValueType.GROUP, GroupRecordValue.class));
+  }
+
+  public static GroupRecordStream groupRecords(final GroupIntent intent) {
+    return groupRecords().withIntent(intent);
   }
 
   public static void autoAcknowledge(final boolean shouldAcknowledgeRecords) {

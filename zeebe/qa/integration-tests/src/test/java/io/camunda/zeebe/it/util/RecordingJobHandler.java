@@ -20,7 +20,7 @@ public final class RecordingJobHandler implements JobHandler {
 
   public RecordingJobHandler() {
     this(
-        (controller, job) -> {
+        (client, job) -> {
           // do nothing
         });
   }

@@ -9,6 +9,9 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.scaling.ScaledUpApplier;
 import io.camunda.zeebe.engine.scaling.ScalingUpApplier;
+import io.camunda.zeebe.engine.scaling.redistribution.RedistributionCompletedApplier;
+import io.camunda.zeebe.engine.scaling.redistribution.RedistributionContinuedApplier;
+import io.camunda.zeebe.engine.scaling.redistribution.RedistributionStartedApplier;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
@@ -29,6 +32,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.EscalationIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
@@ -56,6 +60,7 @@ import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -118,6 +123,7 @@ public final class EventAppliers implements EventApplier {
     registerAuthorizationAppliers(state);
     registerClockAppliers(state);
     registerRoleAppliers(state);
+    registerGroupAppliers(state);
     registerScalingAppliers(state);
     registerTenantAppliers(state);
     registerMappingAppliers(state);
@@ -145,14 +151,21 @@ public final class EventAppliers implements EventApplier {
         DeploymentDistributionIntent.COMPLETED,
         new DeploymentDistributionCompletedApplier(state.getDeploymentState()));
 
-    register(DeploymentIntent.CREATED, 1, new DeploymentCreatedApplier(state.getDeploymentState()));
+    register(
+        DeploymentIntent.CREATED, 1, new DeploymentCreatedV1Applier(state.getDeploymentState()));
     register(DeploymentIntent.CREATED, 2, NOOP_EVENT_APPLIER);
+    register(
+        DeploymentIntent.CREATED, 3, new DeploymentCreatedV3Applier(state.getDeploymentState()));
     register(
         DeploymentIntent.DISTRIBUTED,
         new DeploymentDistributedApplier(state.getProcessState(), state.getDecisionState()));
     register(
         DeploymentIntent.FULLY_DISTRIBUTED,
         new DeploymentFullyDistributedApplier(state.getDeploymentState()));
+    register(DeploymentIntent.RECONSTRUCTED, NOOP_EVENT_APPLIER);
+    register(
+        DeploymentIntent.RECONSTRUCTED_ALL,
+        new DeploymentReconstructedAllApplier(state.getDeploymentState()));
   }
 
   private void registerVariableEventAppliers(final MutableProcessingState state) {
@@ -300,7 +313,13 @@ public final class EventAppliers implements EventApplier {
         new IncidentCreatedApplier(state.getIncidentState(), state.getJobState()));
     register(
         IncidentIntent.RESOLVED,
-        new IncidentResolvedApplier(
+        1,
+        new IncidentResolvedV1Applier(
+            state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
+    register(
+        IncidentIntent.RESOLVED,
+        2,
+        new IncidentResolvedV2Applier(
             state.getIncidentState(), state.getJobState(), state.getElementInstanceState()));
     register(IncidentIntent.MIGRATED, new IncidentMigratedApplier(state.getIncidentState()));
   }
@@ -389,11 +408,15 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.COMPLETING, 2, new UserTaskCompletingV2Applier(state));
     register(UserTaskIntent.COMPLETED, 1, new UserTaskCompletedV1Applier(state));
     register(UserTaskIntent.COMPLETED, 2, new UserTaskCompletedV2Applier(state));
-    register(UserTaskIntent.ASSIGNING, new UserTaskAssigningApplier(state));
-    register(UserTaskIntent.ASSIGNED, new UserTaskAssignedApplier(state));
+    register(UserTaskIntent.ASSIGNING, 1, new UserTaskAssigningV1Applier(state));
+    register(UserTaskIntent.ASSIGNING, 2, new UserTaskAssigningV2Applier(state));
+    register(UserTaskIntent.ASSIGNED, 1, new UserTaskAssignedV1Applier(state));
+    register(UserTaskIntent.ASSIGNED, 2, new UserTaskAssignedV2Applier(state));
     register(UserTaskIntent.UPDATING, new UserTaskUpdatingApplier(state));
     register(UserTaskIntent.UPDATED, new UserTaskUpdatedApplier(state));
     register(UserTaskIntent.MIGRATED, new UserTaskMigratedApplier(state));
+    register(UserTaskIntent.CORRECTED, new UserTaskCorrectedApplier(state));
+    register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
   }
 
   private void registerCompensationSubscriptionApplier(
@@ -413,6 +436,10 @@ public final class EventAppliers implements EventApplier {
     register(
         CompensationSubscriptionIntent.DELETED,
         new CompensationSubscriptionDeletedApplier(
+            processingState.getCompensationSubscriptionState()));
+    register(
+        CompensationSubscriptionIntent.MIGRATED,
+        new CompensationSubscriptionMigratedApplier(
             processingState.getCompensationSubscriptionState()));
   }
 
@@ -443,6 +470,8 @@ public final class EventAppliers implements EventApplier {
 
   private void registerAuthorizationAppliers(final MutableProcessingState state) {
     register(AuthorizationIntent.PERMISSION_ADDED, new AuthorizationPermissionAddedApplier(state));
+    register(
+        AuthorizationIntent.PERMISSION_REMOVED, new AuthorizationPermissionRemovedApplier(state));
   }
 
   private void registerEscalationAppliers() {
@@ -466,35 +495,49 @@ public final class EventAppliers implements EventApplier {
         new RoleCreatedApplier(state.getRoleState(), state.getAuthorizationState()));
     register(RoleIntent.UPDATED, new RoleUpdatedApplier(state.getRoleState()));
     register(RoleIntent.ENTITY_ADDED, new RoleEntityAddedApplier(state));
-    register(
-        RoleIntent.ENTITY_REMOVED,
-        new RoleEntityRemovedApplier(state.getRoleState(), state.getUserState()));
+    register(RoleIntent.ENTITY_REMOVED, new RoleEntityRemovedApplier(state));
     register(
         RoleIntent.DELETED,
         new RoleDeletedApplier(
             state.getRoleState(), state.getUserState(), state.getAuthorizationState()));
   }
 
+  private void registerGroupAppliers(final MutableProcessingState state) {
+    register(
+        GroupIntent.CREATED,
+        new GroupCreatedApplier(state.getGroupState(), state.getAuthorizationState()));
+    register(GroupIntent.UPDATED, new GroupUpdatedApplier(state.getGroupState()));
+    register(GroupIntent.ENTITY_ADDED, new GroupEntityAddedApplier(state));
+    register(GroupIntent.ENTITY_REMOVED, new GroupEntityRemovedApplier(state));
+    register(GroupIntent.DELETED, new GroupDeletedApplier(state));
+  }
+
   private void registerScalingAppliers(final MutableProcessingState state) {
     register(ScaleIntent.SCALING_UP, new ScalingUpApplier(state.getRoutingState()));
     register(ScaleIntent.SCALED_UP, new ScaledUpApplier(state.getRoutingState()));
+    register(RedistributionIntent.STARTED, new RedistributionStartedApplier(state));
+    register(RedistributionIntent.CONTINUED, new RedistributionContinuedApplier(state));
+    register(RedistributionIntent.COMPLETED, new RedistributionCompletedApplier(state));
   }
 
   private void registerTenantAppliers(final MutableProcessingState state) {
-    register(TenantIntent.CREATED, new TenantCreatedApplier(state.getTenantState()));
+    register(
+        TenantIntent.CREATED,
+        new TenantCreatedApplier(state.getTenantState(), state.getAuthorizationState()));
     register(TenantIntent.UPDATED, new TenantUpdatedApplier(state.getTenantState()));
+    register(TenantIntent.ENTITY_ADDED, new TenantEntityAddedApplier(state));
+    register(TenantIntent.ENTITY_REMOVED, new TenantEntityRemovedApplier(state));
     register(
-        TenantIntent.ENTITY_ADDED,
-        new TenantEntityAddedApplier(state.getTenantState(), state.getUserState()));
-    register(
-        TenantIntent.ENTITY_REMOVED,
-        new TenantEntityRemovedApplier(state.getTenantState(), state.getUserState()));
+        TenantIntent.DELETED,
+        new TenantDeletedApplier(
+            state.getTenantState(), state.getUserState(), state.getAuthorizationState()));
   }
 
   private void registerMappingAppliers(final MutableProcessingState state) {
     register(
         MappingIntent.CREATED,
         new MappingCreatedApplier(state.getMappingState(), state.getAuthorizationState()));
+    register(MappingIntent.DELETED, new MappingDeletedApplier(state));
   }
 
   private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {

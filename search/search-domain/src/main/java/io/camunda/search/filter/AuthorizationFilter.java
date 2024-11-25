@@ -7,26 +7,34 @@
  */
 package io.camunda.search.filter;
 
+import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValuesAsList;
+
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
 
 public record AuthorizationFilter(
-    Long ownerKey,
+    List<Long> ownerKeys,
     String ownerType,
-    String resourceKey,
+    List<String> resourceIds,
     String resourceType,
     PermissionType permissionType)
     implements FilterBase {
   public static final class Builder implements ObjectBuilder<AuthorizationFilter> {
-    private Long ownerKey;
+    private List<Long> ownerKeys;
     private String ownerType;
-    private String resourceKey;
+    private List<String> resourceIds;
     private String resourceType;
     private PermissionType permissionType;
 
-    public Builder ownerKey(final Long value) {
-      ownerKey = value;
+    public Builder ownerKeys(final List<Long> value) {
+      ownerKeys = addValuesToList(ownerKeys, value);
       return this;
+    }
+
+    public Builder ownerKeys(final Long... values) {
+      return ownerKeys(collectValuesAsList(values));
     }
 
     public Builder ownerType(final String value) {
@@ -34,9 +42,13 @@ public record AuthorizationFilter(
       return this;
     }
 
-    public Builder resourceKey(final String value) {
-      resourceKey = value;
+    public Builder resourceIds(final List<String> value) {
+      resourceIds = value;
       return this;
+    }
+
+    public Builder resourceIds(final String... values) {
+      return resourceIds(collectValuesAsList(values));
     }
 
     public Builder resourceType(final String value) {
@@ -52,7 +64,7 @@ public record AuthorizationFilter(
     @Override
     public AuthorizationFilter build() {
       return new AuthorizationFilter(
-          ownerKey, ownerType, resourceKey, resourceType, permissionType);
+          ownerKeys, ownerType, resourceIds, resourceType, permissionType);
     }
   }
 }

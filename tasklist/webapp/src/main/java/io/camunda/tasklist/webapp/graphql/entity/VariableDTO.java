@@ -11,8 +11,8 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLType;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -72,7 +72,7 @@ public class VariableDTO {
     return this;
   }
 
-  public static VariableDTO createFrom(TaskVariableEntity variableEntity) {
+  public static VariableDTO createFrom(SnapshotTaskVariableEntity variableEntity) {
     final VariableDTO variableDTO =
         new VariableDTO().setId(variableEntity.getId()).setName(variableEntity.getName());
     variableDTO
@@ -105,7 +105,7 @@ public class VariableDTO {
   }
 
   public static List<VariableDTO> createFromTaskVariables(
-      List<TaskVariableEntity> taskVariableEntities) {
+      List<SnapshotTaskVariableEntity> taskVariableEntities) {
     return taskVariableEntities.stream().map(VariableDTO::createFrom).collect(Collectors.toList());
   }
 

@@ -9,13 +9,13 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.store.ProcessStore;
-import io.camunda.operate.util.TreePath;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.util.*;

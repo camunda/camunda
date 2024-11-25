@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.zeebe.ImportValueType;
@@ -87,12 +88,13 @@ public class ElasticsearchTestExtension
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private TestImportListener testImportListener;
+  @Autowired private TasklistIndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
     if (indexPrefix == null) {
-      indexPrefix = TestUtil.createRandomString(10) + "-tasklist";
+      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
     }
     tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     if (tasklistProperties.getElasticsearch().isCreateSchema()) {

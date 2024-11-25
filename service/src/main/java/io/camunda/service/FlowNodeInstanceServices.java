@@ -7,17 +7,17 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.SearchQueryBuilders.flownodeInstanceSearchQuery;
+
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.FlowNodeInstanceQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.function.Function;
@@ -30,43 +30,45 @@ public final class FlowNodeInstanceServices
 
   public FlowNodeInstanceServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
   }
 
   @Override
   public FlowNodeInstanceServices withAuthentication(final Authentication authentication) {
     return new FlowNodeInstanceServices(
-        brokerClient, securityConfiguration, flowNodeInstanceSearchClient, authentication);
+        brokerClient, securityContextProvider, flowNodeInstanceSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
-    return flowNodeInstanceSearchClient.searchFlowNodeInstances(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+    return flowNodeInstanceSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
+        .searchFlowNodeInstances(query);
   }
 
   public SearchQueryResult<FlowNodeInstanceEntity> search(
       final Function<FlowNodeInstanceQuery.Builder, ObjectBuilder<FlowNodeInstanceQuery>> fn) {
-    return search(SearchQueryBuilders.flownodeInstanceSearchQuery(fn));
+    return search(flownodeInstanceSearchQuery(fn));
   }
 
   public FlowNodeInstanceEntity getByKey(final Long key) {
-    final SearchQueryResult<FlowNodeInstanceEntity> result =
-        search(
-            SearchQueryBuilders.flownodeInstanceSearchQuery()
-                .filter(f -> f.flowNodeInstanceKeys(key))
-                .build());
-    if (result.total() < 1) {
-      throw new NotFoundException(String.format("Flow node instance with key %d not found", key));
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          String.format("Found Flow node instance with key %d more than once", key));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
+    final var result =
+        flowNodeInstanceSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchFlowNodeInstances(
+                flownodeInstanceSearchQuery(q -> q.filter(f -> f.flowNodeInstanceKeys(key))));
+    final var flowNodeInstance = getSingleResultOrThrow(result, key, "Flow node instance");
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
+    if (!securityContextProvider.isAuthorized(
+        flowNodeInstance.processDefinitionId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
     }
+    return flowNodeInstance;
   }
 }

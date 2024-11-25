@@ -9,15 +9,16 @@ package io.camunda.exporter.schema;
 
 import static io.camunda.exporter.schema.SchemaTestUtil.validateMappings;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
-import io.camunda.exporter.utils.TestSupport;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -35,7 +36,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class ElasticsearchEngineClientIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefeaultElasticsearchContainer();
+      TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static ElasticsearchClient elsClient;
   private static ElasticsearchEngineClient elsEngineClient;
@@ -102,6 +103,27 @@ public class ElasticsearchEngineClientIT {
   }
 
   @Test
+  void shouldNotThrowIfTryingToCreateExistingTemplate() {
+    // given
+    final var indexTemplate =
+        SchemaTestUtil.mockIndexTemplate(
+            "index_name",
+            "test*",
+            "alias",
+            Collections.emptyList(),
+            "template_name",
+            "/mappings.json");
+
+    final var settings = new IndexSettings();
+    elsEngineClient.createIndexTemplate(indexTemplate, settings, true);
+
+    // when, then
+    assertThatNoException()
+        .describedAs("Creating an already existing template should not throw")
+        .isThrownBy(() -> elsEngineClient.createIndexTemplate(indexTemplate, settings, true));
+  }
+
+  @Test
   void shouldCreateIndexCorrectly() throws IOException {
     // given
     final var qualifiedIndexName = "full_name";
@@ -142,6 +164,22 @@ public class ElasticsearchEngineClientIT {
                 .name("world")
                 .typeDefinition(Map.of("type", "keyword"))
                 .build());
+  }
+
+  @Test
+  void shouldNotThrowErrorIfRetrievingMappingsWhereOnlySubsetOfIndicesExist() {
+    // given
+    final var index =
+        SchemaTestUtil.mockIndex("index_qualified_name", "alias", "index_name", "/mappings.json");
+
+    elsEngineClient.createIndex(index, new IndexSettings());
+
+    // when, tnen
+    assertThatNoException()
+        .isThrownBy(
+            () ->
+                elsEngineClient.getMappings(
+                    index.getFullQualifiedName() + "*,foo*", MappingSource.INDEX));
   }
 
   @Test

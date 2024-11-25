@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.adapters;
 
+import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
@@ -25,6 +26,8 @@ public interface ClientAdapter {
   SearchEngineClient getSearchEngineClient();
 
   BatchRequest createBatchRequest();
+
+  ExporterEntityCacheProvider getExporterEntityCacheProvider();
 
   void close() throws IOException;
 }

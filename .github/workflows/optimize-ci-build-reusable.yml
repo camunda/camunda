@@ -55,30 +55,36 @@ jobs:
       # Setup: read java version from pom
       - name: "Read Java / Version Info"
         id: pom-info
-        uses: YunaBraska/java-info-action@72dd3fb638d774fb4353d99d2bb3fddddd084789 # 2.1.0
+        uses: YunaBraska/java-info-action@9cf580169f8a525f0fedf51d344bb3d6231bc1fa # 2.1.24
         with:
           work-dir: ./optimize
 
       #########################################################################
-      # Docker login and image tagging
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
-
-      #########################################################################
       # Setup and configure Maven
       - name: Setup Maven
-        uses: ./.github/actions/setup-maven
+        uses: ./.github/actions/setup-build
         with:
-          secrets: ${{ toJSON(secrets) }}
+          harbor: true
+          maven-cache-key-modifier: optimize
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      #########################################################################
+      # Build Optimize frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
 
       #########################################################################
       # Build Optimize
       - name: Generate production .tar.gz
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -PrunAssembly -T 1
+          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -P skipFrontendBuild,runAssembly -T 1
 
       #########################################################################
       # Build Docker image

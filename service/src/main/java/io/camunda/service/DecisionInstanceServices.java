@@ -18,12 +18,11 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.result.DecisionInstanceQueryResultConfig;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
-import io.camunda.util.ObjectBuilder;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
-import java.util.function.Function;
 
 public final class DecisionInstanceServices
     extends SearchQueryService<
@@ -33,18 +32,17 @@ public final class DecisionInstanceServices
 
   public DecisionInstanceServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityHandler,
       final DecisionInstanceSearchClient decisionInstanceSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
-
+    super(brokerClient, securityHandler, authentication);
     this.decisionInstanceSearchClient = decisionInstanceSearchClient;
   }
 
   @Override
   public DecisionInstanceServices withAuthentication(final Authentication authentication) {
     return new DecisionInstanceServices(
-        brokerClient, securityConfiguration, decisionInstanceSearchClient, authentication);
+        brokerClient, securityContextProvider, decisionInstanceSearchClient, authentication);
   }
 
   /**
@@ -55,47 +53,61 @@ public final class DecisionInstanceServices
    */
   @Override
   public SearchQueryResult<DecisionInstanceEntity> search(final DecisionInstanceQuery query) {
-    return baseSearch(
-        q ->
-            q.filter(query.filter())
-                .sort(query.sort())
-                .page(query.page())
-                .resultConfig(
-                    ofNullable(query.resultConfig()).orElseGet(() -> defaultSearchResultConfig())));
+    return decisionInstanceSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication,
+                Authorization.of(a -> a.decisionDefinition().readDecisionInstance())))
+        .searchDecisionInstances(
+            decisionInstanceSearchQuery(
+                q ->
+                    q.filter(query.filter())
+                        .sort(query.sort())
+                        .page(query.page())
+                        .resultConfig(
+                            ofNullable(query.resultConfig())
+                                .orElseGet(this::defaultSearchResultConfig))));
   }
 
   /**
-   * Get a Decision Instance by its key.
+   * Get a Decision Instance by its ID.
    *
-   * @param decisionInstanceKey the key of the Decision Instance
+   * @param decisionInstanceId the ID of the decision instance
    * @return the Decision Instance
-   * @throws NotFoundException if the Decision Instance with the given key does not exist
-   * @throws CamundaSearchException if the Decision Instance with the given key exists more than
-   *     once
+   * @throws NotFoundException if the decision instance with the given ID does not exist
+   * @throws CamundaSearchException if the decision instance with the given ID exists more than once
    */
-  public DecisionInstanceEntity getByKey(final long decisionInstanceKey) {
-    final var result = baseSearch(q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey)));
-    if (result.total() < 1) {
-      throw new NotFoundException(
-          "Decision Instance with decisionInstanceKey=%d not found".formatted(decisionInstanceKey));
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          String.format(
-              "Found Decision Definition with key %d more than once", decisionInstanceKey));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
+  public DecisionInstanceEntity getById(final String decisionInstanceId) {
+    final var result =
+        decisionInstanceSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchDecisionInstances(
+                decisionInstanceSearchQuery(
+                    q -> q.filter(f -> f.decisionInstanceIds(decisionInstanceId))));
+    final var decisionInstanceEntity =
+        getSingleResultOrThrow(result, decisionInstanceId, "Decision instance");
+    final var authorization = Authorization.of(a -> a.decisionDefinition().readDecisionInstance());
+    if (!securityContextProvider.isAuthorized(
+        decisionInstanceEntity.decisionDefinitionId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
     }
+    return decisionInstanceEntity;
   }
 
-  private SearchQueryResult<DecisionInstanceEntity> baseSearch(
-      final Function<DecisionInstanceQuery.Builder, ObjectBuilder<DecisionInstanceQuery>> fn) {
-    return decisionInstanceSearchClient.searchDecisionInstances(
-        decisionInstanceSearchQuery(fn),
-        SecurityContext.of(s -> s.withAuthentication(authentication)));
-  }
-
+  /**
+   * The default config excludes evaluateInputs and evaluateOutputs fields. To include them, the
+   * user must provide a config like
+   *
+   * <pre>
+   *   {
+   *     "includeEvaluatedInputs": true,
+   *     "includeEvaluatedOutputs": true
+   *   }
+   * </pre>
+   *
+   * @return a default config
+   */
   private DecisionInstanceQueryResultConfig defaultSearchResultConfig() {
-    return DecisionInstanceQueryResultConfig.of(
-        r -> r.evaluatedInputs().exclude().evaluatedOutputs().exclude());
+    return DecisionInstanceQueryResultConfig.of(r -> r);
   }
 }

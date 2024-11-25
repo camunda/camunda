@@ -53,6 +53,11 @@
       <artifactId>webapps-common</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+    </dependency>
+
     <!-- SPRING -->
 
     <dependency>
@@ -126,7 +131,7 @@
 
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
-      <artifactId>netty-nio-client</artifactId>
+      <artifactId>apache-client</artifactId>
     </dependency>
 
     <dependency>

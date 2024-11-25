@@ -8,18 +8,19 @@
 package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record IncidentEntity(
-    Long key,
+    Long incidentKey,
     Long processDefinitionKey,
-    String bpmnProcessId,
+    String processDefinitionId,
     Long processInstanceKey,
     ErrorType errorType,
     String errorMessage,
     String flowNodeId,
     Long flowNodeInstanceKey,
-    String creationTime,
+    OffsetDateTime creationTime,
     IncidentState state,
     Long jobKey,
     String treePath,
@@ -37,6 +38,7 @@ public record IncidentEntity(
     UNKNOWN,
     IO_MAPPING_ERROR,
     JOB_NO_RETRIES,
+    EXECUTION_LISTENER_NO_RETRIES,
     CONDITION_ERROR,
     EXTRACT_VALUE_ERROR,
     CALLED_ELEMENT_ERROR,

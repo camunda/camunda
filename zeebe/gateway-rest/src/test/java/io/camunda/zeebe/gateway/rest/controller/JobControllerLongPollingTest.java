@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.any;
 import com.jayway.jsonpath.JsonPath;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.JobServices;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
@@ -360,7 +361,10 @@ public class JobControllerLongPollingTest extends RestControllerTest {
         final BrokerClient brokerClient,
         final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
       return new JobServices<>(
-          brokerClient, new SecurityConfiguration(), activateJobsHandler, null);
+          brokerClient,
+          new SecurityContextProvider(new SecurityConfiguration(), null),
+          activateJobsHandler,
+          null);
     }
   }
 }

@@ -16,7 +16,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.CommonsModuleConfiguration;
-import io.camunda.application.sources.DefaultObjectMapperConfiguration;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
@@ -42,11 +41,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 @SpringBootTest(
-    classes = {
-      CommonsModuleConfiguration.class,
-      BrokerModuleConfiguration.class,
-      DefaultObjectMapperConfiguration.class
-    },
+    classes = {CommonsModuleConfiguration.class, BrokerModuleConfiguration.class},
     properties = {"spring.profiles.active=broker,auth-basic"})
 @WebAppConfiguration
 @AutoConfigureMockMvc

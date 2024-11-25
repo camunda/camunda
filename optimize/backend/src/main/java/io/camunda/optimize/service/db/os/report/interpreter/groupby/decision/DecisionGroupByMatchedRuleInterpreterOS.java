@@ -67,7 +67,7 @@ public class DecisionGroupByMatchedRuleInterpreterOS extends AbstractDecisionGro
                     b ->
                         b.size(
                                 configurationService
-                                    .getElasticSearchConfiguration()
+                                    .getOpenSearchConfiguration()
                                     .getAggregationBucketLimit())
                             .field(MATCHED_RULES)))
             .aggregations(distributedByInterpreter.createAggregations(context, query))
@@ -93,11 +93,13 @@ public class DecisionGroupByMatchedRuleInterpreterOS extends AbstractDecisionGro
     compositeCommandResult.setGroups(matchedRules);
   }
 
+  @Override
   public DecisionDistributedByNoneInterpreterOS getDistributedByInterpreter() {
-    return this.distributedByInterpreter;
+    return distributedByInterpreter;
   }
 
+  @Override
   public DecisionViewInterpreterFacadeOS getViewInterpreter() {
-    return this.viewInterpreter;
+    return viewInterpreter;
   }
 }

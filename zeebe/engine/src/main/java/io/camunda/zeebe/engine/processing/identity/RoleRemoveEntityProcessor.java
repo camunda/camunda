@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.state.immutable.MappingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -32,6 +33,7 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
 
   private final RoleState roleState;
   private final UserState userState;
+  private final MappingState mappingState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
@@ -42,12 +44,14 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   public RoleRemoveEntityProcessor(
       final RoleState roleState,
       final UserState userState,
+      final MappingState mappingState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final CommandDistributionBehavior commandDistributionBehavior) {
     this.roleState = roleState;
     this.userState = userState;
+    this.mappingState = mappingState;
     this.authCheckBehavior = authCheckBehavior;
     this.keyGenerator = keyGenerator;
     stateWriter = writers.state();
@@ -75,7 +79,9 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
+              authorizationRequest.getPermissionType(),
+              authorizationRequest.getResourceType(),
+              "role name '%s'".formatted(persistedRecord.get().getName()));
       rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
       return;
@@ -111,9 +117,10 @@ public class RoleRemoveEntityProcessor implements DistributedTypedRecordProcesso
   }
 
   private boolean isEntityPresent(final long entityKey, final EntityType entityType) {
-    if (EntityType.USER == entityType) {
-      return userState.getUser(entityKey).isPresent();
-    }
-    return false;
+    return switch (entityType) {
+      case USER -> userState.getUser(entityKey).isPresent();
+      case MAPPING -> mappingState.get(entityKey).isPresent();
+      default -> false;
+    };
   }
 }

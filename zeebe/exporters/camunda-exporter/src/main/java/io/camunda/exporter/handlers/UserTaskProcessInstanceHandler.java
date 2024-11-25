@@ -40,9 +40,9 @@ public class UserTaskProcessInstanceHandler
 
   @Override
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
-    return record.getIntent().name().equals(ELEMENT_ACTIVATING.name())
+    return record.getIntent().equals(ELEMENT_ACTIVATING)
         && record.getValue().getBpmnElementType() != null
-        && record.getValue().getBpmnElementType().name().equals(BpmnElementType.PROCESS.name());
+        && record.getValue().getBpmnElementType().equals(BpmnElementType.PROCESS);
   }
 
   @Override
@@ -69,5 +69,10 @@ public class UserTaskProcessInstanceHandler
   @Override
   public void flush(final TaskProcessInstanceEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
+  }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
   }
 }

@@ -47,7 +47,13 @@ public class UpdateRoleMultiPartitionTest {
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .filter(
+                    record ->
+                        record.getValueType() == ValueType.ROLE
+                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
+                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
+                                    == RoleIntent.UPDATE)))
         .extracting(
             io.camunda.zeebe.protocol.record.Record::getIntent,
             io.camunda.zeebe.protocol.record.Record::getRecordType,
@@ -102,11 +108,11 @@ public class UpdateRoleMultiPartitionTest {
   @Test
   public void distributionShouldNotOvertakeOtherCommandsInSameQueue() {
     // when
-    final var name = UUID.randomUUID().toString();
-    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
     for (int partitionId = 2; partitionId <= PARTITION_COUNT; partitionId++) {
       interceptRoleCreateForPartition(partitionId);
     }
+    final var name = UUID.randomUUID().toString();
+    final var roleKey = engine.role().newRole(name).create().getValue().getRoleKey();
     engine.role().updateRole(roleKey).withName(name + "-updated").update();
 
     // Increase time to trigger a redistribution

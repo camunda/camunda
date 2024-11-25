@@ -97,7 +97,8 @@ public class MultiPartitionDeploymentLifecycleTest {
                 .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED))
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
-        .containsExactly(DeploymentIntent.CREATE, ProcessIntent.CREATED, DeploymentIntent.CREATED);
+        .containsSubsequence(
+            DeploymentIntent.CREATE, ProcessIntent.CREATED, DeploymentIntent.CREATED);
 
     assertThat(
             RecordingExporter.records()
@@ -105,7 +106,8 @@ public class MultiPartitionDeploymentLifecycleTest {
                 .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED))
                 .collect(Collectors.toList()))
         .extracting(Record::getIntent)
-        .containsExactly(DeploymentIntent.CREATE, ProcessIntent.CREATED, DeploymentIntent.CREATED);
+        .containsSubsequence(
+            DeploymentIntent.CREATE, ProcessIntent.CREATED, DeploymentIntent.CREATED);
   }
 
   @Test
@@ -137,7 +139,7 @@ public class MultiPartitionDeploymentLifecycleTest {
                 .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED)))
         .describedAs("Has created DMN resources on partition 2")
         .extracting(Record::getIntent)
-        .containsExactly(
+        .containsSubsequence(
             DeploymentIntent.CREATE,
             DecisionRequirementsIntent.CREATED,
             DecisionIntent.CREATED,
@@ -149,7 +151,7 @@ public class MultiPartitionDeploymentLifecycleTest {
                 .limit(r -> r.getIntent().equals(DeploymentIntent.CREATED)))
         .describedAs("Has created DMN resources on partition 3")
         .extracting(Record::getIntent)
-        .containsExactly(
+        .containsSubsequence(
             DeploymentIntent.CREATE,
             DecisionRequirementsIntent.CREATED,
             DecisionIntent.CREATED,
@@ -216,6 +218,59 @@ public class MultiPartitionDeploymentLifecycleTest {
         .describedAs("Expect second command to be rejected")
         .containsExactlyInAnyOrder(
             RecordType.COMMAND, RecordType.COMMAND, RecordType.COMMAND_REJECTION);
+  }
+
+  @Test
+  public void shouldRejectDeploymentDistributionWhenAlreadyCreated() {
+    // given
+    engine.pauseProcessing(2);
+    engine.pauseProcessing(3);
+
+    engine
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess("shouldReDistributeAfterRecovery")
+                .startEvent()
+                .endEvent()
+                .done())
+        .expectCreated()
+        .deploy();
+
+    RecordingExporter.records()
+        .withPartitionId(2)
+        .withValueType(ValueType.DEPLOYMENT)
+        .withIntent(DeploymentIntent.CREATE)
+        .await();
+
+    // first one is skipped
+    engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // continue to add time to the clock until the deployment is re-distributed
+              engine.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+              // todo: could benefit from RecordingExporter without
+              assertThat(
+                      RecordingExporter.records()
+                          .withPartitionId(2)
+                          .withValueType(ValueType.DEPLOYMENT)
+                          .withIntent(DeploymentIntent.CREATE)
+                          .limit(2))
+                  .hasSize(2);
+            });
+
+    // when
+    engine.resumeProcessing(2);
+    engine.resumeProcessing(3);
+
+    // then
+    assertThat(RecordingExporter.records().withPartitionId(2).onlyCommandRejections().limit(1))
+        .describedAs("Expect deployment distribution on partition 2 to be rejected")
+        .isNotEmpty();
+
+    assertThat(RecordingExporter.records().withPartitionId(3).onlyCommandRejections().limit(1))
+        .describedAs("Expect deployment distribution on partition 3 to be rejected")
+        .isNotEmpty();
   }
 
   @Test

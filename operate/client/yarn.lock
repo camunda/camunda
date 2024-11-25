@@ -1200,10 +1200,10 @@
     inherits-browser "^0.1.0"
     tiny-svg "^3.0.1"
 
-"@bpmn-io/feel-editor@^1.8.0":
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-editor/-/feel-editor-1.8.0.tgz#78c8032dacd5db60a295169fea61c3889a9a7fa2"
-  integrity sha512-R7phLKsdlNzzzdkBPYuE1iddnnfXoeJ4YsZ4vddMzOfUsc/8VdgeoY4RJ3o4/wWzfhapUKjAhEc9b8LSPTXuGw==
+"@bpmn-io/feel-editor@^1.9.1":
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-editor/-/feel-editor-1.9.1.tgz#2abf7e5046a3f344e383cd2a0abce35a55b1b18f"
+  integrity sha512-UxSORdh5cwKM4fib4f9ov6J1/BHGpQVNtA+wPyEdKQyCyz3wqwE2/xe5wneVR1j5QFC5m2Na8nTy4a1TDFvZTw==
   dependencies:
     "@bpmn-io/feel-lint" "^1.3.0"
     "@codemirror/autocomplete" "^6.16.2"
@@ -1224,10 +1224,10 @@
     "@codemirror/language" "^6.10.0"
     lezer-feel "^1.2.3"
 
-"@camunda/camunda-composite-components@0.9.0":
-  version "0.9.0"
-  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.9.0.tgz#be3c86e51581de07ec231b5b744a33456e1feb9a"
-  integrity sha512-kFsTBoZHBanQa9Ec0CbTW+ZkfJcKAHzBYHkfX1nFxZjeWCsKsBv7olv9woePLrxG/WE0a0NtQA6lHbVhga0nPA==
+"@camunda/camunda-composite-components@0.11.0":
+  version "0.11.0"
+  resolved "https://registry.yarnpkg.com/@camunda/camunda-composite-components/-/camunda-composite-components-0.11.0.tgz#ce1f81fd9afb828d92605d93ec7abf5411395231"
+  integrity sha512-o0H4LnzWrLJmA61tvTA3m5XwbVuH8QlVEO1C8bHXeT0T0ApR8pLqhJu2iTVaKHwD2NWULI1wYnnxr01XWZ+tFA==
   dependencies:
     jwt-decode "4.0.0"
     react-error-boundary "4.0.13"
@@ -1266,18 +1266,25 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/elements@11.54.0":
-  version "11.54.0"
-  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.54.0.tgz#bd01055f71911c0994330ec8a514c0e041d43149"
-  integrity sha512-H6Di3udRyQSZ8I0kyQoVOG8wFxCiJhuEprZ0Xhug6HcYdLtIFiUHyTTZohx7rkesNDmwOOJwd88Nvu5hHuaAtg==
+"@carbon/colors@^11.28.0":
+  version "11.28.0"
+  resolved "https://registry.yarnpkg.com/@carbon/colors/-/colors-11.28.0.tgz#0df713187a3f527f2a2b99624ab305e734d38dad"
+  integrity sha512-zmNJk5Ec453aL3bk9RRSmM+dkVbyVMvUuKd6szJCOWLoqBFBXbd3PDRZO0AZeHp/Iel9sBRf1gUYej1BJ/5+hw==
   dependencies:
-    "@carbon/colors" "^11.27.0"
-    "@carbon/grid" "^11.28.0"
-    "@carbon/icons" "^11.50.0"
-    "@carbon/layout" "^11.27.0"
-    "@carbon/motion" "^11.23.0"
-    "@carbon/themes" "^11.41.0"
-    "@carbon/type" "^11.32.0"
+    "@ibm/telemetry-js" "^1.5.0"
+
+"@carbon/elements@11.57.0":
+  version "11.57.0"
+  resolved "https://registry.yarnpkg.com/@carbon/elements/-/elements-11.57.0.tgz#ad7c9208587e12ba7cfecea24c9a3820e901ce97"
+  integrity sha512-9vs/7mMWduwo/YtcbII5CJsaVHhQ+hL3l/d3iqalWcNfEb06xDCghZy8ZSez7j0fHwh4WAGCisjkYw/tegVN+Q==
+  dependencies:
+    "@carbon/colors" "^11.28.0"
+    "@carbon/grid" "^11.29.0"
+    "@carbon/icons" "^11.53.0"
+    "@carbon/layout" "^11.28.0"
+    "@carbon/motion" "^11.24.0"
+    "@carbon/themes" "^11.43.0"
+    "@carbon/type" "^11.33.0"
     "@ibm/telemetry-js" "^1.5.0"
 
 "@carbon/feature-flags@^0.20.0":
@@ -1293,6 +1300,14 @@
   integrity sha512-J0E8gGYOOlNfKB4Omks9fJdAI5CmzWF6JvCDndTCcpq58By1atQt9n1C1jvo8iHf84ZDoU1Vd6+ZB9u4fXKdNg==
   dependencies:
     "@carbon/layout" "^11.27.0"
+    "@ibm/telemetry-js" "^1.5.0"
+
+"@carbon/grid@^11.29.0":
+  version "11.29.0"
+  resolved "https://registry.yarnpkg.com/@carbon/grid/-/grid-11.29.0.tgz#783bec6503f8a0812d4951a49d93677558969226"
+  integrity sha512-SAJhTexN6TjbItcUczOqhzgHBGXLhvUhlTdyqj+wzUH0tqEN8g6gLp+1sn9+rL+kV4obSb/7bdSESZtwQr/tQg==
+  dependencies:
+    "@carbon/layout" "^11.28.0"
     "@ibm/telemetry-js" "^1.5.0"
 
 "@carbon/icon-helpers@^10.48.0":
@@ -1311,10 +1326,10 @@
     "@ibm/telemetry-js" "^1.5.0"
     prop-types "^15.7.2"
 
-"@carbon/icons@^11.50.0":
-  version "11.50.0"
-  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.50.0.tgz#70ef27651c622cd7ad1cee357d67e9eced5342c9"
-  integrity sha512-C2sVOaaiNypzcgEZ47MN33yQye9NEWTLrYvwFHRg9DbhvB++70zJp8TvwOLGs84LA3LRCmyaHLjPOqCiuOTurQ==
+"@carbon/icons@^11.53.0":
+  version "11.53.0"
+  resolved "https://registry.yarnpkg.com/@carbon/icons/-/icons-11.53.0.tgz#511fe8be40ee9dc611859ec6dfe97d462d956cf8"
+  integrity sha512-hX9jt/bTz0Hkfh0eKQ2AiXZ/rRu8o8ZGAQyeWnQcWtmKJ/X90+JQX71Nho88Alwjoi1IKdEdSRnzN+9sTvmuQA==
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
@@ -1325,10 +1340,24 @@
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/motion@^11.18.0", "@carbon/motion@^11.23.0":
+"@carbon/layout@^11.28.0":
+  version "11.28.0"
+  resolved "https://registry.yarnpkg.com/@carbon/layout/-/layout-11.28.0.tgz#7bcff327518c05e6a9e9e5f54bb11f2c3d7c4685"
+  integrity sha512-Yl0Dsxs00EgAaCKpZCXgebuf9BwiBK66a1Oiao6D12p3ViciZ4L18mlRgOPBcDlolP2tUtncz48TlfkWC097hQ==
+  dependencies:
+    "@ibm/telemetry-js" "^1.5.0"
+
+"@carbon/motion@^11.18.0":
   version "11.23.0"
   resolved "https://registry.yarnpkg.com/@carbon/motion/-/motion-11.23.0.tgz#df91c6d8dd75466983282b62206f6c8b508dc3a6"
   integrity sha512-zPxO/lp9FaHET967NHTbQ7pvmqATIQcsiM8WxzNuF2UUNlw6oRL/LMro1eZC9OgKAnyTXRUoxdtYphMhFOXWpA==
+  dependencies:
+    "@ibm/telemetry-js" "^1.5.0"
+
+"@carbon/motion@^11.24.0":
+  version "11.24.0"
+  resolved "https://registry.yarnpkg.com/@carbon/motion/-/motion-11.24.0.tgz#0ec14cba5e7974d2b08f63d1216d566c54d7deed"
+  integrity sha512-JtsSQ3DgVqZXpOdKthetUi5Tp94jkWffgxgrEylbNYErITNt7PeSF6YTXnqtSldk/dUCBkfD1kXkfH1NAxrr1w==
   dependencies:
     "@ibm/telemetry-js" "^1.5.0"
 
@@ -1376,7 +1405,7 @@
     "@ibm/plex" "6.0.0-next.6"
     "@ibm/telemetry-js" "^1.5.0"
 
-"@carbon/themes@^11.36.0", "@carbon/themes@^11.41.0":
+"@carbon/themes@^11.36.0":
   version "11.41.0"
   resolved "https://registry.yarnpkg.com/@carbon/themes/-/themes-11.41.0.tgz#a713f41e20b47be2cf3952f2df7a14708923ca7d"
   integrity sha512-IhNXgbajpy0ktvO8zCBFDGARTUBDH+PrKqigg9H8B42UwfBXRIdSr8exCd5pvY9YQ0b+cM6JKQHEAm/SrfyUDw==
@@ -1387,6 +1416,17 @@
     "@ibm/telemetry-js" "^1.5.0"
     color "^4.0.0"
 
+"@carbon/themes@^11.43.0":
+  version "11.43.0"
+  resolved "https://registry.yarnpkg.com/@carbon/themes/-/themes-11.43.0.tgz#a7286ea6d3f89a75a1c8579c44f37da1b29d9e04"
+  integrity sha512-iBDxHVn1y7QYKVCeBqMjLzryDl5mUG2C67KQbJqGqCfYMKI8L+dkw6KmeeWUYv8rhRhqZq27mm+AODchXO0zcw==
+  dependencies:
+    "@carbon/colors" "^11.28.0"
+    "@carbon/layout" "^11.28.0"
+    "@carbon/type" "^11.33.0"
+    "@ibm/telemetry-js" "^1.5.0"
+    color "^4.0.0"
+
 "@carbon/type@^11.27.0", "@carbon/type@^11.32.0":
   version "11.32.0"
   resolved "https://registry.yarnpkg.com/@carbon/type/-/type-11.32.0.tgz#6f808201f3a6d914069a375eddc9618ebfb6313d"
@@ -1394,6 +1434,15 @@
   dependencies:
     "@carbon/grid" "^11.28.0"
     "@carbon/layout" "^11.27.0"
+    "@ibm/telemetry-js" "^1.5.0"
+
+"@carbon/type@^11.33.0":
+  version "11.33.0"
+  resolved "https://registry.yarnpkg.com/@carbon/type/-/type-11.33.0.tgz#c09de4da5e0ccee69f683aa66067ee35730d188e"
+  integrity sha512-v3lfot0vcHNw6WDe32ap3ewpMGwUqhZ6z56sN11jzngRrWVPFgA9U7NciuoylFw301l2htJuZu0dBS2F4ViCXQ==
+  dependencies:
+    "@carbon/grid" "^11.29.0"
+    "@carbon/layout" "^11.28.0"
     "@ibm/telemetry-js" "^1.5.0"
 
 "@codemirror/autocomplete@^6.16.2":
@@ -1596,10 +1645,10 @@
     libxmljs2 "^0.31 || ^0.32 || ^0.33"
     xmlbuilder2 "^3.0.2"
 
-"@cyclonedx/webpack-plugin@3.13.0":
-  version "3.13.0"
-  resolved "https://registry.yarnpkg.com/@cyclonedx/webpack-plugin/-/webpack-plugin-3.13.0.tgz#3c056dc4d8e74740d5441279fc560d4b2c0eb44f"
-  integrity sha512-iY//zT44BNl9MxbA6w5o7QmPjXFOWvfXTVsww1/cDzVREe2NEmzfqXk8L/SUEBtQyGTY+2WOJIcSN5lLSz4xXw==
+"@cyclonedx/webpack-plugin@3.15.0":
+  version "3.15.0"
+  resolved "https://registry.yarnpkg.com/@cyclonedx/webpack-plugin/-/webpack-plugin-3.15.0.tgz#445b139f68811c65e1fff92e93d235f549323462"
+  integrity sha512-n9dfj1zeTqCEPxis8qakfzC0RaCN6BozcbFo+4X2HIRBSBlwSHBQmOLWpdbNtV9/UrMMnhQ0W4ihWwQaM+tN/A==
   dependencies:
     "@cyclonedx/cyclonedx-library" "^6.11.0"
     normalize-package-data "^3||^4||^5||^6"
@@ -2582,10 +2631,10 @@
     lz-string "^1.5.0"
     pretty-format "^27.0.2"
 
-"@testing-library/jest-dom@6.5.0":
-  version "6.5.0"
-  resolved "https://registry.yarnpkg.com/@testing-library/jest-dom/-/jest-dom-6.5.0.tgz#50484da3f80fb222a853479f618a9ce5c47bfe54"
-  integrity sha512-xGGHpBXYSHUUr6XsKBfs85TWlYKpTc37cSBBVrXcib2MkHLboWlkClhWF37JKlDb9KEq3dHs+f2xR7XJEWGBxA==
+"@testing-library/jest-dom@6.6.3":
+  version "6.6.3"
+  resolved "https://registry.yarnpkg.com/@testing-library/jest-dom/-/jest-dom-6.6.3.tgz#26ba906cf928c0f8172e182c6fe214eb4f9f2bd2"
+  integrity sha512-IteBhl4XqYNkM54f4ejhLRJiZNqcSCoXUOG2CPK7qbD322KjQozM4kHQOfkG2oln9b9HTYqs+Sae8vBATubxxA==
   dependencies:
     "@adobe/css-tools" "^4.4.0"
     aria-query "^5.0.0"
@@ -2912,10 +2961,10 @@
   dependencies:
     undici-types "~6.19.2"
 
-"@types/node@20.16.12":
-  version "20.16.12"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.16.12.tgz#61cc9be049584b472fa31e465aa0ab3c090dac56"
-  integrity sha512-LfPFB0zOeCeCNQV3i+67rcoVvoN5n0NVuR2vLG0O5ySQMgchuZlC4lgz546ZOJyDtj5KIgOxy+lacOimfqZAIA==
+"@types/node@20.17.6":
+  version "20.17.6"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-20.17.6.tgz#6e4073230c180d3579e8c60141f99efdf5df0081"
+  integrity sha512-VEI7OdvK2wP7XHnsuXbAJnEpEkF6NjSN45QJlL4VGqZSXsnicpesdTWsg9RISeSdYd3yeRj/y3k5KGjUXYnFwQ==
   dependencies:
     undici-types "~6.19.2"
 
@@ -5205,28 +5254,28 @@ dlv@^1.1.3:
   resolved "https://registry.yarnpkg.com/dlv/-/dlv-1.1.3.tgz#5c198a8a11453596e751494d49874bc7732f2e79"
   integrity sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==
 
-dmn-js-boxed-expression@^16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-boxed-expression/-/dmn-js-boxed-expression-16.7.1.tgz#a1c1f5798e562d85aa3d657fb7520e86b5455f26"
-  integrity sha512-/u7axnD7aPDJkTT2o2aoMLsQJnO8Qo5IEwcXcA+Z3U1mjDU2rosSj/eknmQr6mLBiYatPeWi1sbyYqF3cnu2fw==
+dmn-js-boxed-expression@^16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-boxed-expression/-/dmn-js-boxed-expression-16.8.2.tgz#74b5ff5a6870d531a2c1fa0f57eda18e82f8766f"
+  integrity sha512-pvwobJfn/Rb3Td3NHsfa/d5gDgh03LbV4+mUxFcC8/s9rrjzs9Xn89ak2z2qUTSdzk7XGAF8+6EXnh5OrxFz/A==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     diagram-js "^14.7.1"
-    dmn-js-shared "^16.7.1"
+    dmn-js-shared "^16.8.2"
     inferno "~5.6.3"
     min-dash "^4.0.0"
     min-dom "^4.2.1"
     table-js "^9.1.0"
 
-dmn-js-decision-table@^16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.7.1.tgz#4cd0c325b58a9bee94f896a38f895e7342d1108c"
-  integrity sha512-2Xkbc/zxMTduMBMZ1lsr5qktFudGYjmrTxR0WEImfEUjKnVqIZHRSWcY8aGEfTMtAdHtYLsldG9vozZfHqmTRQ==
+dmn-js-decision-table@^16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.8.2.tgz#e0b88ed0273d48921bd5bcc77a949a2910c81821"
+  integrity sha512-U3/2bPLh5s4jdbJ8ComWN8zmXneGKE11X1ww9cl1LQ8oIlPKfynYuq+HPyqmeH5Z3wE955K9bHRCrShIl84N9Q==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     css.escape "^1.5.1"
     diagram-js "^14.7.1"
-    dmn-js-shared "^16.7.1"
+    dmn-js-shared "^16.8.2"
     escape-html "^1.0.3"
     inferno "~5.6.3"
     min-dash "^4.0.0"
@@ -5234,40 +5283,40 @@ dmn-js-decision-table@^16.7.1:
     selection-ranges "^3.0.2"
     table-js "^9.1.0"
 
-dmn-js-drd@^16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-16.7.1.tgz#f92713c7ffac25d2390fd138a6ed09d09ad34aff"
-  integrity sha512-lU0zHqH+gOiMXtXxw7I1LCCa84nGKDiIOIgqBvYVT26oqZd/a6w4rsfbIhFYM4TEtXPqFqo+hzRTPqmXg0zpeA==
+dmn-js-drd@^16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-16.8.2.tgz#54bf1329182cdaf73fdcb5ec0d41d405089989fe"
+  integrity sha512-LIZlpeMZi5ICWDTgtdZhBu/OezIbpZ52j5imAZDGMEPhFZDvDnSB+S6HbkbESHZCkM++WnCNO1IZRNq2lW8Egw==
   dependencies:
     diagram-js "^14.7.1"
     diagram-js-direct-editing "^3.0.1"
-    dmn-js-shared "^16.7.1"
+    dmn-js-shared "^16.8.2"
     inherits-browser "^0.1.0"
     min-dash "^4.0.0"
     min-dom "^4.2.1"
     object-refs "^0.4.0"
     tiny-svg "^3.1.2"
 
-dmn-js-literal-expression@^16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-16.7.1.tgz#2c072c939b9c033e5adc48f1402602a90e1e65a8"
-  integrity sha512-k6mP1ubztixZGM2N2W3bHeFZ677b2yU+uPi2GECRfttnl+j+XxCkCylvY1xtbewjs7lV9sX/d90lAXEK9H9VQg==
+dmn-js-literal-expression@^16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-16.8.2.tgz#cb5059411c7b657c482a80a202dd3789e7efa23f"
+  integrity sha512-rHNUXOdrwbVm+JiROrNzvV0EP6yB/LCpDc79k/3TDBR995ZhfABkl9SDXID+OUq8wd0dqJ4cEmG8/UXKTdPWsQ==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     diagram-js "^14.7.1"
-    dmn-js-shared "^16.7.1"
+    dmn-js-shared "^16.8.2"
     escape-html "^1.0.3"
     inferno "~5.6.3"
     min-dash "^4.0.0"
     min-dom "^4.2.1"
     table-js "^9.1.0"
 
-dmn-js-shared@^16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-16.7.1.tgz#dae8b3c0f9aa8b29ea25c87224419d6092767bc7"
-  integrity sha512-pX9JI1PRTHO1j+RccvpFaYN0zXoSpAgXnfHGTQbgfmnKGvJ8DAxU6V9aulRKs8+ORn//hczTlTD+25Z9Zq7XeA==
+dmn-js-shared@^16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-16.8.2.tgz#7801931f037b303e3f275be6d3928c3e5877c3bf"
+  integrity sha512-bZazgVHmgp3D39Kofad6btkua78K7/0o51TWUT+aHw87Ynjtsj4sVW/jSzsu+GziUP2MdtoibKufC6t+Jrgs6g==
   dependencies:
-    "@bpmn-io/feel-editor" "^1.8.0"
+    "@bpmn-io/feel-editor" "^1.9.1"
     diagram-js "^14.7.1"
     didi "^10.2.2"
     dmn-moddle "^10.0.0"
@@ -5279,16 +5328,16 @@ dmn-js-shared@^16.7.1:
     selection-update "^0.1.2"
     table-js "^9.1.0"
 
-dmn-js@16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.7.1.tgz#af2f3308980f392495314e92799a24e088b40e31"
-  integrity sha512-TPlMNFsuR9Px665IyR/Z1zNinQ7PNO8kFEdgLCCysfEdXTWR5vrMYCSWg9GkRZ7D47EJJgnVoBFA8setjbZeQg==
+dmn-js@16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.8.2.tgz#6294fe88db6dd5c3c10a9ea178b4bff4c45c90b7"
+  integrity sha512-7vJdOJbxVLJDtneQipbL+6qeIy8PF0z2Sq3M5f85/oMc0F/S2itL1R/eICm3Aoo+/Th2dDiluWSLctePmmDi7w==
   dependencies:
-    dmn-js-boxed-expression "^16.7.1"
-    dmn-js-decision-table "^16.7.1"
-    dmn-js-drd "^16.7.1"
-    dmn-js-literal-expression "^16.7.1"
-    dmn-js-shared "^16.7.1"
+    dmn-js-boxed-expression "^16.8.2"
+    dmn-js-decision-table "^16.8.2"
+    dmn-js-drd "^16.8.2"
+    dmn-js-literal-expression "^16.8.2"
+    dmn-js-shared "^16.8.2"
 
 dmn-moddle@^10.0.0:
   version "10.0.0"

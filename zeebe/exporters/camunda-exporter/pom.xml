@@ -19,6 +19,12 @@
 
   <name>Camunda Exporter</name>
   <dependencies>
+
+    <dependency>
+      <groupId>com.github.ben-manes.caffeine</groupId>
+      <artifactId>caffeine</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-exporter-api</artifactId>
@@ -52,6 +58,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapps-schema</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-common</artifactId>
     </dependency>
 
     <dependency>
@@ -100,6 +111,26 @@
     </dependency>
 
     <dependency>
+      <groupId>com.google.code.findbugs</groupId>
+      <artifactId>jsr305</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>junit-jupiter</artifactId>
       <scope>test</scope>
@@ -108,12 +139,6 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>elasticsearch</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -152,6 +177,7 @@
       <artifactId>zeebe-exporter-test</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol-test-util</artifactId>
@@ -167,6 +193,30 @@
     <dependency>
       <groupId>org.opensearch</groupId>
       <artifactId>opensearch-testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opensearch.client</groupId>
+      <artifactId>opensearch-rest-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
       <scope>test</scope>
     </dependency>
 

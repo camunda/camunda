@@ -29,7 +29,7 @@ jobs:
             secret/data/github.com/organizations/camunda NEXUS_USR;
             secret/data/github.com/organizations/camunda NEXUS_PSW;
       - name: Setup Java
-        uses: actions/setup-java@b36c23c0d998641eff861008f374ee103c25ac73 # v4
+        uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4
         with:
           distribution: "adopt"
           java-version: "21"
@@ -54,4 +54,4 @@ jobs:
              }]
           mirrors: '[{"url": "https://repository.nexus.camunda.cloud/content/groups/internal/", "id": "camunda-nexus", "mirrorOf": "*", "name": "camunda Nexus"}]'
       - name: Run checks
-        run: ./mvnw -f optimize/pom.xml -T1C -B -D skipTests -P !autoFormat,checkFormat verify
+        run: ./mvnw -f optimize/pom.xml -T1C -B -D skipTests -P !autoFormat,checkFormat,skipFrontendBuild verify

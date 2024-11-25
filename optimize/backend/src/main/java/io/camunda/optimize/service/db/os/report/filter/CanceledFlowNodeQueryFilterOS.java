@@ -7,11 +7,11 @@
  */
 package io.camunda.optimize.service.db.os.report.filter;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.nested;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.or;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.term;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.nested;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.or;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.term;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_CANCELED;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_ID;
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.FLOW_NODE_INSTANCES;

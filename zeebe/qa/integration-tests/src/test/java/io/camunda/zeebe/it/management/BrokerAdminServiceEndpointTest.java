@@ -31,7 +31,7 @@ public class BrokerAdminServiceEndpointTest {
   static RequestSpecification brokerServerSpec;
 
   @TestZeebe
-  private static TestStandaloneBroker broker =
+  private static final TestStandaloneBroker BROKER =
       new TestStandaloneBroker().withProperty("management.server.base-path", "/foo");
 
   private static final String EXPECTED_PARTITIONS_JSON =
@@ -40,7 +40,7 @@ public class BrokerAdminServiceEndpointTest {
       {
         "1": {
           "role": "LEADER",
-          "processedPosition": -1,
+          "processedPosition": 1,
           "snapshotId": null,
           "processedPositionInSnapshot": null,
           "streamProcessorPhase": "PROCESSING",
@@ -57,38 +57,38 @@ public class BrokerAdminServiceEndpointTest {
             "status": "HEALTHY",
             "componentsState": "HEALTHY",
             "children": [
-              {
-                "id": "ZeebePartition-1",
-                "name": "ZeebePartition-1",
-                "status": "HEALTHY",
-                "children": []
-              },
-              {
-                "id": "raft-partition-partition-1",
-                "name": "raft-partition-partition-1",
-                "status": "HEALTHY",
-                "children": []
-              },
-              {
-                "id": "SnapshotDirector-1",
-                "name": "SnapshotDirector-1",
-                "status": "HEALTHY",
-                "children": []
-              },
-              {
-                "id": "StreamProcessor-1",
-                "name": "StreamProcessor-1",
-                "status": "HEALTHY",
-                "children": []
-              },
-              {
-                "id": "Exporter-1",
-                "name": "Exporter-1",
-                "status": "HEALTHY",
-                "children": []
-              }
-            ]
-          }
+                {
+                 "id": "SnapshotDirector-1",
+                 "name": "SnapshotDirector-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "ZeebePartitionHealth-1",
+                 "name": "ZeebePartitionHealth-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "StreamProcessor-1",
+                 "name": "StreamProcessor-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "Exporter-1",
+                 "name": "Exporter-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "RaftPartition-1",
+                 "name": "RaftPartition-1",
+                 "status": "HEALTHY",
+                 "children": []
+               }
+             ]
+           }
         }
       }
       """;
@@ -97,7 +97,7 @@ public class BrokerAdminServiceEndpointTest {
       """
       {
         "role": "LEADER",
-        "processedPosition": -1,
+        "processedPosition": 1,
         "snapshotId": null,
         "processedPositionInSnapshot": null,
         "streamProcessorPhase": "PROCESSING",
@@ -109,43 +109,43 @@ public class BrokerAdminServiceEndpointTest {
           "modification": {}
         },
         "health": {
-          "id": "Partition-1",
-          "name": "Partition-1",
-          "status": "HEALTHY",
-          "componentsState": "HEALTHY",
-          "children": [
-            {
-              "id": "ZeebePartition-1",
-              "name": "ZeebePartition-1",
-              "status": "HEALTHY",
-              "children": []
-            },
-            {
-              "id": "raft-partition-partition-1",
-              "name": "raft-partition-partition-1",
-              "status": "HEALTHY",
-              "children": []
-            },
-            {
-              "id": "SnapshotDirector-1",
-              "name": "SnapshotDirector-1",
-              "status": "HEALTHY",
-              "children": []
-            },
-            {
-              "id": "StreamProcessor-1",
-              "name": "StreamProcessor-1",
-              "status": "HEALTHY",
-              "children": []
-            },
-            {
-              "id": "Exporter-1",
-              "name": "Exporter-1",
-              "status": "HEALTHY",
-              "children": []
-            }
-          ]
-        }
+             "id": "Partition-1",
+             "name": "Partition-1",
+             "status": "HEALTHY",
+             "componentsState": "HEALTHY",
+             "children": [
+               {
+                 "id": "SnapshotDirector-1",
+                 "name": "SnapshotDirector-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "ZeebePartitionHealth-1",
+                 "name": "ZeebePartitionHealth-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "StreamProcessor-1",
+                 "name": "StreamProcessor-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "Exporter-1",
+                 "name": "Exporter-1",
+                 "status": "HEALTHY",
+                 "children": []
+               },
+               {
+                 "id": "RaftPartition-1",
+                 "name": "RaftPartition-1",
+                 "status": "HEALTHY",
+                 "children": []
+               }
+             ]
+           }
       }
       """;
 
@@ -166,7 +166,7 @@ public class BrokerAdminServiceEndpointTest {
         new RequestSpecBuilder()
             .setContentType(ContentType.JSON)
             // set URL explicitly since we want to ensure the mapping is correct
-            .setBaseUri("http://localhost:" + broker.mappedPort(TestZeebePort.MONITORING) + "/foo")
+            .setBaseUri("http://localhost:" + BROKER.mappedPort(TestZeebePort.MONITORING) + "/foo")
             .addFilter(new ResponseLoggingFilter())
             .addFilter(new RequestLoggingFilter())
             .build();

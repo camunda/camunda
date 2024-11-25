@@ -8,8 +8,8 @@
 package io.camunda.tasklist.entities.listview;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.util.Map;
 
 public class UserTaskListViewEntity {

@@ -8,11 +8,14 @@
 package io.camunda.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
+import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.List;
@@ -26,7 +29,7 @@ public class DefaultExporterResourceProviderTest {
   void shouldHaveCorrectFullQualifiedNamesForIndexAndTemplates(final ExporterConfiguration config) {
     final var provider = new DefaultExporterResourceProvider();
 
-    provider.init(config);
+    provider.init(config, mock(ExporterEntityCacheProvider.class), new SimpleMeterRegistry());
 
     provider
         .getIndexDescriptors()

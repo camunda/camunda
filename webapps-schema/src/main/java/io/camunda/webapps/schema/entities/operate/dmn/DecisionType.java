@@ -7,7 +7,6 @@
  */
 package io.camunda.webapps.schema.entities.operate.dmn;
 
-import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,15 +17,15 @@ public enum DecisionType {
   UNSPECIFIED,
   UNKNOWN;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeType.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionType.class);
 
-  public static DecisionType fromZeebeDecisionType(String decisionType) {
+  public static DecisionType fromZeebeDecisionType(final String decisionType) {
     if (decisionType == null) {
       return UNSPECIFIED;
     }
     try {
       return DecisionType.valueOf(decisionType);
-    } catch (IllegalArgumentException ex) {
+    } catch (final IllegalArgumentException ex) {
       LOGGER.error(
           "Decision type not found for value [{}]. UNKNOWN type will be assigned.", decisionType);
       return UNKNOWN;

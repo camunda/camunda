@@ -24,66 +24,47 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
+import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
-import java.time.Duration;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.util.List;
 import java.util.UUID;
-import org.elasticsearch.client.RestClient;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 @AutoCloseResources
 @Testcontainers
 @ZeebeIntegration
 public class JobUpdateAuthorizationIT {
 
-  private static final DockerImageName ELASTIC_IMAGE =
-      DockerImageName.parse("docker.elastic.co/elasticsearch/elasticsearch")
-          .withTag(RestClient.class.getPackage().getImplementationVersion());
-
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      new ElasticsearchContainer(ELASTIC_IMAGE)
-          // use JVM option files to avoid overwriting default options set by the ES container class
-          .withClasspathResourceMapping(
-              "elasticsearch-fast-startup.options",
-              "/usr/share/elasticsearch/config/jvm.options.d/ elasticsearch-fast-startup.options",
-              BindMode.READ_ONLY)
-          // can be slow in CI
-          .withStartupTimeout(Duration.ofMinutes(5))
-          .withEnv("action.auto_create_index", "true")
-          .withEnv("xpack.security.enabled", "false")
-          .withEnv("xpack.watcher.enabled", "false")
-          .withEnv("xpack.ml.enabled", "false")
-          .withEnv("action.destructive_requires_name", "false");
+      TestSearchContainers.createDefeaultElasticsearchContainer();
 
   private static final String PROCESS_ID = "processId";
+  private static AuthorizationsUtil authUtil;
+  @AutoCloseResource private static ZeebeClient defaultUserClient;
+  private static long jobKey;
 
   @TestZeebe(autoStart = false)
-  private static final TestStandaloneBroker BROKER =
+  private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
           .withBrokerConfig(
               b -> b.getExperimental().getEngine().getAuthorizations().setEnableAuthorization(true))
           .withAdditionalProfile(Profile.AUTH_BASIC);
 
-  private static AuthorizationsUtil authUtil;
-  private static ZeebeClient defaultUserClient;
-  private static long jobKey;
-
-  @BeforeAll
-  static void beforeAll() {
-    BROKER.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
-    BROKER.start();
+  @BeforeEach
+  void beforeEach() {
+    broker.withCamundaExporter("http://" + CONTAINER.getHttpHostAddress());
+    broker.start();
 
     final var defaultUsername = "demo";
-    defaultUserClient = createClient(BROKER, defaultUsername, "demo");
-    authUtil = new AuthorizationsUtil(BROKER, defaultUserClient, CONTAINER.getHttpHostAddress());
+    defaultUserClient = createClient(broker, defaultUsername, "demo");
+    authUtil = new AuthorizationsUtil(broker, defaultUserClient, CONTAINER.getHttpHostAddress());
 
     authUtil.awaitUserExistsInElasticsearch(defaultUsername);
     defaultUserClient
@@ -132,7 +113,9 @@ public class JobUpdateAuthorizationIT {
         username,
         password,
         new Permissions(
-            ResourceTypeEnum.PROCESS_DEFINITION, PermissionTypeEnum.UPDATE, List.of(PROCESS_ID)));
+            ResourceTypeEnum.PROCESS_DEFINITION,
+            PermissionTypeEnum.UPDATE_PROCESS_INSTANCE,
+            List.of(PROCESS_ID)));
 
     try (final var client = authUtil.createClient(username, password)) {
       // when then
@@ -160,7 +143,8 @@ public class JobUpdateAuthorizationIT {
           .hasMessageContaining("title: UNAUTHORIZED")
           .hasMessageContaining("status: 401")
           .hasMessageContaining(
-              "Unauthorized to perform operation 'UPDATE' on resource 'PROCESS_DEFINITION'");
+              "Unauthorized to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION' with BPMN process id '%s'",
+              PROCESS_ID);
     }
   }
 }

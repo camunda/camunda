@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
@@ -63,7 +64,13 @@ public class UpdateUserMultiPartitionTest {
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2))
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
+                .filter(
+                    record ->
+                        record.getValueType() == ValueType.USER
+                            || (record.getValueType() == ValueType.COMMAND_DISTRIBUTION
+                                && ((CommandDistributionRecordValue) record.getValue()).getIntent()
+                                    == UserIntent.UPDATE)))
         .extracting(
             Record::getIntent,
             Record::getRecordType,
@@ -124,7 +131,7 @@ public class UpdateUserMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());

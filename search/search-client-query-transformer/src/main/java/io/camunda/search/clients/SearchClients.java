@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients;
 
+import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
@@ -15,9 +16,11 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -28,14 +31,17 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
+import java.util.List;
 
 public class SearchClients
     implements AuthorizationSearchClient,
@@ -48,120 +54,225 @@ public class SearchClients
         ProcessDefinitionSearchClient,
         ProcessInstanceSearchClient,
         RoleSearchClient,
+        TenantSearchClient,
         UserTaskSearchClient,
         UserSearchClient,
-        VariableSearchClient {
+        VariableSearchClient,
+        MappingSearchClient {
 
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
+  private final SecurityContext securityContext;
 
   public SearchClients(
-      final DocumentBasedSearchClient searchClient, final boolean isCamundaExporterEnabled) {
+      final DocumentBasedSearchClient searchClient,
+      final boolean isCamundaExporterEnabled,
+      final String prefix) {
+    this(
+        searchClient,
+        ServiceTransformers.newInstance(isCamundaExporterEnabled, prefix),
+        SecurityContext.withoutAuthentication());
+  }
+
+  private SearchClients(
+      final DocumentBasedSearchClient searchClient,
+      final ServiceTransformers transformers,
+      final SecurityContext securityContext) {
     this.searchClient = searchClient;
-    transformers = ServiceTransformers.newInstance(isCamundaExporterEnabled);
+    this.transformers = transformers;
+    this.securityContext = securityContext;
   }
 
   @Override
   public SearchQueryResult<AuthorizationEntity> searchAuthorizations(
-      final AuthorizationQuery filter, final SecurityContext securityContext) {
+      final AuthorizationQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, AuthorizationEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity.class);
+  }
+
+  @Override
+  public List<AuthorizationEntity> findAllAuthorizations(final AuthorizationQuery filter) {
+    final var executor =
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.findAll(
+        filter, io.camunda.webapps.schema.entities.usermanagement.AuthorizationEntity.class);
+  }
+
+  @Override
+  public SearchClients withSecurityContext(final SecurityContext securityContext) {
+    return new SearchClients(searchClient, transformers, securityContext);
+  }
+
+  @Override
+  public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
+    throw new UnsupportedOperationException("Not implemented");
   }
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
-      final DecisionDefinitionQuery filter, final SecurityContext securityContext) {
+      final DecisionDefinitionQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, DecisionDefinitionEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter,
+        io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity.class);
   }
 
   @Override
   public SearchQueryResult<DecisionInstanceEntity> searchDecisionInstances(
-      final DecisionInstanceQuery filter, final SecurityContext securityContext) {
+      final DecisionInstanceQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, DecisionInstanceEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity.class);
   }
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
-      final DecisionRequirementsQuery filter, final SecurityContext securityContext) {
+      final DecisionRequirementsQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, DecisionRequirementsEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter,
+        io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionRequirementsEntity.class);
   }
 
   @Override
   public SearchQueryResult<FlowNodeInstanceEntity> searchFlowNodeInstances(
-      final FlowNodeInstanceQuery filter, final SecurityContext securityContext) {
+      final FlowNodeInstanceQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, FlowNodeInstanceEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity.class);
   }
 
   @Override
-  public SearchQueryResult<FormEntity> searchForms(
-      final FormQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, FormEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(filter, io.camunda.webapps.schema.entities.tasklist.FormEntity.class);
   }
 
   @Override
-  public SearchQueryResult<IncidentEntity> searchIncidents(
-      final IncidentQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, IncidentEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(filter, io.camunda.webapps.schema.entities.operate.IncidentEntity.class);
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> searchProcessDefinitions(
-      final ProcessDefinitionQuery filter, final SecurityContext securityContext) {
+      final ProcessDefinitionQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, ProcessDefinitionEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(filter, io.camunda.webapps.schema.entities.operate.ProcessEntity.class);
   }
 
   @Override
   public SearchQueryResult<ProcessInstanceEntity> searchProcessInstances(
-      final ProcessInstanceQuery filter, final SecurityContext securityContext) {
+      final ProcessInstanceQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, ProcessInstanceEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter,
+        io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity.class);
   }
 
   @Override
-  public SearchQueryResult<RoleEntity> searchRoles(
-      final RoleQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, RoleEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.usermanagement.RoleEntity.class);
   }
 
   @Override
-  public SearchQueryResult<UserEntity> searchUsers(
-      final UserQuery filter, final SecurityContext securityContext) {
-    final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, UserEntity.class);
+  public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
+    return new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext)
+        .search(filter, io.camunda.webapps.schema.entities.usermanagement.TenantEntity.class);
   }
 
   @Override
-  public SearchQueryResult<UserTaskEntity> searchUserTasks(
-      final UserTaskQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, UserTaskEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
   }
 
   @Override
-  public SearchQueryResult<VariableEntity> searchVariables(
-      final VariableQuery filter, final SecurityContext securityContext) {
+  public SearchQueryResult<UserTaskEntity> searchUserTasks(final UserTaskQuery filter) {
     final var executor =
-        new SearchClientBasedQueryExecutor(searchClient, transformers, securityContext);
-    return executor.search(filter, VariableEntity.class);
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(filter, io.camunda.webapps.schema.entities.tasklist.TaskEntity.class);
+  }
+
+  @Override
+  public SearchQueryResult<VariableEntity> searchVariables(final VariableQuery filter) {
+    final var executor =
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(filter, io.camunda.webapps.schema.entities.operate.VariableEntity.class);
   }
 }

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import static io.camunda.zeebe.gateway.rest.Loggers.REST_LOGGER;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.DecisionDefinitionQuery;
@@ -61,7 +60,6 @@ public class DecisionDefinitionQueryController {
                   .withAuthentication(RequestMapper.getAuthentication())
                   .getByKey(decisionDefinitionKey)));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getDecisionDefinition.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -79,7 +77,6 @@ public class DecisionDefinitionQueryController {
                   .withAuthentication(RequestMapper.getAuthentication())
                   .getDecisionDefinitionXml(decisionDefinitionKey));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in getDecisionDefinitionXml.", e);
       return mapErrorToResponse(e);
     }
   }
@@ -94,7 +91,6 @@ public class DecisionDefinitionQueryController {
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toDecisionDefinitionSearchQueryResponse(result));
     } catch (final Exception e) {
-      REST_LOGGER.debug("An exception occurred in searchDecisionDefinitions.", e);
       return mapErrorToResponse(e);
     }
   }

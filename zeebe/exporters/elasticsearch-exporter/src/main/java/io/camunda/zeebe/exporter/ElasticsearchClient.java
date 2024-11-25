@@ -26,6 +26,7 @@ import io.camunda.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer.Sample;
 import java.io.IOException;
@@ -99,7 +100,15 @@ class ElasticsearchClient implements AutoCloseable {
     client.close();
   }
 
-  public void index(final Record<?> record, final RecordSequence recordSequence) {
+  /**
+   * Indexes a record to the batch of records that will be sent to Elasticsearch
+   *
+   * @param record the record that will be the source of the document
+   * @param recordSequence the sequence number of the record
+   * @return true if the record was appended to the batch, false if the record is already indexed in
+   *     the batch because only one copy of the record is allowed in the batch
+   */
+  public boolean index(final Record<?> record, final RecordSequence recordSequence) {
     if (bulkIndexRequest.isEmpty()) {
       flushLatencyMeasurement = metrics.startFlushLatencyMeasurement();
     }
@@ -109,7 +118,7 @@ class ElasticsearchClient implements AutoCloseable {
             indexRouter.indexFor(record),
             indexRouter.idFor(record),
             indexRouter.routingFor(record));
-    bulkIndexRequest.index(action, record, recordSequence);
+    return bulkIndexRequest.index(action, record, recordSequence);
   }
 
   /**
@@ -155,11 +164,15 @@ class ElasticsearchClient implements AutoCloseable {
    * @return true if request was acknowledged
    */
   public boolean putIndexTemplate(final ValueType valueType) {
-    final String templateName = indexRouter.indexPrefixForValueType(valueType);
+    return putIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+  }
+
+  public boolean putIndexTemplate(final ValueType valueType, final String version) {
+    final String templateName = indexRouter.indexPrefixForValueType(valueType, version);
     final Template template =
         templateReader.readIndexTemplate(
             valueType,
-            indexRouter.searchPatternForValueType(valueType),
+            indexRouter.searchPatternForValueType(valueType, version),
             indexRouter.aliasNameForValueType(valueType));
 
     return putIndexTemplate(templateName, template);

@@ -11,10 +11,9 @@ import static io.camunda.optimize.service.db.report.plan.process.ProcessDistribu
 import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
 
 import io.camunda.optimize.dto.optimize.IdentityType;
-import io.camunda.optimize.service.AssigneeCandidateGroupService;
 import io.camunda.optimize.service.DefinitionService;
-import io.camunda.optimize.service.LocalizationService;
 import io.camunda.optimize.service.db.es.report.interpreter.view.process.ProcessViewInterpreterFacadeES;
+import io.camunda.optimize.service.db.report.interpreter.distributedby.process.identity.ProcessDistributedByIdentityInterpreterHelper;
 import io.camunda.optimize.service.db.report.plan.process.ProcessDistributedBy;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.condition.ElasticSearchCondition;
@@ -26,29 +25,41 @@ import org.springframework.stereotype.Component;
 @Conditional(ElasticSearchCondition.class)
 public class ProcessDistributedByAssigneeInterpreterES
     extends AbstractProcessDistributedByIdentityInterpreterES {
-
   private final ProcessViewInterpreterFacadeES viewInterpreter;
   private final ConfigurationService configurationService;
-  private final LocalizationService localizationService;
   private final DefinitionService definitionService;
-  private final AssigneeCandidateGroupService assigneeCandidateGroupService;
+  private final ProcessDistributedByIdentityInterpreterHelper helper;
 
   public ProcessDistributedByAssigneeInterpreterES(
       final ProcessViewInterpreterFacadeES viewInterpreter,
       final ConfigurationService configurationService,
-      final LocalizationService localizationService,
       final DefinitionService definitionService,
-      final AssigneeCandidateGroupService assigneeCandidateGroupService) {
+      final ProcessDistributedByIdentityInterpreterHelper helper) {
+    super();
     this.viewInterpreter = viewInterpreter;
     this.configurationService = configurationService;
-    this.localizationService = localizationService;
     this.definitionService = definitionService;
-    this.assigneeCandidateGroupService = assigneeCandidateGroupService;
+    this.helper = helper;
   }
 
   @Override
-  public Set<ProcessDistributedBy> getSupportedDistributedBys() {
-    return Set.of(PROCESS_DISTRIBUTED_BY_ASSIGNEE);
+  protected ProcessViewInterpreterFacadeES getViewInterpreter() {
+    return viewInterpreter;
+  }
+
+  @Override
+  protected ConfigurationService getConfigurationService() {
+    return configurationService;
+  }
+
+  @Override
+  protected ProcessDistributedByIdentityInterpreterHelper getHelper() {
+    return helper;
+  }
+
+  @Override
+  protected DefinitionService getDefinitionService() {
+    return definitionService;
   }
 
   @Override
@@ -61,23 +72,8 @@ public class ProcessDistributedByAssigneeInterpreterES
     return IdentityType.USER;
   }
 
-  public ProcessViewInterpreterFacadeES getViewInterpreter() {
-    return this.viewInterpreter;
-  }
-
-  public ConfigurationService getConfigurationService() {
-    return this.configurationService;
-  }
-
-  public LocalizationService getLocalizationService() {
-    return this.localizationService;
-  }
-
-  public DefinitionService getDefinitionService() {
-    return this.definitionService;
-  }
-
-  public AssigneeCandidateGroupService getAssigneeCandidateGroupService() {
-    return this.assigneeCandidateGroupService;
+  @Override
+  public Set<ProcessDistributedBy> getSupportedDistributedBys() {
+    return Set.of(PROCESS_DISTRIBUTED_BY_ASSIGNEE);
   }
 }

@@ -25,9 +25,7 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.AddPermissionsResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
-import io.camunda.zeebe.client.protocol.rest.PermissionDTO;
 import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import java.time.Duration;
@@ -41,49 +39,42 @@ public class AddPermissionsCommandImpl
         AddPermissionsCommandStep3,
         AddPermissionsCommandStep4 {
 
-  private final String path;
-  private final AuthorizationPatchRequest request;
-  private final JsonMapper jsonMapper;
+  private final PatchAuthorizationCommand delegate;
   private final HttpClient httpClient;
+  private final JsonMapper jsonMapper;
+  private final String path;
   private final RequestConfig.Builder httpRequestConfig;
-  private PermissionDTO currentPermission;
 
   public AddPermissionsCommandImpl(
       final long ownerKey, final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
-    httpRequestConfig = httpClient.newRequestConfig();
-    request = new AuthorizationPatchRequest().action(ActionEnum.ADD);
     path = "/authorizations/" + ownerKey;
+    httpRequestConfig = httpClient.newRequestConfig();
+    delegate = new PatchAuthorizationCommand(ActionEnum.ADD);
   }
 
   @Override
   public AddPermissionsCommandStep2 resourceType(final ResourceTypeEnum resourceType) {
-    ArgumentUtil.ensureNotNull("resourceType", resourceType);
-    request.resourceType(resourceType);
+    delegate.resourceType(resourceType);
     return this;
   }
 
   @Override
   public AddPermissionsCommandStep3 permission(final PermissionTypeEnum permissionType) {
-    ArgumentUtil.ensureNotNull("permissionType", permissionType);
-    currentPermission = new PermissionDTO();
-    currentPermission.permissionType(permissionType);
-    request.addPermissionsItem(currentPermission);
+    delegate.permission(permissionType);
     return this;
   }
 
   @Override
   public AddPermissionsCommandStep4 resourceIds(final List<String> resourceIds) {
-    ArgumentUtil.ensureNotNullOrEmpty("resourceIds", resourceIds);
-    resourceIds.forEach(this::resourceId);
+    delegate.resourceIds(resourceIds);
     return this;
   }
 
   @Override
   public AddPermissionsCommandStep4 resourceId(final String resourceId) {
-    ArgumentUtil.ensureNotNullNorEmpty("resourceId", resourceId);
-    currentPermission.addResourceIdsItem(resourceId);
+    delegate.resourceId(resourceId);
     return this;
   }
 
@@ -97,7 +88,8 @@ public class AddPermissionsCommandImpl
   @Override
   public ZeebeFuture<AddPermissionsResponse> send() {
     final HttpZeebeFuture<AddPermissionsResponse> result = new HttpZeebeFuture<>();
-    httpClient.patch(path, jsonMapper.toJson(request), httpRequestConfig.build(), result);
+    httpClient.patch(
+        path, jsonMapper.toJson(delegate.getRequest()), httpRequestConfig.build(), result);
     return result;
   }
 }

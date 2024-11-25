@@ -7,17 +7,17 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearchQuery;
+
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.entities.ProcessDefinitionEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.ProcessDefinitionQuery;
-import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Optional;
 
@@ -26,51 +26,46 @@ public class ProcessDefinitionServices
         ProcessDefinitionServices, ProcessDefinitionQuery, ProcessDefinitionEntity> {
 
   private final ProcessDefinitionSearchClient processDefinitionSearchClient;
-  private final FormServices formServices;
 
   public ProcessDefinitionServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
-      final FormServices formServices,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
-    this.formServices = formServices;
   }
 
   @Override
   public SearchQueryResult<ProcessDefinitionEntity> search(final ProcessDefinitionQuery query) {
-    return processDefinitionSearchClient.searchProcessDefinitions(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+    return processDefinitionSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.processDefinition().read())))
+        .searchProcessDefinitions(query);
   }
 
   @Override
   public ProcessDefinitionServices withAuthentication(final Authentication authentication) {
     return new ProcessDefinitionServices(
-        brokerClient,
-        securityConfiguration,
-        processDefinitionSearchClient,
-        formServices,
-        authentication);
+        brokerClient, securityContextProvider, processDefinitionSearchClient, authentication);
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {
-    final SearchQueryResult<ProcessDefinitionEntity> result =
-        search(
-            SearchQueryBuilders.processDefinitionSearchQuery()
-                .filter(f -> f.processDefinitionKeys(processDefinitionKey))
-                .build());
-    if (result.total() < 1) {
-      throw new NotFoundException(
-          String.format("Process definition with key %d not found", processDefinitionKey));
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          String.format(
-              "Found Process definition with key %d more than once", processDefinitionKey));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
+    final var result =
+        processDefinitionSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchProcessDefinitions(
+                processDefinitionSearchQuery(
+                    q -> q.filter(f -> f.processDefinitionKeys(processDefinitionKey))));
+    final var processDefinitionEntity =
+        getSingleResultOrThrow(result, processDefinitionKey, "Process definition");
+    final var authorization = Authorization.of(a -> a.processDefinition().read());
+    if (!securityContextProvider.isAuthorized(
+        processDefinitionEntity.processDefinitionId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
     }
+    return processDefinitionEntity;
   }
 
   public Optional<String> getProcessDefinitionXml(final Long processDefinitionKey) {

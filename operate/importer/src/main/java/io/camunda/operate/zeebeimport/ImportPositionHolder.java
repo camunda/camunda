@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.zeebeimport;
 
-import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ImportStore;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -59,12 +59,12 @@ public class ImportPositionHolder {
     scheduleImportPositionUpdateTask();
   }
 
-  public void setConcurrencyMode(boolean concurrencyMode) {
-    importStore.setConcurrencyMode(concurrencyMode);
-  }
-
   public boolean getConcurrencyMode() {
     return importStore.getConcurrencyMode();
+  }
+
+  public void setConcurrencyMode(final boolean concurrencyMode) {
+    importStore.setConcurrencyMode(concurrencyMode);
   }
 
   public void scheduleImportPositionUpdateTask() {
@@ -128,7 +128,8 @@ public class ImportPositionHolder {
             importPosition
                 .setPosition(lastProcessedPosition.getPosition())
                 .setSequence(lastProcessedPosition.getSequence())
-                .setIndexName(lastProcessedPosition.getIndexName());
+                .setIndexName(lastProcessedPosition.getIndexName())
+                .setCompleted(lastProcessedPosition.getCompleted());
           }
           inflightImportPositions.put(key, importPosition);
         });

@@ -16,6 +16,7 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,27 +41,29 @@ public class CamundaExporterITInvocationProvider
         BeforeAllCallback,
         AfterEachCallback {
 
-  public static final String CONFIG_PREFIX = "camunda-record";
+  public static final String CONFIG_PREFIX = "custom-prefix";
+  protected SearchClientAdapter elsClientAdapter;
+  protected SearchClientAdapter osClientAdapter;
   private final ElasticsearchContainer elsContainer =
-      TestSupport.createDefeaultElasticsearchContainer();
-  private final OpensearchContainer<?> osContainer = TestSupport.createDefaultOpensearchContainer();
+      TestSearchContainers.createDefeaultElasticsearchContainer();
+  private final OpensearchContainer<?> osContainer =
+      TestSearchContainers.createDefaultOpensearchContainer();
   private ElasticsearchClient elsClient;
   private OpenSearchClient osClient;
-  private SearchClientAdapter elsClientAdapter;
-  private SearchClientAdapter osClientAdapter;
-
   private final List<AutoCloseable> closeables = new ArrayList<>();
 
-  private ExporterConfiguration getConfigWithConnectionDetails(
+  protected ExporterConfiguration getConfigWithConnectionDetails(
       final ConnectionTypes connectionType) {
     final var config = new ExporterConfiguration();
     config.getIndex().setPrefix(CONFIG_PREFIX);
     config.getBulk().setSize(1); // force flushing on the first record
     if (connectionType == ELASTICSEARCH) {
       config.getConnect().setUrl(elsContainer.getHttpHostAddress());
+
     } else if (connectionType == OPENSEARCH) {
       config.getConnect().setUrl(osContainer.getHttpHostAddress());
     }
+    config.getConnect().setClusterName(connectionType.name());
     config.getConnect().setType(connectionType.getType());
     return config;
   }
@@ -115,6 +118,42 @@ public class CamundaExporterITInvocationProvider
         invocationContext(getConfigWithConnectionDetails(ELASTICSEARCH), elsClientAdapter));
   }
 
+  protected ParameterResolver exporterConfigResolver(final ExporterConfiguration config) {
+    return new ParameterResolver() {
+
+      @Override
+      public boolean supportsParameter(
+          final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
+        return parameterCtx.getParameter().getType().equals(ExporterConfiguration.class);
+      }
+
+      @Override
+      public Object resolveParameter(
+          final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
+        return config;
+      }
+    };
+  }
+
+  protected ParameterResolver clientAdapterResolver(final SearchClientAdapter clientAdapter) {
+    return new ParameterResolver() {
+
+      @Override
+      public boolean supportsParameter(
+          final ParameterContext parameterContext, final ExtensionContext extensionContext)
+          throws ParameterResolutionException {
+        return parameterContext.getParameter().getType().equals(SearchClientAdapter.class);
+      }
+
+      @Override
+      public Object resolveParameter(
+          final ParameterContext parameterContext, final ExtensionContext extensionContext)
+          throws ParameterResolutionException {
+        return clientAdapter;
+      }
+    };
+  }
+
   private TestTemplateInvocationContext invocationContext(
       final ExporterConfiguration config, final SearchClientAdapter clientAdapter) {
     return new TestTemplateInvocationContext() {
@@ -126,37 +165,7 @@ public class CamundaExporterITInvocationProvider
 
       @Override
       public List<Extension> getAdditionalExtensions() {
-        return asList(
-            new ParameterResolver() {
-
-              @Override
-              public boolean supportsParameter(
-                  final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
-                return parameterCtx.getParameter().getType().equals(ExporterConfiguration.class);
-              }
-
-              @Override
-              public Object resolveParameter(
-                  final ParameterContext parameterCtx, final ExtensionContext extensionCtx) {
-                return config;
-              }
-            },
-            new ParameterResolver() {
-
-              @Override
-              public boolean supportsParameter(
-                  final ParameterContext parameterContext, final ExtensionContext extensionContext)
-                  throws ParameterResolutionException {
-                return parameterContext.getParameter().getType().equals(SearchClientAdapter.class);
-              }
-
-              @Override
-              public Object resolveParameter(
-                  final ParameterContext parameterContext, final ExtensionContext extensionContext)
-                  throws ParameterResolutionException {
-                return clientAdapter;
-              }
-            });
+        return asList(exporterConfigResolver(config), clientAdapterResolver(clientAdapter));
       }
     };
   }

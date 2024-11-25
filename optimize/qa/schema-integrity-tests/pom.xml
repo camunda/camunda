@@ -18,9 +18,8 @@
 
   <dependencies>
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-high-level-client</artifactId>
-      <version>7.17.25</version>
+      <groupId>co.elastic.clients</groupId>
+      <artifactId>elasticsearch-java</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -114,13 +113,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch</artifactId>
-      <version>${elasticsearch.client.test.version}</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
       <version>4.4.16</version>
@@ -137,7 +129,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.15.1</version>
+      <version>2.18.0</version>
       <scope>test</scope>
     </dependency>
 

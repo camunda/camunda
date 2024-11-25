@@ -75,39 +75,34 @@ jobs:
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
-            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_USR;
-            secret/data/products/operate/ci/github-actions REGISTRY_HUB_DOCKER_COM_PSW;
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
 
       #########################################################################
       # Setup and configure Maven, Docker, and settings
-      - uses: ./.github/actions/build-operate-setup
+      - uses: ./.github/actions/setup-build
         name: Build setup
         with:
-          nexusUsername: ${{ steps.secrets.outputs.NEXUS_USR }}
-          nexusPassword: ${{ steps.secrets.outputs.NEXUS_PSW }}
+          dockerhub: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
+          harbor: true
+          java-distribution: adopt
+          maven-cache-key-modifier: operate
+          maven-version: 3.8.6
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       #########################################################################
       # Build Operate frontend
       - name: Build frontend
-        uses: ./.github/actions/build-operate-fe
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
 
       #########################################################################
       # Build: maven artifacts and Docker images
       - name: Build Maven
         run: |
           ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -D skipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
-
-      #########################################################################
-      # Docker login and image tagging
-      - name: Login to Harbor docker registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.NEXUS_USR }}
-          password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       #########################################################################
       # Build Docker image
@@ -124,15 +119,6 @@ jobs:
           dockerfile: operate.Dockerfile
 
       #########################################################################
-      # Docker login for snapshot deployment
-      - name: Login to docker hub
-        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
-        uses: docker/login-action@v3
-        with:
-          username: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_USR }}
-          password: ${{ steps.secrets.outputs.REGISTRY_HUB_DOCKER_COM_PSW }}
-
-      #########################################################################
       # Build SNAPSHOT Docker image
       - name: Build SNAPSHOT Docker image
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
@@ -143,13 +129,6 @@ jobs:
           push: true
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: operate.Dockerfile
-
-      #########################################################################
-      # Deploy Nexus SNAPSHOT
-      - name: Deploy - Nexus SNAPSHOT
-        if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
-        run: |
-          ./mvnw -f operate org.sonatype.plugins:nexus-staging-maven-plugin:deploy-staged -DskipTests=true -P -docker,skipFrontendBuild -B -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
 
       #########################################################################
       # Collect information about build status for central statistics with CI Analytics

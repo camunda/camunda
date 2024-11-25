@@ -28,7 +28,7 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
         && (shouldInstallOnTransition(targetRole, context.getCurrentRole())
             || targetRole == Role.INACTIVE)) {
       final var director = context.getSnapshotDirector();
-      context.getComponentHealthMonitor().removeComponent(director.getName());
+      context.getComponentHealthMonitor().removeComponent(director);
       context.getRaftPartition().getServer().removeCommittedEntryListener(director);
       final ActorFuture<Void> future = director.closeAsync();
       future.onComplete(
@@ -79,7 +79,7 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
           (ok, error) -> {
             if (error == null) {
               context.setSnapshotDirector(director);
-              context.getComponentHealthMonitor().registerComponent(director.getName(), director);
+              context.getComponentHealthMonitor().registerComponent(director);
               if (targetRole == Role.LEADER) {
                 server.addCommittedEntryListener(director);
               }

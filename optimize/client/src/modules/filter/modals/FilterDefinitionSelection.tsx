@@ -46,6 +46,7 @@ export default function FilterDefinitionSelection({
 
   return (
     <div className="FilterDefinitionSelection">
+      {/* @ts-expect-error remove when https://github.com/carbon-design-system/carbon/issues/16993 is fixed */}
       <FilterableMultiSelect
         id="filterDefintionSelection"
         initialSelectedItems={selectedItems}

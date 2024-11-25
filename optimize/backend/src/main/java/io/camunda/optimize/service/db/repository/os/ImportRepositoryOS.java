@@ -10,7 +10,7 @@ package io.camunda.optimize.service.db.repository.os;
 import static io.camunda.optimize.service.db.DatabaseConstants.LIST_FETCH_LIMIT;
 import static io.camunda.optimize.service.db.DatabaseConstants.POSITION_BASED_IMPORT_INDEX_NAME;
 import static io.camunda.optimize.service.db.DatabaseConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.stringTerms;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.stringTerms;
 import static io.camunda.optimize.service.db.schema.index.index.TimestampBasedImportIndex.DB_TYPE_INDEX_REFERS_TO;
 import static java.lang.String.format;
 

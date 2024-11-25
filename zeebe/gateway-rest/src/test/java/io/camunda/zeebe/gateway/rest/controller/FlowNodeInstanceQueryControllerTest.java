@@ -23,6 +23,7 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -40,7 +41,20 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
       """
           {
               "items": [
-                  {}
+                  {
+                   "flowNodeInstanceKey":1,
+                   "processInstanceKey":2,
+                   "processDefinitionKey":3,
+                   "processDefinitionId":"bpmnProcessId",
+                   "startDate": "2023-05-17T00:00:00.000Z",
+                   "endDate":"2023-05-23T00:00:00.000Z",
+                   "flowNodeId":"flowNodeId",
+                   "treePath":"processInstanceKey/flowNodeId",
+                   "type":"SERVICE_TASK",
+                   "state":"ACTIVE",
+                   "hasIncident":false,
+                   "tenantId":"<default>"
+                 }
               ],
               "page": {
                   "totalItems": 1,
@@ -60,14 +74,13 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                       1L,
                       2L,
                       3L,
-                      "2023-05-17",
-                      "2023-05-23",
+                      OffsetDateTime.parse("2023-05-17T00:00:00Z"),
+                      OffsetDateTime.parse("2023-05-23T00:00:00Z"),
                       "flowNodeId",
                       "processInstanceKey/flowNodeId",
                       FlowNodeType.SERVICE_TASK,
                       FlowNodeState.ACTIVE,
                       false,
-                      null,
                       null,
                       "bpmnProcessId",
                       "<default>")))
@@ -81,8 +94,8 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                    "processInstanceKey":5,
                    "processDefinitionKey":17,
                    "processDefinitionId":"complexProcess",
-                   "startDate":"startDate",
-                   "endDate":"endDate",
+                   "startDate": "2023-05-17T10:10:10.000Z",
+                   "endDate":"2023-05-23T10:10:10.000Z",
                    "flowNodeId":"startEvent_1",
                    "treePath":"5/23",
                    "type":"SERVICE_TASK",
@@ -98,15 +111,14 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
           23L,
           5L,
           17L,
-          "startDate",
-          "endDate",
+          OffsetDateTime.parse("2023-05-17T10:10:10Z"),
+          OffsetDateTime.parse("2023-05-23T10:10:10Z"),
           "startEvent_1",
           "5/23",
           FlowNodeType.SERVICE_TASK,
           FlowNodeState.ACTIVE,
           true,
           1234L,
-          null,
           "complexProcess",
           "tenantId");
 

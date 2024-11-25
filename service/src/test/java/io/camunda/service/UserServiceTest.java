@@ -18,7 +18,7 @@ import io.camunda.search.filter.UserFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
@@ -39,17 +39,19 @@ public class UserServiceTest {
   @BeforeEach
   public void before() {
     client = mock(UserSearchClient.class);
+    when(client.withSecurityContext(any())).thenReturn(client);
     brokerClient = mock(BrokerClient.class);
     authentication = mock(Authentication.class);
     userDeleteRequestArgumentCaptor = ArgumentCaptor.forClass(BrokerUserDeleteRequest.class);
-    services = new UserServices(brokerClient, new SecurityConfiguration(), client, authentication);
+    services =
+        new UserServices(brokerClient, mock(SecurityContextProvider.class), client, authentication);
   }
 
   @Test
   public void shouldEmptyQueryReturnUsers() {
     // given
     final var result = mock(SearchQueryResult.class);
-    when(client.searchUsers(any(), any())).thenReturn(result);
+    when(client.searchUsers(any())).thenReturn(result);
 
     final UserFilter filter = new UserFilter.Builder().build();
     final var searchQuery = SearchQueryBuilders.userSearchQuery((b) -> b.filter(filter));

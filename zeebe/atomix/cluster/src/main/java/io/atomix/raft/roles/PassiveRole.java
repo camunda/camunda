@@ -46,6 +46,8 @@ import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.system.Configuration;
+import io.camunda.zeebe.journal.CheckedJournalException;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
@@ -53,6 +55,7 @@ import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.camunda.zeebe.snapshots.SnapshotException.SnapshotAlreadyExistsException;
 import io.camunda.zeebe.snapshots.impl.SnapshotChunkId;
+import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
@@ -84,15 +87,16 @@ public class PassiveRole extends InactiveRole {
 
   @Override
   public CompletableFuture<RaftRole> start() {
-
-    return super.start().thenRun(this::truncateUncommittedEntries).thenApply(v -> this);
+    return super.start()
+        .thenRun((CheckedRunnable.toUnchecked(this::truncateUncommittedEntries)))
+        .thenApply(v -> this);
   }
 
   @Override
   public CompletableFuture<Void> stop() {
     abortPendingSnapshots();
 
-    // as a safe guard, we clean up any orphaned pending snapshots
+    // as a safeguard, we clean up any orphaned pending snapshots
     try {
       raft.getPersistedSnapshotStore().purgePendingSnapshots().join();
     } catch (final Exception e) {
@@ -103,8 +107,7 @@ public class PassiveRole extends InactiveRole {
     return super.stop();
   }
 
-  /** Truncates uncommitted entries from the log. */
-  private void truncateUncommittedEntries() {
+  private void truncateUncommittedEntries() throws CheckedJournalException {
     if (role() == RaftServer.Role.PASSIVE && raft.getLog().getLastIndex() > raft.getCommitIndex()) {
       raft.getLog().deleteAfter(raft.getCommitIndex());
     }
@@ -734,7 +737,14 @@ public class PassiveRole extends InactiveRole {
 
         final boolean failedToAppend = tryToAppend(future, entry, index, lastEntry);
         if (failedToAppend) {
-          flush(lastLogIndex - 1, request.prevLogIndex());
+          try {
+            flush(lastLogIndex - 1, request.prevLogIndex());
+          } catch (final Exception e) {
+            log.warn(
+                "Failed to flush when append failed: lastFlushedIndex={}, prevEntryIndex={}",
+                lastLogIndex - 1,
+                request.prevLogIndex());
+          }
           return;
         }
 
@@ -755,14 +765,25 @@ public class PassiveRole extends InactiveRole {
       log.trace("Committed entries up to index {}", commitIndex);
     }
 
-    // Make sure all entries are flushed before ack to ensure we have persisted what we acknowledge
-    flush(lastLogIndex, request.prevLogIndex());
+    try {
+      //     Make sure all entries are flushed before ack to ensure we have persisted what we
+      //     acknowledge
+      flush(lastLogIndex, request.prevLogIndex());
+    } catch (final Exception e) {
+      log.warn(
+          "Failed to flush appended entries to the log, cannot guarantee durability; leader will retry the append operation",
+          e);
+      // Flush failed, return error to the leader so we can retry.
+      failAppend(request.prevLogIndex(), future);
+      return;
+    }
 
     // Return a successful append response.
     succeedAppend(lastLogIndex, future);
   }
 
-  private void flush(final long lastFlushedIndex, final long previousEntryIndex) {
+  private void flush(final long lastFlushedIndex, final long previousEntryIndex)
+      throws FlushException {
     if (lastFlushedIndex > previousEntryIndex) {
       raft.getLog().flush();
     }
@@ -786,7 +807,11 @@ public class PassiveRole extends InactiveRole {
         // If the last entry term doesn't match the leader's term for the same entry, truncate
         // the log and append the leader's entry.
         if (lastEntry.term() != entry.term()) {
-          raft.getLog().deleteAfter(index - 1);
+          try {
+            raft.getLog().deleteAfter(index - 1);
+          } catch (final FlushException e) {
+            return !failAppend(index - 1, future);
+          }
 
           failedToAppend = !appendEntry(index, entry, future);
         }
@@ -815,6 +840,10 @@ public class PassiveRole extends InactiveRole {
     return appendEntry(index, entry, future);
   }
 
+  /**
+   * @param future to complete in case of errors
+   * @return true if it succeeds, false if it fails
+   */
   private boolean replaceExistingEntry(
       final CompletableFuture<AppendResponse> future,
       final ReplicatableRaftRecord entry,
@@ -837,7 +866,11 @@ public class PassiveRole extends InactiveRole {
       // truncate
       // the log and append the leader's entry.
       if (existingEntry.term() != entry.term()) {
-        raft.getLog().deleteAfter(index - 1);
+        try {
+          raft.getLog().deleteAfter(index - 1);
+        } catch (final FlushException e) {
+          return failAppend(index - 1, future);
+        }
 
         return appendEntry(index, entry, future);
       }
@@ -846,8 +879,11 @@ public class PassiveRole extends InactiveRole {
   }
 
   /**
-   * Attempts to append an entry, returning {@code false} if the append fails due to an {@link
-   * JournalException.OutOfDiskSpace} exception.
+   * Attempts to append an entry
+   *
+   * @return whether the entry was appended successfully.
+   *     <p>returns {@code false} if the append fails due to an {@link
+   *     JournalException.OutOfDiskSpace} exception.
    */
   private boolean appendEntry(
       final long index,

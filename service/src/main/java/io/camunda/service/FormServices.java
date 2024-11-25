@@ -15,9 +15,8 @@ import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import java.util.Optional;
 
@@ -27,22 +26,24 @@ public final class FormServices extends SearchQueryService<FormServices, FormQue
 
   public FormServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final FormSearchClient formSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.formSearchClient = formSearchClient;
   }
 
   @Override
   public FormServices withAuthentication(final Authentication authentication) {
-    return new FormServices(brokerClient, securityConfiguration, formSearchClient, authentication);
+    return new FormServices(
+        brokerClient, securityContextProvider, formSearchClient, authentication);
   }
 
   @Override
   public SearchQueryResult<FormEntity> search(final FormQuery query) {
-    return formSearchClient.searchForms(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+    return formSearchClient
+        .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+        .searchForms(query);
   }
 
   public FormEntity getByKey(final Long key) {

@@ -10,7 +10,7 @@ import React from 'react';
 
 import {format, BACKEND_DATE_FORMAT} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
-import {ErrorPage, Loading, PageTitle} from 'components';
+import {Breadcrumbs, ErrorPage, Loading, PageTitle} from 'components';
 import {evaluateReport} from 'services';
 import {newReport} from 'config';
 
@@ -101,11 +101,6 @@ export class Report extends React.Component {
 
   render() {
     const {report, serverError} = this.state;
-    const hasOpensearchError = serverError?.detailedMessage?.includes('No interpreter registered');
-
-    if (hasOpensearchError) {
-      return <ErrorPage text={t('apiErrors.reportNotSupportedForOpenSearch')} />;
-    }
 
     if (!report && serverError) {
       return <ErrorPage />;
@@ -120,6 +115,7 @@ export class Report extends React.Component {
     return (
       <div className="Report-container">
         <PageTitle pageName={t('report.label')} resourceName={report?.name} isNew={this.isNew()} />
+        <Breadcrumbs />
         {viewMode === 'edit' ? (
           <ReportEdit
             error={serverError}

@@ -12,8 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
-import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.util.j5templates.MockMvcManager;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.rest.BatchOperationRestService;
@@ -21,6 +19,8 @@ import io.camunda.operate.webapp.rest.dto.UserDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.security.UserService;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
@@ -176,49 +176,42 @@ public class BatchOperationRestServiceIT extends OperateSearchAbstractIT {
     final OperationEntity bo1op1 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[0])
-            .setId("11")
             .setState(OperationState.COMPLETED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo1op1.getId(), bo1op1);
     final OperationEntity bo1op2 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[0])
-            .setId("12")
             .setState(OperationState.COMPLETED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo1op2.getId(), bo1op2);
     final OperationEntity bo1op3 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[0])
-            .setId("13")
             .setState(OperationState.COMPLETED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo1op3.getId(), bo1op3);
     final OperationEntity bo1op4 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[0])
-            .setId("14")
             .setState(OperationState.FAILED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo1op4.getId(), bo1op4);
     final OperationEntity bo1op5 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[0])
-            .setId("15")
             .setState(OperationState.FAILED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo1op5.getId(), bo1op5);
     final OperationEntity bo2op1 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[1])
-            .setId("21")
             .setState(OperationState.COMPLETED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo2op1.getId(), bo2op1);
     final OperationEntity bo2op2 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[1])
-            .setId("22")
             .setState(OperationState.COMPLETED);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo2op2.getId(), bo2op2);
@@ -227,7 +220,6 @@ public class BatchOperationRestServiceIT extends OperateSearchAbstractIT {
     final OperationEntity bo3op1 =
         new OperationEntity()
             .setBatchOperationId(TEST_BATCH_OP_IDS[2])
-            .setId("31")
             .setState(OperationState.SENT);
     testSearchRepository.createOrUpdateDocumentFromObject(
         operationIndexName, bo3op1.getId(), bo3op1);

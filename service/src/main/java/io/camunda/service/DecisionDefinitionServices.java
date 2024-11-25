@@ -13,15 +13,13 @@ import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSe
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.entities.DecisionDefinitionEntity;
-import io.camunda.search.entities.DecisionRequirementsEntity;
-import io.camunda.search.exception.CamundaSearchException;
-import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
-import io.camunda.security.auth.SecurityContext;
-import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.search.core.SearchQueryService;
+import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -40,11 +38,11 @@ public final class DecisionDefinitionServices
 
   public DecisionDefinitionServices(
       final BrokerClient brokerClient,
-      final SecurityConfiguration securityConfiguration,
+      final SecurityContextProvider securityContextProvider,
       final DecisionDefinitionSearchClient decisionDefinitionSearchClient,
       final DecisionRequirementSearchClient decisionRequirementSearchClient,
       final Authentication authentication) {
-    super(brokerClient, securityConfiguration, authentication);
+    super(brokerClient, securityContextProvider, authentication);
     this.decisionDefinitionSearchClient = decisionDefinitionSearchClient;
     this.decisionRequirementSearchClient = decisionRequirementSearchClient;
   }
@@ -53,7 +51,7 @@ public final class DecisionDefinitionServices
   public DecisionDefinitionServices withAuthentication(final Authentication authentication) {
     return new DecisionDefinitionServices(
         brokerClient,
-        securityConfiguration,
+        securityContextProvider,
         decisionDefinitionSearchClient,
         decisionRequirementSearchClient,
         authentication);
@@ -61,8 +59,11 @@ public final class DecisionDefinitionServices
 
   @Override
   public SearchQueryResult<DecisionDefinitionEntity> search(final DecisionDefinitionQuery query) {
-    return decisionDefinitionSearchClient.searchDecisionDefinitions(
-        query, SecurityContext.of(s -> s.withAuthentication(authentication)));
+    return decisionDefinitionSearchClient
+        .withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.decisionDefinition().read())))
+        .searchDecisionDefinitions(query);
   }
 
   public SearchQueryResult<DecisionDefinitionEntity> search(
@@ -76,38 +77,32 @@ public final class DecisionDefinitionServices
     final Long decisionRequirementsKey = decisionDefinition.decisionRequirementsKey();
     final var decisionRequirementsQuery =
         decisionRequirementsSearchQuery(
-            q ->
-                q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey))
-                    .resultConfig(r -> r.xml().include()));
-    return decisionRequirementSearchClient
-        .searchDecisionRequirements(
-            decisionRequirementsQuery,
-            SecurityContext.of(s -> s.withAuthentication(authentication)))
-        .items()
-        .stream()
-        .findFirst()
-        .map(DecisionRequirementsEntity::xml)
-        .orElseThrow(
-            () ->
-                new NotFoundException(
-                    "DecisionRequirements with decisionRequirementsKey=%d cannot be found"
-                        .formatted(decisionRequirementsKey)));
+            q -> q.filter(f -> f.decisionRequirementsKeys(decisionRequirementsKey)));
+    final var decisionRequirements =
+        getSingleResultOrThrow(
+            decisionRequirementSearchClient
+                .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+                .searchDecisionRequirements(decisionRequirementsQuery),
+            decisionRequirementsKey,
+            "Decision requirements");
+    return decisionRequirements.xml();
   }
 
   public DecisionDefinitionEntity getByKey(final long decisionKey) {
     final var result =
-        search(
-            decisionDefinitionSearchQuery(
-                q -> q.filter(f -> f.decisionDefinitionKeys(decisionKey))));
-    if (result.total() < 1) {
-      throw new NotFoundException(
-          "Decision Definition with decisionKey=%d not found".formatted(decisionKey));
-    } else if (result.total() > 1) {
-      throw new CamundaSearchException(
-          String.format("Found Decision Definition with key %d more than once", decisionKey));
-    } else {
-      return result.items().stream().findFirst().orElseThrow();
+        decisionDefinitionSearchClient
+            .withSecurityContext(securityContextProvider.provideSecurityContext(authentication))
+            .searchDecisionDefinitions(
+                decisionDefinitionSearchQuery(
+                    q -> q.filter(f -> f.decisionDefinitionKeys(decisionKey))));
+    final var decisionDefinitionEntity =
+        getSingleResultOrThrow(result, decisionKey, "Decision definition");
+    final var authorization = Authorization.of(a -> a.decisionDefinition().read());
+    if (!securityContextProvider.isAuthorized(
+        decisionDefinitionEntity.decisionDefinitionId(), authentication, authorization)) {
+      throw new ForbiddenException(authorization);
     }
+    return decisionDefinitionEntity;
   }
 
   public CompletableFuture<BrokerResponse<DecisionEvaluationRecord>> evaluateDecision(

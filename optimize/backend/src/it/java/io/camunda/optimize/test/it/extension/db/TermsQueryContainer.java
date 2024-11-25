@@ -9,7 +9,7 @@ package io.camunda.optimize.test.it.extension.db;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL;
+import io.camunda.optimize.service.db.os.client.dsl.QueryDSL;
 import java.util.HashMap;
 import java.util.List;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;

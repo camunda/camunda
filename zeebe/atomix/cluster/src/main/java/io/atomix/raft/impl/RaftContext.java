@@ -26,6 +26,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.raft.ElectionTimer;
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
 import io.atomix.raft.RaftCommitListener;
+import io.atomix.raft.RaftException.CommitFailedException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
@@ -73,15 +74,19 @@ import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.exception.UnrecoverableException;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -544,12 +549,24 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
     checkArgument(commitIndex >= 0, "commitIndex must be positive");
     final long previousCommitIndex = this.commitIndex;
     if (commitIndex > previousCommitIndex) {
-      this.commitIndex = commitIndex;
-      raftLog.setCommitIndex(Math.min(commitIndex, raftLog.getLastIndex()));
       if (isLeader()) {
         // leader counts itself in quorum, so in order to commit the leader must persist
-        raftLog.flush();
+        try {
+          raftLog.flush();
+        } catch (final FlushException e) {
+          if (log.isWarnEnabled()) {
+            log.warn(
+                "Failed to flush commit at index %s, resetting journal to %s and stepping down"
+                    .formatted(commitIndex, previousCommitIndex),
+                e);
+          }
+          transition(Role.FOLLOWER);
+          throw new CommitFailedException(
+              "Failed to commit index %s because of a flush error: %s", commitIndex, e);
+        }
       }
+      raftLog.setCommitIndex(Math.min(commitIndex, raftLog.getLastIndex()));
+      this.commitIndex = commitIndex;
       meta.storeCommitIndex(commitIndex);
       final var clusterConfig = cluster.getConfiguration();
       if (clusterConfig != null) {
@@ -636,7 +653,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
       return CompletableFuture.completedFuture(null);
     }
 
-    return CompletableFuture.runAsync(raftLog::forceFlush, threadContext);
+    return CompletableFuture.runAsync(CheckedRunnable.toUnchecked(this::flushLog), threadContext);
   }
 
   /**
@@ -998,8 +1015,12 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    *
    * @return The server name.
    */
-  @Override
   public String getName() {
+    return name;
+  }
+
+  @Override
+  public String componentName() {
     return name;
   }
 
@@ -1254,6 +1275,16 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   public int getSnapshotChunkSize() {
     return snapshotChunkSize;
+  }
+
+  public CompletableFuture<Collection<Path>> getTailSegments(final long index) {
+    final var fut = new CompletableFuture<Collection<Path>>();
+    threadContext.execute(
+        () -> {
+          final var segments = raftLog.getTailSegments(index);
+          fut.complete(segments.values());
+        });
+    return fut;
   }
 
   /** Raft server state. */

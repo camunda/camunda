@@ -33,6 +33,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>webapps-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>operate-importer-8_6</artifactId>
       <scope>runtime</scope>
     </dependency>

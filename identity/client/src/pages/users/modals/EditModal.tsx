@@ -26,7 +26,7 @@ const EditModal: FC<UseEntityModalProps<User>> = ({
 
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      id,
+      id: id!,
       name,
       email,
       username,

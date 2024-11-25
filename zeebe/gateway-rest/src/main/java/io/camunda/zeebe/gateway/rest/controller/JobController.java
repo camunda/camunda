@@ -98,8 +98,9 @@ public class JobController {
       final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
-    jobServices.activateJobs(
-        activationRequest, responseObserver, responseObserver::setCancelationHandler);
+    jobServices
+        .withAuthentication(RequestMapper.getAuthentication())
+        .activateJobs(activationRequest, responseObserver, responseObserver::setCancelationHandler);
     return result.handleAsync(
         (res, ex) -> {
           responseObserver.invokeCancelationHandler();
@@ -139,7 +140,10 @@ public class JobController {
         () ->
             jobServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .completeJob(completeJobRequest.jobKey(), completeJobRequest.variables()));
+                .completeJob(
+                    completeJobRequest.jobKey(),
+                    completeJobRequest.variables(),
+                    completeJobRequest.result()));
   }
 
   private CompletableFuture<ResponseEntity<Object>> updateJob(

@@ -15,7 +15,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "10.1.5"
+      "version": "10.4.0"
     },
     {
       "type": "panel",
@@ -138,7 +138,6 @@
         "y": 1
       },
       "id": 298,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -151,12 +150,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -222,7 +223,6 @@
         "y": 1
       },
       "id": 277,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -235,12 +235,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -302,7 +304,6 @@
         "y": 1
       },
       "id": 275,
-      "links": [],
       "options": {
         "colorMode": "none",
         "graphMode": "area",
@@ -315,12 +316,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -399,7 +402,6 @@
         "y": 6
       },
       "id": 274,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -412,12 +414,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -483,7 +487,6 @@
         "y": 6
       },
       "id": 278,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -496,12 +499,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -567,7 +572,6 @@
         "y": 6
       },
       "id": 276,
-      "links": [],
       "options": {
         "colorMode": "none",
         "graphMode": "area",
@@ -580,12 +584,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -627,6 +633,7 @@
             "mode": "palette-classic"
           },
           "custom": {
+            "axisBorderShow": false,
             "axisCenteredZero": false,
             "axisColorMode": "text",
             "axisLabel": "",
@@ -761,7 +768,6 @@
         "y": 18
       },
       "id": 232,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -774,12 +780,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -787,7 +795,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark.*\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark|medic.*benchmark-latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -799,7 +807,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark.*\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{cluster=~\"$cluster\", namespace=~\"medic.*benchmark|medic.*benchmark-latency\",pod=~\"$pod\", partition=~\"$partition\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -862,7 +870,6 @@
         "y": 18
       },
       "id": 299,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -875,12 +882,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -963,7 +972,6 @@
         "y": 18
       },
       "id": 300,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -976,12 +984,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -1064,7 +1074,6 @@
         "y": 22
       },
       "id": 305,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -1077,12 +1086,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -1165,7 +1176,6 @@
         "y": 22
       },
       "id": 306,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -1178,12 +1188,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -1251,13 +1263,12 @@
       },
       "lines": true,
       "linewidth": 1,
-      "links": [],
       "nullPointMode": "null",
       "options": {
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1564,7 +1575,7 @@
           }
         ]
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -1716,7 +1727,7 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -1827,13 +1838,12 @@
       },
       "lines": true,
       "linewidth": 1,
-      "links": [],
       "nullPointMode": "null",
       "options": {
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1963,7 +1973,7 @@
         },
         "showHeader": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -2098,7 +2108,6 @@
         "y": 50
       },
       "id": 291,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -2111,12 +2120,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -2182,7 +2193,6 @@
         "y": 50
       },
       "id": 292,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -2195,12 +2205,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -2262,7 +2274,6 @@
         "y": 50
       },
       "id": 293,
-      "links": [],
       "options": {
         "colorMode": "none",
         "graphMode": "area",
@@ -2275,12 +2286,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -2350,7 +2363,6 @@
         "y": 54
       },
       "id": 301,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -2363,12 +2375,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -2451,7 +2465,6 @@
         "y": 54
       },
       "id": 302,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -2464,12 +2477,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -2552,7 +2567,6 @@
         "y": 54
       },
       "id": 303,
-      "links": [],
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -2565,12 +2579,14 @@
           "fields": "",
           "values": false
         },
+        "showPercentChange": false,
         "text": {
           "titleSize": 10
         },
-        "textMode": "auto"
+        "textMode": "auto",
+        "wideLayout": true
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -2808,7 +2824,7 @@
           }
         ]
       },
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "targets": [
         {
           "datasource": {
@@ -2929,13 +2945,12 @@
       },
       "lines": true,
       "linewidth": 1,
-      "links": [],
       "nullPointMode": "null",
       "options": {
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "10.1.5",
+      "pluginVersion": "10.4.0",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -2999,14 +3014,13 @@
     }
   ],
   "refresh": "1m",
-  "schemaVersion": 38,
-  "style": "dark",
+  "schemaVersion": 39,
   "tags": [],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "Prometheus",
           "value": "prometheus"
         },
@@ -3161,6 +3175,6 @@
   "timezone": "",
   "title": "Zeebe Medic Benchmarks",
   "uid": "zeebe-medic-benchmark",
-  "version": 4,
+  "version": 5,
   "weekStart": ""
 }

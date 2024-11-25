@@ -602,3 +602,23 @@ rules:
         then:
             function: typedEnum
         type: validation
+    no-period-in-summary:
+        category:
+            description: Operations are the core of the contract, they define paths and HTTP methods. These rules check operations have been well constructed, looks for operationId, parameter, schema and return types in depth.
+            id: operations
+            name: Operations
+        description: Path summary must not include period
+        formats:
+            - oas3
+            - oas3_1
+            - oas2
+        severity: error
+        given: $.paths[*][*].summary
+        howToFix: Summaries are short descriptions often used in navigation bars, they must not contain periods at the end. Please remove the period at the end of the summary text.
+        id: no-period-in-summary
+        then:
+            function: pattern
+            functionOptions:
+                notMatch: ^.*\.$
+        type: validation
+  

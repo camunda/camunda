@@ -1,0 +1,22 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "long"
+      },
+      "tenantId": {
+        "type": "keyword"
+      },
+      "name": {
+        "type": "keyword"
+      },
+      "assignedMemberKeys": {
+        "type": "long"
+      }
+    }
+  }
+}

@@ -33,6 +33,11 @@
       <artifactId>webapps-schema</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-common</artifactId>
+    </dependency>
+
     <!-- ZEEBE Record classes and interfaces -->
     <dependency>
       <groupId>io.camunda</groupId>

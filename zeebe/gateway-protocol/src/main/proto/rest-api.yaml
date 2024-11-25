@@ -40,10 +40,13 @@ tags:
   - name: Process definition
   - name: Process instance
   - name: Resource
+  - name: Role
   - name: Signal
+  - name: Tenant
   - name: User
   - name: User task
   - name: Variable
+  - name: Mapping Rule
 
 paths:
   /topology:
@@ -60,12 +63,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TopologyResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /license:
     get:
       tags:
         - License
       operationId: getLicense
-      summary: Get status of Camunda license
+      summary: Get license status
       description: Obtains the status of the current Camunda license
       responses:
         "200":
@@ -74,6 +79,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LicenseResponse"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /jobs/activation:
     post:
       tags:
@@ -103,12 +110,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}/failure:
     post:
       tags:
@@ -157,12 +159,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}/error:
     post:
       tags:
@@ -211,12 +208,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}/completion:
     post:
       tags:
@@ -265,18 +257,13 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /jobs/{jobKey}:
     patch:
       tags:
         - Job
       operationId: updateJob
-      summary: Update a job
+      summary: Update job
       description: Update a job with the given key.
       parameters:
         - name: jobKey
@@ -317,12 +304,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /incidents/{incidentKey}/resolution:
     post:
@@ -357,11 +339,219 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants:
+    post:
+      tags:
+        - Tenant
+      operationId: createTenant
+      summary: Create tenant
+      description: Creates a new tenant.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: The tenant was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantCreateResponse"
+        "400":
+          description: The provided data is not valid.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden. The request is not allowed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not found. The resource was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants/{tenantKey}:
+    patch:
+      tags:
+        - Tenant
+      operationId: updateTenant
+      summary: Update tenant
+      description: Updates an existing tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: The tenant was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantUpdateResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden. The request is not allowed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not found. The tenant was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      tags:
+        - Tenant
+      operationId: getTenant
+      summary: Get tenant
+      description: Retrieves a single tenant by tenant Key.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The tenant was retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantItem"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Tenant not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: deleteTenant
+      summary: Delete tenant
+      description: Deletes an existing tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The tenant was deleted successfully.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden. The request is not allowed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not found. The tenant was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  /tenants/search:
+    post:
+      tags:
+        - Tenant
+      operationId: searchTenants
+      summary: Query tenants
+      description: Retrieves a filtered and sorted list of tenants.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantSearchQueryRequest"
+      responses:
+        "200":
+          description: The tenants search result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantSearchQueryResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: Not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /user-tasks/{userTaskKey}/completion:
     post:
@@ -411,12 +601,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}/assignment:
     post:
       tags:
@@ -464,26 +650,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}:
     get:
       tags:
         - User task
       operationId: getUserTask
-      summary: Return user task by a user task key
+      summary: Get user task (alpha)
       description: |
         Get the user task by the user task key.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: userTaskKey
           in: path
@@ -501,29 +683,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/UserTaskItem"
         "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
+          description: >
+            The provided data is not valid.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
-          description: "Not found"
+          description: The user task with the given key was not found.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
     patch:
       tags:
         - User task
@@ -570,30 +745,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}/form:
     get:
       tags:
         - User task
       operationId: getUserTaskForm
-      summary: Return user task form
+      summary: Get user task form (alpha)
       description: |
         Get the form of a user task.
 
-        :::note
-        This endpoint will only return linked forms. This endpoint does not support embedded forms.
-        :::
+        Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
+        Furthermore, this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: userTaskKey
           in: path
@@ -620,11 +788,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: "Not found"
           content:
@@ -632,11 +796,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}/assignee:
     delete:
       tags:
@@ -678,12 +839,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /user-tasks/search:
     post:
       tags:
@@ -693,11 +849,11 @@ paths:
       description: |
         Search for user tasks based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         required: false
         content:
@@ -707,7 +863,7 @@ paths:
       responses:
         "200":
           description: >
-            The user task search successful response.
+            The user task search result.
           content:
             application/json:
               schema:
@@ -721,26 +877,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}/variables:
     post:
       tags:
         - User task
       operationId: findUserTaskVariables
-      summary: Query user tasks variables (alpha)
+      summary: Query user task variables (alpha)
       description: |
-        Search for user tasks based on given criteria.
+        Search for user task variables based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: userTaskKey
           in: path
@@ -758,7 +910,7 @@ paths:
       responses:
         "200":
           description: >
-            The user task varialbes search successful response.
+            The user task variables search response.
           content:
             application/json:
               schema:
@@ -772,27 +924,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /variables/search:
     post:
       tags:
         - Variable
       operationId: findVariables
-      summary: Query process and local variables (alpha)
+      summary: Query variables (alpha)
       description: |
-        Search for variables based on given criteria.
+        Search for process and local variables based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         required: false
         content:
@@ -802,7 +949,7 @@ paths:
       responses:
         "200":
           description: >
-            The variable search successful response.
+            The variable search result.
           content:
             application/json:
               schema:
@@ -816,25 +963,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /variables/{variableKey}:
     get:
       tags:
         - Variable
       operationId: getVariable
-      summary: Return variable by a variable key
+      summary: Get variable (alpha)
       description: |
         Get the variable by the variable key.
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: variableKey
           in: path
@@ -858,11 +1002,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: "Not found"
           content:
@@ -870,11 +1010,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /clock:
     put:
       tags:
@@ -886,10 +1023,8 @@ paths:
         When the clock is pinned, it remains at the specified time and does not advance.
         To change the time, the clock must be pinned again with a new timestamp.
 
-        :::note
-        This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
-        :::
       requestBody:
         required: true
         content:
@@ -907,11 +1042,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /clock/reset:
     post:
       tags:
@@ -923,31 +1055,28 @@ paths:
         This operation is useful for returning the clock to
         normal behavior after it has been pinned to a specific time.
 
-        :::note
-        This endpoint is an [alpha feature](/reference/alpha-features.md) and may be subject to change
+        This endpoint is an alpha feature and may be subject to change
         in future releases.
       responses:
         "204":
           description: The clock was successfully reset to the system time.
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-definitions/search:
     post:
       tags:
         - Process definition
       operationId: findProcessDefinitions
-      summary: Search process definitions (alpha)
+      summary: Query process definitions (alpha)
       description: |
         Search for process definitions based on given criteria.
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         required: false
         content:
@@ -957,7 +1086,7 @@ paths:
       responses:
         "200":
           description: >
-            The process definition search successful response.
+            The process definition search result.
           content:
             application/json:
               schema:
@@ -971,25 +1100,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-definitions/{processDefinitionKey}:
     get:
       tags:
         - Process definition
       operationId: getProcessDefinition
-      summary: Get process definition by key (alpha)
+      summary: Get process definition (alpha)
       description: |
         Returns process definition as JSON.
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: processDefinitionKey
           in: path
@@ -1023,12 +1149,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-definitions/{processDefinitionKey}/xml:
     get:
       tags:
@@ -1038,11 +1160,11 @@ paths:
       description: |
         Returns process definition as XML.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: processDefinitionKey
           in: path
@@ -1083,30 +1205,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-definitions/{processDefinitionsKey}/form:
     get:
       tags:
         - Process definition
       operationId: getStartProcessForm
-      summary: Get start process form
+      summary: Get process start form (alpha)
       description: |
         Get the start form of a process.
 
-        :::note
-        This endpoint will only return linked forms. This endpoint does not support embedded forms.
-        :::
+        Note that this endpoint will only return linked forms. This endpoint does not support embedded forms.
+        Furthermore, this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: processDefinitionsKey
           in: path
@@ -1133,11 +1248,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: "Not found"
           content:
@@ -1145,11 +1256,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances:
     post:
       tags:
@@ -1191,11 +1299,8 @@ paths:
         "400":
           description: The provided data is not valid.
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}:
     get:
       tags:
@@ -1205,11 +1310,11 @@ paths:
       description: |
         Get the process instance by the process instance key.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: processInstanceKey
           in: path
@@ -1232,11 +1337,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: The request lacks valid authentication credentials.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "404":
           description: The process instance with the given key was not found.
           content:
@@ -1244,11 +1345,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/search:
     post:
       tags:
@@ -1258,11 +1356,11 @@ paths:
       description: |
         Search for process instances based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         required: false
         content:
@@ -1271,7 +1369,7 @@ paths:
               $ref: "#/components/schemas/ProcessInstanceSearchQueryRequest"
       responses:
         "200":
-          description: The process instance search successful response.
+          description: The process instance search result.
           content:
             application/json:
               schema:
@@ -1285,11 +1383,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/cancellation:
     post:
       tags:
@@ -1327,11 +1422,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/migration:
     post:
       tags:
@@ -1376,11 +1468,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/{processInstanceKey}/modification:
     post:
       tags:
@@ -1424,11 +1513,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /flownode-instances/search:
     post:
@@ -1439,11 +1524,11 @@ paths:
       description: |
         Search for flow node instances based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         required: false
         content:
@@ -1453,7 +1538,7 @@ paths:
       responses:
         "200":
           description: >
-            The Flow node instance search successful response.
+            The flow node instance search result.
           content:
             application/json:
               schema:
@@ -1467,25 +1552,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /flownode-instances/{flownodeInstanceKey}:
     get:
       tags:
         - Flow node instance
       operationId: getFlowNodeInstance
-      summary: Get flow node instance by key (alpha)
+      summary: Get flow node instance (alpha)
       description: |
         Returns flow node instance as JSON.
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: flownodeInstanceKey
           in: path
@@ -1519,12 +1601,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-definitions/search:
     post:
       tags:
@@ -1534,11 +1612,11 @@ paths:
       description: |
         Search for decision definitions based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         required: false
         content:
@@ -1548,7 +1626,7 @@ paths:
       responses:
         "200":
           description: >
-            The Decision Definition Search successful response.
+            The decision definition search result.
           content:
             application/json:
               schema:
@@ -1562,26 +1640,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-definitions/{decisionDefinitionKey}:
     get:
       tags:
         - Decision definition
       operationId: getDecisionDefinition
-      summary: Get decision definition by key (alpha)
+      summary: Get decision definition (alpha)
       description: |
-        Returns a decision definition.
+        Returns a decision definition by key.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: decisionDefinitionKey
           in: path
@@ -1615,12 +1689,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-definitions/{decisionDefinitionKey}/xml:
     get:
       tags:
@@ -1630,11 +1700,11 @@ paths:
       description: |
         Returns decision definition as XML.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: decisionDefinitionKey
           in: path
@@ -1668,12 +1738,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-requirements/search:
     post:
       tags:
@@ -1683,11 +1749,11 @@ paths:
       description: |
         Search for decision requirements based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         required: false
         content:
@@ -1697,29 +1763,36 @@ paths:
       responses:
         "200":
           description: >
-            The decision requirements search successful response.
+            The decision requirements search result.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DecisionRequirementsSearchQueryResponse"
         "400":
           description: >
-            The decision requirements search query failed.
+            The search query failed.
             More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-requirements/{decisionRequirementsKey}:
     get:
       tags:
         - Decision requirements
       operationId: getDecisionRequirements
-      summary: Get decision requirements by key (alpha)
+      summary: Get decision requirements (alpha)
       description: |
         Returns Decision Requirements as JSON.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: decisionRequirementsKey
           in: path
@@ -1753,12 +1826,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /decision-requirements/{decisionRequirementsKey}/xml:
     get:
       tags:
@@ -1768,11 +1837,11 @@ paths:
       description: |
         Returns decision requirements as XML.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: decisionRequirementsKey
           in: path
@@ -1806,12 +1875,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /decision-instances/search:
     post:
@@ -1822,11 +1886,11 @@ paths:
       description: |
         Search for decision instances based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         required: false
         content:
@@ -1836,7 +1900,7 @@ paths:
       responses:
         "200":
           description: >
-            The decision instance search successful response.
+            The decision instance search result.
           content:
             application/json:
               schema:
@@ -1850,35 +1914,29 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
-  /decision-instances/{decisionInstanceKey}:
+  /decision-instances/{decisionInstanceId}:
     get:
       tags:
         - Decision instance
       operationId: getDecisionInstance
-      summary: Get decision instance by key (alpha)
+      summary: Get decision instance (alpha)
       description: |
         Returns a decision instance.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
-        - name: decisionInstanceKey
+        - name: decisionInstanceId
           in: path
           required: true
-          description: The assigned key of the decision instance, which acts as a unique identifier for this decision instance.
+          description: The assigned ID of the decision instance, which acts as a unique identifier for this decision instance.
           schema:
-            type: integer
-            format: int64
+            type: string
       responses:
         "200":
           description: >
@@ -1897,19 +1955,14 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "404":
           description: >
-            The decision instance with the given key was not found.
+            The decision instance with the given ID was not found.
             More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /decision-definitions/evaluation:
     post:
@@ -1959,18 +2012,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /authorizations/{ownerKey}:
     patch:
       tags:
         - Authorization
       operationId: updateAuthorization
-      summary: Patch authorization
+      summary: Update authorization
       description: Manage the permissions assigned to the authorization.
       parameters:
         - name: ownerKey
@@ -1999,13 +2048,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
-          description: |
-            The request to patch the authorization was unauthorized.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Unauthorized"
         "403":
           description: |
             The request to patch an authorization was denied.
@@ -2026,25 +2069,21 @@ paths:
             The request to add or remove permissions to an authorization was in conflict.
             More details are provided in the response body.
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
   /authorizations/search:
     post:
       tags:
         - Authorization
-      summary: "Query authorizations (alpha)"
+      summary: Query authorizations (alpha)
       description: |
         Search for authorizations based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
-      operationId: "findAuthorizations"
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      operationId: findAuthorizations
       requestBody:
         content:
           application/json:
@@ -2053,82 +2092,187 @@ paths:
         required: true
       responses:
         "200":
-          description: "OK"
+          description: The authorization search result.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthorizationSearchResponse"
         "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
+          description: >
+            The authorization search query failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
-
-  /users:
+  /roles:
     post:
       tags:
-        - User
-      operationId: createUser
-      summary: Create a user
+        - Role
+      operationId: createRole
+      summary: Create role
+      description: |
+        Create a new role
       requestBody:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserRequest"
-        required: true
+              $ref: "#/components/schemas/RoleCreateRequest"
       responses:
         "202":
           description: |
-            The user was created successfully.
+            The role was created successfully.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserCreateResponse"
+                $ref: "#/components/schemas/RoleCreateResponse"
         "400":
           description: |
-            The user could not be created.
+            The role could not be created.
             More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
           description: |
-            The request to create a user was unauthorized.
+            The request to create a role was denied.
             More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: |
-            The request to create a user was denied.
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /roles/{roleKey}:
+    get:
+      tags:
+        - Role
+      operationId: getRole
+      summary: Get role
+      description: |
+        Get a role by its key
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The role key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The role is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The role with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    patch:
+      tags:
+        - Role
+      operationId: updateRole
+      summary: Update role
+      description: Update a role with the given key.
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The key of the role to update.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleUpdateRequest"
+      responses:
+        "204":
+          description: The role was updated successfully.
+        "400":
+          description: >
+            The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The role with the roleKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Role
+      operationId: deleteRole
+      summary: Delete role
+      description: Deletes the role with the given key.
+      parameters:
+        - name: roleKey
+          in: path
+          required: true
+          description: The key of the role to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The role was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The role with the roleKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /roles/search:
+    post:
+      tags:
+        - Role
+      operationId: searchRoles
+      summary: Query roles
+      description: |
+        Search for roles based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleSearchQueryRequest"
+      responses:
+        "200":
+          description: The roles search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleSearchQueryResponse"
+        "400":
+          description: >
+            The role search query failed.
             More details are provided in the response body.
           content:
             application/problem+json:
@@ -2141,12 +2285,55 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /mapping-rules:
+    post:
+      tags:
+        - Mapping Rule
+      operationId: createMappingRule
+      summary: Create mapping rule
+      description: |
+        Create a new mapping rule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingRuleCreateRequest"
+      responses:
+        "201":
+          description: The mapping rule was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingRuleCreateResponse"
+        "400":
+          description: The mapping rule could not be created.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: |
+            The request to create a mapping rule was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The request to create a mapping rule was denied.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /messages/publication:
     post:
       tags:
         - Message
       operationId: publishMessage
-      summary: Publish a message
+      summary: Publish message
       description: |
         Publishes a single message.
         Messages are published to specific partitions computed from their correlation keys.
@@ -2172,17 +2359,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: Internal server error.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /messages/correlation:
     post:
       tags:
         - Message
       operationId: correlateMessage
-      summary: Correlate a message
+      summary: Correlate message
       description: |
         Publishes a message and correlates it to a subscription.
         If correlation is successful it will return the first process instance key the message correlated with.
@@ -2218,11 +2402,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: Internal server error
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /documents:
     post:
@@ -2233,10 +2413,10 @@ paths:
       description: |
         Upload a document to the Camunda 8 cluster.
 
-        :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
-        :::
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: storeId
           in: query
@@ -2292,10 +2472,10 @@ paths:
       description: |
         Download a document from the Camunda 8 cluster.
 
-        :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
-        :::
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: documentId
           in: path
@@ -2325,12 +2505,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
     delete:
       tags:
         - Document
@@ -2339,10 +2515,10 @@ paths:
       description: |
         Delete a document from the Camunda 8 cluster.
 
-        :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
-        :::
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: documentId
           in: path
@@ -2367,12 +2543,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /document/{documentId}/links:
     post:
       tags:
@@ -2382,10 +2554,10 @@ paths:
       description: |
         Create a link to a document in the Camunda 8 cluster.
 
-        :::note
-        This endpoint is an alpha feature. It currently only supports an in-memory document store,
-        which is not meant for production use.
-        :::
+        Note that this currently only supports an in-memory document store, which is not meant for production use.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: documentId
           in: path
@@ -2420,20 +2592,61 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
 
+  /users:
+    post:
+      tags:
+        - User
+      operationId: createUser
+      summary: Create user
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRequest"
+        required: true
+      responses:
+        "202":
+          description: |
+            The user was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserCreateResponse"
+        "400":
+          description: |
+            Unable to create the user.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: |
+            The request to create a user was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /users/search:
     post:
       tags:
         - User
       operationId: findUsers
-      summary: "Query users (alpha)"
+      summary: Query users (alpha)
       description: |
         Search for users based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         content:
           application/json:
@@ -2442,29 +2655,101 @@ paths:
         required: true
       responses:
         "200":
-          description: "OK"
+          description: The user search result.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserSearchResponse"
         "400":
-          description: "Bad request"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "401":
-          description: "Unauthorized"
+          description: >
+            The user search query failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
+          $ref: "#/components/responses/InternalServerError"
+
+  /users/{userKey}/authorizations/search:
+    post:
+      tags:
+        - Authorization
+      summary: "Query user authorizations (alpha)"
+      description: |
+        Search for user authorizations based on given criteria.
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      operationId: "findUserAuthorizations"
+      parameters:
+        - name: userKey
+          in: path
+          required: true
+          description: The key of the userKey of the authorization.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationSearchQueryRequest"
+        required: true
+      responses:
+        "200":
+          description: The user authorization search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthorizationSearchResponse"
+        "400":
+          description: >
+            The user authorization search query failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /users/{userKey}:
+    delete:
+        tags:
+            - User
+        operationId: deleteUser
+        summary: Delete user
+        description: |
+            Deletes a user.
+        parameters:
+            - name: userKey
+              in: path
+              required: true
+              description: The key of the user to delete.
+              schema:
+                  type: integer
+                  format: int64
+        responses:
+            "204":
+              description: The user was deleted successfully.
+            "400":
+              description: The provided data is not valid.
+              content:
+                application/problem+json:
+                  schema:
+                    $ref: "#/components/schemas/ProblemDetail"
+            "404":
+              description: The user is not found.
+              content:
+                application/problem+json:
+                  schema:
+                    $ref: "#/components/schemas/ProblemDetail"
+            "500":
+              $ref: "#/components/responses/InternalServerError"
 
   /incidents/search:
     post:
@@ -2475,11 +2760,11 @@ paths:
       description: |
         Search for incidents based on given criteria.
 
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       requestBody:
         required: false
         content:
@@ -2489,7 +2774,7 @@ paths:
       responses:
         "200":
           description: >
-            The incident search successful response.
+            The incident search result.
           content:
             application/json:
               schema:
@@ -2498,43 +2783,23 @@ paths:
           description: >
             The incident search query failed.
             More details are provided in the response body.
-        "401":
-          description: "Unauthorized"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "403":
-          description: "Forbidden"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "404":
-          description: "Not found"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: "Internal server error"
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /incidents/{incidentKey}:
     get:
       tags:
         - Incident
       operationId: getIncident
-      summary: Get incident by key (alpha)
+      summary: Get incident (alpha)
       description: |
         Returns incident as JSON.
-        :::note
-        This endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
-        See the [Camunda 8 REST API overview](/apis-tools/camunda-api-rest/camunda-api-rest-overview.md#query-api)
-        for further details.
-        :::
+
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
       parameters:
         - name: incidentKey
           in: path
@@ -2568,12 +2833,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: >
-            An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
+
   /deployments:
     post:
       tags:
@@ -2659,11 +2920,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /element-instances/{elementInstanceKey}/variables:
     post:
@@ -2701,11 +2958,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
   /signals/broadcast:
     post:
@@ -2740,14 +2993,108 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
-          description: An internal error occurred while processing the request.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   schemas:
+    TenantCreateRequest:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          description: The unique external tenant ID
+        name:
+          type: string
+          description: The name of the tenant.
+      required:
+        - tenantId
+
+    TenantCreateResponse:
+      type: "object"
+      properties:
+        tenantKey:
+          description: The external key of the created tenant
+          type: "integer"
+          format: "int64"
+
+    TenantUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The new name of the tenant.
+      required:
+        - name
+
+    TenantUpdateResponse:
+      type: object
+      properties:
+        tenantKey:
+          type: integer
+          description: The unique system-generated internal tenant ID
+          format: int64
+        tenantId:
+          type: string
+          description: The unique external tenant ID
+        name:
+          type: string
+          description: The name of the tenant.
+
+    TenantItem:
+      description: Tenant search response item.
+      type: object
+      properties:
+        tenantKey:
+          type: integer
+          description: The unique system-generated internal tenant ID.
+          format: int64
+        name:
+          type: string
+          description: The tenant name.
+        tenantId:
+          type: string
+          description: The unique external tenant ID.
+        assignedMemberKeys:
+          type: array
+          description: The set of keys of members assigned to the tenant.
+          items:
+            type: integer
+            format: int64
+
+    TenantSearchQueryRequest:
+      description: Tenant search request
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        filter:
+          description: The tenant search filters.
+          allOf:
+            - $ref: "#/components/schemas/TenantFilterRequest"
+
+    TenantFilterRequest:
+      description: Tenant filter request
+      type: object
+      properties:
+        tenantId:
+          type: string
+          description: The ID of the tenant.
+        name:
+          type: string
+          description: The name of the tenant.
+
+    TenantSearchQueryResponse:
+      description: Tenant search response.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          description: The matching tenants.
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantItem"
+
     UserTaskSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -2788,17 +3135,24 @@ components:
             - CANCELED
             - FAILED
         assignee:
-          type: string
           description: The assignee of the user task.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        priority:
+          description: The priority of the user task.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
         elementId:
           type: string
           description: The element ID of the user task.
         candidateGroup:
-          type: string
           description: The candidate group for this user task.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         candidateUser:
-          type: string
           description: The candidate user for this user task.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionKey:
           type: integer
           description: The key of the process definition.
@@ -2813,6 +3167,10 @@ components:
         processDefinitionId:
           type: string
           description: The ID of the process definition.
+        elementInstanceKey:
+          type: integer
+          description: The key of the element instance.
+          format: int64
         variables:
           type: array
           items:
@@ -2927,22 +3285,24 @@ components:
       properties:
         variableKey:
           description: The key for this variable.
-          type: integer
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         name:
           description: Name of the variable.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         value:
           description: The value of the variable.
-          type: string
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         scopeKey:
           description: The key of the scope of this variable.
-          type: integer
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         processInstanceKey:
           description: The key of the process instance of this variable.
-          type: integer
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         tenantId:
           description: Tenant ID of this variable.
           type: string
@@ -3068,58 +3428,270 @@ components:
         filter:
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
+    AdvancedIntegerFilter:
+      description: Advanced integer (int32) filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: integer
+          format: int32
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: integer
+          format: int32
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: integer
+          format: int32
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: integer
+          format: int32
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: integer
+          format: int32
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: integer
+          format: int32
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: integer
+            format: int32
+    IntegerFilterProperty:
+      description: Integer property with advanced search capabilities.
+      type: object
+      oneOf:
+        - type: integer
+          format: int32
+        - $ref: "#/components/schemas/AdvancedIntegerFilter"
+    BasicLongFilter:
+      description: Basic advanced long (int64) filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: integer
+          format: int64
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: integer
+          format: int64
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: integer
+            format: int64
+    AdvancedLongFilter:
+      description: Advanced long (int64) filter.
+      allOf:
+        - $ref: "#/components/schemas/BasicLongFilter"
+        - type: object
+          properties:
+            $gt:
+              description: Greater than comparison with the provided value.
+              type: integer
+              format: int64
+            $gte:
+              description: Greater than or equal comparison with the provided value.
+              type: integer
+              format: int64
+            $lt:
+              description: Lower than comparison with the provided value.
+              type: integer
+              format: int64
+            $lte:
+              description: Lower than or equal comparison with the provided value.
+              type: integer
+              format: int64
+    AdvancedStringFilter:
+      description: Advanced string filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: string
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: string
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: string
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+            Supported wildcard characters depend on the configured search client.
+          type: string
+    AdvancedProcessInstanceStateFilter:
+      description: Advanced ProcessInstanceStateEnum filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        $like:
+          description: |
+            Checks if the property matches the provided like value.
+            Supported wildcard characters depend on the configured search client.
+          type: string
+    AdvancedDateTimeFilter:
+      description: Advanced date-time filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          type: string
+          format: date-time
+        $neq:
+          description: Checks for inequality with the provided value.
+          type: string
+          format: date-time
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $gt:
+          description: Greater than comparison with the provided value.
+          type: string
+          format: date-time
+        $gte:
+          description: Greater than or equal comparison with the provided value.
+          type: string
+          format: date-time
+        $lt:
+          description: Lower than comparison with the provided value.
+          type: string
+          format: date-time
+        $lte:
+          description: Lower than or equal comparison with the provided value.
+          type: string
+          format: date-time
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            type: string
+            format: date-time
+    BasicLongFilterProperty:
+      description: Long property with basic advanced search capabilities.
+      type: object
+      oneOf:
+        - type: integer
+          format: int64
+        - $ref: "#/components/schemas/BasicLongFilter"
+    LongFilterProperty:
+      description: Long property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: integer
+          format: int64
+        - $ref: "#/components/schemas/AdvancedLongFilter"
+    StringFilterProperty:
+      description: String property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+        - $ref: "#/components/schemas/AdvancedStringFilter"
+    ProcessInstanceStateFilterProperty:
+      description: ProcessInstanceStateEnum property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - $ref: "#/components/schemas/ProcessInstanceStateEnum"
+        - $ref: "#/components/schemas/AdvancedProcessInstanceStateFilter"
+    DateTimeFilterProperty:
+      description: Date-time property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          format: date-time
+        - $ref: "#/components/schemas/AdvancedDateTimeFilter"
     ProcessInstanceFilterRequest:
       description: Process instance search filter.
       type: object
       properties:
         processInstanceKey:
-          type: integer
           description: The key of this process instance.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         processDefinitionId:
-          type: string
           description: The process definition ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionName:
-          type: string
           description: The process definition name.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionVersion:
-          type: integer
           description: The process definition version.
-          format: int32
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
         processDefinitionVersionTag:
-          type: string
           description: The process definition version tag.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionKey:
-          type: integer
           description: The process definition key.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         parentProcessInstanceKey:
-          type: integer
           description: The parent process instance key.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         parentFlowNodeInstanceKey:
-          type: integer
           description: The parent flow node instance key.
-          format: int64
+          allOf:
+            - $ref: "#/components/schemas/LongFilterProperty"
         treePath:
-          type: string
           description: The path of keys to this process instance, separated by '/'.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
         startDate:
-          type: string
           description: The start date.
-          format: date-time
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         endDate:
-          type: string
           description: The end date.
-          format: date-time
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         state:
-          $ref: "#/components/schemas/ProcessInstanceStateEnum"
+          description: The process instance state.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceStateFilterProperty"
         hasIncident:
           type: boolean
           description: Whether this process instance has a related incident or not.
         tenantId:
-          type: string
           description: The tenant ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
@@ -3525,6 +4097,7 @@ components:
             - UNKNOWN
             - IO_MAPPING_ERROR
             - JOB_NO_RETRIES
+            - EXECUTION_LISTENER_NO_RETRIES
             - CONDITION_ERROR
             - EXTRACT_VALUE_ERROR
             - CALLED_ELEMENT_ERROR
@@ -3645,15 +4218,22 @@ components:
           type: string
           description: The tenant ID of the decision definition.
     PermissionTypeEnum:
-        description: Specifies the type of permissions.
-        enum:
-          - CREATE
-          - READ
-          - UPDATE
-          - DELETE
-          - DELETE_PROCESS
-          - DELETE_DRD
-          - DELETE_FORM
+      description: Specifies the type of permissions.
+      enum:
+        - CREATE
+        - CREATE_PROCESS_INSTANCE
+        - CREATE_DECISION_INSTANCE
+        - READ
+        - READ_PROCESS_INSTANCE
+        - READ_USER_TASK
+        - READ_DECISION_INSTANCE
+        - UPDATE
+        - UPDATE_PROCESS_INSTANCE
+        - UPDATE_USER_TASK
+        - DELETE
+        - DELETE_PROCESS
+        - DELETE_DRD
+        - DELETE_FORM
     ResourceTypeEnum:
       description: The type of resource to add/remove permissions to/from.
       enum:
@@ -3686,10 +4266,11 @@ components:
           description: Specifies the type of permissions.
           type: object
           allOf:
-              - $ref: "#/components/schemas/PermissionTypeEnum"
+            - $ref: "#/components/schemas/PermissionTypeEnum"
         resourceIds:
           type: array
           description: A list of resource IDs the permission relates to.
+          uniqueItems: true
           items:
             type: string
     AuthorizationPatchRequest:
@@ -3705,12 +4286,12 @@ components:
           description: The type of resource to add/remove permissions to/from.
           type: object
           allOf:
-             - $ref: "#/components/schemas/ResourceTypeEnum"
+            - $ref: "#/components/schemas/ResourceTypeEnum"
         permissions:
           type: array
           description: The permissions to add/remove.
           items:
-             $ref: "#/components/schemas/PermissionDTO"
+            $ref: "#/components/schemas/PermissionDTO"
     AuthorizationSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -3735,19 +4316,19 @@ components:
       type: "object"
       properties:
         ownerKey:
-            description: The id of the owner of permissions.
-            type: integer
-            format: int64
+          description: The id of the owner of permissions.
+          type: integer
+          format: int64
         ownerType:
           description: The type of the owner of permissions.
           type: object
           allOf:
-              - $ref: "#/components/schemas/OwnerTypeEnum"
+            - $ref: "#/components/schemas/OwnerTypeEnum"
         resourceType:
           description: The type of resource that owner have permissions.
           type: object
           allOf:
-             - $ref: "#/components/schemas/ResourceTypeEnum"
+            - $ref: "#/components/schemas/ResourceTypeEnum"
         permissions:
           type: array
           description: The permissions.
@@ -3821,6 +4402,90 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserResponse"
+    RoleCreateRequest:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: The display name of the new role
+    RoleCreateResponse:
+      type: "object"
+      properties:
+        roleKey:
+          description: The key of the created role
+          type: "integer"
+          format: "int64"
+    RoleUpdateRequest:
+      type: object
+      properties:
+        changeset:
+          $ref: "#/components/schemas/RoleChangeset"
+      required:
+        - changeset
+    RoleChangeset:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The updated display name of the role.
+    RoleItem:
+      description: Role search response item.
+      type: object
+      properties:
+        key:
+          type: integer
+          description: The role key.
+          format: int64
+        name:
+          type: string
+          description: The role name.
+        assignedMemberKeys:
+          type: array
+          description: The set of keys of members assigned to the role.
+          items:
+            type: integer
+            format: int64
+    RoleSearchQueryRequest:
+      description: Role search request.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+    RoleSearchQueryResponse:
+      description: Role search response.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleItem"
+    MappingRuleCreateRequest:
+      type: object
+      properties:
+        claimName:
+          type: string
+          description: The name of the claim to map.
+        claimValue:
+          type: string
+          description: The value of the claim to map.
+      required:
+        - claimName
+        - claimValue
+    MappingRuleCreateResponse:
+      type: object
+      properties:
+        mappingKey:
+          description: The key of the created mapping rule.
+          type: integer
+          format: int64
+        claimName:
+          type: string
+          description: The name of the claim to map.
+        claimValue:
+          type: string
+          description: The value of the claim to map.
+
     TopologyResponse:
       description: The response of a topology request.
       type: object
@@ -3861,6 +4526,14 @@ components:
         licenseType:
           description: Will return the license type property of the Camunda license
           type: string
+        isCommercial:
+          description: Will be false when a license contains a non-commerical=true property
+          type: boolean
+        expiresAt:
+          description: The date when the Camunda license expires
+          type: string
+          format: date-time
+          nullable: true
     BrokerInfo:
       description: Provides information on a broker node.
       type: object
@@ -4183,6 +4856,22 @@ components:
           additionalProperties: true
           description: The variables to complete the job with.
           type: object
+          nullable: true
+        result:
+          $ref: "#/components/schemas/JobResult"
+    JobResult:
+      type: object
+      nullable: true
+      description: The result of the completed job as determined by the worker.
+      properties:
+        denied:
+          type: boolean
+          description: >
+            Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
+            For example, a Task Listener can deny the completion of a task by setting this flag to true.
+            In this example, the completion of a task is represented by a job that the worker can complete as denied.
+            As a result, the completion request is rejected and the task remains active.
+            Defaults to false.
           nullable: true
     JobUpdateRequest:
       type: object
@@ -4539,12 +5228,20 @@ components:
         decisionInstanceKey:
           type: integer
           format: int64
-          description: The key of the decision instance.
+          description: |
+            The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+        decisionInstanceId:
+          type: string
+          description: The ID of the decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationFailure:
           type: string
           description: The evaluation failure of the decision instance.
+        evaluationDate:
+          description: The evaluation date of the decision instance.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
         processDefinitionKey:
           type: integer
           format: int64
@@ -4554,9 +5251,9 @@ components:
           format: int64
           description: The key of the process instance.
         decisionDefinitionKey:
-          type: integer
-          format: int64
           description: The key of the decision.
+          allOf:
+            - $ref: "#/components/schemas/BasicLongFilterProperty"
         decisionDefinitionId:
           type: string
           description: The ID of the DMN decision.
@@ -4588,7 +5285,10 @@ components:
         decisionInstanceKey:
           type: integer
           format: int64
-          description: The key of the decision instance.
+          description: The key of the decision instance. Note that this is not the unique identifier of the entity itself; the `decisionInstanceId` serves as the primary identifier.
+        decisionInstanceId:
+          type: string
+          description: The ID of the decision instance.
         state:
           $ref: "#/components/schemas/DecisionInstanceStateEnum"
         evaluationDate:
@@ -4778,9 +5478,9 @@ components:
           format: int64
           description: The size of the document in bytes.
         customProperties:
-            type: object
-            description: Custom properties of the document.
-            additionalProperties: true
+          type: object
+          description: Custom properties of the document.
+          additionalProperties: true
 
     DocumentLinkRequest:
       type: object
@@ -5230,6 +5930,20 @@ components:
           description: The version of the form.
           type: integer
           format: int64
+  responses:
+    InternalServerError:
+      description: >
+        An internal error occurred while processing the request.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    Unauthorized:
+      description: The request lacks valid authentication credentials.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
 
   securitySchemes:
     bearerAuth:

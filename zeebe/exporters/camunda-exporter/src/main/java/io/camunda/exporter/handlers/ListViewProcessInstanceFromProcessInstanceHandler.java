@@ -11,12 +11,16 @@ import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
+import io.camunda.exporter.cache.ExporterEntityCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.time.Instant;
@@ -37,17 +41,21 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ListViewProcessInstanceFromProcessInstanceHandler.class);
 
-  private static final Set<String> PI_AND_AI_START_STATES = Set.of(ELEMENT_ACTIVATING.name());
-  private static final Set<String> PI_AND_AI_FINISH_STATES =
-      Set.of(ELEMENT_COMPLETED.name(), ELEMENT_TERMINATED.name());
+  private static final Set<Intent> PI_AND_AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
+  private static final Set<Intent> PI_AND_AI_FINISH_STATES =
+      Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
 
   private final boolean concurrencyMode;
+  private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final String indexName;
 
   public ListViewProcessInstanceFromProcessInstanceHandler(
-      final String indexName, final boolean concurrencyMode) {
+      final String indexName,
+      final boolean concurrencyMode,
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.indexName = indexName;
     this.concurrencyMode = concurrencyMode;
+    this.processCache = processCache;
   }
 
   @Override
@@ -64,10 +72,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
   public boolean handlesRecord(final Record<ProcessInstanceRecordValue> record) {
     final var recordValue = record.getValue();
     if (isProcessEvent(recordValue)) {
-      final var intent = record.getIntent().name();
+      final var intent = record.getIntent();
       return PI_AND_AI_START_STATES.contains(intent)
           || PI_AND_AI_FINISH_STATES.contains(intent)
-          || ELEMENT_MIGRATED.name().equals(intent);
+          || ELEMENT_MIGRATED.equals(intent);
     }
     return false;
   }
@@ -88,7 +96,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       final ProcessInstanceForListViewEntity piEntity) {
 
     final var recordValue = record.getValue();
-    final var intentStr = record.getIntent().name();
+    final var intent = record.getIntent();
 
     piEntity
         .setId(String.valueOf(recordValue.getProcessInstanceKey()))
@@ -101,22 +109,27 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         .setBpmnProcessId(recordValue.getBpmnProcessId())
         .setProcessVersion(recordValue.getVersion())
         .setProcessName(
-            getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()));
+            getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()))
+        .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()));
 
     final OffsetDateTime timestamp =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
     final boolean isRootProcessInstance =
         recordValue.getParentProcessInstanceKey() == EMPTY_PARENT_PROCESS_INSTANCE_ID;
-    if (intentStr.equals(ELEMENT_COMPLETED.name()) || intentStr.equals(ELEMENT_TERMINATED.name())) {
+    if (intent.equals(ELEMENT_COMPLETED) || intent.equals(ELEMENT_TERMINATED)) {
       incrementFinishedCount();
       piEntity.setEndDate(timestamp);
-      if (intentStr.equals(ELEMENT_TERMINATED.name())) {
+      if (intent.equals(ELEMENT_TERMINATED)) {
         piEntity.setState(ProcessInstanceState.CANCELED);
       } else {
         piEntity.setState(ProcessInstanceState.COMPLETED);
       }
-    } else if (intentStr.equals(ELEMENT_ACTIVATING.name())) {
+    } else if (intent.equals(ELEMENT_ACTIVATING)) {
       piEntity.setStartDate(timestamp).setState(ProcessInstanceState.ACTIVE);
+      // default tree path that may be updated later by Incident record handler:
+      // PI_<processInstanceKey>
+      piEntity.setTreePath(
+          new TreePath().startTreePath(recordValue.getProcessInstanceKey()).toString());
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }
@@ -125,26 +138,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       piEntity
           .setParentProcessInstanceKey(recordValue.getParentProcessInstanceKey())
           .setParentFlowNodeInstanceKey(recordValue.getParentElementInstanceKey());
-      //      if (piEntity.getTreePath() == null) {
-      //        final String treePath = getTreePathForCalledProcess(recordValue);
-      //        piEntity.setTreePath(treePath);
-      //      }
     }
-
-    // TODO: Implement properly treePath https://github.com/camunda/camunda/issues/18378
-    final String treePath = getTreePathForCalledProcess(recordValue);
-    piEntity.setTreePath(treePath);
-    //
-    //    if (piEntity.getTreePath() == null) {
-    //      final String treePath =
-    //          new TreePath()
-    //
-    // .startTreePath(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()))
-    //              .toString();
-    //      piEntity.setTreePath(treePath);
-    //    }
-
-    completeOperation(record);
   }
 
   @Override
@@ -180,6 +174,11 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     }
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   private boolean isProcessEvent(final ProcessInstanceRecordValue recordValue) {
     return isOfType(recordValue, BpmnElementType.PROCESS);
   }
@@ -191,14 +190,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       return false;
     }
     return bpmnElementType.equals(type);
-  }
-
-  private boolean isProcessInstanceTerminated(final Record<ProcessInstanceRecordValue> record) {
-    return record.getIntent() == ELEMENT_TERMINATED;
-  }
-
-  private boolean isProcessInstanceMigrated(final Record<ProcessInstanceRecordValue> record) {
-    return record.getIntent() == ELEMENT_MIGRATED;
   }
 
   protected String getProcessInstanceScript() {
@@ -249,87 +240,21 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     */
   }
 
-  /// TODO - because it depends on listViewStore and flowNodeStore
-  private String getTreePathForCalledProcess(final ProcessInstanceRecordValue recordValue) {
-    // DEFAULT for now
-    return String.format("PI_%s", recordValue.getProcessInstanceKey());
-    //   TODO: TreePath  https://github.com/camunda/camunda/issues/18378
-    //
-    //    final ListViewStore listViewStore = null;
-    //    final FlowNodeStore flowNodeStore = null;
-    //    if (listViewStore == null || flowNodeStore == null) {
-    //      return null;
-    //    }
-    //
-    //    final String parentTreePath =
-    //
-    // listViewStore.findProcessInstanceTreePathFor(recordValue.getParentProcessInstanceKey());
-    //
-    //    if (parentTreePath != null) {
-    //      final String flowNodeInstanceId =
-    //          ConversionUtils.toStringOrNull(recordValue.getParentElementInstanceKey());
-    //      final String callActivityId =
-    //          flowNodeStore.getFlowNodeIdByFlowNodeInstanceId(flowNodeInstanceId);
-    //      final String treePath =
-    //          new TreePath(parentTreePath)
-    //              .appendEntries(
-    //                  callActivityId,
-    //                  flowNodeInstanceId,
-    //                  ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()))
-    //              .toString();
-    //
-    //      return treePath;
-    //    } else {
-    //      LOGGER.warn(
-    //          "Unable to find parent tree path for parent instance id "
-    //              + recordValue.getParentProcessInstanceKey());
-    //      final String treePath =
-    //          new TreePath()
-    //
-    // .startTreePath(ConversionUtils.toStringOrNull(recordValue.getProcessInstanceKey()))
-    //              .toString();
-    //
-    //      return treePath;
-    //    }
-  }
-
-  /// TODO - because it depends on operationsManager and batchRequest
-  private void completeOperation(final Record<ProcessInstanceRecordValue> record) {
-    // TODO: Implement Operations manager for Exporter
-    // https://github.com/camunda/camunda/issues/18372
-    //
-    //    final OperationsManager operationsManager = null;
-    //    final NewElasticsearchBatchRequest batchRequest = null;
-    //    if (operationsManager == null || batchRequest == null) {
-    //      return;
-    //    }
-    //
-    //    try {
-    //      if (isProcessInstanceTerminated(record)) {
-    //        // resolve corresponding operation
-    //        operationsManager.completeOperation(
-    //            null, record.getKey(), null, OperationType.CANCEL_PROCESS_INSTANCE, batchRequest);
-    //      } else if (isProcessInstanceMigrated(record)) {
-    //        // resolve corresponding operation
-    //        operationsManager.completeOperation(
-    //            null, record.getKey(), null, OperationType.MIGRATE_PROCESS_INSTANCE,
-    // batchRequest);
-    //      }
-    //    } catch (final PersistenceException ex) {
-    //      throw new OperateRuntimeException(ex);
-    //    }
-  }
-
-  /// TODO - because it depends on processCache
   private String getProcessName(final Long processDefinitionKey, final String bpmnProcessId) {
-    return bpmnProcessId;
+    return processCache
+        .get(processDefinitionKey)
+        .map(CachedProcessEntity::name)
+        .map(
+            processName ->
+                processName == null || processName.isBlank() ? bpmnProcessId : processName)
+        // If the cache does not contain the process definition then the process has been
+        // deleted from the backend. This is a special case which can happen only if there was a
+        // data loss in the backend. In that case, inorder to not block the exporter, we can
+        // return the bpmnProcessId as the process name.
+        .orElse(bpmnProcessId);
+  }
 
-    // TODO https://github.com/camunda/camunda/issues/18364
-    //    final ProcessCache processCache = null;
-    //    if (processCache == null) {
-    //      return bpmnProcessId;
-    //    }
-    //
-    //    return processCache.getProcessNameOrDefaultValue(processDefinitionKey, bpmnProcessId);
+  private String getVersionTag(final long processDefinitionJey) {
+    return processCache.get(processDefinitionJey).map(CachedProcessEntity::versionTag).orElse(null);
   }
 }

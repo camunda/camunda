@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -40,6 +42,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.scaling.RedistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
@@ -106,6 +109,9 @@ public final class TypedEventRegistry {
     registry.put(ValueType.TENANT, TenantRecord.class);
     registry.put(ValueType.ROLE, RoleRecord.class);
     registry.put(ValueType.SCALE, ScaleRecord.class);
+    registry.put(ValueType.MAPPING, MappingRecord.class);
+    registry.put(ValueType.GROUP, GroupRecord.class);
+    registry.put(ValueType.REDISTRIBUTION, RedistributionRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 

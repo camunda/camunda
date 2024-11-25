@@ -7,15 +7,18 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.zeebe.gateway.protocol.rest.AuthorizationFilterRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationSearchResponse;
+import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestQueryController;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,13 +44,21 @@ public class AuthorizationQueryController {
   }
 
   @PostMapping(
-      path = "/v2/users/{id}/authorizations/search",
+      path = "/v2/users/{userKey}/authorizations/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<AuthorizationSearchResponse> searchUserAuthorizations(
-      @PathVariable("id") final long id,
+      @PathVariable("userKey") final long userKey,
       @RequestBody(required = false) final AuthorizationSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toAuthorizationQuery(query)
+    var finalQuery = query;
+    if (query == null) {
+      finalQuery = new AuthorizationSearchQueryRequest();
+    }
+    if (finalQuery.getFilter() == null) {
+      finalQuery.setFilter(new AuthorizationFilterRequest());
+    }
+    finalQuery.getFilter().ownerType(OwnerTypeEnum.USER).ownerKey(userKey);
+    return SearchQueryRequestMapper.toAuthorizationQuery(finalQuery)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
@@ -56,11 +67,8 @@ public class AuthorizationQueryController {
       final var result = authorizationServices.search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toAuthorizationSearchQueryResponse(result));
-    } catch (final Throwable e) {
-      final var problemDetail =
-          RestErrorMapper.createProblemDetail(
-              HttpStatus.BAD_REQUEST, e.getMessage(), "Failed to execute User Search Query");
-      return RestErrorMapper.mapProblemToResponse(problemDetail);
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
     }
   }
 }

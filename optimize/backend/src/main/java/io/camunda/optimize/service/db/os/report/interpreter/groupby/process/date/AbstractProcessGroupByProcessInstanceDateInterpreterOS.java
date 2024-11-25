@@ -7,9 +7,9 @@
  */
 package io.camunda.optimize.service.db.os.report.interpreter.groupby.process.date;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.withSubaggregations;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.withSubaggregations;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
 import static io.camunda.optimize.service.db.os.report.interpreter.util.FilterLimitedAggregationUtilOS.unwrapFilterLimitedAggregations;
 
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
@@ -22,7 +22,6 @@ import io.camunda.optimize.service.db.os.report.interpreter.RawResult;
 import io.camunda.optimize.service.db.os.report.interpreter.groupby.process.AbstractProcessGroupByInterpreterOS;
 import io.camunda.optimize.service.db.os.report.service.DateAggregationServiceOS;
 import io.camunda.optimize.service.db.os.report.service.MinMaxStatsServiceOS;
-import io.camunda.optimize.service.db.os.util.AggregateHelperOS;
 import io.camunda.optimize.service.db.report.ExecutionContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import io.camunda.optimize.service.db.report.groupby.ProcessGroupByProcessInstanceDateInterpreter;
@@ -125,10 +124,8 @@ public abstract class AbstractProcessGroupByProcessInstanceDateInterpreterOS
       final CompositeCommandResult result,
       final SearchResponse<RawResult> response,
       final ExecutionContext<ProcessReportDataDto, ProcessExecutionPlan> context) {
-    final Map<String, Aggregate> fixedAggregations =
-        AggregateHelperOS.withNullValues(response.hits().total().value(), response.aggregations());
     ProcessGroupByProcessInstanceDateInterpreter.addQueryResult(
-        processAggregations(response, fixedAggregations, context),
+        processAggregations(response, response.aggregations(), context),
         getDistributedByInterpreter().isKeyOfNumericType(context),
         result,
         context);

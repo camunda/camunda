@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState, useEffect, ComponentPropsWithoutRef, ReactNode} from 'react';
+import {useState, useEffect, ComponentPropsWithoutRef, ReactNode, forwardRef} from 'react';
 import {Tabs as CarbonTabs, TabList, Tab, TabPanels, TabPanel, TabsSkeleton} from '@carbon/react';
 
 import {ignoreFragments} from 'services';
@@ -69,9 +69,9 @@ export default function Tabs<T extends string | number>({
   );
 }
 
-Tabs.Tab = ({children}: TabProps<number | string>): JSX.Element => {
-  return <TabPanel>{children}</TabPanel>;
-};
+Tabs.Tab = forwardRef<HTMLDivElement, TabProps<number | string>>(({children}, ref) => {
+  return <TabPanel ref={ref}>{children}</TabPanel>;
+});
 
 function getIndex<T extends string | number>(array: T[], value: T): number {
   const idx = array.indexOf(value);

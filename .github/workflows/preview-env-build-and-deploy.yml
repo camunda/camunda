@@ -39,28 +39,18 @@ jobs:
           ref: refs/heads/${{ github.head_ref }}
           fetch-depth: 0 # fetches all history for all branches and tags
 
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          dockerhub: true
+          harbor: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
-
-      - name: Import Secrets
-        id: secrets
-        uses: hashicorp/vault-action@v3.0.0
-        with:
-          url: ${{ secrets.VAULT_ADDR }}
-          method: approle
-          roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secrets: |
-            secret/data/github.com/organizations/camunda NEXUS_USR;
-            secret/data/github.com/organizations/camunda NEXUS_PSW;
 
       - name: Set environment variables
         env:
@@ -68,13 +58,6 @@ jobs:
         run: |
           GIT_COMMIT_HASH=$(git rev-parse $HEAD_REF)
           echo "VERSION=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
-
-      - name: Login to Harbor docker registry
-        uses: docker/login-action@v3
-        with:
-          registry: registry.camunda.cloud
-          username: ${{ steps.secrets.outputs.NEXUS_USR }}
-          password: ${{ steps.secrets.outputs.NEXUS_PSW }}
 
       - uses: ./.github/actions/build-platform-docker
         with:

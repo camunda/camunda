@@ -12,6 +12,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.XMLUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
@@ -30,7 +32,9 @@ import org.junit.jupiter.api.Test;
 public class ProcessHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-process";
-  private final ProcessHandler underTest = new ProcessHandler(indexName, new XMLUtil());
+  private final TestProcessCache processCache = new TestProcessCache();
+  private final ProcessHandler underTest =
+      new ProcessHandler(indexName, new XMLUtil(), processCache);
 
   @Test
   void testGetHandledValueType() {
@@ -111,12 +115,13 @@ public class ProcessHandlerTest {
             .from(factory.generateObject(ImmutableProcess.class))
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
             .build();
 
     final Record<Process> processRecord =
         factory.generateRecord(
-            ValueType.DECISION,
+            ValueType.PROCESS,
             r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
 
     // when
@@ -139,23 +144,24 @@ public class ProcessHandlerTest {
   }
 
   @Test
-  void shouldUpdateEntityFromRecordWithForm() throws IOException {
+  void shouldUpdateEntityFromRecordWithLinkedForm() throws IOException {
     // given
 
     final long expectedId = 123;
-    final var resource = getClass().getClassLoader().getResource("process/form-process.bpmn");
+    final var resource = getClass().getClassLoader().getResource("process/form-link-process.bpmn");
     assertThat(resource).isNotNull();
     final ImmutableProcess processRecordValue =
         ImmutableProcess.builder()
             .from(factory.generateObject(ImmutableProcess.class))
             .withProcessDefinitionKey(expectedId)
             .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
             .withResource(Files.readAllBytes(Path.of(resource.getPath())))
             .build();
 
     final Record<Process> processRecord =
         factory.generateRecord(
-            ValueType.DECISION,
+            ValueType.PROCESS,
             r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
 
     // when
@@ -174,6 +180,126 @@ public class ProcessHandlerTest {
         .isEqualTo(new String(processRecordValue.getResource(), StandardCharsets.UTF_8));
     assertThat(processEntity.getTenantId()).isEqualTo(processRecordValue.getTenantId());
     assertThat(processEntity.getIsPublic()).isTrue();
-    assertThat(processEntity.getFormId()).isNotNull();
+    assertThat(processEntity.getFormId()).isEqualTo("testForm");
+    assertThat(processEntity.getFormKey()).isNull();
+    assertThat(processEntity.getIsFormEmbedded()).isFalse();
+  }
+
+  @Test
+  void shouldUpdateEntityFromRecordWithEmbeddedForm() throws IOException {
+    // given
+
+    final long expectedId = 123;
+    final var resource =
+        getClass().getClassLoader().getResource("process/form-embedded-process.bpmn");
+    assertThat(resource).isNotNull();
+    final ImmutableProcess processRecordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(expectedId)
+            .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
+            .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .build();
+
+    final Record<Process> processRecord =
+        factory.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
+
+    // when
+    final ProcessEntity processEntity = new ProcessEntity();
+    underTest.updateEntity(processRecord, processEntity);
+
+    // then
+    assertThat(processEntity.getId()).isEqualTo(String.valueOf(expectedId));
+    assertThat(processEntity.getKey()).isEqualTo(expectedId);
+    assertThat(processEntity.getName()).isEqualTo("testProcessName");
+    assertThat(processEntity.getBpmnProcessId()).isEqualTo("testProcessId");
+    assertThat(processEntity.getVersionTag()).isEqualTo("processTag");
+    assertThat(processEntity.getVersion()).isEqualTo(processRecordValue.getVersion());
+    assertThat(processEntity.getResourceName()).isEqualTo(processRecordValue.getResourceName());
+    assertThat(processEntity.getBpmnXml())
+        .isEqualTo(new String(processRecordValue.getResource(), StandardCharsets.UTF_8));
+    assertThat(processEntity.getTenantId()).isEqualTo(processRecordValue.getTenantId());
+    assertThat(processEntity.getIsPublic()).isTrue();
+    assertThat(processEntity.getFormId()).isNull();
+    assertThat(processEntity.getFormKey()).isEqualTo("camunda-forms:bpmn:testForm");
+    assertThat(processEntity.getIsFormEmbedded()).isTrue();
+  }
+
+  @Test
+  void shouldLinkStartFormOnlyForDeployedProcess() throws IOException {
+    // given
+
+    final var expectedId = 123L;
+    final var resource =
+        getClass().getClassLoader().getResource("process/two-process-with-embedded-form.bpmn");
+    assertThat(resource).isNotNull();
+    final ImmutableProcess processRecordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(expectedId)
+            .withBpmnProcessId("testProcessIdOne")
+            .withVersionTag(null)
+            .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .build();
+
+    final Record<Process> processRecord =
+        factory.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
+
+    // when
+    final ProcessEntity processEntity = new ProcessEntity();
+    underTest.updateEntity(processRecord, processEntity);
+
+    // then
+    assertThat(processEntity.getId()).isEqualTo(String.valueOf(expectedId));
+    assertThat(processEntity.getKey()).isEqualTo(expectedId);
+    assertThat(processEntity.getName()).isNull();
+    assertThat(processEntity.getBpmnProcessId()).isEqualTo("testProcessIdOne");
+    assertThat(processEntity.getVersionTag()).isNull();
+    assertThat(processEntity.getVersion()).isEqualTo(processRecordValue.getVersion());
+    assertThat(processEntity.getResourceName()).isEqualTo(processRecordValue.getResourceName());
+    assertThat(processEntity.getBpmnXml())
+        .isEqualTo(new String(processRecordValue.getResource(), StandardCharsets.UTF_8));
+    assertThat(processEntity.getTenantId()).isEqualTo(processRecordValue.getTenantId());
+    assertThat(processEntity.getIsPublic()).isFalse();
+    assertThat(processEntity.getFormId()).isNull();
+    assertThat(processEntity.getFormKey()).isEqualTo("camunda-forms:bpmn:my-embedded-form-one");
+    assertThat(processEntity.getIsFormEmbedded()).isTrue();
+  }
+
+  @Test
+  void shouldUpdateProcessCache() throws IOException {
+    // given
+    final long expectedId = 123;
+    final var resource = getClass().getClassLoader().getResource("process/test-process.bpmn");
+    assertThat(resource).isNotNull();
+    final ImmutableProcess processRecordValue =
+        ImmutableProcess.builder()
+            .from(factory.generateObject(ImmutableProcess.class))
+            .withProcessDefinitionKey(expectedId)
+            .withBpmnProcessId("testProcessId")
+            .withVersionTag("processTag")
+            .withResource(Files.readAllBytes(Path.of(resource.getPath())))
+            .build();
+
+    final Record<Process> processRecord =
+        factory.generateRecord(
+            ValueType.PROCESS,
+            r -> r.withIntent(ProcessIntent.CREATED).withValue(processRecordValue));
+
+    // when
+    final ProcessEntity processEntity = new ProcessEntity();
+    underTest.updateEntity(processRecord, processEntity);
+
+    // then
+    assertThat(processCache.get(processRecord.getValue().getProcessDefinitionKey()))
+        .isPresent()
+        .get()
+        .extracting(CachedProcessEntity::name, CachedProcessEntity::versionTag)
+        .containsExactly("testProcessName", "processTag");
   }
 }

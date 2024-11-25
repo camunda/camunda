@@ -19,8 +19,6 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
-import io.camunda.operate.schema.templates.OperationTemplate;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
@@ -40,7 +38,9 @@ import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.identity.PermissionsService;
 import io.camunda.operate.webapp.writer.PersistOperationHelper;
 import io.camunda.operate.webapp.writer.ProcessInstanceSource;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
@@ -376,13 +376,14 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
             .setInstancesCount(0);
 
     // Create operation
-    final OperationEntity operationEntity = new OperationEntity();
-    operationEntity.generateId();
-    operationEntity.setDecisionDefinitionKey(decisionDefinitionKey);
-    operationEntity.setType(operationType);
-    operationEntity.setState(OperationState.SCHEDULED);
-    operationEntity.setBatchOperationId(batchOperation.getId());
-    operationEntity.setUsername(userService.getCurrentUser().getUsername());
+    final OperationEntity operationEntity =
+        new OperationEntity()
+            .withGeneratedId()
+            .setDecisionDefinitionKey(decisionDefinitionKey)
+            .setType(operationType)
+            .setState(OperationState.SCHEDULED)
+            .setBatchOperationId(batchOperation.getId())
+            .setUsername(userService.getCurrentUser().getUsername());
 
     // Create request
     try {
@@ -425,13 +426,14 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
             .setInstancesCount(0);
 
     // Create operation
-    final OperationEntity operationEntity = new OperationEntity();
-    operationEntity.generateId();
-    operationEntity.setProcessDefinitionKey(processDefinitionKey);
-    operationEntity.setType(operationType);
-    operationEntity.setState(OperationState.SCHEDULED);
-    operationEntity.setBatchOperationId(batchOperation.getId());
-    operationEntity.setUsername(userService.getCurrentUser().getUsername());
+    final OperationEntity operationEntity =
+        new OperationEntity()
+            .withGeneratedId()
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setType(operationType)
+            .setState(OperationState.SCHEDULED)
+            .setBatchOperationId(batchOperation.getId())
+            .setUsername(userService.getCurrentUser().getUsername());
 
     // Create request
     try {
@@ -526,13 +528,12 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
 
   private BatchOperationEntity createBatchOperationEntity(
       final OperationType operationType, final String name) {
-    final BatchOperationEntity batchOperationEntity = new BatchOperationEntity();
-    batchOperationEntity.generateId();
-    batchOperationEntity.setType(operationType);
-    batchOperationEntity.setName(name);
-    batchOperationEntity.setStartDate(OffsetDateTime.now());
-    batchOperationEntity.setUsername(userService.getCurrentUser().getUsername());
-    return batchOperationEntity;
+    return new BatchOperationEntity()
+        .withGeneratedId()
+        .setType(operationType)
+        .setName(name)
+        .setStartDate(OffsetDateTime.now())
+        .setUsername(userService.getCurrentUser().getUsername());
   }
 
   private OperationEntity createOperationEntity(
@@ -557,17 +558,15 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       final OperationType operationType,
       final String batchOperationId) {
 
-    final OperationEntity operationEntity = new OperationEntity();
-    operationEntity.generateId();
-    operationEntity.setProcessInstanceKey(processInstanceSource.getProcessInstanceKey());
-    operationEntity.setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey());
-    operationEntity.setBpmnProcessId(processInstanceSource.getBpmnProcessId());
-    operationEntity.setType(operationType);
-    operationEntity.setState(OperationState.SCHEDULED);
-    operationEntity.setBatchOperationId(batchOperationId);
-    operationEntity.setUsername(userService.getCurrentUser().getUsername());
-
-    return operationEntity;
+    return new OperationEntity()
+        .withGeneratedId()
+        .setProcessInstanceKey(processInstanceSource.getProcessInstanceKey())
+        .setProcessDefinitionKey(processInstanceSource.getProcessDefinitionKey())
+        .setBpmnProcessId(processInstanceSource.getBpmnProcessId())
+        .setType(operationType)
+        .setState(OperationState.SCHEDULED)
+        .setBatchOperationId(batchOperationId)
+        .setUsername(userService.getCurrentUser().getUsername());
   }
 
   private void validateTotalHits(final SearchHits hits) {

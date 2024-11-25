@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobActivationBehavio
 import io.camunda.zeebe.engine.processing.clock.ClockProcessors;
 import io.camunda.zeebe.engine.processing.common.DecisionBehavior;
 import io.camunda.zeebe.engine.processing.deployment.DeploymentCreateProcessor;
+import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructProcessor;
+import io.camunda.zeebe.engine.processing.deployment.DeploymentReconstructionStarter;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributeProcessor;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
 import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCompleteProcessor;
@@ -31,6 +33,8 @@ import io.camunda.zeebe.engine.processing.distribution.CommandRedistributor;
 import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
+import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
+import io.camunda.zeebe.engine.processing.identity.MappingProcessors;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
 import io.camunda.zeebe.engine.processing.job.JobEventProcessors;
@@ -48,6 +52,7 @@ import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
 import io.camunda.zeebe.engine.scaling.ScalingProcessors;
+import io.camunda.zeebe.engine.scaling.redistribution.RedistributionBehavior;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -255,10 +260,28 @@ public final class EngineProcessors {
         writers,
         commandDistributionBehavior);
 
+    GroupProcessors.addGroupProcessors(
+        typedRecordProcessors,
+        processingState,
+        authCheckBehavior,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior);
+
+    final var redistributionBehavior =
+        new RedistributionBehavior(writers, commandDistributionBehavior, processingState);
     ScalingProcessors.addScalingProcessors(
-        typedRecordProcessors, writers, keyGenerator, processingState);
+        redistributionBehavior, typedRecordProcessors, writers, keyGenerator, processingState);
 
     TenantProcessors.addTenantProcessors(
+        typedRecordProcessors,
+        processingState,
+        authCheckBehavior,
+        keyGenerator,
+        writers,
+        commandDistributionBehavior);
+
+    MappingProcessors.addMappingProcessors(
         typedRecordProcessors,
         processingState,
         authCheckBehavior,
@@ -374,6 +397,14 @@ public final class EngineProcessors {
         ValueType.DEPLOYMENT_DISTRIBUTION,
         DeploymentDistributionIntent.COMPLETE,
         completeDeploymentDistributionProcessor);
+
+    typedRecordProcessors.onCommand(
+        ValueType.DEPLOYMENT,
+        DeploymentIntent.RECONSTRUCT,
+        new DeploymentReconstructProcessor(keyGenerator, writers));
+
+    typedRecordProcessors.withListener(
+        new DeploymentReconstructionStarter(processingState.getDeploymentState()));
   }
 
   private static void addIncidentProcessors(

@@ -7,6 +7,9 @@
  */
 package io.camunda.operate.schema.elasticsearch;
 
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
@@ -280,8 +283,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   }
 
   private String settingsTemplateName() {
-    final OperateElasticsearchProperties elsConfig = operateProperties.getElasticsearch();
-    return String.format("%s_template", elsConfig.getIndexPrefix());
+    return String.format("%s%s_template", formatIndexPrefix(getIndexPrefix()), OPERATE);
   }
 
   private Settings getDefaultIndexSettings() {

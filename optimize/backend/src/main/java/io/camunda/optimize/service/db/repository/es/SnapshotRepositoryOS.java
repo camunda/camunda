@@ -7,12 +7,11 @@
  */
 package io.camunda.optimize.service.db.repository.es;
 
-import static io.camunda.optimize.service.db.os.externalcode.client.async.OpenSearchAsyncSnapshotOperations.SnaphotStatus.FAILED;
-import static io.camunda.optimize.service.db.os.externalcode.client.async.OpenSearchAsyncSnapshotOperations.SnaphotStatus.SUCCESS;
+import static io.camunda.optimize.service.db.os.client.async.OpenSearchAsyncSnapshotOperations.SnapshotStatus.FAILED;
+import static io.camunda.optimize.service.db.os.client.async.OpenSearchAsyncSnapshotOperations.SnapshotStatus.SUCCESS;
 import static io.camunda.optimize.service.util.SnapshotUtil.getSnapshotPrefixWithBackupId;
 import static java.lang.String.format;
 
-import co.elastic.clients.transport.TransportException;
 import io.camunda.optimize.service.db.os.OptimizeOpenSearchClient;
 import io.camunda.optimize.service.db.repository.SnapshotRepository;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -47,7 +46,7 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
         .async()
         .snapshot()
         .delete(
-            configurationService.getElasticSearchConfiguration().getSnapshotRepositoryName(),
+            configurationService.getOpenSearchConfiguration().getSnapshotRepositoryName(),
             getSnapshotPrefixWithBackupId(backupId) + "*",
             e -> "Failed to send delete snapshot request to Opensearch!")
         .whenComplete(
@@ -68,7 +67,7 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
         .async()
         .snapshot()
         .create(
-            configurationService.getElasticSearchConfiguration().getSnapshotRepositoryName(),
+            configurationService.getOpenSearchConfiguration().getSnapshotRepositoryName(),
             snapshotName,
             Arrays.asList(indexNames),
             e -> format("Failed to send create snapshot %s request to Opensearch!", snapshotName))
@@ -84,7 +83,7 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
   }
 
   private void onSnapshotDeletionFailed(final Throwable e, final Long backupId) {
-    if (e instanceof IOException || e instanceof TransportException) {
+    if (e instanceof IOException) {
       final String reason =
           format(
               "Encountered an error connecting to Opensearch while attempting to delete snapshots for backupID [%s].",
@@ -114,10 +113,10 @@ public class SnapshotRepositoryOS implements SnapshotRepository {
   }
 
   private void onSnapshotCreationFailed(final Throwable e, final String snapshotName) {
-    if (e instanceof IOException || e instanceof TransportException) {
+    if (e instanceof IOException) {
       final String reason =
           format(
-              "Encountered an error connecting to Elasticsearch while attempting to create snapshot [%s].",
+              "Encountered an error connecting to OpenSearch while attempting to create snapshot [%s].",
               snapshotName);
       LOG.error(reason, e);
     } else {

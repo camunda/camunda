@@ -7,4 +7,4 @@
  */
 package io.camunda.webapps.schema.descriptors.backup;
 
-public interface Prio1Backup {}
+public interface Prio1Backup extends BackupPriority {}

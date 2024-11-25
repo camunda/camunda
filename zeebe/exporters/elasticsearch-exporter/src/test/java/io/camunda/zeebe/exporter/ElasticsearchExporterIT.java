@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import co.elastic.clients.elasticsearch.core.GetResponse;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapp
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.record.ImmutableRecord.Builder;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -27,12 +29,19 @@ import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
+import io.camunda.zeebe.util.VersionUtil;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
+import java.util.function.UnaryOperator;
 import org.agrona.CloseHelper;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -43,6 +52,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -59,7 +69,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 final class ElasticsearchExporterIT {
   @Container
   private static final ElasticsearchContainer CONTAINER =
-      TestSupport.createDefaultContainer().withEnv("action.destructive_requires_name", "false");
+      TestSearchContainers.createDefeaultElasticsearchContainer()
+          .withEnv("action.destructive_requires_name", "false");
 
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
@@ -105,7 +116,7 @@ final class ElasticsearchExporterIT {
   @MethodSource("io.camunda.zeebe.exporter.TestSupport#provideValueTypes")
   void shouldExportRecord(final ValueType valueType) {
     // given
-    final var record = factory.generateRecord(valueType);
+    final var record = generateRecord(valueType);
 
     // when
     export(record);
@@ -135,7 +146,10 @@ final class ElasticsearchExporterIT {
             .withCustomHeaders(Map.of("x", "1", "x.y", "2"))
             .build();
     final Record<JobRecordValue> record =
-        factory.generateRecord(ValueType.JOB, builder -> builder.withValue(value));
+        factory.generateRecord(
+            ValueType.JOB,
+            builder ->
+                builder.withValue(value).withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when
     export(record);
@@ -161,7 +175,10 @@ final class ElasticsearchExporterIT {
             .withJobKeys(Collections.singleton(1L))
             .build();
     final Record<JobBatchRecordValue> record =
-        factory.generateRecord(ValueType.JOB_BATCH, builder -> builder.withValue(value));
+        factory.generateRecord(
+            ValueType.JOB_BATCH,
+            builder ->
+                builder.withValue(value).withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when
     export(record);
@@ -180,8 +197,9 @@ final class ElasticsearchExporterIT {
         "no template is created because the exporter is configured filter out records of this type");
 
     // given
-    final var record = factory.generateRecord(valueType);
-    final var expectedIndexTemplateName = indexRouter.indexPrefixForValueType(valueType);
+    final var record = generateRecord(valueType);
+    final var expectedIndexTemplateName =
+        indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
 
     // when - export a single record to enforce installing all index templatesWrapper
     export(record);
@@ -199,7 +217,8 @@ final class ElasticsearchExporterIT {
   @Test
   void shouldPutComponentTemplate() {
     // given
-    final var record = factory.generateRecord();
+    final var record =
+        factory.generateRecord(r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
 
     // when - export a single record to enforce installing all index templatesWrapper
     export(record);
@@ -219,13 +238,26 @@ final class ElasticsearchExporterIT {
     return true;
   }
 
+  private <T extends RecordValue> Record<T> generateRecord(final ValueType valueType) {
+    return factory.generateRecord(
+        valueType, r -> r.withBrokerVersion(VersionUtil.getVersionLowerCase()));
+  }
+
+  private <T extends RecordValue> Record<T> generateSupportedRecord(
+      final UnaryOperator<Builder<T>> modifier) {
+    final var supportedTypes = TestSupport.provideValueTypes().toList();
+
+    return factory.generateRecord(
+        supportedTypes.get(new Random().nextInt(supportedTypes.size())), modifier);
+  }
+
   @Nested
   final class IndexSettingsTest {
     @Test
     void shouldAddIndexLifecycleSettingsToExistingIndicesOnRerunWhenRetentionIsEnabled() {
       // given
       configureExporter(false);
-      final var record1 = factory.generateRecord(ValueType.JOB);
+      final var record1 = generateRecord(ValueType.JOB);
 
       // when
       export(record1);
@@ -239,7 +271,7 @@ final class ElasticsearchExporterIT {
       /* Tests when retention is later enabled all indices should have lifecycle policy */
       // given
       configureExporter(true);
-      final var record2 = factory.generateRecord(ValueType.JOB);
+      final var record2 = generateRecord(ValueType.JOB);
 
       // when
       export(record2);
@@ -257,7 +289,7 @@ final class ElasticsearchExporterIT {
     void shouldRemoveIndexLifecycleSettingsFromExistingIndicesOnRerunWhenRetentionIsDisabled() {
       // given
       configureExporter(true);
-      final var record1 = factory.generateRecord(ValueType.JOB);
+      final var record1 = generateRecord(ValueType.JOB);
 
       // when
       export(record1);
@@ -270,7 +302,7 @@ final class ElasticsearchExporterIT {
       /* Tests when retention is later disabled all indices should not have a lifecycle policy */
       // given
       configureExporter(false);
-      final var record2 = factory.generateRecord(ValueType.JOB);
+      final var record2 = generateRecord(ValueType.JOB);
 
       // when
       export(record2);
@@ -298,13 +330,13 @@ final class ElasticsearchExporterIT {
       // using 498 here as we will export one more record after (1 main shard, 1 replica)
       final int limit = 498;
       for (int i = 0; i < limit; i++) {
-        final var record = factory.generateRecord(ValueType.JOB);
+        final var record = generateRecord(ValueType.JOB);
         records.add(record);
         export(record);
       }
       // when
       configureExporter(true);
-      final var record2 = factory.generateRecord(ValueType.JOB);
+      final var record2 = generateRecord(ValueType.JOB);
       // when
       await("New record is exported, and existing indices are updated")
           .atMost(Duration.ofSeconds(30))
@@ -323,9 +355,93 @@ final class ElasticsearchExporterIT {
       }
     }
 
+    @Test
+    void shouldExportRecordToIndexSpecifiedByRecordBrokerVersion() {
+      configureExporter(false);
+      final var oldRecord =
+          factory.generateRecord(ValueType.JOB, r -> r.withBrokerVersion("8.6.0"));
+
+      try (final var mockVersion =
+          Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
+        mockVersion.when(VersionUtil::getVersionLowerCase).thenReturn("8.7.0");
+
+        await("New record is exported, and existing indices are updated")
+            .atMost(Duration.ofSeconds(30))
+            .until(() -> export(oldRecord));
+      }
+
+      final var document = testClient.getExportedDocumentFor(oldRecord);
+      assertThat(document.index().contains(oldRecord.getBrokerVersion())).isTrue();
+    }
+
     private void configureExporter(final boolean retentionEnabled) {
       config.retention.setEnabled(retentionEnabled);
       exporter.configure(exporterTestContext);
+    }
+
+    @Test
+    void shouldExportToCorrectIndexWithElasticsearchNotReachable() throws IOException {
+
+      // given
+      final var currentPort = CONTAINER.getFirstMappedPort();
+      CONTAINER.stop();
+      Awaitility.await().until(() -> !CONTAINER.isRunning());
+
+      final var record = generateSupportedRecord(r -> r.withBrokerVersion("8.6.0"));
+
+      try (final var mockVersion =
+          Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
+        mockVersion.when(VersionUtil::getVersionLowerCase).thenReturn("8.6.0");
+        configureExporter(false);
+
+        assertThatThrownBy(() -> export(record));
+      }
+
+      CONTAINER
+          .withEnv("discovery.type", "single-node")
+          .setPortBindings(List.of(currentPort + ":9200"));
+      CONTAINER.start();
+      Awaitility.await().until(CONTAINER::isRunning);
+
+      // when
+      final var record2 = generateSupportedRecord(r -> r.withBrokerVersion("8.7.0"));
+
+      try (final var mockVersion =
+          Mockito.mockStatic(VersionUtil.class, Mockito.CALLS_REAL_METHODS)) {
+        mockVersion.when(VersionUtil::getVersionLowerCase).thenReturn("8.7.0");
+        configureExporter(false);
+
+        export(record);
+        export(record2);
+      }
+
+      // then
+
+      // If the templates are not created then the dynamically created indices will not have an
+      // alias versus with a template as the template defines an alias.
+      final var firstRecordIndexName = indexRouter.indexFor(record);
+      final var firstRecordIndexAliases =
+          testClient
+              .getEsClient()
+              .indices()
+              .get(r -> r.index(firstRecordIndexName))
+              .result()
+              .get(firstRecordIndexName)
+              .aliases();
+      assertThat(firstRecordIndexAliases.size()).isEqualTo(1);
+      assertThat(firstRecordIndexName).contains("8.6.0");
+
+      final var secondRecordIndexName = indexRouter.indexFor(record2);
+      final var secondRecordIndexAliases =
+          testClient
+              .getEsClient()
+              .indices()
+              .get(r -> r.index(secondRecordIndexName))
+              .result()
+              .get(secondRecordIndexName)
+              .aliases();
+      assertThat(secondRecordIndexAliases.size()).isEqualTo(1);
+      assertThat(secondRecordIndexName).contains("8.7.0");
     }
 
     private void assertIndexSettingsHasLifecyclePolicy(

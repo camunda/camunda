@@ -115,6 +115,11 @@ public class ListViewFlowNodeFromIncidentHandler
     }
   }
 
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
   public String trimWhitespace(final String str) {
     return (str == null) ? null : str.strip();
   }

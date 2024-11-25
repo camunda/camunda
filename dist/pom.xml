@@ -132,6 +132,23 @@
     </dependency>
 
     <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>migration-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>process-migration</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda.migration</groupId>
+      <artifactId>identity-migration</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms</artifactId>
     </dependency>
@@ -205,11 +222,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>identity-webjar</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>identity-migration</artifactId>
     </dependency>
 
     <dependency>
@@ -320,6 +332,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-services</artifactId>
     </dependency>
 
     <dependency>
@@ -641,6 +658,16 @@
       <artifactId>testcontainers</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-test</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 
@@ -755,7 +782,6 @@
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
-            <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
 
             <!-- Needed for configuring the Identity SDK by providing an IdentityConfiguration bean -->
             <dependency>io.camunda:identity-spring-boot-autoconfigure</dependency>
@@ -773,6 +799,8 @@
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
+            <dep>io.camunda.migration:identity-migration</dep>
+            <dep>io.camunda.migration:process-migration</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

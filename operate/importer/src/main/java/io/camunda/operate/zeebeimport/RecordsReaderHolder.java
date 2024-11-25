@@ -13,8 +13,13 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.camunda.zeebe.util.VisibleForTesting;
+import java.io.IOException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +34,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class RecordsReaderHolder {
 
+  public static final Integer MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 5;
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordsReaderHolder.class);
 
   private Set<RecordsReader> recordsReaders = null;
@@ -38,6 +44,10 @@ public class RecordsReaderHolder {
   @Autowired private PartitionHolder partitionHolder;
 
   @Autowired private OperateProperties operateProperties;
+
+  private final Set<Integer> partitionsCompletedImporting = new HashSet<>();
+
+  private final Map<RecordsReader, Integer> countEmptyBatchesAfterImportingDone = new HashMap<>();
 
   public Set<RecordsReader> getAllRecordsReaders() {
     if (CollectionUtil.isNotEmpty(recordsReaders)) {
@@ -51,11 +61,53 @@ public class RecordsReaderHolder {
     for (final Integer partitionId : partitionIds) {
       // TODO what if it's not the final list of partitions
       for (final ImportValueType importValueType : IMPORT_VALUE_TYPES) {
-        recordsReaders.add(
-            beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize));
+        final var recordReader =
+            beanFactory.getBean(RecordsReader.class, partitionId, importValueType, queueSize);
+        recordsReaders.add(recordReader);
+        countEmptyBatchesAfterImportingDone.put(recordReader, 0);
       }
     }
     return recordsReaders;
+  }
+
+  public void addPartitionCompletedImporting(final int partitionId) {
+    partitionsCompletedImporting.add(partitionId);
+  }
+
+  public boolean hasPartitionCompletedImporting(final int partitionId) {
+    return partitionsCompletedImporting.contains(partitionId);
+  }
+
+  public void incrementEmptyBatches(final int partitionId, final ImportValueType importValueType) {
+    final var reader = getRecordsReader(partitionId, importValueType);
+    countEmptyBatchesAfterImportingDone.merge(reader, 1, Integer::sum);
+  }
+
+  public boolean isRecordReaderCompletedImporting(
+      final int partitionId, final ImportValueType importValueType) {
+    if (hasPartitionCompletedImporting(partitionId)) {
+
+      final var reader = getRecordsReader(partitionId, importValueType);
+      return countEmptyBatchesAfterImportingDone.get(reader)
+          >= MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER;
+    }
+
+    return false;
+  }
+
+  public void recordLatestLoadedPositionAsCompleted(
+      final ImportPositionHolder importPositionHolder,
+      final String aliasTemplate,
+      final int partitionId)
+      throws IOException {
+    final ImportPositionEntity currentLatestPosition =
+        importPositionHolder.getLatestScheduledPosition(aliasTemplate, partitionId);
+    importPositionHolder.recordLatestLoadedPosition(currentLatestPosition.setCompleted(true));
+  }
+
+  @VisibleForTesting
+  public void resetCountEmptyBatches() {
+    countEmptyBatchesAfterImportingDone.replaceAll((k, v) -> v = 0);
   }
 
   public RecordsReader getRecordsReader(

@@ -9,14 +9,17 @@
 import {setup} from './processInstanceMigration.mocks';
 import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
-import {SETUP_WAITING_TIME} from './constants';
+import {SETUP_WAITING_TIME, SETUP_WAITING_TIME_LONG} from './constants';
 import {config} from '../config';
 import {zeebeGrpcApi} from '../api/zeebe-grpc';
 
+const {createWorker} = zeebeGrpcApi;
 let initialData: Awaited<ReturnType<typeof setup>>;
 
 test.beforeAll(async ({request}) => {
   initialData = await setup();
+
+  const totalInstances = initialData.processV1Instances.length;
 
   await expect
     .poll(
@@ -35,12 +38,12 @@ test.beforeAll(async ({request}) => {
 
         return await response.json();
       },
-      {timeout: SETUP_WAITING_TIME},
+      {timeout: SETUP_WAITING_TIME_LONG},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', totalInstances);
 
   await Promise.all(
-    [...new Array(10)].map((_, index) =>
+    [...new Array(totalInstances)].map((_, index) =>
       zeebeGrpcApi.zeebe.publishMessage({
         name: 'Message_4',
         correlationKey: `myCorrelationKey${index}`,
@@ -69,7 +72,7 @@ test.beforeAll(async ({request}) => {
       },
       {timeout: SETUP_WAITING_TIME},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', totalInstances);
 
   // Wait until all script tasks are in incident state
   await expect
@@ -94,7 +97,7 @@ test.beforeAll(async ({request}) => {
       },
       {timeout: SETUP_WAITING_TIME},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', totalInstances);
 
   // Wait until all signals have been received
   await expect
@@ -118,7 +121,7 @@ test.beforeAll(async ({request}) => {
       },
       {timeout: SETUP_WAITING_TIME},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', totalInstances);
 
   // Wait until all error event were caught
   await expect
@@ -142,7 +145,7 @@ test.beforeAll(async ({request}) => {
       },
       {timeout: SETUP_WAITING_TIME},
     )
-    .toHaveProperty('total', 10);
+    .toHaveProperty('total', totalInstances);
 });
 
 test.describe.serial('Process Instance Migration', () => {
@@ -188,7 +191,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(40);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(47);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -286,6 +289,12 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for multi instance task/i),
     ).toHaveValue('MultiInstanceTask');
+    await expect(
+      page.getByLabel(/target flow node for compensation task/i),
+    ).toHaveValue('CompensationTask');
+    await expect(
+      page.getByLabel(/target flow node for compensation boundary event/i),
+    ).toHaveValue('CompensationBoundaryEvent');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
@@ -654,7 +663,7 @@ test.describe.serial('Process Instance Migration', () => {
     await commonPage.collapseOperationsPanel();
   });
 
-  test.skip('Migrated tasks', async ({
+  test('Migrated tasks', async ({
     processesPage,
     processInstancePage,
     page,
@@ -760,7 +769,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
-    await processInstancePage.diagram.clickFlowNode('Task G'); // deselect Script task 2
+    await processInstancePage.diagram.clickFlowNode('Task G'); // deselect
 
     /**
      * Business rule task
@@ -782,9 +791,98 @@ test.describe.serial('Process Instance Migration', () => {
     await processInstancePage.metadataModal
       .getByRole('button', {name: /close/i})
       .click();
+    await processInstancePage.diagram.clickFlowNode('Business rule task 2'); // deselect
+
+    /**
+     * Escalation task
+     */
+    const escalationWorker = createWorker(
+      'escalationWorker',
+      true,
+      {},
+      async (job) => {
+        const acknowledgement = await job.complete();
+        await escalationWorker.close();
+        return acknowledgement;
+      },
+    );
+
+    /**
+     * Expect that the escalation boundary event has been migrated.
+     * In v1 and v2 of the process the escalation boundary event has a different escalation code (123).
+     * Since the escalation code is static, it is expected that the code in the target process (234) is used.
+     *
+     * To test this, an escalation throw event with escalation code (234) is triggered. When the escalation
+     * boundary event becomes selectable, it means it has caught the escalation correctly.
+     */
+    await expect(
+      await processInstancePage.diagram.getLabeledElement(
+        'Escalation boundary event',
+      ),
+    ).toHaveClass(/op-selectable/, {timeout: 20000});
+
+    /**
+     * Escalation event task
+     */
+    await processInstancePage.diagram.clickFlowNode('Escalation event task');
+    await processInstancePage.diagram.showMetaData();
+
+    /**
+     * Expect that escalation event task has been migrated and is active
+     */
+    await expect(
+      processInstancePage.metadataModal.getByText('endDate'),
+    ).toBeVisible();
+    await expect(
+      processInstancePage.metadataModal.getByText('"endDate": "null"'),
+    ).not.toBeVisible();
+
+    await processInstancePage.metadataModal
+      .getByRole('button', {name: /close/i})
+      .click();
+    await processInstancePage.diagram.clickFlowNode('Escalation event task'); // deselect
+
+    /**
+     * Compensation task
+     */
+    const compensationWorker = createWorker(
+      'compensationWorker',
+      true,
+      {},
+      async (job) => {
+        const acknowledgement = await job.complete();
+        await compensationWorker.close();
+        return acknowledgement;
+      },
+    );
+
+    /**
+     * Expect that the compensation boundary event has been migrated.
+     * After the compensationWorker completes the compensation task, it is expected,
+     * that the compensation catch event catches the token and runs the Undo task.
+     *
+     * When all these elements are selectable, it means that the compensation has been
+     * migrated successfully.
+     */
+    await expect(
+      await processInstancePage.diagram.getLabeledElement(
+        'Compensation boundary event',
+      ),
+    ).toHaveClass(/op-selectable/, {timeout: 20000});
+    await expect(
+      await processInstancePage.diagram.getLabeledElement(
+        'Compensation throw event',
+      ),
+    ).toHaveClass(/op-selectable/);
+    await expect(
+      processInstancePage.diagram.getFlowNode('Compensation task'),
+    ).toHaveClass(/op-selectable/);
+    await expect(processInstancePage.diagram.getFlowNode('Undo')).toHaveClass(
+      /op-selectable/,
+    );
   });
 
-  test.skip('Migrated message events', async ({
+  test('Migrated message events', async ({
     processesPage,
     processInstancePage,
     page,
@@ -891,7 +989,7 @@ test.describe.serial('Process Instance Migration', () => {
       .click();
   });
 
-  test.skip('Migrated gateways', async ({
+  test('Migrated gateways', async ({
     processesPage,
     processInstancePage,
     page,
@@ -943,10 +1041,7 @@ test.describe.serial('Process Instance Migration', () => {
     ).toBeVisible();
   });
 
-  test.skip('Migrated date tag', async ({
-    processesPage,
-    processInstancePage,
-  }) => {
+  test('Migrated date tag', async ({processesPage, processInstancePage}) => {
     const targetBpmnProcessId = initialData.processV3.bpmnProcessId;
     const targetVersion = initialData.processV3.version.toString();
 
@@ -968,7 +1063,7 @@ test.describe.serial('Process Instance Migration', () => {
     ).toBeVisible();
   });
 
-  test.skip('Migrated signal elements', async ({
+  test('Migrated signal elements', async ({
     processesPage,
     processInstancePage,
     request,

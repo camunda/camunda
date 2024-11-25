@@ -113,6 +113,13 @@ test('complex Homepage actions', async (t) => {
   await t.expect(Common.listItem('dashboard').textContent).contains('Sales Dashboard');
   await t.expect(Common.listItem('dashboard').textContent).contains('3 Reports');
 
+  // breadcrumb navigation
+  await t.click(Common.listItemLink('dashboard'));
+  await t.click(e.dashboardReportLink);
+  await t.click(e.breadcrumb('Sales Dashboard'));
+  await t.expect(e.dashboardView.visible).ok();
+  await t.click(Common.collectionsPage);
+
   await t.click(Common.createNewButton).click(Common.menuOption('Collection'));
   await t.typeText(Common.modalNameInput, 'Marketing', {replace: true});
   await t.click(Common.modalConfirmButton);
@@ -136,21 +143,16 @@ test('complex Homepage actions', async (t) => {
 
   await t.typeText(Common.nameEditField, 'Incoming Leads', {replace: true});
   await save(t);
-
-  await t.click(Common.collectionsPage);
-  await t.click(Common.listItemLink('collection'));
+  await t.click(e.breadcrumb('Sales'));
 
   await t.click(Common.createNewButton);
   await t.click(Common.menuOption('Report'));
   await t.click(Common.templateModalProcessField);
   await t.click(Common.firstOption);
   await t.click(Common.modalConfirmButton);
-
   await t.typeText(Common.nameEditField, 'Sales Goal this Quarter', {replace: true});
   await save(t);
-
-  await t.click(Common.collectionsPage);
-  await t.click(Common.listItemLink('collection'));
+  await t.click(e.breadcrumb('Sales'));
 
   await createNewDashboard(t);
 
@@ -158,9 +160,7 @@ test('complex Homepage actions', async (t) => {
   await addReportToDashboard(t, 'Incoming Leads');
   await addReportToDashboard(t, 'Sales Goal this Quarter');
   await save(t);
-
-  await t.click(Common.collectionsPage);
-  await t.click(Common.listItemLink('collection'));
+  await t.click(e.breadcrumb('Sales'));
 
   await t
     .resizeWindow(1150, 550)

@@ -15,9 +15,12 @@
  */
 package io.camunda.zeebe.journal;
 
+import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.journal.JournalException.InvalidIndex;
 import io.camunda.zeebe.util.buffer.BufferWriter;
+import java.nio.file.Path;
+import java.util.SortedMap;
 
 public interface Journal extends AutoCloseable {
 
@@ -119,7 +122,7 @@ public interface Journal extends AutoCloseable {
    * persistent storage. A call to this method guarantees that all records written are safely
    * flushed to the persistent storage.
    */
-  void flush();
+  void flush() throws FlushException;
 
   /**
    * Opens a new {@link JournalReader}
@@ -134,4 +137,6 @@ public interface Journal extends AutoCloseable {
    * @return true if open, false otherwise
    */
   boolean isOpen();
+
+  SortedMap<Long, Path> getTailSegments(long index);
 }

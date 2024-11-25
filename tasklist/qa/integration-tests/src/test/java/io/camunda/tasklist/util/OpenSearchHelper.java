@@ -10,16 +10,16 @@ package io.camunda.tasklist.util;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -51,7 +51,7 @@ public class OpenSearchHelper implements NoSqlHelper {
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private VariableIndex variableIndex;
 
@@ -165,16 +165,18 @@ public class OpenSearchHelper implements NoSqlHelper {
 
   public boolean checkVariableExists(final String taskId, final String varName) {
     final Query.Builder taskIdQ = new Query.Builder();
-    taskIdQ.term(term -> term.field(TaskVariableTemplate.TASK_ID).value(FieldValue.of(taskId)));
+    taskIdQ.term(
+        term -> term.field(SnapshotTaskVariableTemplate.TASK_ID).value(FieldValue.of(taskId)));
 
     final Query.Builder varNameQ = new Query.Builder();
-    varNameQ.term(term -> term.field(TaskVariableTemplate.NAME).value(FieldValue.of(varName)));
+    varNameQ.term(
+        term -> term.field(SnapshotTaskVariableTemplate.NAME).value(FieldValue.of(varName)));
 
     try {
-      final SearchResponse<TaskVariableEntity> response =
+      final SearchResponse<SnapshotTaskVariableEntity> response =
           osClient.search(
               s -> s.query(OpenSearchUtil.joinWithAnd(taskIdQ, varNameQ)),
-              TaskVariableEntity.class);
+              SnapshotTaskVariableEntity.class);
       return response.hits().total().value() > 0;
     } catch (IOException e) {
       final String message =

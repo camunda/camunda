@@ -11,9 +11,13 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
+import java.util.List;
 
 public interface AuthorizationSearchClient {
 
-  SearchQueryResult<AuthorizationEntity> searchAuthorizations(
-      AuthorizationQuery filter, SecurityContext securityContext);
+  SearchQueryResult<AuthorizationEntity> searchAuthorizations(AuthorizationQuery filter);
+
+  List<AuthorizationEntity> findAllAuthorizations(AuthorizationQuery filter);
+
+  AuthorizationSearchClient withSecurityContext(SecurityContext securityContext);
 }

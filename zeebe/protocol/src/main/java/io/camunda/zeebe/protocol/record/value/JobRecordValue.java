@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.immutables.value.Value;
@@ -127,4 +128,75 @@ public interface JobRecordValue
   JobListenerEventType getJobListenerEventType();
 
   Set<String> getChangedAttributes();
+
+  JobResultValue getResult();
+
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableJobResultValue.Builder.class)
+  interface JobResultValue {
+
+    /**
+     * @return true if the operation was rejected by Task Listener
+     */
+    boolean isDenied();
+
+    /**
+     * May only contain the attribute names of {@link JobResultCorrectionsValue} as entries. Those
+     * attributes that are contained in this list are the ones that were corrected by the worker.
+     * Others are considered not corrected.
+     *
+     * @return the list of attributes that the worker corrected when handling the job
+     * @apiNote only attributes in this list should be considered when accessing {@link
+     *     JobResultCorrectionsValue} as unset fields receive default values
+     */
+    List<String> getCorrectedAttributes();
+
+    /**
+     * @return the corrections the worker made as a result of completing the job
+     * @apiNote contains defaults for fields that were not set, use {@link
+     *     JobResultValue#getCorrectedAttributes()} to determine which fields are set
+     */
+    JobResultCorrectionsValue getCorrections();
+  }
+
+  /**
+   * Represents the corrections that can be part of a {@link JobResultValue}.
+   *
+   * @apiNote the fields are all optional, but receive a default value if not set. Use {@link
+   *     JobResultValue#getCorrectedAttributes()} to determine which fields are set.
+   */
+  @Value.Immutable
+  @ImmutableProtocol(builder = ImmutableJobResultCorrectionsValue.Builder.class)
+  interface JobResultCorrectionsValue {
+
+    /**
+     * @return the corrected assignee value
+     */
+    String getAssignee();
+
+    /**
+     * @return the corrected due date value
+     */
+    String getDueDate();
+
+    /**
+     * @return the corrected follow-up date value
+     */
+    String getFollowUpDate();
+
+    /**
+     * @return the corrected candidate users
+     */
+    List<String> getCandidateGroups();
+
+    /**
+     * @return the corrected candidate groups
+     */
+    List<String> getCandidateUsers();
+
+    /**
+     * @return the corrected priority
+     */
+    int getPriority();
+  }
 }

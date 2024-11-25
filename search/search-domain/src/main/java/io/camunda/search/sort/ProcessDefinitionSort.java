@@ -28,7 +28,7 @@ public record ProcessDefinitionSort(List<FieldSorting> orderings) implements Sor
       implements ObjectBuilder<ProcessDefinitionSort> {
 
     public Builder processDefinitionKey() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("processDefinitionKey", null);
       return this;
     }
 
@@ -53,7 +53,7 @@ public record ProcessDefinitionSort(List<FieldSorting> orderings) implements Sor
     }
 
     public Builder processDefinitionId() {
-      currentOrdering = new FieldSorting("bpmnProcessId", null);
+      currentOrdering = new FieldSorting("processDefinitionId", null);
       return this;
     }
 

@@ -7,17 +7,18 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
-import static io.camunda.search.filter.FilterBuilders.dateValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchRangeQuery;
 import io.camunda.search.clients.query.SearchTermQuery;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.Operation;
 import io.camunda.search.query.SearchQueryBuilders;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
@@ -124,6 +125,28 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  void shouldQueryByDecisionInstanceId() {
+    // given
+    final var decisionInstanceFilter =
+        FilterBuilders.decisionInstance(f -> f.decisionInstanceIds("12345-1"));
+    final var searchQuery =
+        SearchQueryBuilders.decisionInstanceSearchQuery(q -> q.filter(decisionInstanceFilter));
+
+    // when
+    final var searchRequest = transformQuery(decisionInstanceFilter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchTermQuery.class,
+            t -> {
+              assertThat(t.field()).isEqualTo("id");
+              assertThat(t.value().stringValue()).isEqualTo("12345-1");
+            });
+  }
+
+  @Test
   void shouldQueryByDmnDecisionName() {
     // given
     final var decisionInstanceFilter =
@@ -178,18 +201,11 @@ class DecisionInstanceQueryTransformerTest extends AbstractTransformerTest {
   @Test
   void shouldQueryByEvaluationDate() {
     // given
+    final var dateAfter = OffsetDateTime.of(LocalDateTime.of(2024, 1, 2, 3, 4, 5), ZoneOffset.UTC);
+    final var dateBefore = OffsetDateTime.of(LocalDateTime.of(2024, 2, 3, 4, 5, 6), ZoneOffset.UTC);
+    final var dateFilter = List.of(Operation.gte(dateAfter), Operation.lt(dateBefore));
     final var decisionInstanceFilter =
-        FilterBuilders.decisionInstance(
-            f ->
-                f.evaluationDate(
-                    dateValue(
-                        d ->
-                            d.after(
-                                    OffsetDateTime.of(
-                                        LocalDateTime.of(2024, 1, 2, 3, 4, 5), ZoneOffset.UTC))
-                                .before(
-                                    OffsetDateTime.of(
-                                        LocalDateTime.of(2024, 2, 3, 4, 5, 6), ZoneOffset.UTC)))));
+        FilterBuilders.decisionInstance(f -> f.evaluationDateOperations(dateFilter));
 
     // when
     final var searchRequest = transformQuery(decisionInstanceFilter);

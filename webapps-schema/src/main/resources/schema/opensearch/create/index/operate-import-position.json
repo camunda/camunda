@@ -22,7 +22,10 @@
 			},
 			"postImporterPosition": {
 				"type": "long"
-			}
+			},
+      "completed": {
+        "type": "boolean"
+      }
 		}
 	}
 }

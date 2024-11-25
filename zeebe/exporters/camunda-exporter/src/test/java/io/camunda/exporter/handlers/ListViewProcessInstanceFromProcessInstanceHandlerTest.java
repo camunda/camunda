@@ -13,6 +13,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.TestProcessCache;
+import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -40,8 +43,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
 
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
+  private final TestProcessCache processCache = new TestProcessCache();
   private final ListViewProcessInstanceFromProcessInstanceHandler underTest =
-      new ListViewProcessInstanceFromProcessInstanceHandler(indexName, false);
+      new ListViewProcessInstanceFromProcessInstanceHandler(indexName, false, processCache);
 
   @Test
   public void testGetHandledValueType() {
@@ -200,7 +204,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   void shouldUpsertEntityWithConcurrencyModeOnFlush() {
     // given
     final ListViewProcessInstanceFromProcessInstanceHandler underTest =
-        new ListViewProcessInstanceFromProcessInstanceHandler(indexName, true);
+        new ListViewProcessInstanceFromProcessInstanceHandler(indexName, true, processCache);
     final ProcessInstanceForListViewEntity inputEntity =
         new ProcessInstanceForListViewEntity()
             .setId("111")
@@ -259,6 +263,10 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
                     .withPosition(55L)
                     .withValue(processInstanceRecordValue));
 
+    processCache.put(
+        processInstanceRecordValue.getProcessDefinitionKey(),
+        new CachedProcessEntity("test-process-name", "test-version-tag", new ArrayList<>()));
+
     // when
     final ProcessInstanceForListViewEntity processInstanceForListViewEntity =
         new ProcessInstanceForListViewEntity();
@@ -283,9 +291,6 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         .isEqualTo(processInstanceRecordValue.getBpmnProcessId());
     assertThat(processInstanceForListViewEntity.getProcessVersion())
         .isEqualTo(processInstanceRecordValue.getVersion());
-    // without ProcessCache implementation process name = bpmnProcessId
-    assertThat(processInstanceForListViewEntity.getProcessName())
-        .isEqualTo(processInstanceRecordValue.getBpmnProcessId());
     assertThat(processInstanceForListViewEntity.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
     assertThat(processInstanceForListViewEntity.getStartDate())
         .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
@@ -298,6 +303,11 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         .isEqualTo(new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
     assertThat(processInstanceForListViewEntity.getTreePath())
         .isEqualTo("PI_" + processInstanceRecordValue.getProcessInstanceKey());
+
+    // process name and version tag is read from the cache
+    assertThat(processInstanceForListViewEntity.getProcessName()).isEqualTo("test-process-name");
+    assertThat(processInstanceForListViewEntity.getProcessVersionTag())
+        .isEqualTo("test-version-tag");
   }
 
   @Test

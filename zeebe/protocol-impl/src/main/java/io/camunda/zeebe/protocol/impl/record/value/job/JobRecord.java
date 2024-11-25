@@ -17,6 +17,7 @@ import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.PackedProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -80,9 +81,11 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final ArrayProperty<StringValue> changedAttributesProp =
       new ArrayProperty<>("changedAttributes", StringValue::new);
+  private final ObjectProperty<JobResult> resultProp =
+      new ObjectProperty<>("result", new JobResult());
 
   public JobRecord() {
-    super(21);
+    super(22);
     declareProperty(deadlineProp)
         .declareProperty(timeoutProp)
         .declareProperty(workerProp)
@@ -103,7 +106,8 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(changedAttributesProp);
+        .declareProperty(changedAttributesProp)
+        .declareProperty(resultProp);
   }
 
   public void wrapWithoutVariables(final JobRecord record) {
@@ -128,6 +132,7 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     elementInstanceKeyProp.setValue(record.getElementInstanceKey());
     tenantIdProp.setValue(record.getTenantId());
     setChangedAttributes(record.getChangedAttributes());
+    resultProp.getValue().wrap(record.getResult());
   }
 
   public void wrap(final JobRecord record) {
@@ -262,6 +267,18 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
     changedAttributesProp.reset();
     changedAttributes.forEach(
         attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
+    return this;
+  }
+
+  @Override
+  public JobResult getResult() {
+    return resultProp.getValue();
+  }
+
+  public JobRecord setResult(final JobResult result) {
+    if (result != null) {
+      resultProp.getValue().wrap(result);
+    }
     return this;
   }
 

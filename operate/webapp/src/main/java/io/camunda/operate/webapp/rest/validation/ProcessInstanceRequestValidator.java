@@ -15,6 +15,7 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.webapps.schema.entities.operate.ListenerType;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 import org.springframework.stereotype.Component;
@@ -62,9 +63,26 @@ public class ProcessInstanceRequestValidator {
   }
 
   public void validateListenerRequest(final ListenerRequestDto request) {
-    if (request.getPageSize() == null || request.getFlowNodeId() == null) {
+    if (request.getPageSize() == null
+        || (request.getFlowNodeId() == null && request.getFlowNodeInstanceId() == null)) {
       throw new InvalidRequestException(
-          "'pageSize' and 'flowNodeId' must be specified in the request.");
+          "'pageSize' and either 'flowNodeId' or 'flowNodeInstanceId' must be specified in the request.");
+    }
+    if (request.getFlowNodeId() != null && request.getFlowNodeInstanceId() != null) {
+      throw new InvalidRequestException(
+          "Only one of 'flowNodeId' or 'flowNodeInstanceId' must be specified in the request.");
+    }
+    final ListenerType listenerTypeFilter = request.getListenerTypeFilter();
+    if (listenerTypeFilter != null
+        && listenerTypeFilter != ListenerType.EXECUTION_LISTENER
+        && listenerTypeFilter != ListenerType.TASK_LISTENER) {
+      throw new InvalidRequestException(
+          "'listenerTypeFilter' only allows for values: ["
+              + "null, "
+              + ListenerType.EXECUTION_LISTENER
+              + ", "
+              + ListenerType.TASK_LISTENER
+              + "]");
     }
   }
 

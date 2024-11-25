@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.fixtures;
 
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.function.Function;
@@ -24,29 +25,29 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
         new ProcessInstanceDbModelBuilder()
             .processInstanceKey(nextKey())
             .processDefinitionKey(nextKey())
-            .processDefinitionId("process-" + RANDOM.nextInt(1000))
+            .processDefinitionId("process-" + RANDOM.nextInt(10000))
             .parentProcessInstanceKey(nextKey())
             .parentElementInstanceKey(nextKey())
             .startDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .endDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
-            .version(RANDOM.nextInt(20))
-            .tenantId("tenant-" + RANDOM.nextInt(1000));
+            .version(RANDOM.nextInt(10000))
+            .tenantId("tenant-" + RANDOM.nextInt(10000));
 
     return builderFunction.apply(builder).build();
   }
 
   public static void createAndSaveRandomProcessInstances(final RdbmsWriter rdbmsWriter) {
-    createAndSaveRandomProcessInstances(rdbmsWriter, nextStringId());
+    createAndSaveRandomProcessInstances(rdbmsWriter, b -> b);
   }
 
   public static void createAndSaveRandomProcessInstances(
-      final RdbmsWriter rdbmsWriter, final String processDefinitionId) {
+      final RdbmsWriter rdbmsWriter,
+      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
+          builderFunction) {
     for (int i = 0; i < 20; i++) {
       rdbmsWriter
           .getProcessInstanceWriter()
-          .create(
-              ProcessInstanceFixtures.createRandomized(
-                  b -> b.processDefinitionId(processDefinitionId)));
+          .create(ProcessInstanceFixtures.createRandomized(builderFunction));
     }
 
     rdbmsWriter.flush();

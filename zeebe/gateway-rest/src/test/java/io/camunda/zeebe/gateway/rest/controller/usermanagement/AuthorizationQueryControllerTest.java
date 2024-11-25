@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ResourceTypeEnum;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,6 +68,8 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
              }
            }""";
   private static final String AUTHORIZATION_SEARCH_URL = "/v2/authorizations/search";
+  private static final String USERS_AUTHORIZATION_SEARCH_URL =
+      "/v2/users/{ownerKey}/authorizations/search";
 
   private static final SearchQueryResult<AuthorizationEntity> SEARCH_QUERY_RESULT =
       new Builder<AuthorizationEntity>()
@@ -74,10 +77,10 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
           .items(
               List.of(
                   new AuthorizationEntity(
-                      "1",
+                      1L,
                       OwnerTypeEnum.USER.getValue(),
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
-                      List.of(new Permission(PermissionType.CREATE, List.of("2"))))))
+                      List.of(new Permission(PermissionType.CREATE, Set.of("2"))))))
           .sortValues(new Object[] {"v"})
           .build();
 
@@ -193,7 +196,160 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
     verify(authorizationServices, never()).search(any(AuthorizationQuery.class));
   }
 
+  @Test
+  void shouldSearchUserAuthorizationsWithEmptyBody() {
+    // given
+    when(authorizationServices.search(any(AuthorizationQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    // when / then
+
+    webClient
+        .post()
+        .uri(USERS_AUTHORIZATION_SEARCH_URL, 1)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(authorizationServices)
+        .search(
+            new AuthorizationQuery.Builder()
+                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
+                .build());
+  }
+
+  @Test
+  void shouldSearchUserAuthorizationsWithEmptyQuery() {
+    // given
+    when(authorizationServices.search(any(AuthorizationQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    final String request = "{}";
+    // when / then
+    webClient
+        .post()
+        .uri(USERS_AUTHORIZATION_SEARCH_URL, 1)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(authorizationServices)
+        .search(
+            new AuthorizationQuery.Builder()
+                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
+                .build());
+  }
+
+  @Test
+  void shouldSearchUserAuthorizationsWithRequestedFilter() {
+    // given
+    when(authorizationServices.search(any(AuthorizationQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    final String request =
+        """
+    {"filter": {"ownerType": null, "ownerKey": 2}}
+    """;
+    // when / then
+    webClient
+        .post()
+        .uri(USERS_AUTHORIZATION_SEARCH_URL, 1)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(authorizationServices)
+        .search(
+            new AuthorizationQuery.Builder()
+                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
+                .build());
+  }
+
+  @Test
+  void shouldSearchUserAuthorizationsWithSorting() {
+    // given
+    when(authorizationServices.search(any(AuthorizationQuery.class)))
+        .thenReturn(SEARCH_QUERY_RESULT);
+    final var request =
+        """
+            {
+                "sort": [
+                    {
+                        "field": "ownerType",
+                        "order": "desc"
+                    }
+                ]
+            }""";
+    // when / then
+    webClient
+        .post()
+        .uri(USERS_AUTHORIZATION_SEARCH_URL, 1)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(authorizationServices)
+        .search(
+            new AuthorizationQuery.Builder()
+                .filter(f -> f.ownerType(OwnerTypeEnum.USER.getValue()).ownerKeys(1L))
+                .sort(new AuthorizationSort.Builder().ownerType().desc().build())
+                .build());
+  }
+
+  @ParameterizedTest
+  @MethodSource("invalidUserAuthorizationSearchQueries")
+  void shouldInvalidateUserAuthorizationsSearchQueryWithBadQueries(
+      final String request, final String expectedResponse) {
+    // when / then
+    webClient
+        .post()
+        .uri(USERS_AUTHORIZATION_SEARCH_URL, 1)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(authorizationServices, never()).search(any(AuthorizationQuery.class));
+  }
+
   public static Stream<Arguments> invalidAuthorizationSearchQueries() {
+    return invalidAuthorizationSearchQueriesForEndpoint(AUTHORIZATION_SEARCH_URL);
+  }
+
+  public static Stream<Arguments> invalidUserAuthorizationSearchQueries() {
+    return invalidAuthorizationSearchQueriesForEndpoint("/v2/users/1/authorizations/search");
+  }
+
+  private static Stream<Arguments> invalidAuthorizationSearchQueriesForEndpoint(
+      final String endpoint) {
     return Stream.of(
         Arguments.of(
             // invalid sort order
@@ -215,7 +371,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       "detail": "Unknown sortOrder: dsc.",
                       "instance": "%s"
                     }""",
-                AUTHORIZATION_SEARCH_URL)),
+                endpoint)),
         Arguments.of(
             // unknown field
             """
@@ -236,7 +392,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       "detail": "Unknown sortBy: unknownField.",
                       "instance": "%s"
                     }""",
-                AUTHORIZATION_SEARCH_URL)),
+                endpoint)),
         Arguments.of(
             // missing sort field
             """
@@ -256,7 +412,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       "detail": "Sort field must not be null.",
                       "instance": "%s"
                     }""",
-                AUTHORIZATION_SEARCH_URL)),
+                endpoint)),
         Arguments.of(
             // conflicting pagination
             """
@@ -275,6 +431,6 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                       "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
                       "instance": "%s"
                     }""",
-                AUTHORIZATION_SEARCH_URL)));
+                endpoint)));
   }
 }

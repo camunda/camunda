@@ -20,6 +20,12 @@ concurrency:
   cancel-in-progress: true
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
 jobs:
   integration-tests:
     name: "[IT] RDBMS"
@@ -27,11 +33,12 @@ jobs:
     runs-on: gcp-perf-core-8-default
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-zeebe
+      - uses: ./.github/actions/setup-build
         with:
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
           maven-extra-args: -T1C -PskipFrontendBuild -D skipOptimize
@@ -40,7 +47,7 @@ jobs:
       - name: Maven Test Build
         run: >
           ./mvnw -B -T1C --no-snapshot-updates
-          -D forkCount=4
+          -D forkCount=1
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks -D skipOptimize
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports

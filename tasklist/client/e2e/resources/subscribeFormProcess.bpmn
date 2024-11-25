@@ -1,55 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1pg20dm" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.12.0-nightly.20230601" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.3.0">
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1pg20dm" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="a3b2585" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
   <bpmn:process id="subscribeFormProcess" isExecutable="true">
-    <bpmn:extensionElements>
-      <zeebe:userTaskForm id="subscribeForm">
-        {
-  "components": [
-    {
-      "text": "# Subscribe to newsletter",
-      "type": "text",
-      "layout": {
-        "row": "Row_0jjnqip",
-        "columns": null
-      },
-      "id": "Field_1xn41dw"
-    },
-    {
-      "label": "Name",
-      "type": "textfield",
-      "layout": {
-        "row": "Row_15ghdy6",
-        "columns": null
-      },
-      "id": "Field_0ibsmz4",
-      "key": "field_1lfayry"
-    },
-    {
-      "label": "Email",
-      "type": "textfield",
-      "layout": {
-        "row": "Row_1klibf9",
-        "columns": null
-      },
-      "id": "Field_0msuoi3",
-      "key": "field_1prtdvl"
-    }
-  ],
-  "type": "default",
-  "id": "subscribe",
-  "executionPlatform": "Camunda Cloud",
-  "executionPlatformVersion": "8.3.0",
-  "exporter": {
-    "name": "Camunda Modeler",
-    "version": "5.12.0-nightly.20230524"
-  },
-  "schemaVersion": 8
-}
-  </zeebe:userTaskForm>
-    </bpmn:extensionElements>
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:extensionElements>
-        <zeebe:formDefinition formKey="camunda-forms:bpmn:subscribeForm" />
+        <zeebe:formDefinition formId="subscribe" />
         <zeebe:properties>
           <zeebe:property name="publicAccess" value="true" />
         </zeebe:properties>

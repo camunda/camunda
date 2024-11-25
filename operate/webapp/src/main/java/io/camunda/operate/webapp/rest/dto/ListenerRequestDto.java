@@ -10,11 +10,15 @@ package io.camunda.operate.webapp.rest.dto;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
+import io.camunda.webapps.schema.entities.operate.ListenerType;
 import java.util.Objects;
 import java.util.Set;
 
 public class ListenerRequestDto extends PaginatedQuery<ListenerRequestDto> {
   private String flowNodeId;
+  private Long flowNodeInstanceId;
+
+  private ListenerType listenerTypeFilter;
 
   public ListenerRequestDto() {}
 
@@ -24,6 +28,24 @@ public class ListenerRequestDto extends PaginatedQuery<ListenerRequestDto> {
 
   public ListenerRequestDto setFlowNodeId(final String flowNodeId) {
     this.flowNodeId = flowNodeId;
+    return this;
+  }
+
+  public Long getFlowNodeInstanceId() {
+    return flowNodeInstanceId;
+  }
+
+  public ListenerRequestDto setFlowNodeInstanceId(final Long flowNodeInstanceId) {
+    this.flowNodeInstanceId = flowNodeInstanceId;
+    return this;
+  }
+
+  public ListenerType getListenerTypeFilter() {
+    return listenerTypeFilter;
+  }
+
+  public ListenerRequestDto setListenerTypeFilter(final ListenerType listenerTypeFilter) {
+    this.listenerTypeFilter = listenerTypeFilter;
     return this;
   }
 
@@ -50,7 +72,7 @@ public class ListenerRequestDto extends PaginatedQuery<ListenerRequestDto> {
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), flowNodeId);
+    return Objects.hash(super.hashCode(), flowNodeId, flowNodeInstanceId, listenerTypeFilter);
   }
 
   @Override
@@ -65,7 +87,9 @@ public class ListenerRequestDto extends PaginatedQuery<ListenerRequestDto> {
       return false;
     }
     final ListenerRequestDto that = (ListenerRequestDto) o;
-    return Objects.equals(flowNodeId, that.flowNodeId);
+    return Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
+        && listenerTypeFilter == that.listenerTypeFilter;
   }
 
   @Override
@@ -74,8 +98,10 @@ public class ListenerRequestDto extends PaginatedQuery<ListenerRequestDto> {
         + "flowNodeId='"
         + flowNodeId
         + '\''
-        + ", pageSize="
-        + pageSize
+        + ", flowNodeInstanceId="
+        + flowNodeInstanceId
+        + ", listenerTypeFilter="
+        + listenerTypeFilter
         + '}';
   }
 }

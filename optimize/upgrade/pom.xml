@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -30,7 +28,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.3</version>
+      <version>8.6.5</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -159,7 +157,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.177</version>
+      <version>4.8.179</version>
       <scope>provided</scope>
     </dependency>
 
@@ -287,15 +285,15 @@
             <configuration>
               <skip>${skip.docker}</skip>
               <target name="check-es-is-up" description="Check whether ES is running">
-                <echo message="Check ES is running..."/>
+                <echo message="Check ES is running..." />
                 <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <socket server="localhost" port="9200"/>
+                  <socket server="localhost" port="9200" />
                 </waitfor>
-                <echo message="ES http socket is open. Checking for ES cluster state..."/>
+                <echo message="ES http socket is open. Checking for ES cluster state..." />
                 <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
-                  <http url="http://localhost:9200/_cluster/state"/>
+                  <http url="http://localhost:9200/_cluster/state" />
                 </waitfor>
-                <echo message="ES is running."/>
+                <echo message="ES is running." />
               </target>
             </configuration>
             <goals>

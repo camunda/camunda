@@ -8,9 +8,9 @@
 package io.camunda.optimize.service.db.os.report.filter.util;
 
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.fieldDateMath;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.filter;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.json;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.fieldDateMath;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.filter;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.json;
 import static io.camunda.optimize.service.db.report.filter.util.DateHistogramFilterUtil.getMaxDateFilterOffsetDateTime;
 import static io.camunda.optimize.service.db.report.filter.util.DateHistogramFilterUtil.getMinDateFilterOffsetDateTime;
 

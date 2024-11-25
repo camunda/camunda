@@ -10,7 +10,6 @@ package io.camunda.search.clients.transformers.sort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.sort.SortOrder;
 import org.assertj.core.api.Assertions;
@@ -21,9 +20,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByValueASC() {
     // given
-    final var variableFilter =
-        FilterBuilders.variable(
-            (f) -> f.variable(new VariableValueFilter.Builder().name("foo").build()));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("foo"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.value().asc()));
@@ -46,9 +43,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByNameDESC() {
     // given
-    final var variableFilter =
-        FilterBuilders.variable(
-            (f) -> f.variable(new VariableValueFilter.Builder().name("bar").build()));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("bar"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.name().desc()));
@@ -71,9 +66,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByTenantIdASC() {
     // given
-    final var variableFilter =
-        FilterBuilders.variable(
-            (f) -> f.variable(new VariableValueFilter.Builder().name("tenant").build()));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("tenant"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.tenantId().asc()));
@@ -98,9 +91,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByVariableKeyDESC() {
     // given
-    final var variableFilter =
-        FilterBuilders.variable(
-            (f) -> f.variable(new VariableValueFilter.Builder().name("varKey").build()));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("varKey"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.variableKey().desc()));
@@ -123,9 +114,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByScopeKeyASC() {
     // given
-    final var variableFilter =
-        FilterBuilders.variable(
-            (f) -> f.variable(new VariableValueFilter.Builder().name("scope").build()));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("scope"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.scopeKey().asc()));
@@ -150,9 +139,7 @@ public class VariableSortTest extends AbstractSortTransformerTest {
   @Test
   public void shouldApplySortConditionByProcessInstanceKeyDESC() {
     // given
-    final var variableFilter =
-        FilterBuilders.variable(
-            (f) -> f.variable(new VariableValueFilter.Builder().name("processInstance").build()));
+    final var variableFilter = FilterBuilders.variable((f) -> f.names("processInstance"));
     final var request =
         SearchQueryBuilders.variableSearchQuery(
             (q) -> q.filter(variableFilter).sort((s) -> s.processInstanceKey().desc()));

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
@@ -57,7 +58,10 @@ final class JobBatchCollectorTest {
 
   @BeforeEach
   void beforeEach() {
-    collector = new JobBatchCollector(state, lengthEvaluator);
+    final var authorizationCheckBehavior =
+        new AuthorizationCheckBehavior(
+            state.getAuthorizationState(), state.getUserState(), new EngineConfiguration());
+    collector = new JobBatchCollector(state, lengthEvaluator, authorizationCheckBehavior);
   }
 
   @Test

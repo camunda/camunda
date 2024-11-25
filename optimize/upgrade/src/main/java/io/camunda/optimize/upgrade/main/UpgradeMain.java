@@ -13,12 +13,13 @@ import static io.camunda.optimize.upgrade.util.UpgradeUtil.createUpgradeDependen
 
 import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import io.camunda.optimize.upgrade.plan.UpgradePlan;
 import io.camunda.optimize.upgrade.plan.UpgradePlanRegistry;
-import io.camunda.optimize.util.jetty.LoggingConfigurationReader;
+import io.camunda.optimize.util.tomcat.LoggingConfigurationReader;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -49,6 +50,23 @@ public class UpgradeMain {
               Optional.ofNullable(System.getenv(CAMUNDA_OPTIMIZE_DATABASE))
                   .orElse(ELASTICSEARCH_DATABASE_PROPERTY));
       LOG.info("Identified {} Database configuration", databaseType.getId());
+
+      final boolean initSchemaEnabled =
+          ConfigurationServiceBuilder.createDefaultConfiguration()
+              .getElasticSearchConfiguration()
+              .getConnection()
+              .isInitSchemaEnabled();
+
+      final boolean clusterTaskCheckingEnabled =
+          ConfigurationServiceBuilder.createDefaultConfiguration()
+              .getElasticSearchConfiguration()
+              .getConnection()
+              .isClusterTaskCheckingEnabled();
+      if (databaseType == DatabaseType.ELASTICSEARCH
+          && (!initSchemaEnabled || !clusterTaskCheckingEnabled)) {
+        throw new UpgradeRuntimeException(
+            "Upgrade cannot be performed without cluster checking and schema initialization enabled");
+      }
 
       final UpgradeExecutionDependencies upgradeDependencies =
           createUpgradeDependencies(databaseType);
@@ -82,6 +100,7 @@ public class UpgradeMain {
       for (final UpgradePlan upgradePlan : upgradePlans) {
         upgradeProcedure.performUpgrade(upgradePlan);
       }
+
       upgradeProcedure.schemaUpgradeClient.initializeSchema();
 
       LOG.info("Update finished successfully.");

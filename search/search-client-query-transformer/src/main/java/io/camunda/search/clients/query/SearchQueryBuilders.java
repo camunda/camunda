@@ -12,7 +12,11 @@ import static io.camunda.util.CollectionUtil.withoutNull;
 
 import io.camunda.search.clients.query.SearchHasParentQuery.Builder;
 import io.camunda.search.clients.query.SearchMatchQuery.SearchMatchQueryOperator;
+import io.camunda.search.clients.types.TypedValue;
+import io.camunda.search.entities.ValueTypeEnum;
 import io.camunda.search.filter.Operation;
+import io.camunda.search.filter.Operator;
+import io.camunda.search.filter.UntypedOperation;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -20,7 +24,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public final class SearchQueryBuilders {
 
@@ -52,7 +58,7 @@ public final class SearchQueryBuilders {
     if (nonNullQueries == null || nonNullQueries.isEmpty()) {
       return null;
     } else if (nonNullQueries.size() == 1) {
-      return nonNullQueries.get(0);
+      return nonNullQueries.getFirst();
     } else {
       return mapper.apply(nonNullQueries);
     }
@@ -262,6 +268,10 @@ public final class SearchQueryBuilders {
     return term((q) -> q.field(field).value(value)).toSearchQuery();
   }
 
+  public static SearchQuery term(final String field, final TypedValue value) {
+    return term((q) -> q.field(field).value(value)).toSearchQuery();
+  }
+
   public static SearchTermsQuery.Builder terms() {
     return new SearchTermsQuery.Builder();
   }
@@ -277,7 +287,7 @@ public final class SearchQueryBuilders {
     if (fieldValues == null || fieldValues.isEmpty()) {
       return null;
     } else if (fieldValues.size() == 1) {
-      return term(field, fieldValues.get(0));
+      return term(field, fieldValues.getFirst());
     } else {
       return SearchTermsQuery.of(q -> q.field(field).intTerms(fieldValues)).toSearchQuery();
     }
@@ -289,7 +299,7 @@ public final class SearchQueryBuilders {
     if (fieldValues == null || fieldValues.isEmpty()) {
       return null;
     } else if (fieldValues.size() == 1) {
-      return term(field, fieldValues.get(0));
+      return term(field, fieldValues.getFirst());
     } else {
       return SearchTermsQuery.of(q -> q.field(field).longTerms(fieldValues)).toSearchQuery();
     }
@@ -300,15 +310,27 @@ public final class SearchQueryBuilders {
     if (fieldValues == null || fieldValues.isEmpty()) {
       return null;
     } else if (fieldValues.size() == 1) {
-      return term(field, fieldValues.get(0));
+      return term(field, fieldValues.getFirst());
     } else {
       return SearchTermsQuery.of(q -> q.field(field).stringTerms(fieldValues)).toSearchQuery();
     }
   }
 
-  private static IllegalStateException unexpectedOperation(
-      final String type, final Operation<?> op) {
-    return new IllegalStateException("Unexpected %s operation: %s".formatted(type, op.operator()));
+  public static SearchQuery objectTerms(final String field, final Collection<Object> values) {
+    final var fieldValues = withoutNull(values);
+    if (fieldValues == null || fieldValues.isEmpty()) {
+      return null;
+    } else if (fieldValues.size() == 1) {
+      return term(field, TypedValue.toTypedValue(fieldValues.getFirst()));
+    } else {
+      final var typedValues =
+          fieldValues.stream().map(TypedValue::toTypedValue).collect(Collectors.toList());
+      return SearchTermsQuery.of(q -> q.field(field).terms(typedValues)).toSearchQuery();
+    }
+  }
+
+  private static IllegalStateException unexpectedOperation(final String type, final Operator op) {
+    return new IllegalStateException("Unexpected %s operation: %s".formatted(type, op));
   }
 
   public static <C extends List<Operation<Integer>>> List<SearchQuery> intOperations(
@@ -330,7 +352,7 @@ public final class SearchQueryBuilders {
                   case LOWER_THAN -> lt(field, op.value());
                   case LOWER_THAN_EQUALS -> lte(field, op.value());
                   case IN -> intTerms(field, op.values());
-                  default -> throw unexpectedOperation("Integer", op);
+                  default -> throw unexpectedOperation("Integer", op.operator());
                 });
           });
       return searchQueries;
@@ -356,7 +378,7 @@ public final class SearchQueryBuilders {
                   case LOWER_THAN -> lt(field, op.value());
                   case LOWER_THAN_EQUALS -> lte(field, op.value());
                   case IN -> longTerms(field, op.values());
-                  default -> throw unexpectedOperation("Long", op);
+                  default -> throw unexpectedOperation("Long", op.operator());
                 });
           });
       return searchQueries;
@@ -379,7 +401,7 @@ public final class SearchQueryBuilders {
                   case NOT_EXISTS -> mustNot(exists(field));
                   case IN -> stringTerms(field, op.values());
                   case LIKE -> wildcardQuery(field, op.value());
-                  default -> throw unexpectedOperation("String", op);
+                  default -> throw unexpectedOperation("String", op.operator());
                 });
           });
       return searchQueries;
@@ -390,26 +412,96 @@ public final class SearchQueryBuilders {
     return DATE_TIME_FORMATTER.format(dateTime);
   }
 
-  public static <C extends List<Operation<OffsetDateTime>>> SearchQuery dateTimeOperations(
+  private static SearchRangeQuery.Builder buildRangeQuery(
+      SearchRangeQuery.Builder builder,
+      final String field,
+      final Consumer<SearchRangeQuery.Builder> builderConsumer) {
+    if (builder == null) {
+      builder = new SearchRangeQuery.Builder().field(field).format(DATE_TIME_FORMAT);
+    }
+    builderConsumer.accept(builder);
+    return builder;
+  }
+
+  public static <C extends List<Operation<OffsetDateTime>>> List<SearchQuery> dateTimeOperations(
       final String field, final C operations) {
     if (operations == null || operations.isEmpty()) {
       return null;
     } else {
-      final var b = new SearchRangeQuery.Builder().field(field).format(DATE_TIME_FORMAT);
+      final var queries = new ArrayList<SearchQuery>();
+      SearchRangeQuery.Builder rangeQueryBuilder = null;
+      for (final Operation<OffsetDateTime> op : operations) {
+        final var formatted = formatDate(op.value());
+        switch (op.operator()) {
+          case EQUALS -> queries.add(term(field, formatted));
+          case NOT_EQUALS -> queries.add(mustNot(term(field, formatted)));
+          case EXISTS -> queries.add(exists(field));
+          case NOT_EXISTS -> queries.add(mustNot(exists(field)));
+          case GREATER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gt(formatted));
+          case GREATER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.gte(formatted));
+          case LOWER_THAN ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lt(formatted));
+          case LOWER_THAN_EQUALS ->
+              rangeQueryBuilder = buildRangeQuery(rangeQueryBuilder, field, b -> b.lte(formatted));
+          default -> throw unexpectedOperation("Date", op.operator());
+        }
+      }
+      if (rangeQueryBuilder != null) {
+        queries.add(rangeQueryBuilder.build().toSearchQuery());
+      }
+      return queries;
+    }
+  }
+
+  public static <C extends List<UntypedOperation>> List<SearchQuery> variableOperations(
+      final String field, final C operations) {
+    if (operations == null || operations.isEmpty()) {
+      return null;
+    } else {
+      final var searchQueries = new ArrayList<SearchQuery>();
       operations.forEach(
           op -> {
-            final var formatted = formatDate(op.value());
-            switch (op.operator()) {
-              case EXISTS -> exists(field);
-              case NOT_EXISTS -> mustNot(exists(field));
-              case GREATER_THAN -> b.gt(formatted);
-              case GREATER_THAN_EQUALS -> b.gte(formatted);
-              case LOWER_THAN -> b.lt(formatted);
-              case LOWER_THAN_EQUALS -> b.lte(formatted);
-              default -> throw unexpectedOperation("Date", op);
+            // common operations
+            final var res =
+                switch (op.operator()) {
+                  case EQUALS -> term(field, TypedValue.toTypedValue(op.value()));
+                  case NOT_EQUALS -> mustNot(term(field, TypedValue.toTypedValue(op.value())));
+                  case EXISTS -> exists(field);
+                  case NOT_EXISTS -> mustNot(exists(field));
+                  case IN -> objectTerms(field, op.values());
+                  default -> null;
+                };
+            if (res != null) {
+              searchQueries.add(res);
+              return;
+            }
+
+            // type specific operations
+            final var type = op.type();
+            if (type.equals(ValueTypeEnum.LONG) || type.equals(ValueTypeEnum.DOUBLE)) {
+              searchQueries.add(
+                  switch (op.operator()) {
+                    case GREATER_THAN -> range(q -> q.field(field).gt(op.value())).toSearchQuery();
+                    case GREATER_THAN_EQUALS ->
+                        range(q -> q.field(field).gte(op.value())).toSearchQuery();
+                    case LOWER_THAN -> range(q -> q.field(field).lt(op.value())).toSearchQuery();
+                    case LOWER_THAN_EQUALS ->
+                        range(q -> q.field(field).lte(op.value())).toSearchQuery();
+                    default -> throw unexpectedOperation("Variable (numeric)", op.operator());
+                  });
+              return;
+            }
+            if (type.equals(ValueTypeEnum.STRING)) {
+              searchQueries.add(
+                  switch (op.operator()) {
+                    case LIKE -> wildcardQuery(field, (String) op.value());
+                    default -> throw unexpectedOperation("Variable (string)", op.operator());
+                  });
             }
           });
-      return b.build().toSearchQuery();
+      return searchQueries;
     }
   }
 

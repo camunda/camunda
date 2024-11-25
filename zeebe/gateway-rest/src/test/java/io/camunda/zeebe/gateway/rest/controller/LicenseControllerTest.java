@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.service.ManagementServices;
 import io.camunda.service.license.LicenseType;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -27,7 +28,17 @@ public class LicenseControllerTest extends RestControllerTest {
       """
       {
           "validLicense": true,
-          "licenseType": "saas"
+          "licenseType": "saas",
+          "isCommercial": true,
+          "expiresAt": "2024-10-29T15:14:13Z"
+      }""";
+
+  static final String EXPECTED_LICENSE_RESPONSE_NO_EXPIRATION =
+      """
+      {
+          "validLicense": true,
+          "licenseType": "saas",
+          "isCommercial": true
       }""";
 
   @MockBean ManagementServices managementServices;
@@ -37,6 +48,9 @@ public class LicenseControllerTest extends RestControllerTest {
     // given
     when(managementServices.isCamundaLicenseValid()).thenReturn(true);
     when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
+    when(managementServices.getCamundaLicenseExpiresAt())
+        .thenReturn(OffsetDateTime.parse("2024-10-29T15:14:13Z"));
 
     // when / then
     webClient
@@ -53,5 +67,34 @@ public class LicenseControllerTest extends RestControllerTest {
 
     verify(managementServices).isCamundaLicenseValid();
     verify(managementServices).getCamundaLicenseType();
+    verify(managementServices).isCommercialCamundaLicense();
+    verify(managementServices).getCamundaLicenseExpiresAt();
+  }
+
+  @Test
+  void shouldReturnWithoutExpirationDateWhenThereIsNoExpirationOnLicense() {
+    // given
+    when(managementServices.isCamundaLicenseValid()).thenReturn(true);
+    when(managementServices.getCamundaLicenseType()).thenReturn(LicenseType.SAAS);
+    when(managementServices.isCommercialCamundaLicense()).thenReturn(true);
+    when(managementServices.getCamundaLicenseExpiresAt()).thenReturn(null);
+
+    // when / then
+    webClient
+        .get()
+        .uri(LICENSE_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_LICENSE_RESPONSE_NO_EXPIRATION);
+
+    verify(managementServices).isCamundaLicenseValid();
+    verify(managementServices).getCamundaLicenseType();
+    verify(managementServices).isCommercialCamundaLicense();
+    verify(managementServices).getCamundaLicenseExpiresAt();
   }
 }

@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -51,14 +52,19 @@ public class AddEntityTenantMultiPartitionTest {
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    engine.tenant().addEntity(tenantKey).withEntityKey(userKey).add();
+    engine
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityKey(userKey)
+        .withEntityType(EntityType.USER)
+        .add();
 
     // then
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 4)
                 .filter(
                     record ->
                         record.getValueType() == ValueType.TENANT
@@ -122,7 +128,7 @@ public class AddEntityTenantMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
@@ -149,7 +155,12 @@ public class AddEntityTenantMultiPartitionTest {
     final var tenantId = UUID.randomUUID().toString();
     final var tenantKey =
         engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    engine.tenant().addEntity(tenantKey).withEntityKey(userKey).add();
+    engine
+        .tenant()
+        .addEntity(tenantKey)
+        .withEntityKey(userKey)
+        .withEntityType(EntityType.USER)
+        .add();
 
     // Increase time to trigger redistribution
     engine.increaseTime(Duration.ofMinutes(1));
@@ -157,10 +168,11 @@ public class AddEntityTenantMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(3))
+                .limit(4))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.USER, UserIntent.CREATE),
+            tuple(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION),
             tuple(ValueType.TENANT, TenantIntent.CREATE),
             tuple(ValueType.TENANT, TenantIntent.ADD_ENTITY));
   }

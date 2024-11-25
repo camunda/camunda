@@ -11,8 +11,10 @@ import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
@@ -20,6 +22,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
@@ -68,6 +71,21 @@ public class IndexTemplateDescriptorsConfigurator {
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
     return new MetricIndex(
+        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb()) {
+      @Override
+      public String getIndexPrefix() {
+        return indexPrefixHolder.getIndexPrefix();
+      }
+    };
+  }
+
+  @Bean
+  public ImportPositionIndex getImportPositionIndex(
+      final OperateProperties operateProperties,
+      final DatabaseInfo databaseInfo,
+      final IndexPrefixHolder indexPrefixHolder) {
+    return new ImportPositionIndex(
         operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
         databaseInfo.isElasticsearchDb()) {
       @Override
@@ -249,6 +267,36 @@ public class IndexTemplateDescriptorsConfigurator {
       final IndexPrefixHolder indexPrefixHolder) {
     return new VariableTemplate(
         operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb()) {
+      @Override
+      public String getIndexPrefix() {
+        return indexPrefixHolder.getIndexPrefix();
+      }
+    };
+  }
+
+  @Bean
+  public OperationTemplate getOperationTemplate(
+      final OperateProperties operateProperties,
+      final DatabaseInfo databaseInfo,
+      final IndexPrefixHolder indexPrefixHolder) {
+    return new OperationTemplate(
+        operateProperties.getIndexPrefix(DatabaseInfo.getCurrent()),
+        databaseInfo.isElasticsearchDb()) {
+      @Override
+      public String getIndexPrefix() {
+        return indexPrefixHolder.getIndexPrefix();
+      }
+    };
+  }
+
+  @Bean
+  public BatchOperationTemplate getBatchOperationTemplate(
+      final OperateProperties operateProperties,
+      final DatabaseInfo databaseInfo,
+      final IndexPrefixHolder indexPrefixHolder) {
+    return new BatchOperationTemplate(
+        operateProperties.getIndexPrefix(DatabaseInfo.getCurrent()),
         databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {

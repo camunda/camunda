@@ -29,6 +29,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -47,10 +48,15 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
   private final JobTemplate jobTemplate;
   private final RestHighLevelClient esClient;
 
+  private final TermQueryBuilder executionListenersQ;
+  private final TermQueryBuilder taskListenersQ;
+
   public ElasticsearchListenerReader(
       final JobTemplate jobTemplate, final RestHighLevelClient esClient) {
     this.jobTemplate = jobTemplate;
     this.esClient = esClient;
+    executionListenersQ = termQuery(JobTemplate.JOB_KIND, ListenerType.EXECUTION_LISTENER);
+    taskListenersQ = termQuery(JobTemplate.JOB_KIND, ListenerType.TASK_LISTENER);
   }
 
   @Override
@@ -58,18 +64,12 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
       final String processInstanceId, final ListenerRequestDto request) {
     final TermQueryBuilder processInstanceQ =
         termQuery(JobTemplate.PROCESS_INSTANCE_KEY, processInstanceId);
-    final TermQueryBuilder flowNodeIdQ =
-        termQuery(JobTemplate.FLOW_NODE_ID, request.getFlowNodeId());
-    final TermQueryBuilder executionListenersQ =
-        termQuery(JobTemplate.JOB_KIND, ListenerType.EXECUTION_LISTENER);
-    final TermQueryBuilder taskListenersQ =
-        termQuery(JobTemplate.JOB_KIND, ListenerType.TASK_LISTENER);
 
     final SearchSourceBuilder sourceBuilder =
         new SearchSourceBuilder()
             .query(
                 joinWithAnd(
-                    processInstanceQ, flowNodeIdQ, joinWithOr(executionListenersQ, taskListenersQ)))
+                    processInstanceQ, getFlowNodeQuery(request), getListenerTypeQuery(request)))
             .size(request.getPageSize());
 
     applySorting(sourceBuilder, request);
@@ -104,6 +104,25 @@ public class ElasticsearchListenerReader extends AbstractReader implements Liste
       throw new OperateRuntimeException(message, e);
     }
     return new ListenerResponseDto(listeners, totalHitCount);
+  }
+
+  private TermQueryBuilder getFlowNodeQuery(final ListenerRequestDto request) {
+    if (request.getFlowNodeInstanceId() != null) {
+      return termQuery(JobTemplate.FLOW_NODE_INSTANCE_ID, request.getFlowNodeInstanceId());
+    }
+    return termQuery(JobTemplate.FLOW_NODE_ID, request.getFlowNodeId());
+  }
+
+  private QueryBuilder getListenerTypeQuery(final ListenerRequestDto request) {
+    final ListenerType listenerFilter = request.getListenerTypeFilter();
+    if (listenerFilter == null) {
+      return joinWithOr(executionListenersQ, taskListenersQ);
+    } else if (listenerFilter.equals(ListenerType.EXECUTION_LISTENER)) {
+      return executionListenersQ;
+    } else if (listenerFilter.equals(ListenerType.TASK_LISTENER)) {
+      return taskListenersQ;
+    }
+    throw new IllegalArgumentException("'listenerFilter' is set to an unsupported value.");
   }
 
   private void applySorting(

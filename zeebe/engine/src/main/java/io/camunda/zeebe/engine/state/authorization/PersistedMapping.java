@@ -25,13 +25,19 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
   private final StringProperty claimValueProp = new StringProperty("claimValue", "");
   private final ArrayProperty<LongValue> roleKeysProp =
       new ArrayProperty<>("roleKeys", LongValue::new);
+  private final ArrayProperty<LongValue> tenantKeysProp =
+      new ArrayProperty<>("tenantKeys", LongValue::new);
+  private final ArrayProperty<LongValue> groupKeysProp =
+      new ArrayProperty<>("groupKeys", LongValue::new);
 
   public PersistedMapping() {
-    super(4);
-    declareProperty(mappingKeyProp);
-    declareProperty(claimNameProp);
-    declareProperty(claimValueProp);
-    declareProperty(roleKeysProp);
+    super(6);
+    declareProperty(mappingKeyProp)
+        .declareProperty(claimNameProp)
+        .declareProperty(claimValueProp)
+        .declareProperty(roleKeysProp)
+        .declareProperty(tenantKeysProp)
+        .declareProperty(groupKeysProp);
   }
 
   public long getMappingKey() {
@@ -75,6 +81,40 @@ public class PersistedMapping extends UnpackedObject implements DbValue {
 
   public PersistedMapping addRoleKey(final long roleKey) {
     roleKeysProp.add().setValue(roleKey);
+    return this;
+  }
+
+  public List<Long> getTenantKeysList() {
+    return StreamSupport.stream(tenantKeysProp.spliterator(), false)
+        .map(LongValue::getValue)
+        .collect(Collectors.toList());
+  }
+
+  public PersistedMapping setTenantKeysList(final List<Long> tenantKeys) {
+    tenantKeysProp.reset();
+    tenantKeys.forEach(tenantKey -> tenantKeysProp.add().setValue(tenantKey));
+    return this;
+  }
+
+  public PersistedMapping addTenantKey(final long tenantKey) {
+    tenantKeysProp.add().setValue(tenantKey);
+    return this;
+  }
+
+  public List<Long> getGroupKeysList() {
+    return StreamSupport.stream(groupKeysProp.spliterator(), false)
+        .map(LongValue::getValue)
+        .collect(Collectors.toList());
+  }
+
+  public PersistedMapping setGroupKeysList(final List<Long> groupKeys) {
+    groupKeysProp.reset();
+    groupKeys.forEach(groupKey -> groupKeysProp.add().setValue(groupKey));
+    return this;
+  }
+
+  public PersistedMapping addGroupKey(final long groupKey) {
+    groupKeysProp.add().setValue(groupKey);
     return this;
   }
 }

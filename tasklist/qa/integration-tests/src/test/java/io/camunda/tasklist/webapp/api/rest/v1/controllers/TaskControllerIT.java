@@ -19,8 +19,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
-import io.camunda.tasklist.entities.TaskImplementation;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.queries.RangeValueFilter;
 import io.camunda.tasklist.queries.RangeValueFilter.RangeValueFilterBuilder;
@@ -39,6 +37,8 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;

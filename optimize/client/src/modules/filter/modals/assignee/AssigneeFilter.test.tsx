@@ -88,8 +88,8 @@ it('should add/remove a role', async () => {
   const node = shallow(<AssigneeFilter {...props} addFilter={spy} />);
 
   node.find(UserTypeahead).prop('onChange')([
-    {id: 'USER:null', identity: {id: null, name: 'Unassigned'}} as User,
-    {id: 'USER:demo', identity: {id: 'demo', name: 'Demo Demo'}} as User,
+    {id: 'USER:null', identity: {id: null, name: 'Unassigned'}},
+    {id: 'USER:demo', identity: {id: 'demo', name: 'Demo Demo'}},
   ]);
 
   node.find('.confirm').simulate('click');

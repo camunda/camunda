@@ -9,17 +9,17 @@ package io.camunda.optimize.service.db.os.report.service;
 
 import static io.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
 import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FORMAT;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.fieldDateMath;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.filtersAggregation;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.AggregationDSL.withSubaggregations;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.and;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.exists;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.filter;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.gte;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.lt;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.matchAll;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.not;
-import static io.camunda.optimize.service.db.os.externalcode.client.dsl.QueryDSL.or;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.fieldDateMath;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.filtersAggregation;
+import static io.camunda.optimize.service.db.os.client.dsl.AggregationDSL.withSubaggregations;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.and;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.exists;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.filter;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.gte;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.lt;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.matchAll;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.not;
+import static io.camunda.optimize.service.db.os.client.dsl.QueryDSL.or;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.createDecisionDateHistogramLimitingFilter;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.createFilterBoolQueryBuilder;
 import static io.camunda.optimize.service.db.os.report.filter.util.DateHistogramFilterUtilOS.createModelElementDateHistogramLimitingFilterQueryFor;
@@ -43,14 +43,12 @@ import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -225,7 +223,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
             .field(context.getDateField())
             .calendarInterval(mapToCalendarInterval(context.getAggregateByDateUnit()))
             .format(OPTIMIZE_DATE_FORMAT)
-            .timeZone(context.getTimezone().getDisplayName(TextStyle.SHORT, Locale.US));
+            .timeZone(context.getTimezone().toString());
 
     if (context.isExtendBoundsToMinMaxStats()
         && context.getMinMaxStats().isMaxValid()
@@ -257,7 +255,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
                         .field(context.getDateField())
                         .calendarInterval(mapToCalendarInterval(context.getAggregateByDateUnit()))
                         .format(OPTIMIZE_DATE_FORMAT)
-                        .timeZone(context.getTimezone().getDisplayName(TextStyle.SHORT, Locale.US)))
+                        .timeZone(context.getTimezone().toString()))
             .aggregations(context.getSubAggregations())
             .build());
   }
@@ -359,7 +357,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
             .dateRange(
                 b ->
                     b.field(context.getDateField())
-                        .timeZone(min.getZone().getDisplayName(TextStyle.SHORT, Locale.US))
+                        .timeZone(min.getZone().toString())
                         .ranges(ranges))
             .build();
 

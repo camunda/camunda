@@ -10,16 +10,16 @@ package io.camunda.operate.qa.backup;
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 
 import io.camunda.operate.qa.util.TestContext;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.rest.StatefulRestTemplate;
-import io.camunda.operate.webapp.management.dto.GetBackupStateResponseDto;
-import io.camunda.operate.webapp.management.dto.TakeBackupRequestDto;
-import io.camunda.operate.webapp.management.dto.TakeBackupResponseDto;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.webapps.backup.GetBackupStateResponseDto;
+import io.camunda.webapps.backup.TakeBackupRequestDto;
+import io.camunda.webapps.backup.TakeBackupResponseDto;
+import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.net.URI;
 import java.util.Map;
@@ -39,7 +39,7 @@ public class OperateAPICaller {
 
   private StatefulRestTemplate restTemplate;
 
-  public StatefulRestTemplate createRestTemplate(TestContext testContext) {
+  public StatefulRestTemplate createRestTemplate(final TestContext testContext) {
     restTemplate =
         statefulRestTemplateFactory.apply(
             testContext.getExternalOperateHost(), testContext.getExternalOperatePort());
@@ -76,24 +76,24 @@ public class OperateAPICaller {
         ListViewResponseDto.class);
   }
 
-  public SequenceFlowDto[] getSequenceFlows(String processInstanceId) {
+  public SequenceFlowDto[] getSequenceFlows(final String processInstanceId) {
     return restTemplate.getForObject(
         restTemplate.getURL("/api/process-instances/" + processInstanceId + "/sequence-flows"),
         SequenceFlowDto[].class);
   }
 
-  public TakeBackupResponseDto backup(Long backupId) {
+  public TakeBackupResponseDto backup(final Long backupId) {
     final TakeBackupRequestDto takeBackupRequest = new TakeBackupRequestDto().setBackupId(backupId);
     return restTemplate.postForObject(
         restTemplate.getURL("/actuator/backups"), takeBackupRequest, TakeBackupResponseDto.class);
   }
 
-  public GetBackupStateResponseDto getBackupState(Long backupId) {
+  public GetBackupStateResponseDto getBackupState(final Long backupId) {
     return restTemplate.getForObject(
         restTemplate.getURL("/actuator/backups/" + backupId), GetBackupStateResponseDto.class);
   }
 
-  boolean createOperation(Long processInstanceKey, OperationType operationType) {
+  boolean createOperation(final Long processInstanceKey, final OperationType operationType) {
     final Map<String, Object> operationRequest =
         CollectionUtil.asMap("operationType", operationType.name());
     final URI url =

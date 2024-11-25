@@ -50,7 +50,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "errorMessage": "No retries left.",
                       "flowNodeId": "flowNodeId",
                       "flowNodeInstanceKey": 17,
-                      "creationTime": "2024-05-23T23:05:00.000+0000",
+                      "creationTime": "2024-05-23T23:05:00.000Z",
                       "state": "ACTIVE",
                       "jobKey": 101,
                       "treePath":"PI_42/FN_flowNodeId/FNI_17",
@@ -80,7 +80,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "No retries left.",
                       "flowNodeId",
                       17L,
-                      "2024-05-23T23:05:00.000+0000",
+                      OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
                       IncidentState.ACTIVE,
                       101L,
                       "PI_42/FN_flowNodeId/FNI_17",
@@ -99,7 +99,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                           "errorMessage": "No retries left.",
                           "flowNodeId": "flowNodeId",
                           "flowNodeInstanceKey": 17,
-                          "creationTime": "2024-05-23T23:05:00.000+0000",
+                          "creationTime": "2024-05-23T23:05:00.000Z",
                           "state": "ACTIVE",
                           "jobKey": 101,
                           "treePath":"PI_42/FN_flowNodeId/FNI_17",
@@ -117,7 +117,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
           "No retries left.",
           "flowNodeId",
           17L,
-          "2024-05-23T23:05:00.000+0000",
+          OffsetDateTime.parse("2024-05-23T23:05:00.000Z"),
           IncidentState.ACTIVE,
           101L,
           "PI_42/FN_flowNodeId/FNI_17",
@@ -191,7 +191,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                 "errorMessage": "No retries left.",
                 "flowNodeId": "flowNodeId",
                 "flowNodeInstanceKey": 17,
-                "creationTime": "2024-05-23T23:05:00.000+00:00",
+                "creationTime": "2024-05-23T23:05:00.000Z",
                 "state": "ACTIVE",
                 "jobKey": 101,
                 "treePath":"PI_42/FN_flowNodeId/FNI_17",
@@ -290,7 +290,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
         .expectStatus()
         .isOk()
         .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON_UTF8_VALUE)
+        .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_GET_RESPONSE);
 

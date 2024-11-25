@@ -39,7 +39,7 @@ public class TaskCompletedMetricHandler
 
   @Override
   public boolean handlesRecord(final Record<UserTaskRecordValue> record) {
-    return record.getIntent().name().equals(UserTaskIntent.COMPLETED.name());
+    return record.getIntent().equals(UserTaskIntent.COMPLETED);
   }
 
   @Override
@@ -64,5 +64,10 @@ public class TaskCompletedMetricHandler
   @Override
   public void flush(final MetricEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(indexName, entity);
+  }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
   }
 }

@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class TasklistElasticsearchProperties extends ElasticsearchProperties {
 
-  public static final String DEFAULT_INDEX_PREFIX = "tasklist";
+  public static final String DEFAULT_INDEX_PREFIX = "";
   private static final int DEFAULT_NUMBER_OF_SHARDS = 1;
   private static final int DEFAULT_NUMBER_OF_REPLICAS = 0;
   private static final String DEFAULT_REFRESH_INTERVAL = "1s";

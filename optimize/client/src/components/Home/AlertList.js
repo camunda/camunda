@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Component} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {Button} from '@carbon/react';
 import {CopyFile, Edit, Notification, TrashCan} from '@carbon/icons-react';
 
@@ -23,8 +23,8 @@ import {
   isDurationReport,
   isAlertCompatibleReport,
 } from 'services';
-import {withErrorHandling} from 'HOC';
 import {getWebhooks} from 'config';
+import {useErrorHandling} from 'hooks';
 
 import CopyAlertModal from './modals/CopyAlertModal';
 import {removeAlerts} from './service';
@@ -33,227 +33,201 @@ import './AlertList.scss';
 
 const {duration, frequency} = formatters;
 
-export default withErrorHandling(
-  class AlertList extends Component {
-    state = {
-      deleting: null,
-      editing: null,
-      copying: null,
-      reports: null,
-      alerts: null,
-      webhooks: null,
-      loading: false,
-    };
+const AlertList = ({collection, readOnly}) => {
+  const [deleting, setDeleting] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [copying, setCopying] = useState(null);
+  const [reports, setReports] = useState(null);
+  const [alerts, setAlerts] = useState(null);
+  const [webhooks, setWebhooks] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const {mightFail} = useErrorHandling();
 
-    componentDidMount() {
-      this.loadData();
-      this.loadWebhooks();
-    }
+  const syncAlerts = useCallback(() => {
+    mightFail(loadAlerts(collection), (loadedAlerts) => setAlerts(loadedAlerts), showError);
+  }, [collection, mightFail]);
 
-    componentDidUpdate(prevProps) {
-      if (prevProps.collection !== this.props.collection) {
-        this.loadData();
+  const syncReports = useCallback(() => {
+    mightFail(
+      loadReports(collection),
+      (loadedReports) => {
+        setReports(loadedReports.filter(isAlertCompatibleReport));
+      },
+      (error) => {
+        showError(error);
+        setReports(null);
       }
-    }
+    );
+  }, [collection, mightFail]);
 
-    loadData() {
-      this.loadReports();
-      this.loadAlerts();
-    }
+  const loadData = useCallback(() => {
+    syncReports();
+    syncAlerts();
+  }, [syncAlerts, syncReports]);
 
-    loadReports = () => {
-      this.props.mightFail(
-        loadReports(this.props.collection),
-        (reports) =>
-          this.setState({
-            reports: reports.filter(isAlertCompatibleReport),
-          }),
-        (error) => {
-          showError(error);
-          this.setState({reports: null});
+  const loadWebhooks = useCallback(() => {
+    mightFail(getWebhooks(), setWebhooks, showError);
+  }, [mightFail]);
+
+  useEffect(() => {
+    loadData();
+    loadWebhooks();
+  }, [loadData, loadWebhooks]);
+
+  const openAddAlertModal = () => setEditing({});
+  const openEditAlertModal = (alert) => setEditing(alert);
+
+  const onAdd = async (newAlert) => {
+    setLoading(true);
+    await mightFail(
+      addAlert(newAlert),
+      () => {
+        closeEditAlertModal();
+        syncAlerts();
+      },
+      showError,
+      () => setLoading(false)
+    );
+  };
+
+  const onEdit = async (changedAlert) => {
+    setLoading(true);
+    await mightFail(
+      editAlert(editing.id, changedAlert),
+      () => {
+        closeEditAlertModal();
+        syncAlerts();
+      },
+      showError,
+      () => setLoading(false)
+    );
+  };
+
+  const closeEditAlertModal = () => setEditing(null);
+  const openCopyAlertModal = (alert) => setCopying(alert);
+  const closeCopyAlertModal = () => setCopying(null);
+
+  const formatDescription = (reportId, operator, value) => {
+    const report = reports?.find(({id}) => id === reportId);
+    const aboveOrBelow = operator === '<' ? t('common.below') : t('common.above');
+    const thresholdValue = isDurationReport(report) ? duration(value) : frequency(value);
+
+    return t('alert.description', {
+      name: report.name,
+      aboveOrBelow,
+      thresholdValue,
+    });
+  };
+
+  const isLoading = alerts === null || reports === null;
+
+  return (
+    <div className="AlertList">
+      <EntityList
+        action={
+          !readOnly && (
+            <Button className="createAlert" kind="primary" onClick={openAddAlertModal}>
+              {t('alert.createNew')}
+            </Button>
+          )
         }
-      );
-    };
-
-    loadAlerts = () => {
-      this.props.mightFail(
-        loadAlerts(this.props.collection),
-        (alerts) => {
-          this.setState({alerts});
-        },
-        showError
-      );
-    };
-
-    loadWebhooks = () => {
-      this.props.mightFail(getWebhooks(), (webhooks) => this.setState({webhooks}), showError);
-    };
-
-    openAddAlertModal = () => this.setState({editing: {}});
-    openEditAlertModal = (editing) => this.setState({editing});
-
-    addAlert = async (newAlert) => {
-      this.setState({loading: true});
-      await this.props.mightFail(
-        addAlert(newAlert),
-        () => {
-          this.closeEditAlertModal();
-          this.loadAlerts();
-        },
-        showError
-      );
-      this.setState({loading: false});
-    };
-
-    editAlert = async (changedAlert) => {
-      this.setState({loading: true});
-      await this.props.mightFail(
-        editAlert(this.state.editing.id, changedAlert),
-        () => {
-          this.closeEditAlertModal();
-          this.loadAlerts();
-        },
-        showError
-      );
-      this.setState({loading: false});
-    };
-    closeEditAlertModal = () => this.setState({editing: null});
-
-    openCopyAlertModal = (copying) => this.setState({copying});
-    closeCopyAlertModal = () => this.setState({copying: null});
-
-    render() {
-      const {deleting, editing, copying, alerts, reports, webhooks, loading} = this.state;
-      const {readOnly} = this.props;
-
-      const isLoading = alerts === null || reports === null;
-
-      return (
-        <div className="AlertList">
-          <EntityList
-            action={
+        emptyStateComponent={
+          <EmptyState
+            title={t('alert.notCreated')}
+            description={!readOnly ? t('alert.emptyStateDecription') : t('alert.contactManager')}
+            icon={<Notification />}
+            actions={
               !readOnly && (
-                <Button className="createAlert" kind="primary" onClick={this.openAddAlertModal}>
+                <Button
+                  className="createAlert"
+                  size="md"
+                  kind="primary"
+                  onClick={openAddAlertModal}
+                >
                   {t('alert.createNew')}
                 </Button>
               )
             }
-            emptyStateComponent={
-              <EmptyState
-                title={t('alert.notCreated')}
-                description={
-                  !readOnly ? t('alert.emptyStateDecription') : t('alert.contactManager')
-                }
-                icon={<Notification />}
-                actions={
-                  !readOnly && (
-                    <Button
-                      className="createAlert"
-                      size="md"
-                      kind="primary"
-                      onClick={this.openAddAlertModal}
-                    >
-                      {t('alert.createNew')}
-                    </Button>
-                  )
-                }
-              />
-            }
-            isLoading={isLoading}
-            headers={[
-              t('common.name'),
-              t('report.label'),
-              t('common.condition'),
-              t('alert.recipient'),
-            ]}
-            bulkActions={!readOnly && [<BulkDeleter type="delete" deleteEntities={removeAlerts} />]}
-            onChange={this.loadAlerts}
-            rows={
-              !isLoading &&
-              this.state.alerts.map((alert) => {
-                const {id, name, webhook, emails, reportId, threshold, thresholdOperator} = alert;
-                const inactive = webhook && emails?.length === 0 && !webhooks?.includes(webhook);
-
-                return {
-                  id,
-                  entityType: 'alert',
-                  icon: <Notification />,
-                  type: t('alert.label'),
-                  name,
-                  meta: [
-                    reports.find((report) => report.id === reportId).name,
-                    this.formatDescription(reportId, thresholdOperator, threshold),
-                    emails?.join(', ') || webhook,
-                  ],
-                  warning: inactive && t('alert.inactiveStatus'),
-                  actions: !readOnly && [
-                    {
-                      icon: <Edit />,
-                      text: t('common.edit'),
-                      action: () => this.openEditAlertModal(alert),
-                    },
-                    {
-                      icon: <CopyFile />,
-                      text: t('common.copy'),
-                      action: () => this.openCopyAlertModal(alert),
-                    },
-                    {
-                      icon: <TrashCan />,
-                      text: t('common.delete'),
-                      action: () => this.setState({deleting: alert}),
-                    },
-                  ],
-                };
-              })
-            }
           />
-          <Deleter
-            type="alert"
-            entity={deleting}
-            onDelete={this.loadAlerts}
-            onClose={() => this.setState({deleting: null})}
-            deleteEntity={({id}) => removeAlert(id)}
-          />
-          {editing && reports && (
-            <AlertModal
-              initialAlert={editing}
-              reports={reports}
-              webhooks={webhooks}
-              onClose={this.closeEditAlertModal}
-              onConfirm={(alert) => {
-                if (editing.id) {
-                  this.editAlert(alert);
-                } else {
-                  this.addAlert(alert);
-                }
-              }}
-              disabled={loading}
-            />
-          )}
-          {copying && (
-            <CopyAlertModal
-              initialAlertName={copying.name}
-              onClose={this.closeCopyAlertModal}
-              onConfirm={async (name) => {
-                this.addAlert({...copying, name});
-                this.closeCopyAlertModal();
-              }}
-            />
-          )}
-        </div>
-      );
-    }
+        }
+        isLoading={isLoading}
+        headers={[t('common.name'), t('report.label'), t('common.condition'), t('alert.recipient')]}
+        bulkActions={!readOnly && [<BulkDeleter type="delete" deleteEntities={removeAlerts} />]}
+        onChange={syncAlerts}
+        rows={
+          !isLoading &&
+          alerts.map((alert) => {
+            const {id, name, webhook, emails, reportId, threshold, thresholdOperator} = alert;
+            const inactive = webhook && emails?.length === 0 && !webhooks?.includes(webhook);
 
-    formatDescription = (reportId, operator, value) => {
-      const report = this.state.reports.find(({id}) => id === reportId);
-      const aboveOrBelow = operator === '<' ? t('common.below') : t('common.above');
-      const thresholdValue = isDurationReport(report) ? duration(value) : frequency(value);
+            return {
+              id,
+              entityType: 'alert',
+              icon: <Notification />,
+              type: t('alert.label'),
+              name,
+              meta: [
+                reports.find((report) => report.id === reportId).name,
+                formatDescription(reportId, thresholdOperator, threshold),
+                emails?.join(', ') || webhook,
+              ],
+              warning: inactive && t('alert.inactiveStatus'),
+              actions: !readOnly && [
+                {
+                  icon: <Edit />,
+                  text: t('common.edit'),
+                  action: () => openEditAlertModal(alert),
+                },
+                {
+                  icon: <CopyFile />,
+                  text: t('common.copy'),
+                  action: () => openCopyAlertModal(alert),
+                },
+                {
+                  icon: <TrashCan />,
+                  text: t('common.delete'),
+                  action: () => setDeleting(alert),
+                },
+              ],
+            };
+          })
+        }
+      />
+      <Deleter
+        type="alert"
+        entity={deleting}
+        onDelete={syncAlerts}
+        onClose={() => setDeleting(null)}
+        deleteEntity={({id}) => removeAlert(id)}
+      />
+      {editing && reports && (
+        <AlertModal
+          initialAlert={editing}
+          reports={reports}
+          webhooks={webhooks}
+          onClose={closeEditAlertModal}
+          onConfirm={(alert) => {
+            if (editing.id) {
+              onEdit(alert);
+            } else {
+              onAdd(alert);
+            }
+          }}
+          disabled={loading}
+        />
+      )}
+      {copying && (
+        <CopyAlertModal
+          initialAlertName={copying.name}
+          onClose={closeCopyAlertModal}
+          onConfirm={(name) => {
+            onAdd({...copying, name});
+            closeCopyAlertModal();
+          }}
+        />
+      )}
+    </div>
+  );
+};
 
-      return t('alert.description', {
-        name: report.name,
-        aboveOrBelow,
-        thresholdValue,
-      });
-    };
-  }
-);
+export default AlertList;

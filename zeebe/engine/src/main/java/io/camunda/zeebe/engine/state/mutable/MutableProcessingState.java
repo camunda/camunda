@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
+import io.camunda.zeebe.engine.scaling.redistribution.MutableRedistributionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
@@ -85,10 +86,16 @@ public interface MutableProcessingState extends ProcessingState {
   MutableRoutingState getRoutingState();
 
   @Override
+  MutableRedistributionState getRedistributionState();
+
+  @Override
   MutableClockState getClockState();
 
   @Override
   MutableRoleState getRoleState();
+
+  @Override
+  MutableGroupState getGroupState();
 
   @Override
   MutableTenantState getTenantState();
