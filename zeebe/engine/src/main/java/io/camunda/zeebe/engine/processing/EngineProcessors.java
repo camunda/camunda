@@ -55,6 +55,7 @@ import io.camunda.zeebe.engine.scaling.ScalingProcessors;
 import io.camunda.zeebe.engine.scaling.redistribution.RedistributionBehavior;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -112,10 +113,15 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
+<<<<<<< HEAD
     final var authCheckBehavior =
         new AuthorizationCheckBehavior(
             processingState.getAuthorizationState(), processingState.getUserState(), config);
 
+=======
+    final var transientProcessMessageSubscriptionState =
+        typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
+>>>>>>> 57cf1143 (refactor: inject pending message sub state)
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             processingState,
@@ -127,7 +133,11 @@ public final class EngineProcessors {
             jobMetrics,
             decisionBehavior,
             clock,
+<<<<<<< HEAD
             authCheckBehavior);
+=======
+            transientProcessMessageSubscriptionState);
+>>>>>>> 57cf1143 (refactor: inject pending message sub state)
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -302,7 +312,11 @@ public final class EngineProcessors {
       final JobMetrics jobMetrics,
       final DecisionBehavior decisionBehavior,
       final InstantSource clock,
+<<<<<<< HEAD
       final AuthorizationCheckBehavior authCheckBehavior) {
+=======
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+>>>>>>> 57cf1143 (refactor: inject pending message sub state)
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -313,7 +327,11 @@ public final class EngineProcessors {
         timerChecker,
         jobStreamer,
         clock,
+<<<<<<< HEAD
         authCheckBehavior);
+=======
+        transientProcessMessageSubscriptionState);
+>>>>>>> 57cf1143 (refactor: inject pending message sub state)
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
