@@ -13,14 +13,16 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
+import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -86,7 +88,10 @@ public class UserControllerTest extends RestControllerTest {
     final var dto = validCreateUserRequest();
 
     when(userServices.createUser(dto))
-        .thenThrow(new CamundaSearchException(RejectionType.ALREADY_EXISTS.name()));
+        .thenThrow(
+            new BrokerRejectionException(
+                new BrokerRejection(
+                    UserIntent.CREATE, -1L, RejectionType.ALREADY_EXISTS, "Already exists")));
 
     final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, message);
     expectedBody.setTitle("Bad Request");
