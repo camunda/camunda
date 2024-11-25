@@ -27,13 +27,8 @@ import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
-<<<<<<< HEAD
-=======
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
-import io.camunda.zeebe.engine.state.routing.RoutingInfo;
-import io.camunda.zeebe.engine.state.signal.SignalSubscription;
->>>>>>> 8368c937 (feat: backport of #25298 to main)
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -70,11 +65,7 @@ public final class CatchEventBehavior {
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
   private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
-<<<<<<< HEAD
-=======
-  private final InstantSource clock;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
->>>>>>> 8368c937 (feat: backport of #25298 to main)
 
   public CatchEventBehavior(
       final ProcessingState processingState,
@@ -84,13 +75,8 @@ public final class CatchEventBehavior {
       final StateWriter stateWriter,
       final SideEffectWriter sideEffectWriter,
       final DueDateTimerChecker timerChecker,
-<<<<<<< HEAD
-      final int partitionsCount) {
-=======
-      final RoutingInfo routingInfo,
-      final InstantSource clock,
+      final int partitionsCount,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
->>>>>>> 8368c937 (feat: backport of #25298 to main)
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.stateWriter = stateWriter;
@@ -104,11 +90,7 @@ public final class CatchEventBehavior {
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
-<<<<<<< HEAD
-=======
-    this.clock = clock;
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
->>>>>>> 8368c937 (feat: backport of #25298 to main)
   }
 
   /**
@@ -334,7 +316,7 @@ public final class CatchEventBehavior {
 
     final String subscriptionMessageName = subscription.getMessageName();
     final String tenantId = subscription.getTenantId();
-    final var lastSentTime = clock.millis();
+    final var lastSentTime = ActorClock.currentTimeMillis();
 
     // update transient state in a side-effect to ensure that these changes only take effect after
     // the command has been successfully processed
@@ -487,7 +469,7 @@ public final class CatchEventBehavior {
         elementInstanceKey,
         messageName,
         subscription.getRecord().getTenantId());
-    final var lastSentTime = clock.millis();
+    final var lastSentTime = ActorClock.currentTimeMillis();
 
     // update transient state in a side-effect to ensure that these changes only take effect after
     // the command has been successfully processed

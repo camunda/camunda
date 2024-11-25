@@ -92,14 +92,6 @@ public final class DbProcessMessageSubscriptionState
     processMessageSubscription.setKey(key).setRecord(record);
 
     subscriptionColumnFamily.insert(elementKeyAndMessageName, processMessageSubscription);
-<<<<<<< HEAD
-
-    transientState.add(
-        new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-        ActorClock.currentTimeMillis());
-=======
->>>>>>> 8368c937 (feat: backport of #25298 to main)
   }
 
   @Override
@@ -119,13 +111,6 @@ public final class DbProcessMessageSubscriptionState
   @Override
   public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setClosing());
-<<<<<<< HEAD
-    transientState.update(
-        new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-        ActorClock.currentTimeMillis());
-=======
->>>>>>> 8368c937 (feat: backport of #25298 to main)
   }
 
   @Override

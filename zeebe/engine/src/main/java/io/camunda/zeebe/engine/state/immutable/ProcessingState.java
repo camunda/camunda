@@ -7,11 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-<<<<<<< HEAD
-=======
-import io.camunda.zeebe.engine.scaling.redistribution.RedistributionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
->>>>>>> 8368c937 (feat: backport of #25298 to main)
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 

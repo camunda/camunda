@@ -95,17 +95,9 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   public EngineConfiguration getConfig() {
     return config;
   }
-<<<<<<< HEAD
-=======
-
-  @Override
-  public ControllableStreamClock getClock() {
-    return clock;
-  }
 
   @Override
   public TransientPendingSubscriptionState getTransientProcessMessageSubscriptionState() {
     return transientProcessMessageSubscriptionState;
   }
->>>>>>> 8368c937 (feat: backport of #25298 to main)
 }

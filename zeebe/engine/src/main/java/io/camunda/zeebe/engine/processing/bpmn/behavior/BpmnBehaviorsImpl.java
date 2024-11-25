@@ -57,14 +57,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
-<<<<<<< HEAD
-      final JobStreamer jobStreamer) {
-=======
       final JobStreamer jobStreamer,
-      final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
->>>>>>> 8368c937 (feat: backport of #25298 to main)
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(
@@ -84,13 +78,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers.state(),
             writers.sideEffect(),
             timerChecker,
-<<<<<<< HEAD
-            partitionsCount);
-=======
-            routingInfo,
-            clock,
+            partitionsCount,
             transientProcessMessageSubscriptionState);
->>>>>>> 8368c937 (feat: backport of #25298 to main)
 
     eventTriggerBehavior =
         new EventTriggerBehavior(

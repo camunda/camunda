@@ -59,18 +59,8 @@ public final class BpmnProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DueDateTimerChecker timerChecker,
-<<<<<<< HEAD
-      final Writers writers) {
-=======
       final Writers writers,
-      final CommandDistributionBehavior commandDistributionBehavior,
-      final int partitionId,
-      final RoutingInfo routingInfo,
-      final InstantSource clock,
-      final EngineConfiguration config,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
->>>>>>> 8368c937 (feat: backport of #25298 to main)
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -90,13 +80,8 @@ public final class BpmnProcessors {
         bpmnBehaviors,
         processingState,
         scheduledTaskState,
-<<<<<<< HEAD
-        writers);
-=======
         writers,
-        clock,
         transientProcessMessageSubscriptionState);
->>>>>>> 8368c937 (feat: backport of #25298 to main)
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
@@ -145,13 +130,8 @@ public final class BpmnProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskState,
-<<<<<<< HEAD
-      final Writers writers) {
-=======
       final Writers writers,
-      final InstantSource clock,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
->>>>>>> 8368c937 (feat: backport of #25298 to main)
     typedRecordProcessors
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,

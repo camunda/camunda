@@ -32,11 +32,6 @@ public interface TypedRecordProcessorContext {
   Supplier<ScheduledTaskState> getScheduledTaskStateFactory();
 
   EngineConfiguration getConfig();
-<<<<<<< HEAD
-=======
-
-  ControllableStreamClock getClock();
 
   TransientPendingSubscriptionState getTransientProcessMessageSubscriptionState();
->>>>>>> 8368c937 (feat: backport of #25298 to main)
 }

@@ -91,14 +91,8 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
-<<<<<<< HEAD
-=======
-    final var authCheckBehavior =
-        new AuthorizationCheckBehavior(
-            processingState.getAuthorizationState(), processingState.getUserState(), config);
     final var transientProcessMessageSubscriptionState =
         typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
->>>>>>> 8368c937 (feat: backport of #25298 to main)
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             processingState,
@@ -108,14 +102,8 @@ public final class EngineProcessors {
             timerChecker,
             jobStreamer,
             jobMetrics,
-<<<<<<< HEAD
-            decisionBehavior);
-=======
             decisionBehavior,
-            clock,
-            authCheckBehavior,
             transientProcessMessageSubscriptionState);
->>>>>>> 8368c937 (feat: backport of #25298 to main)
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -156,18 +144,8 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
-<<<<<<< HEAD
-            timerChecker);
-=======
             timerChecker,
-            commandDistributionBehavior,
-            partitionId,
-            routingInfo,
-            clock,
-            config,
-            authCheckBehavior,
             transientProcessMessageSubscriptionState);
->>>>>>> 8368c937 (feat: backport of #25298 to main)
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -219,14 +197,8 @@ public final class EngineProcessors {
       final DueDateTimerChecker timerChecker,
       final JobStreamer jobStreamer,
       final JobMetrics jobMetrics,
-<<<<<<< HEAD
-      final DecisionBehavior decisionBehavior) {
-=======
       final DecisionBehavior decisionBehavior,
-      final InstantSource clock,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
->>>>>>> 8368c937 (feat: backport of #25298 to main)
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -235,14 +207,8 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         partitionsCount,
         timerChecker,
-<<<<<<< HEAD
-        jobStreamer);
-=======
         jobStreamer,
-        clock,
-        authCheckBehavior,
         transientProcessMessageSubscriptionState);
->>>>>>> 8368c937 (feat: backport of #25298 to main)
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -252,18 +218,8 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-<<<<<<< HEAD
-      final DueDateTimerChecker timerChecker) {
-=======
       final DueDateTimerChecker timerChecker,
-      final CommandDistributionBehavior commandDistributionBehavior,
-      final int partitionId,
-      final RoutingInfo routingInfo,
-      final InstantSource clock,
-      final EngineConfiguration config,
-      final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
->>>>>>> 8368c937 (feat: backport of #25298 to main)
     return BpmnProcessors.addBpmnStreamProcessor(
         processingState,
         scheduledTaskState,
@@ -271,18 +227,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         subscriptionCommandSender,
         timerChecker,
-<<<<<<< HEAD
-        writers);
-=======
         writers,
-        commandDistributionBehavior,
-        partitionId,
-        routingInfo,
-        clock,
-        config,
-        authCheckBehavior,
         transientProcessMessageSubscriptionState);
->>>>>>> 8368c937 (feat: backport of #25298 to main)
   }
 
   private static void addDeploymentRelatedProcessorAndServices(
