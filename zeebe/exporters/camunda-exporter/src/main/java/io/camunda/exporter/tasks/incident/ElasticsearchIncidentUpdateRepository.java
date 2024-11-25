@@ -20,9 +20,12 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
 import co.elastic.clients.elasticsearch.core.search.SourceFilter;
+import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
+import co.elastic.clients.elasticsearch.indices.analyze.AnalyzeToken;
 import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
@@ -108,6 +111,22 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
               return CompletableFuture.completedFuture(r.items().size());
             },
             executor);
+  }
+
+  @Override
+  public CompletionStage<List<String>> analyzeTreePath(final String treePath) {
+    final var request =
+        new AnalyzeRequest.Builder()
+            .field(ListViewTemplate.TREE_PATH)
+            .index(listViewAlias)
+            .text(treePath)
+            .build();
+
+    return client
+        .indices()
+        .analyze(request)
+        .thenApplyAsync(
+            response -> response.tokens().stream().map(AnalyzeToken::token).toList(), executor);
   }
 
   private BulkOperation createUpdateOperation(final DocumentUpdate update) {
