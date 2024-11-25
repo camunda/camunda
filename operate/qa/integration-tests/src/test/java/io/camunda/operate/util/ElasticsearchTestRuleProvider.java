@@ -16,7 +16,6 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
@@ -113,7 +112,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private DecisionRequirementsIndex decisionRequirementsIndex;
   @Autowired private DecisionIndex decisionIndex;
-  @Autowired private SchemaManager schemaManager;
   @Autowired private IndexPrefixHolder indexPrefixHolder;
 
   @Autowired private ObjectMapper objectMapper;
