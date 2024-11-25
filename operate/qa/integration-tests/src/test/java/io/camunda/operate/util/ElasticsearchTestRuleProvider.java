@@ -118,7 +118,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Autowired private ObjectMapper objectMapper;
 
-  @Autowired private TestImportListener testImportListener;
   private String indexPrefix;
 
   @Override
@@ -259,11 +258,35 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       final Predicate<Object[]> predicate,
       final Supplier<Object> supplier,
       final Object... arguments) {
-    // no import anymore
-    try {
-      Thread.sleep(15_000);
-    } catch (final InterruptedException e) {
-      throw new RuntimeException(e);
+    int waitingRound = 0;
+    final int maxRounds = maxWaitingRounds;
+    boolean found = predicate.test(arguments);
+    final long start = System.currentTimeMillis();
+    while (!found && waitingRound < maxRounds) {
+      try {
+        if (supplier != null) {
+          supplier.get();
+        }
+        refreshSearchIndices();
+        refreshOperateSearchIndices();
+        if (runPostImport) {
+          runPostImportActions();
+        }
+      } catch (final Exception e) {
+        LOGGER.error(e.getMessage(), e);
+      }
+      found = predicate.test(arguments);
+      if (!found) {
+        sleepFor(500);
+        waitingRound++;
+      }
+    }
+    final long finishedTime = System.currentTimeMillis() - start;
+    if (found) {
+      LOGGER.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
+    } else {
+      LOGGER.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
+      //      throw new TestPrerequisitesFailedException("Conditions not met.");
     }
   }
 
