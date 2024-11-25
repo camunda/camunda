@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.UserMapper">
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.UserDbQuery">
+    SELECT COUNT(*)
+    FROM USERS
+    <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.UserDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.UserMapper.searchResultMap">
+    SELECT * FROM (
+    SELECT USER_KEY,
+    USERNAME,
+    NAME,
+    EMAIL,
+    NULL AS PASSWORD
+    FROM USERS
+    <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <!-- basic filters -->
+    <if test="filter.key != null">AND USER_KEY = #{filter.key}</if>
+    <if test="filter.username != null">AND USERNAME = #{filter.username}</if>
+    <if test="filter.name != null">AND NAME = #{filter.name}</if>
+    <if test="filter.email != null">AND EMAIL = #{filter.email}</if>
+  </sql>
+
+  <resultMap id="searchResultMap" type="io.camunda.search.entities.UserEntity">
+    <constructor>
+      <idArg column="USER_KEY" javaType="java.lang.Long"/>
+      <arg column="USERNAME" javaType="java.lang.String"/>
+      <arg column="NAME" javaType="java.lang.String"/>
+      <arg column="EMAIL" javaType="java.lang.String"/>
+      <arg column="PASSWORD" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.UserDbModel"
+    flushCache="true">
+    INSERT INTO USERS (USER_KEY, USERNAME, NAME, EMAIL)
+    VALUES (#{userKey}, #{username}, #{name}, #{email})
+  </insert>
+
+  <update
+    id="update"
+    parameterType="io.camunda.db.rdbms.write.domain.UserDbModel"
+    flushCache="true">
+    UPDATE USERS
+    SET USERNAME = #{username},
+        NAME     = #{name},
+        EMAIL    = #{email}
+    WHERE USER_KEY = #{userKey}
+  </update>
+</mapper>
