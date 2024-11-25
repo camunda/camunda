@@ -29,6 +29,7 @@ import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
@@ -36,6 +37,9 @@ import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
@@ -58,6 +62,9 @@ import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -67,31 +74,38 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 abstract sealed class IncidentUpdateRepositoryIT {
   private static final int PARTITION_ID = 1;
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
-
+  protected final PostImporterQueueTemplate postImporterQueueTemplate;
+  protected final IncidentTemplate incidentTemplate;
+  protected final ListViewTemplate listViewTemplate;
+  protected final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  protected final OperationTemplate operationTemplate;
   private final String indexPrefix = UUID.randomUUID().toString();
-  protected final PostImporterQueueTemplate postImporterQueueTemplate =
-      new PostImporterQueueTemplate(indexPrefix, true);
-  protected final IncidentTemplate incidentTemplate = new IncidentTemplate(indexPrefix, true);
-  protected final ListViewTemplate listViewTemplate = new ListViewTemplate(indexPrefix, true);
-  protected final FlowNodeInstanceTemplate flowNodeInstanceTemplate =
-      new FlowNodeInstanceTemplate(indexPrefix, true);
-
   @AutoCloseResource private final ClientAdapter clientAdapter;
   private final SearchEngineClient engineClient;
 
-  protected IncidentUpdateRepositoryIT(final String databaseUrl) {
+  protected IncidentUpdateRepositoryIT(final String databaseUrl, final boolean isElastic) {
     final var config = new ExporterConfiguration();
     config.getConnect().setIndexPrefix(indexPrefix);
     config.getConnect().setUrl(databaseUrl);
 
     clientAdapter = ClientAdapter.of(config);
     engineClient = clientAdapter.getSearchEngineClient();
+
+    postImporterQueueTemplate = new PostImporterQueueTemplate(indexPrefix, isElastic);
+    incidentTemplate = new IncidentTemplate(indexPrefix, isElastic);
+    listViewTemplate = new ListViewTemplate(indexPrefix, isElastic);
+    flowNodeInstanceTemplate = new FlowNodeInstanceTemplate(indexPrefix, isElastic);
+    operationTemplate = new OperationTemplate(indexPrefix, isElastic);
   }
 
   @BeforeEach
   void beforeEach() {
     Stream.of(
-            postImporterQueueTemplate, incidentTemplate, listViewTemplate, flowNodeInstanceTemplate)
+            postImporterQueueTemplate,
+            incidentTemplate,
+            listViewTemplate,
+            flowNodeInstanceTemplate,
+            operationTemplate)
         .forEach(template -> engineClient.createIndexTemplate(template, new IndexSettings(), true));
   }
 
@@ -109,7 +123,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
     @AutoCloseResource private final RestClientTransport transport = createTransport();
 
     public ElasticsearchIT() {
-      super("http://" + CONTAINER.getHttpHostAddress());
+      super("http://" + CONTAINER.getHttpHostAddress(), true);
     }
 
     @Override
@@ -120,6 +134,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
           incidentTemplate.getAlias(),
           listViewTemplate.getAlias(),
           flowNodeInstanceTemplate.getAlias(),
+          operationTemplate.getAlias(),
           new ElasticsearchAsyncClient(transport),
           Runnable::run);
     }
@@ -556,6 +571,98 @@ abstract sealed class IncidentUpdateRepositoryIT {
               "PI_1/FN_call/FNI_2/PI_3",
               "PI_1/FN_call/FNI_2/PI_3/FN_task",
               "PI_1/FN_call/FNI_2/PI_3/FN_task/FNI_4");
+    }
+  }
+
+  @Nested
+  final class WasProcessInstanceDeletedIT {
+    @Test
+    void shouldReturnNotDeletedIfDifferentKey() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.add(
+          operationTemplate.getFullQualifiedName(),
+          new OperationEntity()
+              .setProcessInstanceKey(2L)
+              .setType(OperationType.DELETE_PROCESS_INSTANCE)
+              .setState(OperationState.COMPLETED));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+
+      // then
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
+    }
+
+    @Test
+    void shouldReturnNotDeletedIfDifferentType() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.add(
+          operationTemplate.getFullQualifiedName(),
+          new OperationEntity()
+              .setProcessInstanceKey(2L)
+              .setType(OperationType.CANCEL_PROCESS_INSTANCE)
+              .setState(OperationState.COMPLETED));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+
+      // then
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = OperationState.class,
+        names = {"SENT", "COMPLETED"},
+        mode = Mode.EXCLUDE)
+    void shouldReturnNotDeletedIfDifferentState(final OperationState state)
+        throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.add(
+          operationTemplate.getFullQualifiedName(),
+          new OperationEntity()
+              .setProcessInstanceKey(1L)
+              .setType(OperationType.DELETE_PROCESS_INSTANCE)
+              .setState(state));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+
+      // then
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(false);
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+        value = OperationState.class,
+        names = {"SENT", "COMPLETED"},
+        mode = Mode.INCLUDE)
+    void shouldReturnDeleted(final OperationState state) throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.add(
+          operationTemplate.getFullQualifiedName(),
+          new OperationEntity()
+              .setProcessInstanceKey(1L)
+              .setType(OperationType.DELETE_PROCESS_INSTANCE)
+              .setState(state));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var wasDeleted = repository.wasProcessInstanceDeleted(1L);
+
+      // then
+      assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(true);
     }
   }
 }
