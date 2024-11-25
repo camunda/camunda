@@ -5,11 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.backup.repository;
+package io.camunda.authentication.service;
 
-public record BackupRepositoryPropsImpl(
-    String version,
-    String repositoryName,
-    int snapshotTimeout,
-    Long incompleteCheckTimeoutInSeconds)
-    implements BackupRepositoryProps {}
+import io.camunda.authentication.entity.CamundaUser;
+
+public interface CamundaUserService {
+  CamundaUser getCurrentUser();
+
+  String getUserToken();
+
+  String getCurrentUsername();
+}

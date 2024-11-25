@@ -9,6 +9,7 @@ package io.camunda.tasklist.es;
 
 import static io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty.createIndexMappingProperty;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultForNullValue;
+import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -54,7 +55,6 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -405,7 +405,7 @@ public class RetryElasticsearchClient {
         .indices()
         .exists(
             new GetIndexRequest(indexPattern)
-                .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
+                .indicesOptions(LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED),
             requestOptions);
   }
 

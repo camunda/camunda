@@ -9,18 +9,20 @@ package io.camunda.webapps.backup;
 
 import io.camunda.webapps.backup.exceptions.InvalidRequestException;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.backup.repository.GenericBackupException;
+import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,8 +65,8 @@ public class BackupServiceImpl implements BackupService {
 
   @Override
   public void deleteBackup(final Long backupId) {
-    repository.validateRepositoryExists(getRepositoryName());
-    final String repositoryName = getRepositoryName();
+    repository.validateRepositoryExists(backupProps.repositoryName());
+    final String repositoryName = backupProps.repositoryName();
     final int count = getIndexPatternsOrdered().length;
     final String version = getCurrentVersion();
     for (int index = 0; index < count; index++) {
@@ -78,8 +80,8 @@ public class BackupServiceImpl implements BackupService {
 
   @Override
   public TakeBackupResponseDto takeBackup(final TakeBackupRequestDto request) {
-    repository.validateRepositoryExists(getRepositoryName());
-    repository.validateNoDuplicateBackupId(getRepositoryName(), request.getBackupId());
+    repository.validateRepositoryExists(backupProps.repositoryName());
+    repository.validateNoDuplicateBackupId(backupProps.repositoryName(), request.getBackupId());
     if (!requestsQueue.isEmpty()) {
       throw new InvalidRequestException("Another backup is running at the moment");
     } // TODO remove duplicate
@@ -93,16 +95,16 @@ public class BackupServiceImpl implements BackupService {
 
   @Override
   public GetBackupStateResponseDto getBackupState(final Long backupId) {
-    return repository.getBackupState(getRepositoryName(), backupId);
+    return repository.getBackupState(backupProps.repositoryName(), backupId);
   }
 
   @Override
   public List<GetBackupStateResponseDto> getBackups() {
-    return repository.getBackups(getRepositoryName());
+    return repository.getBackups(backupProps.repositoryName());
   }
 
   TakeBackupResponseDto scheduleSnapshots(final TakeBackupRequestDto request) {
-    final String repositoryName = getRepositoryName();
+    final String repositoryName = backupProps.repositoryName();
     final int count = getIndexPatternsOrdered().length;
     final List<String> snapshotNames = new ArrayList<>();
     final String version = getCurrentVersion();
@@ -133,53 +135,45 @@ public class BackupServiceImpl implements BackupService {
     }
   }
 
-  private String getRepositoryName() {
-    return backupProps.repositoryName();
-  }
-
   private String[][] getIndexPatternsOrdered() {
     if (indexPatternsOrdered == null) {
       indexPatternsOrdered =
           new String[][] {
-            prio1BackupIndices.stream()
-                .map(index -> ((IndexDescriptor) index).getFullQualifiedName())
-                .toArray(String[]::new),
-            prio2BackupTemplates.stream()
-                .map(index -> ((IndexTemplateDescriptor) index).getFullQualifiedName())
-                .toArray(String[]::new),
+            fullQualifiedName(prio1BackupIndices),
+            fullQualifiedName(prio2BackupTemplates),
             // dated indices
-            prio2BackupTemplates.stream()
-                .map(
-                    index ->
-                        new String[] {
-                          ((IndexTemplateDescriptor) index).getFullQualifiedName() + "*",
-                          "-" + ((IndexTemplateDescriptor) index).getFullQualifiedName()
-                        })
-                .flatMap(Arrays::stream)
-                .toArray(String[]::new),
-            prio3BackupTemplates.stream()
-                .map(index -> ((IndexTemplateDescriptor) index).getFullQualifiedName())
-                .toArray(String[]::new),
+            fullQualifiedNameWithMatcher(prio2BackupTemplates),
+            fullQualifiedName(prio3BackupTemplates),
             // dated indices
-            prio3BackupTemplates.stream()
-                .map(
-                    index ->
-                        new String[] {
-                          ((IndexTemplateDescriptor) index).getFullQualifiedName() + "*",
-                          "-" + ((IndexTemplateDescriptor) index).getFullQualifiedName()
-                        })
-                .flatMap(Arrays::stream)
-                .toArray(String[]::new),
-            prio4BackupIndices.stream()
-                .map(index -> ((IndexDescriptor) index).getFullQualifiedName())
-                .toArray(String[]::new),
+            fullQualifiedNameWithMatcher(prio3BackupTemplates),
+            fullQualifiedName(prio4BackupIndices)
           };
     }
     return indexPatternsOrdered;
   }
 
+  private <A extends BackupPriority> String[] fullQualifiedName(final Collection<A> backups) {
+    return backups.stream().map(this::getFullQualifiedName).toArray(String[]::new);
+  }
+
+  private <A extends BackupPriority> String[] fullQualifiedNameWithMatcher(
+      final Collection<A> backups) {
+    return backups.stream()
+        .map(this::getFullQualifiedName)
+        .flatMap(name -> Stream.of(name + "*", "-" + name))
+        .toArray(String[]::new);
+  }
+
   // TODO Keep in mind this bug: https://github.com/camunda/camunda/issues/20458
   private String getCurrentVersion() {
     return backupProps.version().toLowerCase();
+  }
+
+  private String getFullQualifiedName(final BackupPriority index) {
+    if (index != null) {
+      return index.getFullQualifiedName();
+    } else {
+      throw new GenericBackupException("Can't find out index name for backup.");
+    }
   }
 }

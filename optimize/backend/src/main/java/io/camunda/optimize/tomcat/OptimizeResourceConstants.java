@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.jetty;
+package io.camunda.optimize.tomcat;
 
 import com.google.common.collect.ImmutableList;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
