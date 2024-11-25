@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.util;
 
+import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -28,7 +29,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
@@ -295,7 +295,7 @@ public class ElasticsearchTestExtension
             .indices()
             .get(
                 new GetIndexRequest(indexPrefix + "*")
-                    .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
+                    .indicesOptions(LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED),
                 RequestOptions.DEFAULT);
     final String[] indices = response.getIndices();
     return indices != null && indices.length >= minCountOfIndices;

@@ -10,6 +10,7 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT;
 import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT_TIME;
 import static io.camunda.tasklist.schema.indices.MetricIndex.VALUE;
+import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +27,6 @@ import java.util.stream.Collectors;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -104,7 +104,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
         SearchSourceBuilder.searchSource().query(rangeQuery).aggregation(aggregation);
     final SearchRequest searchRequest =
         new SearchRequest(index.getFullQualifiedName())
-            .indicesOptions(IndicesOptions.lenientExpandOpen())
+            .indicesOptions(LENIENT_EXPAND_OPEN_IGNORE_THROTTLED)
             .source(source);
     try {
 
