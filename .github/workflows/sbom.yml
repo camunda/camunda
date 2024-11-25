@@ -97,31 +97,31 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download Backend SBOM Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: backend-sbom
           path: ./sboms/backend
 
       - name: Download Tasklist SBOM Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: tasklist-fe-sbom
           path: ./sboms/tasklist
 
       - name: Download Operate SBOM Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: operate-fe-sbom
           path: ./sboms/operate
 
       - name: Download Identity SBOM Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: identity-fe-sbom
           path: ./sboms/identity
 
       - name: Download Optimize SBOM Artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: optimize-fe-sbom
           path: ./sboms/optimize
