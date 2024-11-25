@@ -325,6 +325,19 @@ public final class CatchEventBehavior {
         correlationKey,
         event.isInterrupting(),
         context.getTenantId());
+
+    final var lastSentTime = clock.millis();
+
+    // update transient state in a side-effect to ensure that these changes only take effect after
+    // the command has been successfully processed
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          transientProcessMessageSubscriptionState.update(
+              new PendingSubscription(
+                  elementInstanceKey, subscription.getMessageName(), subscription.getTenantId()),
+              lastSentTime);
+          return true;
+        });
   }
 
   private void subscribeToTimerEvents(

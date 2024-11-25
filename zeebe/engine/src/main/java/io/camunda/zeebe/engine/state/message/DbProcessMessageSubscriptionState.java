@@ -95,11 +95,6 @@ public final class DbProcessMessageSubscriptionState
     processMessageSubscription.setKey(key).setRecord(record);
 
     subscriptionColumnFamily.insert(elementKeyAndMessageName, processMessageSubscription);
-
-    transientState.add(
-        new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-        clock.millis());
   }
 
   @Override
