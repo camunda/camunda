@@ -145,7 +145,8 @@ public class BackupRestoreTest {
     createSnapshotRepository(testContext);
 
     String zeebeVersion = ZeebeClient.class.getPackage().getImplementationVersion();
-    if (zeebeVersion.toLowerCase().contains("snapshot")) {
+    // zeebeVersion can be null if tests are launched from the IDE
+    if (zeebeVersion == null || zeebeVersion.toLowerCase().contains("snapshot")) {
       zeebeVersion = "SNAPSHOT";
     }
     testContainerUtil.startZeebe(zeebeVersion, testContext);

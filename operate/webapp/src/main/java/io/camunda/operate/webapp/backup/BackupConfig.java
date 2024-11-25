@@ -56,6 +56,12 @@ public class BackupConfig {
       public Long incompleteCheckTimeoutInSeconds() {
         return operateProperties.getIncompleteCheckTimeoutInSeconds();
       }
+
+      @Override
+      public boolean includeGlobalState() {
+        // was not set in operate
+        return false;
+      }
     };
   }
 }
