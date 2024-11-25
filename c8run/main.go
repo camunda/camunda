@@ -210,10 +210,16 @@ func main() {
 	startFlagSet.StringVar(&settings.keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.logLevel, "log-level", "", "Adjust the log level of Camunda")
+	startFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (still requires Elasticsearch to be running outside of c8run)")
+
+	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
+	stopFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
 
 	switch baseCommand {
 	case "start":
 		startFlagSet.Parse(os.Args[2:])
+	case "stop":
+		stopFlagSet.Parse(os.Args[2:])
 	}
 
 	if settings.logLevel != "" {
@@ -306,33 +312,35 @@ func main() {
 
 		os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
 
-		fmt.Print("Starting Elasticsearch " + elasticsearchVersion + "...\n")
-		fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
+		if !settings.disableElasticsearch {
+			fmt.Print("Starting Elasticsearch " + elasticsearchVersion + "...\n")
+			fmt.Print("(Hint: you can find the log output in the 'elasticsearch.log' file in the 'log' folder of your distribution.)\n")
 
-		elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
-		elasticsearchLogFile, err := os.OpenFile(elasticsearchLogFilePath, os.O_RDWR|os.O_CREATE, 0644)
-		if err != nil {
-			fmt.Print("Failed to open file: " + elasticsearchLogFilePath)
-			os.Exit(1)
-		}
+			elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")
+			elasticsearchLogFile, err := os.OpenFile(elasticsearchLogFilePath, os.O_RDWR|os.O_CREATE, 0644)
+			if err != nil {
+				fmt.Print("Failed to open file: " + elasticsearchLogFilePath)
+				os.Exit(1)
+			}
 
-		elasticsearchCmd := c8.ElasticsearchCmd(elasticsearchVersion, parentDir)
-		elasticsearchCmd.Stdout = elasticsearchLogFile
-		elasticsearchCmd.Stderr = elasticsearchLogFile
-		err = elasticsearchCmd.Start()
-		if err != nil {
-			fmt.Printf("%+v", err)
-			os.Exit(1)
-		}
-		fmt.Print("Process id ", elasticsearchCmd.Process.Pid, "\n")
+			elasticsearchCmd := c8.ElasticsearchCmd(elasticsearchVersion, parentDir)
+			elasticsearchCmd.Stdout = elasticsearchLogFile
+			elasticsearchCmd.Stderr = elasticsearchLogFile
+			err = elasticsearchCmd.Start()
+			if err != nil {
+				fmt.Printf("%+v", err)
+				os.Exit(1)
+			}
+			fmt.Print("Process id ", elasticsearchCmd.Process.Pid, "\n")
 
-		elasticsearchPidFile, err := os.OpenFile(elasticsearchPidPath, os.O_RDWR|os.O_CREATE, 0644)
-		if err != nil {
-			fmt.Print("Failed to open file: " + elasticsearchPidPath)
-			os.Exit(1)
+			elasticsearchPidFile, err := os.OpenFile(elasticsearchPidPath, os.O_RDWR|os.O_CREATE, 0644)
+			if err != nil {
+				fmt.Print("Failed to open file: " + elasticsearchPidPath)
+				os.Exit(1)
+			}
+			elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
+			queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 		}
-		elasticsearchPidFile.Write([]byte(strconv.Itoa(elasticsearchCmd.Process.Pid)))
-		queryElasticsearchHealth("Elasticsearch", "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s")
 
 		connectorsCmd := c8.ConnectorsCmd(javaBinary, parentDir, camundaVersion)
 		connectorsLogPath := filepath.Join(parentDir, "log", "connectors.log")
@@ -390,8 +398,10 @@ func main() {
 	}
 
 	if baseCommand == "stop" {
-		stopProcess(c8, elasticsearchPidPath)
-		fmt.Println("Elasticsearch is stopped.")
+		if !settings.disableElasticsearch {
+			stopProcess(c8, elasticsearchPidPath)
+			fmt.Println("Elasticsearch is stopped.")
+		}
 		stopProcess(c8, connectorsPidPath)
 		fmt.Println("Connectors is stopped.")
 		stopProcess(c8, camundaPidPath)
