@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 
@@ -55,7 +56,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnBehaviorsImpl.java
       final JobStreamer jobStreamer) {
+=======
+      final JobStreamer jobStreamer,
+      final InstantSource clock,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+>>>>>>> 57cf1143 (refactor: inject pending message sub state):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnBehaviorsImpl.java
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(
@@ -75,7 +82,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers.state(),
             writers.sideEffect(),
             timerChecker,
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnBehaviorsImpl.java
             partitionsCount);
+=======
+            routingInfo,
+            clock,
+            transientProcessMessageSubscriptionState);
+>>>>>>> 57cf1143 (refactor: inject pending message sub state):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/bpmn/behavior/BpmnBehaviorsImpl.java
 
     eventTriggerBehavior =
         new EventTriggerBehavior(
