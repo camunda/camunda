@@ -35,7 +35,7 @@ public class MappingController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> create(
       @RequestBody final MappingRuleCreateRequest mappingRequest) {
-    return RequestMapper.toMappingRequest(mappingRequest)
+    return RequestMapper.toMappingDTO(mappingRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createMapping);
   }
 

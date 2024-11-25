@@ -39,7 +39,7 @@ public class MappingControllerTest extends RestControllerTest {
   }
 
   @Test
-  void createMappingShouldReturnAccepted() {
+  void createMappingShouldReturnCreated() {
     // given
     final var dto = validCreateMappingRequest();
     final var mappingRecord =

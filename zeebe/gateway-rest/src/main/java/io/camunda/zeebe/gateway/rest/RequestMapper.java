@@ -328,7 +328,7 @@ public class RequestMapper {
                 passwordEncoder.encode(request.getPassword())));
   }
 
-  public static Either<ProblemDetail, MappingDTO> toMappingRequest(
+  public static Either<ProblemDetail, MappingDTO> toMappingDTO(
       final MappingRuleCreateRequest request) {
     return getResult(
         validateMappingRequest(request),

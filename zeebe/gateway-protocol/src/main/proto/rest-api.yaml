@@ -46,7 +46,7 @@ tags:
   - name: User
   - name: User task
   - name: Variable
-  - name: Mapping
+  - name: Mapping Rule
 
 paths:
   /topology:
@@ -2204,7 +2204,7 @@ paths:
   /mapping-rules:
     post:
       tags:
-        - Mapping
+        - Mapping Rule
       operationId: createMappingRule
       summary: Create mapping rule
       description: |
