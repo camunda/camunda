@@ -13,13 +13,19 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.webapps.schema.descriptors.ImportValueType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -306,5 +313,80 @@ public class ElasticsearchEngineClientIT {
     assertThat(complexProperty.get("type")).isEqualTo("text");
     assertThat(complexProperty.get("index")).isEqualTo(false);
     assertThat(complexProperty.get("eager_global_ordinals")).isEqualTo(true);
+  }
+
+  @Nested
+  class ImportersCompleted {
+    final String indexPrefix = "";
+    final int partitionId = 1;
+    final IndexDescriptor importPositionIndex = new ImportPositionIndex(indexPrefix, true);
+
+    @BeforeEach
+    void setup() throws IOException {
+      elsClient
+          .indices()
+          .delete(r -> r.index(importPositionIndex.getFullQualifiedName()).ignoreUnavailable(true));
+      elsEngineClient.createIndex(importPositionIndex, new IndexSettings());
+    }
+
+    @Test
+    void shouldReturnRecordReadersCompletedIfAllReadersCompletedFieldIsTrue() throws IOException {
+      // given, when
+      elsClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
+      elsClient.indices().refresh();
+
+      // then
+      final var importersCompleted = elsEngineClient.importersCompleted(partitionId, indexPrefix);
+      assertThat(importersCompleted).isEqualTo(true);
+    }
+
+    @Test
+    void shouldReturnRecordReadersNotCompletedIfSomeReadersCompletedFieldIsFalse()
+        throws IOException {
+      elsClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
+
+      final var decisionEntity =
+          new ImportPositionEntity()
+              .setPartitionId(partitionId)
+              .setAliasName(ImportValueType.DECISION.getAliasTemplate());
+
+      final var updateRequest =
+          new UpdateRequest.Builder<>()
+              .id(decisionEntity.getId())
+              .index(importPositionIndex.getFullQualifiedName())
+              .doc(Map.of("completed", false))
+              .build();
+
+      elsClient.update(updateRequest, ImportPositionEntity.class);
+
+      elsClient.indices().refresh();
+
+      final var importersCompleted = elsEngineClient.importersCompleted(partitionId, indexPrefix);
+      assertThat(importersCompleted).isEqualTo(false);
+    }
+
+    private BulkRequest createImportPositionDocuments(
+        final int partitionId, final IndexDescriptor importPositionIndex) {
+      final BulkRequest.Builder br = new BulkRequest.Builder();
+      Arrays.stream(ImportValueType.values())
+          .map(
+              type ->
+                  new ImportPositionEntity()
+                      .setCompleted(true)
+                      .setPartitionId(partitionId)
+                      .setAliasName(type.getAliasTemplate()))
+          .forEach(
+              entity -> {
+                br.operations(
+                    op ->
+                        op.index(
+                            i ->
+                                i.index(importPositionIndex.getFullQualifiedName())
+                                    .id(entity.getId())
+                                    .document(entity)));
+              });
+
+      return br.build();
+    }
   }
 }
