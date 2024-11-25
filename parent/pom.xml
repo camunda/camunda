@@ -151,7 +151,7 @@
     <version.liquibase>4.29.2</version.liquibase>
     <version.caffeine>3.1.8</version.caffeine>
 
-    <version.commons-io>2.17.0</version.commons-io>
+    <version.commons-io>2.18.0</version.commons-io>
     <version.thymeleaf>3.1.2.RELEASE</version.thymeleaf>
     <version.unboundid-ldapsdk>7.0.1</version.unboundid-ldapsdk>
     <version.parsson>1.1.7</version.parsson>
