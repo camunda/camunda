@@ -260,6 +260,11 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       final Supplier<Object> supplier,
       final Object... arguments) {
     // no import anymore
+    try {
+      Thread.sleep(15_000);
+    } catch (final InterruptedException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
