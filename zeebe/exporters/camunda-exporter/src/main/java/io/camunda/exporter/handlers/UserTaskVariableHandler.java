@@ -7,8 +7,10 @@
  */
 package io.camunda.exporter.handlers;
 
+import io.camunda.exporter.handlers.UserTaskVariableHandler.UserTaskVariableBatch;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
@@ -16,6 +18,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class UserTaskVariableHandler
-    implements ExportHandler<TaskVariableEntity, VariableRecordValue> {
+    implements ExportHandler<UserTaskVariableBatch, VariableRecordValue> {
 
   private static final Logger LOG = LoggerFactory.getLogger(UserTaskVariableHandler.class);
 
@@ -43,8 +46,8 @@ public class UserTaskVariableHandler
   }
 
   @Override
-  public Class<TaskVariableEntity> getEntityType() {
-    return TaskVariableEntity.class;
+  public Class<UserTaskVariableBatch> getEntityType() {
+    return UserTaskVariableBatch.class;
   }
 
   @Override
@@ -54,61 +57,124 @@ public class UserTaskVariableHandler
 
   @Override
   public List<String> generateIds(final Record<VariableRecordValue> record) {
-    return List.of(
-        ID_PATTERN.formatted(record.getValue().getScopeKey(), record.getValue().getName()));
+    return List.of(String.valueOf(record.getKey()));
   }
 
   @Override
-  public TaskVariableEntity createNewEntity(final String id) {
-    return new TaskVariableEntity().setId(id);
+  public UserTaskVariableBatch createNewEntity(final String id) {
+    return new UserTaskVariableBatch().setId(id);
   }
 
   @Override
   public void updateEntity(
-      final Record<VariableRecordValue> record, final TaskVariableEntity entity) {
-    entity
-        .setPartitionId(record.getPartitionId())
-        .setPosition(record.getPosition())
-        .setTenantId(record.getValue().getTenantId())
-        .setKey(record.getKey())
-        .setProcessInstanceId(record.getValue().getProcessInstanceKey())
-        .setScopeKey(record.getValue().getScopeKey())
-        .setName(record.getValue().getName());
+      final Record<VariableRecordValue> record, final UserTaskVariableBatch entity) {
+
+    final var processVariable =
+        new TaskVariableEntity()
+            .setId(
+                ID_PATTERN.formatted(record.getValue().getScopeKey(), record.getValue().getName()))
+            .setPartitionId(record.getPartitionId())
+            .setPosition(record.getPosition())
+            .setTenantId(record.getValue().getTenantId())
+            .setKey(record.getKey())
+            .setProcessInstanceId(record.getValue().getProcessInstanceKey())
+            .setScopeKey(record.getValue().getScopeKey())
+            .setName(record.getValue().getName());
 
     if (record.getValue().getValue().length() > variableSizeThreshold) {
-      entity.setValue(record.getValue().getValue().substring(0, variableSizeThreshold));
-      entity.setFullValue(record.getValue().getValue());
-      entity.setIsTruncated(true);
+      processVariable.setValue(record.getValue().getValue().substring(0, variableSizeThreshold));
+      processVariable.setFullValue(record.getValue().getValue());
+      processVariable.setIsTruncated(true);
     } else {
-      entity.setValue(record.getValue().getValue());
-      entity.setFullValue(null);
-      entity.setIsTruncated(false);
+      processVariable.setValue(record.getValue().getValue());
+      processVariable.setFullValue(null);
+      processVariable.setIsTruncated(false);
     }
 
     final TaskJoinRelationship joinRelationship = new TaskJoinRelationship();
-    joinRelationship.setParent(entity.getScopeKey());
-    joinRelationship.setName(
-        // Whether it's a process or a task variable
-        Objects.equals(entity.getProcessInstanceId(), entity.getScopeKey())
-            ? TaskJoinRelationshipType.PROCESS_VARIABLE.getType()
-            : TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
-    entity.setJoin(joinRelationship);
+    joinRelationship.setParent(processVariable.getProcessInstanceId());
+    joinRelationship.setName(TaskJoinRelationshipType.PROCESS_VARIABLE.getType());
+    processVariable.setJoin(joinRelationship);
+
+    TaskVariableEntity taskVariable = null;
+    if (!Objects.equals(
+        record.getValue().getProcessInstanceKey(), record.getValue().getScopeKey())) {
+      taskVariable =
+          new TaskVariableEntity()
+              .setId(
+                  ID_PATTERN.formatted(record.getValue().getScopeKey(), record.getValue().getName())
+                      + "-local")
+              .setPartitionId(record.getPartitionId())
+              .setPosition(record.getPosition())
+              .setTenantId(record.getValue().getTenantId())
+              .setKey(record.getKey())
+              .setProcessInstanceId(record.getValue().getProcessInstanceKey())
+              .setScopeKey(record.getValue().getScopeKey())
+              .setName(record.getValue().getName());
+
+      if (record.getValue().getValue().length() > variableSizeThreshold) {
+        taskVariable.setValue(record.getValue().getValue().substring(0, variableSizeThreshold));
+        taskVariable.setFullValue(record.getValue().getValue());
+        taskVariable.setIsTruncated(true);
+      } else {
+        taskVariable.setValue(record.getValue().getValue());
+        taskVariable.setFullValue(null);
+        taskVariable.setIsTruncated(false);
+      }
+
+      final TaskJoinRelationship localTaskJoinRelationship = new TaskJoinRelationship();
+      localTaskJoinRelationship.setParent(taskVariable.getScopeKey());
+      localTaskJoinRelationship.setName(TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
+      taskVariable.setJoin(localTaskJoinRelationship);
+    }
+
+    final var myList = new ArrayList<TaskVariableEntity>();
+    myList.add(processVariable);
+    myList.add(taskVariable);
+    entity.setVariables(myList);
   }
 
   @Override
-  public void flush(final TaskVariableEntity entity, final BatchRequest batchRequest) {
-    final Map<String, Object> updateFields = new HashMap<>();
+  public void flush(final UserTaskVariableBatch batch, final BatchRequest batchRequest) {
 
-    updateFields.put(TaskTemplate.VARIABLE_VALUE, entity.getValue());
-    updateFields.put(TaskTemplate.VARIABLE_FULL_VALUE, entity.getFullValue());
-    updateFields.put(TaskTemplate.IS_TRUNCATED, entity.getIsTruncated());
+    batch
+        .getVariables()
+        .forEach(
+            entity -> {
+              if (entity != null) {
+                final Map<String, Object> updateFields = new HashMap<>();
 
-    batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(entity.getScopeKey()));
+                updateFields.put(TaskTemplate.VARIABLE_VALUE, entity.getValue());
+                updateFields.put(TaskTemplate.VARIABLE_FULL_VALUE, entity.getFullValue());
+                updateFields.put(TaskTemplate.IS_TRUNCATED, entity.getIsTruncated());
+
+                batchRequest.upsertWithRouting(
+                    indexName,
+                    entity.getId(),
+                    entity,
+                    updateFields,
+                    String.valueOf(entity.getScopeKey()));
+              }
+            });
   }
 
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  public static final class UserTaskVariableBatch
+      extends AbstractExporterEntity<UserTaskVariableBatch> {
+
+    private List<TaskVariableEntity> variables;
+
+    public List<TaskVariableEntity> getVariables() {
+      return variables;
+    }
+
+    public UserTaskVariableBatch setVariables(final List<TaskVariableEntity> variables) {
+      this.variables = variables;
+      return this;
+    }
   }
 }

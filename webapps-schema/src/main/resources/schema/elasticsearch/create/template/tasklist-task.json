@@ -2,7 +2,7 @@
   "mappings": {
     "dynamic": "strict",
     "properties": {
-      "join_process": {
+      "join": {
         "type": "join",
         "eager_global_ordinals": true,
         "relations": {
@@ -11,7 +11,7 @@
             "variable"
           ],
           "task": [
-            "localVariables"
+            "localVariable"
           ]
         }
       },
