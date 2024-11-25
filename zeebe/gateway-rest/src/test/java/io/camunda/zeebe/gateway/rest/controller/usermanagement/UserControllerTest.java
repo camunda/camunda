@@ -315,7 +315,7 @@ public class UserControllerTest extends RestControllerTest {
   @Test
   void updateUserShouldReturnNoContent() {
     // given
-    final UserDTO user = new UserDTO(100L, "", "Alice", "alice@camunda.test", null);
+    final UserDTO user = new UserDTO(100L, "", "Alice", "test+alice@camunda.com", null);
     when(userServices.updateUser(any()))
         .thenReturn(
             CompletableFuture.completedFuture(

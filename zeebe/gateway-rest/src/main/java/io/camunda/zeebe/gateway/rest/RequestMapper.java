@@ -31,6 +31,7 @@ import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.val
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
@@ -170,9 +171,11 @@ public class RequestMapper {
   public static Either<ProblemDetail, UpdateUserRequest> toUserUpdateRequest(
       final UserUpdateRequest updateRequest, final long userKey) {
     final UserChangeset changeset = updateRequest.getChangeset();
-    return Either.right(
-        new UpdateUserRequest(
-            userKey, changeset.getName(), changeset.getEmail(), changeset.getPassword()));
+    return getResult(
+        validateUserUpdateRequest(updateRequest),
+        () ->
+            new UpdateUserRequest(
+                userKey, changeset.getName(), changeset.getEmail(), changeset.getPassword()));
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
