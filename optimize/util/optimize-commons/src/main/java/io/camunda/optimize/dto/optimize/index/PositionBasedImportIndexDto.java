@@ -7,14 +7,12 @@
  */
 package io.camunda.optimize.dto.optimize.index;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 
 public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceDto> {
 
   protected long positionOfLastEntity = 0;
   protected long sequenceOfLastEntity = 0;
-  protected String dbTypeIndexRefersTo;
   // flag to indicate whether at least one record with a sequence field has been imported
   protected boolean hasSeenSequenceField = false;
 
@@ -34,15 +32,6 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
 
   public void setSequenceOfLastEntity(final long sequenceOfLastEntity) {
     this.sequenceOfLastEntity = sequenceOfLastEntity;
-  }
-
-  @JsonProperty("esTypeIndexRefersTo")
-  public String getDbTypeIndexRefersTo() {
-    return dbTypeIndexRefersTo;
-  }
-
-  public void setDbTypeIndexRefersTo(final String dbTypeIndexRefersTo) {
-    this.dbTypeIndexRefersTo = dbTypeIndexRefersTo;
   }
 
   public boolean isHasSeenSequenceField() {
