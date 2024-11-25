@@ -44,6 +44,8 @@ public interface TaskStore {
 
   List<TaskEntity> getTasksById(List<String> ids);
 
+  void updateTaskLinkedForm(final TaskEntity task, final String formBpmnId);
+
   default TaskEntity makeCopyOf(final TaskEntity taskBefore) {
     return new TaskEntity()
         .setId(taskBefore.getId())

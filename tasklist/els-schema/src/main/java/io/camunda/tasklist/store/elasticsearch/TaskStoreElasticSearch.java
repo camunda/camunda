@@ -169,6 +169,16 @@ public class TaskStoreElasticSearch implements TaskStore {
     return response;
   }
 
+  @Override
+  public List<TaskEntity> getTasksById(final List<String> ids) {
+    try {
+      final SearchHit[] response = getTasksRawResponse(ids);
+      return mapSearchHits(response, objectMapper, TaskEntity.class);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   /**
    * Persist that task is completed even before the corresponding events are imported from Zeebe.
    */
@@ -271,13 +281,8 @@ public class TaskStoreElasticSearch implements TaskStore {
   }
 
   @Override
-  public List<TaskEntity> getTasksById(final List<String> ids) {
-    try {
-      final SearchHit[] response = getTasksRawResponse(ids);
-      return mapSearchHits(response, objectMapper, TaskEntity.class);
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
+  public void updateTaskLinkedForm(final TaskEntity task, final String formBpmnId) {
+    updateTask(task.getId(), asMap(TaskTemplate.FORM_ID, formBpmnId));
   }
 
   private SearchHit[] getTasksRawResponse(final List<String> ids) throws IOException {
