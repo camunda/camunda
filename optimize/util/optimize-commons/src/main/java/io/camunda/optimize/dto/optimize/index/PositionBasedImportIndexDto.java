@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.index;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
 
 public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceDto> {
@@ -35,6 +36,7 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
     this.sequenceOfLastEntity = sequenceOfLastEntity;
   }
 
+  @JsonProperty("esTypeIndexRefersTo")
   public String getDbTypeIndexRefersTo() {
     return dbTypeIndexRefersTo;
   }
