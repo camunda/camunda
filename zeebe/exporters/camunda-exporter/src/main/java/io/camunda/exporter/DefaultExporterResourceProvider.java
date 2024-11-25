@@ -63,6 +63,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
@@ -78,6 +79,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
@@ -138,7 +140,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 new BatchOperationTemplate(globalPrefix, isElasticsearch)),
             entry(
                 DraftTaskVariableTemplate.class,
-                new DraftTaskVariableTemplate(globalPrefix, isElasticsearch)));
+                new DraftTaskVariableTemplate(globalPrefix, isElasticsearch)),
+            entry(
+                SnapshotTaskVariableTemplate.class,
+                new SnapshotTaskVariableTemplate(globalPrefix, isElasticsearch)));
 
     indexDescriptorsMap =
         Map.ofEntries(
@@ -156,7 +161,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             entry(AuthorizationIndex.class, new AuthorizationIndex(globalPrefix, isElasticsearch)),
             entry(MappingIndex.class, new MappingIndex(globalPrefix, isElasticsearch)),
             entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
-            entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)));
+            entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)),
+            entry(
+                ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)));
 
     final var processCache =
         new ExporterEntityCacheImpl<>(

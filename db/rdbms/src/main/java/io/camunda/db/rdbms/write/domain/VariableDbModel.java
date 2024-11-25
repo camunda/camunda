@@ -10,7 +10,9 @@ package io.camunda.db.rdbms.write.domain;
 import static io.camunda.util.ValueTypeUtil.mapBoolean;
 
 import io.camunda.search.entities.ValueTypeEnum;
+import io.camunda.util.ObjectBuilder;
 import io.camunda.util.ValueTypeUtil;
+import java.util.function.Function;
 
 public record VariableDbModel(
     Long variableKey,
@@ -28,9 +30,25 @@ public record VariableDbModel(
 
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191; // TODO make configurable
 
-  public static class VariableDbModelBuilder {
+  public VariableDbModel copy(
+      final Function<ObjectBuilder<VariableDbModel>, ObjectBuilder<VariableDbModel>>
+          builderFunction) {
+    return builderFunction
+        .apply(
+            new VariableDbModelBuilder()
+                .variableKey(this.variableKey)
+                .value(this.value)
+                .name(this.name)
+                .scopeKey(this.scopeKey)
+                .processInstanceKey(this.processInstanceKey)
+                .processDefinitionId(this.processDefinitionId)
+                .tenantId(this.tenantId))
+        .build();
+  }
 
-    private Long key;
+  public static class VariableDbModelBuilder implements ObjectBuilder<VariableDbModel> {
+
+    private Long variableKey;
     private String name;
     private String value;
     private Long scopeKey;
@@ -38,12 +56,10 @@ public record VariableDbModel(
     private String processDefinitionId;
     private String tenantId;
 
-    // Public constructor to initialize the builder
     public VariableDbModelBuilder() {}
 
-    // Builder methods for each field
-    public VariableDbModelBuilder key(final Long key) {
-      this.key = key;
+    public VariableDbModelBuilder variableKey(final Long variableKey) {
+      this.variableKey = variableKey;
       return this;
     }
 
@@ -93,7 +109,7 @@ public record VariableDbModel(
 
     private VariableDbModel getModel(final String value) {
       return new VariableDbModel(
-          key,
+          variableKey,
           name,
           ValueTypeEnum.STRING,
           null,
@@ -109,7 +125,7 @@ public record VariableDbModel(
 
     private VariableDbModel getModelWithPreview() {
       return new VariableDbModel(
-          key,
+          variableKey,
           name,
           ValueTypeEnum.STRING,
           null,
@@ -125,7 +141,7 @@ public record VariableDbModel(
 
     private VariableDbModel getLongModel() {
       return new VariableDbModel(
-          key,
+          variableKey,
           name,
           ValueTypeEnum.LONG,
           null,
@@ -141,7 +157,7 @@ public record VariableDbModel(
 
     private VariableDbModel getDoubleModel() {
       return new VariableDbModel(
-          key,
+          variableKey,
           name,
           ValueTypeEnum.DOUBLE,
           Double.parseDouble(value),

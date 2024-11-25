@@ -61,7 +61,7 @@ public class MappingServicesTest {
   @Test
   public void shouldCreateMapping() {
     // given
-    final var mappingDTO = new MappingDTO(100L, "newClaimName", "newClaimValue");
+    final var mappingDTO = new MappingDTO("newClaimName", "newClaimValue");
 
     // when
     services.createMapping(mappingDTO);

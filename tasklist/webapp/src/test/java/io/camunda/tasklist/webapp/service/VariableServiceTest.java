@@ -23,9 +23,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.ImportProperties;
@@ -43,6 +40,9 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -69,7 +69,7 @@ class VariableServiceTest {
   @Mock private TasklistProperties tasklistProperties;
   @Mock private TaskValidator taskValidator;
   @Captor private ArgumentCaptor<Collection<DraftTaskVariableEntity>> draftTaskVariableCaptor;
-  @Captor private ArgumentCaptor<Collection<TaskVariableEntity>> taskVariableCaptor;
+  @Captor private ArgumentCaptor<Collection<SnapshotTaskVariableEntity>> taskVariableCaptor;
   @Spy private ObjectMapper objectMapper = CommonUtils.getObjectMapper();
 
   @InjectMocks private VariableService instance;
@@ -305,7 +305,7 @@ class VariableServiceTest {
             Map.of(
                 taskId,
                 List.of(
-                    new TaskVariableEntity()
+                    new SnapshotTaskVariableEntity()
                         .setId("variableId")
                         .setTaskId("id789")
                         .setName("A_numVar")
@@ -432,7 +432,7 @@ class VariableServiceTest {
     when(draftVariableStore.getById(variableId)).thenReturn(Optional.empty());
     when(variableStore.getTaskVariable(variableId, emptySet()))
         .thenReturn(
-            new TaskVariableEntity()
+            new SnapshotTaskVariableEntity()
                 .setId(variableId)
                 .setTaskId("id789")
                 .setName("arrayVar")

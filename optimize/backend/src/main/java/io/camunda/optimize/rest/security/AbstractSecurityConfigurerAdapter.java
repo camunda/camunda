@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.rest.security;
 
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthCookieService;

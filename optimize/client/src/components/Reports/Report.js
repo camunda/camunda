@@ -101,11 +101,6 @@ export class Report extends React.Component {
 
   render() {
     const {report, serverError} = this.state;
-    const hasOpensearchError = serverError?.detailedMessage?.includes('No interpreter registered');
-
-    if (hasOpensearchError) {
-      return <ErrorPage text={t('apiErrors.reportNotSupportedForOpenSearch')} />;
-    }
 
     if (!report && serverError) {
       return <ErrorPage />;

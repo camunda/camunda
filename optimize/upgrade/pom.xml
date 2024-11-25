@@ -28,7 +28,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-connect</artifactId>
-      <version>8.6.3</version>
+      <version>8.6.5</version>
     </dependency>
 
     <!-- Test dependencies -->
@@ -108,7 +108,7 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.17.2</version>
+      <version>2.18.1</version>
       <scope>compile</scope>
     </dependency>
 
@@ -150,21 +150,21 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>2.17.2</version>
+      <version>2.18.1</version>
       <scope>compile</scope>
     </dependency>
 
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.177</version>
+      <version>4.8.179</version>
       <scope>provided</scope>
     </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.17.2</version>
+      <version>2.18.1</version>
       <scope>compile</scope>
     </dependency>
 

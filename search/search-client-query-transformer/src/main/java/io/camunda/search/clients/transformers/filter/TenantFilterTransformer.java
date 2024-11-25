@@ -9,6 +9,9 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.NAME;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.TenantFilter;
@@ -20,9 +23,9 @@ public class TenantFilterTransformer implements FilterTransformer<TenantFilter> 
   public SearchQuery toSearchQuery(final TenantFilter filter) {
 
     return and(
-        filter.key() == null ? null : term("key", filter.key()),
-        filter.tenantId() == null ? null : term("tenantId", filter.tenantId()),
-        filter.name() == null ? null : term("name", filter.name()));
+        filter.key() == null ? null : term(KEY, filter.key()),
+        filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
+        filter.name() == null ? null : term(NAME, filter.name()));
   }
 
   @Override

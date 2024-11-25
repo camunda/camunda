@@ -169,6 +169,26 @@ const elements = {
     name: 'Multi instance task',
     type: 'MultiInstanceTask',
   },
+  EscalationEventSubProcess: {
+    id: 'EscalationEventSubProcess',
+    name: 'Escalation event sub process',
+    type: 'EscalationEventSubProcess',
+  },
+  EscalationStartEvent: {
+    id: 'EscalationStartEvent',
+    name: 'Escalation start event',
+    type: 'EscalationStartEvent',
+  },
+  CompensationTask: {
+    id: 'CompensationTask',
+    name: 'Compensation task',
+    type: 'CompensationTask',
+  },
+  CompensationBoundaryEvent: {
+    id: 'CompensationBoundaryEvent',
+    name: 'Compensation boundary event',
+    type: 'CompensationBoundaryEvent',
+  },
 };
 
 type Props = {

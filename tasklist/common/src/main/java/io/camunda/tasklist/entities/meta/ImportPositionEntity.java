@@ -22,6 +22,8 @@ public class ImportPositionEntity extends TasklistEntity<ImportPositionEntity> {
 
   private String indexName;
 
+  private boolean completed;
+
   public ImportPositionEntity() {}
 
   public String getAliasName() {
@@ -69,6 +71,15 @@ public class ImportPositionEntity extends TasklistEntity<ImportPositionEntity> {
     return this;
   }
 
+  public boolean isCompleted() {
+    return completed;
+  }
+
+  public ImportPositionEntity setCompleted(final boolean completed) {
+    this.completed = completed;
+    return this;
+  }
+
   @Override
   public String getId() {
     return String.format("%s-%s", partitionId, aliasName);
@@ -76,15 +87,17 @@ public class ImportPositionEntity extends TasklistEntity<ImportPositionEntity> {
 
   public static ImportPositionEntity createFrom(
       final long sequence,
-      ImportPositionEntity importPositionEntity,
-      long newPosition,
-      String indexName) {
+      final ImportPositionEntity importPositionEntity,
+      final long newPosition,
+      final String indexName,
+      final boolean completed) {
     return new ImportPositionEntity()
         .setSequence(sequence)
         .setAliasName(importPositionEntity.getAliasName())
         .setPartitionId(importPositionEntity.getPartitionId())
         .setIndexName(indexName)
-        .setPosition(newPosition);
+        .setPosition(newPosition)
+        .setCompleted(completed);
   }
 
   @Override

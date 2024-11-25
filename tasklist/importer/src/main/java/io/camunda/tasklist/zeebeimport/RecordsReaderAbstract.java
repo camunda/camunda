@@ -60,6 +60,8 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
   @Qualifier("tasklistImportThreadPoolExecutor")
   private ThreadPoolTaskExecutor importExecutor;
 
+  @Autowired private RecordsReaderHolder recordsReaderHolder;
+
   private ImportJob pendingImportJob;
   private final ReentrantLock schedulingImportJobLock;
   private boolean ongoingRescheduling;
@@ -105,6 +107,14 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
       }
       Long nextRunDelay = null;
       if (importBatch.getHits().size() == 0) {
+        if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
+          recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
+        }
+
+        if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
+          recordsReaderHolder.recordLatestLoadedPositionAsCompleted(
+              importPositionHolder, importValueType.getAliasTemplate(), partitionId);
+        }
         nextRunDelay = readerBackoff;
       } else {
         final var importJob = createImportJob(latestPosition, importBatch);

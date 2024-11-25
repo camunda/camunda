@@ -58,7 +58,7 @@ jobs:
     timeout-minutes: 5
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
-      ACTIONLINT_VERSION: '1.7.3'
+      ACTIONLINT_VERSION: '1.7.4'
     steps:
       - uses: actions/checkout@v4
       - run: echo "::add-matcher::.github/actionlint-matcher.json"
@@ -238,6 +238,12 @@ jobs:
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-16-default
+          - group: qa-migration-integration
+            name: "Migration QA - Integration Tests"
+            maven-modules: "migration/process-migration"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-8-default
           - group: qa-update
             name: "Zeebe QA - Update Tests"
             maven-modules: "zeebe/qa/update-tests"
@@ -491,7 +497,7 @@ jobs:
         with:
           work-dir: ./optimize
       - name: Set Node.js
-        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a6 # v4
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
           cache: yarn
@@ -690,7 +696,7 @@ jobs:
           secrets: |
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_USR;
             secret/data/products/zeebe/ci/zeebe ARTIFACTS_PSW;
-      - uses: actions/setup-java@v4.4.0
+      - uses: actions/setup-java@v4.5.0
         with:
           distribution: 'temurin'
           java-version: '21'
@@ -780,11 +786,12 @@ jobs:
           platforms: ${{ env.DOCKER_PLATFORMS }}
           dockerfile: camunda.Dockerfile
           push: true
-      - uses: ./.github/actions/build-platform-docker
-        id: build-operate-docker
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
         with:
-          repository: camunda/operate
-          version: SNAPSHOT
-          push: true
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          dockerfile: operate.Dockerfile
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

@@ -80,5 +80,5 @@ public class MappingServices
     return sendBrokerRequest(new BrokerMappingDeleteRequest().setMappingKey(mappingKey));
   }
 
-  public record MappingDTO(Long mappingKey, String claimName, String claimValue) {}
+  public record MappingDTO(String claimName, String claimValue) {}
 }

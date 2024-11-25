@@ -25,9 +25,7 @@
     "termsOfUse": "Nutzungsbedingungen",
     "imprint": "Impressum",
     "academy": "Camunda Academy",
-    "feedback": "Feedback und Support",
-    "opensearchPreview": "OpenSearch Release Informationen",
-    "opensearchWarningText": "Diese Optimize-Version für OpenSearch kann in Produktionsumgebungen genutzt werden. Der Datenimport ist vollständig funktionsfähig, jedoch sind die Datenvisualisierungs- und Berichtsauswertungsfunktionen eingeschränkt."
+    "feedback": "Feedback und Support"
   },
   "login": {
     "label": "Einloggen",

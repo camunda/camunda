@@ -19,6 +19,7 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 
 public record DecisionInstanceFilter(
     List<Long> decisionInstanceKeys,
@@ -35,6 +36,11 @@ public record DecisionInstanceFilter(
     List<DecisionDefinitionType> decisionTypes,
     List<String> tenantIds)
     implements FilterBase {
+
+  public static DecisionInstanceFilter of(
+      final Function<DecisionInstanceFilter.Builder, ObjectBuilder<DecisionInstanceFilter>> fn) {
+    return FilterBuilders.decisionInstance(fn);
+  }
 
   public static final class Builder implements ObjectBuilder<DecisionInstanceFilter> {
 

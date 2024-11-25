@@ -68,7 +68,15 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * Represents the intent indicating that the User Task will not be completed, but rather will be
    * reverted to the CREATED state.
    */
-  COMPLETION_DENIED(17);
+  COMPLETION_DENIED(17),
+
+  /**
+   * Represents the intent indicating that the User Task data was corrected by a Task Listener. This
+   * means the user task data available to any subsequent Task Listeners uses the corrected values.
+   * Note that the changes are only applied to the User Task instance after all Task Listeners have
+   * been handled and none denied the operation.
+   */
+  CORRECTED(18);
 
   private final short value;
   private final boolean shouldBanInstance;
@@ -124,6 +132,8 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
         return DENY_TASK_LISTENER;
       case 17:
         return COMPLETION_DENIED;
+      case 18:
+        return CORRECTED;
       default:
         return UNKNOWN;
     }
@@ -149,6 +159,7 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
       case UPDATED:
       case MIGRATED:
       case COMPLETION_DENIED:
+      case CORRECTED:
         return true;
       default:
         return false;

@@ -60,7 +60,7 @@ public class TaskEntity extends TasklistEntity<TaskEntity> {
   private Long formVersion;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private boolean isFormEmbedded;
+  private Boolean isFormEmbedded;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private OffsetDateTime followUpDate;

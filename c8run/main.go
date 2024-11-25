@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/tls"
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/camunda/camunda/c8run/internal/unix"
 	"github.com/camunda/camunda/c8run/internal/windows"
@@ -14,14 +16,6 @@ import (
 	"strings"
 	"time"
 )
-
-func printHelp() {
-	optionsHelp := `Options:
-   --config     - Applies the specified configuration file.
-   --detached   - Starts Camunda Run as a detached process
-`
-	fmt.Print(optionsHelp)
-}
 
 func printStatus() {
 	endpoints, _ := os.ReadFile("endpoints.txt")
@@ -49,8 +43,15 @@ func queryElasticsearchHealth(name string, url string) {
 	fmt.Println(name + " has successfully been started.")
 }
 
-func queryCamundaHealth(c8 C8Run, name string, url string) error {
+func queryCamundaHealth(c8 C8Run, name string, settings C8RunSettings) error {
 	healthy := false
+
+	protocol := "http"
+	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	if settings.keystore != "" && settings.keystorePassword != "" {
+		protocol = "https"
+	}
+	url := protocol + "://localhost:8080/operate/login"
 	for retries := 24; retries >= 0; retries-- {
 		fmt.Println("Waiting for " + name + " to start. " + strconv.Itoa(retries) + " retries left")
 		time.Sleep(14 * time.Second)
@@ -67,7 +68,7 @@ func queryCamundaHealth(c8 C8Run, name string, url string) error {
 		return fmt.Errorf("Error: %s did not start!", name)
 	}
 	fmt.Println(name + " has successfully been started.")
-	err := c8.OpenBrowser()
+	err := c8.OpenBrowser(protocol)
 	if err != nil {
 		// failing to open the browser is not a critical error. It could simply be a sign the script is running in a CI node without a browser installed, or a docker image.
 		fmt.Println("Failed to open browser")
@@ -100,31 +101,6 @@ func stopProcess(c8 C8Run, pidfile string) {
 
 }
 
-func parseCommandLineOptions(args []string, settings *C8RunSettings) *C8RunSettings {
-	if len(args) == 0 {
-		return settings
-	}
-	argsToPop := 0
-	switch args[0] {
-	case "--config":
-		if len(args) > 1 {
-			argsToPop = 2
-			settings.config = args[1]
-		} else {
-			printHelp()
-			os.Exit(1)
-		}
-	case "--detached":
-		settings.detached = true
-	default:
-		argsToPop = 2
-		printHelp()
-		os.Exit(1)
-
-	}
-	return parseCommandLineOptions(args[argsToPop:], settings)
-}
-
 func getC8RunPlatform() C8Run {
 	if runtime.GOOS == "windows" {
 		return &windows.WindowsC8Run{}
@@ -132,6 +108,27 @@ func getC8RunPlatform() C8Run {
 		return &unix.UnixC8Run{}
 	}
 	panic("Unsupported operating system")
+}
+
+func adjustJavaOpts(javaOpts string, settings C8RunSettings) string {
+	if settings.keystore != "" && settings.keystorePassword != "" {
+		javaOpts = javaOpts + " -Dserver.ssl.keystore=file:" + settings.keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.keystorePassword
+	}
+	return javaOpts
+}
+
+func validateKeystore(settings C8RunSettings, parentDir string) error {
+	if settings.keystore != "" {
+		if settings.keystorePassword == "" {
+			return fmt.Errorf("You must provide a password with --keystorePassword to unlock your keystore.")
+		}
+		if settings.keystore != "" {
+			if !strings.HasPrefix(settings.keystore, "/") {
+				settings.keystore = filepath.Join(parentDir, settings.keystore)
+			}
+		}
+	}
+	return nil
 }
 
 func main() {
@@ -158,6 +155,13 @@ func main() {
 	os.Setenv("CAMUNDA_REST_QUERY_ENABLED", "true")
 	os.Setenv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
 	os.Setenv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
+	os.Setenv("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "1000")
+	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
+	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
+
+	os.Setenv("CAMUNDA_OPERATE_IMPORTER_READERBACKOFF", "1000")
+	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
+	os.Setenv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
 
 	// classPath := filepath.Join(parentDir, "configuration", "userlib") + "," + filepath.Join(parentDir, "configuration", "keystore")
 
@@ -172,14 +176,30 @@ func main() {
 		baseCommand = "package"
 	} else if os.Args[1] == "clean" {
 		baseCommand = "clean"
+	} else if os.Args[1] == "-h" || os.Args[1] == "--help" {
+		fmt.Println("Usage: c8run [command] [options]\nCommands:\n  start\n  stop\n  package")
+		os.Exit(0)
 	} else {
 		panic("Unsupported operation")
 	}
 	fmt.Print("Command: " + baseCommand + "\n")
 
 	var settings C8RunSettings
-	if len(os.Args) > 2 {
-		parseCommandLineOptions(os.Args[2:], &settings)
+	startFlagSet := flag.NewFlagSet("start", flag.ExitOnError)
+	startFlagSet.StringVar(&settings.config, "config", "", "Applies the specified configuration file.")
+	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
+	startFlagSet.StringVar(&settings.keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
+	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
+
+	switch baseCommand {
+	case "start":
+		startFlagSet.Parse(os.Args[2:])
+	}
+
+	err := validateKeystore(settings, parentDir)
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	javaHome := os.Getenv("JAVA_HOME")
@@ -258,6 +278,7 @@ func main() {
 		if javaOpts != "" {
 			fmt.Print("JAVA_OPTS: " + javaOpts + "\n")
 		}
+		javaOpts = adjustJavaOpts(javaOpts, settings)
 
 		os.Setenv("ES_JAVA_OPTS", "-Xms1g -Xmx1g")
 
@@ -316,7 +337,7 @@ func main() {
 		} else {
 			extraArgs = "--spring.config.location=" + filepath.Join(parentDir, "configuration")
 		}
-		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs)
+		camundaCmd := c8.CamundaCmd(camundaVersion, parentDir, extraArgs, javaOpts)
 		camundaLogPath := filepath.Join(parentDir, "log", "camunda.log")
 		camundaLogFile, err := os.OpenFile(camundaLogPath, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
@@ -336,7 +357,8 @@ func main() {
 			os.Exit(1)
 		}
 		camundaPidFile.Write([]byte(strconv.Itoa(camundaCmd.Process.Pid)))
-		err = queryCamundaHealth(c8, "Camunda", "http://localhost:8080/operate/login")
+
+		err = queryCamundaHealth(c8, "Camunda", settings)
 		if err != nil {
 			fmt.Printf("%+v", err)
 			os.Exit(1)

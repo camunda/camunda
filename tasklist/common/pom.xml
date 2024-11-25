@@ -15,11 +15,6 @@
 
   <dependencies>
 
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>webapps-schema</artifactId>
-    </dependency>
-
     <!-- ZEEBE -->
     <dependency>
       <groupId>io.camunda</groupId>
@@ -56,6 +51,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapps-common</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
     </dependency>
 
     <!-- SPRING -->

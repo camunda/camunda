@@ -13,14 +13,14 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.ProcessInstanceEntity;
-import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
-import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -59,7 +59,7 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   @Autowired private ProcessInstanceIndex processInstanceIndex;
 
-  @Autowired private TaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private VariableIndex variableIndex;
 
@@ -159,8 +159,8 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   @Override
   public boolean checkVariableExists(final String taskId, final String varName) {
-    final TermQueryBuilder taskIdQ = termQuery(TaskVariableTemplate.TASK_ID, taskId);
-    final TermQueryBuilder varNameQ = termQuery(TaskVariableTemplate.NAME, varName);
+    final TermQueryBuilder taskIdQ = termQuery(SnapshotTaskVariableTemplate.TASK_ID, taskId);
+    final TermQueryBuilder varNameQ = termQuery(SnapshotTaskVariableTemplate.NAME, varName);
     final SearchRequest searchRequest =
         new SearchRequest(taskVariableTemplate.getAlias())
             .source(

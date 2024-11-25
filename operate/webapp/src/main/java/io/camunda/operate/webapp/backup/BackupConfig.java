@@ -7,6 +7,9 @@
  */
 package io.camunda.operate.webapp.backup;
 
+import io.camunda.operate.property.BackupProperties;
+import io.camunda.operate.property.OperateProperties;
+import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -23,5 +26,36 @@ public class BackupConfig {
     executor.setQueueCapacity(6);
     executor.initialize();
     return executor;
+  }
+
+  @Bean
+  public static BackupRepositoryProps backupRepositoryProps(
+      final OperateProperties operateProperties) {
+    return props(operateProperties.getVersion(), operateProperties.getBackup());
+  }
+
+  public static BackupRepositoryProps props(
+      final String operateVersion, final BackupProperties operateProperties) {
+    return new BackupRepositoryProps() {
+      @Override
+      public String version() {
+        return operateVersion;
+      }
+
+      @Override
+      public String repositoryName() {
+        return operateProperties.getRepositoryName();
+      }
+
+      @Override
+      public int snapshotTimeout() {
+        return operateProperties.getSnapshotTimeout();
+      }
+
+      @Override
+      public Long incompleteCheckTimeoutInSeconds() {
+        return operateProperties.getIncompleteCheckTimeoutInSeconds();
+      }
+    };
   }
 }
