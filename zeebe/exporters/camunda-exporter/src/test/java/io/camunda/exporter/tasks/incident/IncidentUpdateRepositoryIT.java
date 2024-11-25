@@ -25,6 +25,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdat
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
@@ -521,6 +522,40 @@ abstract sealed class IncidentUpdateRepositoryIT {
           .hasSize(2)
           .extracting(FlowNodeInstanceEntity::getKey, FlowNodeInstanceEntity::isIncident)
           .containsExactlyInAnyOrder(Tuple.tuple(1L, true), Tuple.tuple(2L, false));
+    }
+  }
+
+  @Nested
+  final class AnalyzeTreePathIT {
+    @Test
+    void shouldAnalyzeTreePath() {
+      // given
+      final var repository = createRepository();
+      final var treePath =
+          new TreePath()
+              .startTreePath(1)
+              .appendFlowNode("call")
+              .appendFlowNodeInstance(2)
+              .appendProcessInstance(3)
+              .appendFlowNode("task")
+              .appendFlowNodeInstance(4)
+              .toString();
+      engineClient.createIndex(listViewTemplate, new IndexSettings());
+
+      // when
+      final var terms = repository.analyzeTreePath(treePath);
+
+      // then
+      assertThat(terms)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.list(String.class))
+          .containsExactly(
+              "PI_1",
+              "PI_1/FN_call",
+              "PI_1/FN_call/FNI_2",
+              "PI_1/FN_call/FNI_2/PI_3",
+              "PI_1/FN_call/FNI_2/PI_3/FN_task",
+              "PI_1/FN_call/FNI_2/PI_3/FN_task/FNI_4");
     }
   }
 }
