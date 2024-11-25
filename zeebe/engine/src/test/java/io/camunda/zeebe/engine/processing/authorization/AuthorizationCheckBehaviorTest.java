@@ -204,6 +204,49 @@ public class AuthorizationCheckBehaviorTest {
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
   }
 
+  @Test
+  public void shouldBeAuthorizedForTenant() {
+    // given
+    final var userKey = createUser();
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(userKey, resourceType, permissionType, resourceId);
+    final var tenantId = createAndAssignTenant(userKey);
+    final var command = mockCommand(userKey);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType, tenantId)
+            .addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized).isTrue();
+  }
+
+  @Test
+  public void shouldBeUnauthorizedForTenant() {
+    // given
+    final var userKey = createUser();
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(userKey, resourceType, permissionType, resourceId);
+    final var anotherTenantId = "authorizedForAnotherTenant";
+    createAndAssignTenant(userKey);
+    final var command = mockCommand(userKey);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType, anotherTenantId)
+            .addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized).isFalse();
+  }
+
   private long createUser() {
     return engine
         .user()
@@ -240,6 +283,19 @@ public class AuthorizationCheckBehaviorTest {
     }
 
     client.add();
+  }
+
+  private String createAndAssignTenant(final long userKey) {
+    final var tenantId = UUID.randomUUID().toString();
+    final var tenantKey = engine.tenant().newTenant().withTenantId(tenantId).create().getKey();
+    engine
+        .tenant()
+        .addEntity(tenantKey)
+        .withTenantId(tenantId)
+        .withEntityKey(userKey)
+        .withEntityType(EntityType.USER)
+        .add();
+    return tenantId;
   }
 
   private TypedRecord<?> mockCommand(final long userKey) {
