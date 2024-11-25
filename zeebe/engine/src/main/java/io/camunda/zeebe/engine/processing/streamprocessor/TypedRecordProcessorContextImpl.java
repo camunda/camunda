@@ -95,4 +95,17 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   public EngineConfiguration getConfig() {
     return config;
   }
+<<<<<<< HEAD
+=======
+
+  @Override
+  public ControllableStreamClock getClock() {
+    return clock;
+  }
+
+  @Override
+  public TransientPendingSubscriptionState getTransientProcessMessageSubscriptionState() {
+    return transientProcessMessageSubscriptionState;
+  }
+>>>>>>> 57cf1143 (refactor: inject pending message sub state)
 }
