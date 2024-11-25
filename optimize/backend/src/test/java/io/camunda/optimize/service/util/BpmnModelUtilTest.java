@@ -99,8 +99,7 @@ public class BpmnModelUtilTest {
             CUSTOMER_ONBOARDING, SIMPLE_SERVICE_TASK_PROCESS);
 
     // then
-    assertThat(processName).isPresent();
-    assertThat(CUSTOMER_ONBOARDING).isEqualTo(processName.get());
+    assertThat(processName).isPresent().get().isEqualTo(CUSTOMER_ONBOARDING);
   }
 
   @Test
