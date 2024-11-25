@@ -40,6 +40,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -89,6 +90,8 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
+    final var transientProcessMessageSubscriptionState =
+        typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             processingState,
@@ -98,7 +101,8 @@ public final class EngineProcessors {
             timerChecker,
             jobStreamer,
             jobMetrics,
-            decisionBehavior);
+            decisionBehavior,
+            transientProcessMessageSubscriptionState);
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -139,7 +143,8 @@ public final class EngineProcessors {
             typedRecordProcessors,
             subscriptionCommandSender,
             writers,
-            timerChecker);
+            timerChecker,
+            transientProcessMessageSubscriptionState);
 
     addDecisionProcessors(typedRecordProcessors, decisionBehavior, writers, processingState);
 
@@ -188,7 +193,8 @@ public final class EngineProcessors {
       final DueDateTimerChecker timerChecker,
       final JobStreamer jobStreamer,
       final JobMetrics jobMetrics,
-      final DecisionBehavior decisionBehavior) {
+      final DecisionBehavior decisionBehavior,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -197,7 +203,8 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         partitionsCount,
         timerChecker,
-        jobStreamer);
+        jobStreamer,
+        transientProcessMessageSubscriptionState);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
@@ -207,7 +214,8 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final Writers writers,
-      final DueDateTimerChecker timerChecker) {
+      final DueDateTimerChecker timerChecker,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     return ProcessEventProcessors.addProcessProcessors(
         processingState,
         scheduledTaskState,
@@ -215,7 +223,8 @@ public final class EngineProcessors {
         typedRecordProcessors,
         subscriptionCommandSender,
         timerChecker,
-        writers);
+        writers,
+        transientProcessMessageSubscriptionState);
   }
 
   private static void addDeploymentRelatedProcessorAndServices(

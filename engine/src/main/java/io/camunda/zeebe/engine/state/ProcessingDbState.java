@@ -59,16 +59,13 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 
 public class ProcessingDbState implements MutableProcessingState {
-
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final KeyGenerator keyGenerator;
-
   private final MutableProcessState processState;
   private final MutableTimerInstanceState timerInstanceState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
-
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
@@ -82,6 +79,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableFormState formState;
   private final MutableSignalSubscriptionState signalSubscriptionState;
   private final MutableDistributionState distributionState;
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -119,8 +117,8 @@ public class ProcessingDbState implements MutableProcessingState {
     formState = new DbFormState(zeebeDb, transactionContext);
     signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
-
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
   @Override
@@ -202,6 +200,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutableFormState getFormState() {
+    return formState;
+  }
+
+  @Override
   public MutableSignalSubscriptionState getSignalSubscriptionState() {
     return signalSubscriptionState;
   }
@@ -217,11 +220,6 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
-  public MutableFormState getFormState() {
-    return formState;
-  }
-
-  @Override
   public KeyGenerator getKeyGenerator() {
     return keyGenerator;
   }
@@ -234,6 +232,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
+  }
+
+  @Override
+  public TransientPendingSubscriptionState getTransientPendingSubscriptionState() {
+    return transientProcessMessageSubscriptionState;
   }
 
   @Override
