@@ -65,6 +65,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+/* This class should be moved to the dist/ module as it does not really test anything operate specific
+anymore, it will be done in a follow-up PR
+*/
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {TestApplication.class},
