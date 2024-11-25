@@ -11,10 +11,14 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.ThrowableAssert.catchThrowableOfType;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.CompleteUserTaskResponse;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
@@ -24,6 +28,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -223,6 +228,85 @@ public class UserTaskListenersTest {
         });
   }
 
+  @Test
+  public void shouldRejectUserTaskCompletionWhenTaskListenerDeniesTheWork() {
+    // given
+    final var listenerType = "my_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.complete().type(listenerType)));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).result().denied(true).send().join();
+    final var recordingHandler = new RecordingJobHandler(completeJobHandler);
+
+    client.newWorker().jobType(listenerType).handler(recordingHandler).open();
+
+    // when: invoke complete user task command
+    final ZeebeFuture<CompleteUserTaskResponse> completeUserTaskFuture =
+        client.newUserTaskCompleteCommand(userTaskKey).send();
+
+    // TL job should be successfully completed with the result "denied" set correctly
+    ZeebeAssertHelper.assertJobCompleted(
+        listenerType,
+        (userTaskListener) -> {
+          assertThat(userTaskListener.getResult().isDenied()).isTrue();
+        });
+
+    final var rejectionReason =
+        String.format(
+            "Command 'COMPLETE' rejected with code 'INVALID_STATE': Completion of the User Task with key '%s' was rejected by Task Listener",
+            userTaskKey);
+
+    //     verify the rejection
+    final ProblemException problemException =
+        catchThrowableOfType(ProblemException.class, completeUserTaskFuture::join);
+    assertThat(problemException.details().getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
+    assertThat(problemException.details().getDetail()).isEqualTo(rejectionReason);
+
+    // verify the expected sequence of User Task intents
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED);
+  }
+
+  @Test
+  public void shouldCompleteUserTaskWhenTaskListenerAcceptsTheWork() {
+    // given
+    final var listenerType = "my_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.complete().type(listenerType)));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).result().denied(false).send().join();
+    final var recordingHandler = new RecordingJobHandler(completeJobHandler);
+
+    client.newWorker().jobType(listenerType).handler(recordingHandler).open();
+
+    // when: invoke complete user task command
+    final ZeebeFuture<CompleteUserTaskResponse> completeUserTaskFuture =
+        client.newUserTaskCompleteCommand(userTaskKey).send();
+
+    // TL job should be successfully completed with the result "denied" set correctly
+    ZeebeAssertHelper.assertJobCompleted(
+        listenerType,
+        (userTaskListener) -> {
+          assertThat(userTaskListener.getResult().isDenied()).isFalse();
+        });
+
+    // wait for successful `COMPLETE` user task command completion
+    assertThatCode(completeUserTaskFuture::join).doesNotThrowAnyException();
+
+    // verify the expected sequence of User Task intents
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETE,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETED);
+  }
+
   private void waitForJobRetriesToBeExhausted(final RecordingJobHandler recordingHandler) {
     await("until all retries are exhausted")
         .untilAsserted(
@@ -232,5 +316,15 @@ public class UserTaskListenersTest {
                     .last()
                     .extracting(ActivatedJob::getRetries)
                     .isEqualTo(1));
+  }
+
+  private void assertUserTaskIntentsSequence(final UserTaskIntent... intents) {
+    assertThat(intents).describedAs("Expected intents not to be empty").isNotEmpty();
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .limit(r -> r.getIntent() == intents[intents.length - 1]))
+        .extracting(Record::getIntent)
+        .describedAs("Verify the expected sequence of User Task intents")
+        .containsSequence(intents);
   }
 }
