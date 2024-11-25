@@ -46,6 +46,7 @@ import io.camunda.zeebe.client.api.command.TopologyRequestStep1;
 import io.camunda.zeebe.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateRetriesJobCommandStep1;
+import io.camunda.zeebe.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.zeebe.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.fetch.DecisionDefinitionGetRequest;
@@ -1533,4 +1534,21 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   CreateTenantCommandStep1 newCreateTenantCommand();
+
+  /**
+   * Creates a command to update the name of an existing tenant.
+   *
+   * <p>Example usage:
+   *
+   * <pre>
+   * zeebeClient
+   *   .newUpdateTenantCommand(12345L) // Specify the tenant key
+   *   .name("Updated Tenant Name")   // Set the new tenant name
+   *   .send();                       // Send the command to the broker
+   * </pre>
+   *
+   * @param tenantKey the unique identifier of the tenant to be updated
+   * @return a builder to configure and send the update tenant command
+   */
+  UpdateTenantCommandStep1 newUpdateTenantCommand(long tenantKey);
 }
