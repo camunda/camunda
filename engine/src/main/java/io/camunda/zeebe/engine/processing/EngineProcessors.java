@@ -40,6 +40,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -89,6 +90,8 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
+    final var transientProcessMessageSubscriptionState =
+        typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             processingState,
@@ -98,7 +101,13 @@ public final class EngineProcessors {
             timerChecker,
             jobStreamer,
             jobMetrics,
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/EngineProcessors.java
             decisionBehavior);
+=======
+            decisionBehavior,
+            clock,
+            transientProcessMessageSubscriptionState);
+>>>>>>> 57cf1143 (refactor: inject pending message sub state):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/EngineProcessors.java
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -188,7 +197,13 @@ public final class EngineProcessors {
       final DueDateTimerChecker timerChecker,
       final JobStreamer jobStreamer,
       final JobMetrics jobMetrics,
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/EngineProcessors.java
       final DecisionBehavior decisionBehavior) {
+=======
+      final DecisionBehavior decisionBehavior,
+      final InstantSource clock,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+>>>>>>> 57cf1143 (refactor: inject pending message sub state):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/EngineProcessors.java
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -197,7 +212,13 @@ public final class EngineProcessors {
         subscriptionCommandSender,
         partitionsCount,
         timerChecker,
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/EngineProcessors.java
         jobStreamer);
+=======
+        jobStreamer,
+        clock,
+        transientProcessMessageSubscriptionState);
+>>>>>>> 57cf1143 (refactor: inject pending message sub state):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/EngineProcessors.java
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(

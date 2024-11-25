@@ -27,6 +27,12 @@ import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/common/CatchEventBehavior.java
+=======
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.engine.state.signal.SignalSubscription;
+>>>>>>> 57cf1143 (refactor: inject pending message sub state):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/common/CatchEventBehavior.java
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -63,6 +69,11 @@ public final class CatchEventBehavior {
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
   private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/common/CatchEventBehavior.java
+=======
+  private final InstantSource clock;
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+>>>>>>> 57cf1143 (refactor: inject pending message sub state):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/common/CatchEventBehavior.java
 
   public CatchEventBehavior(
       final ProcessingState processingState,
@@ -72,7 +83,13 @@ public final class CatchEventBehavior {
       final StateWriter stateWriter,
       final SideEffectWriter sideEffectWriter,
       final DueDateTimerChecker timerChecker,
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/common/CatchEventBehavior.java
       final int partitionsCount) {
+=======
+      final RoutingInfo routingInfo,
+      final InstantSource clock,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+>>>>>>> 57cf1143 (refactor: inject pending message sub state):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/common/CatchEventBehavior.java
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.stateWriter = stateWriter;
@@ -86,6 +103,11 @@ public final class CatchEventBehavior {
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
+<<<<<<< HEAD:engine/src/main/java/io/camunda/zeebe/engine/processing/common/CatchEventBehavior.java
+=======
+    this.clock = clock;
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
+>>>>>>> 57cf1143 (refactor: inject pending message sub state):zeebe/engine/src/main/java/io/camunda/zeebe/engine/processing/common/CatchEventBehavior.java
   }
 
   /**
