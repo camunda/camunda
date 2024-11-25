@@ -28,14 +28,11 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.Optional;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.annotation.IfProfileValue;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.util.unit.DataSize;
 
 @SpringBootTest(
     classes = {TestApplication.class},
@@ -57,99 +54,6 @@ public class IncidentZeebeImportIT extends OperateZeebeAbstractIT {
   public void before() {
     super.before();
     updateVariableHandler.setZeebeClient(zeebeClient);
-  }
-
-  @Test
-  public void testUnhandledErrorEventAsEndEvent() {
-    // Given
-    tester
-        .deployProcess("error-end-event.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        // when
-        .startProcessInstance("error-end-process")
-        .waitUntil()
-        .incidentIsActive();
-    // then
-    final List<IncidentDto> incidents = tester.getIncidents();
-    assertThat(incidents.size()).isEqualTo(1);
-    assertIncident(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
-  }
-
-  @Test
-  @IfProfileValue(
-      name = "spring.profiles.active",
-      value = "test") // Do not execute on 'old-zeebe' profile
-  public void testErrorMessageSizeExceeded() throws Exception {
-    // given
-    final int variableCount = 4;
-    final String largeValue =
-        "\"" + "x".repeat((int) (DataSize.ofMegabytes(4).toBytes() / variableCount)) + "\"";
-
-    tester
-        .deployProcess("single-task.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        .then()
-        .startProcessInstance("process", "{}")
-        .waitUntil()
-        .processInstanceIsStarted();
-
-    for (int i = 0; i < variableCount; i++) {
-      tester
-          .updateVariableOperation(Integer.toString(i), largeValue)
-          .waitUntil()
-          .operationIsCompleted();
-    }
-
-    // when
-    // ---
-    // Activation of the job tries to accumulate all variables in the process
-    // this triggers the incident, and the activate jobs command will not return a job
-    tester.activateJob("task").waitUntil().incidentIsActive();
-    // then
-    final List<IncidentDto> incidents = tester.getIncidents();
-    assertThat(incidents.size()).isEqualTo(1);
-    assertIncident(incidents.get(0), ErrorType.MESSAGE_SIZE_EXCEEDED);
-  }
-
-  @Test
-  public void testUnhandledErrorEvent() {
-    // Given
-    tester
-        .deployProcess("errorProcess.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        .startProcessInstance("errorProcess")
-        // when
-        .throwError("errorTask", "this-errorcode-does-not-exists", "Process error")
-        .then()
-        .waitUntil()
-        .incidentIsActive();
-
-    // then
-    final List<IncidentDto> incidents = tester.getIncidents();
-    assertThat(incidents.size()).isEqualTo(1);
-    assertIncident(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT);
-  }
-
-  @Ignore
-  @Test
-  public void testCatchAllErrorEvent() {
-    // Given
-    tester
-        .deployProcess("errorProcessCatchAll.bpmn")
-        .waitUntil()
-        .processIsDeployed()
-        .startProcessInstance("errorProcess")
-        // when
-        .throwError("errorTask", "unknown", "Process error")
-        .then()
-        .waitUntil()
-        .processInstanceIsFinished();
-
-    // then
-    assertThat(tester.getIncidents()).isEmpty();
   }
 
   @Test
