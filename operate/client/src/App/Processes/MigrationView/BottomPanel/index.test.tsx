@@ -59,10 +59,12 @@ const {
   MultiInstanceTask,
   EscalationEventSubProcess,
   EscalationStartEvent,
+  CompensationTask,
+  CompensationBoundaryEvent,
 } = elements;
 
 const HEADER_ROW_COUNT = 1;
-const CONTENT_ROW_COUNT = 33;
+const CONTENT_ROW_COUNT = 35;
 
 /**
  * Returns a custom matcher function which ignores all option elements from comboboxes.
@@ -110,6 +112,10 @@ describe('MigrationView/BottomPanel', () => {
       screen.getByText(EscalationEventSubProcess.name),
     ).toBeInTheDocument();
     expect(screen.getByText(EscalationStartEvent.name)).toBeInTheDocument();
+    expect(screen.getByText(CompensationTask.name)).toBeInTheDocument();
+    expect(
+      screen.getByText(CompensationBoundaryEvent.name),
+    ).toBeInTheDocument();
 
     expect(screen.getAllByRole('row')).toHaveLength(
       HEADER_ROW_COUNT + CONTENT_ROW_COUNT,
@@ -190,6 +196,7 @@ describe('MigrationView/BottomPanel', () => {
     {source: SignalIntermediateCatch, target: SignalBoundaryEvent},
     {source: MessageIntermediateCatch, target: SignalIntermediateCatch},
     {source: MultiInstanceTask, target: SendTask},
+    {source: CompensationBoundaryEvent, target: SignalBoundaryEvent},
   ])(
     'should not allow $source.type -> $target.type mapping',
     async ({source, target}) => {
@@ -307,6 +314,9 @@ describe('MigrationView/BottomPanel', () => {
     const comboboxEscalationStartEvent = await screen.findByLabelText(
       new RegExp(`target flow node for ${EscalationStartEvent.name}`, 'i'),
     );
+    const comboboxCompensationBoundaryEvent = await screen.findByLabelText(
+      new RegExp(`target flow node for ${CompensationBoundaryEvent.name}`, 'i'),
+    );
 
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
@@ -337,6 +347,9 @@ describe('MigrationView/BottomPanel', () => {
       comboboxTimerNonInterrupting.id,
     );
     expect(comboboxSignalBoundaryEvent).toHaveValue(SignalBoundaryEvent.id);
+    expect(comboboxCompensationBoundaryEvent).toHaveValue(
+      comboboxCompensationBoundaryEvent.id,
+    );
 
     // Expect auto-mapping (same id, intermediate catch event, same event type)
     expect(comboboxMessageIntermediateCatch).toHaveValue(
@@ -638,6 +651,12 @@ describe('MigrationView/BottomPanel', () => {
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText(getMatcherFunction(MultiInstanceSubProcess.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(CompensationTask.name)),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(getMatcherFunction(CompensationBoundaryEvent.name)),
     ).not.toBeInTheDocument();
 
     const UNMAPPED_ROW_COUNT = 8;

@@ -243,6 +243,31 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
+  public void shouldQueryByElementInstanceKey() {
+    // given
+    final var filter = FilterBuilders.userTask((f) -> f.elementInstanceKeys(12345L));
+
+    // when
+    final var searchRequest = transformQuery(filter);
+
+    // then
+    final var queryVariant = searchRequest.queryOption();
+
+    assertThat(queryVariant)
+        .isInstanceOfSatisfying(
+            SearchBoolQuery.class,
+            (t) -> {
+              assertThat(t.must().get(0).queryOption())
+                  .isInstanceOfSatisfying(
+                      SearchTermQuery.class,
+                      (term) -> {
+                        assertThat(term.field()).isEqualTo("flowNodeInstanceId");
+                        assertThat(term.value().longValue()).isEqualTo(12345L);
+                      });
+            });
+  }
+
+  @Test
   public void shouldQueryByCandidateGroups() {
     // given
     final var filter = FilterBuilders.userTask((f) -> f.candidateGroups("candidateGroup1"));

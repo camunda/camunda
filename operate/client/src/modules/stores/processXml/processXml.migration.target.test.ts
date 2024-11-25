@@ -76,6 +76,8 @@ describe('stores/processXml/processXml.migration.target', () => {
       'MultiInstanceTask',
       'EscalationEventSubProcess',
       'EscalationStartEvent',
+      'CompensationBoundaryEvent',
+      'CompensationTask',
     ]);
   });
 
@@ -161,6 +163,8 @@ describe('stores/processXml/processXml.migration.target', () => {
       'MultiInstanceTask',
       'EscalationEventSubProcess',
       'EscalationStartEvent',
+      'CompensationBoundaryEvent',
+      'CompensationTask',
     ]);
   });
 });

@@ -237,6 +237,7 @@
       <bpmn:outgoing>Flow_05qmb1x</bpmn:outgoing>
       <bpmn:outgoing>Flow_11ijrlo</bpmn:outgoing>
       <bpmn:outgoing>Flow_0dw7xkl</bpmn:outgoing>
+      <bpmn:outgoing>Flow_008rqf8</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow id="Flow_0o25skw" sourceRef="Gateway_1httqhv" targetRef="confirmDelivery" />
     <bpmn:parallelGateway id="Gateway_1httqhv">
@@ -245,6 +246,7 @@
       <bpmn:incoming>Flow_01uxv84</bpmn:incoming>
       <bpmn:incoming>Flow_13cb35a</bpmn:incoming>
       <bpmn:incoming>Flow_0eron8r</bpmn:incoming>
+      <bpmn:incoming>Flow_0wq1eyt</bpmn:incoming>
       <bpmn:outgoing>Flow_0o25skw</bpmn:outgoing>
     </bpmn:parallelGateway>
     <bpmn:sequenceFlow id="Flow_1cjbi1v" sourceRef="Gateway_1k1ntxs" targetRef="ScriptTask" />
@@ -350,6 +352,26 @@
         <bpmn:incoming>Flow_02u1eyw</bpmn:incoming>
       </bpmn:endEvent>
     </bpmn:subProcess>
+    <bpmn:boundaryEvent id="CompensationBoundaryEvent" name="Compensation boundary event" attachedToRef="CompensationTask">
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_07uyd0k" />
+    </bpmn:boundaryEvent>
+    <bpmn:sequenceFlow id="Flow_008rqf8" sourceRef="Gateway_1k1ntxs" targetRef="CompensationTask" />
+    <bpmn:sequenceFlow id="Flow_00k6q4q" sourceRef="CompensationTask" targetRef="CompensationThrowEvent" />
+    <bpmn:task id="UndoTask" name="Undo" isForCompensation="true" />
+    <bpmn:sequenceFlow id="Flow_0wq1eyt" sourceRef="CompensationThrowEvent" targetRef="Gateway_1httqhv" />
+    <bpmn:intermediateThrowEvent id="CompensationThrowEvent" name="Compensation throw event">
+      <bpmn:incoming>Flow_00k6q4q</bpmn:incoming>
+      <bpmn:outgoing>Flow_0wq1eyt</bpmn:outgoing>
+      <bpmn:compensateEventDefinition id="CompensateEventDefinition_02dcfvq" />
+    </bpmn:intermediateThrowEvent>
+    <bpmn:serviceTask id="CompensationTask" name="Compensation task">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="foo" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_008rqf8</bpmn:incoming>
+      <bpmn:outgoing>Flow_00k6q4q</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:association id="Association_1fdbv3h" associationDirection="One" sourceRef="CompensationBoundaryEvent" targetRef="UndoTask" />
   </bpmn:process>
   <bpmn:message id="Message_0so1os3" name="Message_1">
     <bpmn:extensionElements>
@@ -395,6 +417,19 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="requestForPayment_di" bpmnElement="requestForPayment">
         <dc:Bounds x="444" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_08of8yc_di" bpmnElement="UndoTask">
+        <dc:Bounds x="1760" y="860" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0le9j9k_di" bpmnElement="CompensationThrowEvent">
+        <dc:Bounds x="1812" y="762" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1795" y="805" width="71" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_18pvdze_di" bpmnElement="CompensationTask">
+        <dc:Bounds x="1620" y="740" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_0zhf45a_di" bpmnElement="shippingSubProcess" isExpanded="true">
         <dc:Bounds x="610" y="38" width="350" height="200" />
@@ -641,6 +676,11 @@
         <di:waypoint x="686" y="1380" />
         <di:waypoint x="862" y="1380" />
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Association_1fdbv3h_di" bpmnElement="Association_1fdbv3h">
+        <di:waypoint x="1690" y="838" />
+        <di:waypoint x="1690" y="900" />
+        <di:waypoint x="1760" y="900" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNShape id="Event_0ztghtl_di" bpmnElement="SignalBoundaryEvent">
         <dc:Bounds x="1772" y="642" width="36" height="36" />
         <bpmndi:BPMNLabel>
@@ -675,6 +715,12 @@
         <dc:Bounds x="1202" y="160" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="1152" y="187" width="56" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0eq4ysp_di" bpmnElement="CompensationBoundaryEvent">
+        <dc:Bounds x="1672" y="802" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1653" y="845" width="76" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0j6tsnn_di" bpmnElement="SequenceFlow_0j6tsnn">
@@ -885,6 +931,20 @@
         <di:waypoint x="1430" y="1170" />
         <di:waypoint x="1480" y="1170" />
         <di:waypoint x="1480" y="163" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_008rqf8_di" bpmnElement="Flow_008rqf8">
+        <di:waypoint x="1580" y="163" />
+        <di:waypoint x="1580" y="780" />
+        <di:waypoint x="1620" y="780" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_00k6q4q_di" bpmnElement="Flow_00k6q4q">
+        <di:waypoint x="1720" y="780" />
+        <di:waypoint x="1812" y="780" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0wq1eyt_di" bpmnElement="Flow_0wq1eyt">
+        <di:waypoint x="1848" y="780" />
+        <di:waypoint x="1900" y="780" />
+        <di:waypoint x="1900" y="163" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
