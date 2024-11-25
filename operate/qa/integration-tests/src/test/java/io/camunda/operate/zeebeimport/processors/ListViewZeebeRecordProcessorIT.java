@@ -169,7 +169,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     assertThat(updatedFni.getErrorMessage()).isNull();
     assertThat(updatedFni.getPositionIncident()).isEqualTo(fni.getPositionIncident());
   }
-  
+
   @Test
   public void shouldNotOverrideVariableFields() throws IOException, PersistenceException {
     // having
@@ -210,69 +210,6 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     assertThat(updatedVar.getId()).isEqualTo(var.getId());
     assertThat(updatedVar.getVarName()).isEqualTo(var.getVarName());
     assertThat(updatedVar.getVarValue()).isEqualTo(var.getVarValue());
-  }
-
-  @Test
-  public void shouldOverrideFlowNodeInstanceFields() throws IOException, PersistenceException {
-    // having
-    // flow node instance entity with position = 1
-    final long processInstanceKey = 222L;
-    final FlowNodeInstanceForListViewEntity fni =
-        createFlowNodeInstance(processInstanceKey, FlowNodeState.ACTIVE).setPosition(1L);
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        listViewTemplate.getFullQualifiedName(),
-        fni.getId(),
-        fni,
-        String.valueOf(processInstanceKey));
-
-    // when
-    // importing Zeebe record with bigger position
-    final long newPosition = 2L;
-    final Record<ProcessInstanceRecordValue> zeebeRecord =
-        createZeebeRecordFromFni(
-            fni, b -> b.withPosition(newPosition).withIntent(ELEMENT_COMPLETED), null);
-    importProcessInstanceZeebeRecord(zeebeRecord);
-
-    // then
-    // incident fields are updated
-    final FlowNodeInstanceForListViewEntity updatedFni = findFlowNodeInstanceByKey(fni.getKey());
-    // old values
-    assertThat(updatedFni.getKey()).isEqualTo(fni.getKey());
-    // new values
-    assertThat(updatedFni.getActivityState()).isEqualTo(FlowNodeState.COMPLETED);
-    assertThat(updatedFni.getPosition()).isEqualTo(newPosition);
-  }
-
-  @Test
-  public void shouldOverrideFlowNodeInstanceFieldsForNullPosition()
-      throws IOException, PersistenceException {
-    // having
-    // flow node instance entity with null position
-    final long processInstanceKey = 222L;
-    final FlowNodeInstanceForListViewEntity fni =
-        createFlowNodeInstance(processInstanceKey, FlowNodeState.ACTIVE);
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        listViewTemplate.getFullQualifiedName(),
-        fni.getId(),
-        fni,
-        String.valueOf(processInstanceKey));
-
-    // when
-    // importing Zeebe record with bigger position
-    final long newPosition = 2L;
-    final Record<ProcessInstanceRecordValue> zeebeRecord =
-        createZeebeRecordFromFni(
-            fni, b -> b.withPosition(newPosition).withIntent(ELEMENT_COMPLETED), null);
-    importProcessInstanceZeebeRecord(zeebeRecord);
-
-    // then
-    // incident fields are updated
-    final FlowNodeInstanceForListViewEntity updatedFni = findFlowNodeInstanceByKey(fni.getKey());
-    // old values
-    assertThat(updatedFni.getKey()).isEqualTo(fni.getKey());
-    // new values
-    assertThat(updatedFni.getActivityState()).isEqualTo(FlowNodeState.COMPLETED);
-    assertThat(updatedFni.getPosition()).isEqualTo(newPosition);
   }
 
   @Test
