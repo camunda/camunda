@@ -16,10 +16,13 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
@@ -62,6 +65,39 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
         .thenApplyAsync(this::createPendingIncidentBatch, executor);
   }
 
+  @Override
+  public CompletionStage<Map<String, IncidentDocument>> getIncidentDocuments(
+      final List<String> incidentIds) {
+    final var request = createIncidentDocumentsRequest(incidentIds);
+
+    return client
+        .search(request, IncidentEntity.class)
+        .thenApplyAsync(this::createIncidentDocuments, executor);
+  }
+
+  private SearchRequest createIncidentDocumentsRequest(final List<String> incidentIds) {
+    final var idQ = QueryBuilders.ids(i -> i.values(incidentIds));
+    final var partitionQ =
+        QueryBuilders.term(t -> t.field(IncidentTemplate.PARTITION_ID).value(partitionId));
+    return new SearchRequest.Builder()
+        .index(incidentAlias)
+        .query(q -> q.bool(b -> b.must(idQ, partitionQ)))
+        .allowNoIndices(true)
+        .ignoreUnavailable(true)
+        .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)))
+        .build();
+  }
+
+  private Map<String, IncidentDocument> createIncidentDocuments(
+      final SearchResponse<IncidentEntity> response) {
+    final Map<String, IncidentDocument> documents = new HashMap<>();
+    for (final var hit : response.hits().hits()) {
+      documents.put(hit.id(), new IncidentDocument(hit.id(), hit.index(), hit.source()));
+    }
+
+    return documents;
+  }
+
   private SearchRequest createPendingIncidentsBatchRequest(final int size, final Query query) {
     final var sourceFilter =
         new SourceFilter.Builder()
@@ -84,24 +120,16 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
 
   private Query createPendingIncidentsBatchQuery(final long fromPosition) {
     final var positionQ =
-        QueryBuilders.range()
-            .field(PostImporterQueueTemplate.POSITION)
-            .gt(JsonData.of(fromPosition))
-            .build()
-            ._toQuery();
+        QueryBuilders.range(
+            r -> r.field(PostImporterQueueTemplate.POSITION).gt(JsonData.of(fromPosition)));
     final var typeQ =
-        QueryBuilders.term()
-            .field(PostImporterQueueTemplate.ACTION_TYPE)
-            .value(f -> f.anyValue(JsonData.of(PostImporterActionType.INCIDENT)))
-            .build()
-            ._toQuery();
+        QueryBuilders.term(
+            t ->
+                t.field(PostImporterQueueTemplate.ACTION_TYPE)
+                    .value(PostImporterActionType.INCIDENT.name()));
     final var partitionQ =
-        QueryBuilders.term()
-            .field(PostImporterQueueTemplate.PARTITION_ID)
-            .value(partitionId)
-            .build()
-            ._toQuery();
-    return QueryBuilders.bool().must(positionQ, typeQ, partitionQ).build()._toQuery();
+        QueryBuilders.term(t -> t.field(PostImporterQueueTemplate.PARTITION_ID).value(partitionId));
+    return QueryBuilders.bool(b -> b.must(positionQ, typeQ, partitionQ));
   }
 
   private PendingIncidentUpdateBatch createPendingIncidentBatch(

@@ -18,11 +18,13 @@ import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
@@ -94,16 +96,6 @@ final class ElasticsearchIncidentUpdateRepositoryIT {
     final var restClient =
         RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress())).build();
     return new RestClientTransport(restClient, new JacksonJsonpMapper());
-  }
-
-  private PostImporterQueueEntity newPendingUpdate() {
-    return new PostImporterQueueEntity()
-        .setActionType(PostImporterActionType.INCIDENT)
-        .setIntent(IncidentIntent.CREATED.name())
-        .setKey(1L)
-        .setPartitionId(PARTITION_ID)
-        .setProcessInstanceKey(1L)
-        .setPosition(1L);
   }
 
   @Nested
@@ -221,6 +213,16 @@ final class ElasticsearchIncidentUpdateRepositoryIT {
           .containsExactly(-1L, Collections.emptyMap());
     }
 
+    private PostImporterQueueEntity newPendingUpdate() {
+      return new PostImporterQueueEntity()
+          .setActionType(PostImporterActionType.INCIDENT)
+          .setIntent(IncidentIntent.CREATED.name())
+          .setKey(1L)
+          .setPartitionId(PARTITION_ID)
+          .setProcessInstanceKey(1L)
+          .setPosition(1L);
+    }
+
     private List<BulkOperation> setupIncidentUpdates(
         final long fromPosition, final long toPosition) {
       return setupIncidentUpdates(fromPosition, toPosition, ignored -> {});
@@ -239,6 +241,75 @@ final class ElasticsearchIncidentUpdateRepositoryIT {
                       i -> i.index(postImporterQueueTemplate.getFullQualifiedName()).document(doc)))
           .map(op -> BulkOperation.of(b -> b.index(op)))
           .toList();
+    }
+  }
+
+  @Nested
+  final class GetIncidentDocumentsTest {
+    @Test
+    void shouldReturnEmptyMap() {
+      // given
+      final var repository = createRepository();
+
+      // when
+      final var documents = repository.getIncidentDocuments(List.of("1"));
+
+      // then
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.map(Long.class, IncidentDocument.class))
+          .isEmpty();
+    }
+
+    @Test
+    void shouldReturnIncidentByIds() throws IOException {
+      // given
+      final var repository = createRepository();
+      final var expected = createIncident(1L);
+      createIncident(2L);
+
+      // when
+      final var documents = repository.getIncidentDocuments(List.of("1"));
+
+      // then
+      assertThat(documents)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.map(String.class, IncidentDocument.class))
+          .hasSize(1)
+          .containsEntry(
+              "1", new IncidentDocument("1", incidentTemplate.getFullQualifiedName(), expected));
+    }
+
+    private IncidentEntity createIncident(final long key) throws IOException {
+      final var incident = newIncident(key);
+
+      indexIncident(incident);
+      return incident;
+    }
+
+    private void indexIncident(final IncidentEntity incident) throws IOException {
+      testClient.index(
+          i ->
+              i.index(incidentTemplate.getFullQualifiedName())
+                  .document(incident)
+                  .id(incident.getId())
+                  .refresh(Refresh.True));
+    }
+
+    private IncidentEntity newIncident(final long key) {
+      final var incident = new IncidentEntity();
+      final var id = String.valueOf(key);
+
+      incident.setState(IncidentState.PENDING);
+      incident.setId(id);
+      incident.setKey(key);
+      incident.setProcessInstanceKey(key);
+      incident.setFlowNodeInstanceKey(key);
+      incident.setFlowNodeId(id);
+      incident.setPartitionId(PARTITION_ID);
+      incident.setErrorMessage("failure");
+
+      return incident;
     }
   }
 }
