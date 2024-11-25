@@ -27,6 +27,8 @@ import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.SubscriptionUtil;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
@@ -63,6 +65,7 @@ public final class CatchEventBehavior {
   private final DueDateTimerChecker timerChecker;
   private final KeyGenerator keyGenerator;
   private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
 
   public CatchEventBehavior(
       final ProcessingState processingState,
@@ -72,7 +75,8 @@ public final class CatchEventBehavior {
       final StateWriter stateWriter,
       final SideEffectWriter sideEffectWriter,
       final DueDateTimerChecker timerChecker,
-      final int partitionsCount) {
+      final int partitionsCount,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.stateWriter = stateWriter;
@@ -86,6 +90,7 @@ public final class CatchEventBehavior {
 
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
   /**
@@ -280,6 +285,20 @@ public final class CatchEventBehavior {
         correlationKey,
         event.isInterrupting(),
         context.getTenantId());
+
+    final String subscriptionMessageName = subscription.getMessageName();
+    final String tenantId = subscription.getTenantId();
+    final var lastSentTime = ActorClock.currentTimeMillis();
+
+    // update transient state in a side-effect to ensure that these changes only take effect after
+    // the command has been successfully processed
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          transientProcessMessageSubscriptionState.update(
+              new PendingSubscription(elementInstanceKey, subscriptionMessageName, tenantId),
+              lastSentTime);
+          return true;
+        });
   }
 
   private void subscribeToTimerEvents(
@@ -408,18 +427,32 @@ public final class CatchEventBehavior {
   private void unsubscribeFromMessageEvent(final ProcessMessageSubscription subscription) {
 
     final DirectBuffer messageName = cloneBuffer(subscription.getRecord().getMessageNameBuffer());
+    final String messageNameString = subscription.getRecord().getMessageName();
     final int subscriptionPartitionId = subscription.getRecord().getSubscriptionPartitionId();
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
     final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
+    final String tenantId = subscription.getRecord().getTenantId();
 
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
+
     sendCloseMessageSubscriptionCommand(
         subscriptionPartitionId,
         processInstanceKey,
         elementInstanceKey,
         messageName,
         subscription.getRecord().getTenantId());
+    final var lastSentTime = ActorClock.currentTimeMillis();
+
+    // update transient state in a side-effect to ensure that these changes only take effect after
+    // the command has been successfully processed
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          transientProcessMessageSubscriptionState.update(
+              new PendingSubscription(elementInstanceKey, messageNameString, tenantId),
+              lastSentTime);
+          return true;
+        });
   }
 
   private boolean sendCloseMessageSubscriptionCommand(

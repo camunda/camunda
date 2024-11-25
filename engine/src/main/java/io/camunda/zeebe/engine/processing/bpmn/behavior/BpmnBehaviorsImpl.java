@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableStateEvaluationContextLookup;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 
@@ -55,7 +56,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount,
       final DueDateTimerChecker timerChecker,
-      final JobStreamer jobStreamer) {
+      final JobStreamer jobStreamer,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     expressionBehavior =
         new ExpressionProcessor(
             ExpressionLanguageFactory.createExpressionLanguage(
@@ -75,7 +77,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers.state(),
             writers.sideEffect(),
             timerChecker,
-            partitionsCount);
+            partitionsCount,
+            transientProcessMessageSubscriptionState);
 
     eventTriggerBehavior =
         new EventTriggerBehavior(
