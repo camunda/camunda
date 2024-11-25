@@ -15,6 +15,8 @@ import static java.util.Objects.requireNonNullElse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
+import io.camunda.tasklist.store.FormStore;
+import io.camunda.tasklist.store.FormStore.FormIdView;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
@@ -55,6 +57,7 @@ public class TaskService {
 
   @Autowired private TaskStore taskStore;
   @Autowired private VariableService variableService;
+  @Autowired private FormStore formStore;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
@@ -126,7 +129,21 @@ public class TaskService {
   }
 
   public TaskDTO getTask(final String taskId) {
-    return TaskDTO.createFrom(taskStore.getTask(taskId), objectMapper);
+    final TaskEntity task = taskStore.getTask(taskId);
+    if (task.getExternalFormReference() == null
+        && (task.getIsFormEmbedded() == null || task.getIsFormEmbedded())
+        && task.getFormKey() != null
+        && task.getFormId() == null) {
+      final Optional<FormIdView> linkedForm =
+          formStore.getHighestVersionFormByKey(task.getFormKey());
+      linkedForm.ifPresent(
+          form -> {
+            taskStore.updateTaskLinkedForm(task, form.bpmnId());
+            task.setFormId(form.bpmnId());
+            task.setFormVersion(form.version());
+          });
+    }
+    return TaskDTO.createFrom(task, objectMapper);
   }
 
   public TaskDTO assignTask(
