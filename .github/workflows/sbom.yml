@@ -142,9 +142,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           for artifact in ./sboms/*/*; do
+            base_name=$(basename "$artifact")
+            dir_name=$(basename "$(dirname "$artifact")")
+            unique_name="${dir_name}-${base_name}"
             gh release upload "$RELEASE_TAG" "$artifact" \
-                --repo "camunda/camunda" \
-                --clobber
+              --repo "camunda/camunda" \
+              --clobber \
+              --name "$unique_name"
           done
 
 
