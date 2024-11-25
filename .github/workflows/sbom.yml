@@ -141,14 +141,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          mkdir -p ./sboms/renamed
           for artifact in ./sboms/*/*; do
             base_name=$(basename "$artifact")
             dir_name=$(basename "$(dirname "$artifact")")
             unique_name="${dir_name}-${base_name}"
-            gh release upload "$RELEASE_TAG" "$artifact" \
-              --repo "camunda/camunda" \
-              --clobber \
-              --name "$unique_name"
+            cp "$artifact" "./sboms/renamed/$unique_name"
           done
-
+          gh release upload "$RELEASE_TAG" ./sboms/renamed/* \
+            --repo "camunda/camunda" \
+            --clobber
 
