@@ -7,9 +7,9 @@
  */
 package io.camunda.webapps.backup;
 
-import io.camunda.webapps.backup.exceptions.InvalidRequestException;
+import io.camunda.webapps.backup.BackupException.*;
+import io.camunda.webapps.backup.BackupException.GenericBackupException;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.GenericBackupException;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;

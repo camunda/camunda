@@ -12,14 +12,13 @@ import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
 import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
+import io.camunda.webapps.backup.BackupException;
+import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
-import io.camunda.webapps.backup.exceptions.InvalidRequestException;
-import io.camunda.webapps.backup.exceptions.ResourceNotFoundException;
-import io.camunda.webapps.backup.repository.BackupRepositoryConnectionException;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.profiles.ProfileOperateTasklistStandalone;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -27,7 +26,6 @@ import io.micrometer.common.lang.NonNull;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
-import java.util.List;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
@@ -127,12 +125,11 @@ public class BackupController {
   }
 
   private HistoryBackupDetail mapTo(final GetBackupStateResponseDetailDto detail) {
-    // FIXME mapping from string to BackupStateDTO is not expected to be 1:1
     return new HistoryBackupDetail(
         detail.getSnapshotName(),
         detail.getState(),
         detail.getStartTime(),
-        detail.getFailures() != null ? Arrays.asList(detail.getFailures()) : List.of());
+        detail.getFailures() != null ? Arrays.asList(detail.getFailures()) : null);
   }
 
   private HistoryBackupInfo mapTo(final GetBackupStateResponseDto detail) {
@@ -150,13 +147,17 @@ public class BackupController {
 
   private WebEndpointResponse<?> mapErrorResponse(final Exception exception) {
     final String message = exception.getMessage();
-    final int errorCode =
-        switch (exception) {
-          case final InvalidRequestException ignored -> WebEndpointResponse.STATUS_BAD_REQUEST;
-          case final ResourceNotFoundException ignored -> WebEndpointResponse.STATUS_NOT_FOUND;
-          case final BackupRepositoryConnectionException ignored -> 502;
-          default -> WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
-        };
+    int errorCode = WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
+    if (exception instanceof BackupException) {
+      errorCode =
+          switch (exception) {
+            case final InvalidRequestException ignored -> WebEndpointResponse.STATUS_BAD_REQUEST;
+            case final ResourceNotFoundException ignored -> WebEndpointResponse.STATUS_NOT_FOUND;
+            case final MissingRepositoryException ignored -> WebEndpointResponse.STATUS_NOT_FOUND;
+            case final BackupRepositoryConnectionException ignored -> 502;
+            default -> WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR;
+          };
+    }
     return new WebEndpointResponse<>(new Error().message(message), errorCode);
   }
 }
