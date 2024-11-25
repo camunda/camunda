@@ -127,9 +127,6 @@ public class ImportRepositoryOS implements ImportRepository {
         "Writing position based import index of type [{}] with position [{}] to opensearch",
         optimizeDto.getDbTypeIndexRefersTo(),
         optimizeDto.getPositionOfLastEntity());
-    // leaving the prefix "es" although it is valid for ES and OS,
-    // since changing this would require data migration and the cost/benefit of the change is not
-    // worth the effort
     return new BulkOperation.Builder()
         .index(
             new IndexOperation.Builder<PositionBasedImportIndexDto>()
