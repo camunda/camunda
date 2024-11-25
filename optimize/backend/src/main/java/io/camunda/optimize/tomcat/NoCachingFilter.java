@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.jetty;
+package io.camunda.optimize.tomcat;
 
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static io.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.NO_CACHE_RESOURCES;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -48,12 +48,12 @@ public class NoCachingFilter implements Filter {
     chain.doFilter(request, response);
   }
 
-  private boolean isApiRestCall(final String requestPath) {
-    return requestPath.startsWith(REST_API_PATH);
-  }
-
   @Override
   public void destroy() {
     // nothing to do here
+  }
+
+  private boolean isApiRestCall(final String requestPath) {
+    return requestPath.startsWith(REST_API_PATH);
   }
 }

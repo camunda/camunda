@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.util.jetty;
+package io.camunda.optimize.util.tomcat;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
