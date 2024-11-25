@@ -28,6 +28,7 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
@@ -463,18 +464,32 @@ public final class CatchEventBehavior {
   private void unsubscribeFromMessageEvent(final ProcessMessageSubscription subscription) {
 
     final DirectBuffer messageName = cloneBuffer(subscription.getRecord().getMessageNameBuffer());
+    final String messageNameString = subscription.getRecord().getMessageName();
     final int subscriptionPartitionId = subscription.getRecord().getSubscriptionPartitionId();
     final long processInstanceKey = subscription.getRecord().getProcessInstanceKey();
     final long elementInstanceKey = subscription.getRecord().getElementInstanceKey();
+    final String tenantId = subscription.getRecord().getTenantId();
 
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETING, subscription.getRecord());
+
     sendCloseMessageSubscriptionCommand(
         subscriptionPartitionId,
         processInstanceKey,
         elementInstanceKey,
         messageName,
         subscription.getRecord().getTenantId());
+    final var lastSentTime = clock.millis();
+
+    // update transient state in a side-effect to ensure that these changes only take effect after
+    // the command has been successfully processed
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          transientProcessMessageSubscriptionState.update(
+              new PendingSubscription(elementInstanceKey, messageNameString, tenantId),
+              lastSentTime);
+          return true;
+        });
   }
 
   private boolean sendCloseMessageSubscriptionCommand(

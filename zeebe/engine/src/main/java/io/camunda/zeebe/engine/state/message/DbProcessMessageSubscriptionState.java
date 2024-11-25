@@ -122,10 +122,6 @@ public final class DbProcessMessageSubscriptionState
   @Override
   public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setClosing());
-    transientState.update(
-        new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-        clock.millis());
   }
 
   @Override
