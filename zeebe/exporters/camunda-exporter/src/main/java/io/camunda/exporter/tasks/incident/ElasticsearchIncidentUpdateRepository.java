@@ -84,6 +84,7 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
         .query(q -> q.bool(b -> b.must(idQ, partitionQ)))
         .allowNoIndices(true)
         .ignoreUnavailable(true)
+        .sort(s -> s.field(f -> f.field(IncidentTemplate.KEY)))
         .build();
   }
 
