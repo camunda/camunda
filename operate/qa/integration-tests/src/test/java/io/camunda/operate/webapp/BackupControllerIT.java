@@ -12,7 +12,6 @@ import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.elasticsearch.backup.ElasticsearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -26,8 +25,6 @@ import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
 import io.camunda.management.backups.HistoryStateCode;
-import io.camunda.management.backups.HistoryStateCode.*;
-import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.backup.OperateSnapshotNameProvider;
@@ -75,7 +72,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "management.endpoints.web.exposure.include = backups",
+      "management.endpoints.web.exposure.include = backup-history",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
 @ActiveProfiles({"test", "operate", "standalone"})
@@ -111,7 +108,6 @@ public class BackupControllerIT {
     assertThat(result.getStatusCode().value()).isEqualTo(HttpStatus.SC_NOT_FOUND);
 
     final Map<String, String> resultBody = (Map<String, String>) result.getBody();
-    System.out.println(result.getBody());
     assertThat(resultBody.get("message")).isEqualTo("No backup with id [2] found.");
   }
 
@@ -145,7 +141,7 @@ public class BackupControllerIT {
 
     final String expectedMessage =
         String.format("A backup with ID [%s] already exists. Found snapshots:", backupId);
-    assertReturnsError(() -> backupController.takeBackup(1L), 400, expectedMessage);
+    assertReturnsError(() -> backupController.takeBackup(backupId), 400, expectedMessage);
     verify(esClient, times(2)).snapshot();
   }
 
@@ -175,7 +171,7 @@ public class BackupControllerIT {
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for duplicate backup. Repository name: [%s].",
             operateProperties.getBackup().getRepositoryName());
-    assertReturnsError(() -> backupController.takeBackup(backupId), 404, expectedMessage);
+    assertReturnsError(() -> backupController.takeBackup(backupId), 502, expectedMessage);
   }
 
   @Test
@@ -441,7 +437,7 @@ public class BackupControllerIT {
     when(snapshotClient.getRepository(any(), any())).thenThrow(elsEx);
     when(esClient.snapshot()).thenReturn(snapshotClient);
     final var webResponse = backupController.deleteBackup(3L);
-    assertThat(webResponse.getStatus()).isEqualTo(WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    assertThat(webResponse.getStatus()).isEqualTo(404);
 
     final var error = (Error) webResponse.getBody();
 
@@ -478,19 +474,12 @@ public class BackupControllerIT {
     when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
     when(esClient.snapshot()).thenThrow(elsEx);
 
-    final Exception exception =
-        assertThrows(
-            OperateRuntimeException.class,
-            () -> {
-              backupController.getBackups();
-            });
-
     final String expectedMessage =
         String.format(
             "No repository with name [%s] could be found.",
             operateProperties.getBackup().getRepositoryName());
-    final String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertReturnsError(() -> backupController.getBackups(), 404, expectedMessage);
+
     verify(esClient, times(1)).snapshot();
   }
 

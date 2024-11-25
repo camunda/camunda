@@ -14,13 +14,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import io.camunda.webapps.backup.BackupException.GenericBackupException;
+import io.camunda.webapps.backup.BackupException.InvalidRequestException;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.Metadata;
-import io.camunda.webapps.backup.exceptions.InvalidRequestException;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.GenericBackupException;
 import io.camunda.webapps.backup.repository.elasticsearch.TestSnapshotProvider;
 import java.io.IOException;
 import java.net.SocketTimeoutException;

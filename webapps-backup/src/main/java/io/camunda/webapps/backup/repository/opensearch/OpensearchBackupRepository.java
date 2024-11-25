@@ -20,16 +20,14 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
 
+import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.Metadata;
-import io.camunda.webapps.backup.exceptions.InvalidRequestException;
-import io.camunda.webapps.backup.exceptions.ResourceNotFoundException;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.GenericBackupException;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import io.camunda.webapps.util.ExceptionSupplier;
 import java.net.SocketTimeoutException;
