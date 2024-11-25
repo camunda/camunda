@@ -75,5 +75,5 @@ public class MappingServices
         .findFirst();
   }
 
-  public record MappingDTO(Long mappingKey, String claimName, String claimValue) {}
+  public record MappingDTO(String claimName, String claimValue) {}
 }
