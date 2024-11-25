@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
+import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
@@ -29,6 +30,7 @@ public class RdbmsService {
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessInstanceReader processInstanceReader;
   private final VariableReader variableReader;
+  private final UserReader userReader;
   private final UserTaskReader userTaskReader;
 
   public RdbmsService(
@@ -40,6 +42,7 @@ public class RdbmsService {
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceReader processInstanceReader,
       final VariableReader variableReader,
+      final UserReader userReader,
       final UserTaskReader userTaskReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.decisionRequirementsReader = decisionRequirementsReader;
@@ -49,6 +52,7 @@ public class RdbmsService {
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceReader = processInstanceReader;
     this.variableReader = variableReader;
+    this.userReader = userReader;
     this.userTaskReader = userTaskReader;
   }
 
@@ -78,6 +82,10 @@ public class RdbmsService {
 
   public VariableReader getVariableReader() {
     return variableReader;
+  }
+
+  public UserReader getUserReader() {
+    return userReader;
   }
 
   public UserTaskReader getUserTaskReader() {

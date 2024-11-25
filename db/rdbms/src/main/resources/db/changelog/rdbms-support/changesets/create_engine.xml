@@ -255,4 +255,16 @@
     <!-- No additional index for DECISION_INSTANCE_KEY needed -->
   </changeSet>
 
+
+  <changeSet id="create_user_table" author="cthiel">
+    <createTable tableName="USERS">
+      <column name="USER_KEY" type="BIGINT" >
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="USERNAME" type="VARCHAR(255)" />
+      <column name="NAME" type="VARCHAR(255)" />
+      <column name="EMAIL" type="VARCHAR(255)" />
+    </createTable>
+  </changeSet>
+
 </databaseChangeLog>

@@ -24,12 +24,15 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
@@ -247,6 +250,43 @@ class RdbmsExporterIT {
     assertThat(definition).isNotEmpty();
   }
 
+  @Test
+  public void shouldExportAndUpdateUser() {
+    // given
+    final var userRecord = getUserRecord(42L, UserIntent.CREATED);
+    final var userRecordValue = ((UserRecordValue) userRecord.getValue());
+
+    // when
+    exporter.export(userRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var user = rdbmsService.getUserReader().findOne(userRecord.getKey());
+    assertThat(user).isNotEmpty();
+    assertThat(user.get().userKey()).isEqualTo(userRecord.getKey());
+    assertThat(user.get().userKey()).isEqualTo(userRecordValue.getUserKey());
+    assertThat(user.get().username()).isEqualTo(userRecordValue.getUsername());
+    assertThat(user.get().name()).isEqualTo(userRecordValue.getName());
+    assertThat(user.get().email()).isEqualTo(userRecordValue.getEmail());
+
+    // given
+    final var updateUserRecord = getUserRecord(42L, UserIntent.UPDATED);
+    final var updateUserRecordValue = ((UserRecordValue) updateUserRecord.getValue());
+
+    // when
+    exporter.export(updateUserRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());
+    assertThat(updatedUser).isNotEmpty();
+    assertThat(updatedUser.get().userKey()).isEqualTo(userRecord.getKey());
+    assertThat(updatedUser.get().userKey()).isEqualTo(updateUserRecordValue.getUserKey());
+    assertThat(updatedUser.get().username()).isEqualTo(updateUserRecordValue.getUsername());
+    assertThat(updatedUser.get().name()).isEqualTo(updateUserRecordValue.getName());
+    assertThat(updatedUser.get().email()).isEqualTo(updateUserRecordValue.getEmail());
+  }
+
   private ImmutableRecord<RecordValue> getProcessInstanceStartedRecord(final Long position) {
     final Record<RecordValue> recordValueRecord =
         factory.generateRecord(ValueType.PROCESS_INSTANCE);
@@ -370,6 +410,23 @@ class RdbmsExporterIT {
             ImmutableProcessInstanceRecordValue.builder()
                 .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
                 .withVersion(1)
+                .build())
+        .build();
+  }
+
+  private ImmutableRecord<RecordValue> getUserRecord(final Long userKey, final UserIntent intent) {
+    final Record<RecordValue> recordValueRecord = factory.generateRecord(ValueType.USER);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(intent)
+        .withPosition(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withKey(userKey)
+        .withValue(
+            ImmutableUserRecordValue.builder()
+                .from((UserRecordValue) recordValueRecord.getValue())
+                .withUserKey(userKey)
                 .build())
         .build();
   }
