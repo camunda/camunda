@@ -48,7 +48,7 @@ jobs:
           yarn run extract-sbom
 
       - name: Upload Frontend SBOM Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.component }}-fe-sbom
           path: ${{ matrix.component }}/client/${{ matrix.folder }}/cyclonedx/bom.json
@@ -82,7 +82,7 @@ jobs:
         run: ./mvnw org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
 
       - name: Upload Backend SBOM Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: backend-sbom
           path: target/bom.json
