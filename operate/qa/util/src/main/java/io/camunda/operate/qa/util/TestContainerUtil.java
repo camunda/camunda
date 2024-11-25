@@ -46,6 +46,7 @@ import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -492,6 +493,7 @@ public class TestContainerUtil {
       final long startTime = System.currentTimeMillis();
       Testcontainers.exposeHostPorts(ELS_PORT);
       broker = new ZeebeContainer(DockerImageName.parse("camunda/zeebe:" + version));
+      broker.withLogConsumer(new Slf4jLogConsumer(LOGGER));
       if (testContext.getNetwork() != null) {
         broker.withNetwork(testContext.getNetwork());
       }
