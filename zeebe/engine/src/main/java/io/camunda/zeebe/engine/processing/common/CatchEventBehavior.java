@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
@@ -65,6 +66,7 @@ public final class CatchEventBehavior {
   private final KeyGenerator keyGenerator;
   private final SignalSubscriptionRecord signalSubscription = new SignalSubscriptionRecord();
   private final InstantSource clock;
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
 
   public CatchEventBehavior(
       final ProcessingState processingState,
@@ -75,7 +77,8 @@ public final class CatchEventBehavior {
       final SideEffectWriter sideEffectWriter,
       final DueDateTimerChecker timerChecker,
       final RoutingInfo routingInfo,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.stateWriter = stateWriter;
@@ -90,6 +93,7 @@ public final class CatchEventBehavior {
     this.keyGenerator = keyGenerator;
     this.timerChecker = timerChecker;
     this.clock = clock;
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
   /**

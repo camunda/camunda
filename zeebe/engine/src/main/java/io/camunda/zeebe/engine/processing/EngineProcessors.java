@@ -46,6 +46,7 @@ import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskEventProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -102,6 +103,8 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
+    final var transientProcessMessageSubscriptionState =
+        typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
             processingState,
@@ -112,7 +115,8 @@ public final class EngineProcessors {
             jobStreamer,
             jobMetrics,
             decisionBehavior,
-            clock);
+            clock,
+            transientProcessMessageSubscriptionState);
 
     final var commandDistributionBehavior =
         new CommandDistributionBehavior(
@@ -230,7 +234,8 @@ public final class EngineProcessors {
       final JobStreamer jobStreamer,
       final JobMetrics jobMetrics,
       final DecisionBehavior decisionBehavior,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     return new BpmnBehaviorsImpl(
         processingState,
         writers,
@@ -240,7 +245,8 @@ public final class EngineProcessors {
         routingInfo,
         timerChecker,
         jobStreamer,
-        clock);
+        clock,
+        transientProcessMessageSubscriptionState);
   }
 
   private static TypedRecordProcessor<ProcessInstanceRecord> addProcessProcessors(
