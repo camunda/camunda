@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.HashSet;
 import java.util.List;
@@ -120,13 +119,8 @@ public final class AuthorizationCheckBehavior {
     if (userOptional.isEmpty()) {
       return new HashSet<>();
     }
-    final var user = userOptional.get();
 
-    // The default user has all permissions
-    if (user.getUserType().equals(UserType.DEFAULT)) {
-      // TODO this should change when we introduce a default "admin" role to the default user
-      return new HashSet<>(Set.of(WILDCARD_PERMISSION));
-    }
+    final var user = userOptional.get();
 
     // Get resource identifiers for this user
     final var userAuthorizedResourceIdentifiers =
