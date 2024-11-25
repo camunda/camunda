@@ -452,6 +452,26 @@ class UserTaskQueryTest {
     assertThat(result).isNull();
   }
 
+  @Test
+  void shouldFilterByElementInstanceKey() {
+    // when
+    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+
+    final var userTaskElementInstanceKey =
+        userTaskList.items().stream().findFirst().get().getElementInstanceKey();
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.elementInstanceKey(userTaskElementInstanceKey))
+            .send()
+            .join();
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getElementInstanceKey())
+        .isEqualTo(userTaskElementInstanceKey);
+  }
+
   private static void deployProcess(
       final String processId,
       final String resourceName,

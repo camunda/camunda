@@ -3167,6 +3167,10 @@ components:
         processDefinitionId:
           type: string
           description: The ID of the process definition.
+        elementInstanceKey:
+          type: integer
+          description: The key of the element instance.
+          format: int64
         variables:
           type: array
           items:
