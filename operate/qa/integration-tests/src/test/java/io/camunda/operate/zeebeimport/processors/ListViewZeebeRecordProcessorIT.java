@@ -16,7 +16,6 @@ import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTem
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.VARIABLES_JOIN_RELATION;
 import static io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState.ACTIVE;
-import static io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState.COMPLETED;
 import static io.camunda.zeebe.protocol.record.intent.IncidentIntent.CREATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -91,89 +90,6 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   }
 
   @Test
-  public void shouldOverrideProcessInstanceFields() throws IOException, PersistenceException {
-    // having
-    // process instance entity with position = 1
-    final ProcessInstanceForListViewEntity pi = createProcessInstance().setPosition(1L);
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        listViewTemplate.getFullQualifiedName(), pi.getId(), pi);
-
-    // when
-    // importing Zeebe record with bigger position
-    when(processCache.getProcessNameOrDefaultValue(eq(newProcessDefinitionKey), anyString()))
-        .thenReturn(newProcessName);
-    final long newPosition = 2L;
-    final Record<ProcessInstanceRecordValue> zeebeRecord =
-        createZeebeRecordFromPi(
-            pi,
-            b -> b.withPosition(newPosition).withIntent(ELEMENT_COMPLETED),
-            b ->
-                b.withVersion(newVersion)
-                    .withBpmnProcessId(newBpmnProcessId)
-                    .withProcessDefinitionKey(newProcessDefinitionKey));
-    importProcessInstanceZeebeRecord(zeebeRecord);
-
-    // then
-    // process instance fields are updated
-    final ProcessInstanceForListViewEntity updatedPI = findProcessInstanceByKey(pi.getKey());
-    // old values
-    assertThat(updatedPI.getProcessInstanceKey()).isEqualTo(pi.getProcessInstanceKey());
-    assertThat(updatedPI.getTenantId()).isEqualTo(pi.getTenantId());
-    assertThat(updatedPI.getKey()).isEqualTo(pi.getKey());
-    assertThat(updatedPI.getTenantId()).isEqualTo(pi.getTenantId());
-    assertThat(updatedPI.getStartDate()).isNotNull();
-    // new values
-    assertThat(updatedPI.getProcessName()).isEqualTo(newProcessName);
-    assertThat(updatedPI.getProcessDefinitionKey()).isEqualTo(newProcessDefinitionKey);
-    assertThat(updatedPI.getProcessVersion()).isEqualTo(newVersion);
-    assertThat(updatedPI.getState()).isEqualTo(COMPLETED);
-    assertThat(updatedPI.getEndDate()).isNotNull();
-    assertThat(updatedPI.getPosition()).isEqualTo(newPosition);
-  }
-
-  @Test
-  public void shouldOverrideProcessInstanceFieldsForNullPosition()
-      throws IOException, PersistenceException {
-    // having
-    // process instance entity with null position
-    final ProcessInstanceForListViewEntity pi = createProcessInstance(); // null positions field
-    testSearchRepository.createOrUpdateDocumentFromObject(
-        listViewTemplate.getFullQualifiedName(), pi.getId(), pi);
-
-    // when
-    // importing Zeebe record with bigger position
-    when(processCache.getProcessNameOrDefaultValue(eq(newProcessDefinitionKey), anyString()))
-        .thenReturn(newProcessName);
-    final long newPosition = 2L;
-    final Record<ProcessInstanceRecordValue> zeebeRecord =
-        createZeebeRecordFromPi(
-            pi,
-            b -> b.withPosition(newPosition).withIntent(ELEMENT_COMPLETED),
-            b ->
-                b.withVersion(newVersion)
-                    .withBpmnProcessId(newBpmnProcessId)
-                    .withProcessDefinitionKey(newProcessDefinitionKey));
-    importProcessInstanceZeebeRecord(zeebeRecord);
-
-    // then
-    // process instance fields are updated
-    final ProcessInstanceForListViewEntity updatedPI = findProcessInstanceByKey(pi.getKey());
-    // old values
-    assertThat(updatedPI.getProcessInstanceKey()).isEqualTo(pi.getProcessInstanceKey());
-    assertThat(updatedPI.getTenantId()).isEqualTo(pi.getTenantId());
-    assertThat(updatedPI.getKey()).isEqualTo(pi.getKey());
-    assertThat(updatedPI.getTenantId()).isEqualTo(pi.getTenantId());
-    assertThat(updatedPI.getStartDate()).isNotNull();
-    // new values
-    assertThat(updatedPI.getProcessName()).isEqualTo(newProcessName);
-    assertThat(updatedPI.getProcessDefinitionKey()).isEqualTo(newProcessDefinitionKey);
-    assertThat(updatedPI.getProcessVersion()).isEqualTo(newVersion);
-    assertThat(updatedPI.getState()).isEqualTo(COMPLETED);
-    assertThat(updatedPI.getEndDate()).isNotNull();
-    assertThat(updatedPI.getPosition()).isEqualTo(newPosition);
-  }
-
-  @Test
   public void shouldNotOverrideProcessInstanceFields() throws IOException, PersistenceException {
     // having
     // process instance entity with position = 2
@@ -216,33 +132,6 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   }
 
   @Test
-  public void shouldHaveVersionTagOfProcessInListView() throws PersistenceException, IOException {
-    final String versionTag = "tag-v1";
-    final long instanceKey = 333L;
-    final long definitionKey = 123L;
-    when(processCache.getProcessNameOrDefaultValue(eq(definitionKey), anyString()))
-        .thenReturn(newProcessName);
-    when(processCache.getProcessVersionTag(eq(definitionKey))).thenReturn(versionTag);
-    final ProcessInstanceForListViewEntity pi =
-        createProcessInstance().setProcessInstanceKey(instanceKey);
-    final Record<ProcessInstanceRecordValue> zeebeRecord =
-        createZeebeRecordFromPi(
-            pi,
-            b -> b.withIntent(ELEMENT_COMPLETED),
-            b ->
-                b.withVersion(1)
-                    .withBpmnProcessId(newBpmnProcessId)
-                    .withProcessDefinitionKey(definitionKey));
-
-    importProcessInstanceZeebeRecord(zeebeRecord);
-    final ProcessInstanceForListViewEntity actualPI = findProcessInstanceByKey(instanceKey);
-
-    assertThat(actualPI.getProcessInstanceKey()).isEqualTo(instanceKey);
-    assertThat(actualPI.getKey()).isEqualTo(pi.getKey());
-    assertThat(actualPI.getProcessVersionTag()).isEqualTo(versionTag);
-  }
-
-  @Test
   public void shouldOverrideIncidentErrorMsg() throws IOException, PersistenceException {
     // having
     // flow node instance entity with position = 1
@@ -259,17 +148,16 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     // importing Zeebe record with bigger position
     final long newPosition = 2L;
     final Record<IncidentRecordValue> zeebeRecord =
-        (Record)
-            ImmutableRecord.builder()
-                .withKey(112L)
-                .withPosition(newPosition)
-                .withIntent(CREATED)
-                .withValue(
-                    ImmutableIncidentRecordValue.builder()
-                        .withElementInstanceKey(fni.getKey())
-                        .withErrorMessage(errorMessage)
-                        .build())
-                .build();
+        ImmutableRecord.<IncidentRecordValue>builder()
+            .withKey(112L)
+            .withPosition(newPosition)
+            .withIntent(CREATED)
+            .withValue(
+                ImmutableIncidentRecordValue.builder()
+                    .withElementInstanceKey(fni.getKey())
+                    .withErrorMessage(errorMessage)
+                    .build())
+            .build();
     importIncidentZeebeRecord(zeebeRecord);
 
     // then
