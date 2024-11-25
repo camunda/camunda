@@ -867,6 +867,8 @@
             <dep>org.apache.tika:tika-core</dep>
             <dep>commons-collections:commons-collections</dep>
             <dep>org.opensearch.client:opensearch-rest-client</dep>
+            <dep>com.sun.mail:jakarta.mail:jar:2.0.1:test</dep>
+            <dep>jakarta.mail:jakarta.mail-api:jar:2.1.3:test</dep>
           </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
