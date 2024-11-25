@@ -28,7 +28,7 @@ public class ZeebeProperties {
   }
 
   public ZeebeProperties setCertificatePath(final String caCertificatePath) {
-    this.certificatePath = caCertificatePath;
+    certificatePath = caCertificatePath;
     return this;
   }
 
@@ -38,8 +38,8 @@ public class ZeebeProperties {
   }
 
   @Deprecated
-  public void setBrokerContactPoint(String brokerContactPoint) {
-    this.gatewayAddress = brokerContactPoint;
+  public void setBrokerContactPoint(final String brokerContactPoint) {
+    gatewayAddress = brokerContactPoint;
   }
 
   public String getGatewayAddress() {

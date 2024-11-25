@@ -91,7 +91,7 @@ public class UserTaskVariableHandler
         // Whether it's a process or a task variable
         Objects.equals(entity.getProcessInstanceId(), entity.getScopeKey())
             ? TaskJoinRelationshipType.PROCESS_VARIABLE.getType()
-            : TaskJoinRelationshipType.TASK_VARIABLE.getType());
+            : TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
     entity.setJoin(joinRelationship);
   }
 

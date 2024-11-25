@@ -114,7 +114,7 @@ public class UserTaskCompletionVariableHandler
 
     final TaskJoinRelationship joinRelationship = new TaskJoinRelationship();
     joinRelationship.setParent(entity.getScopeKey());
-    joinRelationship.setName(TaskJoinRelationshipType.TASK_VARIABLE.getType());
+    joinRelationship.setName(TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
     entity.setJoin(joinRelationship);
   }
 

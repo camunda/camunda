@@ -167,7 +167,7 @@ public class UserTaskVariableHandlerTest {
     assertThat(variableEntity.getJoin()).isNotNull();
     assertThat(variableEntity.getJoin().getParent()).isEqualTo(variableRecordValue.getScopeKey());
     assertThat(variableEntity.getJoin().getName())
-        .isEqualTo(TaskJoinRelationshipType.TASK_VARIABLE.getType());
+        .isEqualTo(TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
   }
 
   @Test

@@ -13,7 +13,7 @@ public final class OperateURIs {
   public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
   public static final String ROOT = "/operate";
   public static final String API = "/api/**";
-  public static final String PUBLIC_API = "/v*/**";
+  public static final String PUBLIC_API = "/v1/**";
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String LOGOUT_RESOURCE = "/api/logout";
   public static final String COOKIE_JSESSIONID = "OPERATE-SESSION";
