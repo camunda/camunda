@@ -10,12 +10,10 @@ package io.camunda.webapps.schema.entities.usermanagement;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 
 public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
-
   private Long groupKey;
   private String name;
   private Long entityKey;
-
-  private EntityJoinRelation join;
+  private EntityJoin join;
 
   public Long getGroupKey() {
     return groupKey;
@@ -44,16 +42,21 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
     return this;
   }
 
-  public EntityJoinRelation getJoin() {
+  public EntityJoin<Relation> getJoin() {
     return join;
   }
 
-  public GroupEntity setJoin(final EntityJoinRelation join) {
+  public GroupEntity setJoin(final EntityJoin<Relation> join) {
     this.join = join;
     return this;
   }
 
   public static String getMemberKey(final long groupKey, final long entityKey) {
     return String.format("%d-%d", groupKey, entityKey);
+  }
+
+  public enum Relation {
+    GROUP,
+    MEMBER
   }
 }
