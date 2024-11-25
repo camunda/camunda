@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.scaling.redistribution.RedistributionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 
@@ -52,6 +53,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   PendingMessageSubscriptionState getPendingMessageSubscriptionState();
 
   PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState();
+
+  TransientPendingSubscriptionState getTransientPendingSubscriptionState();
 
   MigrationState getMigrationState();
 
