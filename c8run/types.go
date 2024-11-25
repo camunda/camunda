@@ -27,6 +27,3 @@ type TemplateData struct {
 	ServerPort int
 }
 
-type TemplateData struct {
-	ServerPort int
-}
