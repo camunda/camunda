@@ -7,16 +7,12 @@
  */
 package io.camunda.security.entity;
 
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a proprietary license.
- * See the License.txt file for more information. You may not use this file
- * except in compliance with the proprietary license.
- */
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class ClusterMetadata implements Serializable {
@@ -79,17 +75,7 @@ public class ClusterMetadata implements Serializable {
 
   @Override
   public String toString() {
-    return "ClusterMetadata{"
-        + "uuid='"
-        + uuid
-        + '\''
-        + ", name='"
-        + name
-        + '\''
-        + ", urls="
-        + urls
-        + '\''
-        + '}';
+    return "ClusterMetadata{uuid='%s', name='%s', urls='%s'}".formatted(uuid, name, urls);
   }
 
   public record C8AppLink(String name, String link) {}

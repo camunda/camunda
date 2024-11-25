@@ -28,9 +28,6 @@ public class BasicCamundaUserService implements CamundaUserService {
 
   @Override
   public String getCurrentUsername() {
-    final var authenticatedUser =
-        (CamundaUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-    return authenticatedUser.getUsername();
+    return getCurrentUser().getUsername();
   }
 }
