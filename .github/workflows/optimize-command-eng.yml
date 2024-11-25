@@ -126,9 +126,9 @@ jobs:
           # Validate 'start' command
           if [ "${{ steps.parse-args.outputs.arg1 }}" == 'start' ]; then
             # Check if the issue is in the correct status
-            if [ "$project_status" != 'Global Backlog' ] ||
-               [ "$project_status" != 'Ready' ] ||
-               [ "$project_status" != 'On Hold' ] ||
+            if [ "$project_status" != 'Global Backlog' ] &&
+               [ "$project_status" != 'Ready' ] &&
+               [ "$project_status" != 'On Hold' ] &&
                [ "$project_status" != 'Inbox' ]; then
               echo "Issue can be moved to In Progress only from 'Global Backlog', 'Ready', 'On Hold' or 'Inbox' status"
               exit 1
