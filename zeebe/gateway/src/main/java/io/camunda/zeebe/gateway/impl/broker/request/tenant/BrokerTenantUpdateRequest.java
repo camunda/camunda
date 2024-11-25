@@ -21,6 +21,7 @@ public class BrokerTenantUpdateRequest extends BrokerExecuteCommand<TenantRecord
     super(ValueType.TENANT, TenantIntent.UPDATE);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
     request.setKey(key);
+    tenantDto.setTenantKey(key);
   }
 
   public BrokerTenantUpdateRequest setName(final String name) {
