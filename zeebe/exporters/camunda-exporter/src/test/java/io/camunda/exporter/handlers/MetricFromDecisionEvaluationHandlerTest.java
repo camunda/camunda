@@ -26,6 +26,7 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -49,13 +50,28 @@ public class MetricFromDecisionEvaluationHandlerTest {
 
   @Test
   void shouldHandleRecord() {
+    Arrays.stream(DecisionEvaluationIntent.values())
+        .filter(i -> !i.name().equals(DecisionEvaluationIntent.EVALUATE.name()))
+        .forEach(
+            intent -> {
+              // given
+              final Record<DecisionEvaluationRecordValue> decisionEvaluationRecord =
+                  factory.generateRecord(ValueType.DECISION_EVALUATION, r -> r.withIntent(intent));
+
+              // when - then
+              assertThat(underTest.handlesRecord(decisionEvaluationRecord)).isTrue();
+            });
+  }
+
+  @Test
+  void shouldNotHandleRecord() {
     // given
     final Record<DecisionEvaluationRecordValue> decisionEvaluationRecord =
         factory.generateRecord(
-            ValueType.DECISION_EVALUATION, r -> r.withIntent(DecisionEvaluationIntent.EVALUATED));
+            ValueType.DECISION_EVALUATION, r -> r.withIntent(DecisionEvaluationIntent.EVALUATE));
 
     // when - then
-    assertThat(underTest.handlesRecord(decisionEvaluationRecord)).isTrue();
+    assertThat(underTest.handlesRecord(decisionEvaluationRecord)).isFalse();
   }
 
   @Test

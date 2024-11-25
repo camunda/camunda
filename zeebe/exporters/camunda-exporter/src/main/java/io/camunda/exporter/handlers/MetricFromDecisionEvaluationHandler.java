@@ -13,6 +13,7 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -45,7 +46,8 @@ public class MetricFromDecisionEvaluationHandler
 
   @Override
   public boolean handlesRecord(final Record<DecisionEvaluationRecordValue> record) {
-    return true;
+    return record.getIntent().name().equals(DecisionEvaluationIntent.EVALUATED.name())
+        || record.getIntent().name().equals(DecisionEvaluationIntent.FAILED.name());
   }
 
   @Override
