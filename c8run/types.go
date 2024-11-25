@@ -15,8 +15,9 @@ type C8Run interface {
 }
 
 type C8RunSettings struct {
-	config           string
-	detached         bool
-	keystore         string
-	keystorePassword string
+	config               string
+	detached             bool
+	keystore             string
+	keystorePassword     string
+	disableElasticsearch bool
 }
