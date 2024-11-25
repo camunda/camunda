@@ -1200,10 +1200,10 @@
     inherits-browser "^0.1.0"
     tiny-svg "^3.0.1"
 
-"@bpmn-io/feel-editor@^1.8.0":
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-editor/-/feel-editor-1.8.0.tgz#78c8032dacd5db60a295169fea61c3889a9a7fa2"
-  integrity sha512-R7phLKsdlNzzzdkBPYuE1iddnnfXoeJ4YsZ4vddMzOfUsc/8VdgeoY4RJ3o4/wWzfhapUKjAhEc9b8LSPTXuGw==
+"@bpmn-io/feel-editor@^1.9.1":
+  version "1.9.1"
+  resolved "https://registry.yarnpkg.com/@bpmn-io/feel-editor/-/feel-editor-1.9.1.tgz#2abf7e5046a3f344e383cd2a0abce35a55b1b18f"
+  integrity sha512-UxSORdh5cwKM4fib4f9ov6J1/BHGpQVNtA+wPyEdKQyCyz3wqwE2/xe5wneVR1j5QFC5m2Na8nTy4a1TDFvZTw==
   dependencies:
     "@bpmn-io/feel-lint" "^1.3.0"
     "@codemirror/autocomplete" "^6.16.2"
@@ -5254,28 +5254,28 @@ dlv@^1.1.3:
   resolved "https://registry.yarnpkg.com/dlv/-/dlv-1.1.3.tgz#5c198a8a11453596e751494d49874bc7732f2e79"
   integrity sha512-+HlytyjlPKnIG8XuRG8WvmBP8xs8P71y+SKKS6ZXWoEgLuePxtDoUEiH7WkdePWrQ5JBpE6aoVqfZfJUQkjXwA==
 
-dmn-js-boxed-expression@^16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-boxed-expression/-/dmn-js-boxed-expression-16.7.1.tgz#a1c1f5798e562d85aa3d657fb7520e86b5455f26"
-  integrity sha512-/u7axnD7aPDJkTT2o2aoMLsQJnO8Qo5IEwcXcA+Z3U1mjDU2rosSj/eknmQr6mLBiYatPeWi1sbyYqF3cnu2fw==
+dmn-js-boxed-expression@^16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-boxed-expression/-/dmn-js-boxed-expression-16.8.2.tgz#74b5ff5a6870d531a2c1fa0f57eda18e82f8766f"
+  integrity sha512-pvwobJfn/Rb3Td3NHsfa/d5gDgh03LbV4+mUxFcC8/s9rrjzs9Xn89ak2z2qUTSdzk7XGAF8+6EXnh5OrxFz/A==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     diagram-js "^14.7.1"
-    dmn-js-shared "^16.7.1"
+    dmn-js-shared "^16.8.2"
     inferno "~5.6.3"
     min-dash "^4.0.0"
     min-dom "^4.2.1"
     table-js "^9.1.0"
 
-dmn-js-decision-table@^16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.7.1.tgz#4cd0c325b58a9bee94f896a38f895e7342d1108c"
-  integrity sha512-2Xkbc/zxMTduMBMZ1lsr5qktFudGYjmrTxR0WEImfEUjKnVqIZHRSWcY8aGEfTMtAdHtYLsldG9vozZfHqmTRQ==
+dmn-js-decision-table@^16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-decision-table/-/dmn-js-decision-table-16.8.2.tgz#e0b88ed0273d48921bd5bcc77a949a2910c81821"
+  integrity sha512-U3/2bPLh5s4jdbJ8ComWN8zmXneGKE11X1ww9cl1LQ8oIlPKfynYuq+HPyqmeH5Z3wE955K9bHRCrShIl84N9Q==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     css.escape "^1.5.1"
     diagram-js "^14.7.1"
-    dmn-js-shared "^16.7.1"
+    dmn-js-shared "^16.8.2"
     escape-html "^1.0.3"
     inferno "~5.6.3"
     min-dash "^4.0.0"
@@ -5283,40 +5283,40 @@ dmn-js-decision-table@^16.7.1:
     selection-ranges "^3.0.2"
     table-js "^9.1.0"
 
-dmn-js-drd@^16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-16.7.1.tgz#f92713c7ffac25d2390fd138a6ed09d09ad34aff"
-  integrity sha512-lU0zHqH+gOiMXtXxw7I1LCCa84nGKDiIOIgqBvYVT26oqZd/a6w4rsfbIhFYM4TEtXPqFqo+hzRTPqmXg0zpeA==
+dmn-js-drd@^16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-drd/-/dmn-js-drd-16.8.2.tgz#54bf1329182cdaf73fdcb5ec0d41d405089989fe"
+  integrity sha512-LIZlpeMZi5ICWDTgtdZhBu/OezIbpZ52j5imAZDGMEPhFZDvDnSB+S6HbkbESHZCkM++WnCNO1IZRNq2lW8Egw==
   dependencies:
     diagram-js "^14.7.1"
     diagram-js-direct-editing "^3.0.1"
-    dmn-js-shared "^16.7.1"
+    dmn-js-shared "^16.8.2"
     inherits-browser "^0.1.0"
     min-dash "^4.0.0"
     min-dom "^4.2.1"
     object-refs "^0.4.0"
     tiny-svg "^3.1.2"
 
-dmn-js-literal-expression@^16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-16.7.1.tgz#2c072c939b9c033e5adc48f1402602a90e1e65a8"
-  integrity sha512-k6mP1ubztixZGM2N2W3bHeFZ677b2yU+uPi2GECRfttnl+j+XxCkCylvY1xtbewjs7lV9sX/d90lAXEK9H9VQg==
+dmn-js-literal-expression@^16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-literal-expression/-/dmn-js-literal-expression-16.8.2.tgz#cb5059411c7b657c482a80a202dd3789e7efa23f"
+  integrity sha512-rHNUXOdrwbVm+JiROrNzvV0EP6yB/LCpDc79k/3TDBR995ZhfABkl9SDXID+OUq8wd0dqJ4cEmG8/UXKTdPWsQ==
   dependencies:
     "@bpmn-io/dmn-variable-resolver" "^0.7.0"
     diagram-js "^14.7.1"
-    dmn-js-shared "^16.7.1"
+    dmn-js-shared "^16.8.2"
     escape-html "^1.0.3"
     inferno "~5.6.3"
     min-dash "^4.0.0"
     min-dom "^4.2.1"
     table-js "^9.1.0"
 
-dmn-js-shared@^16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-16.7.1.tgz#dae8b3c0f9aa8b29ea25c87224419d6092767bc7"
-  integrity sha512-pX9JI1PRTHO1j+RccvpFaYN0zXoSpAgXnfHGTQbgfmnKGvJ8DAxU6V9aulRKs8+ORn//hczTlTD+25Z9Zq7XeA==
+dmn-js-shared@^16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js-shared/-/dmn-js-shared-16.8.2.tgz#7801931f037b303e3f275be6d3928c3e5877c3bf"
+  integrity sha512-bZazgVHmgp3D39Kofad6btkua78K7/0o51TWUT+aHw87Ynjtsj4sVW/jSzsu+GziUP2MdtoibKufC6t+Jrgs6g==
   dependencies:
-    "@bpmn-io/feel-editor" "^1.8.0"
+    "@bpmn-io/feel-editor" "^1.9.1"
     diagram-js "^14.7.1"
     didi "^10.2.2"
     dmn-moddle "^10.0.0"
@@ -5328,16 +5328,16 @@ dmn-js-shared@^16.7.1:
     selection-update "^0.1.2"
     table-js "^9.1.0"
 
-dmn-js@16.7.1:
-  version "16.7.1"
-  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.7.1.tgz#af2f3308980f392495314e92799a24e088b40e31"
-  integrity sha512-TPlMNFsuR9Px665IyR/Z1zNinQ7PNO8kFEdgLCCysfEdXTWR5vrMYCSWg9GkRZ7D47EJJgnVoBFA8setjbZeQg==
+dmn-js@16.8.2:
+  version "16.8.2"
+  resolved "https://registry.yarnpkg.com/dmn-js/-/dmn-js-16.8.2.tgz#6294fe88db6dd5c3c10a9ea178b4bff4c45c90b7"
+  integrity sha512-7vJdOJbxVLJDtneQipbL+6qeIy8PF0z2Sq3M5f85/oMc0F/S2itL1R/eICm3Aoo+/Th2dDiluWSLctePmmDi7w==
   dependencies:
-    dmn-js-boxed-expression "^16.7.1"
-    dmn-js-decision-table "^16.7.1"
-    dmn-js-drd "^16.7.1"
-    dmn-js-literal-expression "^16.7.1"
-    dmn-js-shared "^16.7.1"
+    dmn-js-boxed-expression "^16.8.2"
+    dmn-js-decision-table "^16.8.2"
+    dmn-js-drd "^16.8.2"
+    dmn-js-literal-expression "^16.8.2"
+    dmn-js-shared "^16.8.2"
 
 dmn-moddle@^10.0.0:
   version "10.0.0"
