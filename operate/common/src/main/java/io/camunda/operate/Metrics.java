@@ -96,12 +96,18 @@ public class Metrics {
     registry.counter(OPERATE_NAMESPACE + name, tags).increment(count);
   }
 
-  public <T> void registerGauge(
+  public <T> Gauge registerGauge(
       final String name,
       final T stateObject,
       final ToDoubleFunction<T> valueFunction,
       final String... tags) {
-    Gauge.builder(name, stateObject, valueFunction).tags(tags).register(registry);
+    return Gauge.builder(name, () -> valueFunction.applyAsDouble(stateObject))
+        .tags(tags)
+        .register(registry);
+  }
+
+  public Gauge getGauge(final String name, final String... tags) {
+    return registry.get(name).tags(tags).gauge();
   }
 
   public void registerGaugeSupplier(
