@@ -142,8 +142,8 @@ public class TenantServiceTest {
     final BrokerTenantUpdateRequest request = stubbedBrokerClient.getSingleBrokerRequest();
     assertThat(request.getIntent()).isEqualTo(TenantIntent.UPDATE);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
-    assertThat(request.getKey()).isEqualTo(tenantDTO.key());
     final TenantRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getTenantKey()).isEqualTo(tenantDTO.key());
     assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
   }
 

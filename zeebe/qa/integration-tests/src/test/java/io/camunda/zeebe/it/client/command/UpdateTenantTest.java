@@ -82,6 +82,7 @@ class UpdateTenantTest {
   @Test
   void shouldRejectUpdateIfTenantDoesNotExist() {
     // when / then
+    final long notExistingTenantKey = 67677634L;
     assertThatThrownBy(
             () ->
                 client
@@ -91,6 +92,8 @@ class UpdateTenantTest {
                     .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
-        .hasMessageContaining("Tenant not found");
+        .hasMessageContaining(
+            "Expected to update tenant with key '%d', but no tenant with this key exists."
+                .formatted(notExistingTenantKey));
   }
 }
