@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.schema.elasticsearch;
 
+import static io.camunda.exporter.utils.SearchEngineClientUtils.allImportersCompleted;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSchemaSettings;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
@@ -15,6 +16,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
@@ -36,8 +39,11 @@ import io.camunda.exporter.schema.IndexMapping;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.webapps.schema.descriptors.ImportValueType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -176,6 +182,34 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       LOG.error(errMsg, e);
       throw new ElasticsearchExporterException(errMsg, e);
     }
+  }
+
+  @Override
+  public boolean importersCompleted(final int partitionId, final String indexPrefix) {
+    final var importPositionSearchRequest = importPositionDocuments(partitionId, indexPrefix);
+
+    try {
+      final var docs = client.search(importPositionSearchRequest, ImportPositionEntity.class);
+      return allImportersCompleted(
+          docs.hits().hits().stream().map(Hit::source).toList(), ImportValueType.values());
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format(
+              "Failed to search documents in the import position index for partition [%s]",
+              partitionId);
+      LOG.error(errMsg, e);
+      throw new ElasticsearchExporterException(errMsg, e);
+    }
+  }
+
+  private SearchRequest importPositionDocuments(final int partitionId, final String indexPrefix) {
+    final var importPositionIndexName =
+        new ImportPositionIndex(indexPrefix, true).getFullQualifiedName();
+    return new SearchRequest.Builder()
+        .index(importPositionIndexName)
+        .size(ImportValueType.values().length)
+        .query(q -> q.match(m -> m.field(ImportPositionIndex.PARTITION_ID).query(partitionId)))
+        .build();
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(

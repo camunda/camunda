@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.schema.opensearch;
 
+import static io.camunda.exporter.utils.SearchEngineClientUtils.allImportersCompleted;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSchemaSettings;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
@@ -21,8 +22,11 @@ import io.camunda.exporter.schema.IndexMapping;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.webapps.schema.descriptors.ImportValueType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -39,6 +43,8 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
@@ -187,6 +193,38 @@ public class OpensearchEngineClient implements SearchEngineClient {
       LOG.error(errMsg, e);
       throw new OpensearchExporterException(errMsg, e);
     }
+  }
+
+  @Override
+  public boolean importersCompleted(final int partitionId, final String indexPrefix) {
+    final var importPositionSearchRequest = importPositionDocuments(partitionId, indexPrefix);
+    try {
+      final var docs = client.search(importPositionSearchRequest, ImportPositionEntity.class);
+      return allImportersCompleted(
+          docs.hits().hits().stream().map(Hit::source).toList(), ImportValueType.values());
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format(
+              "Failed to search documents in the import position index for partition [%s]",
+              partitionId);
+      LOG.error(errMsg, e);
+      throw new OpensearchExporterException(errMsg, e);
+    }
+  }
+
+  private SearchRequest importPositionDocuments(final int partitionId, final String indexPrefix) {
+    final var importPositionIndexName =
+        new ImportPositionIndex(indexPrefix, true).getFullQualifiedName();
+    return new SearchRequest.Builder()
+        .index(importPositionIndexName)
+        .size(ImportValueType.values().length)
+        .query(
+            q ->
+                q.match(
+                    m ->
+                        m.field(ImportPositionIndex.PARTITION_ID)
+                            .query(innerQ -> innerQ.longValue(partitionId))))
+        .build();
   }
 
   public Request createIndexStateManagementPolicy(
