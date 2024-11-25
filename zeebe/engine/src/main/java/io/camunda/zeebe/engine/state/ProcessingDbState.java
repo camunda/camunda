@@ -63,16 +63,13 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 
 public class ProcessingDbState implements MutableProcessingState {
-
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final KeyGenerator keyGenerator;
-
   private final MutableProcessState processState;
   private final MutableTimerInstanceState timerInstanceState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
-
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
@@ -88,6 +85,19 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableDistributionState distributionState;
   private final MutableUserTaskState userTaskState;
   private final MutableCompensationSubscriptionState compensationSubscriptionState;
+<<<<<<< HEAD
+=======
+  private final MutableUserState userState;
+  private final MutableClockState clockState;
+  private final MutableAuthorizationState authorizationState;
+  private final MutableRoutingState routingState;
+  private final MutableRedistributionState redistributionState;
+  private final MutableTenantState tenantState;
+  private final MutableRoleState roleState;
+  private final MutableGroupState groupState;
+  private final MutableMappingState mappingState;
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+>>>>>>> 8368c937 (feat: backport of #25298 to main)
   private final int partitionId;
 
   public ProcessingDbState(
@@ -129,6 +139,19 @@ public class ProcessingDbState implements MutableProcessingState {
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
     compensationSubscriptionState =
         new DbCompensationSubscriptionState(zeebeDb, transactionContext);
+<<<<<<< HEAD
+=======
+    userState = new DbUserState(zeebeDb, transactionContext);
+    clockState = new DbClockState(zeebeDb, transactionContext);
+    authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
+    routingState = new DbRoutingState(zeebeDb, transactionContext);
+    redistributionState = new DbRedistributionState(zeebeDb, transactionContext);
+    roleState = new DbRoleState(zeebeDb, transactionContext);
+    groupState = new DbGroupState(zeebeDb, transactionContext);
+    tenantState = new DbTenantState(zeebeDb, transactionContext);
+    mappingState = new DbMappingState(zeebeDb, transactionContext);
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
+>>>>>>> 8368c937 (feat: backport of #25298 to main)
   }
 
   @Override
@@ -252,6 +275,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
+  }
+
+  @Override
+  public TransientPendingSubscriptionState getTransientPendingSubscriptionState() {
+    return transientProcessMessageSubscriptionState;
   }
 
   @Override
