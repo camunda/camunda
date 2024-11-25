@@ -121,10 +121,10 @@ public class CamundaUser extends User {
     private String name;
     private String username;
     private String password;
-    private List<String> roles;
-    private List<Permission> permissions;
-    private List<TenantEntity> tenants;
-    private List<String> groups;
+    private List<String> roles = List.of();
+    private List<Permission> permissions = List.of();
+    private List<TenantEntity> tenants = List.of();
+    private List<String> groups = List.of();
     private String salesPlanType;
     private Map<ClusterMetadata.AppName, String> c8Links;
     private boolean canLogout;
