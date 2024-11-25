@@ -19,4 +19,5 @@ type C8RunSettings struct {
 	detached         bool
 	keystore         string
 	keystorePassword string
+	logLevel         string
 }

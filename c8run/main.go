@@ -190,10 +190,15 @@ func main() {
 	startFlagSet.BoolVar(&settings.detached, "detached", false, "Starts Camunda Run as a detached process")
 	startFlagSet.StringVar(&settings.keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
+	startFlagSet.StringVar(&settings.logLevel, "log-level", "", "Adjust the log level of Camunda")
 
 	switch baseCommand {
 	case "start":
 		startFlagSet.Parse(os.Args[2:])
+	}
+
+	if settings.logLevel != "" {
+		os.Setenv("ZEEBE_LOG_LEVEL", settings.logLevel)
 	}
 
 	err := validateKeystore(settings, parentDir)
