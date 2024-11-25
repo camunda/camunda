@@ -86,6 +86,12 @@ public final class TestOperateWithExporter extends TestSpringApplication<TestOpe
     brokerProperties.getData().getDisk().getFreeSpace().setProcessing(DataSize.ofMegabytes(128));
     brokerProperties.getData().getDisk().getFreeSpace().setReplication(DataSize.ofMegabytes(64));
 
+    brokerProperties
+        .getExperimental()
+        .getEngine()
+        .createEngineConfiguration()
+        .setEnableAuthorization(false);
+
     brokerProperties.getExperimental().getConsistencyChecks().setEnableForeignKeyChecks(true);
     brokerProperties.getExperimental().getConsistencyChecks().setEnablePreconditions(true);
 
