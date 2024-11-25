@@ -20,6 +20,7 @@ type C8RunSettings struct {
 	port             int
 	keystore         string
 	keystorePassword string
+	logLevel         string
 }
 
 type TemplateData struct {
