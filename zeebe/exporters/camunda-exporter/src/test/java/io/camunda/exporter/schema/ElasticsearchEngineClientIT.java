@@ -365,6 +365,12 @@ public class ElasticsearchEngineClientIT {
       assertThat(importersCompleted).isEqualTo(false);
     }
 
+    @Test
+    void shouldReturnImportersCompletedForFreshInstall() {
+      final var importersCompleted = elsEngineClient.importersCompleted(partitionId, indexPrefix);
+      assertThat(importersCompleted).isEqualTo(true);
+    }
+
     private BulkRequest createImportPositionDocuments(
         final int partitionId, final IndexDescriptor importPositionIndex) {
       final BulkRequest.Builder br = new BulkRequest.Builder();

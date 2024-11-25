@@ -369,6 +369,13 @@ public class OpensearchEngineClientIT {
       assertThat(importersCompleted).isEqualTo(false);
     }
 
+    @Test
+    void shouldReturnImportersCompletedForFreshInstall() {
+      final var importersCompleted =
+          opensearchEngineClient.importersCompleted(partitionId, indexPrefix);
+      assertThat(importersCompleted).isEqualTo(true);
+    }
+
     private BulkRequest createImportPositionDocuments(
         final int partitionId, final IndexDescriptor importPositionIndex) {
       final BulkRequest.Builder br = new BulkRequest.Builder();

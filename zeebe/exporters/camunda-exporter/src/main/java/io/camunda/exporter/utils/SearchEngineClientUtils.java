@@ -68,6 +68,11 @@ public final class SearchEngineClientUtils {
   public static boolean allImportersCompleted(
       final List<ImportPositionEntity> recordReaderStatuses,
       final ImportValueType[] allImportValueTypes) {
+    // For a fresh install where there are no import position documents
+    if (recordReaderStatuses.isEmpty()) {
+      return true;
+    }
+
     final var partitionCompleted =
         recordReaderStatuses.stream().anyMatch(ImportPositionEntity::getCompleted);
 
