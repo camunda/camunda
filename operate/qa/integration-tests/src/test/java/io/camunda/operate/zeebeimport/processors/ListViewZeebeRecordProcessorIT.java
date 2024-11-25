@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.cache.ProcessCache;
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.zeebe.PartitionHolder;
@@ -64,15 +63,12 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
   private final int newVersion = 111;
   private final String newBpmnProcessId = "newBpmnProcessId";
   private final long newProcessDefinitionKey = 111;
-  private final String newProcessName = "New process name";
-  private final String errorMessage = "Error message";
   @Autowired private ListViewTemplate listViewTemplate;
   @Autowired private ListViewZeebeRecordProcessor listViewZeebeRecordProcessor;
   @Autowired private BeanFactory beanFactory;
   @MockBean private PartitionHolder partitionHolder;
   @MockBean private ProcessCache processCache;
   @Autowired private ImportPositionHolder importPositionHolder;
-  @Autowired private OperateProperties operateProperties;
   private boolean concurrencyModeBefore;
 
   @Override
@@ -100,6 +96,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
 
     // when
     // importing Zeebe record with smaller position
+    final String newProcessName = "New process name";
     when(processCache.getProcessNameOrDefaultValue(eq(newProcessDefinitionKey), anyString()))
         .thenReturn(newProcessName);
     final long newPosition = 1L;
@@ -147,18 +144,18 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     // when
     // importing Zeebe record with smaller position
     final long newPosition = 1L;
+    final String errorMessage = "Error message";
     final Record<IncidentRecordValue> zeebeRecord =
-        (Record)
-            ImmutableRecord.builder()
-                .withKey(112L)
-                .withPosition(newPosition)
-                .withIntent(CREATED)
-                .withValue(
-                    ImmutableIncidentRecordValue.builder()
-                        .withElementInstanceKey(fni.getKey())
-                        .withErrorMessage(errorMessage)
-                        .build())
-                .build();
+        ImmutableRecord.<IncidentRecordValue>builder()
+            .withKey(112L)
+            .withPosition(newPosition)
+            .withIntent(CREATED)
+            .withValue(
+                ImmutableIncidentRecordValue.builder()
+                    .withElementInstanceKey(fni.getKey())
+                    .withErrorMessage(errorMessage)
+                    .build())
+            .build();
     importIncidentZeebeRecord(zeebeRecord);
 
     // then
@@ -188,19 +185,18 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     final long newPosition = 1L;
     final String newValue = "newValue";
     final Record<VariableRecordValue> zeebeRecord =
-        (Record)
-            ImmutableRecord.builder()
-                .withKey(113L)
-                .withPosition(newPosition)
-                .withIntent(VariableIntent.UPDATED)
-                .withValue(
-                    ImmutableVariableRecordValue.builder()
-                        .withName(var.getVarName())
-                        .withValue(newValue)
-                        .withScopeKey(var.getScopeKey())
-                        .withProcessInstanceKey(processInstanceKey)
-                        .build())
-                .build();
+        ImmutableRecord.<VariableRecordValue>builder()
+            .withKey(113L)
+            .withPosition(newPosition)
+            .withIntent(VariableIntent.UPDATED)
+            .withValue(
+                ImmutableVariableRecordValue.builder()
+                    .withName(var.getVarName())
+                    .withValue(newValue)
+                    .withScopeKey(var.getScopeKey())
+                    .withProcessInstanceKey(processInstanceKey)
+                    .build())
+            .build();
     importVariableZeebeRecord(zeebeRecord);
 
     // then
@@ -260,18 +256,17 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
     // importing Zeebe record with bigger position
     final long newPosition = 1L;
     final Record<JobRecordValue> zeebeRecord =
-        (Record)
-            ImmutableRecord.builder()
-                .withKey(115L)
-                .withPosition(newPosition)
-                .withIntent(JobIntent.FAILED)
-                .withValue(
-                    ImmutableJobRecordValue.builder()
-                        .withElementInstanceKey(fni.getKey())
-                        .withProcessInstanceKey(processInstanceKey)
-                        .withRetries(1)
-                        .build())
-                .build();
+        ImmutableRecord.<JobRecordValue>builder()
+            .withKey(115L)
+            .withPosition(newPosition)
+            .withIntent(JobIntent.FAILED)
+            .withValue(
+                ImmutableJobRecordValue.builder()
+                    .withElementInstanceKey(fni.getKey())
+                    .withProcessInstanceKey(processInstanceKey)
+                    .withRetries(1)
+                    .build())
+            .build();
     importJobZeebeRecord(zeebeRecord);
 
     // then
@@ -331,7 +326,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       final Record<ProcessInstanceRecordValue> zeebeRecord) throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     listViewZeebeRecordProcessor.processProcessInstanceRecord(
-        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)),
+        Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)),
         batchRequest,
         mock(ImportBatch.class),
         true);
@@ -351,7 +346,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     listViewZeebeRecordProcessor.processVariableRecords(
-        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest, true);
+        Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest, true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }
@@ -360,7 +355,7 @@ public class ListViewZeebeRecordProcessorIT extends OperateSearchAbstractIT {
       throws PersistenceException {
     final BatchRequest batchRequest = beanFactory.getBean(BatchRequest.class);
     listViewZeebeRecordProcessor.processJobRecords(
-        (Map) Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest, true);
+        Map.of(zeebeRecord.getKey(), List.of(zeebeRecord)), batchRequest, true);
     batchRequest.execute();
     searchContainerManager.refreshIndices(listViewTemplate.getFullQualifiedName());
   }
