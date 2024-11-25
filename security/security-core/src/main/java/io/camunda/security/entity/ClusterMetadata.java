@@ -15,7 +15,6 @@ package io.camunda.security.entity;
  */
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.camunda.tasklist.webapp.graphql.entity.C8AppLink;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
