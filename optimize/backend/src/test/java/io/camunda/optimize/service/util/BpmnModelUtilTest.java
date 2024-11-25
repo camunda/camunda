@@ -120,21 +120,29 @@ public class BpmnModelUtilTest {
 
   @Test
   void shouldGetCollapsedSubprocessElementIds() {
+    // when
     final BpmnModelInstance modelInstance = parseBpmnModel(PROCESS_WITH_83_SIGNAL_EVENTS);
+    assertThat(modelInstance).isNotNull();
 
-    ModelElementInstance signalProcess = modelInstance.getModelElementById("signalProcess");
+    final ModelElementInstance signalProcess = modelInstance.getModelElementById("signalProcess");
+    assertThat(modelInstance).isNotNull();
 
-    ModelInstance instance = signalProcess.getModelInstance();
+    final ModelInstance instance = signalProcess.getModelInstance();
+    assertThat(instance).isNotNull();
 
-    Collection<StartEvent> startEvents = instance.getModelElementsByType(StartEvent.class);
+    final Collection<StartEvent> startEvents = instance.getModelElementsByType(StartEvent.class);
+    final Collection<EndEvent> endEvents = instance.getModelElementsByType(EndEvent.class);
+    final Collection<IntermediateCatchEvent> intermediateCatchEvents =
+        instance.getModelElementsByType(IntermediateCatchEvent.class);
+    final Collection<Signal> signals = instance.getModelElementsByType(Signal.class);
+
+    // then
     assertThat(startEvents)
         .isNotNull()
         .isNotEmpty()
         .extracting(StartEvent::getId)
         .containsExactlyInAnyOrder(
             SIGNAL_START_INT_SUB_PROCESS, SIGNAL_START_NON_INT_SUB_PROCESS, SIGNAL_START_EVENT);
-
-    Collection<EndEvent> endEvents = instance.getModelElementsByType(EndEvent.class);
 
     assertThat(endEvents)
         .isNotNull()
@@ -143,16 +151,12 @@ public class BpmnModelUtilTest {
         .containsExactlyInAnyOrder(
             "interruptingSubProcessEnd", "nonInterruptingSubProcessEnd", SIGNAL_PROCESS_END);
 
-    Collection<IntermediateCatchEvent> intermediateCatchEvents =
-        instance.getModelElementsByType(IntermediateCatchEvent.class);
-
     assertThat(intermediateCatchEvents)
         .isNotNull()
         .isNotEmpty()
         .extracting(IntermediateCatchEvent::getId)
         .containsExactlyInAnyOrder(SIGNAL_CATCH, "timerEvent", SIGNAL_GATEWAY_CATCH);
 
-    Collection<Signal> signals = instance.getModelElementsByType(Signal.class);
     assertThat(signals)
         .isNotNull()
         .isNotEmpty()
