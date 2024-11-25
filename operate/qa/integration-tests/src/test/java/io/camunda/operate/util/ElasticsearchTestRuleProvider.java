@@ -143,7 +143,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void finished(final Description description) {
-    TestUtil.removeIlmPolicy(esClient);
     if (!failed) {
       final String indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
       TestUtil.removeAllIndices(esClient, indexPrefix);
@@ -261,64 +260,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
       final Predicate<Object[]> predicate,
       final Supplier<Object> supplier,
       final Object... arguments) {
-    int waitingRound = 0;
-    final int maxRounds = maxWaitingRounds;
-    boolean found = predicate.test(arguments);
-    final long start = System.currentTimeMillis();
-    while (!found && waitingRound < maxRounds) {
-      testImportListener.resetCounters();
-      try {
-        if (supplier != null) {
-          supplier.get();
-        }
-        refreshSearchIndices();
-        zeebeImporter.performOneRoundOfImportFor(readers);
-        refreshOperateSearchIndices();
-        if (runPostImport) {
-          runPostImportActions();
-        }
-
-      } catch (final Exception e) {
-        LOGGER.error(e.getMessage(), e);
-      }
-      int waitForImports = 0;
-      // Wait for imports max 30 sec (60 * 500 ms)
-      while (testImportListener.getImportedCount() < testImportListener.getScheduledCount()
-          && waitForImports < 60) {
-        waitForImports++;
-        try {
-          sleepFor(2000);
-          zeebeImporter.performOneRoundOfImportFor(readers);
-          refreshOperateSearchIndices();
-          if (runPostImport) {
-            runPostImportActions();
-          }
-
-        } catch (final Exception e) {
-          waitingRound = 0;
-          testImportListener.resetCounters();
-          LOGGER.error(e.getMessage(), e);
-        }
-        LOGGER.debug(
-            " {} of {} imports processed",
-            testImportListener.getImportedCount(),
-            testImportListener.getScheduledCount());
-      }
-      refreshOperateSearchIndices();
-      found = predicate.test(arguments);
-      if (!found) {
-        sleepFor(2000);
-        waitingRound++;
-      }
-    }
-    final long finishedTime = System.currentTimeMillis() - start;
-
-    if (found) {
-      LOGGER.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
-    } else {
-      LOGGER.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
-      //      throw new TestPrerequisitesFailedException("Conditions not met.");
-    }
+    // no import anymore
   }
 
   @Override
