@@ -20,7 +20,6 @@ import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.operate.zeebeimport.RecordsReaderHolder;
-import io.camunda.operate.zeebeimport.ZeebeImporter;
 import io.camunda.operate.zeebeimport.ZeebePostImporter;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
@@ -93,7 +92,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   protected RestHighLevelClient zeebeEsClient;
 
   @Autowired protected OperateProperties operateProperties;
-  @Autowired protected ZeebeImporter zeebeImporter;
+  //  @Autowired protected ZeebeImporter zeebeImporter;
   @Autowired protected ZeebePostImporter zeebePostImporter;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
