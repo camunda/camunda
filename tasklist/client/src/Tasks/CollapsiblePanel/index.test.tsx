@@ -413,9 +413,7 @@ describe('<CollapsiblePanel />', () => {
     );
 
     expect(
-      screen.queryByRole('heading', {
-        name: /the custom filter will be deleted\./i,
-      }),
+      screen.queryByRole('dialog', {name: /delete filter/i}),
     ).not.toBeInTheDocument();
 
     expect(
