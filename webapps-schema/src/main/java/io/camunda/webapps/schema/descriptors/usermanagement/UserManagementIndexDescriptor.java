@@ -18,6 +18,6 @@ public abstract class UserManagementIndexDescriptor extends AbstractIndexDescrip
 
   @Override
   public String getComponentName() {
-    return ComponentNames.IDENTITY.toString();
+    return ComponentNames.CAMUNDA.toString();
   }
 }
