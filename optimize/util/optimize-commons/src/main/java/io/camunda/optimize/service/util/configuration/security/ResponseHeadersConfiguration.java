@@ -128,7 +128,7 @@ public class ResponseHeadersConfiguration {
     }
 
     Boolean includeSubDomains = getHttpStrictTransportSecurityIncludeSubdomains();
-    if(includeSubDomains == null) {
+    if (includeSubDomains == null) {
       includeSubDomains = false;
     }
     if (includeSubDomains) {
@@ -146,10 +146,10 @@ public class ResponseHeadersConfiguration {
     }
 
     Boolean xContentTypeOptions = getXContentTypeOptions();
-    if(xContentTypeOptions == null) {
+    if (xContentTypeOptions == null) {
       xContentTypeOptions = false;
     }
-    if (xContentTypeOptions)  {
+    if (xContentTypeOptions) {
       headers.put(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
     }
 
