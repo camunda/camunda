@@ -24,6 +24,7 @@ import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberAddRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRemoveRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
@@ -171,6 +172,28 @@ public class GroupServiceTest {
     assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
     assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
     assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.ADD_ENTITY);
+    assertThat(request.getKey()).isEqualTo(groupKey);
+    final GroupRecord record = request.getRequestWriter();
+    assertThat(record).hasGroupKey(groupKey);
+    assertThat(record).hasEntityKey(memberKey);
+    assertThat(record).hasEntityType(EntityType.USER);
+  }
+
+  @Test
+  public void shouldRemoveMemberFromGroup() {
+    // given
+    final var groupKey = 123L;
+    final var memberKey = 456L;
+    final var memberType = "user";
+
+    // when
+    services.removeMember(groupKey, memberKey, memberType);
+
+    // then
+    final BrokerGroupMemberRemoveRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(request.getValueType()).isEqualTo(ValueType.GROUP);
+    assertThat(request.getIntent()).isNotEvent().isEqualTo(GroupIntent.REMOVE_ENTITY);
     assertThat(request.getKey()).isEqualTo(groupKey);
     final GroupRecord record = request.getRequestWriter();
     assertThat(record).hasGroupKey(groupKey);
