@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
+import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -33,7 +34,7 @@ public class PermissionsServiceTest {
   private SecurityConfiguration mockSecurityConfiguration;
   private AuthorizationsConfiguration mockAuthorizationsConfiguration;
   private AuthorizationChecker mockAuthorizationChecker;
-  private TenantsService mockTenantsService;
+  private TenantService mockTenantService;
   private Authentication mockAuthentication;
 
   private PermissionsService permissionsService;
@@ -45,12 +46,12 @@ public class PermissionsServiceTest {
     mockSecurityConfiguration = mock(SecurityConfiguration.class);
     mockAuthorizationsConfiguration = mock(AuthorizationsConfiguration.class);
     mockAuthorizationChecker = mock(AuthorizationChecker.class);
-    mockTenantsService = mock(TenantsService.class);
+    mockTenantService = mock(TenantService.class);
     mockAuthentication = mock(Authentication.class);
 
     when(mockSecurityConfiguration.getAuthorizations()).thenReturn(mockAuthorizationsConfiguration);
     when(mockAuthorizationsConfiguration.isEnabled()).thenReturn(true);
-    when(mockTenantsService.tenantIds()).thenReturn(List.of(tenantId));
+    when(mockTenantService.tenantIds()).thenReturn(List.of(tenantId));
 
     final CamundaUser camundaUser = mock(CamundaUser.class);
     when(camundaUser.getUserKey()).thenReturn(userKey);
@@ -61,7 +62,7 @@ public class PermissionsServiceTest {
 
     permissionsService =
         new PermissionsService(
-            mockSecurityConfiguration, mockAuthorizationChecker, mockTenantsService);
+            mockSecurityConfiguration, mockAuthorizationChecker, mockTenantService);
   }
 
   @Test

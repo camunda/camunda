@@ -13,7 +13,7 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.operate.webapp.security.permission.TenantsService;
+import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
 import org.junit.Test;
@@ -32,7 +32,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       IdentityConfigurer.class,
       OperateProperties.class,
       SecurityConfiguration.class,
-      TenantsService.class,
+      TenantService.class,
       PermissionsService.class,
       SecurityContextWrapper.class
     },

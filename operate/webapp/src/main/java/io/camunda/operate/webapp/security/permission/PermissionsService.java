@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.security.permission;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
+import io.camunda.operate.webapp.security.tenant.TenantService;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -28,15 +29,15 @@ public class PermissionsService {
 
   private final SecurityConfiguration securityConfiguration;
   private final AuthorizationChecker authorizationChecker;
-  private final TenantsService tenantsService;
+  private final TenantService tenantService;
 
   public PermissionsService(
       final SecurityConfiguration securityConfiguration,
       final AuthorizationChecker authorizationChecker,
-      final TenantsService tenantsService) {
+      final TenantService tenantService) {
     this.securityConfiguration = securityConfiguration;
     this.authorizationChecker = authorizationChecker;
-    this.tenantsService = tenantsService;
+    this.tenantService = tenantService;
   }
 
   /**
@@ -203,7 +204,7 @@ public class PermissionsService {
 
   private io.camunda.security.auth.Authentication getAuthentication() {
     final Long authenticatedUserKey = getAuthenticatedUserKey();
-    final List<String> authorizedTenants = tenantsService.tenantIds();
+    final List<String> authorizedTenants = tenantService.tenantIds();
     // groups and roles will come later
     return new io.camunda.security.auth.Authentication.Builder()
         .user(authenticatedUserKey)
