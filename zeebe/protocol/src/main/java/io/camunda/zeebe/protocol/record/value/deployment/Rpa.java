@@ -19,7 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableForm.Builder.class)
+@ImmutableProtocol(builder = ImmutableRpa.Builder.class)
 public interface Rpa extends RpaMetadataValue {
   /**
    * @return returns the corresponding robot script
