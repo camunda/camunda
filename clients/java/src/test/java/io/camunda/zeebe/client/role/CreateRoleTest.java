@@ -72,7 +72,7 @@ public class CreateRoleTest extends ClientRestTest {
         REST_API_PATH + "/roles", () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
-    assertThatThrownBy(() -> client.newCreateRoleCommand().send().join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
