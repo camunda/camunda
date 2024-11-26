@@ -17,5 +17,6 @@ public enum ContextType {
   VARIABLE,
   USER,
   USER_TASK,
-  FORM
+  FORM,
+  MAPPING
 }
