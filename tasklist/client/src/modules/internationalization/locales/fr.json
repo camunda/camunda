@@ -145,7 +145,7 @@
     "availableTasksNavLinkAssignedTask": "Tâche assignée: {{name}}",
     "availableTasksNavLinkUnassignedTask": "Tâche non assignée: {{name}}",
     "customFiltersModalDeleteModalLabel": "Supprimer le filtre",
-    "customFiltersModalDeleteModalHeading": "Le filtre personnalisé sera supprimé.",
+    "customFiltersModalDeleteModalHeading": "Le filtre personnalisé <strong>{{name}}</strong> sera supprimé.",
     "customFiltersModalConfirmDeletionButton": "Confirmer la suppression",
     "customFiltersModalAriaLabel": "Modal de filtres personnalisés",
     "customFiltersModalApplyFiltersTitle": "Appliquer les filtres",
