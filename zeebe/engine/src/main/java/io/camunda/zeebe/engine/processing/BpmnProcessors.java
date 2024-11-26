@@ -166,7 +166,8 @@ public final class BpmnProcessors {
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.DELETE,
-            new ProcessMessageSubscriptionDeleteProcessor(subscriptionState, writers))
+            new ProcessMessageSubscriptionDeleteProcessor(
+                subscriptionState, writers, transientState))
         .withListener(
             new PendingProcessMessageSubscriptionChecker(
                 subscriptionCommandSender,

@@ -220,10 +220,6 @@ public final class DbProcessMessageSubscriptionState
         record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
 
     subscriptionColumnFamily.deleteExisting(elementKeyAndMessageName);
-
-    transientState.remove(
-        new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
   }
 
   private void wrapSubscriptionKeys(
