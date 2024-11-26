@@ -26,6 +26,7 @@ import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateMappingCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
@@ -1170,6 +1171,24 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder for the command
    */
   RemovePermissionsCommandStep1 newRemovePermissionsCommand(long ownerKey);
+
+  /**
+   * Command to create a mapping rule.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newCreateMappingCommand()
+   *  .claimName(claimName)
+   *  .claimValue(claimValue)
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   * <br>
+   *
+   * @return a builder for the command
+   */
+  CreateMappingCommandStep1 newCreateMappingCommand();
 
   /*
    * Retrieves the XML representation of a decision requirements.
