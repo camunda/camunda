@@ -77,7 +77,11 @@ public class ResponseHeadersConfiguration {
     this.xsssProtection = xsssProtection;
   }
 
-  public Boolean getXContentTypeOptions() {
+  public boolean getXContentTypeOptions() {
+    if (xContentTypeOptions == null) {
+      return false;
+    }
+
     return xContentTypeOptions;
   }
 
@@ -146,11 +150,7 @@ public class ResponseHeadersConfiguration {
       headers.put(HttpHeaders.X_XSS_PROTECTION, getXsssProtection());
     }
 
-    Boolean xContentTypeOptions = getXContentTypeOptions();
-    if (xContentTypeOptions == null) {
-      xContentTypeOptions = false;
-    }
-    if (xContentTypeOptions) {
+    if (getXContentTypeOptions()) {
       headers.put(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
     }
 
