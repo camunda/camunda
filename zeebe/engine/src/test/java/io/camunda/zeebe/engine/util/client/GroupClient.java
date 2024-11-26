@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.function.Function;
 
 public class GroupClient {
@@ -228,6 +229,14 @@ public class GroupClient {
                 .withIntent(GroupIntent.DELETED)
                 .withSourceRecordPosition(position)
                 .getFirst();
+
+    private static final Function<Long, List<Record<GroupRecordValue>>>
+        SUCCESS_WITH_ENTITIES_SUPPLIER =
+            (position) ->
+                RecordingExporter.groupRecords()
+                    .withIntents(GroupIntent.ENTITY_REMOVED, GroupIntent.DELETED)
+                    .withSourceRecordPosition(position)
+                    .asList();
 
     private static final Function<Long, Record<GroupRecordValue>> REJECTION_SUPPLIER =
         (position) ->
