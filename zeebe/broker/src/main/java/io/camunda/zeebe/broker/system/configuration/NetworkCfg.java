@@ -19,16 +19,16 @@ public final class NetworkCfg implements ConfigurationEntry {
   public static final int DEFAULT_COMMAND_API_PORT = 26501;
   public static final int DEFAULT_INTERNAL_API_PORT = 26502;
   public static final DataSize DEFAULT_MAX_MESSAGE_SIZE = DataSize.ofMegabytes(4);
-  private static final DataSize DEFAULT_BROKER_SOSNDBUF = DataSize.ofMegabytes(1);
-  private static final DataSize DEFAULT_BROKER_SORCVBUF = DataSize.ofMegabytes(1);
+  private static final DataSize DEFAULT_BROKER_SOCKET_SEND_BUFFER = DataSize.ofMegabytes(1);
+  private static final DataSize DEFAULT_BROKER_SOCKET_RECEIVE_BUFFER = DataSize.ofMegabytes(1);
 
   private String host = DEFAULT_HOST;
   private int portOffset = 0;
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private Duration heartbeatTimeout = Duration.ofSeconds(15);
   private Duration heartbeatInterval = Duration.ofSeconds(5);
-  private DataSize soSndbuf = DEFAULT_BROKER_SOSNDBUF;
-  private DataSize soRcvbuf = DEFAULT_BROKER_SORCVBUF;
+  private DataSize socketSendBuffer = DEFAULT_BROKER_SOCKET_SEND_BUFFER;
+  private DataSize socketReceiveBuffer = DEFAULT_BROKER_SOCKET_RECEIVE_BUFFER;
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -83,6 +83,7 @@ public final class NetworkCfg implements ConfigurationEntry {
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
   public Duration getHeartbeatTimeout() {
     return heartbeatTimeout;
   }
@@ -103,19 +104,28 @@ public final class NetworkCfg implements ConfigurationEntry {
   public DataSize getSoSndbuf() {
 >>>>>>> fbaf5df281d (refactor: change type of new parameters)
     return soSndbuf;
+=======
+  public DataSize getSocketSendBuffer() {
+    return socketSendBuffer;
+>>>>>>> 50997b015dc (refactor: improve name of parameters)
   }
 
-  public void setSoSndbuf(final DataSize soSndbuf) {
-    this.soSndbuf = soSndbuf;
+  public void setSocketSendBuffer(final DataSize socketSendBuffer) {
+    this.socketSendBuffer = socketSendBuffer;
   }
 
-  public DataSize getSoRcvbuf() {
-    return soRcvbuf;
+  public DataSize getSocketReceiveBuffer() {
+    return socketReceiveBuffer;
   }
 
+<<<<<<< HEAD
   public void setSoRcvbuf(final DataSize soRcvbuf) {
     this.soRcvbuf = soRcvbuf;
 >>>>>>> fccda7f6c48 (feat: added socket buffers size parameters to config)
+=======
+  public void setSocketReceiveBuffer(final DataSize socketReceiveBuffer) {
+    this.socketReceiveBuffer = socketReceiveBuffer;
+>>>>>>> 50997b015dc (refactor: improve name of parameters)
   }
 
   public CommandApiCfg getCommandApi() {
@@ -150,6 +160,7 @@ public final class NetworkCfg implements ConfigurationEntry {
         + ", maxMessageSize="
         + maxMessageSize
 <<<<<<< HEAD
+<<<<<<< HEAD
         + ", heartbeatTimeout="
         + heartbeatTimeout
         + ", heartbeatInterval="
@@ -160,6 +171,12 @@ public final class NetworkCfg implements ConfigurationEntry {
         + ", so_rcvbuf="
         + soRcvbuf
 >>>>>>> fccda7f6c48 (feat: added socket buffers size parameters to config)
+=======
+        + ", socketReceiveBuffer="
+        + socketReceiveBuffer
+        + ", socketSendBuffer="
+        + socketSendBuffer
+>>>>>>> 50997b015dc (refactor: improve name of parameters)
         + ", commandApi="
         + commandApi
         + ", internalApi="

@@ -142,8 +142,8 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.interceptors.0.id", "overwritten");
     setEnv("zeebe.gateway.interceptors.0.className", "Overwritten");
     setEnv("zeebe.gateway.interceptors.0.jarPath", "./overwritten.jar");
-    setEnv("zeebe.gateway.network.soSndbuf", "3MB");
-    setEnv("zeebe.gateway.network.soRcvbuf", "3MB");
+    setEnv("zeebe.gateway.network.socketSendBuffer", "3MB");
+    setEnv("zeebe.gateway.network.socketReceiveBuffer", "3MB");
 
     final GatewayCfg expected = new GatewayCfg();
     expected
@@ -151,8 +151,8 @@ public final class GatewayCfgTest {
         .setHost("zeebe")
         .setPort(5432)
         .setMinKeepAliveInterval(Duration.ofSeconds(30))
-        .setSoRcvbuf(DataSize.ofMegabytes(3))
-        .setSoSndbuf(DataSize.ofMegabytes(3));
+        .setSocketReceiveBuffer(DataSize.ofMegabytes(3))
+        .setSocketSendBuffer(DataSize.ofMegabytes(3));
     expected
         .getCluster()
         .setInitialContactPoints(List.of("broker:432", "anotherBroker:789"))

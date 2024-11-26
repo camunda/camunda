@@ -82,8 +82,8 @@ public final class ClusterConfigFactory {
             .setPort(network.getInternalApi().getPort())
             .setHeartbeatTimeout(network.getHeartbeatTimeout())
             .setHeartbeatInterval(network.getHeartbeatInterval());
-            .setSoRcvbuf((int) network.getSoRcvbuf().toBytes())
-            .setSoSndbuf((int) network.getSoSndbuf().toBytes());
+            .setSocketReceiveBuffer((int) network.getSocketReceiveBuffer().toBytes())
+            .setSocketSendBuffer((int) network.getSocketSendBuffer().toBytes());
 
     if (network.getSecurity().isEnabled()) {
       messaging

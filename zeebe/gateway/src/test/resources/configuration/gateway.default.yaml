@@ -47,10 +47,13 @@
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_MINKEEPALIVEINTERVAL.
 # minKeepAliveInterval: 30s
 
-# ZEEBE_GATEWAY_NETWORK_SORCVBUF
-# soRcvbuf: 1MB
-# ZEEBE_GATEWAY_NETWORK_SOSNDBUF
-# soSndbuf: 1MB
+# Sets the size of the socket receive buffer (SO_RCVBUF)
+# ZEEBE_GATEWAY_NETWORK_SOCKET_RECEIVE_BUFFER
+# socketReceiveBuffer: 1MB
+
+# Sets the size of the socket send buffer (SO_SNDBUF)
+# ZEEBE_GATEWAY_NETWORK_SOCKET_SEND_BUFFER
+# socketSendBuffer: 1MB
 
 # cluster:
 # Sets initial contact points of brokers
