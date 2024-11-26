@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.processinstance.migration;
 
 import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -943,8 +944,76 @@ public class MigrateMessageSubscriptionTest {
         .visitPending(
             System.currentTimeMillis(),
             s -> {
-              org.assertj.core.api.Assertions.fail(
-                  "Encountered a pending process message subscription.");
+              fail("Encountered a pending process message subscription.");
+              return true;
+            });
+  }
+
+  @Test
+  public void shouldNotCreateMessageSubscriptionWhenRejectingCommand() {
+    // given
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .boundaryEvent("boundary1")
+                    .message(m -> m.name("message1").zeebeCorrelationKeyExpression("key1"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent("boundary2")
+                    .message(m -> m.name("message2").zeebeCorrelationKeyExpression("key2"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .boundaryEvent("boundary1")
+                    .message(m -> m.name("message1").zeebeCorrelationKeyExpression("key1"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent("end")
+                    .done())
+            .deploy();
+
+    final long processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId("process")
+            .withVariables(Map.of("key1", "key1", "key2", "key2"))
+            .create();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, "process2");
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A")
+        .expectRejection()
+        .migrate();
+
+    // then
+    engine
+        .getProcessingState()
+        .getPendingProcessMessageSubscriptionState()
+        .visitPending(
+            System.currentTimeMillis(),
+            s -> {
+              fail("Encountered a pending process message subscription.");
               return true;
             });
   }
