@@ -31,7 +31,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ProcessReaderTest {
 
   @Mock private ProcessStore mockProcessStore;
-
   @Mock private PermissionsService mockPermissionsService;
 
   @Test
@@ -62,8 +61,10 @@ public class ProcessReaderTest {
   }
 
   @Test
-  public void testGetProcessesGroupedWithNoPermissionsService() {
-    final ProcessReader underTest = new ProcessReader(mockProcessStore, null);
+  public void testGetProcessesGroupedWithDisabledPermissions() {
+
+    when(mockPermissionsService.permissionsEnabled()).thenReturn(false);
+    final ProcessReader underTest = new ProcessReader(mockProcessStore, mockPermissionsService);
 
     final String tenantId = "tenantId";
     when(mockProcessStore.getProcessesGrouped(tenantId, null)).thenReturn(new HashMap<>());
@@ -74,20 +75,21 @@ public class ProcessReaderTest {
     final var response = underTest.getProcessesGrouped(requestDto);
 
     assertThat(response).isNotNull();
-    verifyNoInteractions(mockPermissionsService);
+    verify(mockPermissionsService, times(1)).permissionsEnabled();
     verify(mockProcessStore, times(1)).getProcessesGrouped(tenantId, null);
   }
 
   @Test
-  public void testGetProcessesGroupedWithNullPermissions() {
-    final ProcessReader underTest = new ProcessReader(mockProcessStore, mockPermissionsService);
+  public void testGetProcessesGroupedWithNoPermissions() {
 
+    when(mockPermissionsService.permissionsEnabled()).thenReturn(true);
     when(mockPermissionsService.getProcessesWithPermission(IdentityPermission.READ))
-        .thenReturn(null);
+        .thenReturn(ResourcesAllowed.withIds(Set.of()));
 
     final String tenantId = "tenantId";
-    when(mockProcessStore.getProcessesGrouped(tenantId, null)).thenReturn(new HashMap<>());
+    when(mockProcessStore.getProcessesGrouped(tenantId, Set.of())).thenReturn(new HashMap<>());
 
+    final ProcessReader underTest = new ProcessReader(mockProcessStore, mockPermissionsService);
     final ProcessRequestDto requestDto = new ProcessRequestDto();
     requestDto.setTenantId(tenantId);
 
@@ -95,19 +97,20 @@ public class ProcessReaderTest {
 
     assertThat(response).isNotNull();
     verify(mockPermissionsService, times(1)).getProcessesWithPermission(IdentityPermission.READ);
-    verify(mockProcessStore, times(1)).getProcessesGrouped(tenantId, null);
+    verify(mockProcessStore, times(1)).getProcessesGrouped(tenantId, Set.of());
   }
 
   @Test
   public void testGetProcessesGroupedWithAllPermissions() {
-    final ProcessReader underTest = new ProcessReader(mockProcessStore, mockPermissionsService);
 
+    when(mockPermissionsService.permissionsEnabled()).thenReturn(true);
     when(mockPermissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(ResourcesAllowed.all());
 
     final String tenantId = "tenantId";
     when(mockProcessStore.getProcessesGrouped(tenantId, null)).thenReturn(new HashMap<>());
 
+    final ProcessReader underTest = new ProcessReader(mockProcessStore, mockPermissionsService);
     final ProcessRequestDto requestDto = new ProcessRequestDto();
     requestDto.setTenantId(tenantId);
 
@@ -120,8 +123,8 @@ public class ProcessReaderTest {
 
   @Test
   public void testGetProcessesGroupedWithSomePermissions() {
-    final ProcessReader underTest = new ProcessReader(mockProcessStore, mockPermissionsService);
 
+    when(mockPermissionsService.permissionsEnabled()).thenReturn(true);
     final Set<String> allowedProcessIds = Set.of("p1, p2");
     when(mockPermissionsService.getProcessesWithPermission(IdentityPermission.READ))
         .thenReturn(ResourcesAllowed.withIds(allowedProcessIds));
@@ -130,6 +133,7 @@ public class ProcessReaderTest {
     when(mockProcessStore.getProcessesGrouped(tenantId, allowedProcessIds))
         .thenReturn(new HashMap<>());
 
+    final ProcessReader underTest = new ProcessReader(mockProcessStore, mockPermissionsService);
     final ProcessRequestDto requestDto = new ProcessRequestDto();
     requestDto.setTenantId(tenantId);
 
