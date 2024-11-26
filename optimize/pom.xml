@@ -56,7 +56,7 @@
     <spring.boot.version>3.3.4</spring.boot.version>
     <spring.version>6.1.14</spring.version>
     <httpclient.version>4.5.14</httpclient.version>
-    <quartz.version>2.3.2</quartz.version>
+    <quartz.version>2.5.0</quartz.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
 
     <netty.version>4.1.115.Final</netty.version>
