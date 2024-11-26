@@ -93,11 +93,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.session</groupId>
-      <artifactId>spring-session-data-redis</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-thymeleaf</artifactId>
     </dependency>
@@ -237,11 +232,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jdk8</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.session</groupId>
-      <artifactId>spring-session-core</artifactId>
     </dependency>
 
     <dependency>
@@ -551,7 +541,6 @@
             <dependency>org.springframework.boot:spring-boot-starter-thymeleaf</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-actuator</dependency>
             <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
-            <dependency>org.springframework.session:spring-session-data-redis</dependency>
             <dependency>com.graphql-java-kickstart:graphql-spring-boot-starter</dependency>
             <dependency>org.thymeleaf:thymeleaf</dependency>
             <dependency>jakarta.json:jakarta.json-api</dependency>

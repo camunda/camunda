@@ -20,7 +20,6 @@ import io.camunda.tasklist.es.RetryElasticsearchClient;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.tasklist.webapp.security.ElasticsearchSessionRepository;
 import io.camunda.tasklist.webapp.security.TasklistProfileServiceImpl;
 import io.camunda.tasklist.webapp.security.WebSecurityConfig;
 import io.camunda.tasklist.webapp.security.oauth.OAuth2WebConfigurer;
@@ -48,7 +47,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       SearchEngineHealthIndicator.class,
       WebSecurityConfig.class,
       TasklistProfileServiceImpl.class,
-      ElasticsearchSessionRepository.class,
       RetryElasticsearchClient.class,
       ElasticsearchInternalTask.class,
       TasklistProperties.class,
