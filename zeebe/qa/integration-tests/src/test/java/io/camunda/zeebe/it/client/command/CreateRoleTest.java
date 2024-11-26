@@ -67,6 +67,6 @@ class CreateRoleTest {
     // when / then
     assertThatThrownBy(() -> client.newCreateRoleCommand().send().join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("role name must not be null");
+        .hasMessageContaining("name must not be null");
   }
 }
