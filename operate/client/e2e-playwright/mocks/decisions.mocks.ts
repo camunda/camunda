@@ -32,7 +32,6 @@ function mockResponses({
           userId: 'demo',
           displayName: 'demo',
           canLogout: true,
-          permissions: ['read', 'write'],
           roles: null,
           salesPlanType: null,
           c8Links: {},
