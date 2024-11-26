@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.exporter.cache.TestIntraTreePathCache;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -38,8 +39,9 @@ import org.junit.jupiter.api.Test;
 public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
+  private final TestIntraTreePathCache treePathCache = new TestIntraTreePathCache();
   private final FlowNodeInstanceFromProcessInstanceHandler underTest =
-      new FlowNodeInstanceFromProcessInstanceHandler(indexName, intraTreePathCache);
+      new FlowNodeInstanceFromProcessInstanceHandler(indexName, treePathCache);
 
   @Test
   public void testGetHandledValueType() {
@@ -235,6 +237,55 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     assertThat(flowNodeInstanceEntity.getStartDate())
         .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
     assertThat(flowNodeInstanceEntity.getPosition()).isEqualTo(processInstanceRecord.getPosition());
+  }
+
+  @Test
+  public void shouldUpdateEntityFromRecordWithTreePath() {
+    // given
+    final long timestamp = new Date().getTime();
+
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withProcessInstanceKey(1)
+            .build();
+
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withTimestamp(timestamp)
+                    .withValue(processInstanceRecordValue)
+                    .withKey(1));
+
+    final ProcessInstanceRecordValue serviceTaskRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.SERVICE_TASK)
+            .withFlowScopeKey(processInstanceRecord.getKey())
+            .withProcessInstanceKey(processInstanceRecord.getKey())
+            .build();
+    final Record<ProcessInstanceRecordValue> serviceTaskRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withTimestamp(timestamp)
+                    .withValue(serviceTaskRecordValue));
+
+    // when
+    final FlowNodeInstanceEntity flowNodeInstanceEntity = new FlowNodeInstanceEntity();
+    underTest.updateEntity(processInstanceRecord, flowNodeInstanceEntity);
+    underTest.updateEntity(serviceTaskRecord, flowNodeInstanceEntity);
+
+    // then
+    assertThat(flowNodeInstanceEntity.getTreePath())
+        .isEqualTo(
+            String.format(
+                "%s/%s",
+                processInstanceRecordValue.getProcessInstanceKey(), serviceTaskRecord.getKey()));
   }
 
   @Test

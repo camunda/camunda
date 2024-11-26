@@ -13,7 +13,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
-import io.camunda.exporter.cache.ExporterEntityCacheImpl;
+import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.treePath.CachedTreePathKey;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
@@ -48,11 +48,11 @@ public class FlowNodeInstanceFromProcessInstanceHandler
   private static final Set<Intent> AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
 
   private final String indexName;
-  private final ExporterEntityCacheImpl<CachedTreePathKey, String> intraTreePathCache;
+  private final ExporterEntityCache<CachedTreePathKey, String> intraTreePathCache;
 
   public FlowNodeInstanceFromProcessInstanceHandler(
       final String indexName,
-      final ExporterEntityCacheImpl<CachedTreePathKey, String> intraTreePathCache) {
+      final ExporterEntityCache<CachedTreePathKey, String> intraTreePathCache) {
     this.indexName = indexName;
     this.intraTreePathCache = intraTreePathCache;
   }
@@ -162,6 +162,7 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     updateFields.put(FlowNodeInstanceTemplate.TYPE, entity.getType());
     updateFields.put(FlowNodeInstanceTemplate.STATE, entity.getState());
     if (entity.getState() == FlowNodeState.ACTIVE) {
+      // we are only updating tree path when active
       updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, entity.getTreePath());
     }
     updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
