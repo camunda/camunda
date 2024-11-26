@@ -210,7 +210,7 @@
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.assembly>3.7.1</plugin.version.assembly>
     <plugin.version.build-helper>3.6.0</plugin.version.build-helper>
-    <plugin.version.checkstyle>3.5.0</plugin.version.checkstyle>
+    <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.13.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.14.1</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.8.1</plugin.version.dependency>
