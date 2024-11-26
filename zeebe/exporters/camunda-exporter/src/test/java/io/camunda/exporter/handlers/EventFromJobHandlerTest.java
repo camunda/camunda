@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.exporter.handlers.EventFromIncidentHandler.ID_PATTERN;
+import static io.camunda.exporter.handlers.EventFromJobHandler.ID_PATTERN;
 import static io.camunda.exporter.handlers.EventFromJobHandler.JOB_EVENTS;
 import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_CUSTOM_HEADERS;
 import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.JOB_KEY;
@@ -102,6 +102,7 @@ final class EventFromJobHandlerTest {
   @Test
   void testUpdateEntity() {
     // given
+    final long position = 222;
     final long recordKey = 789;
     final int partitionId = 10;
     final int processInstanceKey = 123;
@@ -128,7 +129,8 @@ final class EventFromJobHandlerTest {
         factory.generateRecord(
             ValueType.JOB,
             r ->
-                r.withIntent(JobIntent.CREATED)
+                r.withPosition(position)
+                    .withIntent(JobIntent.CREATED)
                     .withKey(recordKey)
                     .withPartitionId(partitionId)
                     .withValueType(ValueType.JOB)
@@ -150,6 +152,7 @@ final class EventFromJobHandlerTest {
     assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
     assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
+    assertThat(entity.getPositionJob()).isEqualTo(position);
     assertThat(entity.getMetadata().getJobType()).isEqualTo(jobType);
     assertThat(entity.getMetadata().getJobRetries()).isEqualTo(retries);
     assertThat(entity.getMetadata().getJobWorker()).isEqualTo(jobWorker);
