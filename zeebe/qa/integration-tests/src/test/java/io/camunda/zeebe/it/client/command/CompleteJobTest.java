@@ -24,6 +24,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @ZeebeIntegration
@@ -156,18 +157,18 @@ public final class CompleteJobTest {
   }
 
   @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void shouldCompleteJobWithResultDeniedTrue(
-      final boolean useRest, final TestInfo testInfo) {
+  @CsvSource({"true, true", "true, false", "false, true", "false, false"})
+  public void shouldCompleteJobWhenResultDeniedIsSet(
+      final boolean useRest, final boolean denied, final TestInfo testInfo) {
     // given
     final String jobType = "job-" + testInfo.getDisplayName();
     final var jobKey = resourcesHelper.createSingleJob(jobType);
     // when
-    getCommand(client, useRest, jobKey).result().denied(true).send().join();
+    getCommand(client, useRest, jobKey).result().denied(denied).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
-        jobType, (job) -> assertThat(job.getResult().isDenied()).isTrue());
+        jobType, (job) -> assertThat(job.getResult().isDenied()).isEqualTo(denied));
   }
 
   @ParameterizedTest
@@ -179,21 +180,6 @@ public final class CompleteJobTest {
     final var jobKey = resourcesHelper.createSingleJob(jobType);
     // when
     getCommand(client, useRest, jobKey).result().send().join();
-
-    // then
-    ZeebeAssertHelper.assertJobCompleted(
-        jobType, (job) -> assertThat(job.getResult().isDenied()).isFalse());
-  }
-
-  @ParameterizedTest
-  @ValueSource(booleans = {true, false})
-  public void shouldCompleteJobWithResultDeniedFalse(
-      final boolean useRest, final TestInfo testInfo) {
-    // given
-    final String jobType = "job-" + testInfo.getDisplayName();
-    final var jobKey = resourcesHelper.createSingleJob(jobType);
-    // when
-    getCommand(client, useRest, jobKey).result().denied(false).send().join();
 
     // then
     ZeebeAssertHelper.assertJobCompleted(
