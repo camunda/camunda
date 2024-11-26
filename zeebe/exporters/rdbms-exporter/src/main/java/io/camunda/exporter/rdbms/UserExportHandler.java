@@ -30,7 +30,9 @@ public class UserExportHandler implements RdbmsExportHandler<UserRecordValue> {
   public boolean canExport(final Record<UserRecordValue> record) {
     // do not react on UserIntent.DELETED to keep historic data
     return record.getValueType() == ValueType.USER
-        && (record.getIntent() == UserIntent.CREATED || record.getIntent() == UserIntent.UPDATED);
+        && (record.getIntent() == UserIntent.CREATED
+            || record.getIntent() == UserIntent.UPDATED
+            || record.getIntent() == UserIntent.DELETED);
   }
 
   @Override
@@ -40,6 +42,10 @@ public class UserExportHandler implements RdbmsExportHandler<UserRecordValue> {
       userWriter.create(map(value));
     } else if (record.getIntent() == UserIntent.UPDATED) {
       userWriter.update(map(value));
+    } else if (record.getIntent() == UserIntent.DELETED) {
+      userWriter.delete(value.getUserKey());
+    } else {
+      LOG.warn("Unexpected intent {} for user record", record.getIntent());
     }
   }
 
@@ -49,6 +55,7 @@ public class UserExportHandler implements RdbmsExportHandler<UserRecordValue> {
         .username(decision.getUsername())
         .name(decision.getName())
         .email(decision.getEmail())
+        .password(decision.getPassword())
         .build();
   }
 }

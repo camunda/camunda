@@ -264,6 +264,7 @@
       <column name="USERNAME" type="VARCHAR(255)" />
       <column name="NAME" type="VARCHAR(255)" />
       <column name="EMAIL" type="VARCHAR(255)" />
+      <column name="PASSWORD" type="VARCHAR(255)" />
     </createTable>
   </changeSet>
 

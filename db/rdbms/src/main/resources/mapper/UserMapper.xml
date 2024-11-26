@@ -23,7 +23,7 @@
     USERNAME,
     NAME,
     EMAIL,
-    NULL AS PASSWORD
+    PASSWORD
     FROM USERS
     <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
     ) t
@@ -55,8 +55,8 @@
     id="insert"
     parameterType="io.camunda.db.rdbms.write.domain.UserDbModel"
     flushCache="true">
-    INSERT INTO USERS (USER_KEY, USERNAME, NAME, EMAIL)
-    VALUES (#{userKey}, #{username}, #{name}, #{email})
+    INSERT INTO USERS (USER_KEY, USERNAME, NAME, EMAIL, PASSWORD)
+    VALUES (#{userKey}, #{username}, #{name}, #{email}, #{password})
   </insert>
 
   <update
@@ -66,7 +66,14 @@
     UPDATE USERS
     SET USERNAME = #{username},
         NAME     = #{name},
-        EMAIL    = #{email}
+        EMAIL    = #{email},
+        PASSWORD = #{password}
     WHERE USER_KEY = #{userKey}
   </update>
+
+  <delete id="delete" parameterType="java.lang.Long" flushCache="true">
+    DELETE FROM USERS
+    WHERE USER_KEY = #{userKey}
+  </delete>
+
 </mapper>
