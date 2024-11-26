@@ -80,8 +80,8 @@ public final class ClusterConfigFactory {
             .setCompressionAlgorithm(cluster.getMessageCompression())
             .setInterfaces(Collections.singletonList(network.getInternalApi().getHost()))
             .setPort(network.getInternalApi().getPort())
-            .setSoRcvbuf((int) network.getSoRcvbuf().toBytes())
-            .setSoSndbuf((int) network.getSoSndbuf().toBytes());
+            .setSocketReceiveBuffer((int) network.getSocketReceiveBuffer().toBytes())
+            .setSocketSendBuffer((int) network.getSocketSendBuffer().toBytes());
 
     if (network.getSecurity().isEnabled()) {
       final var security = network.getSecurity();

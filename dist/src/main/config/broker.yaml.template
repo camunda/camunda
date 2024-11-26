@@ -82,10 +82,10 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE.
       # maxMessageSize: 4MB
 
-      # ZEEBE_BROKER_NETWORK_SORCVBUF
-      # soRcvbuf: 1MB
-      # ZEEBE_BROKER_NETWORK_SOSNDBUF
-      # soSndbuf: 1MB
+      # ZEEBE_BROKER_NETWORK_SOCKETRECEIVEBUFFER
+      # socketReceiveBuffer: 1MB
+      # ZEEBE_BROKER_NETWORK_SOCKETSENDBUFFER
+      # socketSendBuffer: 1MB
 
       # security:
         # Enables TLS authentication between this gateway and other nodes in the cluster

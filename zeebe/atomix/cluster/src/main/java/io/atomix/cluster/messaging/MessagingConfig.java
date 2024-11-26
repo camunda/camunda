@@ -35,8 +35,8 @@ public class MessagingConfig implements Config {
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
   private File keyStore;
   private String keyStorePassword;
-  private int soSndbuf = 1024 * 1024;
-  private int soRcvbuf = 1024 * 1024;
+  private int socketSendBuffer = 1024 * 1024;
+  private int socketReceiveBuffer = 1024 * 1024;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -255,36 +255,36 @@ public class MessagingConfig implements Config {
   /**
    * @return the configured size in bytes for SO_SNDBUF
    */
-  public int getSoSndbuf() {
-    return soSndbuf;
+  public int getSocketSendBuffer() {
+    return socketSendBuffer;
   }
 
   /**
-   * Sets the size of SO_SNDBUF.
+   * Sets the size of SO_SNDBUF.GatewayCfgT
    *
-   * @param soSndbuf the data size in bytes to use for SO_SNDBUF
+   * @param socketSendBuffer the data size in bytes to use for SO_SNDBUF
    * @return this config for chaining
    */
-  public MessagingConfig setSoSndbuf(final int soSndbuf) {
-    this.soSndbuf = soSndbuf;
+  public MessagingConfig setSocketSendBuffer(final int socketSendBuffer) {
+    this.socketSendBuffer = socketSendBuffer;
     return this;
   }
 
   /**
    * @return the configured size in bytes for SO_RCVBUF
    */
-  public int getSoRcvbuf() {
-    return soRcvbuf;
+  public int getSocketReceiveBuffer() {
+    return socketReceiveBuffer;
   }
 
   /**
    * Sets the size of SO_RCVBUF.
    *
-   * @param soRcvbuf the data size in bytes to use for SO_RCVBUF
+   * @param socketReceiveBuffer the data size in bytes to use for SO_RCVBUF
    * @return this config for chaining
    */
-  public MessagingConfig setSoRcvbuf(final int soRcvbuf) {
-    this.soRcvbuf = soRcvbuf;
+  public MessagingConfig setSocketReceiveBuffer(final int socketReceiveBuffer) {
+    this.socketReceiveBuffer = socketReceiveBuffer;
     return this;
   }
 
