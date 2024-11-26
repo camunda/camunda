@@ -152,6 +152,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     if (entity.getEndDate() != null) {
       updateFields.put(ListViewTemplate.END_DATE, entity.getEndDate());
     }
+    if (entity.getProcessVersionTag() != null) {
+      updateFields.put(ListViewTemplate.PROCESS_VERSION_TAG, entity.getProcessVersionTag());
+    }
     updateFields.put(ListViewTemplate.PROCESS_NAME, entity.getProcessName());
     updateFields.put(ListViewTemplate.PROCESS_VERSION, entity.getProcessVersion());
     updateFields.put(ListViewTemplate.PROCESS_KEY, entity.getProcessDefinitionKey());
@@ -200,6 +203,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
             + "ctx._source.%s = params.%s; " // process version
             + "ctx._source.%s = params.%s; " // process key
             + "ctx._source.%s = params.%s; " // bpmnProcessId
+            + "if (params.%s != null) { ctx._source.%s = params.%s; }" // process version tag
             + "if (params.%s != null) { ctx._source.%s = params.%s; }" // start date
             + "if (params.%s != null) { ctx._source.%s = params.%s; }" // end date
             + "if (params.%s != null) { ctx._source.%s = params.%s; }" // state
@@ -217,6 +221,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         PROCESS_KEY,
         BPMN_PROCESS_ID,
         BPMN_PROCESS_ID,
+        PROCESS_VERSION_TAG,
+        PROCESS_VERSION_TAG,
+        PROCESS_VERSION_TAG,
         START_DATE,
         START_DATE,
         START_DATE,

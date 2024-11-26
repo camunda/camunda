@@ -70,6 +70,7 @@ public class ProcessHandler implements ExportHandler<ProcessEntity, Process> {
         .setKey(process.getProcessDefinitionKey())
         .setBpmnProcessId(process.getBpmnProcessId())
         .setVersion(process.getVersion())
+        .setVersionTag(process.getVersionTag())
         .setTenantId(ExporterUtil.tenantOrDefault(process.getTenantId()));
     final byte[] byteArray = process.getResource();
 
