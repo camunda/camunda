@@ -54,7 +54,7 @@ public class GroupDeletedHandler implements ExportHandler<GroupEntity, GroupReco
   @Override
   public void updateEntity(final Record<GroupRecordValue> record, final GroupEntity entity) {
     final GroupRecordValue value = record.getValue();
-    final var joinRelation = GroupIndex.joinRelationFactory.createParent();
+    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createParent();
     entity.setGroupKey(value.getGroupKey()).setName(value.getName()).setJoin(joinRelation);
   }
 
