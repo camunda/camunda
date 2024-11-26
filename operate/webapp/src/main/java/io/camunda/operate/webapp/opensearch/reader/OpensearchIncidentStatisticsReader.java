@@ -71,9 +71,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   @Autowired private IncidentTemplate incidentTemplate;
   @Autowired private ListViewTemplate processInstanceTemplate;
   @Autowired private ProcessReader processReader;
-
-  @Autowired(required = false)
-  private PermissionsService permissionsService;
+  @Autowired private PermissionsService permissionsService;
 
   @Override
   public Set<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics() {

@@ -61,16 +61,9 @@ public class ListViewProcessInstanceDto {
   public static ListViewProcessInstanceDto createFrom(
       final ProcessInstanceForListViewEntity processInstanceEntity,
       final List<OperationEntity> operations,
+      final PermissionsService permissionsService,
       final ObjectMapper objectMapper) {
-    return createFrom(processInstanceEntity, operations, null, null, objectMapper);
-  }
-
-  public static ListViewProcessInstanceDto createFrom(
-      final ProcessInstanceForListViewEntity processInstanceEntity,
-      final List<OperationEntity> operations,
-      final List<ProcessInstanceReferenceDto> callHierarchy,
-      final ObjectMapper objectMapper) {
-    return createFrom(processInstanceEntity, operations, callHierarchy, null, objectMapper);
+    return createFrom(processInstanceEntity, operations, null, permissionsService, objectMapper);
   }
 
   public static ListViewProcessInstanceDto createFrom(
@@ -141,6 +134,7 @@ public class ListViewProcessInstanceDto {
   public static List<ListViewProcessInstanceDto> createFrom(
       final List<ProcessInstanceForListViewEntity> processInstanceEntities,
       final Map<Long, List<OperationEntity>> operationsPerProcessInstance,
+      final PermissionsService permissionsService,
       final ObjectMapper objectMapper) {
     if (processInstanceEntities == null) {
       return new ArrayList<>();
@@ -152,6 +146,7 @@ public class ListViewProcessInstanceDto {
                 createFrom(
                     item,
                     operationsPerProcessInstance.get(item.getProcessInstanceKey()),
+                    permissionsService,
                     objectMapper))
         .collect(Collectors.toList());
   }
