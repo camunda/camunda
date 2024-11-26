@@ -23,15 +23,15 @@ import io.camunda.zeebe.client.api.response.CreateRoleResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CreateRoleResponseImpl;
+import io.camunda.zeebe.client.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.client.protocol.rest.RoleCreateResponse;
-import io.camunda.zeebe.client.protocol.rest.UserRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
 
-  private final UserRequest request;
+  private final RoleCreateRequest request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -40,7 +40,7 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new UserRequest();
+    request = new RoleCreateRequest();
   }
 
   @Override

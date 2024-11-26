@@ -19,14 +19,6 @@ import io.camunda.zeebe.client.api.response.CreateRoleResponse;
 
 public interface CreateRoleCommandStep1 extends FinalCommandStep<CreateRoleResponse> {
   /**
-   * Set the role ID for the role to be created.
-   *
-   * @param roleId the unique role ID
-   * @return the builder for this command
-   */
-  CreateRoleCommandStep1 roleId(String roleId);
-
-  /**
    * Set the name to create user with.
    *
    * @param name the name value
