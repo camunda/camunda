@@ -14,7 +14,6 @@ import static org.junit.Assert.assertTrue;
 
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -26,7 +25,6 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -112,23 +110,7 @@ public class SchemaCreationIT extends OperateSearchAbstractIT {
 
   @Test // OPE-1308
   public void testDynamicMappingsOfIndices() throws Exception {
-    final IndexDescriptor sessionIndex =
-        indexDescriptors.stream()
-            .filter(
-                indexDescriptor ->
-                    indexDescriptor.getIndexName().equals(OperateWebSessionIndex.INDEX_NAME))
-            .findFirst()
-            .orElseThrow();
-    assertThatIndexHasDynamicMappingOf(sessionIndex, TestSearchRepository.DynamicMappingType.True);
-
-    final List<IndexDescriptor> strictMappingIndices =
-        indexDescriptors.stream()
-            .filter(
-                indexDescriptor ->
-                    !indexDescriptor.getIndexName().equals(OperateWebSessionIndex.INDEX_NAME))
-            .collect(Collectors.toList());
-
-    for (final IndexDescriptor indexDescriptor : strictMappingIndices) {
+    for (final IndexDescriptor indexDescriptor : indexDescriptors) {
       assertThatIndexHasDynamicMappingOf(
           indexDescriptor, TestSearchRepository.DynamicMappingType.Strict);
     }
