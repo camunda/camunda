@@ -27,26 +27,16 @@ import org.junit.jupiter.api.Test;
 
 public class CreateRoleTest extends ClientRestTest {
 
-  public static final String ROLE_ID = "role-id";
   public static final String NAME = "Role Name";
 
   @Test
   void shouldCreateRole() {
     // when
-    client.newRoleCreateCommand().roleId(ROLE_ID).name(NAME).send().join();
+    client.newRoleCreateCommand().name(NAME).send().join();
 
     // then
     final RoleCreateRequest request = gatewayService.getLastRequest(RoleCreateRequest.class);
-    assertThat(request.getRoleKey()).isEqualTo(ROLE_ID);
     assertThat(request.getName()).isEqualTo(NAME);
-  }
-
-  @Test
-  void shouldRaiseExceptionOnNullRoleId() {
-    // when / then
-    assertThatThrownBy(() -> client.newRoleCreateCommand().name(NAME).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("roleId must not be null");
   }
 
   @Test
@@ -56,7 +46,7 @@ public class CreateRoleTest extends ClientRestTest {
         REST_API_PATH + "/roles", () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newRoleCreateCommand().roleId(ROLE_ID).name(NAME).send().join())
+    assertThatThrownBy(() -> client.newRoleCreateCommand().name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -64,13 +54,13 @@ public class CreateRoleTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionIfRoleAlreadyExists() {
     // given
-    client.newRoleCreateCommand().roleId(ROLE_ID).name(NAME).send().join();
+    client.newRoleCreateCommand().name(NAME).send().join();
 
     gatewayService.errorOnRequest(
         REST_API_PATH + "/roles", () -> new ProblemDetail().title("Conflict").status(409));
 
     // when / then
-    assertThatThrownBy(() -> client.newRoleCreateCommand().roleId(ROLE_ID).name(NAME).send().join())
+    assertThatThrownBy(() -> client.newRoleCreateCommand().name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
@@ -82,7 +72,7 @@ public class CreateRoleTest extends ClientRestTest {
         REST_API_PATH + "/roles", () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
-    assertThatThrownBy(() -> client.newRoleCreateCommand().roleId(ROLE_ID).name(NAME).send().join())
+    assertThatThrownBy(() -> client.newRoleCreateCommand().name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }
