@@ -33,6 +33,7 @@ import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcess
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -65,7 +66,8 @@ public final class BpmnProcessors {
       final CommandDistributionBehavior commandDistributionBehavior,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final TransientPendingSubscriptionState transientState) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -86,7 +88,8 @@ public final class BpmnProcessors {
         processingState,
         scheduledTaskState,
         writers,
-        clock);
+        clock,
+        transientState);
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
@@ -142,13 +145,14 @@ public final class BpmnProcessors {
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskState,
       final Writers writers,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final TransientPendingSubscriptionState transientState) {
     typedRecordProcessors
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CREATE,
             new ProcessMessageSubscriptionCreateProcessor(
-                processingState.getProcessMessageSubscriptionState(), writers))
+                processingState.getProcessMessageSubscriptionState(), writers, transientState))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CORRELATE,

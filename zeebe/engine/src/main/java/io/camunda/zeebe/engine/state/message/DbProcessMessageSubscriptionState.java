@@ -109,9 +109,6 @@ public final class DbProcessMessageSubscriptionState
   @Override
   public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setOpened());
-    transientState.remove(
-        new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
   }
 
   @Override
