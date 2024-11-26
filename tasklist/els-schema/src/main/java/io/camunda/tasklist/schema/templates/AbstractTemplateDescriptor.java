@@ -46,7 +46,7 @@ public abstract class AbstractTemplateDescriptor implements TemplateDescriptor {
     return formatAllVersionsIndexNameRegexPattern(getIndexPrefix(), getIndexName());
   }
 
-  private String getIndexPrefix() {
+  protected String getIndexPrefix() {
     return ELASTIC_SEARCH.equals(tasklistProperties.getDatabase())
         ? tasklistProperties.getElasticsearch().getIndexPrefix()
         : tasklistProperties.getOpenSearch().getIndexPrefix();

@@ -9,8 +9,8 @@ package io.camunda.tasklist.qa.migration.v810;
 
 import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.util.ThreadUtil;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;

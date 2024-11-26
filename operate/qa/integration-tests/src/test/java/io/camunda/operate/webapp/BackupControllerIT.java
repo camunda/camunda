@@ -27,13 +27,14 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
-import io.camunda.operate.webapp.backup.Metadata;
+import io.camunda.operate.webapp.backup.OperateSnapshotNameProvider;
 import io.camunda.operate.webapp.management.BackupController;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
+import io.camunda.webapps.backup.Metadata;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -700,36 +701,36 @@ public class BackupControllerIT {
     // COMPLETED
     final SnapshotInfo snapshotInfo11 =
         createSnapshotInfoMock(
-            new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(1).setPartCount(2),
+            new Metadata(backupId1, "8.8.8", 1, 2),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo12 =
         createSnapshotInfoMock(
-            new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(2).setPartCount(2),
+            new Metadata(backupId1, "8.8.8", 2, 2),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
     // we have only 2 out of 3 snapshots + TIMEOUT -> INCOMPLETE
     final SnapshotInfo snapshotInfo21 =
         createSnapshotInfoMock(
-            new Metadata().setBackupId(backupId2).setVersion("8.8.8").setPartNo(1).setPartCount(3),
+            new Metadata(backupId2, "8.8.8", 1, 3),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
     when(snapshotInfo21.startTime()).thenReturn(0L);
     final SnapshotInfo snapshotInfo22 =
         createSnapshotInfoMock(
-            new Metadata().setBackupId(backupId2).setVersion("8.8.8").setPartNo(2).setPartCount(3),
+            new Metadata(backupId2, "8.8.8", 2, 3),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
     when(snapshotInfo22.startTime()).thenReturn(0L);
     // IN_PROGRESS
     final SnapshotInfo snapshotInfo31 =
         createSnapshotInfoMock(
-            new Metadata().setBackupId(backupId3).setVersion("8.8.8").setPartNo(1).setPartCount(3),
+            new Metadata(backupId3, "8.8.8", 1, 3),
             UUID.randomUUID().toString(),
             SnapshotState.SUCCESS);
     final SnapshotInfo snapshotInfo32 =
         createSnapshotInfoMock(
-            new Metadata().setBackupId(backupId3).setVersion("8.8.8").setPartNo(2).setPartCount(3),
+            new Metadata(backupId3, "8.8.8", 2, 3),
             UUID.randomUUID().toString(),
             SnapshotState.IN_PROGRESS);
     final List<SnapshotInfo> snapshotInfos =
@@ -787,22 +788,20 @@ public class BackupControllerIT {
   public void shouldReturnVersion81Backup() throws IOException {
     final Long backupId1 = 123L;
     // COMPLETED
-    final Metadata metadata1 =
-        new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(1).setPartCount(2);
+    final Metadata metadata1 = new Metadata(backupId1, "8.8.8", 1, 2);
     final SnapshotInfo snapshotInfo11 =
         createSnapshotInfoMock(metadata1, UUID.randomUUID().toString(), SnapshotState.SUCCESS);
     // remove backupId from metadata
-    metadata1.setBackupId(null);
+    final Metadata metadata1WithNoId = new Metadata(null, "8.8.8", 1, 2);
     when(snapshotInfo11.userMetadata())
-        .thenReturn(objectMapper.convertValue(metadata1, new TypeReference<>() {}));
+        .thenReturn(objectMapper.convertValue(metadata1WithNoId, new TypeReference<>() {}));
 
-    final Metadata metadata2 =
-        new Metadata().setBackupId(backupId1).setVersion("8.8.8").setPartNo(2).setPartCount(2);
+    final Metadata metadata2 = new Metadata(backupId1, "8.8.8", 2, 2);
     final SnapshotInfo snapshotInfo12 =
         createSnapshotInfoMock(metadata2, UUID.randomUUID().toString(), SnapshotState.SUCCESS);
-    metadata2.setBackupId(null);
+    final Metadata metadata2WithNoId = new Metadata(backupId1, "8.8.8", 2, 2);
     when(snapshotInfo12.userMetadata())
-        .thenReturn(objectMapper.convertValue(metadata2, new TypeReference<>() {}));
+        .thenReturn(objectMapper.convertValue(metadata2WithNoId, new TypeReference<>() {}));
     final List<SnapshotInfo> snapshotInfos =
         asList(new SnapshotInfo[] {snapshotInfo11, snapshotInfo12});
     when(snapshotClient.get(any(), any()))
@@ -864,7 +863,8 @@ public class BackupControllerIT {
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
     if (metadata != null) {
       when(snapshotInfo.snapshotId())
-          .thenReturn(new SnapshotId(metadata.buildSnapshotName(), uuid));
+          .thenReturn(
+              new SnapshotId(new OperateSnapshotNameProvider().getSnapshotName(metadata), uuid));
       when(snapshotInfo.userMetadata())
           .thenReturn(objectMapper.convertValue(metadata, new TypeReference<>() {}));
     } else {

@@ -13,6 +13,10 @@ public class TenantIndex extends UserManagementIndexDescriptor {
   public static final String INDEX_NAME = "tenants";
   public static final String INDEX_VERSION = "8.7.0";
 
+  public static final String KEY = "key";
+  public static final String TENANT_ID = "tenantId";
+  public static final String NAME = "name";
+
   public TenantIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }

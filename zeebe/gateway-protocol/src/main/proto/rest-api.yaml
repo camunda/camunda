@@ -42,9 +42,11 @@ tags:
   - name: Resource
   - name: Role
   - name: Signal
+  - name: Tenant
   - name: User
   - name: User task
   - name: Variable
+  - name: Mapping Rule
 
 paths:
   /topology:
@@ -339,6 +341,202 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /tenants:
+    post:
+      tags:
+        - Tenant
+      operationId: createTenant
+      summary: Create tenant
+      description: Creates a new tenant.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantCreateRequest"
+        required: true
+      responses:
+        "201":
+          description: The tenant was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantCreateResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The resource was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants/{tenantKey}:
+    patch:
+      tags:
+        - Tenant
+      operationId: updateTenant
+      summary: Update tenant
+      description: Updates an existing tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantUpdateRequest"
+        required: true
+      responses:
+        "200":
+          description: The tenant was updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantUpdateResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    get:
+      tags:
+        - Tenant
+      operationId: getTenant
+      summary: Get tenant
+      description: Retrieves a single tenant by tenant Key.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The tenant was retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantItem"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Tenant not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: deleteTenant
+      summary: Delete tenant
+      description: Deletes an existing tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The tenant was deleted successfully.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+
+  /tenants/search:
+    post:
+      tags:
+        - Tenant
+      operationId: searchTenants
+      summary: Query tenants
+      description: Retrieves a filtered and sorted list of tenants.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TenantSearchQueryRequest"
+      responses:
+        "200":
+          description: The tenants search result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantSearchQueryResponse"
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /user-tasks/{userTaskKey}/completion:
     post:
       tags:
@@ -476,6 +674,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: The user task with the given key was not found.
           content:
@@ -575,6 +777,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: "Not found"
           content:
@@ -662,6 +866,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -748,6 +956,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -789,6 +1001,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: "Not found"
           content:
@@ -885,6 +1099,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -926,6 +1144,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: >
             The process definition with the given key was not found.
@@ -982,6 +1204,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: >
             The decision with the given key was not found.
@@ -1035,6 +1261,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: "Not found"
           content:
@@ -1124,6 +1352,8 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: The process instance with the given key was not found.
           content:
@@ -1168,6 +1398,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1337,6 +1571,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1378,6 +1616,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: >
             The flow node instance with the given key was not found.
@@ -1425,6 +1667,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1466,6 +1712,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: >
             The decision with the given key was not found.
@@ -1515,6 +1765,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: >
             The decision with the given key was not found.
@@ -1562,6 +1816,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1603,6 +1861,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: >
             The decision requirements with the given key was not found.
@@ -1652,6 +1914,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: >
             The decision requirements with the given key was not found.
@@ -1699,6 +1965,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1739,6 +2009,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: >
             The decision instance with the given ID was not found.
@@ -1836,13 +2110,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
-          description: |
-            The request to patch an authorization was denied.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: |
             The owner was not found.
@@ -1856,7 +2124,6 @@ paths:
             More details are provided in the response body.
         "500":
           $ref: "#/components/responses/InternalServerError"
-
   /authorizations/search:
     post:
       tags:
@@ -1892,6 +2159,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -1927,16 +2198,9 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
-          description: |
-            The request to create a role was denied.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-
   /roles/{roleKey}:
     get:
       tags:
@@ -1962,6 +2226,8 @@ paths:
                 $ref: "#/components/schemas/RoleItem"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: The role with the given key was not found.
           content:
@@ -2066,12 +2332,60 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           description: An internal error occurred while processing the request.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
+  /mapping-rules:
+    post:
+      tags:
+        - Mapping Rule
+      operationId: createMappingRule
+      summary: Create mapping rule
+      description: |
+        Create a new mapping rule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MappingRuleCreateRequest"
+      responses:
+        "201":
+          description: The mapping rule was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingRuleCreateResponse"
+        "400":
+          description: The mapping rule could not be created.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          description: |
+            The request to create a mapping rule was denied.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The request to create a mapping rule was denied.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /messages/publication:
     post:
       tags:
@@ -2134,11 +2448,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "403":
-          description: Unauthorized
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: Not found
           content:
@@ -2367,13 +2677,7 @@ paths:
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
-          description: |
-            The request to create a user was denied.
-            More details are provided in the response body.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -2412,6 +2716,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -2458,6 +2766,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -2527,6 +2839,10 @@ paths:
           description: >
             The incident search query failed.
             More details are provided in the response body.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -2568,6 +2884,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "404":
           description: >
             The incident with the given key was not found.
@@ -2741,6 +3061,104 @@ paths:
 
 components:
   schemas:
+    TenantCreateRequest:
+      type: object
+      properties:
+        tenantId:
+          type: string
+          description: The unique external tenant ID
+        name:
+          type: string
+          description: The name of the tenant.
+      required:
+        - tenantId
+
+    TenantCreateResponse:
+      type: "object"
+      properties:
+        tenantKey:
+          description: The external key of the created tenant
+          type: "integer"
+          format: "int64"
+
+    TenantUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: The new name of the tenant.
+      required:
+        - name
+
+    TenantUpdateResponse:
+      type: object
+      properties:
+        tenantKey:
+          type: integer
+          description: The unique system-generated internal tenant ID
+          format: int64
+        tenantId:
+          type: string
+          description: The unique external tenant ID
+        name:
+          type: string
+          description: The name of the tenant.
+
+    TenantItem:
+      description: Tenant search response item.
+      type: object
+      properties:
+        tenantKey:
+          type: integer
+          description: The unique system-generated internal tenant ID.
+          format: int64
+        name:
+          type: string
+          description: The tenant name.
+        tenantId:
+          type: string
+          description: The unique external tenant ID.
+        assignedMemberKeys:
+          type: array
+          description: The set of keys of members assigned to the tenant.
+          items:
+            type: integer
+            format: int64
+
+    TenantSearchQueryRequest:
+      description: Tenant search request
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        filter:
+          description: The tenant search filters.
+          allOf:
+            - $ref: "#/components/schemas/TenantFilterRequest"
+
+    TenantFilterRequest:
+      description: Tenant filter request
+      type: object
+      properties:
+        tenantId:
+          type: string
+          description: The ID of the tenant.
+        name:
+          type: string
+          description: The name of the tenant.
+
+    TenantSearchQueryResponse:
+      description: Tenant search response.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          description: The matching tenants.
+          type: array
+          items:
+            $ref: "#/components/schemas/TenantItem"
+
     UserTaskSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -2813,6 +3231,10 @@ components:
         processDefinitionId:
           type: string
           description: The ID of the process definition.
+        elementInstanceKey:
+          type: integer
+          description: The key of the element instance.
+          format: int64
         variables:
           type: array
           items:
@@ -3739,6 +4161,7 @@ components:
             - UNKNOWN
             - IO_MAPPING_ERROR
             - JOB_NO_RETRIES
+            - EXECUTION_LISTENER_NO_RETRIES
             - CONDITION_ERROR
             - EXTRACT_VALUE_ERROR
             - CALLED_ELEMENT_ERROR
@@ -3867,6 +4290,7 @@ components:
         - READ
         - READ_PROCESS_INSTANCE
         - READ_USER_TASK
+        - READ_DECISION_INSTANCE
         - UPDATE
         - UPDATE_PROCESS_INSTANCE
         - UPDATE_USER_TASK
@@ -4100,6 +4524,32 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RoleItem"
+    MappingRuleCreateRequest:
+      type: object
+      properties:
+        claimName:
+          type: string
+          description: The name of the claim to map.
+        claimValue:
+          type: string
+          description: The value of the claim to map.
+      required:
+        - claimName
+        - claimValue
+    MappingRuleCreateResponse:
+      type: object
+      properties:
+        mappingKey:
+          description: The key of the created mapping rule.
+          type: integer
+          format: int64
+        claimName:
+          type: string
+          description: The name of the claim to map.
+        claimValue:
+          type: string
+          description: The value of the claim to map.
+
     TopologyResponse:
       description: The response of a topology request.
       type: object
@@ -5554,6 +6004,12 @@ components:
             $ref: "#/components/schemas/ProblemDetail"
     Unauthorized:
       description: The request lacks valid authentication credentials.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
+    Forbidden:
+      description: Forbidden. The request is not allowed.
       content:
         application/problem+json:
           schema:

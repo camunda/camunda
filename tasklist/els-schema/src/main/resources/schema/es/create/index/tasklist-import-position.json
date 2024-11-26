@@ -19,6 +19,9 @@
       },
       "sequence": {
         "type": "long"
+      },
+      "completed": {
+        "type": "boolean"
       }
     }
   }

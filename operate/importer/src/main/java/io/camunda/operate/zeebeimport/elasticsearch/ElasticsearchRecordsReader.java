@@ -73,8 +73,8 @@ import org.springframework.stereotype.Component;
 @Scope(SCOPE_PROTOTYPE)
 public class ElasticsearchRecordsReader implements RecordsReader {
 
-  public static final Integer MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 5;
-
+  private static final String READ_BATCH_ERROR_MESSAGE =
+      "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchRecordsReader.class);
 
   /** Partition id. */
@@ -184,16 +184,12 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       Integer nextRunDelay = null;
       if (importBatch == null || importBatch.getHits() == null || importBatch.getHits().isEmpty()) {
         if (recordsReaderHolder.hasPartitionCompletedImporting(partitionId)) {
-          final var emptyBatchesAfterPartitionCompletion =
-              recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
+          recordsReaderHolder.incrementEmptyBatches(partitionId, importValueType);
+        }
 
-          if (emptyBatchesAfterPartitionCompletion == MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER) {
-            final ImportPositionEntity currentLatestPosition =
-                importPositionHolder.getLatestScheduledPosition(
-                    importValueType.getAliasTemplate(), partitionId);
-            importPositionHolder.recordLatestLoadedPosition(
-                currentLatestPosition.setCompleted(true));
-          }
+        if (recordsReaderHolder.isRecordReaderCompletedImporting(partitionId, importValueType)) {
+          recordsReaderHolder.recordLatestLoadedPositionAsCompleted(
+              importPositionHolder, importValueType.getAliasTemplate(), partitionId);
         }
         nextRunDelay = readerBackoff;
       } else {
@@ -293,7 +289,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       } else {
-        throw new OperateRuntimeException(readBatchErrorMessage(aliasName, ex.getMessage()), ex);
+        throw new OperateRuntimeException(
+            String.format(READ_BATCH_ERROR_MESSAGE, aliasName, ex.getMessage()), ex);
       }
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
@@ -305,7 +302,8 @@ public class ElasticsearchRecordsReader implements RecordsReader {
         batchSizeThrottle.throttle();
         return readNextBatchBySequence(sequence, lastSequence);
       } else {
-        throw new OperateRuntimeException(readBatchErrorMessage(aliasName, e.getMessage()), e);
+        throw new OperateRuntimeException(
+            String.format(READ_BATCH_ERROR_MESSAGE, aliasName, e.getMessage()), e);
       }
     }
   }
@@ -325,13 +323,15 @@ public class ElasticsearchRecordsReader implements RecordsReader {
       if (ex.getMessage().contains("no such index")) {
         throw new NoSuchIndexException();
       }
-      throw new OperateRuntimeException(readBatchErrorMessage(aliasName, ex.getMessage()), ex);
+      throw new OperateRuntimeException(
+          String.format(READ_BATCH_ERROR_MESSAGE, aliasName, ex.getMessage()), ex);
     } catch (final Exception e) {
       if (e.getMessage().contains("entity content is too long")) {
         batchSizeThrottle.throttle();
         return readNextBatchByPositionAndPartition(positionFrom, positionTo);
       }
-      throw new OperateRuntimeException(readBatchErrorMessage(aliasName, e.getMessage()), e);
+      throw new OperateRuntimeException(
+          String.format(READ_BATCH_ERROR_MESSAGE, aliasName, e.getMessage()), e);
     }
   }
 
@@ -348,12 +348,6 @@ public class ElasticsearchRecordsReader implements RecordsReader {
   @Override
   public BlockingQueue<Callable<Boolean>> getImportJobs() {
     return importJobs;
-  }
-
-  private String readBatchErrorMessage(final String aliasName, final String message) {
-    return String.format(
-        "Exception occurred for alias [%s], while obtaining next Zeebe records batch: %s",
-        aliasName, message);
   }
 
   private ImportBatch readNextBatchBySequence(final Long sequence) throws NoSuchIndexException {

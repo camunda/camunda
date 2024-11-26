@@ -26,6 +26,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>webapps-schema</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>tasklist-webapp</artifactId>
       <scope>test</scope>
     </dependency>
@@ -64,12 +70,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>tasklist-els-schema</artifactId>
       <scope>test</scope>
     </dependency>
 

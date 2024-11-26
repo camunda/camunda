@@ -60,6 +60,10 @@ public final class FilterBuilders {
     return new UserFilter.Builder();
   }
 
+  public static MappingFilter.Builder mapping() {
+    return new MappingFilter.Builder();
+  }
+
   public static RoleFilter.Builder role() {
     return new RoleFilter.Builder();
   }
@@ -108,6 +112,11 @@ public final class FilterBuilders {
 
   public static UserFilter user(final Function<UserFilter.Builder, ObjectBuilder<UserFilter>> fn) {
     return fn.apply(new UserFilter.Builder()).build();
+  }
+
+  public static MappingFilter mapping(
+      final Function<MappingFilter.Builder, ObjectBuilder<MappingFilter>> fn) {
+    return fn.apply(new MappingFilter.Builder()).build();
   }
 
   public static RoleFilter role(final Function<RoleFilter.Builder, ObjectBuilder<RoleFilter>> fn) {

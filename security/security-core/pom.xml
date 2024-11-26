@@ -17,4 +17,11 @@
   <groupId>io.camunda</groupId>
   <artifactId>camunda-security-core</artifactId>
   <name>Camunda Security Core</name>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-annotations</artifactId>
+    </dependency>
+  </dependencies>
 </project>

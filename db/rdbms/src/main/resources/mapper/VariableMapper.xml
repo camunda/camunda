@@ -225,6 +225,6 @@
           VAR_VALUE  = #{value},
           VAR_FULL_VALUE = #{fullValue},
           IS_PREVIEW     = #{isPreview}
-      WHERE VAR_KEY = #{key}
+      WHERE VAR_KEY = #{variableKey}
   </update>
 </mapper>

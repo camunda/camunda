@@ -9,13 +9,17 @@ package io.camunda.tasklist.util;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
 import static io.camunda.tasklist.util.CollectionUtil.throwAwayNullElements;
+import static org.elasticsearch.action.support.IndicesOptions.Option.ALLOW_NO_INDICES;
+import static org.elasticsearch.action.support.IndicesOptions.Option.IGNORE_THROTTLED;
+import static org.elasticsearch.action.support.IndicesOptions.Option.IGNORE_UNAVAILABLE;
+import static org.elasticsearch.action.support.IndicesOptions.WildcardStates.CLOSED;
+import static org.elasticsearch.action.support.IndicesOptions.WildcardStates.OPEN;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.TasklistEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -25,6 +29,7 @@ import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,6 +52,7 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -76,22 +82,43 @@ public abstract class ElasticsearchUtil {
   public static final Function<SearchHit, Long> SEARCH_HIT_ID_TO_LONG =
       (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit, String> SEARCH_HIT_ID_TO_STRING = SearchHit::getId;
+
+  /** IndicesOptions */
+  public static final IndicesOptions LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED =
+      new IndicesOptions(EnumSet.of(IGNORE_UNAVAILABLE, IGNORE_THROTTLED), EnumSet.of(OPEN));
+
+  public static final IndicesOptions LENIENT_EXPAND_OPEN_IGNORE_THROTTLED =
+      new IndicesOptions(
+          EnumSet.of(ALLOW_NO_INDICES, IGNORE_UNAVAILABLE, IGNORE_THROTTLED), EnumSet.of(OPEN));
+  public static final IndicesOptions STRICT_EXPAND_OPEN_CLOSED_IGNORE_THROTTLED =
+      new IndicesOptions(EnumSet.of(ALLOW_NO_INDICES, IGNORE_THROTTLED), EnumSet.of(OPEN, CLOSED));
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
-  public static SearchRequest createSearchRequest(TemplateDescriptor template) {
+  public static SearchRequest createSearchRequest(final TemplateDescriptor template) {
     return createSearchRequest(template, QueryType.ALL);
   }
 
   public static SearchHit getRawResponseWithTenantCheck(
       final String id,
-      IndexDescriptor descriptor,
-      QueryType queryType,
-      TenantAwareElasticsearchClient tenantAwareClient)
+      final IndexDescriptor descriptor,
+      final QueryType queryType,
+      final TenantAwareElasticsearchClient tenantAwareClient)
+      throws IOException {
+    return getRawResponseWithTenantCheck(
+        id, whereToSearch(descriptor, queryType), descriptor.getIndexName(), tenantAwareClient);
+  }
+
+  public static SearchHit getRawResponseWithTenantCheck(
+      final String id,
+      final String index,
+      final String entityName,
+      final TenantAwareElasticsearchClient tenantAwareClient)
       throws IOException {
     final QueryBuilder query = idsQuery().addIds(id);
 
     final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(descriptor, queryType)
+        ElasticsearchUtil.createSearchRequest(index)
             .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
 
     final SearchResponse response = tenantAwareClient.search(request);
@@ -99,10 +126,9 @@ public abstract class ElasticsearchUtil {
       return response.getHits().getHits()[0];
     } else if (response.getHits().getTotalHits().value > 1) {
       throw new NotFoundException(
-          String.format("Unique %s with id %s was not found", descriptor.getIndexName(), id));
+          String.format("Unique %s with id %s was not found", entityName, id));
     } else {
-      throw new NotFoundException(
-          String.format("%s with id %s was not found", descriptor.getIndexName(), id));
+      throw new NotFoundException(String.format("%s with id %s was not found", entityName, id));
     }
   }
 
@@ -157,7 +183,11 @@ public abstract class ElasticsearchUtil {
   /* CREATE QUERIES */
 
   public static SearchRequest createSearchRequest(IndexDescriptor descriptor, QueryType queryType) {
-    return new SearchRequest(whereToSearch(descriptor, queryType));
+    return createSearchRequest(whereToSearch(descriptor, queryType));
+  }
+
+  public static SearchRequest createSearchRequest(final String index) {
+    return new SearchRequest(index);
   }
 
   public static String whereToSearch(IndexDescriptor descriptor, QueryType queryType) {
@@ -250,7 +280,9 @@ public abstract class ElasticsearchUtil {
   /* EXECUTE QUERY */
 
   public static void processBulkRequest(
-      RestHighLevelClient esClient, BulkRequest bulkRequest, RefreshPolicy refreshPolicy)
+      final RestHighLevelClient esClient,
+      BulkRequest bulkRequest,
+      final RefreshPolicy refreshPolicy)
       throws PersistenceException {
     if (bulkRequest.requests().size() > 0) {
       try {
@@ -350,7 +382,7 @@ public abstract class ElasticsearchUtil {
     return entity;
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       SearchRequest searchRequest,
       Class<T> clazz,
       ObjectMapper objectMapper,
@@ -359,7 +391,7 @@ public abstract class ElasticsearchUtil {
     return scroll(searchRequest, clazz, objectMapper, esClient, null, null);
   }
 
-  public static <T extends TasklistEntity> List<T> scroll(
+  public static <T> List<T> scroll(
       SearchRequest searchRequest,
       Class<T> clazz,
       ObjectMapper objectMapper,
@@ -514,8 +546,8 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
-  public static Set<Long> scrollKeysToSet(SearchRequest request, RestHighLevelClient esClient)
-      throws IOException {
+  public static Set<Long> scrollKeysToSet(
+      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
     final Set<Long> result = new HashSet<>();
     final Consumer<SearchHits> collectIds =
         (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));

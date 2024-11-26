@@ -26,7 +26,7 @@ public record RoleSort(List<FieldSorting> orderings) implements SortOption {
       implements ObjectBuilder<RoleSort> {
 
     public Builder roleKey() {
-      currentOrdering = new FieldSorting("key", null);
+      currentOrdering = new FieldSorting("roleKey", null);
       return this;
     }
 

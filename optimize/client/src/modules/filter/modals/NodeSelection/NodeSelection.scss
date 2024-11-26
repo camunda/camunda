@@ -1,21 +1,15 @@
-@use '@carbon/styles/scss/spacing';
-
 .NodeSelection {
   .cds--modal-container {
     height: 100%;
-
-    .filterContentContainer {
-      grid-template-rows: auto auto 1fr;
-      height: 100%;
-    }
   }
 
   .modalContent {
     display: flex;
     flex-direction: column;
 
+    .instructions,
     .diagramActions {
-      margin-bottom: spacing.$spacing-06;
+      margin-bottom: var(--cds-spacing-04);
     }
 
     .diagramContainer {

@@ -10,7 +10,6 @@ package io.camunda.exporter.tasks;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
-import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository.NoopArchiverRepository;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
@@ -38,8 +37,7 @@ final class BackgroundTaskManagerTest {
             LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
             executor,
             // return unfinished futures to have a deterministic count of submitted tasks
-            List.of(CompletableFuture::new, CompletableFuture::new),
-            new ArchiverConfiguration());
+            List.of(CompletableFuture::new, CompletableFuture::new));
 
     @Test
     void shouldNotResubmitTasksOnStart() {
@@ -95,8 +93,7 @@ final class BackgroundTaskManagerTest {
             repository,
             LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
             executor,
-            List.of(),
-            new ArchiverConfiguration());
+            List.of());
 
     @Test
     void shouldCloseExecutorOnClose() {

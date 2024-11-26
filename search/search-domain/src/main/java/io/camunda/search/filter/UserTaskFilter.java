@@ -30,6 +30,7 @@ public record UserTaskFilter(
     List<Operation<String>> candidateGroupOperations,
     List<String> tenantIds,
     List<VariableValueFilter> variableFilters,
+    List<Long> elementInstanceKeys,
     String type)
     implements FilterBase {
 
@@ -46,6 +47,7 @@ public record UserTaskFilter(
     private List<Operation<String>> candidateGroupOperations;
     private List<String> tenantIds;
     private List<VariableValueFilter> variableFilters;
+    private List<Long> elementInstanceKeys;
     private String type;
 
     public Builder userTaskKeys(final Long... values) {
@@ -176,6 +178,15 @@ public record UserTaskFilter(
       return this;
     }
 
+    public Builder elementInstanceKeys(final Long... values) {
+      return elementInstanceKeys(collectValuesAsList(values));
+    }
+
+    public Builder elementInstanceKeys(final List<Long> values) {
+      elementInstanceKeys = addValuesToList(elementInstanceKeys, values);
+      return this;
+    }
+
     public Builder type(final String value) {
       type = value;
       return this;
@@ -196,6 +207,7 @@ public record UserTaskFilter(
           Objects.requireNonNullElse(candidateGroupOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
           Objects.requireNonNullElse(variableFilters, Collections.emptyList()),
+          Objects.requireNonNullElse(elementInstanceKeys, Collections.emptyList()),
           type);
     }
   }

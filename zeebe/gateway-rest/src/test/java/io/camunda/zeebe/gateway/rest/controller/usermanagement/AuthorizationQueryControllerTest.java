@@ -77,7 +77,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
           .items(
               List.of(
                   new AuthorizationEntity(
-                      "1",
+                      1L,
                       OwnerTypeEnum.USER.getValue(),
                       ResourceTypeEnum.PROCESS_DEFINITION.getValue(),
                       List.of(new Permission(PermissionType.CREATE, Set.of("2"))))))

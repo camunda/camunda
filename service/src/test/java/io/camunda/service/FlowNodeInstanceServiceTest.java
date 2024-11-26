@@ -65,11 +65,13 @@ public final class FlowNodeInstanceServiceTest {
     // given
     final var entity = mock(FlowNodeInstanceEntity.class);
     final var processId = "processId";
-    when(entity.bpmnProcessId()).thenReturn(processId);
+    when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchFlowNodeInstances(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     when(securityContextProvider.isAuthorized(
-            processId, authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+            processId,
+            authentication,
+            Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .thenReturn(true);
     // when
     final var searchQueryResult = services.getByKey(1L);
@@ -83,11 +85,13 @@ public final class FlowNodeInstanceServiceTest {
     // given
     final var entity = mock(FlowNodeInstanceEntity.class);
     final var processId = "processId";
-    when(entity.bpmnProcessId()).thenReturn(processId);
+    when(entity.processDefinitionId()).thenReturn(processId);
     when(client.searchFlowNodeInstances(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     when(securityContextProvider.isAuthorized(
-            processId, authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+            processId,
+            authentication,
+            Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .thenReturn(false);
     // when
     final Executable executeGetByKey = () -> services.getByKey(1L);

@@ -7,6 +7,7 @@
  */
 package io.camunda.application.commons.service;
 
+import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
@@ -15,6 +16,7 @@ import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
+import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
@@ -33,6 +35,7 @@ import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.FormServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
+import io.camunda.service.MappingServices;
 import io.camunda.service.MessageServices;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.ProcessInstanceServices;
@@ -190,7 +193,10 @@ public class CamundaServicesConfiguration {
   public DocumentServices documentServices(
       final BrokerClient brokerClient, final SecurityContextProvider securityContextProvider) {
     return new DocumentServices(
-        brokerClient, securityContextProvider, null, new SimpleDocumentStoreRegistry());
+        brokerClient,
+        securityContextProvider,
+        null,
+        new SimpleDocumentStoreRegistry(new EnvironmentConfigurationLoader()));
   }
 
   @Bean
@@ -232,5 +238,13 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final FormSearchClient formSearchClient) {
     return new FormServices(brokerClient, securityContextProvider, formSearchClient, null);
+  }
+
+  @Bean
+  public MappingServices mappingServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final MappingSearchClient mappingSearchClient) {
+    return new MappingServices(brokerClient, securityContextProvider, mappingSearchClient, null);
   }
 }

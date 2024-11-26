@@ -54,8 +54,8 @@ public class ImportPositionHolderElasticSearch extends ImportPositionHolderAbstr
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
-  public ImportPositionEntity getLatestLoadedPosition(String aliasTemplate, int partitionId)
-      throws IOException {
+  public ImportPositionEntity getLatestLoadedPosition(
+      final String aliasTemplate, final int partitionId) throws IOException {
     final QueryBuilder queryBuilder =
         joinWithAnd(
             termQuery(ImportPositionIndex.ALIAS_NAME, aliasTemplate),
@@ -121,6 +121,7 @@ public class ImportPositionHolderElasticSearch extends ImportPositionHolderAbstr
       updateFields.put(ImportPositionIndex.POSITION, position.getPosition());
       updateFields.put(ImportPositionIndex.FIELD_INDEX_NAME, position.getIndexName());
       updateFields.put(ImportPositionIndex.SEQUENCE, position.getSequence());
+      updateFields.put(ImportPositionIndex.COMPLETED, position.isCompleted());
 
       final UpdateRequest updateRequest =
           new UpdateRequest()

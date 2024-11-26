@@ -316,7 +316,7 @@ public class DeploymentStateTest {
   @Test
   public void shouldReturnTrueWhenCheckingIfAllDeploymentsAreStored() {
     // given
-    deploymentState.markALlDeploymentsAsStored();
+    deploymentState.markAllDeploymentsAsStored();
 
     // when
     final var hasStoredAllDeployments = deploymentState.hasStoredAllDeployments();

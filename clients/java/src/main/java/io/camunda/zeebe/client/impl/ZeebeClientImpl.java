@@ -36,6 +36,7 @@ import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
@@ -97,6 +98,7 @@ import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
@@ -782,6 +784,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final DocumentReferenceResponse documentReference) {
     return new DeleteDocumentCommandImpl(
         documentReference.getDocumentId(), documentReference.getStoreId(), httpClient, config);
+  }
+
+  @Override
+  public CreateTenantCommandStep1 newCreateTenantCommand() {
+    return new CreateTenantCommandImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

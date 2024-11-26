@@ -78,7 +78,7 @@ class DecisionInstanceServiceTest {
     when(securityContextProvider.isAuthorized(
             decisionDefinitionKey,
             authentication,
-            Authorization.of(a -> a.decisionDefinition().readInstance())))
+            Authorization.of(a -> a.decisionDefinition().readDecisionInstance())))
         .thenReturn(true);
 
     // when
@@ -130,7 +130,7 @@ class DecisionInstanceServiceTest {
     when(securityContextProvider.isAuthorized(
             decisionDefinitionKey,
             authentication,
-            Authorization.of(a -> a.decisionDefinition().readInstance())))
+            Authorization.of(a -> a.decisionDefinition().readDecisionInstance())))
         .thenReturn(false);
 
     // when
@@ -140,6 +140,6 @@ class DecisionInstanceServiceTest {
     final var exception = assertThrows(ForbiddenException.class, executable);
     assertThat(exception.getMessage())
         .isEqualTo(
-            "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'DECISION_DEFINITION'");
+            "Unauthorized to perform operation 'READ_DECISION_INSTANCE' on resource 'DECISION_DEFINITION'");
   }
 }
