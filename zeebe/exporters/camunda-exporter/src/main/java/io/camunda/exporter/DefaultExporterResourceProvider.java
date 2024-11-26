@@ -87,6 +87,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
@@ -166,7 +167,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
             entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)),
             entry(
-                ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)));
+                ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)),
+            entry(
+                PersistentWebSessionIndexDescriptor.class,
+                new PersistentWebSessionIndexDescriptor(globalPrefix, isElasticsearch)));
 
     final var processCache =
         new ExporterEntityCacheImpl<>(
