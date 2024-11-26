@@ -161,7 +161,8 @@ public final class BpmnProcessors {
                 subscriptionCommandSender,
                 processingState,
                 bpmnBehaviors,
-                writers))
+                writers,
+                transientState))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.DELETE,

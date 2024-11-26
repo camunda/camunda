@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -21,6 +22,8 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -43,11 +46,13 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
           + "but it is already closing";
 
   private final ProcessMessageSubscriptionState subscriptionState;
+  private final TransientPendingSubscriptionState transientState;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
 
   private final EventHandle eventHandle;
 
@@ -56,13 +61,16 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       final SubscriptionCommandSender subscriptionCommandSender,
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
-      final Writers writers) {
+      final Writers writers,
+      final TransientPendingSubscriptionState transientState) {
     this.subscriptionState = subscriptionState;
+    this.transientState = transientState;
     this.subscriptionCommandSender = subscriptionCommandSender;
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
     eventHandle =
         new EventHandle(
             processingState.getKeyGenerator(),
@@ -108,6 +116,19 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
         stateWriter.appendFollowUpEvent(
             subscription.getKey(), ProcessMessageSubscriptionIntent.CORRELATED, record);
+
+        // update transient state in a side-effect to ensure that these changes only take effect
+        // after
+        // the command has been successfully processed
+        sideEffectWriter.appendSideEffect(
+            () -> {
+              transientState.remove(
+                  new PendingSubscription(
+                      subscriptionRecord.getElementInstanceKey(),
+                      subscriptionRecord.getMessageName(),
+                      subscriptionRecord.getTenantId()));
+              return true;
+            });
 
         final var catchEvent =
             getCatchEvent(elementInstance.getValue(), record.getElementIdBuffer());
