@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {UserDto} from 'modules/api/getUser';
-import {mockGetRequest} from './mockRequest';
+import {MeDto} from 'modules/api/v2/authentication/me';
+import {mockGetRequest} from '../mockRequest';
 
-const mockGetUser = () => mockGetRequest<UserDto>('/api/authentications/user');
+const mockMe = () => mockGetRequest<MeDto>('/v2/me');
 
-export {mockGetUser};
+export {mockMe};
