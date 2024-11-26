@@ -11,7 +11,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.ThrowableAssert.catchThrowableOfType;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.client.ZeebeClient;
@@ -39,6 +39,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -258,11 +259,15 @@ public class UserTaskListenersTest {
             "Command 'COMPLETE' rejected with code 'INVALID_STATE': Completion of the User Task with key '%s' was rejected by Task Listener",
             userTaskKey);
 
-    //     verify the rejection
-    final ProblemException problemException =
-        catchThrowableOfType(ProblemException.class, completeUserTaskFuture::join);
-    assertThat(problemException.details().getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
-    assertThat(problemException.details().getDetail()).isEqualTo(rejectionReason);
+    // verify the rejection
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(completeUserTaskFuture::join)
+        .satisfies(
+            ex -> {
+              assertThat(ex.details().getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
+              assertThat(ex.details().getDetail()).isEqualTo(rejectionReason);
+              assertThat(ex.details().getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+            });
 
     // verify the expected sequence of User Task intents
     assertUserTaskIntentsSequence(
