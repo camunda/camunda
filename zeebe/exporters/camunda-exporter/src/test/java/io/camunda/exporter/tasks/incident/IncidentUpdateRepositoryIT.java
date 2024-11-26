@@ -13,6 +13,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -21,6 +23,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
@@ -34,6 +37,8 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
@@ -65,6 +70,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.mockito.Mockito;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -72,6 +80,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @AutoCloseResources
 abstract sealed class IncidentUpdateRepositoryIT {
+  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateRepositoryIT.class);
+
   private static final int PARTITION_ID = 1;
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   protected final PostImporterQueueTemplate postImporterQueueTemplate;
@@ -115,12 +125,16 @@ abstract sealed class IncidentUpdateRepositoryIT {
       final String index, final String field, final List<String> terms, final Class<T> documentType)
       throws IOException;
 
+  protected abstract void assertScrollCleared();
+
   static final class ElasticsearchIT extends IncidentUpdateRepositoryIT {
     @Container
     private static final ElasticsearchContainer CONTAINER =
         TestSearchContainers.createDefeaultElasticsearchContainer();
 
     @AutoCloseResource private final RestClientTransport transport = createTransport();
+    private final ElasticsearchAsyncClient client =
+        Mockito.spy(new ElasticsearchAsyncClient(transport));
 
     public ElasticsearchIT() {
       super("http://" + CONTAINER.getHttpHostAddress(), true);
@@ -135,8 +149,9 @@ abstract sealed class IncidentUpdateRepositoryIT {
           listViewTemplate.getAlias(),
           flowNodeInstanceTemplate.getAlias(),
           operationTemplate.getAlias(),
-          new ElasticsearchAsyncClient(transport),
-          Runnable::run);
+          client,
+          Runnable::run,
+          LOGGER);
     }
 
     @Override
@@ -152,6 +167,16 @@ abstract sealed class IncidentUpdateRepositoryIT {
       return client.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
           .map(Hit::source)
           .toList();
+    }
+
+    @Override
+    protected void assertScrollCleared() {
+      final var inOrder = Mockito.inOrder(client);
+      inOrder
+          .verify(client, Mockito.times(1))
+          .search(Mockito.any(SearchRequest.class), Mockito.any(Class.class));
+      inOrder.verify(client, Mockito.times(1)).clearScroll(Mockito.any(ClearScrollRequest.class));
+      inOrder.verifyNoMoreInteractions();
     }
 
     private RestClientTransport createTransport() {
@@ -179,7 +204,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
     }
 
     @Test
-    void shouldReturnIncidentByIds() throws IOException, PersistenceException {
+    void shouldReturnIncidentByIds() throws PersistenceException {
       // given
       final var repository = createRepository();
       final var expected = createIncident(1L);
@@ -663,6 +688,117 @@ abstract sealed class IncidentUpdateRepositoryIT {
 
       // then
       assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(true);
+    }
+  }
+
+  @Nested
+  final class GetFlowNodesInListViewIT {
+    @Test
+    void shouldGetFlowNodes() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
+          "0");
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("2"),
+          "0");
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
+
+      // then
+      assertThat(flowNodes)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
+          .containsExactly(
+              new Document("1", listViewTemplate.getFullQualifiedName()),
+              new Document("2", listViewTemplate.getFullQualifiedName()));
+    }
+
+    // Unfortunately there is no API in ES/OS to list open search scrolls, so we can only use
+    // Mockito to verify invocation order
+    @Test
+    void shouldClearScrollOnFinish() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
+          "0");
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION).setId("2"),
+          "0");
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
+
+      // then
+      assertThat(flowNodes).succeedsWithin(REQUEST_TIMEOUT);
+      assertScrollCleared();
+    }
+
+    @Test
+    void shouldNotGetNonFlowNodes() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
+          "0");
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION).setId("2"),
+          "0");
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
+
+      // then
+      assertThat(flowNodes)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
+          .containsExactly(new Document("1", listViewTemplate.getFullQualifiedName()));
+    }
+
+    @Test
+    void shouldNotGetFlowNodesWithOtherKeys() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
+          "0");
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("2"),
+          "0");
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1"));
+
+      // then
+      assertThat(flowNodes)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
+          .containsExactly(new Document("1", listViewTemplate.getFullQualifiedName()));
+    }
+
+    private FlowNodeInstanceForListViewEntity createFlowNodeInstance(final String joinRelation) {
+      final var entity = new FlowNodeInstanceForListViewEntity();
+      entity.setJoinRelation(new ListViewJoinRelation(joinRelation).setParent(0L));
+      return entity;
     }
   }
 }
