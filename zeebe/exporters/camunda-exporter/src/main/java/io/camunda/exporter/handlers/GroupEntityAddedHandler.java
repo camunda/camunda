@@ -44,7 +44,7 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupEntity, Group
   @Override
   public List<String> generateIds(final Record<GroupRecordValue> record) {
     final var groupRecord = record.getValue();
-    return List.of(GroupEntity.getMemberKey(groupRecord.getGroupKey(), groupRecord.getEntityKey()));
+    return List.of(GroupEntity.getChildKey(groupRecord.getGroupKey(), groupRecord.getEntityKey()));
   }
 
   @Override
@@ -56,13 +56,13 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupEntity, Group
   public void updateEntity(final Record<GroupRecordValue> record, final GroupEntity entity) {
     final GroupRecordValue value = record.getValue();
     final var joinRelation = GroupIndex.joinRelationFactory.createChild(value.getGroupKey());
-    entity.setEntityKey(value.getEntityKey()).setJoin(joinRelation);
+    entity.setMemberKey(value.getEntityKey()).setJoin(joinRelation);
   }
 
   @Override
   public void flush(final GroupEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.addWithRouting(indexName, entity, String.valueOf(entity.getJoin().getParent()));
+    batchRequest.addWithRouting(indexName, entity, String.valueOf(entity.getJoin().parent()));
   }
 
   @Override

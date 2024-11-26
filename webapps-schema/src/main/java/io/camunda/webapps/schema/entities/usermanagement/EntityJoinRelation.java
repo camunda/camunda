@@ -7,45 +7,25 @@
  */
 package io.camunda.webapps.schema.entities.usermanagement;
 
-public class EntityJoinRelation {
-
-  private String name;
-  private Long parent;
-
-  public String getName() {
-    return name;
-  }
-
-  public EntityJoinRelation setName(final String name) {
-    this.name = name;
-    return this;
-  }
-
-  public Long getParent() {
-    return parent;
-  }
-
-  public EntityJoinRelation setParent(final Long parent) {
-    this.parent = parent;
-    return this;
-  }
+public record EntityJoinRelation(String name, Long parent) {
 
   public static class EntityJoinRelationFactory {
 
-    private IdentityJoinRelationshipType parent;
-    private IdentityJoinRelationshipType child;
+    private final IdentityJoinRelationshipType parent;
+    private final IdentityJoinRelationshipType child;
 
-    public EntityJoinRelationFactory(final IdentityJoinRelationshipType parent, final IdentityJoinRelationshipType child) {
+    public EntityJoinRelationFactory(
+        final IdentityJoinRelationshipType parent, final IdentityJoinRelationshipType child) {
       this.parent = parent;
       this.child = child;
     }
 
     public EntityJoinRelation createParent() {
-      return new EntityJoinRelation().setName(parent.getType());
+      return new EntityJoinRelation(parent.getType(), null);
     }
 
     public EntityJoinRelation createChild(final long parentKey) {
-      return new EntityJoinRelation().setName(child.getType()).setParent(parentKey);
+      return new EntityJoinRelation(child.getType(), parentKey);
     }
   }
 
