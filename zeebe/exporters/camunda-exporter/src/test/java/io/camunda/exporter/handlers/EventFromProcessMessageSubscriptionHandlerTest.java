@@ -112,10 +112,10 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
     final int elementInstanceKey = 456;
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
-    final String errorMessage = "errorMessage";
     final String tenantId = "tenantId";
     final String messageName = "messageName";
     final String correlationKey = "correlationKey";
+    final Intent intent = ProcessMessageSubscriptionIntent.CREATED;
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder()
             .withProcessInstanceKey(processInstanceKey)
@@ -130,7 +130,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
         factory.generateRecord(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             r ->
-                r.withIntent(ProcessMessageSubscriptionIntent.CREATED)
+                r.withIntent(intent)
                     .withKey(recordKey)
                     .withPartitionId(partitionId)
                     .withPosition(position)
@@ -146,7 +146,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
     assertThat(entity.getKey()).isEqualTo(recordKey);
     assertThat(entity.getPartitionId()).isEqualTo(partitionId);
     assertThat(entity.getEventSourceType()).isEqualTo(EventSourceType.PROCESS_MESSAGE_SUBSCRIPTION);
-    assertThat(entity.getEventType()).isEqualTo(EventType.CREATED);
+    assertThat(entity.getEventType()).isEqualTo(EventType.fromZeebeIntent(intent.name()));
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.getFlowNodeInstanceKey()).isEqualTo(elementInstanceKey);
     assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
