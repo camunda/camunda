@@ -16,6 +16,7 @@ import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.test.upgrade.client.ElasticsearchSchemaTestClient;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +72,11 @@ public class UpgradeElasticsearchSchemaIT
         expectedTemplates.keySet());
     final Map<String, TemplateMapping> newTemplates = newDatabaseSchemaClient.getTemplates();
     LOG.info("Actual templates size: {}, names: {}", newTemplates.size(), newTemplates.keySet());
-    assertThat(newTemplates).isEqualToComparingFieldByFieldRecursively(expectedTemplates);
+    for (Entry<String, TemplateMapping> stringTemplateMappingEntry :
+        newDatabaseSchemaClient.getTemplates().entrySet()) {
+      assertThat(expectedTemplates.get(stringTemplateMappingEntry.getKey()).toString())
+          .isEqualTo(stringTemplateMappingEntry.getValue().toString());
+    }
   }
 
   @Override

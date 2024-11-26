@@ -9,12 +9,12 @@ package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
 import static io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO.DEFAULT_PAGE_SIZE;
 
-import io.camunda.tasklist.entities.TaskImplementation;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.queries.DateFilter;
 import io.camunda.tasklist.queries.RangeValueFilter;
 import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;

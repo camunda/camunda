@@ -11,11 +11,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.DraftTaskVariableEntity;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
-import io.camunda.tasklist.entities.TaskVariableEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
@@ -35,6 +31,10 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -108,7 +108,7 @@ public class VariableService {
               if (!variableEntity.getFullValue().equals(draftVariable.getValue())) {
                 toPersist.put(
                     draftVariable.getName(),
-                    DraftTaskVariableEntity.createFrom(
+                    VariableService.createDraftVariableFrom(
                         // draft variable will have the same Id as original variable
                         variableEntity.getId(),
                         task,
@@ -119,7 +119,7 @@ public class VariableService {
             } else {
               toPersist.put(
                   draftVariable.getName(),
-                  DraftTaskVariableEntity.createFrom(
+                  VariableService.createDraftVariableFrom(
                       task,
                       draftVariable.getName(),
                       draftVariable.getValue(),
@@ -157,11 +157,11 @@ public class VariableService {
     final List<VariableEntity> taskVariables =
         getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task));
 
-    final Map<String, TaskVariableEntity> finalVariablesMap = new HashMap<>();
+    final Map<String, SnapshotTaskVariableEntity> finalVariablesMap = new HashMap<>();
     taskVariables.forEach(
         variable ->
             finalVariablesMap.put(
-                variable.getName(), TaskVariableEntity.createFrom(taskId, variable)));
+                variable.getName(), createSnapshotVariableFrom(taskId, variable)));
 
     // Snapshot Process Variable at the moment the task was completed as a Task Variable
     final Map<String, VariableListViewEntity> finalVariablesListViewMap = new HashMap<>();
@@ -184,14 +184,14 @@ public class VariableService {
               draftTaskVariable ->
                   finalVariablesMap.put(
                       draftTaskVariable.getName(),
-                      TaskVariableEntity.createFrom(taskId, draftTaskVariable)));
+                      createSnapshotVariableFrom(taskId, draftTaskVariable)));
     }
 
     // update/append with variables passed for task completion
     for (final VariableInputDTO var : changedVariables) {
       finalVariablesMap.put(
           var.getName(),
-          TaskVariableEntity.createFrom(
+          createSnapshotVariableFrom(
               task.getTenantId(),
               taskId,
               var.getName(),
@@ -437,7 +437,7 @@ public class VariableService {
                             nameToDraftVariable.get(draftVariableName))));
       }
       case COMPLETED -> {
-        final Map<String, List<TaskVariableEntity>> variablesByTaskIds =
+        final Map<String, List<SnapshotTaskVariableEntity>> variablesByTaskIds =
             variableStore.getTaskVariablesPerTaskId(requests);
         if (variablesByTaskIds.size() > 0) {
           vars.addAll(
@@ -466,7 +466,7 @@ public class VariableService {
       case CREATED ->
           vars.addAll(VariableDTO.createFrom(getRuntimeVariablesDTOPerTaskId(requests)));
       case COMPLETED -> {
-        final Map<String, List<TaskVariableEntity>> variablesByTaskIds =
+        final Map<String, List<SnapshotTaskVariableEntity>> variablesByTaskIds =
             variableStore.getTaskVariablesPerTaskId(requests);
         if (variablesByTaskIds.size() > 0) {
           vars.addAll(
@@ -527,7 +527,7 @@ public class VariableService {
       // then in task variables (for completed tasks)
       try {
         // 2nd search in runtime variables
-        final TaskVariableEntity taskVariable =
+        final SnapshotTaskVariableEntity taskVariable =
             variableStore.getTaskVariable(variableId, fieldNames);
         return VariableDTO.createFrom(taskVariable);
       } catch (final NotFoundException ex2) {
@@ -553,7 +553,7 @@ public class VariableService {
               () -> {
                 try {
                   // 3rd search in task variables (for completed tasks)
-                  final TaskVariableEntity taskVariable =
+                  final SnapshotTaskVariableEntity taskVariable =
                       variableStore.getTaskVariable(variableId, Collections.emptySet());
                   return VariableResponse.createFrom(taskVariable);
                 } catch (final NotFoundException ex2) {
@@ -573,5 +573,106 @@ public class VariableService {
    */
   public void removeVariableByFlowNodeInstanceId(final String flowNodeInstanceId) {
     listViewStore.removeVariableByFlowNodeInstanceId(flowNodeInstanceId);
+  }
+
+  public static String getDraftVariableId(final String idPrefix, final String name) {
+    return String.format("%s-%s", idPrefix, name);
+  }
+
+  public static String getSnapshotVariableId(final String idPrefix, final String name) {
+    return String.format("%s-%s", idPrefix, name);
+  }
+
+  private static DraftTaskVariableEntity createDraftVariableFrom(
+      final TaskEntity taskEntity,
+      final String name,
+      final String value,
+      final int variableSizeThreshold) {
+    return completeVariableSetup(
+        new DraftTaskVariableEntity().setId(getDraftVariableId(taskEntity.getId(), name)),
+        taskEntity,
+        name,
+        value,
+        variableSizeThreshold);
+  }
+
+  private static DraftTaskVariableEntity createDraftVariableFrom(
+      final String draftVariableId,
+      final TaskEntity taskEntity,
+      final String name,
+      final String value,
+      final int variableSizeThreshold) {
+    return completeVariableSetup(
+        new DraftTaskVariableEntity().setId(draftVariableId),
+        taskEntity,
+        name,
+        value,
+        variableSizeThreshold);
+  }
+
+  private static DraftTaskVariableEntity completeVariableSetup(
+      final DraftTaskVariableEntity entity,
+      final TaskEntity taskEntity,
+      final String name,
+      final String value,
+      final int variableSizeThreshold) {
+
+    entity.setTaskId(taskEntity.getId()).setName(name).setTenantId(taskEntity.getTenantId());
+    if (value.length() > variableSizeThreshold) {
+      // store preview
+      entity.setValue(value.substring(0, variableSizeThreshold));
+      entity.setIsPreview(true);
+    } else {
+      entity.setValue(value);
+    }
+    entity.setFullValue(value);
+    return entity;
+  }
+
+  public static SnapshotTaskVariableEntity createSnapshotVariableFrom(
+      final String tenantId,
+      final String taskId,
+      final String name,
+      final String value,
+      final int variableSizeThreshold) {
+    final SnapshotTaskVariableEntity entity =
+        new SnapshotTaskVariableEntity()
+            .setId(getSnapshotVariableId(taskId, name))
+            .setTaskId(taskId)
+            .setName(name);
+    if (value.length() > variableSizeThreshold) {
+      // store preview
+      entity.setValue(value.substring(0, variableSizeThreshold));
+      entity.setIsPreview(true);
+    } else {
+      entity.setValue(value);
+    }
+    entity.setFullValue(value);
+    entity.setTenantId(tenantId);
+    return entity;
+  }
+
+  public static SnapshotTaskVariableEntity createSnapshotVariableFrom(
+      final String taskId, final VariableEntity variableEntity) {
+    return new SnapshotTaskVariableEntity()
+        .setId(getSnapshotVariableId(taskId, variableEntity.getName()))
+        .setTaskId(taskId)
+        .setName(variableEntity.getName())
+        .setValue(variableEntity.getValue())
+        .setIsPreview(variableEntity.getIsPreview())
+        .setFullValue(variableEntity.getFullValue())
+        .setTenantId(variableEntity.getTenantId());
+  }
+
+  public static SnapshotTaskVariableEntity createSnapshotVariableFrom(
+      final String taskId, final DraftTaskVariableEntity draftTaskVariableEntity) {
+    return new SnapshotTaskVariableEntity()
+        .setId(getSnapshotVariableId(taskId, draftTaskVariableEntity.getName()))
+        .setTaskId(taskId)
+        .setName(draftTaskVariableEntity.getName())
+        .setValue(draftTaskVariableEntity.getValue())
+        .setIsPreview(draftTaskVariableEntity.getIsPreview())
+        .setFullValue(draftTaskVariableEntity.getFullValue())
+        .setTenantId(draftTaskVariableEntity.getTenantId());
   }
 }

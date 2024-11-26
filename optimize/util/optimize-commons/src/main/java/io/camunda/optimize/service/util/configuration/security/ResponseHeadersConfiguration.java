@@ -8,10 +8,16 @@
 package io.camunda.optimize.service.util.configuration.security;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.net.HttpHeaders;
 import io.camunda.optimize.util.SuppressionConstants;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class ResponseHeadersConfiguration {
+
+  private static final String HEADER_DELIMITER = "; ";
 
   @JsonProperty("HSTS.max-age")
   private Long httpStrictTransportSecurityMaxAge;
@@ -19,13 +25,13 @@ public class ResponseHeadersConfiguration {
   @JsonProperty("HSTS.includeSubDomains")
   private Boolean httpStrictTransportSecurityIncludeSubdomains;
 
-  @JsonProperty("X-XSS-Protection")
+  @JsonProperty(HttpHeaders.X_XSS_PROTECTION)
   private String xsssProtection;
 
-  @JsonProperty("X-Content-Type-Options")
+  @JsonProperty(HttpHeaders.X_CONTENT_TYPE_OPTIONS)
   private Boolean xContentTypeOptions;
 
-  @JsonProperty("Content-Security-Policy")
+  @JsonProperty(HttpHeaders.CONTENT_SECURITY_POLICY)
   private String contentSecurityPolicy;
 
   public ResponseHeadersConfiguration() {}
@@ -61,7 +67,7 @@ public class ResponseHeadersConfiguration {
     return xsssProtection;
   }
 
-  @JsonProperty("X-XSS-Protection")
+  @JsonProperty(HttpHeaders.X_XSS_PROTECTION)
   public void setXsssProtection(final String xsssProtection) {
     this.xsssProtection = xsssProtection;
   }
@@ -70,7 +76,7 @@ public class ResponseHeadersConfiguration {
     return xContentTypeOptions;
   }
 
-  @JsonProperty("X-Content-Type-Options")
+  @JsonProperty(HttpHeaders.X_CONTENT_TYPE_OPTIONS)
   public void setXContentTypeOptions(final Boolean xContentTypeOptions) {
     this.xContentTypeOptions = xContentTypeOptions;
   }
@@ -79,7 +85,7 @@ public class ResponseHeadersConfiguration {
     return contentSecurityPolicy;
   }
 
-  @JsonProperty("Content-Security-Policy")
+  @JsonProperty(HttpHeaders.CONTENT_SECURITY_POLICY)
   public void setContentSecurityPolicy(final String contentSecurityPolicy) {
     this.contentSecurityPolicy = contentSecurityPolicy;
   }
@@ -111,5 +117,36 @@ public class ResponseHeadersConfiguration {
         + ", contentSecurityPolicy="
         + getContentSecurityPolicy()
         + ")";
+  }
+
+  public Map<String, String> getHeadersWithValues() {
+    final Map<String, String> headers = new HashMap<>();
+
+    final List<String> strictTransportSecurityHeaderValues = new ArrayList<>();
+    if (getHttpStrictTransportSecurityMaxAge() > 0) {
+      strictTransportSecurityHeaderValues.add("max-age=" + getHttpStrictTransportSecurityMaxAge());
+    }
+    if (getHttpStrictTransportSecurityIncludeSubdomains()) {
+      strictTransportSecurityHeaderValues.add("includeSubDomains");
+    }
+    if (!strictTransportSecurityHeaderValues.isEmpty()) {
+      headers.put(
+          "Strict-Transport-Security",
+          String.join(HEADER_DELIMITER, strictTransportSecurityHeaderValues));
+    }
+
+    if (getXsssProtection() != null && getXsssProtection().length() > 0) {
+      headers.put(HttpHeaders.X_XSS_PROTECTION, getXsssProtection());
+    }
+
+    if (getXContentTypeOptions()) {
+      headers.put(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
+    }
+
+    if (getContentSecurityPolicy() != null && getContentSecurityPolicy().length() > 0) {
+      headers.put(HttpHeaders.CONTENT_SECURITY_POLICY, getContentSecurityPolicy());
+    }
+
+    return headers;
   }
 }

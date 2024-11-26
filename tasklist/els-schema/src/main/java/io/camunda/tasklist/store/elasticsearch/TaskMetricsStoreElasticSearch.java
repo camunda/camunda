@@ -7,18 +7,19 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT;
-import static io.camunda.tasklist.schema.indices.MetricIndex.EVENT_TIME;
-import static io.camunda.tasklist.schema.indices.MetricIndex.VALUE;
+import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex.VALUE;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.MetricEntity;
-import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.MetricIndex;
 import io.camunda.tasklist.store.TaskMetricsStore;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.entities.MetricEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -26,7 +27,6 @@ import java.util.stream.Collectors;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -53,7 +53,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   public static final String EVENT_TASK_COMPLETED_BY_ASSIGNEE = "task_completed_by_assignee";
   public static final String ASSIGNEE = "assignee";
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreElasticSearch.class);
-  @Autowired private MetricIndex index;
+  @Autowired private TasklistMetricIndex index;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -104,7 +104,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
         SearchSourceBuilder.searchSource().query(rangeQuery).aggregation(aggregation);
     final SearchRequest searchRequest =
         new SearchRequest(index.getFullQualifiedName())
-            .indicesOptions(IndicesOptions.lenientExpandOpen())
+            .indicesOptions(LENIENT_EXPAND_OPEN_IGNORE_THROTTLED)
             .source(source);
     try {
 

@@ -27,6 +27,7 @@ import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
@@ -1479,4 +1480,19 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(
       DocumentReferenceResponse documentReferenceResponse);
+
+  /**
+   * Command to create a tenant.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newCreateTenantCommand()
+   *  .tenantId("tenant-id")
+   *  .name("Tenant Name")
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the command
+   */
+  CreateTenantCommandStep1 newCreateTenantCommand();
 }

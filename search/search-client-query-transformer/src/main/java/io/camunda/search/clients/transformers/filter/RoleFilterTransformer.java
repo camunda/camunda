@@ -9,6 +9,8 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.term;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex.KEY;
+import static io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex.NAME;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.RoleFilter;
@@ -20,8 +22,8 @@ public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
   public SearchQuery toSearchQuery(final RoleFilter filter) {
 
     return and(
-        filter.roleKey() == null ? null : term("key", filter.roleKey()),
-        filter.name() == null ? null : term("name", filter.name()));
+        filter.roleKey() == null ? null : term(KEY, filter.roleKey()),
+        filter.name() == null ? null : term(NAME, filter.name()));
   }
 
   @Override

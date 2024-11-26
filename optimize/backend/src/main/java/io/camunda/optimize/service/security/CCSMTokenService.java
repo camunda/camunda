@@ -7,13 +7,13 @@
  */
 package io.camunda.optimize.service.security;
 
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
 import static io.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
 import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static io.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_REFRESH_TOKEN;
 import static io.camunda.optimize.service.db.DatabaseConstants.ZEEBE_DATA_SOURCE;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
 
 import com.auth0.jwt.interfaces.DecodedJWT;
 import io.camunda.identity.sdk.Identity;

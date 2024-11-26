@@ -18,7 +18,7 @@ import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

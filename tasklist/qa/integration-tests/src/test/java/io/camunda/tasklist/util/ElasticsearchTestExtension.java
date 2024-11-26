@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.util;
 
+import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -15,6 +16,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.zeebe.ImportValueType;
@@ -28,7 +30,6 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
@@ -87,12 +88,13 @@ public class ElasticsearchTestExtension
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private TestImportListener testImportListener;
+  @Autowired private TasklistIndexPrefixHolder indexPrefixHolder;
   private String indexPrefix;
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
     if (indexPrefix == null) {
-      indexPrefix = TestUtil.createRandomString(10);
+      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
     }
     tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
     if (tasklistProperties.getElasticsearch().isCreateSchema()) {
@@ -295,7 +297,7 @@ public class ElasticsearchTestExtension
             .indices()
             .get(
                 new GetIndexRequest(indexPrefix + "*")
-                    .indicesOptions(IndicesOptions.fromOptions(true, false, true, false)),
+                    .indicesOptions(LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED),
                 RequestOptions.DEFAULT);
     final String[] indices = response.getIndices();
     return indices != null && indices.length >= minCountOfIndices;

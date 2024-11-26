@@ -98,10 +98,10 @@ public class IndexSchemaValidatorIT extends TasklistIntegrationTest {
 
     updateSchemaContent(
         originalSchemaContent.replace(
-            "\"properties\": {\n"
-                + "    \"prop0\": {\n"
-                + "      \"type\": \"keyword\"\n"
-                + "    },",
+            "    \"properties\": {\n"
+                + "      \"prop0\": {\n"
+                + "        \"type\": \"keyword\"\n"
+                + "      },",
             "\"properties\": {"));
 
     final String newSchemaContent = readSchemaContent();

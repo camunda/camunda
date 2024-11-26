@@ -20,15 +20,18 @@ import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.Authorization;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import java.util.List;
+import java.util.Set;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,18 +40,23 @@ public class TenantServiceTest {
 
   private TenantServices services;
   private TenantSearchClient client;
-  private Authentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
+  private final TenantEntity tenantEntity =
+      new TenantEntity(100L, "tenant-id", "Tenant name", Set.of());
 
   @BeforeEach
   public void before() {
     stubbedBrokerClient = new StubbedBrokerClient();
-    authentication = Authentication.of(builder -> builder.user(1234L).token("auth_token"));
+    final Authentication authentication =
+        Authentication.of(builder -> builder.user(1234L).token("auth_token"));
     client = mock(TenantSearchClient.class);
+    final SecurityContextProvider securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    when(securityContextProvider.isAuthorized(
+            "tenant-id", authentication, Authorization.of(a -> a.tenant().read())))
+        .thenReturn(true);
     services =
-        new TenantServices(
-            stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
+        new TenantServices(stubbedBrokerClient, securityContextProvider, client, authentication);
   }
 
   @Test
@@ -70,29 +78,27 @@ public class TenantServiceTest {
   @Test
   public void shouldReturnSingleTenant() {
     // given
-    final var entity = mock(TenantEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(tenantEntity), Arrays.array());
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getByKey(1L);
+    final var searchQueryResult = services.getByKey(100L);
 
     // then
-    assertThat(searchQueryResult).isEqualTo(entity);
+    assertThat(searchQueryResult).isEqualTo(tenantEntity);
   }
 
   @Test
   public void shouldReturnSingleVariableForGet() {
     // given
-    final var entity = mock(TenantEntity.class);
-    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    final var result = new SearchQueryResult<>(1, List.of(tenantEntity), Arrays.array());
     when(client.searchTenants(any())).thenReturn(result);
 
     // when
-    final var searchQueryResult = services.getByKey(1L);
+    final var searchQueryResult = services.getByKey(100L);
 
     // then
-    assertThat(searchQueryResult).isEqualTo(entity);
+    assertThat(searchQueryResult).isEqualTo(tenantEntity);
   }
 
   @Test
@@ -139,5 +145,17 @@ public class TenantServiceTest {
     assertThat(request.getKey()).isEqualTo(tenantDTO.key());
     final TenantRecord brokerRequestValue = request.getRequestWriter();
     assertThat(brokerRequestValue.getName()).isEqualTo(tenantDTO.name());
+  }
+
+  @Test
+  public void shouldDeleteTenant() {
+    // when
+    services.deleteTenant(100L);
+
+    // then
+    final BrokerTenantDeleteRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(TenantIntent.DELETE);
+    assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
+    assertThat(request.getRequestWriter().getTenantKey()).isEqualTo(100L);
   }
 }

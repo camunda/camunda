@@ -24,7 +24,7 @@ import feign.codec.ErrorDecoder;
 import feign.jackson.JacksonDecoder;
 import feign.jackson.JacksonEncoder;
 import io.camunda.zeebe.management.backups.BackupInfo;
-import io.camunda.zeebe.management.backups.TakeBackupResponse;
+import io.camunda.zeebe.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator.ErrorResponse.Payload;
 import io.camunda.zeebe.qa.util.cluster.TestApplication;
 import io.zeebe.containers.ZeebeNode;
@@ -102,7 +102,7 @@ public interface BackupActuator {
   @RequestLine("POST")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   @Body("%7B\"backupId\": \"{backupId}\"%7D")
-  TakeBackupResponse take(@Param("backupId") long backupId);
+  TakeBackupRuntimeResponse take(@Param("backupId") long backupId);
 
   @RequestLine("GET /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})

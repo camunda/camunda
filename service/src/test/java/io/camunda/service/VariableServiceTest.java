@@ -81,7 +81,9 @@ public class VariableServiceTest {
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
     when(client.searchVariables(any())).thenReturn(result);
     when(securityContextProvider.isAuthorized(
-            processId, authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+            processId,
+            authentication,
+            Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .thenReturn(true);
 
     // when
@@ -100,7 +102,9 @@ public class VariableServiceTest {
     when(client.searchVariables(any()))
         .thenReturn(new SearchQueryResult<>(1, List.of(entity), null));
     when(securityContextProvider.isAuthorized(
-            processId, authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+            processId,
+            authentication,
+            Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .thenReturn(false);
     // when
     final Executable executeGetByKey = () -> services.getByKey(1L);

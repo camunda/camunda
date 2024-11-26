@@ -65,11 +65,11 @@ public class AuthorizationChecker {
    * defined in the provided SecurityContext. The authorization check is based on the resource type
    * and permission type in the SecurityContext.
    *
-   * @param resourceKey the resource key to check authorization for
+   * @param resourceId the resource id to check authorization for
    * @param securityContext the context containing authorization and authentication information
    * @return true if the resource key is authorized, false otherwise
    */
-  public boolean isAuthorized(final String resourceKey, final SecurityContext securityContext) {
+  public boolean isAuthorized(final String resourceId, final SecurityContext securityContext) {
     final var ownerKeys = collectOwnerKeys(securityContext.authentication());
     final var resourceType = securityContext.authorization().resourceType();
     final var permissionType = securityContext.authorization().permissionType();
@@ -82,7 +82,7 @@ public class AuthorizationChecker {
                                     f.ownerKeys(ownerKeys)
                                         .resourceType(resourceType.name())
                                         .permissionType(permissionType)
-                                        .resourceKeys(List.of(WILDCARD, resourceKey)))
+                                        .resourceIds(List.of(WILDCARD, resourceId)))
                             .page(p -> p.size(1))))
             .total()
         > 0;

@@ -47,6 +47,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.TypedSearchQueryBuilder;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
@@ -62,6 +63,7 @@ import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.SortOptionBuilders;
+import io.camunda.search.sort.TenantSort;
 import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
 import io.camunda.search.sort.VariableSort;
@@ -124,6 +126,20 @@ public final class SearchQueryRequestMapper {
             SortOptionBuilders::role,
             SearchQueryRequestMapper::applyRoleSortField);
     return buildSearchQuery(null, sort, page, SearchQueryBuilders::roleSearchQuery);
+  }
+
+  public static Either<ProblemDetail, TenantQuery> toTenantQuery(
+      final TenantSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.tenantSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::tenant,
+            SearchQueryRequestMapper::applyTenantSortField);
+    return buildSearchQuery(null, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQuery(
@@ -520,6 +536,8 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessInstanceKey())
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
+              Optional.ofNullable(f.getElementInstanceKey())
+                  .ifPresent(builder::elementInstanceKeys);
               Optional.ofNullable(f.getVariables())
                   .filter(variables -> !variables.isEmpty())
                   .ifPresent(vars -> builder.variable(toVariableValueFilters(vars)));
@@ -620,6 +638,22 @@ public final class SearchQueryRequestMapper {
       switch (field) {
         case "roleKey" -> builder.roleKey();
         case "name" -> builder.name();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  private static List<String> applyTenantSortField(
+      final String field, final TenantSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case "tenantKey" -> builder.tenantKey();
+        case "name" -> builder.name();
+        case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
@@ -934,7 +968,6 @@ public final class SearchQueryRequestMapper {
         case "ownerType" -> builder.ownerType();
         case "ownerKey" -> builder.ownerKey();
         case "resourceType" -> builder.resourceType();
-        case "resourceKey" -> builder.resourceKey();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

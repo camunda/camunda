@@ -162,6 +162,10 @@ public final class EventAppliers implements EventApplier {
     register(
         DeploymentIntent.FULLY_DISTRIBUTED,
         new DeploymentFullyDistributedApplier(state.getDeploymentState()));
+    register(DeploymentIntent.RECONSTRUCTED, NOOP_EVENT_APPLIER);
+    register(
+        DeploymentIntent.RECONSTRUCTED_ALL,
+        new DeploymentReconstructedAllApplier(state.getDeploymentState()));
   }
 
   private void registerVariableEventAppliers(final MutableProcessingState state) {
@@ -411,6 +415,7 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.UPDATING, new UserTaskUpdatingApplier(state));
     register(UserTaskIntent.UPDATED, new UserTaskUpdatedApplier(state));
     register(UserTaskIntent.MIGRATED, new UserTaskMigratedApplier(state));
+    register(UserTaskIntent.CORRECTED, new UserTaskCorrectedApplier(state));
     register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
   }
 

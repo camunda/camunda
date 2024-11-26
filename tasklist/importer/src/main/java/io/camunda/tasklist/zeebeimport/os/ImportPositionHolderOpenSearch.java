@@ -53,8 +53,8 @@ public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
   @Autowired
   private OpenSearchClient osClient;
 
-  public ImportPositionEntity getLatestLoadedPosition(String aliasTemplate, int partitionId)
-      throws IOException {
+  public ImportPositionEntity getLatestLoadedPosition(
+      final String aliasTemplate, final int partitionId) throws IOException {
     final Query query =
         OpenSearchUtil.joinWithAnd(
             new Query.Builder()
@@ -83,7 +83,7 @@ public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
     ImportPositionEntity position =
         new ImportPositionEntity().setAliasName(aliasTemplate).setPartitionId(partitionId);
 
-    for (Hit<ImportPositionEntity> hit : hits) {
+    for (final Hit<ImportPositionEntity> hit : hits) {
       position = hit.source();
     }
 
@@ -166,6 +166,7 @@ public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
       updateFields.put(ImportPositionIndex.POSITION, position.getPosition());
       updateFields.put(ImportPositionIndex.FIELD_INDEX_NAME, position.getIndexName());
       updateFields.put(ImportPositionIndex.SEQUENCE, position.getSequence());
+      updateFields.put(ImportPositionIndex.COMPLETED, position.isCompleted());
 
       final UpdateRequest updateRequest =
           new UpdateRequest.Builder()

@@ -12,13 +12,13 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.DraftTaskVariableEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.templates.DraftTaskVariableTemplate;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
+import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;

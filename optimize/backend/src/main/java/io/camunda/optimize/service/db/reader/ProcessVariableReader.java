@@ -9,7 +9,6 @@ package io.camunda.optimize.service.db.reader;
 
 import static io.camunda.optimize.util.LogUtil.sanitizeLogMessage;
 
-import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import com.nimbusds.oauth2.sdk.util.CollectionUtils;
 import io.camunda.optimize.dto.optimize.query.variable.DefinitionVariableLabelsDto;
 import io.camunda.optimize.dto.optimize.query.variable.ProcessToQueryDto;
@@ -23,7 +22,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
@@ -78,14 +76,6 @@ public class ProcessVariableReader {
 
     return variableRepository.getVariableNames(
         variableNameRequest, validNameRequests, processDefinitionKeys, definitionLabelsDtos);
-  }
-
-  public List<ProcessVariableNameResponseDto> getVariableNamesForInstancesMatchingQuery(
-      final List<String> processDefinitionKeysToTarget,
-      final Supplier<BoolQuery.Builder> baseQuerySupplier,
-      final Map<String, DefinitionVariableLabelsDto> definitionLabelsDtos) {
-    return variableRepository.getVariableNamesForInstancesMatchingQuery(
-        processDefinitionKeysToTarget, baseQuerySupplier, definitionLabelsDtos);
   }
 
   public List<String> getVariableValues(final ProcessVariableValuesQueryDto requestDto) {

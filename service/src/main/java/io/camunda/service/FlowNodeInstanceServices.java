@@ -48,7 +48,7 @@ public final class FlowNodeInstanceServices
     return flowNodeInstanceSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .searchFlowNodeInstances(query);
   }
 
@@ -64,9 +64,9 @@ public final class FlowNodeInstanceServices
             .searchFlowNodeInstances(
                 flownodeInstanceSearchQuery(q -> q.filter(f -> f.flowNodeInstanceKeys(key))));
     final var flowNodeInstance = getSingleResultOrThrow(result, key, "Flow node instance");
-    final var authorization = Authorization.of(a -> a.processDefinition().readInstance());
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
-        flowNodeInstance.bpmnProcessId(), authentication, authorization)) {
+        flowNodeInstance.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);
     }
     return flowNodeInstance;

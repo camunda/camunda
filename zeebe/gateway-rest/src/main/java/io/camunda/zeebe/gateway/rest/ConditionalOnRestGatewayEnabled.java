@@ -13,7 +13,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 
 /**
  * The REST API is disabled when either the {@code zeebe.broker.gateway.enable} or {@code
@@ -23,7 +22,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Documented
-@ConditionalOnWebApplication
 @ConditionalOnProperty(
     name = {"zeebe.broker.gateway.enable", "camunda.rest.enabled"},
     havingValue = "true",

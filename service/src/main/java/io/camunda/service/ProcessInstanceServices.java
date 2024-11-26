@@ -65,7 +65,7 @@ public final class ProcessInstanceServices
     return processInstanceSearchClient
         .withSecurityContext(
             securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.processDefinition().readInstance())))
+                authentication, Authorization.of(a -> a.processDefinition().readProcessInstance())))
         .searchProcessInstances(query);
   }
 
@@ -83,7 +83,7 @@ public final class ProcessInstanceServices
                     q -> q.filter(f -> f.processInstanceKeys(processInstanceKey))));
     final var processInstanceEntity =
         getSingleResultOrThrow(result, processInstanceKey, "Process instance");
-    final var authorization = Authorization.of(a -> a.processDefinition().readInstance());
+    final var authorization = Authorization.of(a -> a.processDefinition().readProcessInstance());
     if (!securityContextProvider.isAuthorized(
         processInstanceEntity.processDefinitionId(), authentication, authorization)) {
       throw new ForbiddenException(authorization);

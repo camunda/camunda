@@ -7,19 +7,19 @@
  */
 package io.camunda.zeebe.shared.management;
 
+import io.camunda.zeebe.shared.profiles.ProfileStandaloneBrokerOrGateway;
 import org.springframework.boot.actuate.endpoint.annotation.DeleteOperation;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
-import org.springframework.context.annotation.Profile;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Component
 @WebEndpoint(id = "backups")
-@Profile("broker & standalone")
+@ProfileStandaloneBrokerOrGateway
 public final class BackupEndpointStandalone {
   private final BackupEndpoint backupEndpoint;
 
@@ -32,6 +32,7 @@ public final class BackupEndpointStandalone {
     return backupEndpoint.take(backupId);
   }
 
+  @ReadOperation
   public WebEndpointResponse<?> status(@Selector @NonNull final long id) {
     return backupEndpoint.status(id);
   }

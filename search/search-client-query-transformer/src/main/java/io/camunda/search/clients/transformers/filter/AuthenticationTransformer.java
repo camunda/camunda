@@ -8,6 +8,7 @@
 package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.security.auth.Authentication;
@@ -25,7 +26,7 @@ public final class AuthenticationTransformer {
     // authentication layer.
     final var authenticatedTenantIds = value.authenticatedTenantIds();
     if (authenticatedTenantIds != null && !authenticatedTenantIds.isEmpty()) {
-      return stringTerms("tenantId", authenticatedTenantIds);
+      return stringTerms(TENANT_ID, authenticatedTenantIds);
     }
     return null;
   }

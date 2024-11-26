@@ -7,6 +7,9 @@
  */
 package io.camunda.db.rdbms;
 
+import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
+import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
+import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
@@ -19,6 +22,9 @@ import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 public class RdbmsService {
 
   private final RdbmsWriterFactory rdbmsWriterFactory;
+  private final DecisionDefinitionReader decisionDefinitionReader;
+  private final DecisionInstanceReader decisionInstanceReader;
+  private final DecisionRequirementsReader decisionRequirementsReader;
   private final FlowNodeInstanceReader flowNodeInstanceReader;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessInstanceReader processInstanceReader;
@@ -27,17 +33,35 @@ public class RdbmsService {
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
+      final DecisionDefinitionReader decisionDefinitionReader,
+      final DecisionInstanceReader decisionInstanceReader,
+      final DecisionRequirementsReader decisionRequirementsReader,
       final FlowNodeInstanceReader flowNodeInstanceReader,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceReader processInstanceReader,
       final VariableReader variableReader,
       final UserTaskReader userTaskReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
+    this.decisionRequirementsReader = decisionRequirementsReader;
+    this.decisionDefinitionReader = decisionDefinitionReader;
+    this.decisionInstanceReader = decisionInstanceReader;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceReader = processInstanceReader;
     this.variableReader = variableReader;
     this.userTaskReader = userTaskReader;
+  }
+
+  public DecisionDefinitionReader getDecisionDefinitionReader() {
+    return decisionDefinitionReader;
+  }
+
+  public DecisionInstanceReader getDecisionInstanceReader() {
+    return decisionInstanceReader;
+  }
+
+  public DecisionRequirementsReader getDecisionRequirementsReader() {
+    return decisionRequirementsReader;
   }
 
   public FlowNodeInstanceReader getFlowNodeInstanceReader() {
