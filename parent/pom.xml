@@ -199,7 +199,7 @@
     <version.javassist>3.30.2-GA</version.javassist>
 
     <version.mybatis-spring>3.0.4</version.mybatis-spring>
-    <version.mybatis>3.5.16</version.mybatis>
+    <version.mybatis>3.5.17</version.mybatis>
     <version.mybatis-spring-boot-starter>3.0.3</version.mybatis-spring-boot-starter>
 
     <!--    VERIFY WHETHER OPERATE WORKS WITH MOCKITO 5.11 -->
