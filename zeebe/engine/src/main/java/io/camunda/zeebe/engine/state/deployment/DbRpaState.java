@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -60,6 +62,8 @@ public class DbRpaState implements MutableRpaState {
       DbForeignKey<DbTenantAwareKey<DbLong>>>
       rpaKeyByRpaIdAndVersionTagColumnFamily;
 
+  private final Cache<DbRpaState.TenantIdAndRpaId, PersistedRpa> rpasByTenantIdAndIdCache;
+
   public DbRpaState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
       final TransactionContext transactionContext,
@@ -111,6 +115,8 @@ public class DbRpaState implements MutableRpaState {
         new VersionManager(
             DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.RPA_VERSION, transactionContext);
 
+    rpasByTenantIdAndIdCache =
+        CacheBuilder.newBuilder().maximumSize(config.getRpaCacheCapacity()).build();
   }
 
   @Override
@@ -119,6 +125,9 @@ public class DbRpaState implements MutableRpaState {
     dbRpaKey.wrapLong(record.getRpaKey());
     dbPersistedRpa.wrap(record);
     rpasByKey.upsert(tenantAwareRpaKey, dbPersistedRpa);
+    rpasByTenantIdAndIdCache.put(
+        new DbRpaState.TenantIdAndRpaId(record.getTenantId(), record.getRpaIdBuffer()),
+        dbPersistedRpa.copy());
   }
 
   @Override
@@ -163,6 +172,8 @@ public class DbRpaState implements MutableRpaState {
     tenantIdKey.wrapString(record.getTenantId());
     dbRpaKey.wrapLong(record.getRpaKey());
     rpasByKey.deleteExisting(tenantAwareRpaKey);
+    rpasByTenantIdAndIdCache.invalidate(
+        new DbRpaState.TenantIdAndRpaId(record.getTenantId(), record.getRpaIdBuffer()));
   }
 
   @Override
@@ -199,11 +210,16 @@ public class DbRpaState implements MutableRpaState {
   public Optional<PersistedRpa> findLatestRpaById(
       final DirectBuffer rpaId, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
+    final Optional<PersistedRpa> cachedRpa = getRpaFromCache(tenantId, rpaId);
+    if (cachedRpa.isPresent()) {
+      return cachedRpa;
+    }
 
     final PersistedRpa persistedRpa = getPersistedRpaById(rpaId, tenantId);
     if (persistedRpa == null) {
       return Optional.empty();
     }
+    rpasByTenantIdAndIdCache.put(new DbRpaState.TenantIdAndRpaId(tenantId, rpaId), persistedRpa);
     return Optional.of(persistedRpa);
   }
 
@@ -243,6 +259,7 @@ public class DbRpaState implements MutableRpaState {
 
   @Override
   public void clearCache() {
+    rpasByTenantIdAndIdCache.invalidateAll();
     versionManager.clear();
   }
 
@@ -257,4 +274,12 @@ public class DbRpaState implements MutableRpaState {
     }
     return persistedRpa.copy();
   }
+
+  private Optional<PersistedRpa> getRpaFromCache(
+      final String tenantId, final DirectBuffer rpaId) {
+    return Optional.ofNullable(
+        rpasByTenantIdAndIdCache.getIfPresent(new DbRpaState.TenantIdAndRpaId(tenantId, rpaId)));
+  }
+
+  private record TenantIdAndRpaId(String tenantId, DirectBuffer rpaId) {}
 }
