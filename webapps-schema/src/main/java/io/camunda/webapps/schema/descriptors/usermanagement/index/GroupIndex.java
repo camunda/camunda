@@ -8,11 +8,18 @@
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
 
 public class GroupIndex extends UserManagementIndexDescriptor {
 
   public static final String INDEX_NAME = "groups";
   public static final String INDEX_VERSION = "8.7.0";
+
+  public static final EntityJoinRelationFactory joinRelationFactory =
+      new EntityJoinRelationFactory(
+          EntityJoinRelation.IdentityJoinRelationshipType.GROUP,
+          EntityJoinRelation.IdentityJoinRelationshipType.MEMBER);
 
   public GroupIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
