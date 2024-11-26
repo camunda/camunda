@@ -32,67 +32,6 @@ public class MigrateServiceTaskTest {
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Test
-  public void shouldNotDeleteMessageSubscriptionWhenRejectingCommand() {
-    // given
-    final var deployment =
-        ENGINE
-            .deployment()
-            .withXmlResource(
-                Bpmn.createExecutableProcess("process")
-                    .startEvent()
-                    .serviceTask("A", a -> a.zeebeJobType("A"))
-                    .boundaryEvent("boundary")
-                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
-                    .endEvent()
-                    .moveToActivity("A")
-                    .endEvent()
-                    .done())
-            .withXmlResource(
-                Bpmn.createExecutableProcess("process2")
-                    .startEvent()
-                    .serviceTask("A", t -> t.zeebeJobType("A"))
-                    .boundaryEvent("boundary")
-                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
-                    .endEvent()
-                    .moveToActivity("A")
-                    .endEvent("end")
-                    .done())
-            .deploy();
-
-    final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process").withVariable("key", "key").create();
-
-    final long targetProcessDefinitionKey =
-        extractProcessDefinitionKeyByProcessId(deployment, "process2");
-
-    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-        .withProcessInstanceKey(processInstanceKey)
-        .withElementId("A")
-        .await();
-
-    // when
-    ENGINE
-        .processInstance()
-        .withInstanceKey(processInstanceKey)
-        .migration()
-        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
-        .addMappingInstruction("A", "A")
-        .expectRejection()
-        .migrate();
-
-    // then
-    ENGINE
-        .getProcessingState()
-        .getPendingProcessMessageSubscriptionState()
-        .visitPending(
-            System.currentTimeMillis(),
-            s -> {
-              Assertions.fail("Encountered a pending process message subscription.");
-              return true;
-            });
-  }
-
-  @Test
   public void shouldWriteElementMigratedEventForServiceTask() {
     // given
     final String processId = helper.getBpmnProcessId();

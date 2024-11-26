@@ -886,4 +886,66 @@ public class MigrateMessageSubscriptionTest {
         .describedAs("Expect that the correlation key is not re-evaluated")
         .hasCorrelationKey("key1");
   }
+
+  @Test
+  public void shouldNotDeleteMessageSubscriptionWhenRejectingCommand() {
+    // given
+    final var deployment =
+        engine
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process")
+                    .startEvent()
+                    .serviceTask("A", a -> a.zeebeJobType("A"))
+                    .boundaryEvent("boundary")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess("process2")
+                    .startEvent()
+                    .serviceTask("A", t -> t.zeebeJobType("A"))
+                    .boundaryEvent("boundary")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent("end")
+                    .done())
+            .deploy();
+
+    final long processInstanceKey =
+        engine.processInstance().ofBpmnProcessId("process").withVariable("key", "key").create();
+
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, "process2");
+
+    RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .withElementId("A")
+        .await();
+
+    // when
+    engine
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "A")
+        .expectRejection()
+        .migrate();
+
+    // then
+    engine
+        .getProcessingState()
+        .getPendingProcessMessageSubscriptionState()
+        .visitPending(
+            System.currentTimeMillis(),
+            s -> {
+              org.assertj.core.api.Assertions.fail(
+                  "Encountered a pending process message subscription.");
+              return true;
+            });
+  }
 }
