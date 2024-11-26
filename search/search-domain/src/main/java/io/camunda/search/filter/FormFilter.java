@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public record FormFilter(List<Long> formKey, List<String> formId) implements FilterBase {
+public record FormFilter(List<Long> formKeys, List<String> formIds) implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<FormFilter> {
 

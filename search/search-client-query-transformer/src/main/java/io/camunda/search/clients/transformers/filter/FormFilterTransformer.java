@@ -29,7 +29,7 @@ public class FormFilterTransformer implements FilterTransformer<FormFilter> {
 
   @Override
   public SearchQuery toSearchQuery(final FormFilter filter) {
-    return and(longTerms(KEY, filter.formKey()), stringTerms(BPMN_ID, filter.formId()));
+    return and(longTerms(KEY, filter.formKeys()), stringTerms(BPMN_ID, filter.formIds()));
   }
 
   @Override
