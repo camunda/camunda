@@ -115,7 +115,6 @@ const Variables: React.FC<Props> = observer(
 
         {!isModificationModeEnabled && (
           <Restricted
-            scopes={['write']}
             resourceBasedRestrictions={{
               scopes: ['UPDATE_PROCESS_INSTANCE'],
               permissions: processInstanceDetailsStore.getPermissions(),

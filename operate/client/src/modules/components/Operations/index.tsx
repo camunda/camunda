@@ -94,7 +94,6 @@ const Operations: React.FC<Props> = observer(
         <OperationItems>
           {hasIncident(instance) && !isModificationModeEnabled && (
             <Restricted
-              scopes={['write']}
               resourceBasedRestrictions={{
                 scopes: ['UPDATE_PROCESS_INSTANCE'],
                 permissions,
@@ -111,7 +110,6 @@ const Operations: React.FC<Props> = observer(
           )}
           {isRunning(instance) && !isModificationModeEnabled && (
             <Restricted
-              scopes={['write']}
               resourceBasedRestrictions={{
                 scopes: ['UPDATE_PROCESS_INSTANCE'],
                 permissions,
@@ -128,7 +126,6 @@ const Operations: React.FC<Props> = observer(
           )}
           {!isRunning(instance) && (
             <Restricted
-              scopes={['write']}
               resourceBasedRestrictions={{
                 scopes: ['DELETE_PROCESS_INSTANCE'],
                 permissions,
@@ -148,7 +145,6 @@ const Operations: React.FC<Props> = observer(
             isRunning(instance) &&
             !isModificationModeEnabled && (
               <Restricted
-                scopes={['write']}
                 resourceBasedRestrictions={{
                   scopes: ['UPDATE_PROCESS_INSTANCE'],
                   permissions,

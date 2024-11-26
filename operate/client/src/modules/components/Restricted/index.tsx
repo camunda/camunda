@@ -6,12 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {authenticationStore, Permissions} from 'modules/stores/authentication';
 import {observer} from 'mobx-react';
 
 type Props = {
   children: React.ReactNode;
-  scopes: Permissions;
   resourceBasedRestrictions?: {
     scopes: ResourceBasedPermissionDto[];
     permissions?: ResourceBasedPermissionDto[] | null;
@@ -20,11 +18,7 @@ type Props = {
 };
 
 const Restricted: React.FC<Props> = observer(
-  ({children, scopes: generalScopes, resourceBasedRestrictions, fallback}) => {
-    if (!authenticationStore.hasPermission(generalScopes)) {
-      return fallback ? <>{fallback}</> : null;
-    }
-
+  ({children, resourceBasedRestrictions, fallback}) => {
     if (
       !window.clientConfig?.resourcePermissionsEnabled ||
       resourceBasedRestrictions === undefined ||
