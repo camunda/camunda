@@ -35,6 +35,7 @@ import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.response.AssignUserTaskResponse;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -141,15 +142,9 @@ public class TaskService {
 
       linkedForm.ifPresent(
           form -> {
-            taskStore.updateTaskLinkedForm(task, form.bpmnId(), form.version());
+            updateTaskLinkedForm(task, form);
             task.setFormId(form.bpmnId());
             task.setFormVersion(form.version());
-            LOGGER.debug(
-                "Updated Task with id {} form link of key {} to formId {} and version {}",
-                taskId,
-                task.getFormKey(),
-                form.bpmnId(),
-                form.version());
           });
     }
     return TaskDTO.createFrom(task, objectMapper);
@@ -314,6 +309,19 @@ public class TaskService {
         && task.getFormId() == null
         && (task.getIsFormEmbedded() == null || !task.getIsFormEmbedded())
         && task.getExternalFormReference() == null;
+  }
+
+  private void updateTaskLinkedForm(final TaskEntity task, final FormIdView form) {
+    CompletableFuture.runAsync(
+        () -> {
+          taskStore.updateTaskLinkedForm(task, form.bpmnId(), form.version());
+          LOGGER.debug(
+              "Updated Task with id {} form link of key {} to formId {} and version {}",
+              task.getId(),
+              task.getFormKey(),
+              form.bpmnId(),
+              form.version());
+        });
   }
 
   private void updateClaimedMetric(final TaskEntity task) {
