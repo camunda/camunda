@@ -20,7 +20,6 @@ import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {useLocation} from 'react-router-dom';
 import {tracking} from 'modules/tracking';
-import {authenticationStore} from 'modules/stores/authentication';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {Button} from '@carbon/react';
 import {SortableTable} from 'modules/components/SortableTable';
@@ -64,7 +63,6 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
 
   const isJobIdPresent = sortedIncidents.some(({jobId}) => jobId !== null);
   const hasPermissionForRetryOperation =
-    authenticationStore.hasPermission(['write']) &&
     processInstanceDetailsStore.hasPermission(['UPDATE_PROCESS_INSTANCE']);
 
   return (

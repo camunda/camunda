@@ -142,7 +142,6 @@ const createUser = (options: Partial<MeDto> = {}): MeDto => ({
   userId: 'demo',
   displayName: 'firstname lastname',
   canLogout: true,
-  permissions: ['read', 'write'],
   roles: null,
   salesPlanType: null,
   c8Links: {},
