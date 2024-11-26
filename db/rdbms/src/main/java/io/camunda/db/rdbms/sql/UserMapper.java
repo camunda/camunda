@@ -5,16 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.db.rdbms.write.queue;
+package io.camunda.db.rdbms.sql;
 
-public enum ContextType {
-  EXPORTER_POSITION,
-  DECISION_DEFINITION,
-  DECISION_INSTANCE,
-  PROCESS_DEFINITION,
-  PROCESS_INSTANCE,
-  FLOW_NODE,
-  VARIABLE,
-  USER,
-  USER_TASK
+import io.camunda.db.rdbms.read.domain.UserDbQuery;
+import io.camunda.db.rdbms.write.domain.UserDbModel;
+import io.camunda.search.entities.UserEntity;
+import java.util.List;
+
+public interface UserMapper {
+
+  void insert(UserDbModel processDeployment);
+
+  Long count(UserDbQuery filter);
+
+  List<UserEntity> search(UserDbQuery filter);
 }
