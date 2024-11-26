@@ -1122,7 +1122,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  CreateRoleCommandStep1 newRoleCreateCommand();
+  CreateRoleCommandStep1 newCreateRoleCommand();
 
   /**
    * Command to create a user.

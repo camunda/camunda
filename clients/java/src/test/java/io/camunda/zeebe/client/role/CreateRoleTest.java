@@ -32,7 +32,7 @@ public class CreateRoleTest extends ClientRestTest {
   @Test
   void shouldCreateRole() {
     // when
-    client.newRoleCreateCommand().name(NAME).send().join();
+    client.newCreateRoleCommand().name(NAME).send().join();
 
     // then
     final RoleCreateRequest request = gatewayService.getLastRequest(RoleCreateRequest.class);
@@ -46,21 +46,21 @@ public class CreateRoleTest extends ClientRestTest {
         REST_API_PATH + "/roles", () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newRoleCreateCommand().name(NAME).send().join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
 
   @Test
-  void shouldRaiseExceptionIfRoleAlreadyExists() {
+  void shouldRaiseExceptionIfRoleNameAlreadyExists() {
     // given
-    client.newRoleCreateCommand().name(NAME).send().join();
+    client.newCreateRoleCommand().name(NAME).send().join();
 
     gatewayService.errorOnRequest(
         REST_API_PATH + "/roles", () -> new ProblemDetail().title("Conflict").status(409));
 
     // when / then
-    assertThatThrownBy(() -> client.newRoleCreateCommand().name(NAME).send().join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().name(NAME).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'");
   }
@@ -72,7 +72,7 @@ public class CreateRoleTest extends ClientRestTest {
         REST_API_PATH + "/roles", () -> new ProblemDetail().title("Bad Request").status(400));
 
     // when / then
-    assertThatThrownBy(() -> client.newRoleCreateCommand().name(NAME).send().join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 400: 'Bad Request'");
   }

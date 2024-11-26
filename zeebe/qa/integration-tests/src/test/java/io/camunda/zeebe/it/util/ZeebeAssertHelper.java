@@ -382,11 +382,11 @@ public final class ZeebeAssertHelper {
   }
 
   public static void assertRoleCreated(
-      final String roleId, final Consumer<RoleRecordValue> consumer) {
+      final String roleName, final Consumer<RoleRecordValue> consumer) {
     final RoleRecordValue roleRecordValue =
         RecordingExporter.roleRecords()
             .withIntent(RoleIntent.CREATED)
-            .withRoleKey(roleId)
+            .withName(roleName)
             .getFirst()
             .getValue();
 
