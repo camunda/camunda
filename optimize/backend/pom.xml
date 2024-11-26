@@ -22,6 +22,8 @@
   </properties>
 
   <dependencies>
+    <!-- Logging dependencies -->
+
     <!-- this is necessary. Dependency:analyze error suppressed -->
     <dependency>
       <groupId>net.logstash.logback</groupId>
