@@ -77,7 +77,7 @@ public class GroupEntityRemovedHandlerTest {
   @Test
   void shouldUpdateGroupEntityOnFlush() throws PersistenceException {
     // given
-    final var joinRelation = GroupIndex.joinRelationFactory.createChild(111L);
+    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(111L);
     final GroupEntity inputEntity =
         new GroupEntity().setId("111").setMemberKey(222L).setJoin(joinRelation);
     final BatchRequest mockRequest = mock(BatchRequest.class);
