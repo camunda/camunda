@@ -86,7 +86,8 @@ class AuthorizationMigrationHandlerTest {
     final ArgumentCaptor<Collection<UserResourceAuthorization>> migratedCaptor =
         ArgumentCaptor.forClass(Collection.class);
 
-    verify(managementIdentityProxy, times(3)).markAsMigrated(migratedCaptor.capture());
+    verify(managementIdentityProxy, times(3))
+        .markAuthorizationsAsMigrated(migratedCaptor.capture());
 
     assertThat(
         migratedCaptor.getAllValues().get(0),

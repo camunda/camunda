@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity;
 
+import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,5 +25,11 @@ public class ManagementIdentityProxy {
     return new ArrayList<>();
   }
 
-  public void markAsMigrated(final Collection<UserResourceAuthorization> migrated) {}
+  public void markAuthorizationsAsMigrated(final Collection<UserResourceAuthorization> migrated) {}
+
+  public List<Tenant> fetchTenants(final Tenant lastRecord, final int pageSize) {
+    return new ArrayList<>();
+  }
+
+  public void markTenantsAsMigrated(final Collection<Tenant> migrated) {}
 }

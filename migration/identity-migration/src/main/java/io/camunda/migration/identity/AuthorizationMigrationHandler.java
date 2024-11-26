@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
-public class AuthorizationMigrationHandler {
+public class AuthorizationMigrationHandler implements MigrationHandler {
 
   private final AuthorizationServices authorizationService;
   private final ManagementIdentityProxy managementIdentityProxy;
@@ -35,6 +35,7 @@ public class AuthorizationMigrationHandler {
     this.managementIdentityProxy = managementIdentityProxy;
   }
 
+  @Override
   public void migrate() {
     UserResourceAuthorization lastRecord = null;
     while (true) {
@@ -89,7 +90,7 @@ public class AuthorizationMigrationHandler {
                                               new UserResourceAuthorization(
                                                   owner, resourceId, resourceType, entry.getKey())))
                           .toList();
-                  managementIdentityProxy.markAsMigrated(migrated);
+                  managementIdentityProxy.markAuthorizationsAsMigrated(migrated);
                 });
           });
     }
