@@ -10,8 +10,8 @@ import {render, screen} from 'modules/testing-library';
 import {AppHeader} from '../index';
 import {authenticationStore} from 'modules/stores/authentication';
 import {createUser} from 'modules/testUtils';
-import {mockGetUser} from 'modules/mocks/api/getUser';
-import {UserDto} from 'modules/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
+import {MeDto} from 'modules/api/v2/authentication/me';
 import {Wrapper as BaseWrapper} from './mocks';
 import {useEffect} from 'react';
 
@@ -73,14 +73,14 @@ describe('Info bar', () => {
     window.open = originalWindowOpen;
   });
 
-  it.each<[UserDto['salesPlanType'], string]>([
+  it.each<[MeDto['salesPlanType'], string]>([
     ['free', 'https://forum.camunda.io/'],
     ['enterprise', 'https://jira.camunda.com/projects/SUPPORT/queues'],
     ['paid-cc', 'https://jira.camunda.com/projects/SUPPORT/queues'],
   ])(
     'should render correct links for feedback and support - %p',
     async (salesPlanType, link) => {
-      mockGetUser().withSuccess(createUser({salesPlanType}));
+      mockMe().withSuccess(createUser({salesPlanType}));
       await authenticationStore.authenticate();
 
       const originalWindowOpen = window.open;
