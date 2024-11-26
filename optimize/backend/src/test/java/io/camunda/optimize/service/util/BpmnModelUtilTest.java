@@ -10,49 +10,30 @@ package io.camunda.optimize.service.util;
 import static io.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 import static io.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.SERVICE_TASK;
-import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_CATCH;
-import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_GATEWAY_CATCH;
-import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_PROCESS_END;
-import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_PROCESS_FIRST_SIGNAL;
-import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_PROCESS_SECOND_SIGNAL;
-import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_PROCESS_THIRD_SIGNAL;
-import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_EVENT;
-import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_INT_SUB_PROCESS;
-import static io.camunda.optimize.util.ZeebeBpmnModels.SIGNAL_START_NON_INT_SUB_PROCESS;
 import static io.camunda.optimize.util.ZeebeBpmnModels.START_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.USER_TASK;
-import static io.camunda.optimize.util.ZeebeBpmnModels.createProcessWith83SignalEvents;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.optimize.dto.optimize.FlowNodeDataDto;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.bpmn.instance.EndEvent;
-import org.camunda.bpm.model.bpmn.instance.IntermediateCatchEvent;
-import org.camunda.bpm.model.bpmn.instance.Signal;
-import org.camunda.bpm.model.bpmn.instance.StartEvent;
-import org.camunda.bpm.model.xml.ModelInstance;
-import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
 
 public class BpmnModelUtilTest {
 
-  public static final String CUSTOMER_ONBOARDING = "CustomerOnboarding";
+  public static final String PROCESS_NAME = "processName";
   public static final String END_EVENT_TYPE = "endEvent";
   public static final String SERVICE_TASK_TYPE = "serviceTask";
 
   public static final String SIMPLE_SERVICE_TASK_PROCESS =
-      Bpmn.convertToString(createSimpleServiceTaskProcess(CUSTOMER_ONBOARDING));
-
-  public static final String PROCESS_WITH_83_SIGNAL_EVENTS =
-      Bpmn.convertToString(createProcessWith83SignalEvents(CUSTOMER_ONBOARDING));
+      Bpmn.convertToString(createSimpleServiceTaskProcess(PROCESS_NAME));
 
   @Test
   void shouldParseBpmnModel() {
@@ -84,22 +65,35 @@ public class BpmnModelUtilTest {
   void shouldExtractUserTaskNames() {
     // when
     final String bpmnModelInstance =
-        Bpmn.convertToString(createSimpleUserTaskProcess(CUSTOMER_ONBOARDING));
+        Bpmn.convertToString(createSimpleUserTaskProcess(PROCESS_NAME));
     final Map<String, String> userTaskNames = BpmnModelUtil.extractUserTaskNames(bpmnModelInstance);
 
     // then
-    assertThat(userTaskNames).isNotNull().isNotEmpty().containsKey(USER_TASK);
+    assertThat(userTaskNames)
+        .isNotNull()
+        .isNotEmpty()
+        .containsKey(USER_TASK)
+        .containsValue(USER_TASK);
   }
 
   @Test
   void shouldExtractProcessDefinitionName() {
     // when
     final Optional<String> processName =
-        BpmnModelUtil.extractProcessDefinitionName(
-            CUSTOMER_ONBOARDING, SIMPLE_SERVICE_TASK_PROCESS);
+        BpmnModelUtil.extractProcessDefinitionName(PROCESS_NAME, SIMPLE_SERVICE_TASK_PROCESS);
 
     // then
-    assertThat(processName).isPresent().get().isEqualTo(CUSTOMER_ONBOARDING);
+    assertThat(processName).isPresent().get().isEqualTo(PROCESS_NAME);
+  }
+
+  @Test
+  void shouldExtractProcessDefinitionNameEmpty() {
+    // when
+    final Optional<String> processName =
+        BpmnModelUtil.extractProcessDefinitionName("someUnknownKey", SIMPLE_SERVICE_TASK_PROCESS);
+
+    // then
+    assertThat(processName).isNotPresent();
   }
 
   @Test
@@ -107,66 +101,19 @@ public class BpmnModelUtilTest {
     // when
     final List<FlowNodeDataDto> flowNodeData =
         BpmnModelUtil.extractFlowNodeData(SIMPLE_SERVICE_TASK_PROCESS);
-    final Map<String, String> flowNodeNames = BpmnModelUtil.extractFlowNodeNames(flowNodeData);
 
     // then
+    final Map<String, String> flowNodeNames = BpmnModelUtil.extractFlowNodeNames(flowNodeData);
     assertThat(flowNodeNames)
         .isNotNull()
         .isNotEmpty()
-        .containsKeys(START_EVENT, SERVICE_TASK, END_EVENT)
-        .containsValues(START_EVENT, SERVICE_TASK, null);
-  }
-
-  @Test
-  void shouldGetCollapsedSubprocessElementIds() {
-    // when
-    final BpmnModelInstance modelInstance = parseBpmnModel(PROCESS_WITH_83_SIGNAL_EVENTS);
-    assertThat(modelInstance).isNotNull();
-
-    final ModelElementInstance signalProcess = modelInstance.getModelElementById("signalProcess");
-    assertThat(modelInstance).isNotNull();
-
-    final ModelInstance instance = signalProcess.getModelInstance();
-    assertThat(instance).isNotNull();
-
-    final Collection<StartEvent> startEvents = instance.getModelElementsByType(StartEvent.class);
-    final Collection<EndEvent> endEvents = instance.getModelElementsByType(EndEvent.class);
-    final Collection<IntermediateCatchEvent> intermediateCatchEvents =
-        instance.getModelElementsByType(IntermediateCatchEvent.class);
-    final Collection<Signal> signals = instance.getModelElementsByType(Signal.class);
-
-    // then
-    assertThat(startEvents)
-        .isNotNull()
-        .isNotEmpty()
-        .extracting(StartEvent::getId)
-        .containsExactlyInAnyOrder(
-            SIGNAL_START_INT_SUB_PROCESS, SIGNAL_START_NON_INT_SUB_PROCESS, SIGNAL_START_EVENT);
-
-    assertThat(endEvents)
-        .isNotNull()
-        .isNotEmpty()
-        .extracting(EndEvent::getId)
-        .containsExactlyInAnyOrder(
-            "interruptingSubProcessEnd", "nonInterruptingSubProcessEnd", SIGNAL_PROCESS_END);
-
-    assertThat(intermediateCatchEvents)
-        .isNotNull()
-        .isNotEmpty()
-        .extracting(IntermediateCatchEvent::getId)
-        .containsExactlyInAnyOrder(SIGNAL_CATCH, "timerEvent", SIGNAL_GATEWAY_CATCH);
-
-    assertThat(signals)
-        .isNotNull()
-        .isNotEmpty()
-        .extracting(Signal::getName)
-        .containsExactlyInAnyOrder(
-            "signalToStartInterruptingSubProcess",
-            "signalToStartNonInterruptingSubProcess",
-            "CustomerOnboarding",
-            "signalToContinueProcessAfterNonInterruptingSubProcess",
-            SIGNAL_PROCESS_FIRST_SIGNAL,
-            SIGNAL_PROCESS_SECOND_SIGNAL,
-            SIGNAL_PROCESS_THIRD_SIGNAL);
+        .containsExactlyEntriesOf(
+            new HashMap<>() {
+              {
+                put(START_EVENT, START_EVENT);
+                put(SERVICE_TASK, SERVICE_TASK);
+                put(END_EVENT, null);
+              }
+            });
   }
 }
