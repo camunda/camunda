@@ -75,15 +75,14 @@ import java.util.function.BiConsumer;
 
 public class ProcessingDbState implements MutableProcessingState {
 
+  final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final KeyGenerator keyGenerator;
-
   private final MutableProcessState processState;
   private final MutableTimerInstanceState timerInstanceState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
-
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
@@ -104,7 +103,6 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableClockState clockState;
   private final MutableAuthorizationState authorizationState;
   private final MutableRoutingState routingState;
-
   private final int partitionId;
 
   public ProcessingDbState(
@@ -152,6 +150,7 @@ public class ProcessingDbState implements MutableProcessingState {
     clockState = new DbClockState(zeebeDb, transactionContext);
     authorizationState = new DbAuthorizationState(zeebeDb, transactionContext);
     routingState = new DbRoutingState(zeebeDb, transactionContext);
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
   @Override
@@ -300,6 +299,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
+  }
+
+  @Override
+  public TransientPendingSubscriptionState getTransientPendingSubscriptionState() {
+    return transientProcessMessageSubscriptionState;
   }
 
   @Override
