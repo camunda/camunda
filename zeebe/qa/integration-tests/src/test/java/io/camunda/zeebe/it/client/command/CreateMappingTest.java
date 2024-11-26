@@ -69,4 +69,16 @@ public class CreateMappingTest {
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("claimValue");
   }
+
+  @Test
+  void shouldRejectIfMappingAlreadyExists() {
+    // given
+    client.newCreateMappingCommand().claimName(CLAIM_NAME).claimValue(CLAIM_VALUE).send().join();
+
+    // when / then
+    assertThatThrownBy(() -> client.newCreateMappingCommand().claimName(CLAIM_NAME).claimValue(CLAIM_VALUE).send().join())
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Failed with code 409: 'Conflict'")
+        .hasMessageContaining("Expected to create mapping with claimName 'claimName' and claimValue 'claimValue', but a mapping with this claim already exists.");
+  }
 }
