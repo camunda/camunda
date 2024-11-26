@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -377,6 +379,19 @@ public final class ZeebeAssertHelper {
 
     assertThat(record).isNotNull();
     eventConsumer.accept(record.getValue());
+  }
+
+  public static void assertRoleCreated(
+      final String roleId, final Consumer<RoleRecordValue> consumer) {
+    final RoleRecordValue roleRecordValue =
+        RecordingExporter.roleRecords()
+            .withIntent(RoleIntent.CREATED)
+            .withRoleKey(roleId)
+            .getFirst()
+            .getValue();
+
+    assertThat(roleRecordValue).isNotNull();
+    consumer.accept(roleRecordValue);
   }
 
   public static void assertUserCreated(final String username) {
