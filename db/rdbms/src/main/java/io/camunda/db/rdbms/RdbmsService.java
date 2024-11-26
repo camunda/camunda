@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
+import io.camunda.db.rdbms.read.service.FormReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.read.service.UserReader;
@@ -32,6 +33,7 @@ public class RdbmsService {
   private final VariableReader variableReader;
   private final UserReader userReader;
   private final UserTaskReader userTaskReader;
+  private final FormReader formReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -43,7 +45,8 @@ public class RdbmsService {
       final ProcessInstanceReader processInstanceReader,
       final VariableReader variableReader,
       final UserReader userReader,
-      final UserTaskReader userTaskReader) {
+      final UserTaskReader userTaskReader,
+      final FormReader formReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.decisionRequirementsReader = decisionRequirementsReader;
     this.decisionDefinitionReader = decisionDefinitionReader;
@@ -54,6 +57,7 @@ public class RdbmsService {
     this.variableReader = variableReader;
     this.userReader = userReader;
     this.userTaskReader = userTaskReader;
+    this.formReader = formReader;
   }
 
   public DecisionDefinitionReader getDecisionDefinitionReader() {
@@ -90,6 +94,10 @@ public class RdbmsService {
 
   public UserTaskReader getUserTaskReader() {
     return userTaskReader;
+  }
+
+  public FormReader getFormReader() {
+    return formReader;
   }
 
   public RdbmsWriter createWriter(final long partitionId) {
