@@ -110,7 +110,7 @@ public class OpensearchSearchClient
   public <T> SearchGetResponse<T> get(
       final SearchGetRequest getRequest, final Class<T> documentClass) {
     try {
-      final var requestTransformer = getSearchGetRequestTranformer();
+      final var requestTransformer = getSearchGetRequestTransformer();
       final var request = requestTransformer.apply(getRequest);
       final var rawSearchResponse = client.get(request, documentClass);
       final SearchGetResponseTransformer<T> searchResponseTransformer =
@@ -125,10 +125,11 @@ public class OpensearchSearchClient
   @Override
   public <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest) {
     try {
-      final SearchIndexRequestTransformer<T> requestTransformer = getSearchIndexRequestTranformer();
+      final SearchIndexRequestTransformer<T> requestTransformer =
+          getSearchIndexRequestTransformer();
       final var request = requestTransformer.apply(indexRequest);
       final var rawIndexResponse = client.index(request);
-      final var indexResponseTransformer = getSearchWriteResponseTranformer();
+      final var indexResponseTransformer = getSearchWriteResponseTransformer();
       return indexResponseTransformer.apply(rawIndexResponse);
     } catch (final IOException | OpenSearchException ioe) {
       LOGGER.debug("Failed to execute index request", ioe);
@@ -139,10 +140,10 @@ public class OpensearchSearchClient
   @Override
   public SearchWriteResponse delete(final SearchDeleteRequest deleteRequest) {
     try {
-      final var requestTransformer = getSearchDeleteRequestTranformer();
+      final var requestTransformer = getSearchDeleteRequestTransformer();
       final var request = requestTransformer.apply(deleteRequest);
       final var rawDeleteRequest = client.delete(request);
-      final var deleteResponseTransformer = getSearchWriteResponseTranformer();
+      final var deleteResponseTransformer = getSearchWriteResponseTransformer();
       return deleteResponseTransformer.apply(rawDeleteRequest);
     } catch (final IOException | OpenSearchException ioe) {
       LOGGER.debug("Failed to execute delete request", ioe);
@@ -175,7 +176,7 @@ public class OpensearchSearchClient
     return new SearchResponseTransformer<>(transformers);
   }
 
-  private SearchGetRequestTransformer getSearchGetRequestTranformer() {
+  private SearchGetRequestTransformer getSearchGetRequestTransformer() {
     final SearchTransfomer<SearchGetRequest, GetRequest> transformer =
         transformers.getTransformer(SearchGetRequest.class);
     return (SearchGetRequestTransformer) transformer;
@@ -187,19 +188,19 @@ public class OpensearchSearchClient
     return (SearchGetResponseTransformer<T>) transformer;
   }
 
-  private <T> SearchIndexRequestTransformer<T> getSearchIndexRequestTranformer() {
+  private <T> SearchIndexRequestTransformer<T> getSearchIndexRequestTransformer() {
     final SearchTransfomer<SearchIndexRequest<T>, IndexRequest<T>> transformer =
         transformers.getTransformer(SearchIndexRequest.class);
     return (SearchIndexRequestTransformer<T>) transformer;
   }
 
-  private SearchDeleteRequestTransformer getSearchDeleteRequestTranformer() {
+  private SearchDeleteRequestTransformer getSearchDeleteRequestTransformer() {
     final SearchTransfomer<SearchDeleteRequest, DeleteRequest> transformer =
         transformers.getTransformer(SearchDeleteRequest.class);
     return (SearchDeleteRequestTransformer) transformer;
   }
 
-  private SearchWriteResponseTransformer getSearchWriteResponseTranformer() {
+  private SearchWriteResponseTransformer getSearchWriteResponseTransformer() {
     final SearchTransfomer<WriteResponseBase, SearchWriteResponse> transformer =
         transformers.getTransformer(SearchWriteResponse.class);
     return (SearchWriteResponseTransformer) transformer;

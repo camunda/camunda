@@ -110,12 +110,12 @@ public class ElasticsearchSearchClient
   public <T> SearchGetResponse<T> get(
       final SearchGetRequest getRequest, final Class<T> documentClass) {
     try {
-      final var requestTransformer = getSearchGetRequestTranformer();
+      final var requestTransformer = getSearchGetRequestTransformer();
       final var request = requestTransformer.apply(getRequest);
       final var rawGetResponse = client.get(request, documentClass);
-      final SearchGetResponseTransformer<T> getResponseTranformer =
+      final SearchGetResponseTransformer<T> getResponseTransformer =
           getSearchGetResponseTransformer();
-      return getResponseTranformer.apply(rawGetResponse);
+      return getResponseTransformer.apply(rawGetResponse);
     } catch (final IOException | ElasticsearchException ioe) {
       LOGGER.debug("Failed to execute get request", ioe);
       throw new SearchQueryExecutionException("Failed to execute get request", ioe);
@@ -125,10 +125,11 @@ public class ElasticsearchSearchClient
   @Override
   public <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest) {
     try {
-      final SearchIndexRequestTransformer<T> requestTransformer = getSearchIndexRequestTranformer();
+      final SearchIndexRequestTransformer<T> requestTransformer =
+          getSearchIndexRequestTransformer();
       final var request = requestTransformer.apply(indexRequest);
       final var rawIndexResponse = client.index(request);
-      final var indexResponseTransformer = getSearchWriteResponseTranformer();
+      final var indexResponseTransformer = getSearchWriteResponseTransformer();
       return indexResponseTransformer.apply(rawIndexResponse);
     } catch (final IOException | ElasticsearchException ioe) {
       LOGGER.debug("Failed to execute index request", ioe);
@@ -139,10 +140,10 @@ public class ElasticsearchSearchClient
   @Override
   public SearchWriteResponse delete(final SearchDeleteRequest deleteRequest) {
     try {
-      final var requestTransformer = getSearchDeleteRequestTranformer();
+      final var requestTransformer = getSearchDeleteRequestTransformer();
       final var request = requestTransformer.apply(deleteRequest);
       final var rawDeleteRequest = client.delete(request);
-      final var deleteResponseTransformer = getSearchWriteResponseTranformer();
+      final var deleteResponseTransformer = getSearchWriteResponseTransformer();
       return deleteResponseTransformer.apply(rawDeleteRequest);
     } catch (final IOException | ElasticsearchException ioe) {
       LOGGER.debug("Failed to execute delete request", ioe);
@@ -177,7 +178,7 @@ public class ElasticsearchSearchClient
     return (SearchResponseTransformer<T>) transformer;
   }
 
-  private SearchGetRequestTransformer getSearchGetRequestTranformer() {
+  private SearchGetRequestTransformer getSearchGetRequestTransformer() {
     final SearchTransfomer<SearchGetRequest, GetRequest> transformer =
         transformers.getTransformer(SearchGetRequest.class);
     return (SearchGetRequestTransformer) transformer;
@@ -189,19 +190,19 @@ public class ElasticsearchSearchClient
     return (SearchGetResponseTransformer<T>) transformer;
   }
 
-  private <T> SearchIndexRequestTransformer<T> getSearchIndexRequestTranformer() {
+  private <T> SearchIndexRequestTransformer<T> getSearchIndexRequestTransformer() {
     final SearchTransfomer<SearchIndexRequest<T>, IndexRequest<T>> transformer =
         transformers.getTransformer(SearchIndexRequest.class);
     return (SearchIndexRequestTransformer<T>) transformer;
   }
 
-  private SearchDeleteRequestTransformer getSearchDeleteRequestTranformer() {
+  private SearchDeleteRequestTransformer getSearchDeleteRequestTransformer() {
     final SearchTransfomer<SearchDeleteRequest, DeleteRequest> transformer =
         transformers.getTransformer(SearchDeleteRequest.class);
     return (SearchDeleteRequestTransformer) transformer;
   }
 
-  private SearchWriteResponseTransformer getSearchWriteResponseTranformer() {
+  private SearchWriteResponseTransformer getSearchWriteResponseTransformer() {
     final SearchTransfomer<WriteResponseBase, SearchWriteResponse> transformer =
         transformers.getTransformer(SearchWriteResponse.class);
     return (SearchWriteResponseTransformer) transformer;
