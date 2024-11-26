@@ -49,6 +49,10 @@ import java.util.stream.Collectors;
 public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpdateRepository {
 
   private static final int RETRY_COUNT = 3;
+  private static final List<FieldValue> DELETED_OPERATION_STATES =
+      List.of(
+          FieldValue.of(OperationState.SENT.name()),
+          FieldValue.of(OperationState.COMPLETED.name()));
   private final int partitionId;
   private final String pendingUpdateAlias;
   private final String incidentAlias;
@@ -152,10 +156,6 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
   }
 
   private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {
-    final var stateValues =
-        List.of(
-            FieldValue.of(OperationState.SENT.name()),
-            FieldValue.of(OperationState.COMPLETED.name()));
     final var piKeyQ =
         QueryBuilders.term(
             t -> t.field(OperationTemplate.PROCESS_INSTANCE_KEY).value(processInstanceKey));
@@ -165,7 +165,8 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
                 t.field(OperationTemplate.TYPE)
                     .value(OperationType.DELETE_PROCESS_INSTANCE.name()));
     final var stateQ =
-        QueryBuilders.terms(t -> t.field(OperationTemplate.STATE).terms(f -> f.value(stateValues)));
+        QueryBuilders.terms(
+            t -> t.field(OperationTemplate.STATE).terms(f -> f.value(DELETED_OPERATION_STATES)));
 
     return QueryBuilders.bool(b -> b.must(piKeyQ, typeQ, stateQ));
   }
