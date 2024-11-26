@@ -155,7 +155,7 @@ public class ImportRepositoryES implements ImportRepository {
       final BulkRequest.Builder bulkRequestBuilder, final PositionBasedImportIndexDto optimizeDto) {
     LOG.debug(
         "Writing position based import index of type [{}] with position [{}] to elasticsearch",
-        optimizeDto.getEsTypeIndexRefersTo(),
+        optimizeDto.getDbTypeIndexRefersTo(),
         optimizeDto.getPositionOfLastEntity());
     bulkRequestBuilder.operations(
         b ->
@@ -165,7 +165,7 @@ public class ImportRepositoryES implements ImportRepository {
                         ib.optimizeIndex(esClient, POSITION_BASED_IMPORT_INDEX_NAME)
                             .id(
                                 DatabaseHelper.constructKey(
-                                    optimizeDto.getEsTypeIndexRefersTo(),
+                                    optimizeDto.getDbTypeIndexRefersTo(),
                                     optimizeDto.getDataSource()))
                             .document(optimizeDto))));
   }
@@ -191,7 +191,7 @@ public class ImportRepositoryES implements ImportRepository {
     LOG.debug(
         "Writing timestamp based import index [{}] of type [{}] with execution timestamp [{}] to elasticsearch",
         currentTimeStamp,
-        importIndex.getEsTypeIndexRefersTo(),
+        importIndex.getDbTypeIndexRefersTo(),
         importIndex.getLastImportExecutionTimestamp());
     return builder
         .optimizeIndex(esClient, TIMESTAMP_BASED_IMPORT_INDEX_NAME)
@@ -201,6 +201,6 @@ public class ImportRepositoryES implements ImportRepository {
 
   private String getId(final TimestampBasedImportIndexDto importIndex) {
     return DatabaseHelper.constructKey(
-        importIndex.getEsTypeIndexRefersTo(), importIndex.getDataSourceName());
+        importIndex.getDbTypeIndexRefersTo(), importIndex.getDataSourceName());
   }
 }
