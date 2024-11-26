@@ -10,9 +10,11 @@ package io.camunda.search.es.transformers;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
+import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchConstantScoreQuery;
 import io.camunda.search.clients.query.SearchExistsQuery;
@@ -50,8 +52,10 @@ import io.camunda.search.es.transformers.query.TermsQueryTransformer;
 import io.camunda.search.es.transformers.query.WildcardQueryTransformer;
 import io.camunda.search.es.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetResponseTransformer;
+import io.camunda.search.es.transformers.search.SearchIndexRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchResponseTransformer;
+import io.camunda.search.es.transformers.search.SearchWriteResponseTransformer;
 import io.camunda.search.es.transformers.sort.FieldSortTransformer;
 import io.camunda.search.es.transformers.sort.SortOptionsTransformer;
 import io.camunda.search.es.transformers.source.SourceConfigTransformer;
@@ -88,6 +92,10 @@ public final class ElasticsearchTransformers {
     // get request/response
     mappers.put(SearchGetRequest.class, new SearchGetRequestTransformer(mappers));
     mappers.put(SearchGetResponse.class, new SearchGetResponseTransformer(mappers));
+
+    // write request/response
+    mappers.put(SearchIndexRequest.class, new SearchIndexRequestTransformer(mappers));
+    mappers.put(SearchWriteResponse.class, new SearchWriteResponseTransformer(mappers));
 
     // queries
     mappers.put(SearchQuery.class, new QueryTransformer(mappers));

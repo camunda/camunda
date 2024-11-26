@@ -31,4 +31,13 @@ public final class RequestBuilders {
       final Function<SearchGetRequest.Builder, ObjectBuilder<SearchGetRequest>> fn) {
     return fn.apply(getRequest()).build();
   }
+
+  public static <T> SearchIndexRequest.Builder<T> indexRequest() {
+    return new SearchIndexRequest.Builder<T>();
+  }
+
+  public static <T> SearchIndexRequest<T> indexRequest(
+      final Function<SearchIndexRequest.Builder<T>, ObjectBuilder<SearchIndexRequest<T>>> fn) {
+    return fn.apply(indexRequest()).build();
+  }
 }

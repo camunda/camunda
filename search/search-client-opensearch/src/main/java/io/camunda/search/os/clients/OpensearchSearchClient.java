@@ -10,23 +10,29 @@ package io.camunda.search.os.clients;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
+import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.exception.SearchQueryExecutionException;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import io.camunda.search.os.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetResponseTransformer;
+import io.camunda.search.os.transformers.search.SearchIndexRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchResponseTransformer;
+import io.camunda.search.os.transformers.search.SearchWriteResponseTransformer;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch._types.WriteResponseBase;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -111,6 +117,20 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, AutoCl
     }
   }
 
+  @Override
+  public <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest) {
+    try {
+      final SearchIndexRequestTransformer<T> requestTransformer = getSearchIndexRequestTranformer();
+      final var request = requestTransformer.apply(indexRequest);
+      final var rawIndexResponse = client.index(request);
+      final var indexResponseTransformer = getSearchWriteResponseTranformer();
+      return indexResponseTransformer.apply(rawIndexResponse);
+    } catch (final IOException | OpenSearchException ioe) {
+      LOGGER.debug("Failed to execute index request", ioe);
+      throw new SearchQueryExecutionException("Failed to execute index request", ioe);
+    }
+  }
+
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
     return client.scroll(r -> r.scrollId(scrollId), documentClass);
@@ -146,6 +166,18 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, AutoCl
     final SearchTransfomer<GetResponse<T>, SearchGetResponse<T>> transformer =
         transformers.getTransformer(SearchGetResponse.class);
     return (SearchGetResponseTransformer<T>) transformer;
+  }
+
+  private <T> SearchIndexRequestTransformer<T> getSearchIndexRequestTranformer() {
+    final SearchTransfomer<SearchIndexRequest<T>, IndexRequest<T>> transformer =
+        transformers.getTransformer(SearchIndexRequest.class);
+    return (SearchIndexRequestTransformer<T>) transformer;
+  }
+
+  private SearchWriteResponseTransformer getSearchWriteResponseTranformer() {
+    final SearchTransfomer<WriteResponseBase, SearchWriteResponse> transformer =
+        transformers.getTransformer(SearchWriteResponse.class);
+    return (SearchWriteResponseTransformer) transformer;
   }
 
   @Override

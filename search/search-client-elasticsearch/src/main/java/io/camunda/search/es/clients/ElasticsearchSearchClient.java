@@ -9,8 +9,10 @@ package io.camunda.search.es.clients;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch._types.WriteResponseBase;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -18,14 +20,18 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
+import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.es.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetResponseTransformer;
+import io.camunda.search.es.transformers.search.SearchIndexRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchResponseTransformer;
+import io.camunda.search.es.transformers.search.SearchWriteResponseTransformer;
 import io.camunda.search.exception.SearchQueryExecutionException;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -111,6 +117,20 @@ public class ElasticsearchSearchClient implements DocumentBasedSearchClient, Aut
     }
   }
 
+  @Override
+  public <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest) {
+    try {
+      final SearchIndexRequestTransformer<T> requestTransformer = getSearchIndexRequestTranformer();
+      final var request = requestTransformer.apply(indexRequest);
+      final var rawIndexResponse = client.index(request);
+      final var indexResponseTransformer = getSearchWriteResponseTranformer();
+      return indexResponseTransformer.apply(rawIndexResponse);
+    } catch (final IOException | ElasticsearchException ioe) {
+      LOGGER.debug("Failed to execute index request", ioe);
+      throw new SearchQueryExecutionException("Failed to execute index request", ioe);
+    }
+  }
+
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
     return client.scroll(r -> r.scrollId(scrollId), documentClass);
@@ -148,6 +168,18 @@ public class ElasticsearchSearchClient implements DocumentBasedSearchClient, Aut
     final SearchTransfomer<GetResponse<T>, SearchGetResponse<T>> transformer =
         transformers.getTransformer(SearchGetResponse.class);
     return (SearchGetResponseTransformer<T>) transformer;
+  }
+
+  private <T> SearchIndexRequestTransformer<T> getSearchIndexRequestTranformer() {
+    final SearchTransfomer<SearchIndexRequest<T>, IndexRequest<T>> transformer =
+        transformers.getTransformer(SearchIndexRequest.class);
+    return (SearchIndexRequestTransformer<T>) transformer;
+  }
+
+  private SearchWriteResponseTransformer getSearchWriteResponseTranformer() {
+    final SearchTransfomer<WriteResponseBase, SearchWriteResponse> transformer =
+        transformers.getTransformer(SearchWriteResponse.class);
+    return (SearchWriteResponseTransformer) transformer;
   }
 
   @Override

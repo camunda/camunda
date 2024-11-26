@@ -11,9 +11,11 @@ import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
+import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryRequest.Builder;
 import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
@@ -31,4 +33,6 @@ public interface DocumentBasedSearchClient {
   <T> List<T> findAll(final SearchQueryRequest searchRequest, final Class<T> documentClass);
 
   <T> SearchGetResponse<T> get(final SearchGetRequest getRequest, final Class<T> documentClass);
+
+  <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest);
 }

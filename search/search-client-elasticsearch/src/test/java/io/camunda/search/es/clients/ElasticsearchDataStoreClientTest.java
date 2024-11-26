@@ -13,14 +13,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.HitsMetadata;
 import co.elastic.clients.elasticsearch.core.search.TotalHitsRelation;
 import io.camunda.search.clients.core.SearchGetRequest;
+import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -116,6 +121,48 @@ public class ElasticsearchDataStoreClientTest {
     assertThat(response.source().id()).isEqualTo("123");
   }
 
+  @Test
+  public void shouldTransformIndexRequest() throws IOException {
+    // given
+    final var indexRequestCaptor = ArgumentCaptor.forClass(IndexRequest.class);
+    final var indexResponse = createDefaultIndexResponse();
+    when(client.index(indexRequestCaptor.capture())).thenReturn(indexResponse);
+
+    final var doc = new TestDocument("test");
+    final var searchIndexRequest =
+        SearchIndexRequest.of(b -> b.id("foo").index("bar").routing("foobar").document(doc));
+
+    // when
+    searchClient.index(searchIndexRequest);
+
+    // then
+    assertThat(indexRequestCaptor.getValue().id()).isEqualTo("foo");
+    assertThat(indexRequestCaptor.getValue().index()).isEqualTo("bar");
+    assertThat(indexRequestCaptor.getValue().routing()).isEqualTo("foobar");
+    assertThat(indexRequestCaptor.getValue().document()).isEqualTo(doc);
+  }
+
+  @Test
+  public void shouldTransformIndexResponse() throws IOException {
+    // given
+    final var indexRequestCaptor = ArgumentCaptor.forClass(IndexRequest.class);
+    final var indexResponse = createDefaultIndexResponse();
+    when(client.index(indexRequestCaptor.capture())).thenReturn(indexResponse);
+
+    final var doc = new TestDocument("test");
+    final var searchIndexRequest =
+        SearchIndexRequest.of(b -> b.id("foo").index("bar").routing("foobar").document(doc));
+
+    // when
+    final var response = searchClient.index(searchIndexRequest);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.id()).isEqualTo("foo");
+    assertThat(response.index()).isEqualTo("bar");
+    assertThat(response.result()).isEqualTo(SearchWriteResponse.Result.CREATED);
+  }
+
   private SearchResponse<TestDocument> createDefaultSearchResponse() {
     return SearchResponse.of(
         (f) ->
@@ -132,6 +179,18 @@ public class ElasticsearchDataStoreClientTest {
   private GetResponse<TestDocument> createDefaultGetResponse() {
     return GetResponse.of(
         b -> b.id("foo").index("bar").found(true).source(new TestDocument("123")));
+  }
+
+  private IndexResponse createDefaultIndexResponse() {
+    return IndexResponse.of(
+        b ->
+            b.id("foo")
+                .index("bar")
+                .result(Result.Created)
+                .primaryTerm(1L)
+                .seqNo(1L)
+                .version(1L)
+                .shards(s -> s.total(1).successful(1).failed(0)));
   }
 
   record TestDocument(String id) {}
