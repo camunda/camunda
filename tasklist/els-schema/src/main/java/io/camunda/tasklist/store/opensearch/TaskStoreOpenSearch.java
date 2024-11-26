@@ -173,16 +173,6 @@ public class TaskStoreOpenSearch implements TaskStore {
     return response;
   }
 
-  @Override
-  public List<TaskEntity> getTasksById(final List<String> ids) {
-    try {
-      final List<Hit<TaskEntity>> response = getTasksRawResponse(ids);
-      return response.stream().map(Hit::source).collect(Collectors.toList());
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   /**
    * Persist that task is completed even before the corresponding events are imported from Zeebe.
    */
@@ -276,8 +266,21 @@ public class TaskStoreOpenSearch implements TaskStore {
   }
 
   @Override
-  public void updateTaskLinkedForm(final TaskEntity task, final String formBpmnId) {
-    updateTask(task.getId(), asMap(TaskTemplate.FORM_ID, formBpmnId));
+  public List<TaskEntity> getTasksById(final List<String> ids) {
+    try {
+      final List<Hit<TaskEntity>> response = getTasksRawResponse(ids);
+      return response.stream().map(Hit::source).collect(Collectors.toList());
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  @Override
+  public void updateTaskLinkedForm(
+      final TaskEntity task, final String formBpmnId, final long formVersion) {
+    updateTask(
+        task.getId(),
+        asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
   }
 
   /**

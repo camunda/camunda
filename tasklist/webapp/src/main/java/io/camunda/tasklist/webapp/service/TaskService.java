@@ -130,17 +130,26 @@ public class TaskService {
 
   public TaskDTO getTask(final String taskId) {
     final TaskEntity task = taskStore.getTask(taskId);
-    if (task.getExternalFormReference() == null
-        && (task.getIsFormEmbedded() == null || task.getIsFormEmbedded())
-        && task.getFormKey() != null
-        && task.getFormId() == null) {
+    if (taskFormLinkIsNotComplete(task)) {
+      LOGGER.debug(
+          "Task with id {} found having incorrect form linking to form with key {}",
+          taskId,
+          task.getFormKey());
+
       final Optional<FormIdView> linkedForm =
           formStore.getHighestVersionFormByKey(task.getFormKey());
+
       linkedForm.ifPresent(
           form -> {
-            taskStore.updateTaskLinkedForm(task, form.bpmnId());
+            taskStore.updateTaskLinkedForm(task, form.bpmnId(), form.version());
             task.setFormId(form.bpmnId());
             task.setFormVersion(form.version());
+            LOGGER.debug(
+                "Updated Task with id {} form link of key {} to formId {} and version {}",
+                taskId,
+                task.getFormKey(),
+                form.bpmnId(),
+                form.version());
           });
     }
     return TaskDTO.createFrom(task, objectMapper);
@@ -298,6 +307,13 @@ public class TaskService {
 
   private UserDTO getCurrentUser() {
     return userReader.getCurrentUser();
+  }
+
+  private boolean taskFormLinkIsNotComplete(final TaskEntity task) {
+    return task.getFormKey() != null
+        && task.getFormId() == null
+        && (task.getIsFormEmbedded() == null || !task.getIsFormEmbedded())
+        && task.getExternalFormReference() == null;
   }
 
   private void updateClaimedMetric(final TaskEntity task) {
