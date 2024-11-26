@@ -12,15 +12,18 @@ import co.elastic.clients.elasticsearch._types.ErrorCause;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.core.search.SourceFilter;
 import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
 import co.elastic.clients.elasticsearch.indices.analyze.AnalyzeToken;
@@ -37,6 +40,7 @@ import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,15 +48,18 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
 
 public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpdateRepository {
-
   private static final int RETRY_COUNT = 3;
   private static final List<FieldValue> DELETED_OPERATION_STATES =
       List.of(
           FieldValue.of(OperationState.SENT.name()),
           FieldValue.of(OperationState.COMPLETED.name()));
+  private static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
+
   private final int partitionId;
   private final String pendingUpdateAlias;
   private final String incidentAlias;
@@ -61,6 +68,7 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
   private final String operationAlias;
   private final ElasticsearchAsyncClient client;
   private final Executor executor;
+  private final Logger logger;
 
   public ElasticsearchIncidentUpdateRepository(
       final int partitionId,
@@ -70,7 +78,8 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
       final String flowNodeAlias,
       final String operationAlias,
       final ElasticsearchAsyncClient client,
-      final Executor executor) {
+      final Executor executor,
+      final Logger logger) {
     this.partitionId = partitionId;
     this.pendingUpdateAlias = pendingUpdateAlias;
     this.incidentAlias = incidentAlias;
@@ -79,6 +88,7 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
     this.operationAlias = operationAlias;
     this.client = client;
     this.executor = executor;
+    this.logger = logger;
   }
 
   @Override
@@ -100,6 +110,37 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
     return client
         .search(request, IncidentEntity.class)
         .thenApplyAsync(this::createIncidentDocuments, executor);
+  }
+
+  @Override
+  public CompletionStage<Collection<Document>> getFlowNodesInListView(
+      final List<String> flowNodeKeys) {
+    final var idQ = QueryBuilders.ids(i -> i.values(flowNodeKeys));
+    final var typeQ =
+        QueryBuilders.term(
+            t ->
+                t.field(ListViewTemplate.JOIN_RELATION)
+                    .value(ListViewTemplate.ACTIVITIES_JOIN_RELATION));
+    final var request =
+        new SearchRequest.Builder()
+            .index(listViewAlias)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .query(q -> q.bool(b -> b.must(idQ, typeQ)))
+            .source(s -> s.fetch(false))
+            .scroll(SCROLL_KEEP_ALIVE)
+            .build();
+
+    return client
+        // pass Object as the document type, because we will not read the source anyway and we don't
+        // want to couple ourselves to whatever the entity type really be
+        .search(request, Object.class)
+        .thenComposeAsync(
+            r ->
+                clearScrollOnComplete(
+                    r.scrollId(),
+                    scrollFlowNodesInListView(r.hits().hits(), r.scrollId(), new ArrayList<>())),
+            executor);
   }
 
   @Override
@@ -153,6 +194,52 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
         .analyze(request)
         .thenApplyAsync(
             response -> response.tokens().stream().map(AnalyzeToken::token).toList(), executor);
+  }
+
+  private <T> CompletionStage<T> clearScrollOnComplete(
+      final String scrollId, final CompletionStage<T> scrollOperation) {
+    return scrollOperation
+        // we combine `handleAsync` and `thenComposeAsync` to emulate the behavior of a try/finally
+        // so we always clear the scroll even if the future is already failed
+        .handleAsync((result, error) -> clearScroll(scrollId, result, error), executor)
+        .thenComposeAsync(Function.identity(), executor);
+  }
+
+  private <T> CompletableFuture<T> clearScroll(
+      final String scrollId, final T result, final Throwable error) {
+    final var request = new ClearScrollRequest.Builder().scrollId(scrollId).build();
+    final CompletionStage<T> endResult =
+        error != null
+            ? CompletableFuture.failedFuture(error)
+            : CompletableFuture.completedFuture(result);
+    return client
+        .clearScroll(request)
+        .exceptionallyAsync(
+            clearError -> {
+              logger.warn(
+                  """
+                      Failed to clear scroll context; this could eventually lead to \
+                      increased resource usage in Elastic""",
+                  clearError);
+
+              return null;
+            },
+            executor)
+        .thenComposeAsync(ignored -> endResult);
+  }
+
+  private CompletionStage<Collection<Document>> scrollFlowNodesInListView(
+      final List<Hit<Object>> hits, final String scrollId, final List<Document> accumulator) {
+    if (hits.isEmpty()) {
+      return CompletableFuture.completedFuture(accumulator);
+    }
+
+    hits.forEach(hit -> accumulator.add(new Document(hit.id(), hit.index())));
+
+    return client
+        .scroll(r -> r.scrollId(scrollId).scroll(SCROLL_KEEP_ALIVE), Object.class)
+        .thenComposeAsync(
+            r -> scrollFlowNodesInListView(r.hits().hits(), r.scrollId(), accumulator));
   }
 
   private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {
