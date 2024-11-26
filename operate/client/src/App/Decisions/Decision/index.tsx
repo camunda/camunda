@@ -145,7 +145,6 @@ const Decision: React.FC = observer(() => {
           )}
           {isVersionSelected && decisionDefinitionId !== null && (
             <Restricted
-              scopes={['write']}
               resourceBasedRestrictions={{
                 scopes: ['DELETE'],
                 permissions: groupedDecisionsStore.getPermissions(
