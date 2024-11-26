@@ -13,7 +13,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.core.SearchGetRequest;
+import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.os.transformers.OpensearchTransformers;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,8 +23,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.IndexResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
@@ -116,6 +121,48 @@ public class OpensearchDataStoreClientTest {
     assertThat(response.source().id()).isEqualTo("123");
   }
 
+  @Test
+  public void shouldTransformIndexRequest() throws IOException {
+    // given
+    final var indexRequestCaptor = ArgumentCaptor.forClass(IndexRequest.class);
+    final var indexResponse = createDefaultIndexResponse();
+    when(client.index(indexRequestCaptor.capture())).thenReturn(indexResponse);
+
+    final var doc = new TestDocument("test");
+    final var searchIndexRequest =
+        SearchIndexRequest.of(b -> b.id("foo").index("bar").routing("foobar").document(doc));
+
+    // when
+    searchClient.index(searchIndexRequest);
+
+    // then
+    assertThat(indexRequestCaptor.getValue().id()).isEqualTo("foo");
+    assertThat(indexRequestCaptor.getValue().index()).isEqualTo("bar");
+    assertThat(indexRequestCaptor.getValue().routing()).isEqualTo("foobar");
+    assertThat(indexRequestCaptor.getValue().document()).isEqualTo(doc);
+  }
+
+  @Test
+  public void shouldTransformIndexResponse() throws IOException {
+    // given
+    final var indexRequestCaptor = ArgumentCaptor.forClass(IndexRequest.class);
+    final var indexResponse = createDefaultIndexResponse();
+    when(client.index(indexRequestCaptor.capture())).thenReturn(indexResponse);
+
+    final var doc = new TestDocument("test");
+    final var searchIndexRequest =
+        SearchIndexRequest.of(b -> b.id("foo").index("bar").routing("foobar").document(doc));
+
+    // when
+    final var response = searchClient.index(searchIndexRequest);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.id()).isEqualTo("foo");
+    assertThat(response.index()).isEqualTo("bar");
+    assertThat(response.result()).isEqualTo(SearchWriteResponse.Result.CREATED);
+  }
+
   private SearchResponse<TestDocument> createDefaultSearchResponse() {
     return SearchResponse.searchResponseOf(
         (f) ->
@@ -132,6 +179,18 @@ public class OpensearchDataStoreClientTest {
   private GetResponse<TestDocument> createDefaultGetResponse() {
     return GetResponse.of(
         b -> b.id("foo").index("bar").found(true).source(new TestDocument("123")));
+  }
+
+  private IndexResponse createDefaultIndexResponse() {
+    return IndexResponse.of(
+        b ->
+            b.id("foo")
+                .index("bar")
+                .result(Result.Created)
+                .primaryTerm(1L)
+                .seqNo(1L)
+                .version(1L)
+                .shards(s -> s.total(1).successful(1).failed(0)));
   }
 
   record TestDocument(String id) {}

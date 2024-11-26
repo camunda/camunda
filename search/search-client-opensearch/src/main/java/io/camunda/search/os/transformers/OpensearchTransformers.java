@@ -10,9 +10,11 @@ package io.camunda.search.os.transformers;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
+import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
+import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchConstantScoreQuery;
 import io.camunda.search.clients.query.SearchExistsQuery;
@@ -50,9 +52,11 @@ import io.camunda.search.os.transformers.query.TermsQueryTransformer;
 import io.camunda.search.os.transformers.query.WildcardQueryTransformer;
 import io.camunda.search.os.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetResponseTransformer;
+import io.camunda.search.os.transformers.search.SearchIndexRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchQueryHitTransformer;
 import io.camunda.search.os.transformers.search.SearchRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchResponseTransformer;
+import io.camunda.search.os.transformers.search.SearchWriteResponseTransformer;
 import io.camunda.search.os.transformers.sort.FieldSortTransformer;
 import io.camunda.search.os.transformers.sort.SortOptionsTransformer;
 import io.camunda.search.os.transformers.source.SourceConfigTransformer;
@@ -89,6 +93,10 @@ public final class OpensearchTransformers {
     // get request/response
     mappers.put(SearchGetRequest.class, new SearchGetRequestTransformer(mappers));
     mappers.put(SearchGetResponse.class, new SearchGetResponseTransformer(mappers));
+
+    // write request/response
+    mappers.put(SearchIndexRequest.class, new SearchIndexRequestTransformer(mappers));
+    mappers.put(SearchWriteResponse.class, new SearchWriteResponseTransformer(mappers));
 
     // queries
     mappers.put(SearchQuery.class, new QueryTransformer(mappers));
