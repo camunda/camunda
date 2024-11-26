@@ -217,7 +217,13 @@ public enum ZbColumnFamilies implements EnumValue {
   ENTITY_BY_GROUP(111),
   GROUP_BY_NAME(112),
 
-  REDISTRIBUTION(113);
+  REDISTRIBUTION(113),
+
+  RPAS(114),
+  RPA_VERSION(115),
+  RPA_BY_ID_AND_VERSION(116),
+  RPA_KEY_BY_RPA_ID_AND_VERSION_TAG(117),
+  RPA_KEY_BY_RPA_ID_AND_DEPLOYMENT_KEY(118);
 
   private final int value;
 
