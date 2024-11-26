@@ -145,7 +145,7 @@
     "availableTasksNavLinkAssignedTask": "Assigned task: {{name}}",
     "availableTasksNavLinkUnassignedTask": "Unassigned task: {{name}}",
     "customFiltersModalDeleteModalLabel": "Delete filter",
-    "customFiltersModalDeleteModalHeading": "The custom filter will be deleted.",
+    "customFiltersModalDeleteModalHeading": "The custom filter <strong>{{name}}</strong> will be deleted.",
     "customFiltersModalConfirmDeletionButton": "Confirm deletion",
     "customFiltersModalAriaLabel": "Custom filters modal",
     "customFiltersModalApplyFiltersTitle": "Apply filters",
