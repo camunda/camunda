@@ -144,7 +144,7 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
-    return null;
+    return rdbmsService.getFormReader().search(filter);
   }
 
   @Override
