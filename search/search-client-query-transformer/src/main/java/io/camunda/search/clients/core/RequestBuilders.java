@@ -22,4 +22,13 @@ public final class RequestBuilders {
       final Function<SearchQueryRequest.Builder, ObjectBuilder<SearchQueryRequest>> fn) {
     return fn.apply(searchRequest()).build();
   }
+
+  public static SearchGetRequest.Builder getRequest() {
+    return new SearchGetRequest.Builder();
+  }
+
+  public static SearchGetRequest getRequest(
+      final Function<SearchGetRequest.Builder, ObjectBuilder<SearchGetRequest>> fn) {
+    return fn.apply(getRequest()).build();
+  }
 }

@@ -8,6 +8,8 @@
 package io.camunda.search.es.transformers;
 
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
+import io.camunda.search.clients.core.SearchGetRequest;
+import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
@@ -46,6 +48,8 @@ import io.camunda.search.es.transformers.query.RangeQueryTransformer;
 import io.camunda.search.es.transformers.query.TermQueryTransformer;
 import io.camunda.search.es.transformers.query.TermsQueryTransformer;
 import io.camunda.search.es.transformers.query.WildcardQueryTransformer;
+import io.camunda.search.es.transformers.search.SearchGetRequestTransformer;
+import io.camunda.search.es.transformers.search.SearchGetResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchResponseTransformer;
 import io.camunda.search.es.transformers.sort.FieldSortTransformer;
@@ -80,6 +84,10 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchQueryRequest.class, new SearchRequestTransformer(mappers));
     mappers.put(SearchQueryResponse.class, new SearchResponseTransformer(mappers));
     mappers.put(SearchQueryHit.class, new SearchRequestTransformer(mappers));
+
+    // get request/response
+    mappers.put(SearchGetRequest.class, new SearchGetRequestTransformer(mappers));
+    mappers.put(SearchGetResponse.class, new SearchGetResponseTransformer(mappers));
 
     // queries
     mappers.put(SearchQuery.class, new QueryTransformer(mappers));

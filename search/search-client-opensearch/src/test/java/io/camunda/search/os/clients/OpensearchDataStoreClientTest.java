@@ -8,66 +8,131 @@
 package io.camunda.search.os.clients;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.os.util.StubbedOpensearchClient;
+import io.camunda.search.os.transformers.OpensearchTransformers;
+import java.io.IOException;
 import java.util.ArrayList;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 
 public class OpensearchDataStoreClientTest {
 
-  private OpensearchSearchClient client;
-  private StubbedOpensearchClient stubbedOpensearchClient;
+  private OpenSearchClient client;
+  private OpensearchSearchClient searchClient;
 
   @BeforeEach
   public void before() {
-    stubbedOpensearchClient = new StubbedOpensearchClient();
-    stubbedOpensearchClient.registerHandler(
-        (h) -> {
-          return SearchResponse.searchResponseOf(
-              (f) ->
-                  f.took(122)
-                      .hits(
-                          HitsMetadata.of(
-                              (m) ->
-                                  m.hits(new ArrayList<>())
-                                      .total((t) -> t.value(789).relation(TotalHitsRelation.Eq))))
-                      .shards((s) -> s.failed(0).successful(100).total(100))
-                      .timedOut(false));
-        });
-
-    client = new OpensearchSearchClient(stubbedOpensearchClient);
+    client = mock(OpenSearchClient.class);
+    searchClient = new OpensearchSearchClient(client, new OpensearchTransformers());
   }
 
   @Test
-  public void shouldTransformSearchRequest() {
+  public void shouldTransformSearchRequest() throws IOException {
     // given
+    final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+    final var searchResponse = createDefaultSearchResponse();
+    when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
+        .thenReturn(searchResponse);
+
     final SearchQueryRequest request =
         SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
 
     // when
-    client.search(request, Object.class);
+    searchClient.search(request, TestDocument.class);
 
     // then
-    final var searchRequest = stubbedOpensearchClient.getSingleSearchRequest();
-    assertThat(searchRequest.index()).hasSize(1).contains("operate-list-view-8.3.0_");
+    assertThat(searchRequestCaptor.getValue().index()).contains("operate-list-view-8.3.0_");
   }
 
   @Test
-  public void shouldTransformSearchResponse() {
+  public void shouldTransformSearchResponse() throws IOException {
     // given
+    final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
+    final var searchResponse = createDefaultSearchResponse();
+    when(client.search(searchRequestCaptor.capture(), eq(TestDocument.class)))
+        .thenReturn(searchResponse);
+
     final SearchQueryRequest request =
         SearchQueryRequest.of(b -> b.index("operate-list-view-8.3.0_").size(1));
 
     // when
-    final var response = client.search(request, Object.class);
+    final var response = searchClient.search(request, TestDocument.class);
 
     // then
     assertThat(response).isNotNull();
     assertThat(response.totalHits()).isEqualTo(789);
   }
+
+  @Test
+  public void shouldTransformGetRequest() throws IOException {
+    // given
+    final var getRequestCaptor = ArgumentCaptor.forClass(GetRequest.class);
+    final var getResponse = createDefaultGetResponse();
+    when(client.get(getRequestCaptor.capture(), eq(TestDocument.class))).thenReturn(getResponse);
+
+    final var searchGetRequest =
+        SearchGetRequest.of(b -> b.id("foo").index("bar").routing("foobar"));
+
+    // when
+    searchClient.get(searchGetRequest, TestDocument.class);
+
+    // then
+    assertThat(getRequestCaptor.getValue().id()).isEqualTo("foo");
+    assertThat(getRequestCaptor.getValue().index()).isEqualTo("bar");
+    assertThat(getRequestCaptor.getValue().routing()).isEqualTo("foobar");
+  }
+
+  @Test
+  public void shouldTransformGetResponse() throws IOException {
+    // given
+    final var getRequestCaptor = ArgumentCaptor.forClass(GetRequest.class);
+    final var getResponse = createDefaultGetResponse();
+    when(client.get(getRequestCaptor.capture(), eq(TestDocument.class))).thenReturn(getResponse);
+
+    final var searchGetRequest =
+        SearchGetRequest.of(b -> b.id("foo").index("bar").routing("foobar"));
+
+    // when
+    final var response = searchClient.get(searchGetRequest, TestDocument.class);
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.id()).isEqualTo("foo");
+    assertThat(response.index()).isEqualTo("bar");
+    assertThat(response.found()).isTrue();
+    assertThat(response.source().id()).isEqualTo("123");
+  }
+
+  private SearchResponse<TestDocument> createDefaultSearchResponse() {
+    return SearchResponse.searchResponseOf(
+        (f) ->
+            f.took(122)
+                .hits(
+                    HitsMetadata.of(
+                        (m) ->
+                            m.hits(new ArrayList<>())
+                                .total((t) -> t.value(789).relation(TotalHitsRelation.Eq))))
+                .shards((s) -> s.failed(0).successful(100).total(100))
+                .timedOut(false));
+  }
+
+  private GetResponse<TestDocument> createDefaultGetResponse() {
+    return GetResponse.of(
+        b -> b.id("foo").index("bar").found(true).source(new TestDocument("123")));
+  }
+
+  record TestDocument(String id) {}
 }
