@@ -8,6 +8,7 @@
 package io.camunda.search.os.clients;
 
 import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchIndexRequest;
@@ -17,6 +18,7 @@ import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.exception.SearchQueryExecutionException;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.search.os.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetResponseTransformer;
 import io.camunda.search.os.transformers.search.SearchIndexRequestTransformer;
@@ -30,6 +32,7 @@ import java.util.Optional;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.WriteResponseBase;
+import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.GetRequest;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
@@ -131,6 +134,20 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, AutoCl
     }
   }
 
+  @Override
+  public SearchWriteResponse delete(final SearchDeleteRequest deleteRequest) {
+    try {
+      final var requestTransformer = getSearchDeleteRequestTranformer();
+      final var request = requestTransformer.apply(deleteRequest);
+      final var rawDeleteRequest = client.delete(request);
+      final var deleteResponseTransformer = getSearchWriteResponseTranformer();
+      return deleteResponseTransformer.apply(rawDeleteRequest);
+    } catch (final IOException | OpenSearchException ioe) {
+      LOGGER.debug("Failed to execute delete request", ioe);
+      throw new SearchQueryExecutionException("Failed to execute delete request", ioe);
+    }
+  }
+
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
     return client.scroll(r -> r.scrollId(scrollId), documentClass);
@@ -172,6 +189,12 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, AutoCl
     final SearchTransfomer<SearchIndexRequest<T>, IndexRequest<T>> transformer =
         transformers.getTransformer(SearchIndexRequest.class);
     return (SearchIndexRequestTransformer<T>) transformer;
+  }
+
+  private SearchDeleteRequestTransformer getSearchDeleteRequestTranformer() {
+    final SearchTransfomer<SearchDeleteRequest, DeleteRequest> transformer =
+        transformers.getTransformer(SearchDeleteRequest.class);
+    return (SearchDeleteRequestTransformer) transformer;
   }
 
   private SearchWriteResponseTransformer getSearchWriteResponseTranformer() {

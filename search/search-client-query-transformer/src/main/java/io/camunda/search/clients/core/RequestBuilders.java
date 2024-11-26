@@ -40,4 +40,13 @@ public final class RequestBuilders {
       final Function<SearchIndexRequest.Builder<T>, ObjectBuilder<SearchIndexRequest<T>>> fn) {
     return fn.apply(indexRequest()).build();
   }
+
+  public static SearchDeleteRequest.Builder deleteRequest() {
+    return new SearchDeleteRequest.Builder();
+  }
+
+  public static SearchDeleteRequest deleteRequest(
+      final Function<SearchDeleteRequest.Builder, ObjectBuilder<SearchDeleteRequest>> fn) {
+    return fn.apply(deleteRequest()).build();
+  }
 }
