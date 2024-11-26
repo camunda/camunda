@@ -66,9 +66,9 @@ public class BpmnModelUtilTest {
     // when
     final String bpmnModelInstance =
         Bpmn.convertToString(createSimpleUserTaskProcess(PROCESS_NAME));
-    final Map<String, String> userTaskNames = BpmnModelUtil.extractUserTaskNames(bpmnModelInstance);
 
-    // then
+    // when
+    final Map<String, String> userTaskNames = BpmnModelUtil.extractUserTaskNames(bpmnModelInstance);
     assertThat(userTaskNames)
         .isNotNull()
         .isNotEmpty()
@@ -87,7 +87,7 @@ public class BpmnModelUtilTest {
   }
 
   @Test
-  void shouldExtractProcessDefinitionNameEmpty() {
+  void shouldNotExtractNameForUnkownProcessDefinitionKey() {
     // when
     final Optional<String> processName =
         BpmnModelUtil.extractProcessDefinitionName("someUnknownKey", SIMPLE_SERVICE_TASK_PROCESS);
@@ -98,12 +98,14 @@ public class BpmnModelUtilTest {
 
   @Test
   void shouldExtractFlowNodeNames() {
-    // when
+    // given
     final List<FlowNodeDataDto> flowNodeData =
         BpmnModelUtil.extractFlowNodeData(SIMPLE_SERVICE_TASK_PROCESS);
 
-    // then
+    // when
     final Map<String, String> flowNodeNames = BpmnModelUtil.extractFlowNodeNames(flowNodeData);
+
+    // then
     assertThat(flowNodeNames)
         .isNotNull()
         .isNotEmpty()
