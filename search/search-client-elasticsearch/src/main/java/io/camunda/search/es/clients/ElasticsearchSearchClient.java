@@ -10,6 +10,7 @@ package io.camunda.search.es.clients;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.WriteResponseBase;
+import co.elastic.clients.elasticsearch.core.DeleteRequest;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
@@ -18,6 +19,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchIndexRequest;
@@ -26,6 +28,7 @@ import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import io.camunda.search.es.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchGetResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchIndexRequestTransformer;
@@ -131,6 +134,20 @@ public class ElasticsearchSearchClient implements DocumentBasedSearchClient, Aut
     }
   }
 
+  @Override
+  public SearchWriteResponse delete(final SearchDeleteRequest deleteRequest) {
+    try {
+      final var requestTransformer = getSearchDeleteRequestTranformer();
+      final var request = requestTransformer.apply(deleteRequest);
+      final var rawDeleteRequest = client.delete(request);
+      final var deleteResponseTransformer = getSearchWriteResponseTranformer();
+      return deleteResponseTransformer.apply(rawDeleteRequest);
+    } catch (final IOException | ElasticsearchException ioe) {
+      LOGGER.debug("Failed to execute delete request", ioe);
+      throw new SearchQueryExecutionException("Failed to execute delete request", ioe);
+    }
+  }
+
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
     return client.scroll(r -> r.scrollId(scrollId), documentClass);
@@ -174,6 +191,12 @@ public class ElasticsearchSearchClient implements DocumentBasedSearchClient, Aut
     final SearchTransfomer<SearchIndexRequest<T>, IndexRequest<T>> transformer =
         transformers.getTransformer(SearchIndexRequest.class);
     return (SearchIndexRequestTransformer<T>) transformer;
+  }
+
+  private SearchDeleteRequestTransformer getSearchDeleteRequestTranformer() {
+    final SearchTransfomer<SearchDeleteRequest, DeleteRequest> transformer =
+        transformers.getTransformer(SearchDeleteRequest.class);
+    return (SearchDeleteRequestTransformer) transformer;
   }
 
   private SearchWriteResponseTransformer getSearchWriteResponseTranformer() {

@@ -9,6 +9,7 @@ package io.camunda.search.clients;
 
 import static io.camunda.search.clients.core.RequestBuilders.searchRequest;
 
+import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchIndexRequest;
@@ -35,4 +36,6 @@ public interface DocumentBasedSearchClient {
   <T> SearchGetResponse<T> get(final SearchGetRequest getRequest, final Class<T> documentClass);
 
   <T> SearchWriteResponse index(final SearchIndexRequest<T> indexRequest);
+
+  SearchWriteResponse delete(final SearchDeleteRequest deleteRequest);
 }
