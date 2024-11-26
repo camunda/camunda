@@ -9,7 +9,7 @@
 import {waitFor} from 'modules/testing-library';
 import {authenticationStore} from 'modules/stores/authentication';
 import {getStateLocally} from 'modules/utils/localStorage';
-import {mockGetUser} from 'modules/mocks/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 
 const mockUserResponse = createUser();
@@ -17,32 +17,6 @@ const mockUserResponse = createUser();
 describe('stores/authentication', () => {
   afterEach(() => {
     authenticationStore.reset();
-  });
-
-  it('should set user role', () => {
-    expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
-
-    authenticationStore.setUser(createUser({permissions: undefined}));
-    expect(authenticationStore.state.permissions).toEqual(['read', 'write']);
-
-    authenticationStore.setUser(createUser({permissions: ['read']}));
-    expect(authenticationStore.state.permissions).toEqual(['read']);
-  });
-
-  it('should see if user has permissions to specific scopes', () => {
-    expect(authenticationStore.hasPermission(['write'])).toBe(true);
-    expect(authenticationStore.hasPermission(['read'])).toBe(true);
-    expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
-
-    authenticationStore.setUser(createUser({permissions: undefined}));
-    expect(authenticationStore.hasPermission(['write'])).toBe(true);
-    expect(authenticationStore.hasPermission(['read'])).toBe(true);
-    expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
-
-    authenticationStore.setUser(createUser({permissions: ['read']}));
-    expect(authenticationStore.hasPermission(['write'])).toBe(false);
-    expect(authenticationStore.hasPermission(['read'])).toBe(true);
-    expect(authenticationStore.hasPermission(['write', 'read'])).toBe(true);
   });
 
   it.each([{canLogout: false}, {canLogout: true, isLoginDelegated: true}])(

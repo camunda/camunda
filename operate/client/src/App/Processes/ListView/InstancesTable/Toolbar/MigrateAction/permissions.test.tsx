@@ -40,25 +40,6 @@ describe('<MigrateAction /> - permissions', () => {
     expect(screen.getByRole('button', {name: 'Migrate'})).toBeInTheDocument();
   });
 
-  it('should not render, when the user does not have write permissions', () => {
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: ['read'],
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
-    render(<MigrateAction />, {wrapper: getWrapper()});
-
-    expect(
-      screen.queryByRole('button', {name: 'Migrate'}),
-    ).not.toBeInTheDocument();
-  });
-
   describe('resource based permissions', () => {
     beforeEach(() => {
       window.clientConfig = {

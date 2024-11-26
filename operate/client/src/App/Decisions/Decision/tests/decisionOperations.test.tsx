@@ -61,29 +61,6 @@ describe('<Decision /> - operations', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should not show delete button when user has no permissions', () => {
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: ['read'],
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
-    render(<Decision />, {
-      wrapper: createWrapper('/decisions?name=invoiceClassification&version=1'),
-    });
-
-    expect(
-      screen.queryByRole('button', {
-        name: /delete decision definition/i,
-      }),
-    ).not.toBeInTheDocument();
-  });
-
   it('should not show delete button when user has no resource based permissions', async () => {
     window.clientConfig = {
       resourcePermissionsEnabled: true,
@@ -91,7 +68,6 @@ describe('<Decision /> - operations', () => {
 
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
