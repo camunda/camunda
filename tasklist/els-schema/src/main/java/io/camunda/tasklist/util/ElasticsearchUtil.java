@@ -9,6 +9,11 @@ package io.camunda.tasklist.util;
 
 import static io.camunda.tasklist.util.CollectionUtil.map;
 import static io.camunda.tasklist.util.CollectionUtil.throwAwayNullElements;
+import static org.elasticsearch.action.support.IndicesOptions.Option.ALLOW_NO_INDICES;
+import static org.elasticsearch.action.support.IndicesOptions.Option.IGNORE_THROTTLED;
+import static org.elasticsearch.action.support.IndicesOptions.Option.IGNORE_UNAVAILABLE;
+import static org.elasticsearch.action.support.IndicesOptions.WildcardStates.CLOSED;
+import static org.elasticsearch.action.support.IndicesOptions.WildcardStates.OPEN;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
@@ -25,6 +30,7 @@ import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,6 +53,7 @@ import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
+import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -76,9 +83,20 @@ public abstract class ElasticsearchUtil {
   public static final Function<SearchHit, Long> SEARCH_HIT_ID_TO_LONG =
       (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit, String> SEARCH_HIT_ID_TO_STRING = SearchHit::getId;
+
+  /** IndicesOptions */
+  public static final IndicesOptions LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED =
+      new IndicesOptions(EnumSet.of(IGNORE_UNAVAILABLE, IGNORE_THROTTLED), EnumSet.of(OPEN));
+
+  public static final IndicesOptions LENIENT_EXPAND_OPEN_IGNORE_THROTTLED =
+      new IndicesOptions(
+          EnumSet.of(ALLOW_NO_INDICES, IGNORE_UNAVAILABLE, IGNORE_THROTTLED), EnumSet.of(OPEN));
+  public static final IndicesOptions STRICT_EXPAND_OPEN_CLOSED_IGNORE_THROTTLED =
+      new IndicesOptions(EnumSet.of(ALLOW_NO_INDICES, IGNORE_THROTTLED), EnumSet.of(OPEN, CLOSED));
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUtil.class);
 
-  public static SearchRequest createSearchRequest(TemplateDescriptor template) {
+  public static SearchRequest createSearchRequest(final TemplateDescriptor template) {
     return createSearchRequest(template, QueryType.ALL);
   }
 
@@ -250,7 +268,9 @@ public abstract class ElasticsearchUtil {
   /* EXECUTE QUERY */
 
   public static void processBulkRequest(
-      RestHighLevelClient esClient, BulkRequest bulkRequest, RefreshPolicy refreshPolicy)
+      final RestHighLevelClient esClient,
+      BulkRequest bulkRequest,
+      final RefreshPolicy refreshPolicy)
       throws PersistenceException {
     if (bulkRequest.requests().size() > 0) {
       try {
@@ -514,8 +534,8 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
-  public static Set<Long> scrollKeysToSet(SearchRequest request, RestHighLevelClient esClient)
-      throws IOException {
+  public static Set<Long> scrollKeysToSet(
+      final SearchRequest request, final RestHighLevelClient esClient) throws IOException {
     final Set<Long> result = new HashSet<>();
     final Consumer<SearchHits> collectIds =
         (hits) -> result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));

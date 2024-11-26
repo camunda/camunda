@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.schema.migration.es;
 
+import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -26,7 +27,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -81,39 +81,6 @@ public class ElasticsearchStepsRepository implements StepsRepository {
     retryElasticsearchClient.refresh(migrationRepositoryIndex.getFullQualifiedName());
   }
 
-  private List<Step> readStepsFromClasspath() throws IOException {
-    final List<Step> steps = new ArrayList<>();
-
-    final List<Resource> resources =
-        getResourcesFor(
-            ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
-    for (Resource resource : resources) {
-      LOGGER.info("Read step {} ", resource.getFilename());
-      steps.add(readStepFromFile(resource.getInputStream()));
-    }
-    steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
-
-    return steps;
-  }
-
-  private List<Resource> getResourcesFor(final String pattern) {
-    final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-    try {
-      return Arrays.asList(resolver.getResources(pattern));
-    } catch (IOException e) {
-      LOGGER.info("No resources found for {} ", pattern);
-      return List.of();
-    }
-  }
-
-  private Step readStepFromFile(final InputStream is) throws IOException {
-    return objectMapper.readValue(is, Step.class);
-  }
-
-  protected String idFromStep(final Step step) {
-    return step.getVersion() + "-" + step.getOrder();
-  }
-
   @Override
   public void save(final Step step) throws MigrationException, IOException {
     final boolean createdOrUpdated =
@@ -127,17 +94,6 @@ public class ElasticsearchStepsRepository implements StepsRepository {
       throw new MigrationException(
           String.format("Error in save step %s:  document wasn't created/updated.", step));
     }
-  }
-
-  protected List<Step> findBy(final Optional<QueryBuilder> query) {
-    final SearchSourceBuilder searchSpec =
-        new SearchSourceBuilder().sort(Step.VERSION + ".keyword", SortOrder.ASC);
-    query.ifPresent(searchSpec::query);
-    final SearchRequest request =
-        new SearchRequest(migrationRepositoryIndex.getFullQualifiedName())
-            .source(searchSpec)
-            .indicesOptions(IndicesOptions.lenientExpandOpen());
-    return retryElasticsearchClient.searchWithScroll(request, Step.class, objectMapper);
   }
 
   /** Returns all stored steps in repository index */
@@ -165,5 +121,49 @@ public class ElasticsearchStepsRepository implements StepsRepository {
             joinWithAnd(
                 termQuery(Step.INDEX_NAME + ".keyword", indexName),
                 termQuery(Step.APPLIED, false))));
+  }
+
+  private List<Step> readStepsFromClasspath() throws IOException {
+    final List<Step> steps = new ArrayList<>();
+
+    final List<Resource> resources =
+        getResourcesFor(
+            ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
+    for (final Resource resource : resources) {
+      LOGGER.info("Read step {} ", resource.getFilename());
+      steps.add(readStepFromFile(resource.getInputStream()));
+    }
+    steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
+
+    return steps;
+  }
+
+  private List<Resource> getResourcesFor(final String pattern) {
+    final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
+    try {
+      return Arrays.asList(resolver.getResources(pattern));
+    } catch (final IOException e) {
+      LOGGER.info("No resources found for {} ", pattern);
+      return List.of();
+    }
+  }
+
+  private Step readStepFromFile(final InputStream is) throws IOException {
+    return objectMapper.readValue(is, Step.class);
+  }
+
+  protected String idFromStep(final Step step) {
+    return step.getVersion() + "-" + step.getOrder();
+  }
+
+  protected List<Step> findBy(final Optional<QueryBuilder> query) {
+    final SearchSourceBuilder searchSpec =
+        new SearchSourceBuilder().sort(Step.VERSION + ".keyword", SortOrder.ASC);
+    query.ifPresent(searchSpec::query);
+    final SearchRequest request =
+        new SearchRequest(migrationRepositoryIndex.getFullQualifiedName())
+            .source(searchSpec)
+            .indicesOptions(LENIENT_EXPAND_OPEN_IGNORE_THROTTLED);
+    return retryElasticsearchClient.searchWithScroll(request, Step.class, objectMapper);
   }
 }
