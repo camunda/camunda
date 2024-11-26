@@ -145,6 +145,8 @@ public class RdbmsExporter implements Exporter {
         ValueType.USER, List.of(new UserExportHandler(rdbmsWriter.getUserWriter())));
     registeredHandlers.put(
         ValueType.USER_TASK, List.of(new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter())));
+    registeredHandlers.put(
+        ValueType.FORM, List.of(new FormExportHandler(rdbmsWriter.getFormWriter())));
   }
 
   private void updatePositionInBroker() {
