@@ -34,7 +34,8 @@ public class ResponseHeadersConfiguration {
   @JsonProperty(HttpHeaders.CONTENT_SECURITY_POLICY)
   private String contentSecurityPolicy;
 
-  public ResponseHeadersConfiguration() {}
+  public ResponseHeadersConfiguration() {
+  }
 
   @SuppressWarnings(SuppressionConstants.UNUSED)
   @JsonProperty("HSTS")
@@ -52,7 +53,11 @@ public class ResponseHeadersConfiguration {
     this.httpStrictTransportSecurityMaxAge = httpStrictTransportSecurityMaxAge;
   }
 
-  public Boolean getHttpStrictTransportSecurityIncludeSubdomains() {
+  public boolean getHttpStrictTransportSecurityIncludeSubdomains() {
+    if (httpStrictTransportSecurityIncludeSubdomains == null) {
+      return false;
+    }
+
     return httpStrictTransportSecurityIncludeSubdomains;
   }
 
@@ -127,11 +132,7 @@ public class ResponseHeadersConfiguration {
       strictTransportSecurityHeaderValues.add("max-age=" + getHttpStrictTransportSecurityMaxAge());
     }
 
-    Boolean includeSubDomains = getHttpStrictTransportSecurityIncludeSubdomains();
-    if (includeSubDomains == null) {
-      includeSubDomains = false;
-    }
-    if (includeSubDomains) {
+    if (getHttpStrictTransportSecurityIncludeSubdomains()) {
       strictTransportSecurityHeaderValues.add("includeSubDomains");
     }
 
