@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -58,7 +59,9 @@ public class GroupEntityRemovedHandlerTest {
     final var idList = underTest.generateIds(groupRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(groupRecord.getValue().getEntityKey()));
+    final var value = groupRecord.getValue();
+    assertThat(idList)
+        .containsExactly(GroupEntity.getChildKey(value.getGroupKey(), value.getEntityKey()));
   }
 
   @Test
@@ -74,13 +77,16 @@ public class GroupEntityRemovedHandlerTest {
   @Test
   void shouldUpdateGroupEntityOnFlush() throws PersistenceException {
     // given
-    final GroupEntity inputEntity = new GroupEntity().setId("111").setEntityKey(222L);
+    final var joinRelation = GroupIndex.joinRelationFactory.createChild(111L);
+    final GroupEntity inputEntity =
+        new GroupEntity().setId("111").setMemberKey(222L).setJoin(joinRelation);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
     underTest.flush(inputEntity, mockRequest);
 
     // then
-    verify(mockRequest, times(1)).delete(indexName, inputEntity.getId());
+    verify(mockRequest, times(1))
+        .deleteWithRouting(indexName, inputEntity.getId(), String.valueOf(joinRelation.parent()));
   }
 }
