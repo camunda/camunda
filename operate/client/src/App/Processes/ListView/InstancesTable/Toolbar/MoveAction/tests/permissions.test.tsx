@@ -40,25 +40,6 @@ describe('<MoveAction /> - permissions', () => {
     expect(screen.getByRole('button', {name: 'Move'})).toBeInTheDocument();
   });
 
-  it('should not render, when the user does not have write permissions', () => {
-    authenticationStore.setUser({
-      displayName: 'demo',
-      permissions: ['read'],
-      canLogout: true,
-      userId: 'demo',
-      roles: null,
-      salesPlanType: null,
-      c8Links: {},
-      tenants: [],
-    });
-
-    render(<MoveAction />, {wrapper: getWrapper()});
-
-    expect(
-      screen.queryByRole('button', {name: 'Move'}),
-    ).not.toBeInTheDocument();
-  });
-
   describe('resource based permissions', () => {
     beforeEach(() => {
       window.clientConfig = {

@@ -35,7 +35,6 @@ describe('Restricted user with resource based permissions', () => {
   beforeAll(() => {
     authenticationStore.setUser({
       displayName: 'demo',
-      permissions: ['write'],
       canLogout: true,
       userId: 'demo',
       roles: null,
