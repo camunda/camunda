@@ -2,6 +2,7 @@
 
 .PHONY: env-up
 env-up:
+<<<<<<< HEAD
 	docker compose -f docker-compose.yml up -d elasticsearch \
     && mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks -DskipQaBuild \
 	&& CAMUNDA_OPERATE_IMPORTERENABLED=false \
@@ -11,6 +12,12 @@ env-up:
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE=elasticsearch \
 	ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL=http://localhost:9200 \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneCamunda" -Dspring.profiles.active=operate,broker,dev,dev-data,auth
+=======
+	docker compose -f docker-compose.yml up -d elasticsearch zeebe \
+	&& mvn install -DskipTests=true -Dskip.fe.build=true -DskipChecks -DskipQaBuild \
+	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
+	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth
+>>>>>>> 778772875a4 (refactor: remove global read/write permissions)
 
 env-os-up:
 	docker compose -f docker-compose.yml up -d opensearch zeebe-opensearch \
