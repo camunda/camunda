@@ -8,6 +8,7 @@
 package io.camunda.search.os.clients;
 
 import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
@@ -43,7 +44,8 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OpensearchSearchClient implements DocumentBasedSearchClient, AutoCloseable {
+public class OpensearchSearchClient
+    implements DocumentBasedSearchClient, DocumentBasedWriteClient, AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchSearchClient.class);
   private static final String SCROLL_KEEP_ALIVE_TIME = "1m";

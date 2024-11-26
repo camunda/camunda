@@ -19,6 +19,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.DocumentBasedWriteClient;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
@@ -43,7 +44,8 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ElasticsearchSearchClient implements DocumentBasedSearchClient, AutoCloseable {
+public class ElasticsearchSearchClient
+    implements DocumentBasedSearchClient, DocumentBasedWriteClient, AutoCloseable {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchSearchClient.class);
   private static final String SCROLL_KEEP_ALIVE_TIME = "1m";

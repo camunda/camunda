@@ -7,7 +7,6 @@
  */
 package io.camunda.search.clients.core;
 
-import io.camunda.search.clients.core.SearchQueryResponse.Builder;
 import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
