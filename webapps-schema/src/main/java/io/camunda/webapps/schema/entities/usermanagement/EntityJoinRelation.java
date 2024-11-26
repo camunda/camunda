@@ -30,6 +30,25 @@ public class EntityJoinRelation {
     return this;
   }
 
+  public static class EntityJoinRelationFactory {
+
+    private IdentityJoinRelationshipType parent;
+    private IdentityJoinRelationshipType child;
+
+    public EntityJoinRelationFactory(final IdentityJoinRelationshipType parent, final IdentityJoinRelationshipType child) {
+      this.parent = parent;
+      this.child = child;
+    }
+
+    public EntityJoinRelation createParent() {
+      return new EntityJoinRelation().setName(parent.getType());
+    }
+
+    public EntityJoinRelation createChild(final long parentKey) {
+      return new EntityJoinRelation().setName(child.getType()).setParent(parentKey);
+    }
+  }
+
   public enum IdentityJoinRelationshipType {
     GROUP("group"),
     MEMBER("member");

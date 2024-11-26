@@ -9,8 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
-import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
-import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -56,10 +55,7 @@ public class GroupEntityAddedHandler implements ExportHandler<GroupEntity, Group
   @Override
   public void updateEntity(final Record<GroupRecordValue> record, final GroupEntity entity) {
     final GroupRecordValue value = record.getValue();
-    final var joinRelation =
-        new EntityJoinRelation()
-            .setName(IdentityJoinRelationshipType.MEMBER.getType())
-            .setParent(value.getGroupKey());
+    final var joinRelation = GroupIndex.joinRelationFactory.createChild(value.getGroupKey());
     entity.setEntityKey(value.getEntityKey()).setJoin(joinRelation);
   }
 
