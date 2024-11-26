@@ -19,7 +19,7 @@ import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -41,9 +41,7 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
 
   public static final String DECISION_INSTANCE_URL = "/api/decision-instances";
 
-  @Autowired(required = false)
-  protected PermissionsService permissionsService;
-
+  @Autowired private PermissionsService permissionsService;
   @Autowired private DecisionInstanceReader decisionInstanceReader;
 
   @Operation(summary = "Query decision instances by different parameters")
@@ -80,13 +78,13 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityReadPermission(final String decisionInstanceId) {
-    if (permissionsService != null) {
+    if (permissionsService.permissionsEnabled()) {
       checkIdentityReadPermission(decisionInstanceReader.getDecisionInstance(decisionInstanceId));
     }
   }
 
   private void checkIdentityReadPermission(final DecisionInstanceDto decisionInstance) {
-    if (permissionsService != null
+    if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForDecision(
             decisionInstance.getDecisionId(), IdentityPermission.READ)) {
       throw new NotAuthorizedException(

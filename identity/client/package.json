@@ -18,7 +18,7 @@
   "dependencies": {
     "@camunda/camunda-composite-components": "0.11.0",
     "@carbon/react": "1.71.0",
-    "i18next": "23.15.1",
+    "i18next": "23.16.8",
     "react": "18.3.1",
     "react-debounced": "1.1.2",
     "react-dom": "18.3.1",

@@ -32,6 +32,7 @@ import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
@@ -139,7 +140,8 @@ public final class SearchQueryRequestMapper {
             request.getSort(),
             SortOptionBuilders::tenant,
             SearchQueryRequestMapper::applyTenantSortField);
-    return buildSearchQuery(null, sort, page, SearchQueryBuilders::tenantSearchQuery);
+    final var filter = toTenantFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQuery(
@@ -440,6 +442,15 @@ public final class SearchQueryRequestMapper {
           .ifPresent(builder::tenantIdOperations);
     }
 
+    return builder.build();
+  }
+
+  private static TenantFilter toTenantFilter(final TenantFilterRequest filter) {
+    final var builder = FilterBuilders.tenant();
+    if (filter != null) {
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+      ofNullable(filter.getName()).ifPresent(builder::name);
+    }
     return builder.build();
   }
 

@@ -7,6 +7,16 @@
  */
 package io.camunda.it.rdbms.exporter;
 
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionDefinitionCreatedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirementsCreatedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeActivatingRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeCompletedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCreatedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceStartedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatedRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -20,26 +30,16 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
-import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
-import io.camunda.zeebe.protocol.record.value.BpmnElementType;
-import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
-import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRequirementsRecordValue;
-import io.camunda.zeebe.protocol.record.value.deployment.ImmutableProcess;
+import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
-import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,8 +55,6 @@ import org.springframework.test.context.TestPropertySource;
 class RdbmsExporterIT {
 
   private final ExporterTestController controller = new ExporterTestController();
-
-  private final ProtocolFactory factory = new ProtocolFactory(System.nanoTime());
 
   @Autowired private RdbmsService rdbmsService;
 
@@ -121,7 +119,7 @@ class RdbmsExporterIT {
     // given
     final Record<RecordValue> variableCreatedRecord =
         ImmutableRecord.builder()
-            .from(factory.generateRecord(ValueType.VARIABLE))
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
             .withIntent(VariableIntent.CREATED)
             .withPosition(2L)
             .withTimestamp(System.currentTimeMillis())
@@ -147,7 +145,7 @@ class RdbmsExporterIT {
 
     final Record<RecordValue> variableCreated =
         ImmutableRecord.builder()
-            .from(factory.generateRecord(ValueType.VARIABLE))
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.VARIABLE))
             .withIntent(VariableIntent.CREATED)
             .withPosition(2L)
             .withTimestamp(System.currentTimeMillis())
@@ -247,152 +245,63 @@ class RdbmsExporterIT {
     assertThat(definition).isNotEmpty();
   }
 
-  private ImmutableRecord<RecordValue> getProcessInstanceStartedRecord(final Long position) {
-    final Record<RecordValue> recordValueRecord =
-        factory.generateRecord(ValueType.PROCESS_INSTANCE);
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withValue(
-            ImmutableProcessInstanceRecordValue.builder()
-                .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
-                .withBpmnElementType(BpmnElementType.PROCESS)
-                .withVersion(1)
-                .build())
-        .build();
+  @Test
+  public void shouldExportUpdateAndDeleteUser() {
+    // given
+    final var userRecord = getUserRecord(42L, UserIntent.CREATED);
+    final var userRecordValue = ((UserRecordValue) userRecord.getValue());
+
+    // when
+    exporter.export(userRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var user = rdbmsService.getUserReader().findOne(userRecord.getKey());
+    assertThat(user).isNotEmpty();
+    assertThat(user.get().userKey()).isEqualTo(userRecordValue.getUserKey());
+    assertThat(user.get().username()).isEqualTo(userRecordValue.getUsername());
+    assertThat(user.get().name()).isEqualTo(userRecordValue.getName());
+    assertThat(user.get().email()).isEqualTo(userRecordValue.getEmail());
+    assertThat(user.get().password()).isEqualTo(userRecordValue.getPassword());
+
+    // given
+    final var updateUserRecord = getUserRecord(42L, UserIntent.UPDATED);
+    final var updateUserRecordValue = ((UserRecordValue) updateUserRecord.getValue());
+
+    // when
+    exporter.export(updateUserRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());
+    assertThat(updatedUser).isNotEmpty();
+    assertThat(updatedUser.get().userKey()).isEqualTo(updateUserRecordValue.getUserKey());
+    assertThat(updatedUser.get().username()).isEqualTo(updateUserRecordValue.getUsername());
+    assertThat(updatedUser.get().name()).isEqualTo(updateUserRecordValue.getName());
+    assertThat(updatedUser.get().email()).isEqualTo(updateUserRecordValue.getEmail());
+    assertThat(updatedUser.get().password()).isEqualTo(updateUserRecordValue.getPassword());
+
+    // when
+    exporter.export(getUserRecord(42L, UserIntent.DELETED));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());
+    assertThat(deletedUser).isEmpty();
   }
 
-  private ImmutableRecord<RecordValue> getProcessInstanceCompletedRecord(
-      final Long position, final long processInstanceKey) {
-    final Record<RecordValue> recordValueRecord =
-        factory.generateRecord(ValueType.PROCESS_INSTANCE);
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withKey(processInstanceKey)
-        .withValue(
-            ImmutableProcessInstanceRecordValue.builder()
-                .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
-                .withProcessInstanceKey(processInstanceKey)
-                .withBpmnElementType(BpmnElementType.PROCESS)
-                .withVersion(1)
-                .build())
-        .build();
-  }
+  @Test
+  public void shouldExportForm() {
+    // given
+    final var formCreatedRecord = getFormCreatedRecord(1L);
 
-  private ImmutableRecord<RecordValue> getProcessDefinitionCreatedRecord(final Long position) {
-    final Record<RecordValue> recordValueRecord = factory.generateRecord(ValueType.PROCESS);
+    // when
+    exporter.export(formCreatedRecord);
+    exporter.flushExecutionQueue();
 
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(ProcessIntent.CREATED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withPartitionId(1)
-        .withValue(
-            ImmutableProcess.builder()
-                .from((Process) recordValueRecord.getValue())
-                .withVersion(1)
-                .build())
-        .build();
-  }
-
-  private ImmutableRecord<RecordValue> getDecisionRequirementsCreatedRecord(final Long position) {
-    final Record<RecordValue> recordValueRecord =
-        factory.generateRecord(ValueType.DECISION_REQUIREMENTS);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(DecisionRequirementsIntent.CREATED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withPartitionId(1)
-        .withValue(
-            ImmutableDecisionRequirementsRecordValue.builder()
-                .from((DecisionRequirementsRecordValue) recordValueRecord.getValue())
-                .withDecisionRequirementsVersion(1)
-                .build())
-        .build();
-  }
-
-  private ImmutableRecord<RecordValue> getDecisionDefinitionCreatedRecord(final Long position) {
-    final Record<RecordValue> recordValueRecord = factory.generateRecord(ValueType.DECISION);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(DecisionIntent.CREATED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withPartitionId(1)
-        .withValue(
-            ImmutableDecisionRecordValue.builder()
-                .from((ImmutableDecisionRecordValue) recordValueRecord.getValue())
-                .withVersion(1)
-                .build())
-        .build();
-  }
-
-  private ImmutableRecord<RecordValue> getFlowNodeActivatingRecord(final Long position) {
-    final Record<RecordValue> recordValueRecord =
-        factory.generateRecord(ValueType.PROCESS_INSTANCE);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withPartitionId(1)
-        .withValue(
-            ImmutableProcessInstanceRecordValue.builder()
-                .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
-                .withVersion(1)
-                .build())
-        .build();
-  }
-
-  private ImmutableRecord<RecordValue> getFlowNodeCompletedRecord(
-      final Long position, final long elementKey) {
-    final Record<RecordValue> recordValueRecord =
-        factory.generateRecord(ValueType.PROCESS_INSTANCE);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withPartitionId(1)
-        .withKey(elementKey)
-        .withValue(
-            ImmutableProcessInstanceRecordValue.builder()
-                .from((ProcessInstanceRecordValue) recordValueRecord.getValue())
-                .withVersion(1)
-                .build())
-        .build();
-  }
-
-  private ImmutableRecord<RecordValue> getUserTaskCreatedRecord(final Long position) {
-    final Record<RecordValue> recordValueRecord = factory.generateRecord(ValueType.USER_TASK);
-
-    return ImmutableRecord.builder()
-        .from(recordValueRecord)
-        .withIntent(UserTaskIntent.CREATED)
-        .withPosition(position)
-        .withTimestamp(System.currentTimeMillis())
-        .withPartitionId(1)
-        .withValue(
-            ImmutableUserTaskRecordValue.builder()
-                .from((ImmutableUserTaskRecordValue) recordValueRecord.getValue())
-                .withCreationTimestamp(OffsetDateTime.now().toEpochSecond())
-                .withDueDate(OffsetDateTime.now().toString())
-                .withFollowUpDate(OffsetDateTime.now().toString())
-                .withProcessDefinitionVersion(1)
-                .withCandidateUsersList(List.of("user1", "user2"))
-                .withCandidateGroupsList(List.of("group1", "group2"))
-                .build())
-        .build();
+    // then
+    final var formKey = ((Form) formCreatedRecord.getValue()).getFormKey();
+    final var userTask = rdbmsService.getFormReader().findOne(formKey);
+    assertThat(userTask).isNotNull();
   }
 }

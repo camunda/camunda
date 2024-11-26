@@ -260,7 +260,7 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-registry-prometheus</artifactId>
-      <version>1.13.6</version>
+      <version>1.14.1</version>
     </dependency>
 
     <!--Lucene dependencies-->
@@ -527,7 +527,7 @@
     <dependency>
       <groupId>io.micrometer</groupId>
       <artifactId>micrometer-core</artifactId>
-      <version>1.13.6</version>
+      <version>1.14.1</version>
       <scope>compile</scope>
     </dependency>
 
@@ -541,7 +541,7 @@
     <dependency>
       <groupId>jakarta.validation</groupId>
       <artifactId>jakarta.validation-api</artifactId>
-      <version>3.0.2</version>
+      <version>3.1.0</version>
       <scope>compile</scope>
     </dependency>
 
@@ -620,7 +620,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.14.0</version>
+      <version>3.17.0</version>
       <scope>compile</scope>
     </dependency>
 
@@ -635,7 +635,7 @@
     <dependency>
       <groupId>org.apache.httpcomponents.client5</groupId>
       <artifactId>httpclient5</artifactId>
-      <version>5.3.1</version>
+      <version>5.4.1</version>
       <scope>compile</scope>
     </dependency>
 
@@ -649,7 +649,7 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-text</artifactId>
-      <version>1.11.0</version>
+      <version>1.12.0</version>
       <scope>compile</scope>
     </dependency>
 
@@ -759,7 +759,7 @@
     <dependency>
       <groupId>jakarta.servlet</groupId>
       <artifactId>jakarta.servlet-api</artifactId>
-      <version>6.0.0</version>
+      <version>6.1.0</version>
       <scope>compile</scope>
     </dependency>
 

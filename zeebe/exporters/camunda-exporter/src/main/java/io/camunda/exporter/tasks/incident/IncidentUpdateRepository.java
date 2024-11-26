@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Stream;
 
 /**
  * Encapsulates all accesses to the underlying storage for the {@link IncidentUpdateTask}, allowing
@@ -151,6 +152,13 @@ public interface IncidentUpdateRepository {
       Map<String, DocumentUpdate> incidentRequests) {
     public IncidentBulkUpdate() {
       this(new HashMap<>(), new HashMap<>(), new HashMap<>());
+    }
+
+    public Stream<DocumentUpdate> stream() {
+      return Stream.concat(
+          Stream.concat(
+              listViewRequests.values().stream(), flowNodeInstanceRequests.values().stream()),
+          incidentRequests.values().stream());
     }
   }
 

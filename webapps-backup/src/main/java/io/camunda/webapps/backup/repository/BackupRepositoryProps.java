@@ -21,6 +21,8 @@ public interface BackupRepositoryProps {
 
   Long incompleteCheckTimeoutInSeconds();
 
+  boolean includeGlobalState();
+
   static Integer defaultSnapshotTimeout() {
     return 0;
   }

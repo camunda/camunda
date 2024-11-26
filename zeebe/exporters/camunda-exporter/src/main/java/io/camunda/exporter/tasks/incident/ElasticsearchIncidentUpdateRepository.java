@@ -8,32 +8,57 @@
 package io.camunda.exporter.tasks.incident;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.ErrorCause;
+import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
+import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
+import co.elastic.clients.elasticsearch.core.bulk.UpdateOperation;
 import co.elastic.clients.elasticsearch.core.search.SourceFilter;
+import co.elastic.clients.elasticsearch.indices.AnalyzeRequest;
+import co.elastic.clients.elasticsearch.indices.analyze.AnalyzeToken;
 import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
+import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.operation.OperationType;
+import io.camunda.zeebe.exporter.api.ExporterException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
 public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpdateRepository {
 
+  private static final int RETRY_COUNT = 3;
+  private static final List<FieldValue> DELETED_OPERATION_STATES =
+      List.of(
+          FieldValue.of(OperationState.SENT.name()),
+          FieldValue.of(OperationState.COMPLETED.name()));
   private final int partitionId;
   private final String pendingUpdateAlias;
   private final String incidentAlias;
   private final String listViewAlias;
   private final String flowNodeAlias;
+  private final String operationAlias;
   private final ElasticsearchAsyncClient client;
   private final Executor executor;
 
@@ -43,6 +68,7 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
       final String incidentAlias,
       final String listViewAlias,
       final String flowNodeAlias,
+      final String operationAlias,
       final ElasticsearchAsyncClient client,
       final Executor executor) {
     this.partitionId = partitionId;
@@ -50,6 +76,7 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
     this.incidentAlias = incidentAlias;
     this.listViewAlias = listViewAlias;
     this.flowNodeAlias = flowNodeAlias;
+    this.operationAlias = operationAlias;
     this.client = client;
     this.executor = executor;
   }
@@ -73,6 +100,86 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
     return client
         .search(request, IncidentEntity.class)
         .thenApplyAsync(this::createIncidentDocuments, executor);
+  }
+
+  @Override
+  public CompletionStage<Boolean> wasProcessInstanceDeleted(final long processInstanceKey) {
+    final var query = createProcessInstanceDeletedQuery(processInstanceKey);
+    final var request =
+        new CountRequest.Builder()
+            .index(operationAlias)
+            .query(query)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+
+    return client.count(request).thenApplyAsync(r -> r.count() > 0, executor);
+  }
+
+  @Override
+  public CompletionStage<Integer> bulkUpdate(final IncidentBulkUpdate bulk) {
+    final var updates = bulk.stream().map(this::createUpdateOperation).toList();
+    final var request =
+        new BulkRequest.Builder()
+            .operations(updates)
+            .source(s -> s.fetch(false))
+            .refresh(Refresh.WaitFor)
+            .build();
+
+    return client
+        .bulk(request)
+        .thenComposeAsync(
+            r -> {
+              if (r.errors()) {
+                return CompletableFuture.failedFuture(collectBulkErrors(r.items()));
+              }
+
+              return CompletableFuture.completedFuture(r.items().size());
+            },
+            executor);
+  }
+
+  @Override
+  public CompletionStage<List<String>> analyzeTreePath(final String treePath) {
+    final var request =
+        new AnalyzeRequest.Builder()
+            .field(ListViewTemplate.TREE_PATH)
+            .index(listViewAlias)
+            .text(treePath)
+            .build();
+
+    return client
+        .indices()
+        .analyze(request)
+        .thenApplyAsync(
+            response -> response.tokens().stream().map(AnalyzeToken::token).toList(), executor);
+  }
+
+  private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {
+    final var piKeyQ =
+        QueryBuilders.term(
+            t -> t.field(OperationTemplate.PROCESS_INSTANCE_KEY).value(processInstanceKey));
+    final var typeQ =
+        QueryBuilders.term(
+            t ->
+                t.field(OperationTemplate.TYPE)
+                    .value(OperationType.DELETE_PROCESS_INSTANCE.name()));
+    final var stateQ =
+        QueryBuilders.terms(
+            t -> t.field(OperationTemplate.STATE).terms(f -> f.value(DELETED_OPERATION_STATES)));
+
+    return QueryBuilders.bool(b -> b.must(piKeyQ, typeQ, stateQ));
+  }
+
+  private BulkOperation createUpdateOperation(final DocumentUpdate update) {
+    return new UpdateOperation.Builder<>()
+        .index(update.index())
+        .id(update.id())
+        .retryOnConflict(RETRY_COUNT)
+        .action(a -> a.doc(update.doc()))
+        .routing(update.routing())
+        .build()
+        ._toBulkOperation();
   }
 
   private SearchRequest createIncidentDocumentsRequest(final List<String> incidentIds) {
@@ -149,6 +256,21 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
     }
 
     return new PendingIncidentUpdateBatch(highestPosition, incidents);
+  }
+
+  private Throwable collectBulkErrors(final List<BulkResponseItem> items) {
+    final var collectedErrors = new ArrayList<String>();
+    items.stream()
+        .flatMap(item -> Optional.ofNullable(item.error()).stream())
+        .collect(Collectors.groupingBy(ErrorCause::type))
+        .forEach(
+            (type, errors) ->
+                collectedErrors.add(
+                    String.format(
+                        "Failed to update %d item(s) of bulk update [type: %s, reason: %s]",
+                        errors.size(), type, errors.getFirst().reason())));
+
+    return new ExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
   private record PendingIncidentUpdate(long key, long position, String intent) {}

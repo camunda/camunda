@@ -10,11 +10,16 @@ package io.camunda.security.impl;
 import static io.camunda.security.auth.Authorization.WILDCARD;
 
 import io.camunda.search.clients.AuthorizationSearchClient;
+import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * The AuthorizationChecker class provides methods for checking resource authorization by
@@ -86,6 +91,50 @@ public class AuthorizationChecker {
                             .page(p -> p.size(1))))
             .total()
         > 0;
+  }
+
+  /**
+   * Collects the permission types available for a resource, defined by resource id and resource
+   * type
+   *
+   * @param resourceId the resource id to return permission types for
+   * @param resourceType the resource type to return permission types for
+   * @param authentication the authentication information
+   * @return the permission types found
+   */
+  public Set<PermissionType> collectPermissionTypes(
+      final String resourceId,
+      final AuthorizationResourceType resourceType,
+      final Authentication authentication) {
+    final var ownerKeys = collectOwnerKeys(authentication);
+    final var authorizationEntities =
+        authorizationSearchClient
+            .searchAuthorizations(
+                AuthorizationQuery.of(
+                    q ->
+                        q.filter(
+                            f ->
+                                f.ownerKeys(ownerKeys)
+                                    .resourceType(resourceType.name())
+                                    .resourceIds(List.of(WILDCARD, resourceId)))))
+            .items();
+
+    return collectPermissionTypes(authorizationEntities);
+  }
+
+  private Set<PermissionType> collectPermissionTypes(
+      final List<AuthorizationEntity> authorizationEntities) {
+    final Set<PermissionType> permissionTypeSet = new HashSet<>();
+    if (authorizationEntities != null) {
+      authorizationEntities.forEach(
+          a -> {
+            if (a.permissions() != null) {
+              a.permissions().forEach(p -> permissionTypeSet.add(p.type()));
+            }
+          });
+    }
+
+    return permissionTypeSet;
   }
 
   private List<Long> collectOwnerKeys(final Authentication authentication) {

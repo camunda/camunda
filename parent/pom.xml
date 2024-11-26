@@ -82,7 +82,7 @@
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>3.25.5</version.protobuf>
     <version.protobuf-common>2.49.0</version.protobuf-common>
-    <version.micrometer>1.13.6</version.micrometer>
+    <version.micrometer>1.14.1</version.micrometer>
     <version.rocksdbjni>9.4.0</version.rocksdbjni>
     <version.sbe>1.33.2</version.sbe>
     <version.scala>2.13.15</version.scala>
@@ -126,17 +126,17 @@
     <version.jcip>1.0</version.jcip>
     <version.jnr-posix>3.1.20</version.jnr-posix>
     <version.zpt>8.5.7</version.zpt>
-    <version.feign>13.4</version.feign>
+    <version.feign>13.5</version.feign>
     <version.google-sdk>26.50.0</version.google-sdk>
     <version.azure-sdk>1.2.29</version.azure-sdk>
-    <version.awssdk>2.29.20</version.awssdk>
+    <version.awssdk>2.29.21</version.awssdk>
     <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.0</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.18.1</version.jackson-annotations>
     <version.swagger-annotations>2.2.26</version.swagger-annotations>
-    <version.checker-qual>3.47.0</version.checker-qual>
+    <version.checker-qual>3.48.2</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.4</version.postgresql>
@@ -148,7 +148,7 @@
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.15.0</version.jna-platform>
-    <version.liquibase>4.29.2</version.liquibase>
+    <version.liquibase>4.30.0</version.liquibase>
     <version.caffeine>3.1.8</version.caffeine>
 
     <version.commons-io>2.18.0</version.commons-io>
@@ -161,7 +161,7 @@
     <version.node>v20.12.2</version.node>
     <version.yarn>v1.22.21</version.yarn>
 
-    <version.aws-java-sdk>1.12.778</version.aws-java-sdk>
+    <version.aws-java-sdk>1.12.779</version.aws-java-sdk>
     <version.elasticsearch-test-container>1.20.2</version.elasticsearch-test-container>
     <version.postgres-test-container>1.20.2</version.postgres-test-container>
     <version.elasticsearch7>7.17.25</version.elasticsearch7>
@@ -210,12 +210,12 @@
     <plugin.version.appassembler>2.1.0</plugin.version.appassembler>
     <plugin.version.assembly>3.7.1</plugin.version.assembly>
     <plugin.version.build-helper>3.6.0</plugin.version.build-helper>
-    <plugin.version.checkstyle>3.5.0</plugin.version.checkstyle>
+    <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
     <plugin.version.compiler>3.13.0</plugin.version.compiler>
-    <plugin.version.dependency-analyzer>1.14.1</plugin.version.dependency-analyzer>
+    <plugin.version.dependency-analyzer>1.15.1</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.8.1</plugin.version.dependency>
     <plugin.version.enforcer>3.5.0</plugin.version.enforcer>
-    <plugin.version.exec>3.4.1</plugin.version.exec>
+    <plugin.version.exec>3.5.0</plugin.version.exec>
     <plugin.version.failsafe>3.5.2</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.12</plugin.version.jacoco>
@@ -228,7 +228,7 @@
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.8.6.6</plugin.version.spotbugs>
     <plugin.version.surefire>3.5.2</plugin.version.surefire>
-    <plugin.version.versions>2.17.1</plugin.version.versions>
+    <plugin.version.versions>2.18.0</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
@@ -1938,7 +1938,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-core</artifactId>
-        <version>3.6.11</version>
+        <version>3.7.0</version>
       </dependency>
 
       <!-- between com.github.dasniko:testcontainers-keycloak and its own dependencies -->
