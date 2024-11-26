@@ -64,7 +64,7 @@ describe('stores/authentication', () => {
         },
       }));
 
-      mockGetUser().withSuccess(mockUserResponse);
+      mockMe().withSuccess(mockUserResponse);
 
       authenticationStore.authenticate();
 
@@ -74,7 +74,7 @@ describe('stores/authentication', () => {
         ),
       );
 
-      mockGetUser().withServerError(401);
+      mockMe().withServerError(401);
 
       authenticationStore.authenticate();
 
@@ -86,7 +86,7 @@ describe('stores/authentication', () => {
       expect(mockReload).toHaveBeenCalledTimes(1);
       expect(getStateLocally()?.wasReloaded).toBe(true);
 
-      mockGetUser().withSuccess(mockUserResponse);
+      mockMe().withSuccess(mockUserResponse);
 
       authenticationStore.authenticate();
 

@@ -7,7 +7,7 @@
  */
 
 import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
-import {UserDto} from './api/getUser';
+import {MeDto} from './api/v2/authentication/me';
 import {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
 import {ProcessDto} from './api/processes/fetchGroupedProcesses';
@@ -138,7 +138,7 @@ const createVariable = (
   };
 };
 
-const createUser = (options: Partial<UserDto> = {}): UserDto => ({
+const createUser = (options: Partial<MeDto> = {}): MeDto => ({
   userId: 'demo',
   displayName: 'firstname lastname',
   canLogout: true,

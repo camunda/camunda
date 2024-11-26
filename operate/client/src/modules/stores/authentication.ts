@@ -7,13 +7,11 @@
  */
 
 import {makeObservable, observable, action, computed} from 'mobx';
-import {getUser, UserDto} from 'modules/api/getUser';
+import {getMe, MeDto} from 'modules/api/v2/authentication/me';
 import {login, Credentials} from 'modules/api/login';
 import {logout} from 'modules/api/logout';
 import {NetworkError} from 'modules/networkError';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
-
-type Permissions = Array<'read' | 'write'>;
 
 type State = {
   status:
@@ -25,19 +23,17 @@ type State = {
     | 'session-expired'
     | 'invalid-initial-session'
     | 'invalid-third-party-session';
-  permissions: Permissions;
   displayName: string | null;
   canLogout: boolean;
   userId: string | null;
-  salesPlanType: UserDto['salesPlanType'];
+  salesPlanType: MeDto['salesPlanType'];
   roles: ReadonlyArray<string> | null;
-  c8Links: UserDto['c8Links'];
-  tenants: UserDto['tenants'];
+  c8Links: MeDto['c8Links'];
+  tenants: MeDto['tenants'];
 };
 
 const DEFAULT_STATE: State = {
   status: 'initial',
-  permissions: ['read', 'write'],
   displayName: null,
   canLogout: false,
   userId: null,
@@ -138,7 +134,7 @@ class Authentication {
   authenticate = async (): Promise<void | Error> => {
     this.startLoadingUser();
 
-    const response = await getUser({
+    const response = await getMe({
       onFailure: () => {
         this.expireSession();
       },
@@ -167,7 +163,7 @@ class Authentication {
     roles,
     c8Links,
     tenants,
-  }: UserDto) => {
+  }: MeDto) => {
     storeStateLocally({
       wasReloaded: false,
     });
