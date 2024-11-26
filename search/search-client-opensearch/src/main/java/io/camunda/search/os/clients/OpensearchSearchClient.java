@@ -8,11 +8,15 @@
 package io.camunda.search.os.clients;
 
 import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.core.SearchGetRequest;
+import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.exception.SearchQueryExecutionException;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.search.os.transformers.search.SearchGetRequestTransformer;
+import io.camunda.search.os.transformers.search.SearchGetResponseTransformer;
 import io.camunda.search.os.transformers.search.SearchRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchResponseTransformer;
 import java.io.IOException;
@@ -21,6 +25,8 @@ import java.util.List;
 import java.util.Optional;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -89,6 +95,22 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, AutoCl
     return result;
   }
 
+  @Override
+  public <T> SearchGetResponse<T> get(
+      final SearchGetRequest getRequest, final Class<T> documentClass) {
+    try {
+      final var requestTransformer = getSearchGetRequestTranformer();
+      final var request = requestTransformer.apply(getRequest);
+      final var rawSearchResponse = client.get(request, documentClass);
+      final SearchGetResponseTransformer<T> searchResponseTransformer =
+          getSearchGetResponseTransformer();
+      return searchResponseTransformer.apply(rawSearchResponse);
+    } catch (final IOException | OpenSearchException ioe) {
+      LOGGER.debug("Failed to execute get request", ioe);
+      throw new SearchQueryExecutionException("Failed to execute search query", ioe);
+    }
+  }
+
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
     return client.scroll(r -> r.scrollId(scrollId), documentClass);
@@ -112,6 +134,18 @@ public class OpensearchSearchClient implements DocumentBasedSearchClient, AutoCl
 
   private <T> SearchResponseTransformer<T> getSearchResponseTransformer() {
     return new SearchResponseTransformer<>(transformers);
+  }
+
+  private SearchGetRequestTransformer getSearchGetRequestTranformer() {
+    final SearchTransfomer<SearchGetRequest, GetRequest> transformer =
+        transformers.getTransformer(SearchGetRequest.class);
+    return (SearchGetRequestTransformer) transformer;
+  }
+
+  private <T> SearchGetResponseTransformer<T> getSearchGetResponseTransformer() {
+    final SearchTransfomer<GetResponse<T>, SearchGetResponse<T>> transformer =
+        transformers.getTransformer(SearchGetResponse.class);
+    return (SearchGetResponseTransformer<T>) transformer;
   }
 
   @Override

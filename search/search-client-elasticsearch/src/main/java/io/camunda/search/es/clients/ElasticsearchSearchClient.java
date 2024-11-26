@@ -9,15 +9,21 @@ package io.camunda.search.es.clients;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch.core.GetRequest;
+import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.search.clients.DocumentBasedSearchClient;
+import io.camunda.search.clients.core.SearchGetRequest;
+import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import io.camunda.search.es.transformers.search.SearchGetRequestTransformer;
+import io.camunda.search.es.transformers.search.SearchGetResponseTransformer;
 import io.camunda.search.es.transformers.search.SearchRequestTransformer;
 import io.camunda.search.es.transformers.search.SearchResponseTransformer;
 import io.camunda.search.exception.SearchQueryExecutionException;
@@ -89,6 +95,22 @@ public class ElasticsearchSearchClient implements DocumentBasedSearchClient, Aut
     return result;
   }
 
+  @Override
+  public <T> SearchGetResponse<T> get(
+      final SearchGetRequest getRequest, final Class<T> documentClass) {
+    try {
+      final var requestTransformer = getSearchGetRequestTranformer();
+      final var request = requestTransformer.apply(getRequest);
+      final var rawGetResponse = client.get(request, documentClass);
+      final SearchGetResponseTransformer<T> getResponseTranformer =
+          getSearchGetResponseTransformer();
+      return getResponseTranformer.apply(rawGetResponse);
+    } catch (final IOException | ElasticsearchException ioe) {
+      LOGGER.debug("Failed to execute get request", ioe);
+      throw new SearchQueryExecutionException("Failed to execute get request", ioe);
+    }
+  }
+
   private <T> ScrollResponse<T> scroll(final String scrollId, final Class<T> documentClass)
       throws IOException {
     return client.scroll(r -> r.scrollId(scrollId), documentClass);
@@ -114,6 +136,18 @@ public class ElasticsearchSearchClient implements DocumentBasedSearchClient, Aut
     final SearchTransfomer<SearchResponse<T>, SearchQueryResponse<T>> transformer =
         transformers.getTransformer(SearchQueryResponse.class);
     return (SearchResponseTransformer<T>) transformer;
+  }
+
+  private SearchGetRequestTransformer getSearchGetRequestTranformer() {
+    final SearchTransfomer<SearchGetRequest, GetRequest> transformer =
+        transformers.getTransformer(SearchGetRequest.class);
+    return (SearchGetRequestTransformer) transformer;
+  }
+
+  private <T> SearchGetResponseTransformer<T> getSearchGetResponseTransformer() {
+    final SearchTransfomer<GetResponse<T>, SearchGetResponse<T>> transformer =
+        transformers.getTransformer(SearchGetResponse.class);
+    return (SearchGetResponseTransformer<T>) transformer;
   }
 
   @Override
