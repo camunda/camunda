@@ -6,8 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {RequestHandler} from 'msw';
+import {rest} from 'msw';
 
-const handlers: RequestHandler[] = [];
+const handlers = [
+  rest.get('/v2/me', (_, res, ctx) => {
+    return res(
+      ctx.status(302),
+      ctx.set('Location', '/api/authentications/user'),
+    );
+  }),
+  rest.get('/api/authentications/user', async (req, res, ctx) => {
+    const response = await ctx.fetch(req);
+    const user = await response.json();
+
+    return res(
+      ctx.json({
+        ...user,
+        permissions: [
+          {
+            type: 'ACCESS',
+            resourceIds: ['operate'],
+          },
+        ],
+      }),
+    );
+  }),
+];
 
 export {handlers};
