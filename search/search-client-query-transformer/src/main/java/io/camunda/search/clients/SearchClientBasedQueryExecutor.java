@@ -24,6 +24,7 @@ import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.sort.SortOption;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.List;
 import java.util.function.Function;
 
@@ -65,7 +66,8 @@ public final class SearchClientBasedQueryExecutor {
                 .toList());
   }
 
-  private <T extends FilterBase, S extends SortOption, R> R executeSearch(
+  @VisibleForTesting
+  <T extends FilterBase, S extends SortOption, R> R executeSearch(
       final TypedSearchQuery<T, S> query, final Function<SearchQueryRequest, R> searchExecutor) {
     final var transformer = getSearchQueryRequestTransformer(query);
     final var searchRequest = transformer.apply(query);
