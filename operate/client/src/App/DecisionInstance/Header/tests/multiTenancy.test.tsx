@@ -17,7 +17,7 @@ import {createUser} from 'modules/testUtils';
 import {authenticationStore} from 'modules/stores/authentication';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
-import {mockGetUser} from 'modules/mocks/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
@@ -52,7 +52,7 @@ describe('InstanceHeader', () => {
     };
 
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         tenants: [
           {tenantId: '<default>', name: 'Default Tenant'},
@@ -91,7 +91,7 @@ describe('InstanceHeader', () => {
 
   it('should hide multi tenancy column and exclude tenant from version link', async () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         tenants: [
           {tenantId: '<default>', name: 'Default Tenant'},

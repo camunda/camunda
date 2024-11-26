@@ -9,7 +9,7 @@
 import {render, screen, within} from 'modules/testing-library';
 import {AppHeader} from '../index';
 import {authenticationStore} from 'modules/stores/authentication';
-import {mockGetUser} from 'modules/mocks/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 import {Wrapper as BaseWrapper} from './mocks';
 import {useEffect} from 'react';
@@ -32,7 +32,7 @@ describe('App switcher', () => {
       organizationId: 'some-organization-id',
     };
 
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         c8Links: {
           operate: 'https://link-to-operate',
@@ -90,7 +90,7 @@ describe('App switcher', () => {
       organizationId: null,
     };
 
-    mockGetUser().withSuccess(
+    mockMe().withSuccess(
       createUser({
         c8Links: {
           operate: 'https://link-to-operate',

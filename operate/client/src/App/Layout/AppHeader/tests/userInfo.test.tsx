@@ -10,7 +10,7 @@ import {act, render, screen, waitFor} from 'modules/testing-library';
 import {AppHeader} from '../index';
 import {authenticationStore} from 'modules/stores/authentication';
 import {mockLogout} from 'modules/mocks/api/logout';
-import {mockGetUser} from 'modules/mocks/api/getUser';
+import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 import {Wrapper as BaseWrapper} from './mocks';
 import {useEffect} from 'react';
@@ -34,7 +34,7 @@ const mockSsoUser = createUser({
 
 describe('User info', () => {
   it('should render user display name', async () => {
-    mockGetUser().withSuccess(mockUser);
+    mockMe().withSuccess(mockUser);
 
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,
@@ -54,7 +54,7 @@ describe('User info', () => {
   });
 
   it('should handle a SSO user', async () => {
-    mockGetUser().withSuccess(mockSsoUser);
+    mockMe().withSuccess(mockSsoUser);
 
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,
@@ -80,7 +80,7 @@ describe('User info', () => {
 
   it('should handle logout', async () => {
     mockLogout().withSuccess(null);
-    mockGetUser().withSuccess(mockUser);
+    mockMe().withSuccess(mockUser);
 
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,
@@ -120,7 +120,7 @@ describe('User info', () => {
     const mockOpenFn = jest.fn();
     window.open = mockOpenFn;
 
-    mockGetUser().withSuccess(mockUser);
+    mockMe().withSuccess(mockUser);
 
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,
@@ -187,7 +187,7 @@ describe('User info', () => {
       },
     };
 
-    mockGetUser().withSuccess(mockUser);
+    mockMe().withSuccess(mockUser);
 
     const {user} = render(<AppHeader />, {
       wrapper: Wrapper,
