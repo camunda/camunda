@@ -123,12 +123,18 @@ public class ResponseHeadersConfiguration {
     final Map<String, String> headers = new HashMap<>();
 
     final List<String> strictTransportSecurityHeaderValues = new ArrayList<>();
-    if (getHttpStrictTransportSecurityMaxAge() > 0) {
+    if (getHttpStrictTransportSecurityMaxAge() != null) {
       strictTransportSecurityHeaderValues.add("max-age=" + getHttpStrictTransportSecurityMaxAge());
     }
-    if (getHttpStrictTransportSecurityIncludeSubdomains()) {
+
+    Boolean includeSubDomains = getHttpStrictTransportSecurityIncludeSubdomains();
+    if(includeSubDomains == null) {
+      includeSubDomains = false;
+    }
+    if (includeSubDomains) {
       strictTransportSecurityHeaderValues.add("includeSubDomains");
     }
+
     if (!strictTransportSecurityHeaderValues.isEmpty()) {
       headers.put(
           "Strict-Transport-Security",
@@ -139,7 +145,11 @@ public class ResponseHeadersConfiguration {
       headers.put(HttpHeaders.X_XSS_PROTECTION, getXsssProtection());
     }
 
-    if (getXContentTypeOptions()) {
+    Boolean xContentTypeOptions = getXContentTypeOptions();
+    if(xContentTypeOptions == null) {
+      xContentTypeOptions = false;
+    }
+    if (xContentTypeOptions)  {
       headers.put(HttpHeaders.X_CONTENT_TYPE_OPTIONS, "nosniff");
     }
 
