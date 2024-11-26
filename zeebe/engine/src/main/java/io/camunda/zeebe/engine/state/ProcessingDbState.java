@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbFormState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
+import io.camunda.zeebe.engine.state.deployment.DbRpaState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
@@ -56,6 +57,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionSt
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
+import io.camunda.zeebe.engine.state.mutable.MutableRpaState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
@@ -93,6 +95,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
   private final MutableFormState formState;
+  private final MutableRpaState rpaState;
   private final MutableSignalSubscriptionState signalSubscriptionState;
   private final MutableDistributionState distributionState;
   private final MutableUserTaskState userTaskState;
@@ -139,6 +142,7 @@ public class ProcessingDbState implements MutableProcessingState {
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext, partitionId);
     decisionState = new DbDecisionState(zeebeDb, transactionContext, config);
     formState = new DbFormState(zeebeDb, transactionContext, config);
+    rpaState = new DbRpaState(zeebeDb, transactionContext, config);
     signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
@@ -238,6 +242,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableFormState getFormState() {
     return formState;
+  }
+
+  @Override
+  public MutableRpaState getRpaState() {
+    return rpaState;
   }
 
   @Override
