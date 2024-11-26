@@ -24,7 +24,8 @@ public final class UserFixtures extends CommonFixtures {
             .userKey(userKey)
             .username("user-" + userKey)
             .name("User " + userKey)
-            .email("user-" + userKey + "@camunda-test.com");
+            .email("user-" + userKey + "@camunda-test.com")
+            .password("password-" + userKey);
 
     return builderFunction.apply(builder).build();
   }

@@ -10,13 +10,15 @@ package io.camunda.db.rdbms.write.domain;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
-public record UserDbModel(Long userKey, String username, String name, String email)
+public record UserDbModel(Long userKey, String username, String name, String email, String password)
     implements DbModel<UserDbModel> {
 
   @Override
   public UserDbModel copy(
       final Function<ObjectBuilder<UserDbModel>, ObjectBuilder<UserDbModel>> copyFunction) {
-    return copyFunction.apply(new Builder().username(username).name(name).email(email)).build();
+    return copyFunction
+        .apply(new Builder().username(username).name(name).email(email).password(password))
+        .build();
   }
 
   public static class Builder implements ObjectBuilder<UserDbModel> {
@@ -25,6 +27,7 @@ public record UserDbModel(Long userKey, String username, String name, String ema
     private String username;
     private String name;
     private String email;
+    private String password;
 
     public Builder() {}
 
@@ -49,10 +52,15 @@ public record UserDbModel(Long userKey, String username, String name, String ema
       return this;
     }
 
+    public Builder password(final String password) {
+      this.password = password;
+      return this;
+    }
+
     // Build method to create the record
     @Override
     public UserDbModel build() {
-      return new UserDbModel(userKey, username, name, email);
+      return new UserDbModel(userKey, username, name, email, password);
     }
   }
 }

@@ -14,9 +14,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
+import io.camunda.db.rdbms.write.domain.UserDbModel;
 import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
+import io.camunda.search.entities.UserEntity;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.UserQuery;
@@ -44,11 +46,43 @@ public class UserIT {
 
     final var instance = userReader.findOne(user.userKey()).orElse(null);
 
-    assertThat(instance).isNotNull();
-    assertThat(instance.userKey()).isEqualTo(user.userKey());
-    assertThat(instance.username()).isEqualTo(user.username());
-    assertThat(instance.name()).isEqualTo(user.name());
-    assertThat(instance.email()).isEqualTo(user.email());
+    compareUsers(instance, user);
+  }
+
+  @TestTemplate
+  public void shouldSaveAndUpdate(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final UserReader userReader = rdbmsService.getUserReader();
+
+    final var user = UserFixtures.createRandomized(b -> b);
+    createAndSaveUser(rdbmsWriter, user);
+
+    final var userUpdate = UserFixtures.createRandomized(b -> b.userKey(user.userKey()));
+    rdbmsWriter.getUserWriter().update(userUpdate);
+    rdbmsWriter.flush();
+
+    final var instance = userReader.findOne(user.userKey()).orElse(null);
+
+    compareUsers(instance, userUpdate);
+  }
+
+  @TestTemplate
+  public void shouldSaveAndDelete(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final UserReader userReader = rdbmsService.getUserReader();
+
+    final var user = UserFixtures.createRandomized(b -> b);
+    createAndSaveUser(rdbmsWriter, user);
+    final var instance = userReader.findOne(user.userKey()).orElse(null);
+    compareUsers(instance, user);
+
+    rdbmsWriter.getUserWriter().delete(user.userKey());
+    rdbmsWriter.flush();
+
+    final var deletedInstance = userReader.findOne(user.userKey()).orElse(null);
+    assertThat(deletedInstance).isNull();
   }
 
   @TestTemplate
@@ -162,5 +196,10 @@ public class UserIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(10, 15));
+  }
+
+  private static void compareUsers(final UserEntity instance, final UserDbModel user) {
+    assertThat(instance).isNotNull();
+    assertThat(instance).usingRecursiveComparison().isEqualTo(user);
   }
 }
