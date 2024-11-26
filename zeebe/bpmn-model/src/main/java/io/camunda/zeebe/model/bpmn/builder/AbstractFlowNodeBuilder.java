@@ -20,6 +20,7 @@ import io.camunda.zeebe.model.bpmn.AssociationDirection;
 import io.camunda.zeebe.model.bpmn.BpmnModelException;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Activity;
+import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.Association;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
@@ -393,6 +394,16 @@ public abstract class AbstractFlowNodeBuilder<
   public TransactionBuilder transaction(final String id) {
     final Transaction transaction = createTarget(Transaction.class, id);
     return new TransactionBuilder(modelInstance, transaction);
+  }
+
+  public AdHocSubProcessBuilder adHocSubProcess(
+      final String id, final Consumer<AdHocSubProcessBuilder> consumer) {
+    final AdHocSubProcess adHocSubProcess = createTarget(AdHocSubProcess.class, id);
+    final AdHocSubProcessBuilder builder =
+        new AdHocSubProcessBuilder(modelInstance, adHocSubProcess);
+    consumer.accept(builder);
+    builder.adHocSubProcessDone();
+    return builder;
   }
 
   private <T extends Gateway> T findLastGateway(final Class<T> gatewayType) {
