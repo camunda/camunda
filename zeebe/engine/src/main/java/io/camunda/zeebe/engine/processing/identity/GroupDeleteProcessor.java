@@ -80,6 +80,8 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     }
     record.setName(persistedRecord.get().getName());
 
+    removeAssignedEntities(record);
+
     stateWriter.appendFollowUpEvent(groupKey, GroupIntent.DELETED, record);
     responseWriter.writeEventOnCommand(groupKey, GroupIntent.DELETED, record, command);
 
@@ -92,7 +94,27 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
 
   @Override
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
+    removeAssignedEntities(command.getValue());
     stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void removeAssignedEntities(final GroupRecord record) {
+    final var groupKey = record.getGroupKey();
+    groupState
+        .getEntitiesByType(groupKey)
+        .forEach(
+            (entityType, entityKeys) -> {
+              entityKeys.forEach(
+                  entityKey -> {
+                    final var entityRecord =
+                        new GroupRecord()
+                            .setGroupKey(groupKey)
+                            .setEntityKey(entityKey)
+                            .setEntityType(entityType);
+                    stateWriter.appendFollowUpEvent(
+                        groupKey, GroupIntent.ENTITY_REMOVED, entityRecord);
+                  });
+            });
   }
 }
