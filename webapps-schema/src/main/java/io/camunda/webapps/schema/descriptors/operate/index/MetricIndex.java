@@ -9,7 +9,6 @@ package io.camunda.webapps.schema.descriptors.operate.index;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
-import java.util.Optional;
 
 public class MetricIndex extends OperateIndexDescriptor implements Prio5Backup {
 
@@ -26,11 +25,6 @@ public class MetricIndex extends OperateIndexDescriptor implements Prio5Backup {
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
   }
 
   @Override
