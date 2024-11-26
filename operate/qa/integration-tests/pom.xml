@@ -109,12 +109,6 @@
       <artifactId>elasticsearch</artifactId>
       <scope>test</scope>
     </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_7</artifactId>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch-x-content</artifactId>
