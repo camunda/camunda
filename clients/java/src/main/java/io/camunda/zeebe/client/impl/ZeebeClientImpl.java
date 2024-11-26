@@ -694,7 +694,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public CreateRoleCommandStep1 newRoleCreateCommand() {
+  public CreateRoleCommandStep1 newCreateRoleCommand() {
     return new CreateRoleCommandImpl(httpClient, jsonMapper);
   }
 

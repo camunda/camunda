@@ -15,18 +15,11 @@
  */
 package io.camunda.zeebe.client.impl.response;
 
-import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.CreateRoleResponse;
 import io.camunda.zeebe.client.protocol.rest.RoleCreateResponse;
 
 public class CreateRoleResponseImpl implements CreateRoleResponse {
-
-  private final JsonMapper jsonMapper;
   private long roleKey;
-
-  public CreateRoleResponseImpl(final JsonMapper jsonMapper) {
-    this.jsonMapper = jsonMapper;
-  }
 
   @Override
   public long getRoleKey() {

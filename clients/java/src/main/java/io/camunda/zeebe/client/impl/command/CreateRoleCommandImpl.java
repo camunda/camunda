@@ -30,7 +30,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
-
   private final RoleCreateRequest request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
@@ -44,6 +43,13 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
   }
 
   @Override
+  public CreateRoleCommandStep1 name(final String name) {
+    ArgumentUtil.ensureNotNull("name", name);
+    request.setName(name);
+    return this;
+  }
+
+  @Override
   public FinalCommandStep<CreateRoleResponse> requestTimeout(final Duration requestTimeout) {
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
@@ -53,7 +59,7 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
   public ZeebeFuture<CreateRoleResponse> send() {
     ArgumentUtil.ensureNotNull("name", request.getName());
     final HttpZeebeFuture<CreateRoleResponse> result = new HttpZeebeFuture<>();
-    final CreateRoleResponseImpl response = new CreateRoleResponseImpl(jsonMapper);
+    final CreateRoleResponseImpl response = new CreateRoleResponseImpl();
     httpClient.post(
         "/roles",
         jsonMapper.toJson(request),
@@ -62,12 +68,5 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
         response::setResponse,
         result);
     return result;
-  }
-
-  @Override
-  public CreateRoleCommandStep1 name(final String name) {
-    ArgumentUtil.ensureNotNull("name", name);
-    request.setName(name);
-    return this;
   }
 }

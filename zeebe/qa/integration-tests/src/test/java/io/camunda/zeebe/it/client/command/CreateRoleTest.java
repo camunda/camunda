@@ -39,13 +39,12 @@ class CreateRoleTest {
   @Test
   void shouldCreateRole() {
     // when
-    final var response =
-        client.newRoleCreateCommand().roleId("role-id").name("Role Name").send().join();
+    final var response = client.newCreateRoleCommand().name("Role Name").send().join();
 
     // then
     assertThat(response.getRoleKey()).isGreaterThan(0);
     ZeebeAssertHelper.assertRoleCreated(
-        "role-id",
+        "Role Name",
         (role) -> {
           assertThat(role.getName()).isEqualTo("Role Name");
         });
@@ -54,27 +53,20 @@ class CreateRoleTest {
   @Test
   void shouldRejectIfRoleIdAlreadyExists() {
     // given
-    client.newRoleCreateCommand().roleId("role-id").name("Role Name").send().join();
+    client.newCreateRoleCommand().name("Role Name").send().join();
 
     // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newRoleCreateCommand()
-                    .roleId("role-id")
-                    .name("Another Role Name")
-                    .send()
-                    .join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().name("Role Name").send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 409: 'Conflict'")
-        .hasMessageContaining("a role with this ID already exists");
+        .hasMessageContaining("a role with this name already exists");
   }
 
   @Test
-  void shouldRejectIfMissingRoleId() {
+  void shouldRejectIfMissingRoleName() {
     // when / then
-    assertThatThrownBy(() -> client.newRoleCreateCommand().name("Role Name").send().join())
+    assertThatThrownBy(() -> client.newCreateRoleCommand().send().join())
         .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("roleId must not be null");
+        .hasMessageContaining("role name must not be null");
   }
 }
