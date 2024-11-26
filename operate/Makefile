@@ -3,7 +3,7 @@
 .PHONY: env-up
 env-up:
 	docker compose -f docker-compose.yml up -d elasticsearch zeebe \
-	&& mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks -DskipQaBuild \
+	&& mvn install -DskipTests=true -Dskip.fe.build=true -DskipChecks -DskipQaBuild \
 	&& CAMUNDA_OPERATE_TASKLIST_URL=http://localhost:8081 \
 	   mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java -Dexec.mainClass="io.camunda.application.StandaloneOperate" -Dspring.profiles.active=dev,dev-data,auth
 
