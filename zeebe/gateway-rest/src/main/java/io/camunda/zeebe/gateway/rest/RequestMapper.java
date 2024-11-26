@@ -33,6 +33,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
 
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
