@@ -34,8 +34,7 @@ public class ResponseHeadersConfiguration {
   @JsonProperty(HttpHeaders.CONTENT_SECURITY_POLICY)
   private String contentSecurityPolicy;
 
-  public ResponseHeadersConfiguration() {
-  }
+  public ResponseHeadersConfiguration() {}
 
   @SuppressWarnings(SuppressionConstants.UNUSED)
   @JsonProperty("HSTS")
