@@ -24,10 +24,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 public class PermissionsService {
 
-  public static final String RESOURCE_KEY_ALL = "*";
-  public static final String RESOURCE_TYPE_PROCESS_DEFINITION = "process-definition";
-  public static final String RESOURCE_TYPE_DECISION_DEFINITION = "decision-definition";
-
   private static final Logger LOGGER = LoggerFactory.getLogger(PermissionsService.class);
 
   private final SecurityConfiguration securityConfiguration;
@@ -110,7 +106,7 @@ public class PermissionsService {
    *
    * @return true if the user has the given permission for the resource
    */
-  public boolean hasPermissionForResource(
+  private boolean hasPermissionForResource(
       final String resourceId,
       final AuthorizationResourceType resourceType,
       final IdentityPermission identityPermission) {
@@ -120,9 +116,7 @@ public class PermissionsService {
     if (!isAuthorized()) {
       return false;
     }
-    if (identityPermission == null) {
-      throw new IllegalStateException("Identity permission cannot be null");
-    }
+
     final PermissionType permissionType = getPermission(identityPermission);
 
     return isAuthorizedFor(resourceId, resourceType, permissionType);
@@ -156,7 +150,7 @@ public class PermissionsService {
    * @return resources for which the user has the given permission; the result matches either all
    *     resources, or a list of resourceIds
    */
-  public ResourcesAllowed getResourcesWithPermission(
+  private ResourcesAllowed getResourcesWithPermission(
       final AuthorizationResourceType resourceType, final IdentityPermission identityPermission) {
     if (!permissionsEnabled()) {
       return ResourcesAllowed.all();
@@ -164,9 +158,7 @@ public class PermissionsService {
     if (!isAuthorized()) {
       return ResourcesAllowed.withIds(Set.of());
     }
-    if (identityPermission == null) {
-      throw new IllegalStateException("Identity permission cannot be null");
-    }
+
     final PermissionType permissionType = getPermission(identityPermission);
     final Authorization authorization = new Authorization(resourceType, permissionType);
     final SecurityContext securityContext = getSecurityContext(authorization);

@@ -51,7 +51,7 @@ public class ProcessGroupDto {
               groupDto.setTenantId(process0.getTenantId());
               groupDto.setName(process0.getName());
               groupDto.setPermissions(
-                  permissionsService == null
+                  (!permissionsService.permissionsEnabled())
                       ? new HashSet<>()
                       : permissionsService.getProcessDefinitionPermissions(
                           process0.getBpmnProcessId()));
