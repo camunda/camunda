@@ -156,7 +156,6 @@ class Authentication {
 
   setUser = ({
     displayName,
-    permissions,
     canLogout,
     userId,
     salesPlanType,
@@ -174,7 +173,6 @@ class Authentication {
     this.state.userId = userId;
     this.state.salesPlanType = salesPlanType;
     this.state.roles = roles ?? [];
-    this.state.permissions = permissions ?? DEFAULT_STATE.permissions;
     this.state.c8Links = c8Links;
     this.state.tenants = tenants;
   };
@@ -187,12 +185,6 @@ class Authentication {
     }
 
     this.disableSession();
-  };
-
-  hasPermission = (scopes: Permissions) => {
-    return this.state.permissions.some((permission) =>
-      scopes.includes(permission),
-    );
   };
 
   handleThirdPartySessionSuccess = () => {
@@ -217,7 +209,6 @@ class Authentication {
   resetUser = () => {
     this.state.displayName = DEFAULT_STATE.displayName;
     this.state.canLogout = DEFAULT_STATE.canLogout;
-    this.state.permissions = DEFAULT_STATE.permissions;
   };
 
   reset = () => {
@@ -226,4 +217,3 @@ class Authentication {
 }
 
 export const authenticationStore = new Authentication();
-export type {Permissions};

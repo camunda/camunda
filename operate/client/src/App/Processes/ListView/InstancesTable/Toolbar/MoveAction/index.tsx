@@ -86,7 +86,6 @@ const MoveAction: React.FC = observer(() => {
 
   return (
     <Restricted
-      scopes={['write']}
       resourceBasedRestrictions={{
         scopes: ['UPDATE_PROCESS_INSTANCE'],
         permissions: processesStore.getPermissions(process, tenant),
