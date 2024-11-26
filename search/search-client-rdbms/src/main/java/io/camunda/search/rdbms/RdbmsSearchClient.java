@@ -15,6 +15,7 @@ import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
+import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
@@ -30,6 +31,7 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -45,6 +47,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
@@ -75,7 +78,8 @@ public class RdbmsSearchClient
         VariableSearchClient,
         RoleSearchClient,
         TenantSearchClient,
-        MappingSearchClient {
+        MappingSearchClient,
+        GroupSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -154,6 +158,11 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery filter) {
     return null;
   }
 
