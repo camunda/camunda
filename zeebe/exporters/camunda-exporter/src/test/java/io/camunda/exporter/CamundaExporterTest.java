@@ -14,6 +14,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
+import io.camunda.exporter.cache.treePath.CachedTreePathKey;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.store.BatchRequest;
@@ -65,6 +66,12 @@ final class CamundaExporterTest {
 
     @Override
     public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
+      return k -> null;
+    }
+
+    @Override
+    public CacheLoader<CachedTreePathKey, String> getIntraTreePathCacheLoader(
+        final String fniIndexName) {
       return k -> null;
     }
   }

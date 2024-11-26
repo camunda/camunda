@@ -15,6 +15,8 @@ import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.cache.form.ElasticSearchFormCacheLoader;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.cache.process.ElasticSearchProcessCacheLoader;
+import io.camunda.exporter.cache.treePath.CachedTreePathKey;
+import io.camunda.exporter.cache.treePath.ElasticSearchIntraTreePathCacheLoader;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.schema.SearchEngineClient;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
@@ -70,6 +72,12 @@ class ElasticsearchAdapter implements ClientAdapter {
     @Override
     public CacheLoader<String, CachedFormEntity> getFormCacheLoader(final String formIndexName) {
       return new ElasticSearchFormCacheLoader(client, formIndexName);
+    }
+
+    @Override
+    public CacheLoader<CachedTreePathKey, String> getIntraTreePathCacheLoader(
+        final String fniIndexName) {
+      return new ElasticSearchIntraTreePathCacheLoader(client, fniIndexName);
     }
   }
 }

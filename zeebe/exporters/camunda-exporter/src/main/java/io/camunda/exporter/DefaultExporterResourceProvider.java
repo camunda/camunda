@@ -180,6 +180,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(FormIndex.class).getFullQualifiedName()),
             new ExporterCacheMetrics("form", meterRegistry));
 
+    final var intraTreePathCache =
+        new ExporterEntityCacheImpl<>(
+            10_000, // yolo
+            entityCacheProvider.getIntraTreePathCacheLoader(
+                templateDescriptorsMap.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
+            new ExporterCacheMetrics("fni", meterRegistry));
+
     exportHandlers =
         Set.of(
             new RoleCreateUpdateHandler(
@@ -220,7 +227,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new FlowNodeInstanceFromIncidentHandler(
                 templateDescriptorsMap.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
             new FlowNodeInstanceFromProcessInstanceHandler(
-                templateDescriptorsMap.get(FlowNodeInstanceTemplate.class).getFullQualifiedName()),
+                templateDescriptorsMap.get(FlowNodeInstanceTemplate.class).getFullQualifiedName(),
+                intraTreePathCache),
             new IncidentHandler(
                 templateDescriptorsMap.get(IncidentTemplate.class).getFullQualifiedName(),
                 false,

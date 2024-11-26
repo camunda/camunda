@@ -13,6 +13,8 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_MIGRATED;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
+import io.camunda.exporter.cache.ExporterEntityCacheImpl;
+import io.camunda.exporter.cache.treePath.CachedTreePathKey;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -29,18 +31,30 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 public class FlowNodeInstanceFromProcessInstanceHandler
     implements ExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
 
+  private static final Set<BpmnElementType> CONTAINER_TYPES =
+      Set.of(
+          BpmnElementType.SUB_PROCESS,
+          BpmnElementType.EVENT_SUB_PROCESS,
+          BpmnElementType.MULTI_INSTANCE_BODY,
+          BpmnElementType.PROCESS);
+
   private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
   private static final Set<Intent> AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
 
   private final String indexName;
+  private final ExporterEntityCacheImpl<CachedTreePathKey, String> intraTreePathCache;
 
-  public FlowNodeInstanceFromProcessInstanceHandler(final String indexName) {
+  public FlowNodeInstanceFromProcessInstanceHandler(
+      final String indexName,
+      final ExporterEntityCacheImpl<CachedTreePathKey, String> intraTreePathCache) {
     this.indexName = indexName;
+    this.intraTreePathCache = intraTreePathCache;
   }
 
   @Override
@@ -89,9 +103,31 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     if (intent.equals(ELEMENT_ACTIVATING)) {
-      // we set the default value here, which may be updated later within incident export
-      entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
-      entity.setLevel(1);
+      final long flowScopeKey = recordValue.getFlowScopeKey();
+      final long processInstanceKey = recordValue.getProcessInstanceKey();
+
+      String parentIntraTreePath = Long.toString(processInstanceKey);
+      // resolve treePath
+      if (flowScopeKey != processInstanceKey) {
+        final Optional<String> optionalParentIntraTreePath =
+            intraTreePathCache.get(new CachedTreePathKey(flowScopeKey, processInstanceKey));
+
+        if (optionalParentIntraTreePath.isPresent()) {
+          parentIntraTreePath = optionalParentIntraTreePath.get();
+        }
+      }
+
+      final String intraTreePath =
+          String.join("/", parentIntraTreePath, Long.toString(record.getKey()));
+      entity.setTreePath(intraTreePath);
+      entity.setLevel(parentIntraTreePath.split("/").length);
+
+      // We cache only treePath's of container types to reduce way too many evictions
+      // when storing leafs, which are never requested
+      if (CONTAINER_TYPES.contains(recordValue.getBpmnElementType())) {
+        intraTreePathCache.put(
+            new CachedTreePathKey(flowScopeKey, processInstanceKey), intraTreePath);
+      }
     }
 
     final OffsetDateTime recordTime =
@@ -125,7 +161,9 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, entity.getPartitionId());
     updateFields.put(FlowNodeInstanceTemplate.TYPE, entity.getType());
     updateFields.put(FlowNodeInstanceTemplate.STATE, entity.getState());
-    updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, entity.getTreePath());
+    if (entity.getState() == FlowNodeState.ACTIVE) {
+      updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, entity.getTreePath());
+    }
     updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
     updateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());

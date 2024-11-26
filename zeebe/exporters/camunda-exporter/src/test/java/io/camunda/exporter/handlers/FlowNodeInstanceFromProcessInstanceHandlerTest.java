@@ -39,7 +39,7 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-list-view";
   private final FlowNodeInstanceFromProcessInstanceHandler underTest =
-      new FlowNodeInstanceFromProcessInstanceHandler(indexName);
+      new FlowNodeInstanceFromProcessInstanceHandler(indexName, intraTreePathCache);
 
   @Test
   public void testGetHandledValueType() {
