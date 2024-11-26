@@ -9,7 +9,6 @@ package io.camunda.webapps.schema.descriptors.operate.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
-import java.util.Optional;
 
 public class MessageTemplate extends OperateTemplateDescriptor implements Prio4Backup {
 
@@ -34,11 +33,6 @@ public class MessageTemplate extends OperateTemplateDescriptor implements Prio4B
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public Optional<String> getTenantIdField() {
-    return Optional.of(TENANT_ID);
   }
 
   @Override
