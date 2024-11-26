@@ -17,7 +17,6 @@ import java.util.Map;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -31,7 +30,7 @@ public class ProcessReader {
   private final PermissionsService permissionsService;
 
   public ProcessReader(
-      final ProcessStore processStore, @Nullable final PermissionsService permissionsService) {
+      final ProcessStore processStore, final PermissionsService permissionsService) {
     this.processStore = processStore;
     this.permissionsService = permissionsService;
   }
@@ -88,7 +87,7 @@ public class ProcessReader {
   }
 
   private Set<String> getAllowedProcessIdsOrNullForAll() {
-    if (permissionsService == null) {
+    if (!permissionsService.permissionsEnabled()) {
       return null;
     }
 

@@ -131,7 +131,7 @@ public class ListViewProcessInstanceDto {
     }
     processInstance.setCallHierarchy(callHierarchy);
     processInstance.setPermissions(
-        permissionsService == null
+        (!permissionsService.permissionsEnabled())
             ? new HashSet<>()
             : permissionsService.getProcessDefinitionPermissions(
                 processInstanceEntity.getBpmnProcessId()));

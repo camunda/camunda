@@ -96,7 +96,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
             ProcessIndex.VERSION);
 
     final Query query =
-        permissionsService == null
+        (!permissionsService.permissionsEnabled())
             ? ACTIVE_INCIDENT_QUERY
             : and(
                 ACTIVE_INCIDENT_QUERY,
