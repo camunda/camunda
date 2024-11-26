@@ -101,7 +101,7 @@
     "rollup-plugin-license": "3.5.3",
     "serve": "14.2.4",
     "source-map-explorer": "2.5.3",
-    "stylelint": "16.9.0",
+    "stylelint": "16.10.0",
     "stylelint-prettier": "5.0.2",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.6.3",
