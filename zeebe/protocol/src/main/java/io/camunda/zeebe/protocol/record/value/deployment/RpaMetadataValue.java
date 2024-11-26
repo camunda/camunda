@@ -21,7 +21,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableFormMetadataValue.Builder.class)
+@ImmutableProtocol(builder = ImmutableRpaMetadataValue.Builder.class)
 public interface RpaMetadataValue extends RecordValue, TenantOwned {
 
   /**
