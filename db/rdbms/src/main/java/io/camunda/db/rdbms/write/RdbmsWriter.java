@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
+import io.camunda.db.rdbms.write.service.MappingWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
@@ -34,6 +35,7 @@ public class RdbmsWriter {
   private final UserWriter userWriter;
   private final UserTaskWriter userTaskWriter;
   private final FormWriter formWriter;
+  private final MappingWriter mappingWriter;
 
   public RdbmsWriter(
       final ExecutionQueue executionQueue, final ExporterPositionService exporterPositionService) {
@@ -49,6 +51,7 @@ public class RdbmsWriter {
     userWriter = new UserWriter(executionQueue);
     userTaskWriter = new UserTaskWriter(executionQueue);
     formWriter = new FormWriter(executionQueue);
+    mappingWriter = new MappingWriter(executionQueue);
   }
 
   public DecisionDefinitionWriter getDecisionDefinitionWriter() {
@@ -89,6 +92,10 @@ public class RdbmsWriter {
 
   public FormWriter getFormWriter() {
     return formWriter;
+  }
+
+  public MappingWriter getMappingWriter() {
+    return mappingWriter;
   }
 
   public ExporterPositionService getExporterPositionService() {

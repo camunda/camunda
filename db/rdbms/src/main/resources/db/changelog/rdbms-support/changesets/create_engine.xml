@@ -287,4 +287,14 @@
     </createIndex>
   </changeSet>
 
+  <changeSet id="create_mapping_table" author="pwunderlich">
+    <createTable tableName="MAPPINGS">
+      <column name="MAPPING_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="CLAIM_NAME" type="VARCHAR(255)"/>
+      <column name="CLAIM_VALUE" type="VARCHAR(255)"/>
+    </createTable>
+  </changeSet>
+
 </databaseChangeLog>

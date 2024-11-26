@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -219,6 +220,19 @@ public class RecordFixtures {
                 .from((UserRecordValue) recordValueRecord.getValue())
                 .withUserKey(userKey)
                 .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getMappingRecord(
+      final Long position, final MappingIntent intent) {
+    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.MAPPING);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(intent)
+        .withPosition(position)
+        .withTimestamp(System.currentTimeMillis())
+        .withPartitionId(1)
         .build();
   }
 }
