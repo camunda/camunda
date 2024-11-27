@@ -11,8 +11,15 @@
       "name": {
         "type": "keyword"
       },
-      "assignedMemberKeys": {
+      "memberKey": {
         "type": "long"
+      },
+      "join": {
+        "type": "join",
+        "eager_global_ordinals": true,
+        "relations": {
+          "group": ["member"]
+        }
       }
     }
   }
