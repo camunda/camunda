@@ -259,13 +259,7 @@ public final class SearchQueryResponseMapper {
   }
 
   public static RoleItem toRole(final RoleEntity roleEntity) {
-    return new RoleItem()
-        .key(roleEntity.roleKey())
-        .name(roleEntity.name())
-        .assignedMemberKeys(
-            roleEntity.assignedMemberKeys() == null
-                ? null
-                : roleEntity.assignedMemberKeys().stream().sorted().toList());
+    return new RoleItem().key(roleEntity.roleKey()).name(roleEntity.name());
   }
 
   private static List<TenantItem> toTenants(final List<TenantEntity> tenants) {

@@ -22,7 +22,6 @@ import io.camunda.security.auth.Authentication;
 import io.camunda.service.RoleServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -43,7 +42,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   @Test
   void getRoleShouldReturnOk() {
     // given
-    final var role = new RoleEntity(100L, "Role Name", Set.of());
+    final var role = new RoleEntity(100L, "Role Name");
     when(roleServices.getRole(role.roleKey())).thenReturn(role);
 
     // when
@@ -107,9 +106,9 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 .sortValues(new Object[] {})
                 .items(
                     List.of(
-                        new RoleEntity(100L, "Role 1", Set.of()),
-                        new RoleEntity(200L, "Role 2", Set.of(1L, 2L)),
-                        new RoleEntity(300L, "Role 12", Set.of(3L))))
+                        new RoleEntity(100L, "Role 1"),
+                        new RoleEntity(200L, "Role 2"),
+                        new RoleEntity(300L, "Role 12")))
                 .build());
 
     // when / then
@@ -131,18 +130,15 @@ public class RoleQueryControllerTest extends RestControllerTest {
              "items": [
                {
                  "key": 100,
-                 "name": "Role 1",
-                 "assignedMemberKeys": []
+                 "name": "Role 1"
                },
                {
                  "key": 200,
-                 "name": "Role 2",
-                 "assignedMemberKeys": [1, 2]
+                 "name": "Role 2"
                },
                {
                  "key": 300,
-                 "name": "Role 12",
-                 "assignedMemberKeys": [3]
+                 "name": "Role 12"
                }
              ],
              "page": {
@@ -164,9 +160,9 @@ public class RoleQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new RoleEntity(100L, "Role 1", Set.of()),
-                        new RoleEntity(300L, "Role 12", Set.of()),
-                        new RoleEntity(200L, "Role 2", Set.of())))
+                        new RoleEntity(100L, "Role 1"),
+                        new RoleEntity(300L, "Role 12"),
+                        new RoleEntity(200L, "Role 2")))
                 .build());
 
     // when / then
