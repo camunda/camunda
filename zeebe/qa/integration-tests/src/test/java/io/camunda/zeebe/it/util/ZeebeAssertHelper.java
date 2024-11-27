@@ -422,6 +422,19 @@ public final class ZeebeAssertHelper {
     consumer.accept(tenantRecordValue);
   }
 
+  public static void assertTenantDeleted(
+      final String tenantId, final Consumer<TenantRecordValue> consumer) {
+    final TenantRecordValue tenantRecordValue =
+        RecordingExporter.tenantRecords()
+            .withIntent(TenantIntent.DELETED)
+            .withTenantId(tenantId)
+            .getFirst()
+            .getValue();
+
+    assertThat(tenantRecordValue).isNotNull();
+    consumer.accept(tenantRecordValue);
+  }
+
   public static void assertMappingCreated(final String claimName, final String claimValue) {
     final MappingRecordValue mapping =
         RecordingExporter.mappingRecords()
