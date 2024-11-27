@@ -23,7 +23,7 @@ public abstract class TimestampBasedImportIndex<TBuilder>
 
   public static final String TIMESTAMP_OF_LAST_ENTITY = ImportIndexDto.Fields.timestampOfLastEntity;
   public static final String DB_TYPE_INDEX_REFERS_TO =
-      TimestampBasedImportIndexDto.Fields.esTypeIndexRefersTo;
+      TimestampBasedImportIndexDto.Fields.dbTypeIndexRefersTo;
   public static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
   private static final String LAST_IMPORT_EXECUTION_TIMESTAMP =
       ImportIndexDto.Fields.lastImportExecutionTimestamp;

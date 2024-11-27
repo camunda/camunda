@@ -14,7 +14,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceReferenceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
@@ -40,8 +40,7 @@ public class ProcessInstanceReader {
 
   @Autowired private OperationReader operationReader;
 
-  @Autowired(required = false)
-  private PermissionsService permissionsService;
+  @Autowired private PermissionsService permissionsService;
 
   /**
    * Searches for process instance by key.
@@ -94,7 +93,7 @@ public class ProcessInstanceReader {
 
   public ProcessInstanceCoreStatisticsDto getCoreStatistics() {
     final Map<String, Long> statistics;
-    if (permissionsService != null) {
+    if (permissionsService.permissionsEnabled()) {
       final PermissionsService.ResourcesAllowed allowed =
           permissionsService.getProcessesWithPermission(IdentityPermission.READ);
       statistics =

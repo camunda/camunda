@@ -11,10 +11,14 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.client.ZeebeClient;
+import io.camunda.zeebe.client.api.ZeebeFuture;
+import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.api.response.CompleteUserTaskResponse;
 import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.it.util.RecordingJobHandler;
 import io.camunda.zeebe.it.util.ZeebeAssertHelper;
@@ -24,6 +28,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -34,6 +39,7 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,7 +49,8 @@ import org.junit.jupiter.api.Test;
 public class UserTaskListenersTest {
 
   @TestZeebe
-  private final TestStandaloneBroker zeebe = new TestStandaloneBroker().withRecordingExporter(true);
+  private static final TestStandaloneBroker ZEEBE =
+      new TestStandaloneBroker().withRecordingExporter(true);
 
   @AutoCloseResource private ZeebeClient client;
 
@@ -51,7 +58,7 @@ public class UserTaskListenersTest {
 
   @BeforeEach
   void init() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(5)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(5)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
@@ -64,12 +71,19 @@ public class UserTaskListenersTest {
             t -> t.zeebeTaskListener(l -> l.complete().type("my_listener")));
 
     final JobHandler completeJobHandler =
-        (jobClient, job) -> client.newCompleteCommand(job).send().join();
+        (jobClient, job) -> client.newCompleteCommand(job).result().denied(false).send().join();
     client.newWorker().jobType("my_listener").handler(completeJobHandler).open();
 
     // when: invoke complete user task command
     final var completeUserTaskFuture =
         client.newUserTaskCompleteCommand(userTaskKey).action(action).send();
+
+    // TL job should be successfully completed with the result "denied" set correctly
+    ZeebeAssertHelper.assertJobCompleted(
+        "my_listener",
+        (userTaskListener) -> {
+          assertThat(userTaskListener.getResult().isDenied()).isFalse();
+        });
 
     // wait for successful `COMPLETE` user task command completion
     assertThatCode(completeUserTaskFuture::join).doesNotThrowAnyException();
@@ -223,6 +237,53 @@ public class UserTaskListenersTest {
         });
   }
 
+  @Test
+  public void shouldRejectUserTaskCompletionWhenTaskListenerDeniesTheWork() {
+    // given
+    final var listenerType = "my_listener";
+    final var userTaskKey =
+        resourcesHelper.createSingleUserTask(
+            t -> t.zeebeTaskListener(l -> l.complete().type(listenerType)));
+
+    final JobHandler completeJobHandler =
+        (jobClient, job) -> client.newCompleteCommand(job).result().denied(true).send().join();
+    final var recordingHandler = new RecordingJobHandler(completeJobHandler);
+
+    client.newWorker().jobType(listenerType).handler(recordingHandler).open();
+
+    // when: invoke complete user task command
+    final ZeebeFuture<CompleteUserTaskResponse> completeUserTaskFuture =
+        client.newUserTaskCompleteCommand(userTaskKey).send();
+
+    // TL job should be successfully completed with the result "denied" set correctly
+    ZeebeAssertHelper.assertJobCompleted(
+        listenerType,
+        (userTaskListener) -> {
+          assertThat(userTaskListener.getResult().isDenied()).isTrue();
+        });
+
+    final var rejectionReason =
+        String.format(
+            "Command 'COMPLETE' rejected with code 'INVALID_STATE': Completion of the User Task with key '%s' was rejected by Task Listener",
+            userTaskKey);
+
+    // verify the rejection
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(completeUserTaskFuture::join)
+        .satisfies(
+            ex -> {
+              assertThat(ex.details().getTitle()).isEqualTo(RejectionType.INVALID_STATE.name());
+              assertThat(ex.details().getDetail()).isEqualTo(rejectionReason);
+              assertThat(ex.details().getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+            });
+
+    // verify the expected sequence of User Task intents
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.COMPLETION_DENIED);
+  }
+
   private void waitForJobRetriesToBeExhausted(final RecordingJobHandler recordingHandler) {
     await("until all retries are exhausted")
         .untilAsserted(
@@ -232,5 +293,15 @@ public class UserTaskListenersTest {
                     .last()
                     .extracting(ActivatedJob::getRetries)
                     .isEqualTo(1));
+  }
+
+  private void assertUserTaskIntentsSequence(final UserTaskIntent... intents) {
+    assertThat(intents).describedAs("Expected intents not to be empty").isNotEmpty();
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .limit(r -> r.getIntent() == intents[intents.length - 1]))
+        .extracting(Record::getIntent)
+        .describedAs("Verify the expected sequence of User Task intents")
+        .containsSequence(intents);
   }
 }

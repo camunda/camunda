@@ -14,7 +14,7 @@
   <name>Optimize Backend</name>
 
   <properties>
-    <spring.security.version>6.3.4</spring.security.version>
+    <spring.security.version>6.4.1</spring.security.version>
     <it.test.excludedGroups/>
     <it.test.includedGroups/>
     <test.forkCount/>
@@ -400,7 +400,7 @@
     <dependency>
       <groupId>org.testcontainers</groupId>
       <artifactId>testcontainers</artifactId>
-      <version>1.19.8</version>
+      <version>1.20.4</version>
       <scope>test</scope>
     </dependency>
 
@@ -422,7 +422,7 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-oauth2-core</artifactId>
-      <version>6.3.4</version>
+      <version>6.4.1</version>
       <scope>compile</scope>
     </dependency>
 
@@ -478,7 +478,7 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-core</artifactId>
-      <version>6.3.4</version>
+      <version>6.4.1</version>
       <scope>compile</scope>
     </dependency>
 
@@ -584,7 +584,7 @@
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
-      <version>5.11.0</version>
+      <version>5.14.2</version>
       <scope>test</scope>
     </dependency>
 

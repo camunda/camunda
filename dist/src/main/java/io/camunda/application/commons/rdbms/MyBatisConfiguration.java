@@ -12,6 +12,8 @@ import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
+import io.camunda.db.rdbms.sql.FormMapper;
+import io.camunda.db.rdbms.sql.MappingMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
@@ -132,6 +134,16 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<UserTaskMapper> userTaskMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, UserTaskMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<FormMapper> formMapper(final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, FormMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<MappingMapper> mappingMapper(final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, MappingMapper.class);
   }
 
   @Bean

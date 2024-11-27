@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -405,5 +407,17 @@ public final class ZeebeAssertHelper {
 
     assertThat(tenantRecordValue).isNotNull();
     consumer.accept(tenantRecordValue);
+  }
+
+  public static void assertMappingCreated(final String claimName, final String claimValue) {
+    final MappingRecordValue mapping =
+        RecordingExporter.mappingRecords()
+            .withIntent(MappingIntent.CREATED)
+            .withClaimName(claimName)
+            .withClaimValue(claimValue)
+            .getFirst()
+            .getValue();
+
+    assertThat(mapping).isNotNull();
   }
 }

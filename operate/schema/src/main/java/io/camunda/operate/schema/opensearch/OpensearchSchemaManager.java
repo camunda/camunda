@@ -8,6 +8,8 @@
 package io.camunda.operate.schema.opensearch;
 
 import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.SCHEMA_FOLDER_OPENSEARCH;
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 import static java.lang.String.format;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -363,8 +365,7 @@ public class OpensearchSchemaManager implements SchemaManager {
   }
 
   private String settingsTemplateName() {
-    final OperateOpensearchProperties osConfig = operateProperties.getOpensearch();
-    return format("%s_template", osConfig.getIndexPrefix());
+    return String.format("%s%s_template", formatIndexPrefix(getIndexPrefix()), OPERATE);
   }
 
   private void createTemplates() {

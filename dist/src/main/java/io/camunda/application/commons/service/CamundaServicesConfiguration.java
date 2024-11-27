@@ -15,6 +15,7 @@ import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
+import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
@@ -33,6 +34,7 @@ import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.service.FormServices;
+import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
 import io.camunda.service.MappingServices;
@@ -53,6 +55,7 @@ import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnRestGatewayEnabled
@@ -150,11 +153,21 @@ public class CamundaServicesConfiguration {
   }
 
   @Bean
+  public GroupServices groupServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final GroupSearchClient groupSearchClient) {
+    return new GroupServices(brokerClient, securityContextProvider, groupSearchClient, null);
+  }
+
+  @Bean
   public UserServices userServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final UserSearchClient userSearchClient) {
-    return new UserServices(brokerClient, securityContextProvider, userSearchClient, null);
+      final UserSearchClient userSearchClient,
+      final PasswordEncoder passwordEncoder) {
+    return new UserServices(
+        brokerClient, securityContextProvider, userSearchClient, null, passwordEncoder);
   }
 
   @Bean
