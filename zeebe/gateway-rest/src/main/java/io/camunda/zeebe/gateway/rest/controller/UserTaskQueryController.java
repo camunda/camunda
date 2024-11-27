@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.service.UserTaskServices;
@@ -23,7 +24,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
-import io.camunda.zeebe.gateway.rest.util.XmlUtil;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -38,11 +39,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskQueryController {
 
   private final UserTaskServices userTaskServices;
-  private final XmlUtil xmlUtil;
+  private final ProcessCache processCache;
 
-  public UserTaskQueryController(final UserTaskServices userTaskServices, final XmlUtil xmlUtil) {
+  public UserTaskQueryController(
+      final UserTaskServices userTaskServices, final ProcessCache processCache) {
     this.userTaskServices = userTaskServices;
-    this.xmlUtil = xmlUtil;
+    this.processCache = processCache;
   }
 
   @PostMapping(
@@ -59,9 +61,11 @@ public class UserTaskQueryController {
     try {
       final var result =
           userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
-      final var nameMap = xmlUtil.getUserTasksNames(result.items());
+      final var processCacheItems =
+          processCache.getCacheItems(
+              result.items().stream().map(UserTaskEntity::processDefinitionKey).toList());
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result, nameMap));
+          SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result, processCacheItems));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -77,7 +81,7 @@ public class UserTaskQueryController {
           userTaskServices
               .withAuthentication(RequestMapper.getAuthentication())
               .getByKey(userTaskKey);
-      final var name = xmlUtil.getUserTaskName(userTask);
+      final var name = processCache.getUserTaskName(userTask);
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toUserTask(userTask, name));
     } catch (final Exception e) {
       return mapErrorToResponse(e);

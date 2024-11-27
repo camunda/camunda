@@ -25,10 +25,12 @@ import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
-import io.camunda.zeebe.gateway.rest.util.XmlUtil;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -130,18 +132,18 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
   static final String FLOW_NODE_INSTANCES_SEARCH_URL = FLOW_NODE_INSTANCES_URL + "search";
 
   @MockBean FlowNodeInstanceServices flowNodeInstanceServices;
-  @MockBean XmlUtil xmlUtil;
+  @MockBean ProcessCache processCache;
 
   @BeforeEach
   void setupServices() {
     when(flowNodeInstanceServices.withAuthentication(any(Authentication.class)))
         .thenReturn(flowNodeInstanceServices);
-    when(xmlUtil.getFlowNodeName(any())).thenReturn("flowNodeName");
-    final var processDefinitionMap = mock(HashMap.class);
-    final var userTaskNamesMap = mock(HashMap.class);
-    when(userTaskNamesMap.get(any())).thenReturn("flowNodeName");
-    when(processDefinitionMap.get(any())).thenReturn(userTaskNamesMap);
-    when(xmlUtil.getFlowNodesNames(any())).thenReturn(processDefinitionMap);
+    when(processCache.getFlowNodeName(any())).thenReturn("flowNodeName");
+    final var processCacheItem = mock(ProcessCacheItem.class);
+    when(processCacheItem.getFlowNodeName(any())).thenReturn("flowNodeName");
+    final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
+    when(processDefinitionMap.get(any())).thenReturn(processCacheItem);
+    when(processCache.getCacheItems(any())).thenReturn(processDefinitionMap);
   }
 
   @Test
@@ -162,7 +164,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
-    verify(xmlUtil).getFlowNodesNames(any());
+    verify(processCache).getCacheItems(any());
   }
 
   @Test
@@ -187,7 +189,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
-    verify(xmlUtil).getFlowNodesNames(any());
+    verify(processCache).getCacheItems(any());
   }
 
   @Test
@@ -315,7 +317,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .asc()
                         .build())
                 .build());
-    verify(xmlUtil).getFlowNodesNames(any());
+    verify(processCache).getCacheItems(any());
   }
 
   @Test
@@ -332,7 +334,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_GET_RESPONSE);
 
     verify(flowNodeInstanceServices).getByKey(23L);
-    verify(xmlUtil).getFlowNodeName(any());
+    verify(processCache).getFlowNodeName(any());
   }
 
   @Test
@@ -359,6 +361,6 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                 """);
 
     verify(flowNodeInstanceServices).getByKey(5L);
-    verify(xmlUtil, never()).getFlowNodeName(any());
+    verify(processCache, never()).getFlowNodeName(any());
   }
 }
