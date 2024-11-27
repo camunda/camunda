@@ -9,11 +9,9 @@ package io.camunda.tasklist.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
@@ -49,19 +47,14 @@ public class OpenSearchHelper implements NoSqlHelper {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private ProcessInstanceIndex processInstanceIndex;
-
-  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
-
-  @Autowired private VariableIndex variableIndex;
-
   @Autowired
   @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
   @Autowired private ObjectMapper objectMapper;
 
-  public TaskEntity getTask(String taskId) {
+  @Override
+  public TaskEntity getTask(final String taskId) {
     try {
       final GetResponse<TaskEntity> response =
           osClient.get(g -> g.index(taskTemplate.getAlias()).id(taskId), TaskEntity.class);
@@ -71,52 +64,15 @@ public class OpenSearchHelper implements NoSqlHelper {
         throw new NotFoundApiException(
             String.format("Could not find  task for taskId [%s].", taskId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the task: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
-  public ProcessInstanceEntity getProcessInstance(String processInstanceId) {
-    try {
-      final GetResponse<ProcessInstanceEntity> response =
-          osClient.get(
-              g -> g.index(processInstanceIndex.getAlias()).id(processInstanceId),
-              ProcessInstanceEntity.class);
-      if (response.found()) {
-        return response.source();
-      } else {
-        throw new NotFoundApiException(
-            String.format("Could not find task for processInstanceId [%s].", processInstanceId));
-      }
-    } catch (IOException e) {
-      final String message =
-          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
-    }
-  }
-
-  public List<ProcessInstanceEntity> getProcessInstances(List<String> processInstanceIds) {
-    try {
-      final SearchResponse<ProcessInstanceEntity> searchResponse =
-          osClient.search(
-              s ->
-                  s.index(processInstanceIndex.getAlias())
-                      .query(q -> q.ids(ids -> ids.values(processInstanceIds))),
-              ProcessInstanceEntity.class);
-      return searchResponse.hits().hits().stream()
-          .map(m -> m.source())
-          .collect(Collectors.toList());
-    } catch (IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining list of processes: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
-    }
-  }
-
-  public List<TaskEntity> getTask(String processInstanceId, String flowNodeBpmnId) {
+  @Override
+  public List<TaskEntity> getTask(final String processInstanceId, final String flowNodeBpmnId) {
     final Query.Builder piId = new Query.Builder();
     if (processInstanceId != null) {
       piId.term(
@@ -156,13 +112,14 @@ public class OpenSearchHelper implements NoSqlHelper {
                 "Could not find task for processInstanceId [%s] with flowNodeBpmnId [%s].",
                 processInstanceId, flowNodeBpmnId));
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
+  @Override
   public boolean checkVariableExists(final String taskId, final String varName) {
     final Query.Builder taskIdQ = new Query.Builder();
     taskIdQ.term(
@@ -178,13 +135,14 @@ public class OpenSearchHelper implements NoSqlHelper {
               s -> s.query(OpenSearchUtil.joinWithAnd(taskIdQ, varNameQ)),
               SnapshotTaskVariableEntity.class);
       return response.hits().total().value() > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
+  @Override
   public boolean checkVariablesExist(final String[] varNames) {
     try {
       final SearchResponse<VariableEntity> response =
@@ -210,13 +168,14 @@ public class OpenSearchHelper implements NoSqlHelper {
                                                                               .toList()))))))),
               VariableEntity.class);
       return response.hits().total().value() == varNames.length;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining variables: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
 
+  @Override
   public List<String> getIdsFromIndex(
       final String idFieldName, final String index, final List<String> ids) {
     final Query q =
@@ -240,20 +199,20 @@ public class OpenSearchHelper implements NoSqlHelper {
       final List<String> idsFromEls =
           OpenSearchUtil.scrollFieldToList(request, idFieldName, osClient);
       return idsFromEls;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }
 
   @Override
-  public List<TaskEntity> getTasksFromIdAndIndex(String index, List<String> ids) {
+  public List<TaskEntity> getTasksFromIdAndIndex(final String index, final List<String> ids) {
     try {
       final SearchResponse<TaskEntity> response =
           osClient.search(
               search -> search.index(index).query(q -> q.ids(idsQ -> idsQ.values(ids))),
               TaskEntity.class);
       return response.hits().hits().stream().map(m -> m.source()).collect(Collectors.toList());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
@@ -266,26 +225,26 @@ public class OpenSearchHelper implements NoSqlHelper {
               s -> s.index(index).query(q -> q.matchAll(ma -> ma.queryName("getAll"))),
               TaskEntity.class);
       return response.hits().hits().stream().map(m -> m.source()).collect(Collectors.toList());
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   @Override
-  public Long countIndexResult(String index) {
+  public Long countIndexResult(final String index) {
     try {
       final SearchResponse<Object> result =
           osClient.search(
               s -> s.index(index).query(q -> q.matchAll(ma -> ma.queryName("matchall"))),
               Object.class);
       return result.hits().total().value();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       return -1L;
     }
   }
 
   @Override
-  public Boolean isIndexDynamicMapping(IndexDescriptor index, final String dynamics)
+  public Boolean isIndexDynamicMapping(final IndexDescriptor index, final String dynamics)
       throws IOException {
     final GetIndexResponse response =
         osClient.indices().get(i -> i.index(index.getFullQualifiedName()));
@@ -298,7 +257,7 @@ public class OpenSearchHelper implements NoSqlHelper {
   }
 
   @Override
-  public Map<String, Object> getFieldDescription(IndexDescriptor indexDescriptor)
+  public Map<String, Object> getFieldDescription(final IndexDescriptor indexDescriptor)
       throws IOException {
     final GetIndexResponse response =
         osClient.indices().get(g -> g.index(indexDescriptor.getFullQualifiedName()));
@@ -307,19 +266,20 @@ public class OpenSearchHelper implements NoSqlHelper {
   }
 
   @Override
-  public Boolean indexHasAlias(String index, String alias) throws IOException {
+  public Boolean indexHasAlias(final String index, final String alias) throws IOException {
     final GetIndexResponse response = osClient.indices().get(g -> g.index(index));
     return response.get(index).aliases().size() == 1
         && response.get(index).aliases().containsKey(alias);
   }
 
   @Override
-  public void delete(String index, String id) throws IOException {
+  public void delete(final String index, final String id) throws IOException {
     osClient.delete(d -> d.index(index).id(id));
   }
 
   @Override
-  public void update(String index, String id, Map<String, Object> jsonMap) throws IOException {
+  public void update(final String index, final String id, final Map<String, Object> jsonMap)
+      throws IOException {
     osClient.update(u -> u.index(index).id(id).doc(jsonMap), Object.class);
   }
 }

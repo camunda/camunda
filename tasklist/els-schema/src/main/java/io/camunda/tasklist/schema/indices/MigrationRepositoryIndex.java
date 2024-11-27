@@ -7,11 +7,11 @@
  */
 package io.camunda.tasklist.schema.indices;
 
-import io.camunda.tasklist.schema.backup.Prio4Backup;
+import io.camunda.tasklist.schema.backup.Prio3Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MigrationRepositoryIndex extends AbstractIndexDescriptor implements Prio4Backup {
+public class MigrationRepositoryIndex extends AbstractIndexDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "migration-steps-repository";
   public static final String INDEX_VERSION = "1.1.0";
