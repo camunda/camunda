@@ -20,7 +20,7 @@ public class DatabaseHelperTest {
   public static final String ALIAS = "alias";
 
   @Test
-  void testConstructKey_withDatabaseTypeAndEngineAlias() {
+  void shouldConstructKeyWithDatabaseTypeAndEngineAlias() {
     // Given
     final String databaseType = DataImportSourceType.ZEEBE.toString();
 
@@ -32,7 +32,7 @@ public class DatabaseHelperTest {
   }
 
   @Test
-  void testConstructKey_withIngestedDataDataSourceDto() {
+  void shouldConstructKeyWithIngestedDataDataSourceDto() {
     // Given
     final String databaseType = DataImportSourceType.INGESTED_DATA.toString();
     final DataSourceDto dataSourceDto = new EngineDataSourceDto(ALIAS);
@@ -45,7 +45,7 @@ public class DatabaseHelperTest {
   }
 
   @Test
-  void testConstructKey_withEngineDataSourceDto() {
+  void shouldConstructKeyWithEngineDataSourceDto() {
     // Given
     final String databaseType = DataImportSourceType.ENGINE.toString();
     final DataSourceDto dataSourceDto = new EngineDataSourceDto(ALIAS);
@@ -58,7 +58,7 @@ public class DatabaseHelperTest {
   }
 
   @Test
-  void testConstructKey_withZeebeDataSourceDto() {
+  void shouldConstructKeyWithZeebeDataSourceDto() {
     // Given
     final String databaseType = DataImportSourceType.ZEEBE.toString();
     final int partitionId = 42;
