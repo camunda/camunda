@@ -8,20 +8,20 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import java.util.Set;
 
 public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
 
-  private Long roleKey;
+  private Long key;
   private String name;
-  private Set<Long> assignedMemberKeys;
+  private Long memberKey;
+  private EntityJoinRelation join;
 
   public Long getKey() {
-    return roleKey;
+    return key;
   }
 
   public RoleEntity setKey(final Long key) {
-    roleKey = key;
+    this.key = key;
     return this;
   }
 
@@ -34,12 +34,21 @@ public class RoleEntity extends AbstractExporterEntity<RoleEntity> {
     return this;
   }
 
-  public Set<Long> getAssignedMemberKeys() {
-    return assignedMemberKeys;
+  public Long getMemberKey() {
+    return memberKey;
   }
 
-  public RoleEntity setAssignedMemberKeys(final Set<Long> entityKey) {
-    assignedMemberKeys = entityKey;
+  public RoleEntity setMemberKey(final Long memberKey) {
+    this.memberKey = memberKey;
+    return this;
+  }
+
+  public EntityJoinRelation getJoin() {
+    return join;
+  }
+
+  public RoleEntity setJoin(final EntityJoinRelation join) {
+    this.join = join;
     return this;
   }
 }
