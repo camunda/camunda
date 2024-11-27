@@ -193,8 +193,10 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
-    return null;
+  public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for tenants: {}", query);
+
+    return rdbmsService.getTenantReader().search(query);
   }
 
   @Override

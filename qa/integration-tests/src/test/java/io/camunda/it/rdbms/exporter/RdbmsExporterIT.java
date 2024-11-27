@@ -16,6 +16,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceStartedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getTenantRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatedRecord;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,10 +33,12 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -291,6 +294,75 @@ class RdbmsExporterIT {
     // then
     final var deletedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());
     assertThat(deletedUser).isEmpty();
+  }
+
+  @Test
+  public void shouldExportAndUpdateTenant() {
+    // given
+    final var tenantRecord = getTenantRecord(42L, TenantIntent.CREATED);
+    final var tenantRecordValue = ((TenantRecordValue) tenantRecord.getValue());
+
+    // when
+    exporter.export(tenantRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var tenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    assertThat(tenant).isNotEmpty();
+    assertThat(tenant.get().tenantKey()).isEqualTo(tenantRecord.getKey());
+    assertThat(tenant.get().tenantKey()).isEqualTo(tenantRecordValue.getTenantKey());
+    assertThat(tenant.get().tenantId()).isEqualTo(tenantRecordValue.getTenantId());
+    assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
+
+    // given
+    final var updateTenantRecord = getTenantRecord(42L, TenantIntent.UPDATED);
+    final var updateTenantRecordValue = ((TenantRecordValue) updateTenantRecord.getValue());
+
+    // when
+    exporter.export(updateTenantRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedTenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    assertThat(updatedTenant).isNotEmpty();
+    assertThat(updatedTenant.get().tenantKey()).isEqualTo(updateTenantRecordValue.getTenantKey());
+    assertThat(updatedTenant.get().tenantId()).isEqualTo(updateTenantRecordValue.getTenantId());
+    assertThat(updatedTenant.get().name()).isEqualTo(updateTenantRecordValue.getName());
+  }
+
+  @Test
+  public void shouldExportTenantAndAddAndDeleteMember() {
+    // given
+    final var tenantRecord = getTenantRecord(43L, TenantIntent.CREATED);
+    final var tenantRecordValue = ((TenantRecordValue) tenantRecord.getValue());
+
+    // when
+    exporter.export(tenantRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var tenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    assertThat(tenant).isNotEmpty();
+    assertThat(tenant.get().tenantKey()).isEqualTo(tenantRecordValue.getTenantKey());
+    assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
+
+    // when
+    exporter.export(getTenantRecord(43L, TenantIntent.ENTITY_ADDED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedTenant =
+        rdbmsService.getTenantReader().findOne(tenantRecord.getKey()).orElseThrow();
+    assertThat(updatedTenant.assignedMemberKeys()).containsExactly(1337L);
+
+    // when
+    exporter.export(getTenantRecord(43L, TenantIntent.ENTITY_REMOVED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedTenant =
+        rdbmsService.getTenantReader().findOne(tenantRecord.getKey()).orElseThrow();
+    assertThat(deletedTenant.assignedMemberKeys()).isEmpty();
   }
 
   @Test
