@@ -16,6 +16,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceStartedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getRoleRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getTenantRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatedRecord;
@@ -33,11 +34,13 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -363,6 +366,78 @@ class RdbmsExporterIT {
     final var deletedTenant =
         rdbmsService.getTenantReader().findOne(tenantRecord.getKey()).orElseThrow();
     assertThat(deletedTenant.assignedMemberKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldExportUpdateAndDeleteRole() {
+    // given
+    final var roleRecord = getRoleRecord(42L, RoleIntent.CREATED);
+    final var roleRecordValue = ((RoleRecordValue) roleRecord.getValue());
+
+    // when
+    exporter.export(roleRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var role = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    assertThat(role).isNotEmpty();
+    assertThat(role.get().roleKey()).isEqualTo(roleRecordValue.getRoleKey());
+    assertThat(role.get().name()).isEqualTo(roleRecordValue.getName());
+
+    // given
+    final var updateRoleRecord = getRoleRecord(42L, RoleIntent.UPDATED);
+    final var updateRoleRecordValue = ((RoleRecordValue) updateRoleRecord.getValue());
+
+    // when
+    exporter.export(updateRoleRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    assertThat(updatedRole).isNotEmpty();
+    assertThat(updatedRole.get().roleKey()).isEqualTo(updateRoleRecordValue.getRoleKey());
+    assertThat(updatedRole.get().name()).isEqualTo(updateRoleRecordValue.getName());
+
+    // when
+    exporter.export(getRoleRecord(42L, RoleIntent.DELETED));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    assertThat(deletedRole).isEmpty();
+  }
+
+  @Test
+  public void shouldExportRoleAndAddAndDeleteMember() {
+    // given
+    final var roleRecord = getRoleRecord(42L, RoleIntent.CREATED);
+    final var roleRecordValue = ((RoleRecordValue) roleRecord.getValue());
+
+    // when
+    exporter.export(roleRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var role = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    assertThat(role).isNotEmpty();
+    assertThat(role.get().roleKey()).isEqualTo(roleRecordValue.getRoleKey());
+    assertThat(role.get().name()).isEqualTo(roleRecordValue.getName());
+
+    // when
+    exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_ADDED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
+    assertThat(updatedRole.assignedMemberKeys()).containsExactly(1337L);
+
+    // when
+    exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_REMOVED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
+    assertThat(deletedRole.assignedMemberKeys()).isEmpty();
   }
 
   @Test
