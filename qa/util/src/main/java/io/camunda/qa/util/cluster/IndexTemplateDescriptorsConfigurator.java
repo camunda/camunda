@@ -82,7 +82,7 @@ public class IndexTemplateDescriptorsConfigurator {
     return new EventTemplate("", databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
+  @Bean("operateFlowNodeInstanceTemplate")
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new FlowNodeInstanceTemplate("", databaseInfo.isElasticsearchDb());
@@ -181,5 +181,11 @@ public class IndexTemplateDescriptorsConfigurator {
   public VariableTemplate getTasklistVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean("tasklistFlowNodeInstanceTemplate")
+  public FlowNodeInstanceTemplate getTasklistFlowNodeInstanceTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new FlowNodeInstanceTemplate("", databaseInfo.isElasticsearchDb());
   }
 }

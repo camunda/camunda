@@ -23,10 +23,10 @@ import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -72,11 +72,14 @@ public class VariableStoreOpenSearch implements VariableStore {
   private OpenSearchClient osClient;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
-  @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 
   @Autowired
   @Qualifier("tasklistVariableTemplate")
   private VariableTemplate variableIndex;
+
+  @Autowired
+  @Qualifier("tasklistFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
   @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
@@ -241,7 +244,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
     final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
     searchRequestBuilder
-        .index(flowNodeInstanceIndex.getAlias())
+        .index(flowNodeInstanceIndex.getFullQualifiedName())
         .query(
             q ->
                 q.constantScore(
@@ -251,14 +254,16 @@ public class VariableStoreOpenSearch implements VariableStore {
                                 f.terms(
                                     terms ->
                                         terms
-                                            .field(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID)
+                                            .field(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY)
                                             .terms(
                                                 t ->
                                                     t.value(
                                                         processInstanceIds.stream()
                                                             .map(m -> FieldValue.of(m))
                                                             .collect(toList())))))))
-        .sort(sort -> sort.field(f -> f.field(FlowNodeInstanceIndex.POSITION).order(SortOrder.Asc)))
+        .sort(
+            sort ->
+                sort.field(f -> f.field(FlowNodeInstanceTemplate.POSITION).order(SortOrder.Asc)))
         .size(tasklistProperties.getOpenSearch().getBatchSize());
 
     try {

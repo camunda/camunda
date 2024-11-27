@@ -32,10 +32,10 @@ import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -87,11 +87,14 @@ public class VariableStoreElasticSearch implements VariableStore {
   private RestHighLevelClient esClient;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
-  @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 
   @Autowired
   @Qualifier("tasklistVariableTemplate")
   private VariableTemplate variableIndex;
+
+  @Autowired
+  @Qualifier("tasklistFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
   @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
@@ -226,13 +229,13 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
     final TermsQueryBuilder processInstanceKeyQuery =
-        termsQuery(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID, processInstanceIds);
+        termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceIds);
     final SearchRequest searchRequest =
-        new SearchRequest(flowNodeInstanceIndex.getAlias())
+        new SearchRequest(flowNodeInstanceIndex.getFullQualifiedName())
             .source(
                 new SearchSourceBuilder()
                     .query(constantScoreQuery(processInstanceKeyQuery))
-                    .sort(FlowNodeInstanceIndex.POSITION, SortOrder.ASC)
+                    .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC)
                     .size(tasklistProperties.getElasticsearch().getBatchSize()));
     try {
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);

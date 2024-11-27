@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -30,7 +30,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -39,15 +38,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class VariableStoreElasticSearchTest {
 
   @Captor private ArgumentCaptor<SearchRequest> searchRequestCaptor;
   @Mock private RestHighLevelClient esClient;
-  @Spy private FlowNodeInstanceIndex flowNodeInstanceIndex = new FlowNodeInstanceIndex();
   @Spy private VariableTemplate variableIndex = new VariableTemplate("test", true);
+
+  @Spy
+  private FlowNodeInstanceTemplate flowNodeInstanceIndex =
+      new FlowNodeInstanceTemplate("test", true);
 
   @Spy
   private SnapshotTaskVariableTemplate taskVariableTemplate =
@@ -56,11 +57,6 @@ class VariableStoreElasticSearchTest {
   @Spy private TasklistProperties tasklistProperties = new TasklistProperties();
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
   @InjectMocks private VariableStoreElasticSearch instance;
-
-  @BeforeEach
-  void setUp() {
-    ReflectionTestUtils.setField(flowNodeInstanceIndex, "tasklistProperties", tasklistProperties);
-  }
 
   @Test
   void getFlowNodeInstancesWhenInstancesNotFound() throws Exception {
@@ -84,7 +80,7 @@ class VariableStoreElasticSearchTest {
 
     final SearchRequest capturedSearchRequest = searchRequestCaptor.getValue();
     final String expectedAlias =
-        String.format("tasklist-flownode-instance-%s_alias", FlowNodeInstanceIndex.INDEX_VERSION);
+        String.format("test-operate-flownode-instance-%s_", flowNodeInstanceIndex.getVersion());
     assertThat(capturedSearchRequest.indices()).containsExactly(expectedAlias);
     assertThat(capturedSearchRequest.source().size()).isEqualTo(200);
     assertThat(result).isEmpty();
