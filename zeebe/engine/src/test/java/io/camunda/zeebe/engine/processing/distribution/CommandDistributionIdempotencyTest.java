@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.distribution;
 
+import static io.camunda.zeebe.engine.processing.processinstance.migration.MigrationTestUtil.extractProcessDefinitionKeyByProcessId;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
@@ -49,6 +50,7 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
@@ -60,6 +62,7 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -68,6 +71,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -111,8 +115,6 @@ public class CommandDistributionIdempotencyTest {
 
   @AfterClass
   public static void afterClass() {
-    // TODO we need to add a scenario for this processor. I wasn't sure how to trigger it :)
-    DISTRIBUTING_PROCESSORS.remove(MessageSubscriptionMigrateProcessor.class);
     if (!DISTRIBUTING_PROCESSORS.isEmpty()) {
       fail("No test scenario found for processors: '%s'".formatted(DISTRIBUTING_PROCESSORS));
     }
@@ -500,6 +502,15 @@ public class CommandDistributionIdempotencyTest {
                 },
                 2),
             UserUpdateProcessor.class
+          },
+          {
+            "MessageSubscription.MIGRATE is idempotent",
+            new Scenario(
+                ValueType.MESSAGE_SUBSCRIPTION,
+                MessageSubscriptionIntent.MIGRATE,
+                CommandDistributionIdempotencyTest::migrateMessageSubscription,
+                2),
+            MessageSubscriptionMigrateProcessor.class
           }
         });
   }
@@ -606,6 +617,62 @@ public class CommandDistributionIdempotencyTest {
             "process.bpmn", Bpmn.createExecutableProcess().startEvent().endEvent().done())
         .expectCreated()
         .deploy();
+  }
+
+  private static Record<ProcessInstanceMigrationRecordValue> migrateMessageSubscription() {
+    // given
+    final String processId = "process1";
+    final String targetProcessId = "process2";
+    // the process instance on partition 1 will wait for a message published on 2
+    final var correlationKey = "correlationKey";
+
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(processId)
+                    .startEvent()
+                    .userTask("A")
+                    .boundaryEvent("boundary1")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key1"))
+                    .endEvent()
+                    .moveToActivity("A")
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("B")
+                    .boundaryEvent("boundary2")
+                    .message(m -> m.name("message").zeebeCorrelationKeyExpression("key2"))
+                    .endEvent()
+                    .moveToActivity("B")
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        extractProcessDefinitionKeyByProcessId(deployment, targetProcessId);
+
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withVariables(Map.of("key1", correlationKey))
+            .create();
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    return ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .migration()
+        .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+        .addMappingInstruction("A", "B")
+        .addMappingInstruction("boundary1", "boundary2")
+        .migrate();
   }
 
   public record Scenario(
