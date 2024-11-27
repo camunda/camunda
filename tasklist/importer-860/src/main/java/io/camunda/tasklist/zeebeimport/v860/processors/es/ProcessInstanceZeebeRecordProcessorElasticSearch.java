@@ -10,15 +10,17 @@ package io.camunda.tasklist.zeebeimport.v860.processors.es;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ConversionUtils;
+import io.camunda.tasklist.zeebeimport.util.EnvironmentUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
@@ -31,6 +33,7 @@ import java.util.Set;
 import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,6 +62,8 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     FLOW_NODE_STATES.add(ELEMENT_ACTIVATING.name());
   }
 
+  @Autowired private EnvironmentUtil environment;
+
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
@@ -74,7 +79,9 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
         (ProcessInstanceRecordValueImpl) record.getValue();
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
-      bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
+      if (isNotProcessType(recordValue) && environment.isTestProfileEnabled()) {
+        bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
+      }
       final IndexRequest processRequest = persistFlowNodeDataToListView(flowNodeInstance);
       if (processRequest != null) {
         bulkRequest.add(processRequest);
@@ -89,8 +96,9 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
-    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
-    entity.setParentFlowNodeId(String.valueOf(recordValue.getFlowScopeKey()));
+    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setScopeKey(recordValue.getFlowScopeKey());
+    entity.setState(FlowNodeState.ACTIVE);
     entity.setType(
         FlowNodeType.fromZeebeBpmnElementType(
             recordValue.getBpmnElementType() == null
@@ -100,14 +108,14 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
     return entity;
   }
 
-  private IndexRequest getFlowNodeInstanceQuery(final FlowNodeInstanceEntity entity)
+  private UpdateRequest getFlowNodeInstanceQuery(final FlowNodeInstanceEntity entity)
       throws PersistenceException {
     try {
       LOGGER.debug("Flow node instance: id {}", entity.getId());
 
-      return new IndexRequest(flowNodeInstanceIndex.getFullQualifiedName())
-          .id(entity.getId())
-          .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
+      return new UpdateRequest(flowNodeInstanceIndex.getFullQualifiedName(), entity.getId())
+          .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
+          .doc(Map.of(FlowNodeInstanceIndex.KEY, entity.getKey()));
     } catch (final IOException e) {
       throw new PersistenceException(
           String.format(
@@ -122,6 +130,14 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
       return false;
     }
     return VARIABLE_SCOPE_TYPES.contains(bpmnElementType);
+  }
+
+  private boolean isNotProcessType(final ProcessInstanceRecordValueImpl recordValue) {
+    final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
+    if (bpmnElementType == null) {
+      return false;
+    }
+    return !BpmnElementType.PROCESS.equals(bpmnElementType);
   }
 
   private IndexRequest persistFlowNodeDataToListView(final FlowNodeInstanceEntity flowNodeInstance)
