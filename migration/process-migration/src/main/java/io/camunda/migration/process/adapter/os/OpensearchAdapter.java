@@ -60,17 +60,18 @@ public class OpensearchAdapter implements Adapter {
 
   @Override
   public String migrate(final List<ProcessEntity> entities) throws MigrationException {
-    final BulkRequest.Builder bulkRequest = new BulkRequest.Builder();
+    final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
     final var idList = entities.stream().map(ProcessEntity::getId).toList();
-    entities.forEach(e -> migrateEntity(e, bulkRequest));
+    entities.forEach(e -> migrateEntity(e, bulkRequestBuilder));
 
     final BulkResponse response;
     try {
+      final BulkRequest bulkRequest = bulkRequestBuilder.build();
       response =
           retryDecorator.decorate(
               "Migrate entities %s".formatted(idList),
-              () -> client.bulk(bulkRequest.build()),
-              (res) -> res == null || res.errors() || res.items().isEmpty());
+              () -> client.bulk(bulkRequest),
+              (res) -> res == null || res.items().isEmpty());
     } catch (final Exception e) {
       throw new MigrationException("Failed to migrate entities %s".formatted(idList), e);
     }
