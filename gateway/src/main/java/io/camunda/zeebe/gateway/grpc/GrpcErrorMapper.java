@@ -127,7 +127,6 @@ public final class GrpcErrorMapper {
             "Expected to handle gRPC request, but the connection was cut prematurely with the broker; "
                 + "the request may or may not have been accepted, and may not be safe to retry.",
             rootError);
-      }
     } else {
       builder
           .setCode(Code.INTERNAL_VALUE)
