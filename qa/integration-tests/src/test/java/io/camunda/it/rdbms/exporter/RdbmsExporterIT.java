@@ -12,6 +12,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirement
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeActivatingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getGroupRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
@@ -33,11 +34,13 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -438,6 +441,80 @@ class RdbmsExporterIT {
     // then
     final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
     assertThat(deletedRole.assignedMemberKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldExportUpdateAndDeleteGroup() {
+    // given
+    final var groupRecord = getGroupRecord(42L, GroupIntent.CREATED);
+    final var groupRecordValue = ((GroupRecordValue) groupRecord.getValue());
+
+    // when
+    exporter.export(groupRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    assertThat(group).isNotEmpty();
+    assertThat(group.get().key()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
+
+    // given
+    final var updateGroupRecord = getGroupRecord(42L, GroupIntent.UPDATED);
+    final var updateGroupRecordValue = ((GroupRecordValue) updateGroupRecord.getValue());
+
+    // when
+    exporter.export(updateGroupRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    assertThat(updatedGroup).isNotEmpty();
+    assertThat(updatedGroup.get().key()).isEqualTo(updateGroupRecordValue.getGroupKey());
+    assertThat(updatedGroup.get().name()).isEqualTo(updateGroupRecordValue.getName());
+
+    // when
+    exporter.export(getGroupRecord(42L, GroupIntent.DELETED));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    assertThat(deletedGroup).isEmpty();
+  }
+
+  @Test
+  public void shouldExportGroupAndAddAndDeleteMember() {
+    // given
+    final var groupRecord = getGroupRecord(43L, GroupIntent.CREATED);
+    final var groupRecordValue = ((GroupRecordValue) groupRecord.getValue());
+
+    // when
+    exporter.export(groupRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    assertThat(group).isNotEmpty();
+    assertThat(group.get().key()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
+
+    // when
+    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_ADDED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedGroup =
+        rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
+    assertThat(updatedGroup.assignedMemberKeys()).containsExactly(1337L);
+
+    // when
+    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_REMOVED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedGroup =
+        rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
+    assertThat(deletedGroup.assignedMemberKeys()).isEmpty();
   }
 
   @Test
