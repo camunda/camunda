@@ -701,8 +701,8 @@ jobs:
           distribution: "temurin"
           java-version: "21"
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v3.0.0
+      - name: 'Create settings.xml'
+        uses: s4u/maven-settings-action@v3.1.0
         with:
           githubServer: false
           servers: |
