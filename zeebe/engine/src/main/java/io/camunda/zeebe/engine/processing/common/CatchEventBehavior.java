@@ -326,6 +326,8 @@ public final class CatchEventBehavior {
         event.isInterrupting(),
         context.getTenantId());
 
+    final String subscriptionMessageName = subscription.getMessageName();
+    final String tenantId = subscription.getTenantId();
     final var lastSentTime = clock.millis();
 
     // update transient state in a side-effect to ensure that these changes only take effect after
@@ -333,8 +335,7 @@ public final class CatchEventBehavior {
     sideEffectWriter.appendSideEffect(
         () -> {
           transientProcessMessageSubscriptionState.update(
-              new PendingSubscription(
-                  elementInstanceKey, subscription.getMessageName(), subscription.getTenantId()),
+              new PendingSubscription(elementInstanceKey, subscriptionMessageName, tenantId),
               lastSentTime);
           return true;
         });

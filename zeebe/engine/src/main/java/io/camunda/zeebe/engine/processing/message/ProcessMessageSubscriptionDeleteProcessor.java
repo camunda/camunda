@@ -49,12 +49,12 @@ public final class ProcessMessageSubscriptionDeleteProcessor
   public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command) {
 
     final ProcessMessageSubscriptionRecord subscriptionRecord = command.getValue();
-
+    final long elementInstanceKey = subscriptionRecord.getElementInstanceKey();
+    final String messageName = subscriptionRecord.getMessageName();
+    final String tenantId = subscriptionRecord.getTenantId();
     final var subscription =
         subscriptionState.getSubscription(
-            command.getValue().getElementInstanceKey(),
-            subscriptionRecord.getMessageNameBuffer(),
-            subscriptionRecord.getTenantId());
+            elementInstanceKey, subscriptionRecord.getMessageNameBuffer(), tenantId);
 
     if (subscription == null) {
       rejectCommand(command);
@@ -68,11 +68,7 @@ public final class ProcessMessageSubscriptionDeleteProcessor
     // the command has been successfully processed
     sideEffectWriter.appendSideEffect(
         () -> {
-          transientState.remove(
-              new PendingSubscription(
-                  subscriptionRecord.getElementInstanceKey(),
-                  subscriptionRecord.getMessageName(),
-                  subscriptionRecord.getTenantId()));
+          transientState.remove(new PendingSubscription(elementInstanceKey, messageName, tenantId));
           return true;
         });
   }

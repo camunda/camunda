@@ -86,10 +86,11 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
 
     final var record = command.getValue();
     final var elementInstanceKey = record.getElementInstanceKey();
-
+    final String messageName = record.getMessageName();
+    final String tenantId = record.getTenantId();
     final ProcessMessageSubscription subscription =
         subscriptionState.getSubscription(
-            elementInstanceKey, record.getMessageNameBuffer(), record.getTenantId());
+            elementInstanceKey, record.getMessageNameBuffer(), tenantId);
 
     if (subscription == null) {
       rejectCommand(command, RejectionType.NOT_FOUND, NO_SUBSCRIPTION_FOUND_MESSAGE);
@@ -123,10 +124,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         sideEffectWriter.appendSideEffect(
             () -> {
               transientState.remove(
-                  new PendingSubscription(
-                      subscriptionRecord.getElementInstanceKey(),
-                      subscriptionRecord.getMessageName(),
-                      subscriptionRecord.getTenantId()));
+                  new PendingSubscription(elementInstanceKey, messageName, tenantId));
               return true;
             });
 

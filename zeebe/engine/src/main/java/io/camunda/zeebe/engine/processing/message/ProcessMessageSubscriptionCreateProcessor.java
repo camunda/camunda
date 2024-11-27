@@ -53,11 +53,12 @@ public final class ProcessMessageSubscriptionCreateProcessor
   public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command) {
 
     final ProcessMessageSubscriptionRecord subscriptionRecord = command.getValue();
+    final long elementInstanceKey = subscriptionRecord.getElementInstanceKey();
+    final String tenantId = subscriptionRecord.getTenantId();
+    final String messageName = subscriptionRecord.getMessageName();
     final ProcessMessageSubscription subscription =
         subscriptionState.getSubscription(
-            subscriptionRecord.getElementInstanceKey(),
-            subscriptionRecord.getMessageNameBuffer(),
-            subscriptionRecord.getTenantId());
+            elementInstanceKey, subscriptionRecord.getMessageNameBuffer(), tenantId);
 
     if (subscription != null && subscription.isOpening()) {
       stateWriter.appendFollowUpEvent(
@@ -70,10 +71,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
       sideEffectWriter.appendSideEffect(
           () -> {
             transientState.remove(
-                new PendingSubscription(
-                    subscriptionRecord.getElementInstanceKey(),
-                    subscriptionRecord.getMessageName(),
-                    subscriptionRecord.getTenantId()));
+                new PendingSubscription(elementInstanceKey, messageName, tenantId));
             return true;
           });
     } else {
