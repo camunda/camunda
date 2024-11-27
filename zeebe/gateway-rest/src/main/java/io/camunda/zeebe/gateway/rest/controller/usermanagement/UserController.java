@@ -31,11 +31,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/users")
 public class UserController {
   private final UserServices userServices;
-  private final PasswordEncoder passwordEncoder;
 
   public UserController(final UserServices userServices, final PasswordEncoder passwordEncoder) {
     this.userServices = userServices;
-    this.passwordEncoder = passwordEncoder;
   }
 
   @PostMapping(
@@ -43,7 +41,7 @@ public class UserController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createUser(
       @RequestBody final UserRequest userRequest) {
-    return RequestMapper.toUserDTO(null, userRequest, passwordEncoder)
+    return RequestMapper.toUserDTO(null, userRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createUser);
   }
 
