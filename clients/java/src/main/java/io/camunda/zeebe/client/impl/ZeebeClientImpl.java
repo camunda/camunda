@@ -41,6 +41,7 @@ import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
+import io.camunda.zeebe.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
@@ -105,6 +106,7 @@ import io.camunda.zeebe.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
+import io.camunda.zeebe.client.impl.command.DeleteTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.EvaluateDecisionCommandImpl;
@@ -803,6 +805,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public UpdateTenantCommandStep1 newUpdateTenantCommand(final long tenantKey) {
     return new UpdateTenantCommandImpl(httpClient, jsonMapper, tenantKey);
+  }
+
+  @Override
+  public DeleteTenantCommandStep1 newDeleteTenantCommand(final long tenantKey) {
+    return new DeleteTenantCommandImpl(httpClient).tenantKey(tenantKey);
   }
 
   private JobClient newJobClient() {
