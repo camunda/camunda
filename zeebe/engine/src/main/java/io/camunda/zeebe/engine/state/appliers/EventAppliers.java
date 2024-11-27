@@ -427,6 +427,7 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.MIGRATED, new UserTaskMigratedApplier(state));
     register(UserTaskIntent.CORRECTED, new UserTaskCorrectedApplier(state));
     register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
+    register(UserTaskIntent.ASSIGNMENT_DENIED, new UserTaskAssignmentDeniedApplier(state));
   }
 
   private void registerCompensationSubscriptionApplier(
