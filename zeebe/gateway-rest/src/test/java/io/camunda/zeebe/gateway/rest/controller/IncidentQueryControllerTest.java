@@ -59,7 +59,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                   "totalItems": 1,
-                  "firstSortValues": [],
+                  "firstSortValues": ["v"],
                   "lastSortValues": [
                       "v"
                   ]
