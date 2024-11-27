@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableEndEvent;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
@@ -51,6 +53,14 @@ public final class BpmnStateBehavior {
 
   public ElementInstance getElementInstance(final long elementInstanceKey) {
     return elementInstanceState.getInstance(elementInstanceKey);
+  }
+
+  public ElementTreePathProperties getElementTreePath(final long elementInstanceKey) {
+    return new ElementTreePathBuilder()
+        .withElementInstanceState(elementInstanceState)
+        .withProcessState(processState)
+        .withElementInstanceKey(elementInstanceKey)
+        .build();
   }
 
   public JobState getJobState() {

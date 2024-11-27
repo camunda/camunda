@@ -11,6 +11,7 @@ import io.camunda.tasklist.zeebeimport.v870.record.RecordValueWithPayloadImpl;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import java.util.List;
 import java.util.Objects;
 
 public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
@@ -78,6 +79,21 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   @Override
   public BpmnEventType getBpmnEventType() {
     return bpmnEventType;
+  }
+
+  @Override
+  public List<List<Long>> getElementInstancePath() {
+    return null;
+  }
+
+  @Override
+  public List<Long> getProcessDefinitionPath() {
+    return null;
+  }
+
+  @Override
+  public List<Integer> getCallingElementPath() {
+    return null;
   }
 
   @Override

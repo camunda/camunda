@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -96,6 +97,15 @@ public final class BpmnStateTransitionBehavior {
           context.copy(newElementInstanceKey, context.getRecordValue(), context.getIntent());
     }
 
+    // create tree path?!
+    final ElementTreePathProperties elementTreePath =
+        stateBehavior.getElementTreePath(transitionContext.getElementInstanceKey());
+    transitionContext
+        .getRecordValue()
+        .setElementInstancePath(elementTreePath.elementInstancePath())
+        .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+        .setCallingElementPath(elementTreePath.callingElementPath());
+
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
@@ -104,8 +114,16 @@ public final class BpmnStateTransitionBehavior {
    */
   public BpmnElementContext transitionToActivated(
       final BpmnElementContext context, final BpmnEventType eventType) {
+    // reset the tree path so we are not writing this always
+    context
+        .getRecordValue()
+        .resetCallingElementPath()
+        .resetElementInstancePath()
+        .resetProcessDefinitionPath();
+
     final BpmnElementContext transitionedContext =
         transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
     metrics.elementInstanceActivated(context, eventType);
     return transitionedContext;
   }

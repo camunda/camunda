@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import java.util.List;
 import org.immutables.value.Value;
 
 /**
@@ -82,4 +83,24 @@ public interface ProcessInstanceRecordValue
    * @return the BPMN event type of the current process element.
    */
   BpmnEventType getBpmnEventType();
+
+  /**
+   * @return tree path information about all element instances in the call hierarchy leading to an
+   *     incident. It contains an entry per process instance in the hierarchy of the incident, each
+   *     contains all the instance keys of all the elements in the call hierarchy within this
+   *     process instance
+   */
+  List<List<Long>> getElementInstancePath();
+
+  /**
+   * @return tree path information for all process definitions in the hierarchy of the incident.
+   *     Each entry is a process definition key for the corresponding process instance
+   */
+  List<Long> getProcessDefinitionPath();
+
+  /**
+   * @return tree path information about call activities in the hierarchy of the incident. Each
+   *     entry is a reference to the call activity in BPMN model containing an incident.
+   */
+  List<Integer> getCallingElementPath();
 }
