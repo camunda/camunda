@@ -197,17 +197,22 @@ public final class SearchQueryResponseMapper {
 
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
+
     final List<Object> sortValues =
         ofNullable(result.sortValues()).map(Arrays::asList).orElse(Collections.emptyList());
 
+    final List<Object> firstSortValues =
+        sortValues.stream().findFirst().map(List::of).orElse(Collections.emptyList());
+
+    final List<Object> lastSortValues =
+        sortValues.isEmpty()
+            ? Collections.emptyList()
+            : List.of(sortValues.get(sortValues.size() - 1));
+
     return new SearchQueryPageResponse()
         .totalItems(result.total())
-        .firstSortValues(
-            sortValues.isEmpty() ? Collections.emptyList() : List.of(sortValues.get(0)))
-        .lastSortValues(
-            sortValues.isEmpty()
-                ? Collections.emptyList()
-                : List.of(sortValues.get(sortValues.size() - 1)));
+        .firstSortValues(firstSortValues)
+        .lastSortValues(lastSortValues);
   }
 
   private static List<ProcessDefinitionItem> toProcessDefinitions(
