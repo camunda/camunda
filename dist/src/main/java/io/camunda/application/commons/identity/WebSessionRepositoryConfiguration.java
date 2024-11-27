@@ -44,12 +44,18 @@ public class WebSessionRepositoryConfiguration {
   }
 
   @Bean
-  public PersistentSessionSearchClient persistentWebSessionSearchClient(
-      final DocumentBasedSearchClient searchClient, final DocumentBasedWriteClient writeClient) {
+  public PersistentWebSessionIndexDescriptor persistentWebSessionIndexDescriptor() {
     final var indexPrefix = connectConfiguration.getIndexPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(connectConfiguration.getType()).equals(ConnectionTypes.ELASTICSEARCH);
-    final var descriptor = new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch);
+    return new PersistentWebSessionIndexDescriptor(indexPrefix, isElasticsearch);
+  }
+
+  @Bean
+  public PersistentSessionSearchClient persistentWebSessionSearchClient(
+      final DocumentBasedSearchClient searchClient,
+      final DocumentBasedWriteClient writeClient,
+      final PersistentWebSessionIndexDescriptor descriptor) {
     return new PersistentWebSessionSearchClientImpl(searchClient, writeClient, descriptor);
   }
 
