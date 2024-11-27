@@ -17,7 +17,9 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
+import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -308,6 +310,35 @@ public class UserControllerTest extends RestControllerTest {
 
     // then
     verify(userServices, times(1)).deleteUser(key);
+  }
+
+  @Test
+  void updateUserShouldReturnNoContent() {
+    // given
+    final UserDTO user = new UserDTO(100L, "", "Alice", "test+alice@camunda.com", null);
+    when(userServices.updateUser(any()))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new UserRecord()
+                    .setUserKey(user.userKey())
+                    .setName(user.name())
+                    .setUsername(user.username())
+                    .setEmail(user.email())));
+
+    // when / then
+    webClient
+        .patch()
+        .uri("%s/%s".formatted(USER_BASE_URL, user.userKey()))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            new UserUpdateRequest()
+                .changeset(new UserChangeset().name(user.name()).email(user.email())))
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    verify(userServices, times(1)).updateUser(user);
   }
 
   private UserDTO validCreateUserRequest() {

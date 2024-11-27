@@ -13,7 +13,7 @@ import EntityList, {
   DocumentationDescription,
 } from "src/components/entityList";
 import { DocumentationLink } from "src/components/documentation";
-import { getRoles, Role } from "src/utility/api/roles";
+import { searchRoles, Role } from "src/utility/api/roles";
 import { useNavigate } from "react-router";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
@@ -26,17 +26,17 @@ const List: FC = () => {
   const { t, Translate } = useTranslate();
   const navigate = useNavigate();
   const [, setSearch] = useState("");
-  const { data: roles, loading, reload, success } = useApi(getRoles);
+  const { data: roles, loading, reload, success } = useApi(searchRoles);
   const [addRole, addRoleModal] = useModal(AddModal, reload);
   const [editRole, editRoleModal] = useEntityModal(EditModal, reload);
   const [deleteRole, deleteRoleModal] = useEntityModal(DeleteModal, reload);
-  const showDetails = ({ id }: Role) => navigate(`${id}`);
+  const showDetails = ({ key }: Role) => navigate(String(key));
 
   return (
     <Page>
       <EntityList
         title={t("Roles")}
-        data={roles}
+        data={roles?.items ?? []}
         headers={[
           { header: t("Name"), key: "name" },
           { header: t("Description"), key: "description" },

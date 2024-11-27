@@ -22,4 +22,31 @@ public final class RequestBuilders {
       final Function<SearchQueryRequest.Builder, ObjectBuilder<SearchQueryRequest>> fn) {
     return fn.apply(searchRequest()).build();
   }
+
+  public static SearchGetRequest.Builder getRequest() {
+    return new SearchGetRequest.Builder();
+  }
+
+  public static SearchGetRequest getRequest(
+      final Function<SearchGetRequest.Builder, ObjectBuilder<SearchGetRequest>> fn) {
+    return fn.apply(getRequest()).build();
+  }
+
+  public static <T> SearchIndexRequest.Builder<T> indexRequest() {
+    return new SearchIndexRequest.Builder<T>();
+  }
+
+  public static <T> SearchIndexRequest<T> indexRequest(
+      final Function<SearchIndexRequest.Builder<T>, ObjectBuilder<SearchIndexRequest<T>>> fn) {
+    return fn.apply(indexRequest()).build();
+  }
+
+  public static SearchDeleteRequest.Builder deleteRequest() {
+    return new SearchDeleteRequest.Builder();
+  }
+
+  public static SearchDeleteRequest deleteRequest(
+      final Function<SearchDeleteRequest.Builder, ObjectBuilder<SearchDeleteRequest>> fn) {
+    return fn.apply(deleteRequest()).build();
+  }
 }

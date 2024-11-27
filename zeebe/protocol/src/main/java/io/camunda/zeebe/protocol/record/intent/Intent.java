@@ -70,7 +70,8 @@ public interface Intent {
           ScaleIntent.class,
           RedistributionIntent.class,
           GroupIntent.class,
-          MappingIntent.class);
+          MappingIntent.class,
+          IdentitySetupIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -174,6 +175,8 @@ public interface Intent {
         return GroupIntent.from(intent);
       case MAPPING:
         return MappingIntent.from(intent);
+      case IDENTITY_SETUP:
+        return IdentitySetupIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -267,6 +270,8 @@ public interface Intent {
         return GroupIntent.valueOf(intent);
       case MAPPING:
         return MappingIntent.valueOf(intent);
+      case IDENTITY_SETUP:
+        return IdentitySetupIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

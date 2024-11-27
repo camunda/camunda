@@ -52,7 +52,11 @@ public class ResponseHeadersConfiguration {
     this.httpStrictTransportSecurityMaxAge = httpStrictTransportSecurityMaxAge;
   }
 
-  public Boolean getHttpStrictTransportSecurityIncludeSubdomains() {
+  public boolean getHttpStrictTransportSecurityIncludeSubdomains() {
+    if (httpStrictTransportSecurityIncludeSubdomains == null) {
+      return false;
+    }
+
     return httpStrictTransportSecurityIncludeSubdomains;
   }
 
@@ -72,7 +76,11 @@ public class ResponseHeadersConfiguration {
     this.xsssProtection = xsssProtection;
   }
 
-  public Boolean getXContentTypeOptions() {
+  public boolean getXContentTypeOptions() {
+    if (xContentTypeOptions == null) {
+      return false;
+    }
+
     return xContentTypeOptions;
   }
 
@@ -123,12 +131,14 @@ public class ResponseHeadersConfiguration {
     final Map<String, String> headers = new HashMap<>();
 
     final List<String> strictTransportSecurityHeaderValues = new ArrayList<>();
-    if (getHttpStrictTransportSecurityMaxAge() > 0) {
+    if (getHttpStrictTransportSecurityMaxAge() != null) {
       strictTransportSecurityHeaderValues.add("max-age=" + getHttpStrictTransportSecurityMaxAge());
     }
+
     if (getHttpStrictTransportSecurityIncludeSubdomains()) {
       strictTransportSecurityHeaderValues.add("includeSubDomains");
     }
+
     if (!strictTransportSecurityHeaderValues.isEmpty()) {
       headers.put(
           "Strict-Transport-Security",

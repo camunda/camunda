@@ -24,7 +24,7 @@ import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import java.util.List;
 import java.util.Map;
@@ -119,7 +119,7 @@ public class DecisionZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(demoDecisionGroup2.getDecisions().get(0).getId())
         .isNotEqualTo(demoDecisionGroup1.getDecisions().get(1).getId());
 
-    verify(permissionsService, times(2)).getDecisionDefinitionPermission(anyString());
+    verify(permissionsService, times(2)).getDecisionDefinitionPermissions(anyString());
   }
 
   @Test

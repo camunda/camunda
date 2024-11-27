@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootApplication
 @ComponentScan(
-    basePackages = "io.camunda.operate",
+    basePackages = {"io.camunda.operate", "io.camunda.application.commons"},
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,

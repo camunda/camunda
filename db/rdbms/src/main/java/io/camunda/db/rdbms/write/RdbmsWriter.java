@@ -13,9 +13,12 @@ import io.camunda.db.rdbms.write.service.DecisionInstanceWriter;
 import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
+import io.camunda.db.rdbms.write.service.FormWriter;
+import io.camunda.db.rdbms.write.service.MappingWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
+import io.camunda.db.rdbms.write.service.UserWriter;
 import io.camunda.db.rdbms.write.service.VariableWriter;
 
 public class RdbmsWriter {
@@ -29,7 +32,10 @@ public class RdbmsWriter {
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessInstanceWriter processInstanceWriter;
   private final VariableWriter variableWriter;
+  private final UserWriter userWriter;
   private final UserTaskWriter userTaskWriter;
+  private final FormWriter formWriter;
+  private final MappingWriter mappingWriter;
 
   public RdbmsWriter(
       final ExecutionQueue executionQueue, final ExporterPositionService exporterPositionService) {
@@ -42,7 +48,10 @@ public class RdbmsWriter {
     processDefinitionWriter = new ProcessDefinitionWriter(executionQueue);
     processInstanceWriter = new ProcessInstanceWriter(executionQueue);
     variableWriter = new VariableWriter(executionQueue);
+    userWriter = new UserWriter(executionQueue);
     userTaskWriter = new UserTaskWriter(executionQueue);
+    formWriter = new FormWriter(executionQueue);
+    mappingWriter = new MappingWriter(executionQueue);
   }
 
   public DecisionDefinitionWriter getDecisionDefinitionWriter() {
@@ -73,8 +82,20 @@ public class RdbmsWriter {
     return variableWriter;
   }
 
+  public UserWriter getUserWriter() {
+    return userWriter;
+  }
+
   public UserTaskWriter getUserTaskWriter() {
     return userTaskWriter;
+  }
+
+  public FormWriter getFormWriter() {
+    return formWriter;
+  }
+
+  public MappingWriter getMappingWriter() {
+    return mappingWriter;
   }
 
   public ExporterPositionService getExporterPositionService() {

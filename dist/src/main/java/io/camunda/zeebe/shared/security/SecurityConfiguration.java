@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.shared.security;
 
+import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
-import io.camunda.zeebe.gateway.rest.TenantAttributeHolder;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

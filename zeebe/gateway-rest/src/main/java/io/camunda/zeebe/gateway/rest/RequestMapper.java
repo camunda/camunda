@@ -31,8 +31,10 @@ import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.val
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
+import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
 import io.camunda.security.auth.Authentication;
 import io.camunda.security.auth.Authentication.Builder;
@@ -80,10 +82,12 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -114,7 +118,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -162,6 +165,16 @@ public class RequestMapper {
                 userTaskKey,
                 getRecordWithChangedAttributes(updateRequest),
                 getStringOrEmpty(updateRequest, UserTaskUpdateRequest::getAction)));
+  }
+
+  public static Either<ProblemDetail, UpdateUserRequest> toUserUpdateRequest(
+      final UserUpdateRequest updateRequest, final long userKey) {
+    final UserChangeset changeset = updateRequest.getChangeset();
+    return getResult(
+        validateUserUpdateRequest(updateRequest),
+        () ->
+            new UpdateUserRequest(
+                userKey, changeset.getName(), changeset.getEmail(), changeset.getPassword()));
   }
 
   public static Either<ProblemDetail, Long> getPinnedEpoch(final ClockPinRequest pinRequest) {
@@ -316,7 +329,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, UserDTO> toUserDTO(
-      final Long userKey, final UserRequest request, final PasswordEncoder passwordEncoder) {
+      final Long userKey, final UserRequest request) {
     return getResult(
         validateUserCreateRequest(request),
         () ->
@@ -325,7 +338,7 @@ public class RequestMapper {
                 request.getUsername(),
                 request.getName(),
                 request.getEmail(),
-                passwordEncoder.encode(request.getPassword())));
+                request.getPassword()));
   }
 
   public static Either<ProblemDetail, MappingDTO> toMappingDTO(
@@ -747,6 +760,8 @@ public class RequestMapper {
       long userTaskKey, Map<String, Object> variables, String action) {}
 
   public record UpdateUserTaskRequest(long userTaskKey, UserTaskRecord changeset, String action) {}
+
+  public record UpdateUserRequest(long userKey, String name, String email, String password) {}
 
   public record AssignUserTaskRequest(
       long userTaskKey, String assignee, String action, boolean allowOverride) {}

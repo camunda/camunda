@@ -39,6 +39,7 @@ import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo;
 import io.camunda.operate.webapp.security.sso.model.ClusterInfo.SalesPlan;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
@@ -128,6 +129,7 @@ public class CsrfTokenIT {
   @MockBean private ProcessInstanceReader processInstanceReader;
   @MockBean private BatchOperationWriter batchOperationWriter;
   @MockBean private ProcessDefinitionDao processDefinitionDao;
+  @MockBean private PermissionsService permissionsService;
 
   private static Tokens tokensWithOrgAsMapFrom(final String claim, final String organization) {
     final String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);

@@ -19,7 +19,7 @@ import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -36,12 +36,10 @@ import org.springframework.web.bind.annotation.*;
 public class ProcessRestService extends InternalAPIErrorController {
 
   public static final String PROCESS_URL = "/api/processes";
-  @Autowired protected ProcessReader processReader;
-  @Autowired protected ProcessInstanceReader processInstanceReader;
 
-  @Autowired(required = false)
-  protected PermissionsService permissionsService;
-
+  @Autowired private ProcessReader processReader;
+  @Autowired private ProcessInstanceReader processInstanceReader;
+  @Autowired private PermissionsService permissionsService;
   @Autowired private BatchOperationWriter batchOperationWriter;
 
   @Operation(summary = "Get process BPMN XML")
@@ -87,7 +85,7 @@ public class ProcessRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityReadPermission(final String bpmnProcessId) {
-    if (permissionsService != null
+    if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ)) {
       throw new NotAuthorizedException(
           String.format("No read permission for process %s", bpmnProcessId));
@@ -95,7 +93,7 @@ public class ProcessRestService extends InternalAPIErrorController {
   }
 
   private void checkIdentityDeletePermission(final String bpmnProcessId) {
-    if (permissionsService != null
+    if (permissionsService.permissionsEnabled()
         && !permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE)) {
       throw new NotAuthorizedException(
           String.format("No delete permission for process %s", bpmnProcessId));

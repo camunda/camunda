@@ -58,12 +58,12 @@ export type UseEntityModalCustomProps<E, P> = P & UseEntityModalProps<E>;
 
 type UseEntityModalParams<E> = [
   Component: ComponentType<UseEntityModalProps<E>>,
-  onSuccess: () => unknown,
+  onSuccess: () => void,
 ];
 
 type UseEntityModalWithPropsParams<E, P> = [
   Component: ComponentType<UseEntityModalCustomProps<E, P>>,
-  onSuccess: () => unknown,
+  onSuccess: () => void,
   customProps: P,
 ];
 

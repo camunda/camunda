@@ -25,7 +25,7 @@ import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -65,6 +65,7 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     // when
     when(processReader.getProcess(processDefinitionKey))
         .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
         .thenReturn(false);
     final MvcResult mvcResult =
@@ -81,6 +82,7 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     // when
     when(processReader.getProcess(processDefinitionKey))
         .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.READ))
         .thenReturn(false);
     final MvcResult mvcResult =
@@ -98,6 +100,7 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     // when
     when(processReader.getProcess(processDefinitionKey))
         .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE))
         .thenReturn(true);
     when(batchOperationWriter.scheduleDeleteProcessDefinition(any()))
@@ -147,6 +150,7 @@ public class ProcessRestServiceIT extends OperateAbstractIT {
     // when
     when(processReader.getProcess(processDefinitionKey))
         .thenReturn(new ProcessEntity().setBpmnProcessId(bpmnProcessId));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(bpmnProcessId, IdentityPermission.DELETE))
         .thenReturn(false);
     when(batchOperationWriter.scheduleDeleteProcessDefinition(any()))

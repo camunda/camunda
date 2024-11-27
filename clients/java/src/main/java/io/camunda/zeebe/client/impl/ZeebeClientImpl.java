@@ -35,6 +35,7 @@ import io.camunda.zeebe.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateMappingCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
@@ -97,6 +98,7 @@ import io.camunda.zeebe.client.impl.command.CompleteUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.CorrelateMessageCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateMappingCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
@@ -702,6 +704,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public RemovePermissionsCommandStep1 newRemovePermissionsCommand(final long ownerKey) {
     return new RemovePermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
+  }
+
+  @Override
+  public CreateMappingCommandStep1 newCreateMappingCommand() {
+    return new CreateMappingCommandImpl(httpClient, jsonMapper);
   }
 
   @Override
