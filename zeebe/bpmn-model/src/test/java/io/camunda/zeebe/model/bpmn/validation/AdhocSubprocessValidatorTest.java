@@ -15,21 +15,25 @@
  */
 package io.camunda.zeebe.model.bpmn.validation;
 
+import static io.camunda.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
+
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
+import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.StartEvent;
+import java.util.function.Consumer;
+import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
 
 class AdhocSubprocessValidatorTest {
 
+  private static final String AD_HOC_SUB_PROCESS_ELEMENT_ID = "ad-hoc";
+
   @Test
   void withOneActivity() {
     // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .adHocSubProcess("ad-hoc", subprocess -> subprocess.task("A"))
-            .endEvent()
-            .done();
+    final BpmnModelInstance process = process(adHocSubProcess -> adHocSubProcess.task("A"));
 
     // when/then
     ProcessValidationUtil.assertThatProcessIsValid(process);
@@ -39,18 +43,102 @@ class AdhocSubprocessValidatorTest {
   void withMultipleActivities() {
     // given
     final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .adHocSubProcess(
-                "ad-hoc",
-                subprocess -> {
-                  subprocess.task("A");
-                  subprocess.task("B");
-                })
-            .endEvent()
-            .done();
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+            });
 
     // when/then
     ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void withNoActivity() {
+    // given
+    final BpmnModelInstance process = process(adHocSubProcess -> {});
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(AdHocSubProcess.class, "Must have at least one activity."));
+  }
+
+  @Test
+  void withStartEvent() {
+    // given
+    final BpmnModelInstance process = process(adHocSubProcess -> {});
+
+    final ModelElementInstance adHocSubProcess =
+        process.getModelElementById(AD_HOC_SUB_PROCESS_ELEMENT_ID);
+    adHocSubProcess.addChildElement(process.newInstance(StartEvent.class));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(AdHocSubProcess.class, "Must not contain a start event"));
+  }
+
+  @Test
+  void withEndEvent() {
+    // given
+    final BpmnModelInstance process =
+        process(adHocSubProcess -> adHocSubProcess.endEvent("invalid"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process, expect(AdHocSubProcess.class, "Must not contain an end event"));
+  }
+
+  @Test
+  void withIntermediateCatchEventAndOutgoingSequenceFlow() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> adHocSubProcess.intermediateCatchEvent().signal("signal").task("A"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void withIntermediateCatchEventAndNoOutgoingSequenceFlow() {
+    // given
+    final BpmnModelInstance process =
+        process(adHocSubProcess -> adHocSubProcess.intermediateCatchEvent().signal("signal"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            AdHocSubProcess.class,
+            "Any intermediate catch event must have an outgoing sequence flow."));
+  }
+
+  @Test
+  void withIntermediateThrowEventAndOutgoingSequenceFlow() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> adHocSubProcess.intermediateThrowEvent().signal("signal").task("A"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  void withIntermediateThrowEventAndNoOutgoingSequenceFlow() {
+    // given
+    final BpmnModelInstance process =
+        process(adHocSubProcess -> adHocSubProcess.intermediateThrowEvent().signal("signal"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  private BpmnModelInstance process(final Consumer<AdHocSubProcessBuilder> modifier) {
+    return Bpmn.createExecutableProcess("process")
+        .startEvent()
+        .adHocSubProcess(AD_HOC_SUB_PROCESS_ELEMENT_ID, modifier)
+        .endEvent()
+        .done();
   }
 }
