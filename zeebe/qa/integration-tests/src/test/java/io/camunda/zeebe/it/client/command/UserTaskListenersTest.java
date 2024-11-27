@@ -49,7 +49,7 @@ import org.junit.jupiter.api.Test;
 public class UserTaskListenersTest {
 
   @TestZeebe
-  private static final TestStandaloneBroker zeebe =
+  private static final TestStandaloneBroker ZEEBE =
       new TestStandaloneBroker().withRecordingExporter(true);
 
   @AutoCloseResource private ZeebeClient client;
@@ -58,7 +58,7 @@ public class UserTaskListenersTest {
 
   @BeforeEach
   void init() {
-    client = zeebe.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(5)).build();
+    client = ZEEBE.newClientBuilder().defaultRequestTimeout(Duration.ofSeconds(5)).build();
     resourcesHelper = new ZeebeResourcesHelper(client);
   }
 
