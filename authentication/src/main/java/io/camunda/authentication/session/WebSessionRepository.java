@@ -121,7 +121,8 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
     } catch (final Exception e) {
       // This can happen, if it is called outside a dispatcher servlet.
       LOGGER.debug(
-          "Expected Exception: is not possible to access request as currently this is not on a request context");
+          "Expected Exception: is not possible to access request as currently this is not on a request context",
+          e);
     }
     return isPollingRequest;
   }
