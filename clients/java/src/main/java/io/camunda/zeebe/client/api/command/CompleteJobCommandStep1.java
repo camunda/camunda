@@ -70,7 +70,7 @@ public interface CompleteJobCommandStep1
   CompleteJobCommandStep1 variable(String key, Object value);
 
   /**
-   * Set the result of the job.
+   * The result of the completed job as determined by the worker.
    *
    * @return the builder for this command.
    */
@@ -79,7 +79,11 @@ public interface CompleteJobCommandStep1
   interface CompleteJobCommandStep2 extends FinalCommandStep<CompleteJobResponse> {
 
     /**
-     * Set if the job was denied by the worker.
+     * Indicates whether the worker denies the work, i.e. explicitly doesn't approve it. For
+     * example, a Task Listener can deny the completion of a task by setting this flag to true. In
+     * this example, the completion of a task is represented by a job that the worker can complete
+     * as denied. As a result, the completion request is rejected and the task remains active.
+     * Defaults to false.
      *
      * @param denied indicates if the worker has denied the reason for the job
      * @return the builder for this command.
