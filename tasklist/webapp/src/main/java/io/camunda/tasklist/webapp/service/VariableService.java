@@ -394,19 +394,13 @@ public class VariableService {
           .setParent(flowNodeInstance.getId(), String.valueOf(getScopeKey(flowNodeInstance)));
     }
 
-    // ensure that process instances are added to
-    // the FNI tree
-    processInstanceIds.stream()
-        .map(
-            id ->
-                new FlowNodeInstanceEntity()
-                    .setId(id)
-                    .setProcessInstanceKey(Long.parseLong(id))
-                    .setScopeKey(-1L))
+    // ensure that process instances are added
+    // as a FNI to the FNI tree
+    flowNodeTrees
+        .keySet()
         .forEach(
-            f -> {
-              getFlowNodeTree(flowNodeTrees, String.valueOf(f.getProcessInstanceKey()))
-                  .setParent(f.getId(), String.valueOf(f.getScopeKey()));
+            id -> {
+              getFlowNodeTree(flowNodeTrees, id).setParent(id, ABSENT_PARENT_ID);
             });
 
     return flowNodeTrees;
@@ -419,7 +413,7 @@ public class VariableService {
   }
 
   private Long getScopeKeyIfPresent(final Long scopeKey) {
-    return scopeKey != null && !ABSENT_PARENT_ID.equals(String.valueOf(scopeKey)) ? scopeKey : null;
+    return !ABSENT_PARENT_ID.equals(String.valueOf(scopeKey)) ? scopeKey : null;
   }
 
   private Long getScopeKeyFromTreePathIfPresent(final FlowNodeInstanceEntity flowNodeInstance) {

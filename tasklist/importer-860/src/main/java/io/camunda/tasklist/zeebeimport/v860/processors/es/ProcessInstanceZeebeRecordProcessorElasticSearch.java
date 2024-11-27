@@ -13,11 +13,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.zeebeimport.util.EnvironmentUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
@@ -68,7 +68,9 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
+  @Autowired
+  @Qualifier("tasklistFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
   @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
@@ -115,7 +117,7 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
 
       return new UpdateRequest(flowNodeInstanceIndex.getFullQualifiedName(), entity.getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
-          .doc(Map.of(FlowNodeInstanceIndex.KEY, entity.getKey()));
+          .doc(Map.of(FlowNodeInstanceTemplate.KEY, entity.getKey()));
     } catch (final IOException e) {
       throw new PersistenceException(
           String.format(

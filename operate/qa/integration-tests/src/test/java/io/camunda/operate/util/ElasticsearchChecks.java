@@ -83,7 +83,9 @@ public class ElasticsearchChecks {
   @Autowired private ProcessInstanceReader processInstanceReader;
   @Autowired private FlowNodeInstanceReader flowNodeInstanceReader;
 
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired private EventTemplate eventTemplate;
 
