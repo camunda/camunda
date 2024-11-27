@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEM
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_TERMINATED;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
@@ -89,9 +90,30 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
 
     if (intent.equals(ELEMENT_ACTIVATING)) {
+
+      // SET TREE PATH FROM RECORD
+
+      final ProcessInstanceRecordValue value = record.getValue();
+      final List<List<Long>> elementInstancePath = value.getElementInstancePath();
+      final Long processInstanceKey = Long.valueOf(entity.getId());
+
+      // example of how the tree path is built when current instance is on the third level of
+      // calling
+      // hierarchy:
+      // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/
+      // PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>/PI_<currentProcessInstanceKey>
+      final TreePath treePath = new TreePath();
+      for (int i = 0; i < elementInstancePath.size(); i++) {
+        final List<Long> keysWithinOnePI = elementInstancePath.get(i);
+        treePath.appendProcessInstance(processInstanceKey);
+        for (var elementInstanceKEy : keysWithinOnePI) {
+          treePath.appendFlowNodeInstance(String.valueOf(elementInstanceKEy));
+        }
+      }
+
       // we set the default value here, which may be updated later within incident export
-      entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
-      entity.setLevel(1);
+      entity.setTreePath(treePath.toString());
+      entity.setLevel(treePath.toString().split("/").length);
     }
 
     final OffsetDateTime recordTime =
