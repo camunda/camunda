@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.exporter.handlers.ListViewProcessInstanceFromIncidentHandler.createTreePath;
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
 import static io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate.*;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
@@ -125,11 +126,25 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         piEntity.setState(ProcessInstanceState.COMPLETED);
       }
     } else if (intent.equals(ELEMENT_ACTIVATING)) {
-      piEntity.setStartDate(timestamp).setState(ProcessInstanceState.ACTIVE);
-      // default tree path that may be updated later by Incident record handler:
-      // PI_<processInstanceKey>
-      piEntity.setTreePath(
-          new TreePath().startTreePath(recordValue.getProcessInstanceKey()).toString());
+
+      final ProcessInstanceRecordValue value = record.getValue();
+      final List<List<Long>> elementInstancePath = value.getElementInstancePath();
+      final List<Integer> callingElementPath = value.getCallingElementPath();
+      final List<Long> processDefinitionPath = value.getProcessDefinitionPath();
+      final Long processInstanceKey = value.getProcessInstanceKey();
+
+      final TreePath treePath =
+          createTreePath(
+              processCache,
+              record.getKey(),
+              processInstanceKey,
+              elementInstancePath,
+              processDefinitionPath,
+              callingElementPath);
+      piEntity
+          .setTreePath(treePath.toString())
+          .setStartDate(timestamp)
+          .setState(ProcessInstanceState.ACTIVE);
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }
@@ -148,6 +163,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     final Map<String, Object> updateFields = new HashMap<>();
     if (entity.getStartDate() != null) {
       updateFields.put(ListViewTemplate.START_DATE, entity.getStartDate());
+      updateFields.put(TREE_PATH, entity.getTreePath());
     }
     if (entity.getEndDate() != null) {
       updateFields.put(ListViewTemplate.END_DATE, entity.getEndDate());

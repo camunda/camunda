@@ -79,6 +79,39 @@ public class ListViewProcessInstanceFromIncidentHandler
 
     final Long processInstanceKey = Long.valueOf(entity.getId());
 
+    final TreePath treePath =
+        createTreePath(
+            processCache,
+            record.getKey(),
+            processInstanceKey,
+            elementInstancePath,
+            processDefinitionPath,
+            callingElementPath);
+    entity.setTreePath(treePath.toString());
+  }
+
+  @Override
+  public void flush(
+      final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest) {
+
+    final Map<String, Object> updateFields = new LinkedHashMap<>();
+    updateFields.put(TREE_PATH, entity.getTreePath());
+
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
+  }
+
+  @Override
+  public String getIndexName() {
+    return indexName;
+  }
+
+  public static TreePath createTreePath(
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final long key,
+      final Long processInstanceKey,
+      final List<List<Long>> elementInstancePath,
+      final List<Long> processDefinitionPath,
+      final List<Integer> callingElementPath) {
     // example of how the tree path is built when current instance is on the third level of calling
     // hierarchy:
     // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/
@@ -101,26 +134,11 @@ public class ListViewProcessInstanceFromIncidentHandler
             "No process found in cache. TreePath won't contain proper callActivityId. processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}",
             processInstanceKey,
             processDefinitionPath.get(i),
-            record.getKey());
+            key);
         treePath.appendFlowNode(String.valueOf(callingElementPath.get(i)));
       }
       treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.get(1)));
     }
-    entity.setTreePath(treePath.toString());
-  }
-
-  @Override
-  public void flush(
-      final ProcessInstanceForListViewEntity entity, final BatchRequest batchRequest) {
-
-    final Map<String, Object> updateFields = new LinkedHashMap<>();
-    updateFields.put(TREE_PATH, entity.getTreePath());
-
-    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
-  }
-
-  @Override
-  public String getIndexName() {
-    return indexName;
+    return treePath;
   }
 }
