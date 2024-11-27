@@ -24,6 +24,7 @@ import io.camunda.zeebe.exporter.test.ExporterTestController;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -52,6 +53,11 @@ final class CamundaExporterTest {
     mockedClientAdapterFactory
         .when(() -> ClientAdapter.of(configuration))
         .thenReturn(new StubClientAdapter());
+  }
+
+  @AfterEach
+  void tearDown() {
+    mockedClientAdapterFactory.close();
   }
 
   private static final class NoopExporterEntityCacheProvider
