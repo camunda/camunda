@@ -12,6 +12,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirement
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeActivatingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceStartedRecord;
@@ -30,8 +31,10 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
@@ -303,5 +306,31 @@ class RdbmsExporterIT {
     final var formKey = ((Form) formCreatedRecord.getValue()).getFormKey();
     final var userTask = rdbmsService.getFormReader().findOne(formKey);
     assertThat(userTask).isNotNull();
+  }
+
+  @Test
+  public void shouldExportCreatedAndDeletedMapping() {
+    // given
+    final var mappingCreatedRecord = getMappingRecord(1L, MappingIntent.CREATED);
+
+    // when
+    exporter.export(mappingCreatedRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var key = ((MappingRecordValue) mappingCreatedRecord.getValue()).getMappingKey();
+    final var mapping = rdbmsService.getMappingReader().findOne(key);
+    assertThat(mapping).isNotNull();
+
+    // given
+    final var mappingDeletedRecord = mappingCreatedRecord.withIntent(MappingIntent.DELETED);
+
+    // when
+    exporter.export(mappingDeletedRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedMapping = rdbmsService.getMappingReader().findOne(key);
+    assertThat(deletedMapping).isEmpty();
   }
 }

@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
 import io.camunda.db.rdbms.read.service.FormReader;
+import io.camunda.db.rdbms.read.service.MappingReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
 import io.camunda.db.rdbms.read.service.UserReader;
@@ -24,6 +25,7 @@ import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
+import io.camunda.db.rdbms.sql.MappingMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
@@ -98,6 +100,11 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public MappingReader mappingRdbmsReader(final MappingMapper mappingMapper) {
+    return new MappingReader(mappingMapper);
+  }
+
+  @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
       final ExporterPositionMapper exporterPositionMapper) {
@@ -116,7 +123,8 @@ public class RdbmsConfiguration {
       final ProcessInstanceReader processInstanceReader,
       final UserReader userReader,
       final UserTaskReader userTaskReader,
-      final FormReader formReader) {
+      final FormReader formReader,
+      final MappingReader mappingReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         decisionDefinitionReader,
@@ -128,6 +136,7 @@ public class RdbmsConfiguration {
         variableReader,
         userReader,
         userTaskReader,
-        formReader);
+        formReader,
+        mappingReader);
   }
 }

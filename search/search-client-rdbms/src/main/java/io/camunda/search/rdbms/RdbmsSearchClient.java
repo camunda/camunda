@@ -115,7 +115,9 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
-    return null;
+    LOG.debug("[RDBMS Search Client] Search for mappings: {}", filter);
+
+    return rdbmsService.getMappingReader().search(filter);
   }
 
   @Override
