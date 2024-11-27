@@ -187,7 +187,8 @@ public class TaskListenerTest {
   }
 
   @Test
-  public void shouldCompleteAllAssignmentTaskListenersWhenFirstTaskListenerAcceptOperationAfterRejection() {
+  public void
+      shouldCompleteAllAssignmentTaskListenersWhenFirstTaskListenerAcceptOperationAfterRejection() {
     // given
     final long processInstanceKey =
         createProcessInstance(
@@ -912,7 +913,8 @@ public class TaskListenerTest {
         .done();
   }
 
-  private BpmnModelInstance createProcessWithAssignmentTaskListeners(final String... listenerTypes) {
+  private BpmnModelInstance createProcessWithAssignmentTaskListeners(
+      final String... listenerTypes) {
     return createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.assignment, listenerTypes);
   }
 
