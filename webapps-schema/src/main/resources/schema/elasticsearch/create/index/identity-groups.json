@@ -16,8 +16,9 @@
       },
       "join": {
         "type": "join",
+        "eager_global_ordinals": true,
         "relations": {
-          "group": "member"
+          "group": ["member"]
         }
       }
     }
