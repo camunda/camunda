@@ -33,5 +33,13 @@ public record EntityJoinRelation(String name, Long parent) {
     public EntityJoinRelation createChild(final long parentKey) {
       return new EntityJoinRelation(childName, parentKey);
     }
+
+    public String getChildName() {
+      return childName;
+    }
+
+    public String getChildKey(final long parentKey, final long childKey) {
+      return "%s-%s/%s-%s".formatted(parentName, childName, parentKey, childKey);
+    }
   }
 }

@@ -49,6 +49,11 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
         .searchRoles(query);
   }
 
+  public SearchQueryResult<RoleEntity> getMemberRoles(final long memberKey, final RoleQuery query) {
+    return search(
+        query.toBuilder().filter(query.filter().toBuilder().memberKey(memberKey).build()).build());
+  }
+
   @Override
   public RoleServices withAuthentication(final Authentication authentication) {
     return new RoleServices(
