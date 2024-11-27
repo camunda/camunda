@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.impl.broker.request;
 
-import com.google.common.base.Preconditions;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -36,9 +35,10 @@ public final class BrokerRoleEntityRequest extends BrokerExecuteCommand<RoleReco
   }
 
   public BrokerRoleEntityRequest setEntity(final EntityType entityType, final long entityKey) {
-    Preconditions.checkArgument(
-        entityType == EntityType.USER || entityType == EntityType.MAPPING,
-        "For now, roles can only be granted to users and mappings");
+    if (entityType != EntityType.USER && entityType != EntityType.MAPPING) {
+      throw new IllegalArgumentException(
+          "For now, roles can only be granted to users and mappings");
+    }
     roleDto.setEntityType(entityType);
     roleDto.setEntityKey(entityKey);
     return this;
