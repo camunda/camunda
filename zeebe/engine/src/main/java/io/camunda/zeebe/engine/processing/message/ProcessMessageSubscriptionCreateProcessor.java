@@ -33,7 +33,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
           + "but it is already %s";
 
   private final ProcessMessageSubscriptionState subscriptionState;
-  private final TransientPendingSubscriptionState transientState;
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
@@ -41,9 +41,9 @@ public final class ProcessMessageSubscriptionCreateProcessor
   public ProcessMessageSubscriptionCreateProcessor(
       final ProcessMessageSubscriptionState subscriptionState,
       final Writers writers,
-      final TransientPendingSubscriptionState transientState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     this.subscriptionState = subscriptionState;
-    this.transientState = transientState;
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     rejectionWriter = writers.rejection();
@@ -70,7 +70,7 @@ public final class ProcessMessageSubscriptionCreateProcessor
       // the command has been successfully processed
       sideEffectWriter.appendSideEffect(
           () -> {
-            transientState.remove(
+            transientProcessMessageSubscriptionState.remove(
                 new PendingSubscription(elementInstanceKey, messageName, tenantId));
             return true;
           });

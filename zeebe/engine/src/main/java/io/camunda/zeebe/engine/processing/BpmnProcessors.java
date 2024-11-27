@@ -67,7 +67,7 @@ public final class BpmnProcessors {
       final int partitionId,
       final RoutingInfo routingInfo,
       final InstantSource clock,
-      final TransientPendingSubscriptionState transientState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -89,7 +89,7 @@ public final class BpmnProcessors {
         scheduledTaskState,
         writers,
         clock,
-        transientState);
+        transientProcessMessageSubscriptionState);
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
@@ -146,13 +146,15 @@ public final class BpmnProcessors {
       final Supplier<ScheduledTaskState> scheduledTaskState,
       final Writers writers,
       final InstantSource clock,
-      final TransientPendingSubscriptionState transientState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     typedRecordProcessors
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CREATE,
             new ProcessMessageSubscriptionCreateProcessor(
-                processingState.getProcessMessageSubscriptionState(), writers, transientState))
+                processingState.getProcessMessageSubscriptionState(),
+                writers,
+                transientProcessMessageSubscriptionState))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CORRELATE,
@@ -162,12 +164,12 @@ public final class BpmnProcessors {
                 processingState,
                 bpmnBehaviors,
                 writers,
-                transientState))
+                transientProcessMessageSubscriptionState))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.DELETE,
             new ProcessMessageSubscriptionDeleteProcessor(
-                subscriptionState, writers, transientState))
+                subscriptionState, writers, transientProcessMessageSubscriptionState))
         .withListener(
             new PendingProcessMessageSubscriptionChecker(
                 subscriptionCommandSender,

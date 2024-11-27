@@ -46,7 +46,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
           + "but it is already closing";
 
   private final ProcessMessageSubscriptionState subscriptionState;
-  private final TransientPendingSubscriptionState transientState;
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final ProcessState processState;
   private final ElementInstanceState elementInstanceState;
@@ -62,9 +62,9 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
       final MutableProcessingState processingState,
       final BpmnBehaviors bpmnBehaviors,
       final Writers writers,
-      final TransientPendingSubscriptionState transientState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     this.subscriptionState = subscriptionState;
-    this.transientState = transientState;
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
     processState = processingState.getProcessState();
     elementInstanceState = processingState.getElementInstanceState();
@@ -123,7 +123,7 @@ public final class ProcessMessageSubscriptionCorrelateProcessor
         // the command has been successfully processed
         sideEffectWriter.appendSideEffect(
             () -> {
-              transientState.remove(
+              transientProcessMessageSubscriptionState.remove(
                   new PendingSubscription(elementInstanceKey, messageName, tenantId));
               return true;
             });

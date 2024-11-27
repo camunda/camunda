@@ -32,14 +32,14 @@ public final class ProcessMessageSubscriptionDeleteProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
   private final ProcessMessageSubscriptionState subscriptionState;
-  private final TransientPendingSubscriptionState transientState;
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
 
   public ProcessMessageSubscriptionDeleteProcessor(
       final ProcessMessageSubscriptionState subscriptionState,
       final Writers writers,
-      final TransientPendingSubscriptionState transientState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     this.subscriptionState = subscriptionState;
-    this.transientState = transientState;
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
@@ -68,7 +68,8 @@ public final class ProcessMessageSubscriptionDeleteProcessor
     // the command has been successfully processed
     sideEffectWriter.appendSideEffect(
         () -> {
-          transientState.remove(new PendingSubscription(elementInstanceKey, messageName, tenantId));
+          transientProcessMessageSubscriptionState.remove(
+              new PendingSubscription(elementInstanceKey, messageName, tenantId));
           return true;
         });
   }
