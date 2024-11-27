@@ -144,6 +144,8 @@ public class RdbmsExporter implements Exporter {
     registeredHandlers.put(
         ValueType.VARIABLE, List.of(new VariableExportHandler(rdbmsWriter.getVariableWriter())));
     registeredHandlers.put(
+        ValueType.ROLE, List.of(new RoleExportHandler(rdbmsWriter.getRoleWriter())));
+    registeredHandlers.put(
         ValueType.USER, List.of(new UserExportHandler(rdbmsWriter.getUserWriter())));
     registeredHandlers.put(
         ValueType.USER_TASK, List.of(new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter())));
