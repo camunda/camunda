@@ -8,6 +8,7 @@
 package io.camunda.migration.identity;
 
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
+import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.PatchAuthorizationRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -26,13 +27,13 @@ import org.springframework.stereotype.Component;
 public class AuthorizationMigrationHandler implements MigrationHandler {
 
   private final AuthorizationServices authorizationService;
-  private final ManagementIdentityProxy managementIdentityProxy;
+  private final ManagementIdentityClient managementIdentityClient;
 
   public AuthorizationMigrationHandler(
       final AuthorizationServices authorizationService,
-      final ManagementIdentityProxy managementIdentityProxy) {
+      final ManagementIdentityClient managementIdentityProxy) {
     this.authorizationService = authorizationService;
-    this.managementIdentityProxy = managementIdentityProxy;
+    managementIdentityClient = managementIdentityProxy;
   }
 
   @Override
@@ -40,7 +41,7 @@ public class AuthorizationMigrationHandler implements MigrationHandler {
     UserResourceAuthorization lastRecord = null;
     while (true) {
       final List<UserResourceAuthorization> authorizations =
-          managementIdentityProxy.fetchUserResourceAuthorizations(lastRecord, 100);
+          managementIdentityClient.fetchUserResourceAuthorizations(lastRecord, 100);
       if (authorizations.isEmpty()) {
         return;
       }
@@ -90,7 +91,7 @@ public class AuthorizationMigrationHandler implements MigrationHandler {
                                               new UserResourceAuthorization(
                                                   owner, resourceId, resourceType, entry.getKey())))
                           .toList();
-                  managementIdentityProxy.markAuthorizationsAsMigrated(migrated);
+                  managementIdentityClient.markAuthorizationsAsMigrated(migrated);
                 });
           });
     }

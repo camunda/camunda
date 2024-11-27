@@ -5,19 +5,25 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.migration.identity;
+package io.camunda.migration.identity.midentity;
 
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.dto.UserResourceAuthorization;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 @Component
-public class ManagementIdentityProxy {
+public class ManagementIdentityClient {
 
+  private static final String MIGRATION_MARK_STATUS_ENDPOINT = "/api/migrations";
+  private static final String MIGRATION_TENANTS_ENDPOINT = "/api/migrations/tenants";
   private final RestTemplate restTemplate = new RestTemplate();
 
   public List<UserResourceAuthorization> fetchUserResourceAuthorizations(
@@ -28,8 +34,17 @@ public class ManagementIdentityProxy {
   public void markAuthorizationsAsMigrated(final Collection<UserResourceAuthorization> migrated) {}
 
   public List<Tenant> fetchTenants(final Tenant lastRecord, final int pageSize) {
-    return new ArrayList<>();
+    return Arrays.stream(
+            Objects.requireNonNull(
+                restTemplate.getForObject(
+                    MIGRATION_TENANTS_ENDPOINT, Tenant[].class, lastRecord, pageSize)))
+        .toList();
   }
 
-  public void markTenantsAsMigrated(final Collection<Tenant> migrated) {}
+  public void updateMigrationStatus(final Collection<MigrationStatusUpdateRequest> migrations) {
+    final HttpEntity<Collection<MigrationStatusUpdateRequest>> requestEntity =
+        new HttpEntity<>(migrations, null);
+    restTemplate.exchange(
+        MIGRATION_MARK_STATUS_ENDPOINT, HttpMethod.POST, requestEntity, Void.class);
+  }
 }

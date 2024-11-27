@@ -8,18 +8,25 @@
 package io.camunda.migration.identity;
 
 import io.camunda.migration.identity.dto.Tenant;
+import io.camunda.migration.identity.midentity.ManagementIdentityClient;
+import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
+import io.camunda.migration.identity.midentity.MigrationStatusUpdateRequest;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TenantMigrationHandler implements MigrationHandler {
-  private final ManagementIdentityProxy managementIdentityProxy;
+  private final ManagementIdentityClient managementIdentityClient;
+  private final ManagementIdentityTransformer managementIdentityTransformer;
   private final ZeebeClient client;
 
   public TenantMigrationHandler(
-      final ManagementIdentityProxy managementIdentityProxy, final ZeebeClient client) {
-    this.managementIdentityProxy = managementIdentityProxy;
+      final ManagementIdentityClient managementIdentityClient,
+      final ManagementIdentityTransformer managementIdentityTransformer,
+      final ZeebeClient client) {
+    this.managementIdentityClient = managementIdentityClient;
+    this.managementIdentityTransformer = managementIdentityTransformer;
     this.client = client;
   }
 
@@ -27,21 +34,23 @@ public class TenantMigrationHandler implements MigrationHandler {
   public void migrate() {
     Tenant lastTenant = null;
     do {
-      final List<Tenant> tenants = managementIdentityProxy.fetchTenants(lastTenant, 100);
-      // if error code is duplicate ignore
-      tenants.forEach(this::createTenant);
-      managementIdentityProxy.markTenantsAsMigrated(tenants);
+      final List<Tenant> tenants = managementIdentityClient.fetchTenants(lastTenant, 100);
+      managementIdentityClient.updateMigrationStatus(
+          tenants.stream().map(this::createTenant).toList());
       lastTenant = tenants.isEmpty() ? null : tenants.get(tenants.size() - 1);
     } while (lastTenant != null);
   }
 
-  private void createTenant(final Tenant tenant) {
+  private MigrationStatusUpdateRequest createTenant(final Tenant tenant) {
     try {
       client.newCreateTenantCommand().name(tenant.name()).tenantId(tenant.tenantId()).send().join();
+      return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, null);
     } catch (final Exception e) {
+      // if error code is conflict then ignore
       if (!isConflictError(e)) {
         throw e;
       }
+      return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, e);
     }
   }
 

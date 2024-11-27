@@ -14,6 +14,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.migration.identity.dto.Tenant;
+import io.camunda.migration.identity.midentity.ManagementIdentityClient;
+import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.ProblemException;
@@ -30,9 +32,11 @@ import org.mockito.MockitoAnnotations;
 
 public class TenantMigrationHandlerTest {
   TenantMigrationHandler migrationHandler;
-  @Mock private ManagementIdentityProxy managementIdentityProxy;
+  @Mock private ManagementIdentityClient managementIdentityProxy;
   @Mock private ZeebeClient zeebeClient;
   @Mock private CreateTenantCommandStep1 createTenantCommandStep1;
+  private final ManagementIdentityTransformer managementIdentityTransformer =
+      new ManagementIdentityTransformer();
 
   @BeforeEach
   void setUp() throws Exception {
@@ -40,7 +44,9 @@ public class TenantMigrationHandlerTest {
     when(zeebeClient.newCreateTenantCommand()).thenReturn(createTenantCommandStep1);
     when(createTenantCommandStep1.tenantId(any())).thenReturn(createTenantCommandStep1);
     when(createTenantCommandStep1.name(any())).thenReturn(createTenantCommandStep1);
-    migrationHandler = new TenantMigrationHandler(managementIdentityProxy, zeebeClient);
+    migrationHandler =
+        new TenantMigrationHandler(
+            managementIdentityProxy, managementIdentityTransformer, zeebeClient);
   }
 
   @AfterEach
@@ -88,12 +94,11 @@ public class TenantMigrationHandlerTest {
 
   @Test
   void stopWhenTenantCreationHasError() {
+    // given
     final ZeebeClientFutureImpl<CreateTenantResponse, Object> future =
         new ZeebeClientFutureImpl<>();
     future.completeExceptionally(new ProblemException(0, "runtime exception!", null));
     when(createTenantCommandStep1.send()).thenReturn(future);
-
-    // given
     when(managementIdentityProxy.fetchTenants(any(), anyInt()))
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
         .thenReturn(List.of());
