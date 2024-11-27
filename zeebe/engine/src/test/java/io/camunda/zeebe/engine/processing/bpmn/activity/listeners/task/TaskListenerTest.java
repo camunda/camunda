@@ -164,6 +164,62 @@ public class TaskListenerTest {
   }
 
   @Test
+  public void shouldRejectUserTaskAssignmentWhenTaskListenerRejectsTheOperation() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.assignment, LISTENER_TYPE));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).assign();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then: ensure that `REJECT_TASK_LISTENER` and `ASSIGNMENT_DENIED`
+    // are written after `ASSIGNING` event
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.ASSIGNMENT_DENIED);
+  }
+
+  @Test
+  public void shouldCompleteAllAssignmentTaskListenersWhenFirstTaskListenerAcceptOperationAfterRejection() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithAssignmentTaskListeners(
+                LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).assign();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    ENGINE.userTask().ofInstance(processInstanceKey).assign();
+    completeRecreatedJobWithType(ENGINE, processInstanceKey, LISTENER_TYPE);
+    completeJobs(processInstanceKey, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+
+    // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.DENY_TASK_LISTENER,
+        UserTaskIntent.ASSIGNMENT_DENIED,
+        UserTaskIntent.ASSIGN,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.ASSIGNED);
+  }
+
+  @Test
   public void shouldClaimUserTaskAfterAllAssignmentTaskListenersAreExecuted() {
     // given
     final long processInstanceKey =
@@ -854,6 +910,10 @@ public class TaskListenerTest {
         .apply(Bpmn.createExecutableProcess(PROCESS_ID).startEvent())
         .endEvent()
         .done();
+  }
+
+  private BpmnModelInstance createProcessWithAssignmentTaskListeners(final String... listenerTypes) {
+    return createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.assignment, listenerTypes);
   }
 
   private BpmnModelInstance createProcessWithCompleteTaskListeners(final String... listenerTypes) {
