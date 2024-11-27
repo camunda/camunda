@@ -147,12 +147,14 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, entity.getPartitionId());
     updateFields.put(FlowNodeInstanceTemplate.TYPE, entity.getType());
     updateFields.put(FlowNodeInstanceTemplate.STATE, entity.getState());
-    updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, entity.getTreePath());
+    if (entity.getTreePath() != null) {
+      updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, entity.getTreePath());
+      updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
+    }
     updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
     updateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(FlowNodeInstanceTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
-    updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
     if (entity.getStartDate() != null) {
       updateFields.put(FlowNodeInstanceTemplate.START_DATE, entity.getStartDate());
     }
