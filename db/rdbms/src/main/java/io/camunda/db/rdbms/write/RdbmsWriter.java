@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.write.service.FormWriter;
 import io.camunda.db.rdbms.write.service.MappingWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
+import io.camunda.db.rdbms.write.service.RoleWriter;
 import io.camunda.db.rdbms.write.service.TenantWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.db.rdbms.write.service.UserWriter;
@@ -34,6 +35,7 @@ public class RdbmsWriter {
   private final ProcessInstanceWriter processInstanceWriter;
   private final TenantWriter tenantWriter;
   private final VariableWriter variableWriter;
+  private final RoleWriter roleWriter;
   private final UserWriter userWriter;
   private final UserTaskWriter userTaskWriter;
   private final FormWriter formWriter;
@@ -51,6 +53,7 @@ public class RdbmsWriter {
     processInstanceWriter = new ProcessInstanceWriter(executionQueue);
     tenantWriter = new TenantWriter(executionQueue);
     variableWriter = new VariableWriter(executionQueue);
+    roleWriter = new RoleWriter(executionQueue);
     userWriter = new UserWriter(executionQueue);
     userTaskWriter = new UserTaskWriter(executionQueue);
     formWriter = new FormWriter(executionQueue);
@@ -87,6 +90,10 @@ public class RdbmsWriter {
 
   public VariableWriter getVariableWriter() {
     return variableWriter;
+  }
+
+  public RoleWriter getRoleWriter() {
+    return roleWriter;
   }
 
   public UserWriter getUserWriter() {
