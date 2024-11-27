@@ -118,7 +118,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -330,7 +329,7 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, UserDTO> toUserDTO(
-      final Long userKey, final UserRequest request, final PasswordEncoder passwordEncoder) {
+      final Long userKey, final UserRequest request) {
     return getResult(
         validateUserCreateRequest(request),
         () ->
@@ -339,7 +338,7 @@ public class RequestMapper {
                 request.getUsername(),
                 request.getName(),
                 request.getEmail(),
-                passwordEncoder.encode(request.getPassword())));
+                request.getPassword()));
   }
 
   public static Either<ProblemDetail, MappingDTO> toMappingDTO(
