@@ -49,6 +49,7 @@ public class ProcessZeebeImportIT extends OperateZeebeAbstractIT {
   @Before
   public void before() {
     super.before();
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
   }
 
