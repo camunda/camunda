@@ -41,5 +41,9 @@ public record EntityJoinRelation(String name, Long parent) {
     public String getChildKey(final long parentKey, final long childKey) {
       return "%s-%s/%s-%s".formatted(parentName, childName, parentKey, childKey);
     }
+
+    public String getParentName() {
+      return parentName;
+    }
   }
 }

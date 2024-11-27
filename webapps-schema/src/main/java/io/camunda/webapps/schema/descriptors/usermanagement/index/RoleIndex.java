@@ -17,6 +17,7 @@ public class RoleIndex extends RoleIndexDescriptor {
   public static final String KEY = "key";
   public static final String NAME = "name";
   public static final String MEMBER_KEY = "memberKey";
+  public static final String JOIN = "join";
 
   public static final EntityJoinRelationFactory MEMBER_RELATION =
       new EntityJoinRelationFactory("role", "member");
