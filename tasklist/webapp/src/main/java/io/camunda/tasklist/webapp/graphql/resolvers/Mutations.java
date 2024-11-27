@@ -13,9 +13,7 @@ import static io.camunda.zeebe.client.api.command.CommandWithTenantStep.DEFAULT_
 import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.kickstart.annotations.GraphQLMutationResolver;
-import io.camunda.tasklist.enums.DeletionStatus;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.store.ProcessInstanceStore;
 import io.camunda.tasklist.webapp.graphql.entity.ProcessInstanceDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
@@ -66,15 +64,6 @@ public class Mutations {
           checkTaskImplementation(taskId);
           return getBean(TaskService.class).unassignTask(taskId);
         });
-  }
-
-  @GraphQLField
-  @GraphQLNonNull
-  public static Boolean deleteProcessInstance(final String processInstanceId) {
-    return delegate(
-        () ->
-            DeletionStatus.DELETED.equals(
-                getBean(ProcessInstanceStore.class).deleteProcessInstance(processInstanceId)));
   }
 
   @GraphQLField
