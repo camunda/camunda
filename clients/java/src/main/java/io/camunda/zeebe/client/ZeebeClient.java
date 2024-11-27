@@ -33,6 +33,7 @@ import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
+import io.camunda.zeebe.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
@@ -1551,4 +1552,18 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the update tenant command
    */
   UpdateTenantCommandStep1 newUpdateTenantCommand(long tenantKey);
+
+  /**
+   * Command to delete a tenant.
+   *
+   * <pre>
+   * zeebeClient
+   *  .newDeleteTenantCommand(tenantKey)
+   *  .send();
+   * </pre>
+   *
+   * @param tenantKey the key of the tenant to delete
+   * @return a builder for the delete tenant command
+   */
+  DeleteTenantCommandStep1 newDeleteTenantCommand(long tenantKey);
 }
