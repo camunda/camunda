@@ -8,6 +8,8 @@
 package io.camunda.zeebe.protocol.record.value;
 
 public enum PermissionType {
+  ACCESS,
+
   CREATE,
   CREATE_PROCESS_INSTANCE,
   CREATE_DECISION_INSTANCE,

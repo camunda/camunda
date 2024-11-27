@@ -9,7 +9,6 @@ package io.camunda.authentication.entity;
 
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.security.entity.ClusterMetadata;
-import io.camunda.security.entity.Permission;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +21,7 @@ public class CamundaUser extends User {
 
   private final Long userKey;
   private final String displayName;
-  private List<Permission> permissions = List.of();
+  private List<String> authorizedApplications = List.of();
   private List<TenantEntity> tenants = List.of();
   private List<String> groups = List.of();
   private String salesPlanType;
@@ -53,7 +52,7 @@ public class CamundaUser extends User {
       final String username,
       final String password,
       final List<String> roles,
-      final List<Permission> permissions,
+      final List<String> authorizedApplications,
       final List<TenantEntity> tenants,
       final List<String> groups,
       final String salesPlanType,
@@ -63,7 +62,7 @@ public class CamundaUser extends User {
     super(username, password, prepareAuthorities(roles));
     this.userKey = userKey;
     this.displayName = displayName;
-    this.permissions = permissions;
+    this.authorizedApplications = authorizedApplications;
     this.tenants = tenants;
     this.groups = groups;
     this.salesPlanType = salesPlanType;
@@ -92,8 +91,8 @@ public class CamundaUser extends User {
     return getAuthorities().stream().map(GrantedAuthority::getAuthority).toList();
   }
 
-  public List<Permission> getPermissions() {
-    return permissions;
+  public List<String> getAuthorizedApplications() {
+    return authorizedApplications;
   }
 
   public List<TenantEntity> getTenants() {
@@ -122,7 +121,7 @@ public class CamundaUser extends User {
     private String username;
     private String password;
     private List<String> roles = List.of();
-    private List<Permission> permissions = List.of();
+    private List<String> authorizedApplications = List.of();
     private List<TenantEntity> tenants = List.of();
     private List<String> groups = List.of();
     private String salesPlanType;
@@ -161,8 +160,9 @@ public class CamundaUser extends User {
       return this;
     }
 
-    public CamundaUserBuilder withPermissions(final List<Permission> permissions) {
-      this.permissions = permissions;
+    public CamundaUserBuilder withAuthorizedApplications(
+        final List<String> authorizedApplications) {
+      this.authorizedApplications = authorizedApplications;
       return this;
     }
 
@@ -203,7 +203,7 @@ public class CamundaUser extends User {
           username,
           password,
           roles,
-          permissions,
+          authorizedApplications,
           tenants,
           groups,
           salesPlanType,

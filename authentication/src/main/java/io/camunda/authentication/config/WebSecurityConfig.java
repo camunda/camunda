@@ -58,8 +58,9 @@ public class WebSecurityConfig {
 
   @Bean
   @Profile("auth-basic")
-  public CamundaUserDetailsService camundaUserDetailsService(final UserServices userServices) {
-    return new CamundaUserDetailsService(userServices);
+  public CamundaUserDetailsService camundaUserDetailsService(
+      final UserServices userServices, final AuthorizationServices authorizationServices) {
+    return new CamundaUserDetailsService(userServices, authorizationServices);
   }
 
   @Bean
