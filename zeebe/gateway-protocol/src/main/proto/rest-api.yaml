@@ -2173,7 +2173,7 @@ paths:
       operationId: createRole
       summary: Create role
       description: |
-        Create a new role
+        Create a new role.
       requestBody:
         content:
           application/json:
@@ -2208,7 +2208,7 @@ paths:
       operationId: getRole
       summary: Get role
       description: |
-        Get a role by its key
+        Get a role by its key.
       parameters:
         - name: roleKey
           in: path
@@ -2652,6 +2652,7 @@ paths:
         - User
       operationId: createUser
       summary: Create user
+      description: Create a new user.
       requestBody:
         content:
           application/json:
@@ -4494,12 +4495,12 @@ components:
       properties:
         name:
           type: "string"
-          description: The display name of the new role
+          description: The display name of the new role.
     RoleCreateResponse:
       type: "object"
       properties:
         roleKey:
-          description: The key of the created role
+          description: The key of the created role.
           type: "integer"
           format: "int64"
     RoleUpdateRequest:
