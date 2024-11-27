@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCal
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -20,6 +21,8 @@ public class ElementTreePathBuilder {
   private ProcessState processState;
   private Long elementInstanceKey;
   private ElementTreePathProperties properties;
+  private long flowScopeKey;
+  private ProcessInstanceRecordValue processInstanceRecordValue;
 
   public ElementTreePathBuilder withElementInstanceState(
       final ElementInstanceState elementInstanceState) {
@@ -37,28 +40,48 @@ public class ElementTreePathBuilder {
     return this;
   }
 
+  public ElementTreePathBuilder withFlowScopeKey(final long flowScopeKey) {
+    this.flowScopeKey = flowScopeKey;
+    return this;
+  }
+
+  public ElementTreePathBuilder withRecordValue(
+      final ProcessInstanceRecordValue processInstanceRecordValue) {
+    this.processInstanceRecordValue = processInstanceRecordValue;
+    return this;
+  }
+
   public ElementTreePathProperties build() {
     Objects.requireNonNull(elementInstanceState, "elementInstanceState cannot be null");
     Objects.requireNonNull(processState, "processState cannot be null");
     Objects.requireNonNull(elementInstanceKey, "elementInstanceKey cannot be null");
     properties =
         new ElementTreePathProperties(new LinkedList<>(), new LinkedList<>(), new LinkedList<>());
-    buildElementTreePathProperties(elementInstanceKey);
+
+    if (processInstanceRecordValue != null) {
+      buildElementTreePathProperties(flowScopeKey, processInstanceRecordValue);
+    } else {
+      buildElementTreePathProperties(elementInstanceKey);
+    }
     return properties;
   }
 
   private void buildElementTreePathProperties(final long elementInstanceKey) {
+    final ElementInstance instance = elementInstanceState.getInstance(elementInstanceKey);
+    final long parentElementInstanceKey = instance.getParentKey();
+    buildElementTreePathProperties(parentElementInstanceKey, instance.getValue());
+  }
+
+  private void buildElementTreePathProperties(
+      long parentElementInstanceKey, final ProcessInstanceRecordValue processInstanceRecord) {
     final List<Long> elementInstancePath = new LinkedList<>();
     elementInstancePath.add(elementInstanceKey);
-    ElementInstance instance = elementInstanceState.getInstance(elementInstanceKey);
-    long parentElementInstanceKey = instance.getParentKey();
     while (parentElementInstanceKey != -1) {
-      instance = elementInstanceState.getInstance(parentElementInstanceKey);
+      final var instance = elementInstanceState.getInstance(parentElementInstanceKey);
       elementInstancePath.addFirst(parentElementInstanceKey);
       parentElementInstanceKey = instance.getParentKey();
     }
     properties.elementInstancePath.addFirst(elementInstancePath);
-    final var processInstanceRecord = instance.getValue();
     properties.processDefinitionPath.addFirst(processInstanceRecord.getProcessDefinitionKey());
 
     final long callingElementInstanceKey = processInstanceRecord.getParentElementInstanceKey();

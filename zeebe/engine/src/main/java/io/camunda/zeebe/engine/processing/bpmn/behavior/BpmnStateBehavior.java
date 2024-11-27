@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import java.util.Optional;
@@ -55,11 +56,16 @@ public final class BpmnStateBehavior {
     return elementInstanceState.getInstance(elementInstanceKey);
   }
 
-  public ElementTreePathProperties getElementTreePath(final long elementInstanceKey) {
+  public ElementTreePathProperties getElementTreePath(
+      final long elementInstanceKey,
+      final long flowScopeKey,
+      final ProcessInstanceRecordValue processInstanceRecordValue) {
     return new ElementTreePathBuilder()
         .withElementInstanceState(elementInstanceState)
         .withProcessState(processState)
         .withElementInstanceKey(elementInstanceKey)
+        .withFlowScopeKey(flowScopeKey)
+        .withRecordValue(processInstanceRecordValue)
         .build();
   }
 

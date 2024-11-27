@@ -98,8 +98,17 @@ public final class BpmnStateTransitionBehavior {
     }
 
     // create tree path?!
+
+    // BE AWARE THE ELEMENT INSTANCE DOESNT EXIST YET
+    // We need to work with the parent key and record value
+    final long flowScopeKey = transitionContext.getFlowScopeKey();
+    //    final var scopeKey = flowScopeKey == -1 ? context.getProcessInstanceKey() : flowScopeKey;
+
     final ElementTreePathProperties elementTreePath =
-        stateBehavior.getElementTreePath(transitionContext.getElementInstanceKey());
+        stateBehavior.getElementTreePath(
+            transitionContext.getElementInstanceKey(),
+            flowScopeKey,
+            transitionContext.getRecordValue());
     transitionContext
         .getRecordValue()
         .setElementInstancePath(elementTreePath.elementInstancePath())
