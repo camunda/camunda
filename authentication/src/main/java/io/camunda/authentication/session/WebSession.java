@@ -157,6 +157,6 @@ public class WebSession implements Session {
 
   @Override
   public boolean isExpired() {
-    return getMaxInactiveInterval() != null && delegate.isExpired();
+    return delegate.isExpired();
   }
 }
