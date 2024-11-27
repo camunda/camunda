@@ -19,7 +19,7 @@ import io.camunda.zeebe.client.api.response.CreateRoleResponse;
 
 public interface CreateRoleCommandStep1 extends FinalCommandStep<CreateRoleResponse> {
   /**
-   * Set the name to create user with.
+   * Set the name to create role with.
    *
    * @param name the name value
    * @return the builder for this command. Call {@link #send()} to complete the command and send it

@@ -52,6 +52,14 @@ public class CreateRoleTest extends ClientRestTest {
   }
 
   @Test
+  void shouldRaiseExceptionOnNullName() {
+    // when / then
+    assertThatThrownBy(() -> client.newCreateRoleCommand().send().join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("name must not be null");
+  }
+
+  @Test
   void shouldRaiseExceptionIfRoleNameAlreadyExists() {
     // given
     client.newCreateRoleCommand().name(NAME).send().join();

@@ -57,7 +57,7 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1 {
 
   @Override
   public ZeebeFuture<CreateRoleResponse> send() {
-    ArgumentUtil.ensureNotNull("name", request.getName());
+    // ArgumentUtil.ensureNotNull("name", request.getName());
     final HttpZeebeFuture<CreateRoleResponse> result = new HttpZeebeFuture<>();
     final CreateRoleResponseImpl response = new CreateRoleResponseImpl();
     httpClient.post(
