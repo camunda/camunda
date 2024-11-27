@@ -8,15 +8,10 @@
 package io.camunda.migration.process.util;
 
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import java.util.List;
 
 public class MigrationUtil {
 
-  public static List<ProcessEntity> extractBatchData(final List<ProcessEntity> processDefinitions) {
-    return processDefinitions.stream().map(MigrationUtil::map).toList();
-  }
-
-  private static ProcessEntity map(final ProcessEntity entity) {
+  public static ProcessEntity map(final ProcessEntity entity) {
     final ProcessEntity processEntity = new ProcessEntity();
     processEntity.setId(entity.getId());
     processEntity.setBpmnProcessId(entity.getBpmnProcessId());
