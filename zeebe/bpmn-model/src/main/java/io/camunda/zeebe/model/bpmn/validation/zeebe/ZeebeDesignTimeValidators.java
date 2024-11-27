@@ -43,6 +43,7 @@ public final class ZeebeDesignTimeValidators {
   static {
     final List<ModelElementValidator<?>> validators = new ArrayList<>();
     validators.add(new ActivityValidator());
+    validators.add(new AdHocSubProcessValidator());
     validators.add(new BoundaryEventValidator());
     validators.add(new BusinessRuleTaskValidator());
     validators.add(
