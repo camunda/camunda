@@ -21,53 +21,53 @@ public class DatabaseHelperTest {
 
   @Test
   void shouldConstructKeyWithDatabaseTypeAndEngineAlias() {
-    // Given
+    // given
     final String databaseType = DataImportSourceType.ZEEBE.toString();
 
-    // When
+    // when
     final String result = DatabaseHelper.constructKey(databaseType, ALIAS);
 
-    // Then
+    // then
     assertThat(result).isEqualTo(databaseType + "-" + ALIAS);
   }
 
   @Test
   void shouldConstructKeyWithIngestedDataDataSourceDto() {
-    // Given
+    // given
     final String databaseType = DataImportSourceType.INGESTED_DATA.toString();
     final DataSourceDto dataSourceDto = new EngineDataSourceDto(ALIAS);
 
-    // When
+    // when
     final String result = DatabaseHelper.constructKey(databaseType, dataSourceDto);
 
-    // Then
+    // then
     assertThat(result).isEqualTo(databaseType + "-" + ALIAS);
   }
 
   @Test
   void shouldConstructKeyWithEngineDataSourceDto() {
-    // Given
+    // given
     final String databaseType = DataImportSourceType.ENGINE.toString();
     final DataSourceDto dataSourceDto = new EngineDataSourceDto(ALIAS);
 
-    // When
+    // when
     final String result = DatabaseHelper.constructKey(databaseType, dataSourceDto);
 
-    // Then
+    // then
     assertThat(result).isEqualTo(databaseType + "-" + ALIAS);
   }
 
   @Test
   void shouldConstructKeyWithZeebeDataSourceDto() {
-    // Given
+    // given
     final String databaseType = DataImportSourceType.ZEEBE.toString();
     final int partitionId = 42;
     final ZeebeDataSourceDto zeebeDataSourceDto = new ZeebeDataSourceDto(ALIAS, partitionId);
 
-    // When
+    // when
     final String result = DatabaseHelper.constructKey(databaseType, zeebeDataSourceDto);
 
-    // Then
+    // then
     assertThat(result).isEqualTo(databaseType + "-" + ALIAS + partitionId);
   }
 }
