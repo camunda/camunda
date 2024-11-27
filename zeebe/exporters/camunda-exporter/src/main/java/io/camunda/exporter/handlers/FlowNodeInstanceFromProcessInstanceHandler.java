@@ -87,6 +87,7 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
+    entity.setScopeKey(recordValue.getFlowScopeKey());
 
     if (intent.equals(ELEMENT_ACTIVATING)) {
       // we set the default value here, which may be updated later within incident export
