@@ -55,7 +55,7 @@ public class RoleMemberRemovedHandler implements ExportHandler<RoleEntity, RoleR
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     entity
         .setMemberKey(record.getValue().getEntityKey())
-        .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createChild(record.getValue().getRoleKey()));
+        .setJoin(RoleIndex.MEMBER_RELATION.createChild(record.getValue().getRoleKey()));
   }
 
   @Override

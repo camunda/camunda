@@ -16,8 +16,9 @@ public class RoleIndex extends RoleIndexDescriptor {
 
   public static final String KEY = "key";
   public static final String NAME = "name";
+  public static final String MEMBER_KEY = "memberKey";
 
-  public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
+  public static final EntityJoinRelationFactory MEMBER_RELATION =
       new EntityJoinRelationFactory("role", "member");
 
   public RoleIndex(final String indexPrefix, final boolean isElasticsearch) {
