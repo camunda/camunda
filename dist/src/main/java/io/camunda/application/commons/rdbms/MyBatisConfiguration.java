@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.MappingMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
+import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
@@ -129,6 +130,11 @@ public class MyBatisConfiguration {
   public MapperFactoryBean<VariableMapper> variableMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, VariableMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<RoleMapper> roleMapper(final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, RoleMapper.class);
   }
 
   @Bean

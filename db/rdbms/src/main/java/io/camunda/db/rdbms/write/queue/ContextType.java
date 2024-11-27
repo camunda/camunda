@@ -16,6 +16,7 @@ public enum ContextType {
   FLOW_NODE,
   TENANT,
   VARIABLE,
+  ROLE,
   USER,
   USER_TASK,
   FORM,
