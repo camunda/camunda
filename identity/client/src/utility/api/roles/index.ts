@@ -10,30 +10,32 @@ import {
   ApiDefinition,
   apiDelete,
   apiGet,
+  apiPatch,
   apiPost,
-  apiPut,
   pathBuilder,
 } from "src/utility/api/request";
+import { SearchResponse } from "src/utility/api";
 
-const path = pathBuilder("/v2/roles");
+const path = pathBuilder("/roles");
 
 export type Role = {
-  id: string;
+  key: number;
   name: string;
   description: string;
   permissions: string[];
 };
 
-export const getRoles: ApiDefinition<Role[]> = () => apiGet(path());
+export const searchRoles: ApiDefinition<SearchResponse<Role>> = () =>
+  apiPost(path("search"), {});
 
 type GetRoleParams = {
-  id: string;
+  key: number;
 };
 
-export const getRole: ApiDefinition<Role, GetRoleParams> = ({ id }) =>
-  apiGet(path(id));
+export const getRole: ApiDefinition<Role, GetRoleParams> = ({ key }) =>
+  apiGet(path(key));
 
-type CreateRoleParams = Omit<Role, "id">;
+type CreateRoleParams = Omit<Role, "key">;
 
 export const createRole: ApiDefinition<Role, CreateRoleParams> = (role) =>
   apiPost(path(), role);
@@ -41,12 +43,14 @@ export const createRole: ApiDefinition<Role, CreateRoleParams> = (role) =>
 type UpdateRoleParams = Role;
 
 export const updateRole: ApiDefinition<Role, UpdateRoleParams> = ({
-  id,
+  key,
   ...role
-}) => apiPut(path(id), role);
+}) => apiPatch(path(key), { changeset: role });
 
-type DeleteRoleParams = GetRoleParams;
+interface DeleteRoleParams {
+  key: number;
+}
 
 export const deleteRole: ApiDefinition<undefined, DeleteRoleParams> = ({
-  id,
-}) => apiDelete(path(id));
+  key,
+}) => apiDelete(path(key));

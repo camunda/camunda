@@ -2678,6 +2678,13 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "409":
+          description: |
+            A user with the given username already exists.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
 
@@ -4467,6 +4474,25 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserResponse"
+    UserUpdateRequest:
+      type: object
+      properties:
+        changeset:
+          $ref: "#/components/schemas/UserChangeset"
+    UserChangeset:
+      description: |
+        JSON object with changed user attribute values.
+      type: object
+      properties:
+        name:
+          type: string
+          description: The new name of the user.
+        email:
+          type: string
+          description: The new email of the user.
+        password:
+          type: string
+          description: The new password of the user.
     RoleCreateRequest:
       type: "object"
       properties:
