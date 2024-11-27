@@ -41,7 +41,7 @@ jobs:
         with:
           maven-cache-key-modifier: operate-tests
       - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v3.0.0
+        uses: s4u/maven-settings-action@v3.1.0
         with:
           githubServer: false
           servers: |
