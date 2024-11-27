@@ -4270,6 +4270,7 @@ components:
     PermissionTypeEnum:
       description: Specifies the type of permissions.
       enum:
+        - ACCESS
         - CREATE
         - CREATE_PROCESS_INSTANCE
         - CREATE_DECISION_INSTANCE
