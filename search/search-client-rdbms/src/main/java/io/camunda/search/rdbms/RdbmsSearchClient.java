@@ -166,8 +166,10 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery filter) {
-    return null;
+  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for groups: {}", query);
+
+    return rdbmsService.getGroupReader().search(query);
   }
 
   @Override
