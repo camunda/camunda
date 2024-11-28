@@ -27,6 +27,7 @@ import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.management.IndicesCheck;
 import io.camunda.operate.property.OperateProperties;
@@ -93,6 +94,7 @@ import org.springframework.web.client.RestTemplate;
       OperateProfileService.class,
       OperateIndexController.class,
       WebappsModuleConfiguration.class,
+      ServiceSecurityProperties.class,
     },
     properties = {
       "server.servlet.context-path=" + AuthenticationIT.CONTEXT_PATH,
