@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -96,7 +97,10 @@ public final class StubbedGateway {
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
                 ServerInterceptors.intercept(
-                    gatewayGrpcService, new IdentityInterceptor(identity, multiTenancy)));
+                    gatewayGrpcService, new IdentityInterceptor(identity, multiTenancy)))
+            .addService(
+                ServerInterceptors.intercept(
+                    gatewayGrpcService, new AuthenticationInterceptor()));
     server = serverBuilder.build();
     server.start();
   }
