@@ -760,4 +760,51 @@ abstract sealed class IncidentUpdateRepositoryIT {
       return entity;
     }
   }
+
+  @Nested
+  final class GetFlowNodeInstancesIT {
+    @Test
+    void shouldGetFlowNodes() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          flowNodeInstanceTemplate.getFullQualifiedName(), "1", new FlowNodeInstanceEntity());
+      batchRequest.addWithId(
+          flowNodeInstanceTemplate.getFullQualifiedName(), "2", new FlowNodeInstanceEntity());
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
+
+      // then
+      assertThat(flowNodes)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
+          .containsExactly(
+              new Document("1", listViewTemplate.getFullQualifiedName()),
+              new Document("2", listViewTemplate.getFullQualifiedName()));
+    }
+
+    @Test
+    void shouldNotGetFlowNodesWithOtherKeys() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          flowNodeInstanceTemplate.getFullQualifiedName(), "1", new FlowNodeInstanceEntity());
+      batchRequest.addWithId(
+          flowNodeInstanceTemplate.getFullQualifiedName(), "2", new FlowNodeInstanceEntity());
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1"));
+
+      // then
+      assertThat(flowNodes)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
+          .containsExactly(new Document("1", listViewTemplate.getFullQualifiedName()));
+    }
+  }
 }

@@ -122,27 +122,15 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
             t ->
                 t.field(ListViewTemplate.JOIN_RELATION)
                     .value(ListViewTemplate.ACTIVITIES_JOIN_RELATION));
-    final var request =
-        new SearchRequest.Builder()
-            .index(listViewAlias)
-            .allowNoIndices(true)
-            .ignoreUnavailable(true)
-            .query(q -> q.bool(b -> b.must(idQ, typeQ)))
-            .source(s -> s.fetch(false))
-            .scroll(SCROLL_KEEP_ALIVE)
-            .size(SCROLL_PAGE_SIZE)
-            .build();
+    return fetchUnboundedDocumentCollection(
+        listViewAlias, QueryBuilders.bool(b -> b.must(idQ, typeQ)));
+  }
 
-    return client
-        // pass Object as the document type, because we will not read the source anyway and we don't
-        // want to couple ourselves to whatever the entity type really be
-        .search(request, Object.class)
-        .thenComposeAsync(
-            r ->
-                clearScrollOnComplete(
-                    r.scrollId(),
-                    scrollFlowNodesInListView(r.hits().hits(), r.scrollId(), new ArrayList<>())),
-            executor);
+  @Override
+  public CompletionStage<Collection<Document>> getFlowNodeInstances(
+      final List<String> flowNodeKeys) {
+    final var query = QueryBuilders.ids(i -> i.values(flowNodeKeys));
+    return fetchUnboundedDocumentCollection(flowNodeAlias, query);
   }
 
   @Override
@@ -198,6 +186,31 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
             response -> response.tokens().stream().map(AnalyzeToken::token).toList(), executor);
   }
 
+  private CompletableFuture<Collection<Document>> fetchUnboundedDocumentCollection(
+      final String indexAlias, final Query query) {
+    final var request =
+        new SearchRequest.Builder()
+            .index(indexAlias)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .query(query)
+            .source(s -> s.fetch(false))
+            .scroll(SCROLL_KEEP_ALIVE)
+            .size(SCROLL_PAGE_SIZE)
+            .build();
+
+    return client
+        // pass Object as the document type, because we will not read the source anyway and we don't
+        // want to couple ourselves to whatever the entity type really be
+        .search(request, Object.class)
+        .thenComposeAsync(
+            r ->
+                clearScrollOnComplete(
+                    r.scrollId(),
+                    scrollDocuments(r.hits().hits(), r.scrollId(), new ArrayList<>())),
+            executor);
+  }
+
   private <T> CompletionStage<T> clearScrollOnComplete(
       final String scrollId, final CompletionStage<T> scrollOperation) {
     return scrollOperation
@@ -230,7 +243,7 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
         .thenComposeAsync(ignored -> endResult);
   }
 
-  private CompletionStage<Collection<Document>> scrollFlowNodesInListView(
+  private CompletionStage<Collection<Document>> scrollDocuments(
       final List<Hit<Object>> hits, final String scrollId, final List<Document> accumulator) {
     if (hits.isEmpty()) {
       return CompletableFuture.completedFuture(accumulator);
@@ -240,8 +253,7 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
 
     return client
         .scroll(r -> r.scrollId(scrollId).scroll(SCROLL_KEEP_ALIVE), Object.class)
-        .thenComposeAsync(
-            r -> scrollFlowNodesInListView(r.hits().hits(), r.scrollId(), accumulator));
+        .thenComposeAsync(r -> scrollDocuments(r.hits().hits(), r.scrollId(), accumulator));
   }
 
   private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {
