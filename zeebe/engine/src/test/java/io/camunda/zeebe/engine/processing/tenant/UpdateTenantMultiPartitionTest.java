@@ -49,12 +49,7 @@ public class UpdateTenantMultiPartitionTest {
             .create()
             .getValue()
             .getTenantKey();
-    engine
-        .tenant()
-        .updateTenant(tenantKey)
-        .withTenantId(tenantId + "-updated")
-        .withName("Tenant 2")
-        .update();
+    engine.tenant().updateTenant(tenantKey).withName("Tenant 2").update();
 
     RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
         .withDistributionIntent(TenantIntent.CREATE)
@@ -112,12 +107,7 @@ public class UpdateTenantMultiPartitionTest {
     final var tenantId = UUID.randomUUID().toString();
     final var tenantRecord =
         engine.tenant().newTenant().withTenantId(tenantId).withName("Tenant 1").create();
-    engine
-        .tenant()
-        .updateTenant(tenantRecord.getKey())
-        .withTenantId(tenantId + "-updated")
-        .withName("Tenant 2")
-        .update();
+    engine.tenant().updateTenant(tenantRecord.getKey()).withName("Tenant 2").update();
 
     // then
     assertThat(
@@ -135,9 +125,17 @@ public class UpdateTenantMultiPartitionTest {
       interceptTenantCreateForPartition(partitionId);
     }
     final var tenantId = UUID.randomUUID().toString();
+    final var name = UUID.randomUUID().toString();
     final var tenantKey =
-        engine.tenant().newTenant().withTenantId(tenantId).create().getValue().getTenantKey();
-    engine.tenant().updateTenant(tenantKey).withTenantId(tenantId + "-updated").update();
+        engine
+            .tenant()
+            .newTenant()
+            .withTenantId(tenantId)
+            .withName(name)
+            .create()
+            .getValue()
+            .getTenantKey();
+    engine.tenant().updateTenant(tenantKey).withName(name + "-updated").update();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));
