@@ -214,16 +214,16 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   private SearchRequest importPositionDocuments(final int partitionId, final String indexPrefix) {
     final var importPositionIndexName =
-        new ImportPositionIndex(indexPrefix, true).getFullQualifiedName();
+        new ImportPositionIndex(indexPrefix, false).getFullQualifiedName();
     return new SearchRequest.Builder()
         .index(importPositionIndexName)
         .size(ImportValueType.values().length)
         .query(
             q ->
-                q.match(
-                    m ->
-                        m.field(ImportPositionIndex.PARTITION_ID)
-                            .query(innerQ -> innerQ.longValue(partitionId))))
+                q.term(
+                    t ->
+                        t.field(ImportPositionIndex.PARTITION_ID)
+                            .value(v -> v.longValue(partitionId))))
         .build();
   }
 
