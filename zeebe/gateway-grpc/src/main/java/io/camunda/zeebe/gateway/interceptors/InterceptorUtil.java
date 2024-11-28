@@ -118,9 +118,11 @@ public final class InterceptorUtil {
   }
 
   /**
-   * A helper method to set a {@link Map<String, Claim>} of user claims on the {@code USER_CLAIMS} gRPC Context key.
+   * A helper method to set a {@link Map<String, Claim>} of user claims on the {@code USER_CLAIMS}
+   * gRPC Context key.
    *
-   * @param userClaims - a Map of Strings to Claims that specify the user claims for the gRPC request
+   * @param userClaims - a Map of Strings to Claims that specify the user claims for the gRPC
+   *     request
    * @return the current {@link Context}
    */
   public static Context setUserClaims(final Map<String, Claim> userClaims) {

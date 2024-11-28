@@ -8,10 +8,7 @@
 package io.camunda.zeebe.gateway.interceptors.impl;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
@@ -25,7 +22,6 @@ import io.grpc.ServerCallHandler;
 import io.grpc.Status;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicReference;
-import org.assertj.core.api.ListAssert;
 import org.assertj.core.api.MapAssert;
 import org.junit.jupiter.api.Test;
 
@@ -36,7 +32,8 @@ public class AuthenticationInterceptorTest {
     // when
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
         new CloseStatusCapturingServerCall();
-    new AuthenticationInterceptor().interceptCall(closeStatusCapturingServerCall, new Metadata(), failingNextHandler());
+    new AuthenticationInterceptor()
+        .interceptCall(closeStatusCapturingServerCall, new Metadata(), failingNextHandler());
 
     // then
     assertThat(closeStatusCapturingServerCall.closeStatus)
@@ -81,14 +78,10 @@ public class AuthenticationInterceptorTest {
             metadata,
             (call, headers) -> {
               // then
-              assertUserClaims()
-                  .containsKey("role")
-                  .containsKey("foo")
-                  .containsKey("baz");
+              assertUserClaims().containsKey("role").containsKey("foo").containsKey("baz");
               call.close(Status.OK, headers);
               return null;
             });
-
   }
 
   private Metadata createAuthHeader() {
@@ -113,8 +106,7 @@ public class AuthenticationInterceptorTest {
 
   private static MapAssert<String, Claim> assertUserClaims() {
     try {
-      return assertThat(
-          Context.current().call(() -> InterceptorUtil.getUserClaimsKey().get()));
+      return assertThat(Context.current().call(() -> InterceptorUtil.getUserClaimsKey().get()));
     } catch (final Exception e) {
       throw new RuntimeException("Unable to retrieve user claims from context", e);
     }

@@ -26,8 +26,10 @@ public class AuthenticationInterceptor implements ServerInterceptor {
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
 
   @Override
-  public <ReqT, RespT> Listener<ReqT> interceptCall(final ServerCall<ReqT, RespT> call,
-      final Metadata headers, final ServerCallHandler<ReqT, RespT> next) {
+  public <ReqT, RespT> Listener<ReqT> interceptCall(
+      final ServerCall<ReqT, RespT> call,
+      final Metadata headers,
+      final ServerCallHandler<ReqT, RespT> next) {
     final var methodDescriptor = call.getMethodDescriptor();
 
     final var authorization = headers.get(AUTH_KEY);
@@ -43,7 +45,8 @@ public class AuthenticationInterceptor implements ServerInterceptor {
 
     final String token = authorization.replaceFirst("^Bearer ", "");
 
-    // TODO verify the token, do we really want to delete the identity SDK ? It's not easy to verify a token
+    // TODO verify the token, do we really want to delete the identity SDK ? It's not easy to verify
+    // a token
 
     try {
       // get user claims and set them in the context
@@ -60,8 +63,7 @@ public class AuthenticationInterceptor implements ServerInterceptor {
       return deny(
           call,
           Status.UNAUTHENTICATED
-              .augmentDescription(
-                  "Expected a valid token, see cause for details")
+              .augmentDescription("Expected a valid token, see cause for details")
               .withCause(e));
     }
   }
