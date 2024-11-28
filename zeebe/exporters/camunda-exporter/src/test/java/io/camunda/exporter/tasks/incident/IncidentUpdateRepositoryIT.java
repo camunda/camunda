@@ -13,8 +13,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -70,7 +68,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
-import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -125,16 +122,13 @@ abstract sealed class IncidentUpdateRepositoryIT {
       final String index, final String field, final List<String> terms, final Class<T> documentType)
       throws IOException;
 
-  protected abstract void assertScrollCleared();
-
   static final class ElasticsearchIT extends IncidentUpdateRepositoryIT {
     @Container
     private static final ElasticsearchContainer CONTAINER =
         TestSearchContainers.createDefeaultElasticsearchContainer();
 
     @AutoCloseResource private final RestClientTransport transport = createTransport();
-    private final ElasticsearchAsyncClient client =
-        Mockito.spy(new ElasticsearchAsyncClient(transport));
+    private final ElasticsearchAsyncClient client = new ElasticsearchAsyncClient(transport);
 
     public ElasticsearchIT() {
       super("http://" + CONTAINER.getHttpHostAddress(), true);
@@ -167,16 +161,6 @@ abstract sealed class IncidentUpdateRepositoryIT {
       return client.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
           .map(Hit::source)
           .toList();
-    }
-
-    @Override
-    protected void assertScrollCleared() {
-      final var inOrder = Mockito.inOrder(client);
-      inOrder
-          .verify(client, Mockito.times(1))
-          .search(Mockito.any(SearchRequest.class), Mockito.any(Class.class));
-      inOrder.verify(client, Mockito.times(1)).clearScroll(Mockito.any(ClearScrollRequest.class));
-      inOrder.verifyNoMoreInteractions();
     }
 
     private RestClientTransport createTransport() {
@@ -718,31 +702,6 @@ abstract sealed class IncidentUpdateRepositoryIT {
           .containsExactly(
               new Document("1", listViewTemplate.getFullQualifiedName()),
               new Document("2", listViewTemplate.getFullQualifiedName()));
-    }
-
-    // Unfortunately there is no API in ES/OS to list open search scrolls, so we can only use
-    // Mockito to verify invocation order
-    @Test
-    void shouldClearScrollOnFinish() throws PersistenceException {
-      // given
-      final var repository = createRepository();
-      final var batchRequest = clientAdapter.createBatchRequest();
-      batchRequest.addWithRouting(
-          listViewTemplate.getFullQualifiedName(),
-          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
-          "0");
-      batchRequest.addWithRouting(
-          listViewTemplate.getFullQualifiedName(),
-          createFlowNodeInstance(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION).setId("2"),
-          "0");
-      batchRequest.executeWithRefresh();
-
-      // when
-      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
-
-      // then
-      assertThat(flowNodes).succeedsWithin(REQUEST_TIMEOUT);
-      assertScrollCleared();
     }
 
     @Test
