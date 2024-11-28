@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -34,6 +35,7 @@ public class CamundaUser extends User {
     super(username, password, Collections.emptyList());
     this.userKey = userKey;
     this.displayName = displayName;
+    c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
   }
 
   public CamundaUser(
@@ -44,6 +46,7 @@ public class CamundaUser extends User {
     super(username, password, prepareAuthorities(roles));
     userKey = null;
     this.displayName = displayName;
+    c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
   }
 
   public CamundaUser(
@@ -66,7 +69,7 @@ public class CamundaUser extends User {
     this.tenants = tenants;
     this.groups = groups;
     this.salesPlanType = salesPlanType;
-    this.c8Links = c8Links;
+    this.c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
     this.canLogout = canLogout;
     this.apiUser = apiUser;
   }
@@ -108,9 +111,6 @@ public class CamundaUser extends User {
   }
 
   public Map<ClusterMetadata.AppName, String> getC8Links() {
-    if (c8Links == null) {
-      return Collections.emptyMap();
-    }
     return c8Links;
   }
 
