@@ -13,7 +13,14 @@ import static java.time.temporal.ChronoField.MINUTE_OF_HOUR;
 import static java.time.temporal.ChronoField.NANO_OF_SECOND;
 import static java.time.temporal.ChronoField.SECOND_OF_MINUTE;
 
+import io.camunda.document.api.DocumentError;
+import io.camunda.document.api.DocumentError.DocumentAlreadyExists;
+import io.camunda.document.api.DocumentError.DocumentNotFound;
+import io.camunda.document.api.DocumentError.InvalidInput;
+import io.camunda.document.api.DocumentError.OperationNotSupported;
+import io.camunda.document.api.DocumentError.StoreDoesNotExist;
 import io.camunda.document.api.DocumentLink;
+import io.camunda.service.DocumentServices.DocumentErrorResponse;
 import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
@@ -25,6 +32,8 @@ import io.camunda.zeebe.gateway.protocol.rest.DeploymentForm;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentProcess;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentResponse;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentBatchProblemDetail;
+import io.camunda.zeebe.gateway.protocol.rest.DocumentCreationFailureDetail;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentReference.CamundaDocumentTypeEnum;
@@ -65,6 +74,7 @@ import io.camunda.zeebe.protocol.record.value.EvaluatedInputValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import io.camunda.zeebe.util.Either;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -74,6 +84,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 
 public final class ResponseMapper {
@@ -158,6 +170,78 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toDocumentReference(
       final DocumentReferenceResponse response) {
+    final var reference = transformDocumentReferenceResponse(response);
+    return new ResponseEntity<>(reference, HttpStatus.CREATED);
+  }
+
+  public static ResponseEntity<Object> toDocumentReferenceBatch(
+      final List<Either<DocumentErrorResponse, DocumentReferenceResponse>> responses) {
+    final List<DocumentReferenceResponse> successful =
+        responses.stream().filter(Either::isRight).map(Either::get).toList();
+
+    if (successful.size() == responses.size()) {
+      final List<DocumentReference> references =
+          successful.stream().map(ResponseMapper::transformDocumentReferenceResponse).toList();
+      return ResponseEntity.ok(references);
+    }
+
+    final var problem = new DocumentBatchProblemDetail();
+    successful.stream()
+        .map(ResponseMapper::transformDocumentReferenceResponse)
+        .forEach(problem::addCreatedDocumentsItem);
+
+    responses.stream()
+        .filter(Either::isLeft)
+        .map(Either::getLeft)
+        .forEach(
+            error -> {
+              final var detail = new DocumentCreationFailureDetail();
+              final var defaultProblemDetail = mapDocumentErrorToProblem(error.error());
+              detail.setDetail(defaultProblemDetail.getDetail());
+              detail.setFilename(error.request().metadata().fileName());
+              problem.addFailedDocumentsItem(detail);
+            });
+    return new ResponseEntity<>(problem, HttpStatus.MULTI_STATUS);
+  }
+
+  public static ProblemDetail mapDocumentErrorToProblem(final DocumentError e) {
+    final String detail;
+    final HttpStatusCode status;
+    switch (e) {
+      case final DocumentNotFound notFound -> {
+        detail = String.format("Document with id '%s' not found", notFound.documentId());
+        status = HttpStatus.NOT_FOUND;
+      }
+      case final InvalidInput invalidInput -> {
+        detail = invalidInput.message();
+        status = HttpStatus.BAD_REQUEST;
+      }
+      case final DocumentAlreadyExists documentAlreadyExists -> {
+        detail =
+            String.format(
+                "Document with id '%s' already exists", documentAlreadyExists.documentId());
+        status = HttpStatus.CONFLICT;
+      }
+      case final StoreDoesNotExist storeDoesNotExist -> {
+        detail =
+            String.format(
+                "Document store with id '%s' does not exist", storeDoesNotExist.storeId());
+        status = HttpStatus.BAD_REQUEST;
+      }
+      case final OperationNotSupported operationNotSupported -> {
+        detail = operationNotSupported.message();
+        status = HttpStatus.METHOD_NOT_ALLOWED;
+      }
+      default -> {
+        detail = null;
+        status = HttpStatus.INTERNAL_SERVER_ERROR;
+      }
+    }
+    return RestErrorMapper.createProblemDetail(status, detail, e.getClass().getSimpleName());
+  }
+
+  private static DocumentReference transformDocumentReferenceResponse(
+      final DocumentReferenceResponse response) {
     final var internalMetadata = response.metadata();
     final var externalMetadata =
         new DocumentMetadata()
@@ -170,13 +254,11 @@ public final class ResponseMapper {
             .contentType(internalMetadata.contentType());
     Optional.ofNullable(internalMetadata.customProperties())
         .ifPresent(map -> map.forEach(externalMetadata::putCustomPropertiesItem));
-    final var reference =
-        new DocumentReference()
-            .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
-            .documentId(response.documentId())
-            .storeId(response.storeId())
-            .metadata(externalMetadata);
-    return new ResponseEntity<>(reference, HttpStatus.CREATED);
+    return new DocumentReference()
+        .camundaDocumentType(CamundaDocumentTypeEnum.CAMUNDA)
+        .documentId(response.documentId())
+        .storeId(response.storeId())
+        .metadata(externalMetadata);
   }
 
   public static ResponseEntity<Object> toDocumentLinkResponse(final DocumentLink documentLink) {
