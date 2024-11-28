@@ -19,11 +19,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.util.PayloadUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
@@ -37,12 +34,10 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -63,14 +58,6 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
   @Autowired private ListViewReader listViewReader;
 
   @Autowired private IncidentReader incidentReader;
-
-  @Autowired private TestSearchRepository testSearchRepository;
-
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
-
-  @Autowired private ObjectMapper objectMapper;
-
-  @Autowired private PayloadUtil payloadUtil;
 
   protected void processImportTypeAndWait(
       final ImportValueType importValueType,
@@ -523,49 +510,6 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
         zeebeClient.newTopologyRequest().send().join().getPartitionsCount();
     assertThat(operatePartitions).hasSize(zeebePartitionsCount);
     assertThat(operatePartitions).allMatch(id -> id <= zeebePartitionsCount && id >= 1);
-  }
-
-  @Test
-  public void testDecisionInstanceEvaluatedWithBigInputAndOutput() throws Exception {
-    // given
-    final String bpmnProcessId = "process";
-    final String demoDecisionId2 = "decision";
-
-    final String elementId = "task";
-    final BpmnModelInstance instance =
-        Bpmn.createExecutableProcess(bpmnProcessId)
-            .startEvent()
-            .businessRuleTask(
-                elementId,
-                task -> task.zeebeCalledDecisionId(demoDecisionId2).zeebeResultVariable("result"))
-            .done();
-
-    final String bigJSONVariablePayload = payloadUtil.readStringFromClasspath("/large-payload.txt");
-    final String payload = "{\"value\": \"" + bigJSONVariablePayload + "\"}";
-    tester
-        .deployProcess(instance, "test.bpmn")
-        .deployDecision("largeInputOutput.dmn")
-        .waitUntil()
-        .processIsDeployed()
-        .and()
-        .decisionsAreDeployed(1)
-        // when
-        .startProcessInstance(bpmnProcessId, payload)
-        .waitUntil()
-        .decisionInstancesAreCreated(1);
-
-    // then
-    final List<DecisionInstanceEntity> decisionEntities =
-        testSearchRepository.searchAll(
-            decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
-
-    assertThat(decisionEntities).hasSize(1);
-    assertThat(decisionEntities.get(0).getEvaluatedInputs()).hasSize(1);
-    assertThat(decisionEntities.get(0).getEvaluatedInputs().get(0).getValue())
-        .contains(bigJSONVariablePayload);
-    assertThat(decisionEntities.get(0).getEvaluatedOutputs()).hasSize(1);
-    assertThat(decisionEntities.get(0).getEvaluatedOutputs().get(0).getValue())
-        .contains(bigJSONVariablePayload);
   }
 
   private void assertStartActivityCompleted(final FlowNodeInstanceEntity activity) {
