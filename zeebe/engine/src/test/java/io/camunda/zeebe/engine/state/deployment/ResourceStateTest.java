@@ -89,6 +89,7 @@ public class ResourceStateTest {
   @Test
   void shouldStoreAndDeleteResourceInByIdColumFamily() {
     final ResourceRecord resourceRecord = sampleResourceRecord();
+    resourceState.storeResourceInResourceColumnFamily(sampleResourceRecord());
     resourceState.storeResourceInResourceByIdAndVersionColumnFamily(resourceRecord);
 
     final Optional<PersistedResource> resourceByKey =

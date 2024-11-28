@@ -13,7 +13,7 @@ import org.agrona.DirectBuffer;
 
 public interface ResourceState {
   /**
-   * Query RPAs by the given resource id and return the latest version of the resource.
+   * Query Resource by the given resource id and return the latest version of the resource.
    *
    * @param resourceId the id of the resource
    * @param tenantId the id of the tenant
@@ -24,7 +24,7 @@ public interface ResourceState {
       DirectBuffer resourceId, final String tenantId);
 
   /**
-   * Query RPAs by the given resource key and return the resource.
+   * Query Resource by the given resource key and return the resource.
    *
    * @param resourceKey the key of the resource
    * @param tenantId the id of the tenant
@@ -33,7 +33,7 @@ public interface ResourceState {
   Optional<PersistedResource> findResourceByKey(long resourceKey, final String tenantId);
 
   /**
-   * Query RPAs by the given resource id and deployment key and return the resource.
+   * Query Resource by the given resource id and deployment key and return the resource.
    *
    * @param resourceId the id of the resource
    * @param deploymentKey the key of the deployment the resource was deployed with
@@ -45,7 +45,7 @@ public interface ResourceState {
       DirectBuffer resourceId, long deploymentKey, final String tenantId);
 
   /**
-   * Query RPAs by the given resource id and version tag and return the resource.
+   * Query Resource by the given resource id and version tag and return the resource.
    *
    * @param resourceId the id of the resource
    * @param versionTag the version tag of the resource

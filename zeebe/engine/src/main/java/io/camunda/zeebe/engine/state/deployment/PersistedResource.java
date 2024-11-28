@@ -53,7 +53,7 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     copy.tenantIdProp.setValue(getTenantId());
     copy.deploymentKeyProp.setValue(getDeploymentKey());
     copy.versionTagProp.setValue(getVersionTag());
-    copy.resourceProp.setValue(getRobotScript());
+    copy.resourceProp.setValue(getResource());
     return copy;
   }
 
@@ -85,7 +85,7 @@ public class PersistedResource extends UnpackedObject implements DbValue {
     return deploymentKeyProp.getValue();
   }
 
-  public String getRobotScript() {
+  public String getResource() {
     return bufferAsString(resourceProp.getValue());
   }
 
