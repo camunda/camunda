@@ -7,25 +7,27 @@
  */
 package io.camunda.zeebe.it.processing;
 
-import static io.camunda.zeebe.protocol.record.RecordValueAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.engine.processing.user.DefaultUserCreator;
+import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
+import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
-import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -34,7 +36,7 @@ import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ZeebeIntegration
-final class DefaultUserCreatorIT {
+final class IdentitySetupInitializerIT {
 
   private static PasswordEncoder passwordEncoder;
   @AutoCloseResource private ZeebeClient client;
@@ -46,93 +48,105 @@ final class DefaultUserCreatorIT {
   }
 
   @Test
-  void shouldCreateDefaultUser() throws InterruptedException {
+  void shouldInitializeIdentity() {
     // given a broker with authorization enabled
     createBroker(true, 1);
 
-    // then default user should be created
-    final var createdUser =
-        RecordingExporter.userRecords(UserIntent.CREATED)
-            .withUsername(DefaultUserCreator.DEFAULT_USER_USERNAME)
+    // then identity should be initialized
+    final var record =
+        RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZE)
             .getFirst()
             .getValue();
 
-    assertThat(createdUser)
+    final var createdUser = record.getDefaultUser();
+    Assertions.assertThat(createdUser)
         .isNotNull()
-        .hasFieldOrPropertyWithValue("username", DefaultUserCreator.DEFAULT_USER_USERNAME)
-        .hasFieldOrPropertyWithValue("name", DefaultUserCreator.DEFAULT_USER_USERNAME)
-        .hasFieldOrPropertyWithValue("email", DefaultUserCreator.DEFAULT_USER_EMAIL)
-        .hasFieldOrPropertyWithValue("userType", UserType.DEFAULT);
+        .hasUsername(IdentitySetupInitializer.DEFAULT_USER_USERNAME)
+        .hasName(IdentitySetupInitializer.DEFAULT_USER_USERNAME)
+        .hasEmail(IdentitySetupInitializer.DEFAULT_USER_EMAIL)
+        .hasUserType(UserType.DEFAULT);
     final var passwordMatches =
         passwordEncoder.matches(
-            DefaultUserCreator.DEFAULT_USER_PASSWORD, createdUser.getPassword());
+            IdentitySetupInitializer.DEFAULT_USER_PASSWORD, createdUser.getPassword());
     assertTrue(passwordMatches);
+
+    final var createdRole = record.getDefaultRole();
+    Assertions.assertThat(createdRole).hasName(IdentitySetupInitializer.DEFAULT_ROLE_NAME);
   }
 
   @Test
-  void shouldNotCreateDefaultUserWhenAuthorizationsDisabled() {
+  void shouldNotInitializeIdentityWhenAuthorizationsDisabled() {
     // given a broker with authorization disabled
     createBroker(false, 1);
 
-    // then default user should not be created
+    // then identity should not be initialized
     // We send a clock reset command so we have a record we can limit our RecordingExporter on
     client.newClockResetCommand().send().join();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.records()
-                .limit(r -> r.getIntent() == ClockIntent.RESET)
-                .withIntent(UserIntent.CREATE)
+                .limit(r -> r.getIntent() == ClockIntent.RESETTED)
+                .withIntent(IdentitySetupIntent.INITIALIZE)
                 .toList())
-        .describedAs("No user CREATE command must be written")
+        .describedAs("No initialize command must be written")
         .isEmpty();
+
+    RecordLogger.logRecords();
   }
 
   @Test
-  void shouldOnlyCreateDefaultUserOnDeploymentPartition() {
+  void shouldOnlyInitializeIdentityOnDeploymentPartition() {
     // given a broker with authorization disabled
     createBroker(true, 2);
 
-    // then default user should not be created
+    // identity should not be initialized
     // We send a clock reset command so we have a record we can limit our RecordingExporter on
     // We don't join the future, because we are unauthorized to send this command. Joining it will
     // result in an exception.
     client.newClockResetCommand().send();
 
-    final var userCreateRecords =
+    final var initializeRecords =
         RecordingExporter.records()
-            .limit(r -> r.getIntent() == ClockIntent.RESET)
-            .userRecords()
-            .withIntent(UserIntent.CREATED)
+            .limit(
+                r ->
+                    r.getIntent() == ClockIntent.RESET
+                        && r.getRecordType() == RecordType.COMMAND_REJECTION)
+            .identitySetupRecords()
+            .withIntent(IdentitySetupIntent.INITIALIZED)
             .toList();
 
-    Assertions.assertThat(userCreateRecords)
-        .describedAs("One partition should CREATE user and distribute it to the other")
+    assertThat(initializeRecords)
+        .describedAs("One partition should initialize identity and distribute it to the other")
         .hasSize(2);
 
-    final var firstRecord = userCreateRecords.getFirst();
-    final var secondRecord = userCreateRecords.getLast();
+    final var firstRecord = initializeRecords.getFirst();
+    final var secondRecord = initializeRecords.getLast();
 
-    Assertions.assertThat(firstRecord.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    Assertions.assertThat(Protocol.decodePartitionId(firstRecord.getValue().getUserKey()))
+    assertThat(firstRecord.getPartitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(Protocol.decodePartitionId(firstRecord.getValue().getDefaultRole().getRoleKey()))
+        .describedAs("Role key should be generated on the deployment partition")
+        .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(Protocol.decodePartitionId(firstRecord.getValue().getDefaultUser().getUserKey()))
         .describedAs("User key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
 
-    Assertions.assertThat(secondRecord.getPartitionId())
-        .isNotEqualTo(Protocol.DEPLOYMENT_PARTITION);
-    Assertions.assertThat(Protocol.decodePartitionId(secondRecord.getValue().getUserKey()))
-        .describedAs(
-            "User key should be generated on the deployment partition and distributed to this partition")
+    assertThat(secondRecord.getPartitionId()).isNotEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(Protocol.decodePartitionId(secondRecord.getValue().getDefaultRole().getRoleKey()))
+        .describedAs("Role key should be generated on the deployment partition")
+        .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
+    assertThat(Protocol.decodePartitionId(secondRecord.getValue().getDefaultUser().getUserKey()))
+        .describedAs("User key should be generated on the deployment partition")
         .isEqualTo(Protocol.DEPLOYMENT_PARTITION);
 
     Assertions.assertThat(firstRecord.getValue()).isEqualTo(secondRecord.getValue());
   }
 
   @Test
-  void shouldNotCreateDefaultUserOnRestart(@TempDir final Path tempDir) {
+  void shouldNotInitializeIdentityTwiceOnRestart(@TempDir final Path tempDir) {
     // given a broker with authorization enabled
     createBroker(true, 1, tempDir);
 
-    RecordingExporter.userRecords(UserIntent.CREATED).limit(1).await();
+    RecordingExporter.identitySetupRecords(IdentitySetupIntent.INITIALIZED).limit(1).await();
 
     // when broker is restarted
     final var partitions = PartitionsActuator.of(broker);
@@ -148,18 +162,21 @@ final class DefaultUserCreatorIT {
     broker.stop();
     broker.start().awaitCompleteTopology();
 
-    // then default user should be created once
+    // then identity should only be initialized once
     // We send a clock reset command so we have a record we can limit our RecordingExporter on
     // We don't join the future, because we are unauthorized to send this command. Joining it will
     // result in an exception.
     client.newClockResetCommand().send();
 
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.records()
-                .limit(r -> r.getIntent() == ClockIntent.RESET)
-                .withIntent(UserIntent.CREATE)
+                .limit(
+                    r ->
+                        r.getIntent() == ClockIntent.RESET
+                            && r.getRecordType() == RecordType.COMMAND_REJECTION)
+                .withIntent(IdentitySetupIntent.INITIALIZE)
                 .toList())
-        .describedAs("Only one user CREATE command must be written")
+        .describedAs("Only one initialize command must be written")
         .hasSize(1);
   }
 

@@ -5,40 +5,32 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.processing.user;
+package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.UserIntent;
+import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
-public class UserProcessors {
-  public static void addUserProcessors(
+public final class IdentitySetupProcessors {
+  public static void addIdentitySetupProcessors(
       final KeyGenerator keyGenerator,
       final TypedRecordProcessors typedRecordProcessors,
       final MutableProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final EngineConfiguration config) {
     typedRecordProcessors
         .onCommand(
-            ValueType.USER,
-            UserIntent.CREATE,
-            new UserCreateProcessor(
-                keyGenerator, processingState, writers, distributionBehavior, authCheckBehavior))
-        .onCommand(
-            ValueType.USER,
-            UserIntent.UPDATE,
-            new UserUpdateProcessor(
-                keyGenerator, processingState, writers, distributionBehavior, authCheckBehavior))
-        .onCommand(
-            ValueType.USER,
-            UserIntent.DELETE,
-            new UserDeleteProcessor(
-                keyGenerator, processingState, writers, distributionBehavior, authCheckBehavior));
+            ValueType.IDENTITY_SETUP,
+            IdentitySetupIntent.INITIALIZE,
+            new IdentitySetupInitializeProcessor(
+                processingState, writers, keyGenerator, distributionBehavior))
+        .withListener(new IdentitySetupInitializer(keyGenerator, config, processingState));
   }
 }
