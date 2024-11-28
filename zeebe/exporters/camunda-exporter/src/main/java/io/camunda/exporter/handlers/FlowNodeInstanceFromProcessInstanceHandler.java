@@ -101,10 +101,15 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       // hierarchy:
       // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/
       // PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>/PI_<currentProcessInstanceKey>
-      final StringBuilder treeBuilder = new StringBuilder(Long.toString(processInstanceKey));
+      final StringBuilder treeBuilder = new StringBuilder();
       for (final List<Long> keysWithinOnePI : elementInstancePath) {
+
         for (final var elementInstanceKEy : keysWithinOnePI) {
-          treeBuilder.append('/').append(elementInstanceKEy);
+
+          if (!treeBuilder.isEmpty()) {
+            treeBuilder.append("/");
+          }
+          treeBuilder.append(elementInstanceKEy);
         }
       }
 
