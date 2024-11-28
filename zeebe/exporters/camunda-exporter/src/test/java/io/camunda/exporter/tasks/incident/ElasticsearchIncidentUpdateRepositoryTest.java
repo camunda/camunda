@@ -12,7 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
-import co.elastic.clients.elasticsearch.core.ScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -84,7 +83,7 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.eq(Object.class)))
         .thenReturn(CompletableFuture.completedFuture(searchResponse));
     Mockito.when(client.scroll(Mockito.any(Function.class), Mockito.any()))
-        .thenReturn(CompletableFuture.completedFuture(buildMinimalScrollResponse()));
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("failure")));
     Mockito.when(client.clearScroll(Mockito.any(ClearScrollRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(buildMinimalClearScrollResponse()));
 
@@ -93,18 +92,9 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
     // then
     final var inOrder = Mockito.inOrder(client);
-    assertThat(result).succeedsWithin(Duration.ofSeconds(5));
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
     inOrder.verify(client, Mockito.times(1)).clearScroll(Mockito.any(ClearScrollRequest.class));
     inOrder.verifyNoMoreInteractions();
-  }
-
-  private ScrollResponse<Object> buildMinimalScrollResponse() {
-    return new ScrollResponse.Builder<>()
-        .took(1)
-        .timedOut(false)
-        .hits(h -> h.hits(List.of()))
-        .shards(s -> s.failed(0).successful(0).total(0))
-        .build();
   }
 
   private ClearScrollResponse buildMinimalClearScrollResponse() {
