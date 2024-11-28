@@ -9,6 +9,7 @@ package io.camunda.service;
 
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.entities.UserEntity;
+import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.Authentication;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -52,6 +54,13 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   public UserServices withAuthentication(final Authentication authentication) {
     return new UserServices(
         brokerClient, securityContextProvider, userSearchClient, authentication, passwordEncoder);
+  }
+
+  public Optional<UserEntity> getUserByUsername(final String username) {
+    return search(SearchQueryBuilders.userSearchQuery().filter(f -> f.username(username)).build())
+        .items()
+        .stream()
+        .findFirst();
   }
 
   public CompletableFuture<UserRecord> createUser(final UserDTO request) {
