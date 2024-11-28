@@ -15,7 +15,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.msgpack.value.ArrayValue;
+import io.camunda.zeebe.msgpack.value.CompressedLongArrayValue;
 import io.camunda.zeebe.msgpack.value.IntegerValue;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
@@ -65,8 +66,8 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final LongProperty parentElementInstanceKeyProp =
       new LongProperty("parentElementInstanceKey", -1L);
 
-  private final ArrayProperty<ArrayValue<LongValue>> elementInstancePathProp =
-      new ArrayProperty<>("elementInstancePath", () -> new ArrayValue<>(LongValue::new));
+  private final ArrayProperty<CompressedLongArrayValue> elementInstancePathProp =
+      new ArrayProperty<>("elementInstancePath", CompressedLongArrayValue::new);
   private final ArrayProperty<LongValue> processDefinitionPathProp =
       new ArrayProperty<>("processDefinitionPath", LongValue::new);
   private final ArrayProperty<IntegerValue> callingElementPathProp =
@@ -192,7 +193,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     elementInstancePathProp.forEach(
         pe -> {
           final var pathEntry = new ArrayList<Long>();
-          pe.forEach(e -> pathEntry.add(e.getValue()));
+          Arrays.stream(pe.getValues()).forEach(pathEntry::add);
           elementInstancePath.add(pathEntry);
         });
     return elementInstancePath;
@@ -203,7 +204,12 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     elementInstancePath.forEach(
         pathEntry -> {
           final var entry = elementInstancePathProp.add();
-          pathEntry.forEach(element -> entry.add().setValue(element));
+
+          final long[] longs = new long[pathEntry.size()];
+          for (int i = 0; i < pathEntry.size(); i++) {
+            longs[i] = pathEntry.get(i);
+          }
+          entry.setValues(longs);
         });
     return this;
   }

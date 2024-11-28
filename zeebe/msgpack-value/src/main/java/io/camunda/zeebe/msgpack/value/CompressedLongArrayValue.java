@@ -84,7 +84,7 @@ public class CompressedLongArrayValue extends BaseValue {
     return values;
   }
 
-  void setValues(final long[] values) {
+  public void setValues(final long[] values) {
     this.values = values;
   }
 }
