@@ -15,23 +15,23 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import org.agrona.DirectBuffer;
 
-public class BrokerGroupMemberAddRequest extends BrokerExecuteCommand<GroupRecord> {
+public class BrokerGroupMemberRemoveRequest extends BrokerExecuteCommand<GroupRecord> {
 
   private final GroupRecord requestDto = new GroupRecord();
 
-  public BrokerGroupMemberAddRequest(final long groupKey) {
-    super(ValueType.GROUP, GroupIntent.ADD_ENTITY);
+  public BrokerGroupMemberRemoveRequest(final long groupKey) {
+    super(ValueType.GROUP, GroupIntent.REMOVE_ENTITY);
     request.setKey(groupKey);
     requestDto.setGroupKey(groupKey);
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerGroupMemberAddRequest setMemberKey(final Long memberKey) {
+  public BrokerGroupMemberRemoveRequest setMemberKey(final Long memberKey) {
     requestDto.setEntityKey(memberKey);
     return this;
   }
 
-  public BrokerGroupMemberAddRequest setMemberType(final EntityType memberType) {
+  public BrokerGroupMemberRemoveRequest setMemberType(final EntityType memberType) {
     requestDto.setEntityType(memberType);
     return this;
   }
