@@ -11,7 +11,7 @@ import graphql.annotations.annotationTypes.GraphQLField;
 import graphql.annotations.annotationTypes.GraphQLName;
 import graphql.annotations.annotationTypes.GraphQLNonNull;
 import graphql.annotations.annotationTypes.GraphQLType;
-import io.camunda.tasklist.entities.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.util.ArrayList;
 import java.util.List;
@@ -88,7 +88,10 @@ public class VariableDTO {
     variableDTO
         .setPreviewValue(variableEntity.getValue())
         .setIsValueTruncated(variableEntity.getIsPreview())
-        .setValue(variableEntity.getFullValue());
+        .setValue(
+            variableEntity.getIsPreview()
+                ? variableEntity.getFullValue()
+                : variableEntity.getValue());
     return variableDTO;
   }
 

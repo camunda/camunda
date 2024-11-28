@@ -24,8 +24,8 @@ import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.AbstractTemplateDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
@@ -95,7 +95,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Autowired private List<TemplateDescriptor> tasklistTemplateDescriptors;
 
   @Autowired(required = false)
-  private List<TasklistTemplateDescriptor> commonTemplateDescriptors;
+  private List<IndexTemplateDescriptor> commonTemplateDescriptors;
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -436,6 +436,11 @@ public class OpenSearchSchemaManager implements SchemaManager {
                               @Override
                               public String getVersion() {
                                 return t.getVersion();
+                              }
+
+                              @Override
+                              public String getFullQualifiedName() {
+                                return t.getFullQualifiedName();
                               }
                             })
                     .forEach(this::createTemplate));

@@ -41,7 +41,10 @@ import org.springframework.stereotype.Component;
 public class OpensearchVariableReader implements VariableReader {
 
   @Autowired private OperateProperties operateProperties;
-  @Autowired private VariableTemplate variableTemplate;
+
+  @Autowired
+  @Qualifier("operateVariableTemplate")
+  private VariableTemplate variableTemplate;
 
   @Autowired private OperationReader operationReader;
 

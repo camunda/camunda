@@ -12,7 +12,6 @@ import static java.util.stream.Collectors.toList;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
@@ -31,6 +30,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
@@ -105,7 +105,12 @@ public class VariableService {
                   currentOriginalVariables.get(draftVariable.getName());
               // Persist new draft variables based on the input if value `name` is the same as
               // original and `value` property is different
-              if (!variableEntity.getFullValue().equals(draftVariable.getValue())) {
+
+              final var fullValue =
+                  variableEntity.getIsPreview()
+                      ? variableEntity.getFullValue()
+                      : variableEntity.getValue();
+              if (!fullValue.equals(draftVariable.getValue())) {
                 toPersist.put(
                     draftVariable.getName(),
                     VariableService.createDraftVariableFrom(
@@ -350,7 +355,7 @@ public class VariableService {
         variableStore.getVariablesByFlowNodeInstanceIds(flowNodeInstanceIds, varNames, fieldNames);
 
     return variables.stream()
-        .collect(groupingBy(VariableEntity::getScopeFlowNodeId, getVariableMapCollector()));
+        .collect(groupingBy(v -> String.valueOf(v.getScopeKey()), getVariableMapCollector()));
   }
 
   @NotNull
@@ -660,7 +665,10 @@ public class VariableService {
         .setName(variableEntity.getName())
         .setValue(variableEntity.getValue())
         .setIsPreview(variableEntity.getIsPreview())
-        .setFullValue(variableEntity.getFullValue())
+        .setFullValue(
+            variableEntity.getIsPreview()
+                ? variableEntity.getFullValue()
+                : variableEntity.getValue())
         .setTenantId(variableEntity.getTenantId());
   }
 

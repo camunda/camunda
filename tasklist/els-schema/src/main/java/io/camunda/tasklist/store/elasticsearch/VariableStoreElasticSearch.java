@@ -7,11 +7,6 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.indices.VariableIndex.ID;
-import static io.camunda.tasklist.schema.indices.VariableIndex.NAME;
-import static io.camunda.tasklist.schema.indices.VariableIndex.PROCESS_INSTANCE_ID;
-import static io.camunda.tasklist.schema.indices.VariableIndex.SCOPE_FLOW_NODE_ID;
-import static io.camunda.tasklist.schema.indices.VariableIndex.VALUE;
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
 import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
@@ -19,6 +14,11 @@ import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.camunda.tasklist.util.ElasticsearchUtil.scroll;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.ID;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.NAME;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.SCOPE_KEY;
+import static io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate.VALUE;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.mapping;
 import static java.util.stream.Collectors.toList;
@@ -29,17 +29,17 @@ import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
-import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -88,7 +88,11 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
   @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
-  @Autowired private VariableIndex variableIndex;
+
+  @Autowired
+  @Qualifier("tasklistVariableTemplate")
+  private VariableTemplate variableIndex;
+
   @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -98,11 +102,10 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
       List<String> flowNodeInstanceIds, List<String> varNames, final Set<String> fieldNames) {
-    final TermsQueryBuilder flowNodeInstanceKeyQ =
-        termsQuery(SCOPE_FLOW_NODE_ID, flowNodeInstanceIds);
+    final TermsQueryBuilder flowNodeInstanceKeyQ = termsQuery(SCOPE_KEY, flowNodeInstanceIds);
     TermsQueryBuilder varNamesQ = null;
     if (isNotEmpty(varNames)) {
-      varNamesQ = termsQuery(VariableIndex.NAME, varNames);
+      varNamesQ = termsQuery(VariableTemplate.NAME, varNames);
     }
     final SearchSourceBuilder searchSourceBuilder =
         new SearchSourceBuilder()
@@ -110,7 +113,7 @@ public class VariableStoreElasticSearch implements VariableStore {
     applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
 
     final SearchRequest searchRequest =
-        new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
+        new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);
     try {
       return scroll(searchRequest, VariableEntity.class, objectMapper, esClient);
     } catch (IOException e) {
@@ -140,7 +143,7 @@ public class VariableStoreElasticSearch implements VariableStore {
             .collect(toList());
     TermsQueryBuilder varNamesQ = null;
     if (isNotEmpty(varNames)) {
-      varNamesQ = termsQuery(VariableIndex.NAME, varNames);
+      varNamesQ = termsQuery(VariableTemplate.NAME, varNames);
     }
 
     final SearchSourceBuilder searchSourceBuilder =
@@ -245,7 +248,7 @@ public class VariableStoreElasticSearch implements VariableStore {
         new SearchSourceBuilder().query(idsQuery().addIds(variableId));
     applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
     final SearchRequest request =
-        new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
+        new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);
     try {
       final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value == 1) {
@@ -298,10 +301,11 @@ public class VariableStoreElasticSearch implements VariableStore {
       SearchSourceBuilder searchSourceBuilder, final Set<String> fieldNames) {
     final String[] includesFields;
     if (isNotEmpty(fieldNames)) {
-      final Set<String> elsFieldNames = VariableIndex.getElsFieldsByGraphqlFields(fieldNames);
+      final Set<String> elsFieldNames =
+          VariableStore.getVariableTemplateElsFieldsByGraphqlFields(fieldNames);
       elsFieldNames.add(ID);
       elsFieldNames.add(NAME);
-      elsFieldNames.add(SCOPE_FLOW_NODE_ID);
+      elsFieldNames.add(SCOPE_KEY);
       includesFields = elsFieldNames.toArray(new String[elsFieldNames.size()]);
       searchSourceBuilder.fetchSource(includesFields, null);
     }
@@ -311,7 +315,8 @@ public class VariableStoreElasticSearch implements VariableStore {
       SearchSourceBuilder searchSourceBuilder, final Set<String> fieldNames) {
     final String[] includesFields;
     if (isNotEmpty(fieldNames)) {
-      final Set<String> elsFieldNames = VariableStore.getElsFieldsByGraphqlFields(fieldNames);
+      final Set<String> elsFieldNames =
+          VariableStore.getTaskVariableElsFieldsByGraphqlFields(fieldNames);
       elsFieldNames.add(SnapshotTaskVariableTemplate.ID);
       elsFieldNames.add(SnapshotTaskVariableTemplate.NAME);
       elsFieldNames.add(SnapshotTaskVariableTemplate.TASK_ID);
@@ -331,10 +336,10 @@ public class VariableStoreElasticSearch implements VariableStore {
       boolQuery.must(QueryBuilders.termQuery(VALUE, varValues.get(i)));
 
       final SearchSourceBuilder searchSourceBuilder =
-          new SearchSourceBuilder().query(boolQuery).fetchSource(PROCESS_INSTANCE_ID, null);
+          new SearchSourceBuilder().query(boolQuery).fetchSource(PROCESS_INSTANCE_KEY, null);
 
       final SearchRequest searchRequest =
-          new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
+          new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);
       searchRequest.scroll(new TimeValue(SCROLL_KEEP_ALIVE_MS));
 
       final Set<String> processInstanceIds = new HashSet<>();
@@ -345,7 +350,8 @@ public class VariableStoreElasticSearch implements VariableStore {
 
         List<String> scrollProcessIds =
             Arrays.stream(searchResponse.getHits().getHits())
-                .map(hit -> (String) hit.getSourceAsMap().get(PROCESS_INSTANCE_ID))
+                .map(hit -> hit.getSourceAsMap().get(PROCESS_INSTANCE_KEY))
+                .map(String::valueOf)
                 .collect(Collectors.toList());
 
         processInstanceIds.addAll(scrollProcessIds);
@@ -358,7 +364,8 @@ public class VariableStoreElasticSearch implements VariableStore {
           scrollId = searchResponse.getScrollId();
           scrollProcessIds =
               Arrays.stream(searchResponse.getHits().getHits())
-                  .map(hit -> (String) hit.getSourceAsMap().get(PROCESS_INSTANCE_ID))
+                  .map(hit -> hit.getSourceAsMap().get(PROCESS_INSTANCE_KEY))
+                  .map(String::valueOf)
                   .toList();
           processInstanceIds.addAll(scrollProcessIds);
         }
