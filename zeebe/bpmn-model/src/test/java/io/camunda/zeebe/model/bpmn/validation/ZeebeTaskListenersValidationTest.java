@@ -59,4 +59,21 @@ public class ZeebeTaskListenersValidationTest {
         process,
         expect(ZeebeTaskListener.class, "Attribute 'eventType' must be present and not empty"));
   }
+
+  @Test
+  @DisplayName("task listener with unsupported `eventType` property")
+  void testEventTypeNotSupported() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.readModelFromStream(
+            ReflectUtil.getResourceAsStream(
+                "io/camunda/zeebe/model/bpmn/validation/ZeebeTaskListenersValidationTest.testEventTypeNotSupported.bpmn"));
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeTaskListener.class,
+            "Task listener event type 'cancel' is not supported. Currently, only assignment, complete event types are supported."));
+  }
 }
