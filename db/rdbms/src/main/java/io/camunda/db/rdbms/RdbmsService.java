@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.read.service.FormReader;
 import io.camunda.db.rdbms.read.service.MappingReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
+import io.camunda.db.rdbms.read.service.RoleReader;
 import io.camunda.db.rdbms.read.service.TenantReader;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
@@ -32,8 +33,9 @@ public class RdbmsService {
   private final FlowNodeInstanceReader flowNodeInstanceReader;
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessInstanceReader processInstanceReader;
-  private final TenantReader tenantReader;
   private final VariableReader variableReader;
+  private final RoleReader roleReader;
+  private final TenantReader tenantReader;
   private final UserReader userReader;
   private final UserTaskReader userTaskReader;
   private final FormReader formReader;
@@ -47,8 +49,9 @@ public class RdbmsService {
       final FlowNodeInstanceReader flowNodeInstanceReader,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceReader processInstanceReader,
-      final TenantReader tenantReader,
       final VariableReader variableReader,
+      final RoleReader roleReader,
+      final TenantReader tenantReader,
       final UserReader userReader,
       final UserTaskReader userTaskReader,
       final FormReader formReader,
@@ -62,6 +65,7 @@ public class RdbmsService {
     this.processInstanceReader = processInstanceReader;
     this.tenantReader = tenantReader;
     this.variableReader = variableReader;
+    this.roleReader = roleReader;
     this.userReader = userReader;
     this.userTaskReader = userTaskReader;
     this.formReader = formReader;
@@ -98,6 +102,10 @@ public class RdbmsService {
 
   public VariableReader getVariableReader() {
     return variableReader;
+  }
+
+  public RoleReader getRoleReader() {
+    return roleReader;
   }
 
   public UserReader getUserReader() {
