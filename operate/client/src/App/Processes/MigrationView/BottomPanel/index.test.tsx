@@ -57,6 +57,7 @@ const {
   ErrorStartEvent,
   MultiInstanceSubProcess,
   MultiInstanceTask,
+  MessageStartEvent,
 } = elements;
 
 /**
@@ -101,9 +102,10 @@ describe('MigrationView/BottomPanel', () => {
     expect(screen.getByText(SignalStartEvent.name)).toBeInTheDocument();
     expect(screen.getByText(ErrorEventSubProcess.name)).toBeInTheDocument();
     expect(screen.getByText(ErrorStartEvent.name)).toBeInTheDocument();
+    expect(screen.getByText(MessageStartEvent.name)).toBeInTheDocument();
 
-    // expect table to have 1 header + 31 content rows
-    expect(screen.getAllByRole('row')).toHaveLength(32);
+    // expect table to have 1 header + 32 content rows
+    expect(screen.getAllByRole('row')).toHaveLength(33);
   });
 
   it.each([
@@ -290,6 +292,9 @@ describe('MigrationView/BottomPanel', () => {
     const comboboxMultiInstanceSubProcess = await screen.findByLabelText(
       new RegExp(`target flow node for ${MultiInstanceSubProcess.name}`, 'i'),
     );
+    const comboboxMessageStartEvent = await screen.findByLabelText(
+      new RegExp(`target flow node for ${MessageStartEvent.name}`, 'i'),
+    );
 
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
@@ -310,6 +315,7 @@ describe('MigrationView/BottomPanel', () => {
     expect(comboboxTimerStartEvent).toHaveValue(TimerStartEvent.id);
     expect(comboboxSignalStartEvent).toHaveValue(SignalStartEvent.id);
     expect(comboboxErrorStartEvent).toHaveValue(comboboxErrorStartEvent.id);
+    expect(comboboxMessageStartEvent).toHaveValue(comboboxMessageStartEvent.id);
 
     // Expect auto-mapping (same id, boundary event, same event type)
     expect(comboboxMessageInterrupting).toHaveValue(MessageInterrupting.id);
@@ -541,8 +547,8 @@ describe('MigrationView/BottomPanel', () => {
       }),
     ).toBeVisible();
 
-    // Expect all 31 rows to be visible (+1 header row)
-    expect(await screen.findAllByRole('row')).toHaveLength(32);
+    // Expect all 32 rows to be visible (+1 header row)
+    expect(await screen.findAllByRole('row')).toHaveLength(33);
 
     // Toggle on unmapped flow nodes
     await user.click(screen.getByLabelText(/show only not mapped/i));
@@ -648,6 +654,6 @@ describe('MigrationView/BottomPanel', () => {
     await user.click(screen.getByLabelText(/show only not mapped/i));
 
     // Expect all rows to be visible again
-    expect(await screen.findAllByRole('row')).toHaveLength(32);
+    expect(await screen.findAllByRole('row')).toHaveLength(33);
   });
 });

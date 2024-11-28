@@ -94,6 +94,7 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
         'bpmn:TimerEventDefinition',
         'bpmn:SignalEventDefinition',
         'bpmn:ErrorEventDefinition',
+        'bpmn:MessageEventDefinition',
       ],
     }) &&
     businessObject.$parent !== undefined &&
