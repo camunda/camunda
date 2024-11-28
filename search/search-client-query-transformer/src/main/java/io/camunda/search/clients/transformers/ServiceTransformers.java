@@ -232,7 +232,7 @@ public final class ServiceTransformers {
     mappers.put(MappingSort.class, new MappingFieldSortingTransformer());
 
     // filters -> search query
-    mappers.put(ProcessInstanceFilter.class, new ProcessInstanceFilterTransformer());
+    mappers.put(ProcessInstanceFilter.class, new ProcessInstanceFilterTransformer(mappers));
     mappers.put(UserTaskFilter.class, new UserTaskFilterTransformer(mappers));
     mappers.put(VariableValueFilter.class, new VariableValueFilterTransformer());
     mappers.put(DateValueFilter.class, new DateValueFilterTransformer());
