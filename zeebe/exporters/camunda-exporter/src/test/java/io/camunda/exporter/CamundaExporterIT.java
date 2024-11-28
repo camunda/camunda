@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -32,9 +33,12 @@ import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
+import io.camunda.webapps.schema.descriptors.ImportValueType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -56,6 +60,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.TestTemplate;
@@ -63,7 +68,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import org.testcontainers.containers.GenericContainer;
 
 /**
@@ -139,9 +143,8 @@ final class CamundaExporterIT {
     exporter.export(record2);
     // then
     verify(controllerSpy, never())
-        .updateLastExportedRecordPosition(Mockito.eq(record.getPosition()), Mockito.any());
-    verify(controllerSpy)
-        .updateLastExportedRecordPosition(Mockito.eq(record2.getPosition()), Mockito.any());
+        .updateLastExportedRecordPosition(eq(record.getPosition()), any());
+    verify(controllerSpy).updateLastExportedRecordPosition(eq(record2.getPosition()), any());
   }
 
   @ParameterizedTest
@@ -153,7 +156,7 @@ final class CamundaExporterIT {
     final var exporter = new CamundaExporter();
 
     final var context = getContextFromConfig(config);
-    final ExporterTestController controller = Mockito.spy(new ExporterTestController());
+    final ExporterTestController controller = spy(new ExporterTestController());
 
     exporter.configure(context);
     exporter.open(controller);
@@ -489,5 +492,125 @@ final class CamundaExporterIT {
     when(provider.getIndexTemplateDescriptors()).thenReturn(templateDescriptors);
 
     return provider;
+  }
+
+  @Nested
+  class ImportersCompletedTests {
+    private final ExporterTestController controller = spy(new ExporterTestController());
+    private final CamundaExporter camundaExporter = new CamundaExporter();
+    private final int partitionId = 1;
+
+    @BeforeEach
+    void setup() {
+      controller.resetScheduledTasks();
+    }
+
+    @TestTemplate
+    void shouldNotFlushIfImportersAreNotCompleted(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws IOException {
+      // given
+      final var context = spy(getContextFromConfig(config));
+      doReturn(partitionId).when(context).getPartitionId();
+      camundaExporter.configure(context);
+      camundaExporter.open(controller);
+
+      // when
+      final var importPositionIndex = importPositionIndex(config);
+
+      // adds a not complete position index document so exporter sees importing as not yet completed
+      final var decisionEntity =
+          new ImportPositionEntity()
+              .setPartitionId(partitionId)
+              .setAliasName(ImportValueType.DECISION.getAliasTemplate())
+              .setCompleted(false);
+
+      clientAdapter.index(
+          decisionEntity.getId(), importPositionIndex.getFullQualifiedName(), decisionEntity);
+
+      clientAdapter.refresh();
+
+      controller.runScheduledTasks(Duration.ofMinutes(1));
+
+      // then
+      final var record =
+          factory.generateRecord(
+              ValueType.AUTHORIZATION,
+              r -> r.withBrokerVersion("8.7.0").withTimestamp(System.currentTimeMillis()));
+
+      camundaExporter.export(record);
+
+      // then
+      assertThat(controller.getPosition()).isEqualTo(-1);
+      verify(controller, never()).updateLastExportedRecordPosition(eq(record.getPosition()), any());
+
+      final var authHandler =
+          getHandlers(config).stream()
+              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
+              .filter(handler -> handler.handlesRecord(record))
+              .findFirst()
+              .orElseThrow();
+      final var recordId = authHandler.generateIds(record).getFirst();
+
+      assertThat(
+              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
+          .isNull();
+    }
+
+    @TestTemplate
+    void shouldFlushIfImportersAreCompleted(
+        final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+        throws IOException {
+      // given
+      final var context = spy(getContextFromConfig(config));
+      doReturn(partitionId).when(context).getPartitionId();
+      camundaExporter.configure(context);
+      camundaExporter.open(controller);
+
+      final var importPositionIndex = importPositionIndex(config);
+
+      // mark all import position documents as completed which signals all record readers as
+      // completed
+      for (final var type : ImportValueType.values()) {
+        final var entity =
+            new ImportPositionEntity()
+                .setPartitionId(partitionId)
+                .setAliasName(type.getAliasTemplate())
+                .setCompleted(true);
+        clientAdapter.index(entity.getId(), importPositionIndex.getFullQualifiedName(), entity);
+      }
+
+      controller.runScheduledTasks(Duration.ofMinutes(1));
+
+      // when
+      final var record =
+          factory.generateRecord(
+              ValueType.AUTHORIZATION,
+              r -> r.withBrokerVersion("8.7.0").withTimestamp(System.currentTimeMillis()));
+
+      camundaExporter.export(record);
+
+      // then
+      assertThat(controller.getPosition()).isEqualTo(record.getPosition());
+      verify(controller, times(1))
+          .updateLastExportedRecordPosition(eq(record.getPosition()), any());
+
+      final var authHandler =
+          getHandlers(config).stream()
+              .filter(handler -> handler.getHandledValueType().equals(record.getValueType()))
+              .filter(handler -> handler.handlesRecord(record))
+              .findFirst()
+              .orElseThrow();
+      final var recordId = authHandler.generateIds(record).getFirst();
+
+      assertThat(
+              clientAdapter.get(recordId, authHandler.getIndexName(), authHandler.getEntityType()))
+          .isNotNull();
+    }
+
+    private ImportPositionIndex importPositionIndex(final ExporterConfiguration config) {
+      final var isElasticsearch = config.getConnect().getType().equals(ELASTICSEARCH.getType());
+      return new ImportPositionIndex(config.getIndex().getPrefix(), isElasticsearch);
+    }
   }
 }
