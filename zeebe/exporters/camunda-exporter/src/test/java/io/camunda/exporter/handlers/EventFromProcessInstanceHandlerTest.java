@@ -99,6 +99,7 @@ final class EventFromProcessInstanceHandlerTest {
   @Test
   void testUpdateEntity() {
     // given
+    final long position = 222;
     final int partitionId = 10;
     final int processInstanceKey = 123;
     final long recordKey = 456;
@@ -116,7 +117,8 @@ final class EventFromProcessInstanceHandlerTest {
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             r ->
-                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                r.withPosition(position)
+                    .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                     .withKey(recordKey)
                     .withPartitionId(partitionId)
                     .withValueType(ValueType.PROCESS_INSTANCE)
@@ -137,6 +139,7 @@ final class EventFromProcessInstanceHandlerTest {
     assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
     assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
+    assertThat(entity.getPosition()).isEqualTo(position);
   }
 
   @Test

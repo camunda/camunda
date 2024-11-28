@@ -206,6 +206,14 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
+  public BatchRequest deleteWithRouting(final String index, final String id, final String routing) {
+    LOGGER.debug(
+        "Add delete index request with routing {} for index {} and entity {} ", routing, index, id);
+    bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(index).id(id).routing(routing)));
+    return this;
+  }
+
+  @Override
   public void execute() throws PersistenceException {
     execute(false);
   }

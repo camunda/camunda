@@ -2782,37 +2782,37 @@ paths:
 
   /users/{userKey}:
     delete:
-        tags:
-            - User
-        operationId: deleteUser
-        summary: Delete user
-        description: |
-            Deletes a user.
-        parameters:
-            - name: userKey
-              in: path
-              required: true
-              description: The key of the user to delete.
+      tags:
+        - User
+      operationId: deleteUser
+      summary: Delete user
+      description: |
+        Deletes a user.
+      parameters:
+        - name: userKey
+          in: path
+          required: true
+          description: The key of the user to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The user was deleted successfully.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
               schema:
-                  type: integer
-                  format: int64
-        responses:
-            "204":
-              description: The user was deleted successfully.
-            "400":
-              description: The provided data is not valid.
-              content:
-                application/problem+json:
-                  schema:
-                    $ref: "#/components/schemas/ProblemDetail"
-            "404":
-              description: The user is not found.
-              content:
-                application/problem+json:
-                  schema:
-                    $ref: "#/components/schemas/ProblemDetail"
-            "500":
-              $ref: "#/components/responses/InternalServerError"
+                $ref: "#/components/schemas/ProblemDetail"
+        "404":
+          description: The user is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /incidents/search:
     post:
@@ -3173,7 +3173,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/UserTaskFilterRequest"
+          description: The user task search filters.
+          allOf:
+            - $ref: "#/components/schemas/UserTaskFilterRequest"
     UserTaskVariableSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -3186,6 +3188,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching user tasks.
           type: array
           items:
             $ref: "#/components/schemas/UserTaskItem"
@@ -3244,6 +3247,7 @@ components:
           format: int64
         variables:
           type: array
+          description: Variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
     UserTaskVariableFilterRequest:
@@ -3259,8 +3263,8 @@ components:
       type: object
       properties:
         userTaskKey:
+          description: The key of the user task.
           type: integer
-          description: The key for this user task.
           format: int64
         state:
           type: string
@@ -3271,8 +3275,8 @@ components:
             - CANCELED
             - FAILED
         assignee:
-          type: string
           description: The assignee of the user task.
+          type: string
         elementId:
           type: string
           description: The element ID of the user task.
@@ -3349,7 +3353,9 @@ components:
       type: object
       properties:
         filter:
-          $ref: "#/components/schemas/VariableFilterRequest"
+          description: The variable search filters.
+          allOf:
+            - $ref: "#/components/schemas/VariableFilterRequest"
     VariableFilterRequest:
       description: Variable filter request.
       type: object
@@ -3387,6 +3393,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching variables.
           type: array
           items:
             $ref: "#/components/schemas/VariableItem"
@@ -3427,9 +3434,11 @@ components:
       type: object
       properties:
         filter:
+          description: The process definition search filters.
           allOf:
             - $ref: "#/components/schemas/ProcessDefinitionFilterRequest"
     ProcessDefinitionFilterRequest:
+      description: Process definition search filter.
       type: object
       properties:
         processDefinitionKey:
@@ -3461,6 +3470,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching process definitions.
           type: array
           items:
             $ref: "#/components/schemas/ProcessDefinitionItem"
@@ -3497,6 +3507,7 @@ components:
       type: object
       properties:
         filter:
+          description: The process instance search filters.
           allOf:
             - $ref: "#/components/schemas/ProcessInstanceFilterRequest"
     AdvancedIntegerFilter:
@@ -3782,6 +3793,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching process instances.
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceItem"
@@ -3862,9 +3874,11 @@ components:
       type: object
       properties:
         filter:
+          description: The flow node instance search filters.
           allOf:
             - $ref: "#/components/schemas/FlowNodeInstanceFilterRequest"
     FlowNodeInstanceFilterRequest:
+      description: Flow node instance filter.
       type: object
       properties:
         flowNodeInstanceKey:
@@ -3943,6 +3957,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching flow node instances.
           type: array
           items:
             $ref: "#/components/schemas/FlowNodeInstanceItem"
@@ -4030,9 +4045,11 @@ components:
       type: object
       properties:
         filter:
+          description: The decision definition search filters.
           allOf:
             - $ref: "#/components/schemas/DecisionDefinitionFilterRequest"
     DecisionDefinitionFilterRequest:
+      description: Decision definition search filter.
       type: object
       properties:
         decisionDefinitionKey:
@@ -4065,9 +4082,11 @@ components:
       type: object
       properties:
         filter:
+          description: The incident search filters.
           allOf:
             - $ref: "#/components/schemas/IncidentFilterRequest"
     IncidentFilterRequest:
+      description: Incident search filter.
       type: object
       properties:
         incidentKey:
@@ -4139,6 +4158,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching incidents.
           type: array
           items:
             $ref: "#/components/schemas/IncidentItem"
@@ -4209,55 +4229,13 @@ components:
         tenantId:
           description: The tenant ID of the incident.
           type: string
-    OperationItem:
-      description: " Operation"
-      type: object
-      properties:
-        id:
-          type: string
-        batchOperationId:
-          type: string
-        type:
-          type: string
-          enum:
-            - RESOLVE_INCIDENT
-            - CANCEL_PROCESS_INSTANCE
-            - DELETE_PROCESS_INSTANCE
-            - ADD_VARIABLE
-            - UPDATE_VARIABLE
-            - MODIFY_PROCESS_INSTANCE
-            - DELETE_DECISION_DEFINITION
-            - DELETE_PROCESS_DEFINITION
-            - MIGRATE_PROCESS_INSTANCE
-        state:
-          type: string
-          enum:
-            - SCHEDULED
-            - LOCKED
-            - SENT
-            - FAILED
-            - COMPLETED
-        errorMessage:
-          type: string
-        completedDate:
-          type: string
-          format: date-time
-    ProcessInstanceReferenceItem:
-      description: "Process instance reference description"
-      type: object
-      properties:
-        instanceId:
-          type: string
-        processDefinitionId:
-          type: string
-        processDefinitionName:
-          type: string
     DecisionDefinitionSearchQueryResponse:
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
       type: object
       properties:
         items:
+          description: The matching decision definitions.
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionItem"
@@ -4370,9 +4348,11 @@ components:
       type: object
       properties:
         filter:
+          description: The authorization search filters.
           allOf:
             - $ref: "#/components/schemas/AuthorizationFilterRequest"
     AuthorizationFilterRequest:
+      description: Authorization search filter.
       type: object
       properties:
         ownerType:
@@ -4412,6 +4392,7 @@ components:
         - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
         items:
+          description: The matching authorizations.
           type: array
           items:
             $ref: "#/components/schemas/AuthorizationResponse"
@@ -4419,12 +4400,16 @@ components:
       type: "object"
       properties:
         password:
+          description: The password of the user.
           type: "string"
         username:
+          description: The username of the user.
           type: "string"
         name:
+          description: The name of the user.
           type: "string"
         email:
+          description: The email of the user.
           type: "string"
     UserCreateResponse:
       type: "object"
@@ -4439,31 +4424,41 @@ components:
       type: object
       properties:
         filter:
+          description: The user search filters.
           allOf:
             - $ref: "#/components/schemas/UserFilterRequest"
     UserFilterRequest:
+      description: User search filter.
       type: object
       properties:
         username:
+          description: The username of the user.
           type: "string"
         name:
+          description: The name of the user.
           type: "string"
         email:
+          description: The email of the user.
           type: "string"
     UserResponse:
       type: "object"
       properties:
         id:
+          description: The ID of the user.
           type: "integer"
           format: "int64"
         key:
+          description: The key of the user.
           type: "integer"
           format: "int64"
         username:
+          description: The username of the user.
           type: "string"
         name:
+          description: The name of the user.
           type: "string"
         email:
+          description: The email of the user.
           type: "string"
     UserSearchResponse:
       type: object
@@ -4471,6 +4466,7 @@ components:
         - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
         items:
+          description: The matching users.
           type: array
           items:
             $ref: "#/components/schemas/UserResponse"
@@ -4510,10 +4506,13 @@ components:
       type: object
       properties:
         changeset:
-          $ref: "#/components/schemas/RoleChangeset"
+          description: The set of changed role attributes.
+          allOf:
+            - $ref: "#/components/schemas/RoleChangeset"
       required:
         - changeset
     RoleChangeset:
+      description: A set of changed role attributes.
       type: object
       properties:
         name:
@@ -4548,6 +4547,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching roles.
           type: array
           items:
             $ref: "#/components/schemas/RoleItem"
@@ -4832,6 +4832,7 @@ components:
       type: object
       properties:
         jobs:
+          description: The activated jobs.
           type: array
           items:
             $ref: "#/components/schemas/ActivatedJob"
@@ -5028,11 +5029,13 @@ components:
       type: object
       properties:
         sort:
+          description: Sort field criteria.
           type: array
           items:
             allOf:
               - $ref: "#/components/schemas/SearchQuerySortRequest"
         page:
+          description: Pagination criteria.
           allOf:
             - $ref: "#/components/schemas/SearchQueryPageRequest"
           type: object
@@ -5040,16 +5043,20 @@ components:
       type: object
       properties:
         from:
+          description: The index of items to start searching from.
           type: integer
           format: int32
         limit:
+          description: The maximum number of items to return in one request.
           type: integer
           format: int32
         searchAfter:
+          description: Items to search after. Correlates to the `lastSortValues` property of a previous search response.
           type: array
           items:
             type: object
         searchBefore:
+          description: Items to search before. Correlates to the `firstSortValues` property of a previous search response.
           type: array
           items:
             type: object
@@ -5057,8 +5064,10 @@ components:
       type: object
       properties:
         field:
+          description: The field to sort by.
           type: string
         order:
+          description: The order in which to sort the field.
           type: string
           default: asc
       required:
@@ -5067,49 +5076,38 @@ components:
       type: object
       properties:
         page:
+          description: Pagination information about the search results.
           allOf:
             - $ref: "#/components/schemas/SearchQueryPageResponse"
-          type: object
     SearchQueryPageResponse:
+      description: Pagination information about the search results.
       type: object
       properties:
         totalItems:
+          description: Total items matching the criteria.
           type: integer
           format: int64
         firstSortValues:
+          description: The sort values of the first item in the result set. Use this in the `searchBefore` field of an ensuing request.
           type: array
           items:
             type: object
         lastSortValues:
+          description: The sort values of the last item in the result set. Use this in the `searchAfter` field of an ensuing request.
           type: array
           items:
             type: object
-    VariableValueFilterRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        eq:
-          type: object
-        neq:
-          type: object
-        gt:
-          type: object
-        gte:
-          type: object
-        lt:
-          type: object
-        lte:
-          type: object
     DecisionRequirementsSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
       type: object
       properties:
         filter:
+          description: The decision definition search filters.
           allOf:
             - $ref: "#/components/schemas/DecisionRequirementsFilterRequest"
     DecisionRequirementsFilterRequest:
+      description: Decision requirements search filter.
       type: object
       properties:
         decisionRequirementsKey:
@@ -5135,6 +5133,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching decision requirements.
           type: array
           items:
             $ref: "#/components/schemas/DecisionRequirementsItem"
@@ -5225,12 +5224,13 @@ components:
           type: integer
           format: int64
         evaluatedDecisions:
+          description: Decisions that were evaluated within the requested decision evaluation.
           type: array
           items:
             $ref: "#/components/schemas/EvaluatedDecisionItem"
     EvaluatedDecisionItem:
       type: object
-      description: List of decisions that were evaluated within the requested decision evaluation.
+      description: A decision that was evaluated.
       properties:
         decisionDefinitionKey:
           description: The unique key identifying the decision which was evaluate.
@@ -5257,16 +5257,18 @@ components:
           description: The tenant ID of the evaluated decision.
           type: string
         matchedRules:
+          description: The decision rules that matched within this decision evaluation.
           type: array
           items:
             $ref: "#/components/schemas/MatchedDecisionRuleItem"
         evaluatedInputs:
+          description: The decision inputs that were evaluated within this decision evaluation.
           type: array
           items:
             $ref: "#/components/schemas/EvaluatedDecisionInputItem"
     MatchedDecisionRuleItem:
       type: object
-      description: The decision rules that matched within this decision evaluation.
+      description: A decision rule that matched within this decision evaluation.
       properties:
         ruleId:
           description: The ID of the matched rule.
@@ -5276,12 +5278,13 @@ components:
           type: integer
           format: int32
         evaluatedOutputs:
+          description: The evaluated decision outputs.
           type: array
           items:
             $ref: "#/components/schemas/EvaluatedDecisionOutputItem"
     EvaluatedDecisionInputItem:
       type: object
-      description: The decision inputs that were evaluated within this decision evaluation.
+      description: A decision input that was evaluated within this decision evaluation.
       properties:
         inputId:
           description: The ID of the evaluated decision input.
@@ -5311,9 +5314,11 @@ components:
       type: object
       properties:
         filter:
+          description: The decision instance search filters.
           allOf:
             - $ref: "#/components/schemas/DecisionInstanceFilterRequest"
     DecisionInstanceFilterRequest:
+      description: Decision instance search filter.
       type: object
       properties:
         decisionInstanceKey:
@@ -5366,6 +5371,7 @@ components:
       type: object
       properties:
         items:
+          description: The matching decision instances.
           type: array
           items:
             $ref: "#/components/schemas/DecisionInstanceItem"
@@ -5552,6 +5558,7 @@ components:
         metadata:
           $ref: "#/components/schemas/DocumentMetadata"
     DocumentMetadata:
+      description: Information about the document.
       type: object
       properties:
         contentType:
@@ -5600,10 +5607,12 @@ components:
           format: int64
           description: The unique key identifying the deployment.
         deployments:
+          description: Items deployed by the request.
           type: array
           items:
             $ref: "#/components/schemas/DeploymentMetadata"
         tenantId:
+          description: The tenant ID associated with the deployment.
           type: string
     DeploymentMetadata:
       type: object
@@ -5617,6 +5626,7 @@ components:
         form:
           $ref: "#/components/schemas/DeploymentForm"
     DeploymentProcess:
+      description: A deployed process.
       type: object
       properties:
         processDefinitionId:
@@ -5639,6 +5649,7 @@ components:
           type: string
           description: The tenant ID of the deployed process.
     DeploymentDecision:
+      description: A deployed decision.
       type: object
       properties:
         decisionDefinitionId:
@@ -5671,6 +5682,7 @@ components:
           description: |
             The assigned key of the decision requirements graph that this decision is part of.
     DeploymentDecisionRequirements:
+      description: Deployed decision requirements.
       type: object
       properties:
         decisionRequirementsId:
@@ -5696,6 +5708,7 @@ components:
           type: string
           description: The resource name from which this decision requirements was parsed.
     DeploymentForm:
+      description: A deployed form.
       type: object
       properties:
         formId:
@@ -5832,6 +5845,7 @@ components:
           type: integer
           format: int64
         mappingInstructions:
+          description: Element mappings from the source process instance to the target process instance.
           type: array
           items:
             $ref: "#/components/schemas/MigrateProcessInstanceMappingInstruction"
@@ -5863,10 +5877,12 @@ components:
       type: object
       properties:
         activateInstructions:
+          description: Instructions describing which elements should be activated in which scopes and which variables should be created.
           type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceActivateInstruction"
         terminateInstructions:
+          description: Instructions describing which elements should be terminated.
           type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceTerminateInstruction"
@@ -5880,7 +5896,7 @@ components:
     ModifyProcessInstanceActivateInstruction:
       type: object
       description: |
-        Instructions describing which elements should be activated in which scopes and which variables should be created.
+        Instructions describing an element that should be activated.
       properties:
         elementId:
           description: The ID of the element that should be activated.
@@ -5894,6 +5910,7 @@ components:
           format: int64
           default: -1
         variableInstructions:
+          description: Instructions describing which variables should be created.
           type: array
           items:
             $ref: "#/components/schemas/ModifyProcessInstanceVariableInstruction"

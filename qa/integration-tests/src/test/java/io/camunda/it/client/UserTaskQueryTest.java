@@ -351,6 +351,12 @@ class UserTaskQueryTest {
         .isLessThan(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
         .isLessThan(result.items().get(2).getCreationDate());
+
+    // Assert First and Last Sort Value matches the first and last item
+    assertThat(
+        result.page().firstSortValues().get(0).equals(result.items().get(0).getCreationDate()));
+    assertThat(
+        result.page().lastSortValues().get(0).equals(result.items().get(6).getUserTaskKey()));
   }
 
   @Test

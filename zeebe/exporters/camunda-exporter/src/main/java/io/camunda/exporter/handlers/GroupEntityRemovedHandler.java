@@ -17,11 +17,11 @@ import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import java.util.List;
 
-public class GroupDeletedHandler implements ExportHandler<GroupEntity, GroupRecordValue> {
+public class GroupEntityRemovedHandler implements ExportHandler<GroupEntity, GroupRecordValue> {
 
   private final String indexName;
 
-  public GroupDeletedHandler(final String indexName) {
+  public GroupEntityRemovedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -38,12 +38,13 @@ public class GroupDeletedHandler implements ExportHandler<GroupEntity, GroupReco
   @Override
   public boolean handlesRecord(final Record<GroupRecordValue> record) {
     return getHandledValueType().equals(record.getValueType())
-        && GroupIntent.DELETED.equals(record.getIntent());
+        && GroupIntent.ENTITY_REMOVED.equals(record.getIntent());
   }
 
   @Override
   public List<String> generateIds(final Record<GroupRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    final var groupRecord = record.getValue();
+    return List.of(GroupEntity.getChildKey(groupRecord.getGroupKey(), groupRecord.getEntityKey()));
   }
 
   @Override
@@ -54,14 +55,15 @@ public class GroupDeletedHandler implements ExportHandler<GroupEntity, GroupReco
   @Override
   public void updateEntity(final Record<GroupRecordValue> record, final GroupEntity entity) {
     final GroupRecordValue value = record.getValue();
-    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createParent();
-    entity.setGroupKey(value.getGroupKey()).setName(value.getName()).setJoin(joinRelation);
+    final var joinRelation = GroupIndex.JOIN_RELATION_FACTORY.createChild(value.getGroupKey());
+    entity.setMemberKey(value.getEntityKey()).setJoin(joinRelation);
   }
 
   @Override
   public void flush(final GroupEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.delete(indexName, entity.getId());
+    batchRequest.deleteWithRouting(
+        indexName, entity.getId(), String.valueOf(entity.getJoin().parent()));
   }
 
   @Override

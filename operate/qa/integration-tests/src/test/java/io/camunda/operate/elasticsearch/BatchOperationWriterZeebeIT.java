@@ -318,6 +318,7 @@ public class BatchOperationWriterZeebeIT extends OperateZeebeAbstractIT {
                     String.valueOf(processInstanceKey1), String.valueOf(processInstanceKey2)));
 
     // when
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.getProcessesWithPermission(any()))
         .thenReturn(PermissionsService.ResourcesAllowed.all());
     final ListViewQueryDto query = createGetAllProcessInstancesQuery();

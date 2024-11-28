@@ -829,23 +829,6 @@ public final class SearchQueryRequestMapper {
     return null;
   }
 
-  private static VariableValueFilter toVariableValueFilter(
-      final VariableValueFilterRequest filter) {
-    return Optional.ofNullable(filter)
-        .map(
-            f ->
-                FilterBuilders.variableValue()
-                    .name(f.getName())
-                    .eq(f.getEq())
-                    .neq(f.getNeq())
-                    .gt(f.getGt())
-                    .gte(f.getGte())
-                    .lt(f.getLt())
-                    .lte(f.getLte())
-                    .build())
-        .orElse(null);
-  }
-
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
       final SearchQueryPageRequest requestedPage) {
     if (requestedPage == null) {

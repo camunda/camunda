@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.handlers.EventFromIncidentHandler.ID_PATTERN;
+import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
 import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.INCIDENT_ERROR_MSG;
 import static io.camunda.webapps.schema.descriptors.operate.template.EventTemplate.INCIDENT_ERROR_TYPE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -101,6 +103,7 @@ final class EventFromIncidentHandlerTest {
   @Test
   void testUpdateEntity() {
     // given
+    final long position = 222;
     final long recordKey = 789;
     final int partitionNumber = 10;
     final int processInstanceKey = 123;
@@ -122,7 +125,8 @@ final class EventFromIncidentHandlerTest {
         factory.generateRecord(
             ValueType.INCIDENT,
             r ->
-                r.withIntent(IncidentIntent.CREATED)
+                r.withPosition(position)
+                    .withIntent(IncidentIntent.CREATED)
                     .withKey(recordKey)
                     .withPartitionId(partitionNumber)
                     .withValueType(ValueType.INCIDENT)
@@ -145,6 +149,9 @@ final class EventFromIncidentHandlerTest {
     assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getMetadata().getIncidentErrorMessage()).isEqualTo(errorMessage);
+    assertThat(entity.getPositionIncident()).isEqualTo(position);
+    assertThat(entity.getDateTime())
+        .isEqualTo(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
   }
 
   @Test
