@@ -12,6 +12,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "camunda.migration.identity")
 public class IdentityMigrationProperties {
   private ZeebeProperties zeebe;
+  private ManagementIdentityProperties managementIdentity;
+  private String organizationId;
 
   public ZeebeProperties getZeebe() {
     return zeebe;
@@ -19,5 +21,21 @@ public class IdentityMigrationProperties {
 
   public void setZeebe(final ZeebeProperties zeebe) {
     this.zeebe = zeebe;
+  }
+
+  public ManagementIdentityProperties getManagementIdentity() {
+    return managementIdentity;
+  }
+
+  public void setManagementIdentity(final ManagementIdentityProperties managementIdentity) {
+    this.managementIdentity = managementIdentity;
+  }
+
+  public String getOrganizationId() {
+    return organizationId;
+  }
+
+  public void setOrganizationId(final String organizationId) {
+    this.organizationId = organizationId;
   }
 }

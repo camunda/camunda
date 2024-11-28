@@ -31,12 +31,12 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class TenantMigrationHandlerTest {
-  TenantMigrationHandler migrationHandler;
-  @Mock private ManagementIdentityClient managementIdentityProxy;
+  @Mock private ManagementIdentityClient managementIdentityClient;
   @Mock private ZeebeClient zeebeClient;
   @Mock private CreateTenantCommandStep1 createTenantCommandStep1;
   private final ManagementIdentityTransformer managementIdentityTransformer =
       new ManagementIdentityTransformer();
+  private TenantMigrationHandler migrationHandler;
 
   @BeforeEach
   void setUp() throws Exception {
@@ -46,7 +46,7 @@ public class TenantMigrationHandlerTest {
     when(createTenantCommandStep1.name(any())).thenReturn(createTenantCommandStep1);
     migrationHandler =
         new TenantMigrationHandler(
-            managementIdentityProxy, managementIdentityTransformer, zeebeClient);
+            managementIdentityClient, managementIdentityTransformer, zeebeClient);
   }
 
   @AfterEach
@@ -60,7 +60,7 @@ public class TenantMigrationHandlerTest {
         new ZeebeClientFutureImpl<>();
     future.complete(new CreateTenantResponseImpl());
     when(createTenantCommandStep1.send()).thenReturn(future);
-    when(managementIdentityProxy.fetchTenants(any(), anyInt()))
+    when(managementIdentityClient.fetchTenants(any(), anyInt()))
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
         .thenReturn(List.of());
 
@@ -68,7 +68,7 @@ public class TenantMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(managementIdentityProxy, times(2)).fetchTenants(any(), anyInt());
+    verify(managementIdentityClient, times(2)).fetchTenants(any(), anyInt());
     verify(createTenantCommandStep1, times(2)).send();
   }
 
@@ -80,7 +80,7 @@ public class TenantMigrationHandlerTest {
     when(createTenantCommandStep1.send()).thenReturn(future);
 
     // given
-    when(managementIdentityProxy.fetchTenants(any(), anyInt()))
+    when(managementIdentityClient.fetchTenants(any(), anyInt()))
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
         .thenReturn(List.of());
 
@@ -88,7 +88,7 @@ public class TenantMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(managementIdentityProxy, times(2)).fetchTenants(any(), anyInt());
+    verify(managementIdentityClient, times(2)).fetchTenants(any(), anyInt());
     verify(createTenantCommandStep1, times(2)).send();
   }
 
@@ -99,7 +99,7 @@ public class TenantMigrationHandlerTest {
         new ZeebeClientFutureImpl<>();
     future.completeExceptionally(new ProblemException(0, "runtime exception!", null));
     when(createTenantCommandStep1.send()).thenReturn(future);
-    when(managementIdentityProxy.fetchTenants(any(), anyInt()))
+    when(managementIdentityClient.fetchTenants(any(), anyInt()))
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
         .thenReturn(List.of());
 
@@ -107,7 +107,7 @@ public class TenantMigrationHandlerTest {
     Assertions.assertThrows(Exception.class, () -> migrationHandler.migrate());
 
     // then
-    verify(managementIdentityProxy, times(1)).fetchTenants(any(), anyInt());
+    verify(managementIdentityClient, times(1)).fetchTenants(any(), anyInt());
     verify(createTenantCommandStep1, times(1)).send();
   }
 }

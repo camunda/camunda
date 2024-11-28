@@ -16,15 +16,17 @@ import java.util.List;
 import java.util.Objects;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-@Component
 public class ManagementIdentityClient {
 
-  private static final String MIGRATION_MARK_STATUS_ENDPOINT = "/api/migrations";
-  private static final String MIGRATION_TENANTS_ENDPOINT = "/api/migrations/tenants";
-  private final RestTemplate restTemplate = new RestTemplate();
+  private static final String MIGRATION_MARK_STATUS_ENDPOINT = "/api/migration";
+  private static final String MIGRATION_TENANTS_ENDPOINT = "/api/migration/tenant";
+  private final RestTemplate restTemplate;
+
+  public ManagementIdentityClient(final RestTemplate restTemplate) {
+    this.restTemplate = restTemplate;
+  }
 
   public List<UserResourceAuthorization> fetchUserResourceAuthorizations(
       final UserResourceAuthorization lastRecord, final int pageSize) {
