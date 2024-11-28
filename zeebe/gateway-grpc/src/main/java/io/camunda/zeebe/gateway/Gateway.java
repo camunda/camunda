@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
@@ -394,6 +395,7 @@ public final class Gateway implements CloseableSilently {
       } else {
         interceptors.add(new IdentityInterceptor(identityCfg, gatewayCfg.getMultiTenancy()));
       }
+      interceptors.add(new AuthenticationInterceptor());
     }
 
     return ServerInterceptors.intercept(service, interceptors);
