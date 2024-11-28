@@ -43,8 +43,6 @@ import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -568,70 +566,6 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     assertThat(decisionEntities.get(0).getEvaluatedOutputs()).hasSize(1);
     assertThat(decisionEntities.get(0).getEvaluatedOutputs().get(0).getValue())
         .contains(bigJSONVariablePayload);
-  }
-
-  @Test
-  public void testDecisionInstanceLiteralExpressionImported() throws Exception {
-    // given
-    final String bpmnProcessId = "process";
-    final String demoDecisionId = "literalExpression";
-    final String decisionName = "Convert amount to string";
-
-    final String elementId = "task";
-    final BpmnModelInstance instance =
-        Bpmn.createExecutableProcess(bpmnProcessId)
-            .startEvent()
-            .businessRuleTask(
-                elementId,
-                task -> task.zeebeCalledDecisionId(demoDecisionId).zeebeResultVariable("amountStr"))
-            .done();
-
-    tester
-        .deployProcess(instance, "test.bpmn")
-        .deployDecision("literalExpression.dmn")
-        .waitUntil()
-        .processIsDeployed()
-        .and()
-        .decisionsAreDeployed(1)
-        // when
-        .startProcessInstance(bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}")
-        .waitUntil()
-        .decisionInstancesAreCreated(1);
-
-    // then
-    final List<DecisionInstanceEntity> decisionEntities =
-        testSearchRepository.searchAll(
-            decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
-
-    assertThat(decisionEntities).hasSize(1);
-    final DecisionInstanceEntity entity = decisionEntities.get(0);
-    assertThat(entity.getId()).isNotNull();
-    assertThat(entity.getKey()).isNotNull();
-    assertThat(entity.getExecutionIndex()).isNotNull();
-    assertThat(entity.getId())
-        .isEqualTo(String.format("%s-%s", entity.getKey(), entity.getExecutionIndex()));
-    assertThat(entity.getDecisionId()).isEqualTo(demoDecisionId);
-    assertThat(entity.getDecisionName()).isEqualTo(decisionName);
-    assertThat(entity.getDecisionVersion()).isEqualTo(1);
-    assertThat(entity.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
-    assertThat(entity.getDecisionDefinitionId()).isNotNull();
-    assertThat(entity.getDecisionRequirementsId()).isNotNull();
-    assertThat(entity.getDecisionRequirementsKey()).isNotNull();
-    assertThat(entity.getElementId()).isEqualTo(elementId);
-    assertThat(entity.getElementInstanceKey()).isNotNull();
-    assertThat(entity.getEvaluationFailure()).isNull();
-    assertThat(entity.getEvaluationDate()).isNotNull();
-    assertThat(entity.getPosition()).isNotNull();
-    assertThat(entity.getProcessDefinitionKey()).isNotNull();
-    assertThat(entity.getProcessInstanceKey()).isNotNull();
-    assertThat(entity.getBpmnProcessId()).isNotNull();
-    assertThat(entity.getResult()).isNotEmpty();
-    assertThat(entity.getEvaluatedOutputs()).isEmpty();
-    assertThat(entity.getEvaluatedInputs()).isEmpty();
-    assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
-    assertThat(entity.getDecisionType()).isEqualTo(DecisionType.LITERAL_EXPRESSION);
-    assertThat(entity.getRootDecisionName()).isEqualTo(decisionName);
-    assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
   }
 
   private void assertStartActivityCompleted(final FlowNodeInstanceEntity activity) {

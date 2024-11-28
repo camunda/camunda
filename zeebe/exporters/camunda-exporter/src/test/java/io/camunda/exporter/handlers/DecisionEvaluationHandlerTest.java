@@ -33,6 +33,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class DecisionEvaluationHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -112,14 +114,17 @@ public class DecisionEvaluationHandlerTest {
     verify(mockRequest, times(1)).add(indexName, inputEntity);
   }
 
-  @Test
-  void shouldUpdateEntityFromRecord() {
+  @ParameterizedTest
+  @EnumSource(
+      value = DecisionType.class,
+      names = {"DECISION_TABLE", "LITERAL_EXPRESSION"})
+  void shouldUpdateEntityFromRecord(final DecisionType decisionType) {
     // given
     final long recordKey = 123L;
     final ImmutableEvaluatedDecisionValue evaluatedDecision =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
-            .withDecisionType(DecisionType.DECISION_TABLE.name())
+            .withDecisionType(decisionType.name())
             .withMatchedRules(
                 List.of(
                     ImmutableMatchedRuleValue.builder()
@@ -180,8 +185,8 @@ public class DecisionEvaluationHandlerTest {
     assertThat(decisionInstanceEntity.getDecisionId()).isEqualTo(evaluatedDecision.getDecisionId());
     assertThat(decisionInstanceEntity.getDecisionDefinitionId())
         .isEqualTo(String.valueOf(evaluatedDecision.getDecisionKey()));
-    assertThat(decisionInstanceEntity.getDecisionType().name())
-        .isEqualTo(evaluatedDecision.getDecisionType());
+    assertThat(decisionInstanceEntity.getDecisionType())
+        .isEqualTo(DecisionType.fromZeebeDecisionType(decisionType.name()));
     assertThat(decisionInstanceEntity.getDecisionName())
         .isEqualTo(evaluatedDecision.getDecisionName());
     assertThat(decisionInstanceEntity.getDecisionVersion())
