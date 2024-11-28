@@ -15,49 +15,50 @@ import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.impl.record.value.deployment.RpaRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PersistedRpa extends UnpackedObject implements DbValue {
-  private final StringProperty rpaIdProp = new StringProperty("rpaId");
+public class PersistedResource extends UnpackedObject implements DbValue {
+  private final StringProperty resourceIdProp = new StringProperty("resourceId");
   private final IntegerProperty versionProp = new IntegerProperty("version");
-  private final LongProperty rpaKeyProp = new LongProperty("rpaKey");
+  private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final StringProperty robotScriptProp = new StringProperty("robotScript", "");
+  private final StringProperty resourceProp = new StringProperty("resourceProp", "");
 
-  public PersistedRpa() {
+  public PersistedResource() {
     super(8);
-    declareProperty(rpaIdProp)
+    declareProperty(resourceIdProp)
         .declareProperty(versionProp)
-        .declareProperty(rpaKeyProp)
+        .declareProperty(resourceKeyProp)
         .declareProperty(checksumProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
         .declareProperty(versionTagProp)
-        .declareProperty(robotScriptProp);
+        .declareProperty(resourceProp);
   }
-  public PersistedRpa copy() {
-    final var copy = new PersistedRpa();
-    copy.rpaIdProp.setValue(BufferUtil.cloneBuffer(getFormId()));
+
+  public PersistedResource copy() {
+    final var copy = new PersistedResource();
+    copy.resourceIdProp.setValue(BufferUtil.cloneBuffer(getResourceId()));
     copy.versionProp.setValue(getVersion());
-    copy.rpaKeyProp.setValue(getFormKey());
+    copy.resourceKeyProp.setValue(getFormKey());
     copy.checksumProp.setValue(BufferUtil.cloneBuffer(getChecksum()));
     copy.tenantIdProp.setValue(getTenantId());
     copy.deploymentKeyProp.setValue(getDeploymentKey());
     copy.versionTagProp.setValue(getVersionTag());
-    copy.robotScriptProp.setValue(getRobotScript());
+    copy.resourceProp.setValue(getRobotScript());
     return copy;
   }
 
-  public DirectBuffer getFormId() {
-    return rpaIdProp.getValue();
+  public DirectBuffer getResourceId() {
+    return resourceIdProp.getValue();
   }
 
   public int getVersion() {
@@ -69,7 +70,7 @@ public class PersistedRpa extends UnpackedObject implements DbValue {
   }
 
   public long getFormKey() {
-    return rpaKeyProp.getValue();
+    return resourceKeyProp.getValue();
   }
 
   public DirectBuffer getChecksum() {
@@ -84,18 +85,18 @@ public class PersistedRpa extends UnpackedObject implements DbValue {
     return deploymentKeyProp.getValue();
   }
 
-  public String getRobotScript(){
-    return bufferAsString(robotScriptProp.getValue());
+  public String getRobotScript() {
+    return bufferAsString(resourceProp.getValue());
   }
 
-  public void wrap(final RpaRecord record) {
-    rpaIdProp.setValue(record.getRpaId());
+  public void wrap(final ResourceRecord record) {
+    resourceIdProp.setValue(record.getResourceId());
     versionProp.setValue(record.getVersion());
-    rpaKeyProp.setValue(record.getRpaKey());
+    resourceKeyProp.setValue(record.getResourceKey());
     checksumProp.setValue(record.getChecksumBuffer());
     tenantIdProp.setValue(record.getTenantId());
     deploymentKeyProp.setValue(record.getDeploymentKey());
     versionTagProp.setValue(record.getVersionTag());
-    robotScriptProp.setValue(record.getRobotScript());
+    resourceProp.setValue(record.getResourceProp());
   }
 }

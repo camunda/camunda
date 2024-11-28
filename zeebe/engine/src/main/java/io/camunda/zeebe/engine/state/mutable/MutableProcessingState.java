@@ -61,9 +61,6 @@ public interface MutableProcessingState extends ProcessingState {
   MutableFormState getFormState();
 
   @Override
-  MutableRpaState getRpaState();
-
-  @Override
   MutableSignalSubscriptionState getSignalSubscriptionState();
 
   @Override
@@ -89,6 +86,9 @@ public interface MutableProcessingState extends ProcessingState {
 
   @Override
   MutableClockState getClockState();
+
+  @Override
+  MutableResourceState getResourceState();
 
   KeyGenerator getKeyGenerator();
 }
