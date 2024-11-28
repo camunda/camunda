@@ -59,6 +59,7 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
           FieldValue.of(OperationState.SENT.name()),
           FieldValue.of(OperationState.COMPLETED.name()));
   private static final Time SCROLL_KEEP_ALIVE = Time.of(t -> t.time("1m"));
+  private static final int SCROLL_PAGE_SIZE = 100;
 
   private final int partitionId;
   private final String pendingUpdateAlias;
@@ -129,6 +130,7 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
             .query(q -> q.bool(b -> b.must(idQ, typeQ)))
             .source(s -> s.fetch(false))
             .scroll(SCROLL_KEEP_ALIVE)
+            .size(SCROLL_PAGE_SIZE)
             .build();
 
     return client
