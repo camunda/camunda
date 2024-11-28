@@ -16,7 +16,26 @@
     <new.database.port>9200</new.database.port>
   </properties>
 
+  <!-- this is necessary. Dependency:analyze error suppressed -->
   <dependencies>
+    <dependency>
+      <groupId>io.github.netmikey.logunit</groupId>
+      <artifactId>logunit-log4j2</artifactId>
+      <version>2.0.0</version>
+    </dependency>
+
+    <!-- this is necessary. Dependency:analyze error suppressed -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j-impl</artifactId>
+    </dependency>
+
+    <!-- this is necessary. Dependency:analyze error suppressed -->
+    <dependency>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-slf4j2-impl</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>co.elastic.clients</groupId>
       <artifactId>elasticsearch-java</artifactId>
@@ -32,7 +51,6 @@
     <dependency>
       <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-java</artifactId>
-      <version>${opensearch.client.version}</version>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -71,13 +89,6 @@
     </dependency>
 
     <dependency>
-      <groupId>co.elastic.clients</groupId>
-      <artifactId>elasticsearch-java</artifactId>
-      <version>8.13.4</version>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>io.camunda.optimize</groupId>
       <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
@@ -94,7 +105,6 @@
     <dependency>
       <groupId>org.apache.httpcomponents.core5</groupId>
       <artifactId>httpcore5</artifactId>
-      <version>5.3.1</version>
       <scope>runtime</scope>
     </dependency>
 
@@ -153,10 +163,10 @@
         <executions>
           <execution>
             <id>copy-test-resources</id>
-            <phase>process-test-resources</phase>
             <goals>
               <goal>testResources</goal>
             </goals>
+            <phase>process-test-resources</phase>
           </execution>
         </executions>
       </plugin>
@@ -189,13 +199,30 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredUnusedDeclaredDependencies>
+            <!-- test dependencies -->
+            <dep>io.camunda.optimize:optimize-backend</dep>
+            <dep>io.camunda.optimize:upgrade-optimize</dep>
+            <dep>org.springframework.boot:spring-boot-starter-test</dep>
+            <dep>io.netty:netty-codec-http</dep>
+            <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
+            <dep>io.camunda:zeebe-build-tools</dep>
+            <dep>org.apache.logging.log4j:log4j-core</dep>
+            <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+            <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
+          </ignoredUnusedDeclaredDependencies>
+          <ignoredNonTestScopedDependencies combine.children="append">
+            <dep>org.opensearch.client:opensearch-java</dep>
+          </ignoredNonTestScopedDependencies>
+        </configuration>
         <executions>
           <execution>
             <id>unpack-previous-and-current-optimize</id>
-            <phase>pre-integration-test</phase>
             <goals>
               <goal>unpack</goal>
             </goals>
+            <phase>pre-integration-test</phase>
             <configuration>
               <skip>${skipTests}</skip>
               <artifactItems>
@@ -227,18 +254,6 @@
             </configuration>
           </execution>
         </executions>
-        <configuration>
-          <ignoredUnusedDeclaredDependencies>
-            <!-- test dependencies -->
-            <dep>io.camunda.optimize:optimize-backend</dep>
-            <dep>io.camunda.optimize:upgrade-optimize</dep>
-            <dep>org.springframework.boot:spring-boot-starter-test</dep>
-            <dep>io.netty:netty-codec-http</dep>
-          </ignoredUnusedDeclaredDependencies>
-          <ignoredNonTestScopedDependencies>
-            <dep>org.opensearch.client:opensearch-java</dep>
-          </ignoredNonTestScopedDependencies>
-        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -266,17 +281,17 @@
               <!-- Starting old and new ES through docker-compose -->
               <execution>
                 <id>docker-compose-start</id>
-                <phase>pre-integration-test</phase>
                 <goals>
                   <goal>up</goal>
                 </goals>
+                <phase>pre-integration-test</phase>
               </execution>
               <execution>
                 <id>docker-compose-stop</id>
-                <phase>post-integration-test</phase>
                 <goals>
                   <goal>down</goal>
                 </goals>
+                <phase>post-integration-test</phase>
               </execution>
             </executions>
           </plugin>
