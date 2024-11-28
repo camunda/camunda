@@ -10,6 +10,8 @@ package io.camunda.zeebe.gateway.api.util;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
@@ -48,6 +50,7 @@ import io.grpc.ServerInterceptors;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import java.io.IOException;
+import java.util.Date;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -97,9 +100,9 @@ public final class StubbedGateway {
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
                 ServerInterceptors.intercept(
-                    gatewayGrpcService, new IdentityInterceptor(identity, multiTenancy)))
-            .addService(
-                ServerInterceptors.intercept(gatewayGrpcService, new AuthenticationInterceptor()));
+                    gatewayGrpcService,
+                    new AuthenticationInterceptor(),
+                    new IdentityInterceptor(identity, multiTenancy)));
     server = serverBuilder.build();
     server.start();
   }
@@ -262,8 +265,22 @@ public final class StubbedGateway {
         final RequestInfo requestInfo, final Executor appExecutor, final MetadataApplier applier) {
       final Metadata headers = new Metadata();
       final Key<String> key = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
-      headers.put(key, "Bearer " + token);
+      headers.put(key, generateToken());
       applier.apply(headers);
+    }
+
+    private String generateToken() {
+      final Algorithm algorithm = Algorithm.HMAC256("secret-key");
+
+      return JWT.create()
+          .withIssuer("test-issuer")
+          .withSubject("test-user")
+          .withAudience("test-audience")
+          .withClaim("role", "admin")
+          .withClaim("foo", "bar")
+          .withClaim("baz", "qux")
+          .withExpiresAt(new Date(System.currentTimeMillis() + 60 * 60 * 1000)) // Expires in 1 hour
+          .sign(algorithm);
     }
   }
 }
