@@ -42,14 +42,26 @@ outputs:
         steps.filter-identity.outputs.identity-frontend-change == 'true'
       }}
   operate-backend-changes:
-    description: Output whether Operate backend tests should be run based on GitHub event and files changed
+    description: Output whether Operate backend build should be run based on GitHub event and files changed
     value: >-
       ${{
         github.event_name == 'push' ||
         steps.filter-common.outputs.github-actions-change == 'true' ||
         steps.filter-operate.outputs.operate-backend-change == 'true' ||
         steps.filter-common.outputs.webapps-change == 'true' ||
-        steps.filter-common.outputs.maven-change == 'true'
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.dockerfile-change == 'true'
+      }}
+  tasklist-backend-changes:
+    description: Output whether Tasklist backend build should be run based on GitHub event and files changed
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-tasklist.outputs.tasklist-backend-change == 'true' ||
+        steps.filter-common.outputs.webapps-change == 'true' ||
+        steps.filter-common.outputs.maven-change == 'true' ||
+        steps.filter-common.outputs.dockerfile-change == 'true'
       }}
   optimize-frontend-changes:
     description: Output whether Optimize frontend tests should be run based on GitHub event and files changed
@@ -189,6 +201,15 @@ runs:
       filters: |
         operate-backend-change:
           - 'operate/!(client/**)/**'
+
+  - uses: dorny/paths-filter@v3
+    id: filter-tasklist
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        tasklist-backend-change:
+          - 'tasklist/!(client/**)/**'
 
   - uses: dorny/paths-filter@v3
     id: filter-optimize

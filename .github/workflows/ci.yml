@@ -38,6 +38,7 @@ jobs:
       frontend-changes: ${{ steps.filter.outputs.frontend-changes }}
       zeebe-changes: ${{ steps.filter.outputs.zeebe-changes }}
       operate-backend-changes: ${{ steps.filter.outputs.operate-backend-changes }}
+      tasklist-backend-changes: ${{ steps.filter.outputs.tasklist-backend-changes }}
       optimize-frontend-changes: ${{ steps.filter.outputs.optimize-frontend-changes }}
       optimize-backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
       protobuf-changes: ${{ steps.filter.outputs.protobuf-changes }}
@@ -490,6 +491,46 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  build-tasklist-backend:
+    if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: ./.github/actions/setup-build
+        name: Build setup
+        with:
+          java-distribution: adopt
+          maven-cache-key-modifier: tasklist
+          maven-version: 3.8.6
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Build Maven
+        run: |
+          ./mvnw clean deploy -B -T1C -PskipFrontendBuild -DskipTests -DskipOptimize -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+      # Build the docker image to verify the built artifacts and the Dockerfile
+      # It does NOT push the image to the registry
+      - name: Build Docker image
+        uses: ./.github/actions/build-platform-docker
+        with:
+          dockerfile: tasklist.Dockerfile
+          repository: 'registry.camunda.cloud/team-hto/tasklist'
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   optimize-frontend-unit-tests:
     if: needs.detect-changes.outputs.optimize-frontend-changes == 'true'
     needs: [detect-changes]
@@ -645,6 +686,7 @@ jobs:
       - actionlint
       - build-operate-backend
       - build-platform-frontend
+      - build-tasklist-backend
       - detect-changes
       - docker-checks
       - identity-frontend-tests
