@@ -56,7 +56,10 @@ public class TenantCreateUpdateHandler implements ExportHandler<TenantEntity, Te
   @Override
   public void updateEntity(final Record<TenantRecordValue> record, final TenantEntity entity) {
     final TenantRecordValue value = record.getValue();
-    entity.setKey(value.getTenantKey()).setTenantId(value.getTenantId()).setName(value.getName());
+    entity
+        .setTenantKey(value.getTenantKey())
+        .setTenantId(value.getTenantId())
+        .setName(value.getName());
   }
 
   @Override
