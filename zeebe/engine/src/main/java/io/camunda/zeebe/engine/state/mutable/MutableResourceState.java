@@ -12,28 +12,28 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 
 public interface MutableResourceState extends ResourceState {
   /**
-   * Put the given resource in RPAS column family
+   * Put the given resource in RESOURCES column family
    *
    * @param record the record of the resource
    */
   void storeResourceInResourceColumnFamily(ResourceRecord record);
 
   /**
-   * Put the given resource in RPA_BY_ID_AND_VERSION column family
+   * Put the given resource in RESOURCE_BY_ID_AND_VERSION column family
    *
    * @param record the record of the resource
    */
   void storeResourceInResourceByIdAndVersionColumnFamily(ResourceRecord record);
 
   /**
-   * Put the given resource in RPA_KEY_BY_RPA_ID_AND_DEPLOYMENT_KEY column family
+   * Put the given resource in RESOURCE_KEY_BY_RESOURCE_ID_AND_DEPLOYMENT_KEY column family
    *
    * @param record the record of the resource
    */
   void storeResourceInResourceKeyByResourceIdAndDeploymentKeyColumnFamily(ResourceRecord record);
 
   /**
-   * Put the given resource in RPA_KEY_BY_RPA_ID_AND_VERSION_TAG column family
+   * Put the given resource in RESOURCE_KEY_BY_RESOURCE_ID_AND_VERSION_TAG column family
    *
    * @param record the record of the resource
    */
@@ -47,35 +47,35 @@ public interface MutableResourceState extends ResourceState {
   void updateLatestVersion(ResourceRecord record);
 
   /**
-   * Deletes a resource from RPAS column family
+   * Deletes a resource from RESOURCES column family
    *
    * @param record the record of the resource that is deleted
    */
   void deleteResourceInResourcesColumnFamily(ResourceRecord record);
 
   /**
-   * Deletes a resource from RPA_BY_ID_AND_VERSION column family
+   * Deletes a resource from RESOURCE_BY_ID_AND_VERSION column family
    *
    * @param record the record of the resource that is deleted
    */
   void deleteResourceInResourceByIdAndVersionColumnFamily(ResourceRecord record);
 
   /**
-   * Deletes a resource from RPA_VERSION column family
+   * Deletes a resource from RESOURCE_VERSION column family
    *
    * @param record the record of the resource that is deleted
    */
   void deleteResourceInResourceVersionColumnFamily(ResourceRecord record);
 
   /**
-   * Deletes a resource from RPA_KEY_BY_RPA_ID_AND_DEPLOYMENT_KEY column family
+   * Deletes a resource from RESOURCE_KEY_BY_RESOURCE_ID_AND_DEPLOYMENT_KEY column family
    *
    * @param record the record of the resource that is deleted
    */
   void deleteResourceInResourceKeyByResourceIdAndDeploymentKeyColumnFamily(ResourceRecord record);
 
   /**
-   * Deletes a resource from RPA_KEY_BY_RPA_ID_AND_VERSION_TAG column family
+   * Deletes a resource from RESOURCE_KEY_BY_RESOURCE_ID_AND_VERSION_TAG column family
    *
    * @param record the record of the resource that is deleted
    */
