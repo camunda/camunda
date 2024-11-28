@@ -71,16 +71,23 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
 
   public void deleteExpiredWebSessions() {
     Optional.ofNullable(sessionClient.getAllPersistentWebSessions())
-        .ifPresent(
-            sessions ->
-                sessions.stream()
-                    .map(webSessionMapper::fromPersistentWebSession)
-                    .filter(WebSession::shouldBeDeleted)
-                    .forEach(this::deleteWebSession));
+        .ifPresent(sessions -> sessions.forEach(this::deletePersistentSessionIfExpired));
   }
 
-  private void deleteWebSession(final WebSession session) {
-    deleteById(session.getId());
+  private void deletePersistentSessionIfExpired(
+      final PersistentWebSessionEntity persistentSession) {
+    toWebSession(persistentSession)
+        .ifPresentOrElse(
+            this::deleteWebSessionIfExpired,
+            // otherwise, when the persistent session could
+            // not be restored, then delete it.
+            () -> deleteById(persistentSession.id()));
+  }
+
+  private void deleteWebSessionIfExpired(final WebSession session) {
+    if (session.shouldBeDeleted()) {
+      deleteById(session.getId());
+    }
   }
 
   private void saveWebSessionIfChanged(final WebSession session) {
@@ -92,23 +99,22 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
     }
   }
 
-  private WebSession getWebSessionIfNotExpired(final PersistentWebSessionEntity persistentSession) {
-    final var webSession =
-        Optional.ofNullable(persistentSession)
-            .map(webSessionMapper::fromPersistentWebSession)
-            .orElse(null);
+  private Optional<WebSession> toWebSession(final PersistentWebSessionEntity persistentSession) {
+    return Optional.of(persistentSession).map(webSessionMapper::fromPersistentWebSession);
+  }
 
-    if (webSession != null) {
-      if (!webSession.shouldBeDeleted()) {
-        webSession.setPolling(isPollingRequest(request));
-      } else {
-        // if session is expired (or has no valid authentication),
-        // then immediately delete the persistent session
-        deleteById(webSession.getId());
-        return null;
-      }
+  private WebSession getWebSessionIfNotExpired(final PersistentWebSessionEntity persistentSession) {
+    final var webSession = toWebSession(persistentSession).orElse(null);
+    if (webSession != null && !webSession.shouldBeDeleted()) {
+      webSession.setPolling(isPollingRequest(request));
+      return webSession;
+    } else {
+      // if session is expired (or has no valid authentication),
+      // or the web session could not be restored,
+      // then immediately delete the persistent session
+      deleteById(persistentSession.id());
+      return null;
     }
-    return webSession;
   }
 
   private boolean isPollingRequest(final HttpServletRequest request) {

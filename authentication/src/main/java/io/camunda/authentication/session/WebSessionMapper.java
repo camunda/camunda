@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.convert.TypeDescriptor;
 import org.springframework.core.convert.support.GenericConversionService;
 import org.springframework.core.serializer.support.DeserializingConverter;
@@ -21,6 +23,7 @@ import org.springframework.core.serializer.support.SerializingConverter;
 
 public class WebSessionMapper {
 
+  public static final Logger LOGGER = LoggerFactory.getLogger(WebSessionMapper.class);
   private final WebSessionAttributeConverter converter;
 
   public WebSessionMapper(final WebSessionAttributeConverter converter) {
@@ -38,18 +41,23 @@ public class WebSessionMapper {
   }
 
   public WebSession fromPersistentWebSession(final PersistentWebSessionEntity entity) {
-    final var sessionId = entity.id();
-    final var creationTime = entity.creationTime();
-    final var lastAccessedTime = entity.lastAccessedTime();
-    final var maxInactiveIntervalInSeconds = entity.maxInactiveIntervalInSeconds();
-    final var attributes = deserializeSessionAttributes(entity);
+    try {
+      final var sessionId = entity.id();
+      final var creationTime = entity.creationTime();
+      final var lastAccessedTime = entity.lastAccessedTime();
+      final var maxInactiveIntervalInSeconds = entity.maxInactiveIntervalInSeconds();
+      final var attributes = deserializeSessionAttributes(entity);
 
-    final var webSession = new WebSession(sessionId);
-    webSession.setCreationTime(toInstant(creationTime));
-    webSession.setLastAccessedTime(toInstant(lastAccessedTime));
-    webSession.setMaxInactiveInterval(toDuration(maxInactiveIntervalInSeconds));
-    attributes.forEach(webSession::setAttribute);
-    return webSession;
+      final var webSession = new WebSession(sessionId);
+      webSession.setCreationTime(toInstant(creationTime));
+      webSession.setLastAccessedTime(toInstant(lastAccessedTime));
+      webSession.setMaxInactiveInterval(toDuration(maxInactiveIntervalInSeconds));
+      attributes.forEach(webSession::setAttribute);
+      return webSession;
+    } catch (final Exception e) {
+      LOGGER.error("The persistent session could not be restored.", e);
+      return null;
+    }
   }
 
   private Map<String, byte[]> serializeSessionAttributes(final WebSession session) {
