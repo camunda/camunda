@@ -125,6 +125,9 @@ public class RdbmsExporter implements Exporter {
           List.of(new ProcessExportHandler(rdbmsWriter.getProcessDefinitionWriter())));
     }
     registeredHandlers.put(
+        ValueType.AUTHORIZATION,
+        List.of(new AuthorizationExportHandler(rdbmsWriter.getAuthorizationWriter())));
+    registeredHandlers.put(
         ValueType.DECISION,
         List.of(new DecisionDefinitionExportHandler(rdbmsWriter.getDecisionDefinitionWriter())));
     registeredHandlers.put(

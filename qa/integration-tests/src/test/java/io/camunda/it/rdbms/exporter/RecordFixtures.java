@@ -11,6 +11,7 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
@@ -22,9 +23,13 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue;
@@ -314,6 +319,27 @@ public class RecordFixtures {
                 .withGroupKey(groupKey)
                 .withEntityKey(entityKey != null ? entityKey : 0)
                 .withEntityType(entityKey != null ? EntityType.USER : null)
+                .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getAuthorizationRecord(
+      final AuthorizationIntent intent,
+      final Long ownerKey,
+      final AuthorizationOwnerType ownerType,
+      final AuthorizationResourceType resourceType) {
+    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.AUTHORIZATION);
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(intent)
+        .withPosition(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableAuthorizationRecordValue.builder()
+                .from((AuthorizationRecordValue) recordValueRecord.getValue())
+                .withOwnerKey(ownerKey)
+                .withOwnerType(ownerType)
+                .withResourceType(resourceType)
                 .build())
         .build();
   }
