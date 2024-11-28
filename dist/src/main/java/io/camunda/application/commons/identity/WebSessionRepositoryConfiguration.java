@@ -15,8 +15,8 @@ import io.camunda.authentication.session.WebSessionRepository;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.search.clients.DocumentBasedSearchClient;
 import io.camunda.search.clients.DocumentBasedWriteClient;
-import io.camunda.search.clients.PersistentSessionSearchClient;
-import io.camunda.search.clients.PersistentWebSessionSearchClientImpl;
+import io.camunda.search.clients.PersistentWebSessionClient;
+import io.camunda.search.clients.PersistentWebSessionSearchImpl;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
@@ -44,7 +44,7 @@ public class WebSessionRepositoryConfiguration {
   }
 
   @Bean
-  public PersistentWebSessionIndexDescriptor persistentWebSessionIndexDescriptor() {
+  public PersistentWebSessionIndexDescriptor persistentWebSessionIndex() {
     final var indexPrefix = connectConfiguration.getIndexPrefix();
     final var isElasticsearch =
         ConnectionTypes.from(connectConfiguration.getType()).equals(ConnectionTypes.ELASTICSEARCH);
@@ -52,31 +52,31 @@ public class WebSessionRepositoryConfiguration {
   }
 
   @Bean
-  public PersistentSessionSearchClient persistentWebSessionSearchClient(
+  public PersistentWebSessionClient persistentWebSessionClient(
       final DocumentBasedSearchClient searchClient,
       final DocumentBasedWriteClient writeClient,
       final PersistentWebSessionIndexDescriptor descriptor) {
-    return new PersistentWebSessionSearchClientImpl(searchClient, writeClient, descriptor);
+    return new PersistentWebSessionSearchImpl(searchClient, writeClient, descriptor);
   }
 
   @Bean
   public WebSessionRepository webSessionRepository(
-      final PersistentSessionSearchClient persistentSessionSearchClient,
+      final PersistentWebSessionClient persistentWebSessionClient,
       final HttpServletRequest request) {
     final var webSessionAttributeConverter =
         new SpringBasedWebSessionAttributeConverter(conversionService);
     final var webSessionMapper = new WebSessionMapper(webSessionAttributeConverter);
-    return new WebSessionRepository(persistentSessionSearchClient, webSessionMapper, request);
+    return new WebSessionRepository(persistentWebSessionClient, webSessionMapper, request);
   }
 
   @Bean("persistentWebSessionDeletionTaskExecutor")
   public ScheduledThreadPoolExecutor persistentWebSessionDeletionTaskExecutor(
-      final WebSessionRepository repository) {
+      final WebSessionRepository webSessionRepository) {
     final var executor = createTaskExecutor();
     executor.schedule(
         new SelfSchedulingTask(
             executor,
-            new WebSessionDeletionTask(repository),
+            new WebSessionDeletionTask(webSessionRepository),
             WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_DELAY),
         WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_DELAY,
         TimeUnit.MILLISECONDS);

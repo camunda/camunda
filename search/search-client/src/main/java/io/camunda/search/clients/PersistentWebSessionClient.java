@@ -10,11 +10,11 @@ package io.camunda.search.clients;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import java.util.List;
 
-public interface PersistentSessionSearchClient {
+public interface PersistentWebSessionClient {
 
   PersistentWebSessionEntity getPersistentWebSession(final String sessionId);
 
-  void upsertPersistentWebSession(final PersistentWebSessionEntity webSession);
+  void upsertPersistentWebSession(final PersistentWebSessionEntity persistentWebSessionEntity);
 
   void deletePersistentWebSession(final String sessionId);
 

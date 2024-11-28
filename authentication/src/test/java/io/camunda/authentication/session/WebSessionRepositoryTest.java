@@ -10,7 +10,7 @@ package io.camunda.authentication.session;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.authentication.session.WebSessionMapper.SpringBasedWebSessionAttributeConverter;
-import io.camunda.search.clients.PersistentSessionSearchClient;
+import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -25,14 +25,14 @@ import org.springframework.session.MapSession;
 class WebSessionRepositoryTest {
 
   private WebSessionRepository webSessionRepository;
-  private PersistentSessionSearchClient client;
+  private PersistentWebSessionClient persistentWebSessionClient;
 
   @BeforeEach
   void setUp() {
-    client = new PersistentSessionSearchClientStub();
+    persistentWebSessionClient = new PersistentWebSessionClientStub();
     webSessionRepository =
         new WebSessionRepository(
-            client,
+            persistentWebSessionClient,
             new WebSessionMapper(
                 new SpringBasedWebSessionAttributeConverter(new GenericConversionService())),
             null);
@@ -41,43 +41,43 @@ class WebSessionRepositoryTest {
   @Test
   void createSessionReturnSession() {
     // when
-    final var session = webSessionRepository.createSession();
+    final var webSession = webSessionRepository.createSession();
 
     // then
-    assertThat(session).isNotNull();
-    assertThat(session.getId()).isNotNull();
-    assertThat(session.getLastAccessedTime()).isNotNull();
-    assertThat(session.getCreationTime()).isNotNull();
-    assertThat(session.getMaxInactiveInterval()).isNotNull();
+    assertThat(webSession).isNotNull();
+    assertThat(webSession.getId()).isNotNull();
+    assertThat(webSession.getLastAccessedTime()).isNotNull();
+    assertThat(webSession.getCreationTime()).isNotNull();
+    assertThat(webSession.getMaxInactiveInterval()).isNotNull();
   }
 
   @Test
   void saveValidSessionPersistsSession() {
     // given
-    final var session = webSessionRepository.createSession();
-    session.setLastAccessedTime(Instant.now());
+    final var webSession = webSessionRepository.createSession();
+    webSession.setLastAccessedTime(Instant.now());
 
     // when
-    webSessionRepository.save(session);
+    webSessionRepository.save(webSession);
 
     // then
-    assertThat(webSessionRepository.findById(session.getId())).isNotNull();
+    assertThat(webSessionRepository.findById(webSession.getId())).isNotNull();
   }
 
   @Test
   void saveExpiredSessionDeleteSession() {
     // given
-    final var session = webSessionRepository.createSession();
-    session.setLastAccessedTime(Instant.now());
-    webSessionRepository.save(session);
+    final var webSession = webSessionRepository.createSession();
+    webSession.setLastAccessedTime(Instant.now());
+    webSessionRepository.save(webSession);
 
     // when
-    session.setLastAccessedTime(
+    webSession.setLastAccessedTime(
         Instant.now().minusSeconds(MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds() * 2));
-    webSessionRepository.save(session);
+    webSessionRepository.save(webSession);
 
     // then
-    assertThat(webSessionRepository.findById(session.getId())).isNull();
+    assertThat(webSessionRepository.findById(webSession.getId())).isNull();
   }
 
   @Test
@@ -88,15 +88,15 @@ class WebSessionRepositoryTest {
   @Test
   void deleteById() {
     // given
-    final var session = webSessionRepository.createSession();
-    session.setLastAccessedTime(Instant.now());
-    webSessionRepository.save(session);
+    final var webSession = webSessionRepository.createSession();
+    webSession.setLastAccessedTime(Instant.now());
+    webSessionRepository.save(webSession);
 
     // when
-    webSessionRepository.deleteById(session.getId());
+    webSessionRepository.deleteById(webSession.getId());
 
     // then
-    assertThat(webSessionRepository.findById(session.getId())).isNull();
+    assertThat(webSessionRepository.findById(webSession.getId())).isNull();
   }
 
   @Test
@@ -104,21 +104,21 @@ class WebSessionRepositoryTest {
     // given
     final var expiredLastAccessedTime =
         Instant.now().minusSeconds(MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds() * 2);
-    client.upsertPersistentWebSession(
+    persistentWebSessionClient.upsertPersistentWebSession(
         new PersistentWebSessionEntity(
             "s1",
             expiredLastAccessedTime.toEpochMilli(),
             expiredLastAccessedTime.toEpochMilli(),
             MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds(),
             Map.of()));
-    client.upsertPersistentWebSession(
+    persistentWebSessionClient.upsertPersistentWebSession(
         new PersistentWebSessionEntity(
             "s2",
             expiredLastAccessedTime.toEpochMilli(),
             expiredLastAccessedTime.toEpochMilli(),
             MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds(),
             Map.of()));
-    client.upsertPersistentWebSession(
+    persistentWebSessionClient.upsertPersistentWebSession(
         new PersistentWebSessionEntity(
             "s3",
             expiredLastAccessedTime.toEpochMilli(),
@@ -126,41 +126,42 @@ class WebSessionRepositoryTest {
             MapSession.DEFAULT_MAX_INACTIVE_INTERVAL.toSeconds(),
             Map.of()));
 
-    assertThat(client.getAllPersistentWebSessions()).hasSize(3);
+    assertThat(persistentWebSessionClient.getAllPersistentWebSessions()).hasSize(3);
 
     // when
     webSessionRepository.deleteExpiredWebSessions();
 
     // then
-    assertThat(client.getAllPersistentWebSessions()).isEmpty();
+    assertThat(persistentWebSessionClient.getAllPersistentWebSessions()).isEmpty();
   }
 
-  static final class PersistentSessionSearchClientStub implements PersistentSessionSearchClient {
+  static final class PersistentWebSessionClientStub implements PersistentWebSessionClient {
 
-    private final Map<String, PersistentWebSessionEntity> sessions;
+    private final Map<String, PersistentWebSessionEntity> persistentWebSessions;
 
-    private PersistentSessionSearchClientStub() {
-      sessions = new HashMap<>();
+    private PersistentWebSessionClientStub() {
+      persistentWebSessions = new HashMap<>();
     }
 
     @Override
     public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
-      return sessions.get(sessionId);
+      return persistentWebSessions.get(sessionId);
     }
 
     @Override
-    public void upsertPersistentWebSession(final PersistentWebSessionEntity webSession) {
-      sessions.put(webSession.id(), webSession);
+    public void upsertPersistentWebSession(
+        final PersistentWebSessionEntity persistentWebSessionEntity) {
+      persistentWebSessions.put(persistentWebSessionEntity.id(), persistentWebSessionEntity);
     }
 
     @Override
     public void deletePersistentWebSession(final String sessionId) {
-      sessions.remove(sessionId);
+      persistentWebSessions.remove(sessionId);
     }
 
     @Override
     public List<PersistentWebSessionEntity> getAllPersistentWebSessions() {
-      return new ArrayList<>(sessions.values());
+      return new ArrayList<>(persistentWebSessions.values());
     }
   }
 }

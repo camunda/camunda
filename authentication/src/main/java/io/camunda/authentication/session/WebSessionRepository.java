@@ -7,7 +7,7 @@
  */
 package io.camunda.authentication.session;
 
-import io.camunda.search.clients.PersistentSessionSearchClient;
+import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.entities.PersistentWebSessionEntity;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
@@ -21,15 +21,15 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
   public static final Logger LOGGER = LoggerFactory.getLogger(WebSessionRepository.class);
   private static final String POLLING_HEADER = "x-is-polling";
 
-  private final PersistentSessionSearchClient sessionClient;
+  private final PersistentWebSessionClient persistentWebSessionClient;
   private final WebSessionMapper webSessionMapper;
   private final HttpServletRequest request;
 
   public WebSessionRepository(
-      final PersistentSessionSearchClient sessionClient,
+      final PersistentWebSessionClient persistentWebSessionClient,
       final WebSessionMapper webSessionMapper,
       final HttpServletRequest request) {
-    this.sessionClient = sessionClient;
+    this.persistentWebSessionClient = persistentWebSessionClient;
     this.webSessionMapper = webSessionMapper;
     this.request = request;
   }
@@ -46,19 +46,19 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
   }
 
   @Override
-  public void save(final WebSession session) {
-    LOGGER.debug("Save session {}", session.getId());
-    if (!session.shouldBeDeleted()) {
-      saveWebSessionIfChanged(session);
+  public void save(final WebSession webSession) {
+    LOGGER.debug("Save session {}", webSession.getId());
+    if (!webSession.shouldBeDeleted()) {
+      saveWebSessionIfChanged(webSession);
     } else {
-      deleteById(session.getId());
+      deleteById(webSession.getId());
     }
   }
 
   @Override
   public WebSession findById(final String id) {
     LOGGER.debug("Retrieve session {}", id);
-    return Optional.ofNullable(sessionClient.getPersistentWebSession(id))
+    return Optional.ofNullable(persistentWebSessionClient.getPersistentWebSession(id))
         .map(this::getWebSessionIfNotExpired)
         .orElse(null);
   }
@@ -66,45 +66,49 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
   @Override
   public void deleteById(final String id) {
     LOGGER.debug("Delete session {}", id);
-    sessionClient.deletePersistentWebSession(id);
+    persistentWebSessionClient.deletePersistentWebSession(id);
   }
 
   public void deleteExpiredWebSessions() {
-    Optional.ofNullable(sessionClient.getAllPersistentWebSessions())
-        .ifPresent(sessions -> sessions.forEach(this::deletePersistentSessionIfExpired));
+    Optional.ofNullable(persistentWebSessionClient.getAllPersistentWebSessions())
+        .ifPresent(
+            persistentWebSessionEntities ->
+                persistentWebSessionEntities.forEach(this::deletePersistentWebSessionIfExpired));
   }
 
-  private void deletePersistentSessionIfExpired(
-      final PersistentWebSessionEntity persistentSession) {
-    toWebSession(persistentSession)
+  private void deletePersistentWebSessionIfExpired(
+      final PersistentWebSessionEntity persistentWebSessionEntity) {
+    toWebSession(persistentWebSessionEntity)
         .ifPresentOrElse(
             this::deleteWebSessionIfExpired,
             // otherwise, when the persistent session could
             // not be restored, then delete it.
-            () -> deleteById(persistentSession.id()));
+            () -> deleteById(persistentWebSessionEntity.id()));
   }
 
-  private void deleteWebSessionIfExpired(final WebSession session) {
-    if (session.shouldBeDeleted()) {
-      deleteById(session.getId());
+  private void deleteWebSessionIfExpired(final WebSession webSession) {
+    if (webSession.shouldBeDeleted()) {
+      deleteById(webSession.getId());
     }
   }
 
-  private void saveWebSessionIfChanged(final WebSession session) {
-    if (session.isChanged()) {
-      LOGGER.debug("Web Session {} changed, save in storage.", session);
-      Optional.of(session)
+  private void saveWebSessionIfChanged(final WebSession webSession) {
+    if (webSession.isChanged()) {
+      LOGGER.debug("Web Session {} changed, save in storage.", webSession);
+      Optional.of(webSession)
           .map(webSessionMapper::toPersistentWebSession)
-          .ifPresent(sessionClient::upsertPersistentWebSession);
+          .ifPresent(persistentWebSessionClient::upsertPersistentWebSession);
     }
   }
 
-  private Optional<WebSession> toWebSession(final PersistentWebSessionEntity persistentSession) {
-    return Optional.of(persistentSession).map(webSessionMapper::fromPersistentWebSession);
+  private Optional<WebSession> toWebSession(
+      final PersistentWebSessionEntity persistentWebSessionEntity) {
+    return Optional.of(persistentWebSessionEntity).map(webSessionMapper::fromPersistentWebSession);
   }
 
-  private WebSession getWebSessionIfNotExpired(final PersistentWebSessionEntity persistentSession) {
-    final var webSession = toWebSession(persistentSession).orElse(null);
+  private WebSession getWebSessionIfNotExpired(
+      final PersistentWebSessionEntity persistentWebSessionEntity) {
+    final var webSession = toWebSession(persistentWebSessionEntity).orElse(null);
     if (webSession != null && !webSession.shouldBeDeleted()) {
       webSession.setPolling(isPollingRequest(request));
       return webSession;
@@ -112,7 +116,7 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
       // if session is expired (or has no valid authentication),
       // or the web session could not be restored,
       // then immediately delete the persistent session
-      deleteById(persistentSession.id());
+      deleteById(persistentWebSessionEntity.id());
       return null;
     }
   }

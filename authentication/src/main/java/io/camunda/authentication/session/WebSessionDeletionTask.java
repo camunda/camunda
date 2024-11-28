@@ -14,16 +14,16 @@ public class WebSessionDeletionTask implements Runnable {
 
   public static final int DELETE_EXPIRED_SESSIONS_DELAY = 1_000 * 60 * 30;
   private static final Logger LOGGER = LoggerFactory.getLogger(WebSessionDeletionTask.class);
-  private final WebSessionRepository repository;
+  private final WebSessionRepository webSessionRepository;
 
-  public WebSessionDeletionTask(final WebSessionRepository repository) {
-    this.repository = repository;
+  public WebSessionDeletionTask(final WebSessionRepository webSessionRepository) {
+    this.webSessionRepository = webSessionRepository;
   }
 
   @Override
   public void run() {
     try {
-      repository.deleteExpiredWebSessions();
+      webSessionRepository.deleteExpiredWebSessions();
     } catch (final Exception e) {
       LOGGER.warn("Failed to delete expired web session: {}", e.getMessage(), e);
     }

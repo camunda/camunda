@@ -30,23 +30,25 @@ public class WebSessionMapper {
     this.converter = converter;
   }
 
-  public PersistentWebSessionEntity toPersistentWebSession(final WebSession session) {
-    final var attributes = serializeSessionAttributes(session);
+  public PersistentWebSessionEntity toPersistentWebSession(final WebSession webSession) {
+    final var attributes = serializeSessionAttributes(webSession);
     return new PersistentWebSessionEntity(
-        session.getId(),
-        session.getCreationTime().toEpochMilli(),
-        session.getLastAccessedTime().toEpochMilli(),
-        session.getMaxInactiveInterval().getSeconds(),
+        webSession.getId(),
+        webSession.getCreationTime().toEpochMilli(),
+        webSession.getLastAccessedTime().toEpochMilli(),
+        webSession.getMaxInactiveInterval().getSeconds(),
         attributes);
   }
 
-  public WebSession fromPersistentWebSession(final PersistentWebSessionEntity entity) {
+  public WebSession fromPersistentWebSession(
+      final PersistentWebSessionEntity persistentWebSessionEntity) {
     try {
-      final var sessionId = entity.id();
-      final var creationTime = entity.creationTime();
-      final var lastAccessedTime = entity.lastAccessedTime();
-      final var maxInactiveIntervalInSeconds = entity.maxInactiveIntervalInSeconds();
-      final var attributes = deserializeSessionAttributes(entity);
+      final var sessionId = persistentWebSessionEntity.id();
+      final var creationTime = persistentWebSessionEntity.creationTime();
+      final var lastAccessedTime = persistentWebSessionEntity.lastAccessedTime();
+      final var maxInactiveIntervalInSeconds =
+          persistentWebSessionEntity.maxInactiveIntervalInSeconds();
+      final var attributes = deserializeSessionAttributes(persistentWebSessionEntity);
 
       final var webSession = new WebSession(sessionId);
       webSession.setCreationTime(toInstant(creationTime));
@@ -60,22 +62,25 @@ public class WebSessionMapper {
     }
   }
 
-  private Map<String, byte[]> serializeSessionAttributes(final WebSession session) {
+  private Map<String, byte[]> serializeSessionAttributes(final WebSession webSession) {
     final var serializedAttributes = new HashMap<String, byte[]>();
-    final var attributeNames = session.getAttributeNames();
+    final var attributeNames = webSession.getAttributeNames();
     attributeNames.forEach(
-        a -> serializedAttributes.put(a, converter.serialize(session.getAttribute(a))));
+        a -> serializedAttributes.put(a, converter.serialize(webSession.getAttribute(a))));
     return serializedAttributes;
   }
 
   private Map<String, Object> deserializeSessionAttributes(
-      final PersistentWebSessionEntity entity) {
-    return Optional.ofNullable(entity.attributes()).orElse(new HashMap<>()).entrySet().stream()
+      final PersistentWebSessionEntity persistentWebSessionEntity) {
+    return Optional.ofNullable(persistentWebSessionEntity.attributes())
+        .orElse(new HashMap<>())
+        .entrySet()
+        .stream()
         .collect(Collectors.toMap(Map.Entry::getKey, e -> converter.deserialize(e.getValue())));
   }
 
-  private Instant toInstant(final Long object) {
-    return Optional.ofNullable(object).map(Instant::ofEpochMilli).orElse(null);
+  private Instant toInstant(final Long value) {
+    return Optional.ofNullable(value).map(Instant::ofEpochMilli).orElse(null);
   }
 
   private Duration toDuration(final Long value) {
