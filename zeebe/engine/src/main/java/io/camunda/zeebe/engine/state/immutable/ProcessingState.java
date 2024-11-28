@@ -45,7 +45,7 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   FormState getFormState();
 
-  RpaState getRpaState();
+  ResourceState getResourceState();
 
   SignalSubscriptionState getSignalSubscriptionState();
 

@@ -18,14 +18,14 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.deployment.RpaMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ResourceMetadataValue;
 import org.agrona.DirectBuffer;
 
-public class RpaMetadataRecord extends UnifiedRecordValue implements RpaMetadataValue {
+public class ResourceMetadataRecord extends UnifiedRecordValue implements ResourceMetadataValue {
 
-  private final StringProperty rpaIdProp = new StringProperty("rpaId");
+  private final StringProperty resourceIdProp = new StringProperty("resourceId");
   private final IntegerProperty versionProp = new IntegerProperty("version");
-  private final LongProperty rpaKeyProp = new LongProperty("rpaKey");
+  private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
   private final StringProperty tenantIdProp =
@@ -33,11 +33,11 @@ public class RpaMetadataRecord extends UnifiedRecordValue implements RpaMetadata
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
-  public RpaMetadataRecord() {
+  public ResourceMetadataRecord() {
     super(8);
-    declareProperty(rpaIdProp)
+    declareProperty(resourceIdProp)
         .declareProperty(versionProp)
-        .declareProperty(rpaKeyProp)
+        .declareProperty(resourceKeyProp)
         .declareProperty(checksumProp)
         .declareProperty(isDuplicateProp)
         .declareProperty(tenantIdProp)
@@ -46,13 +46,8 @@ public class RpaMetadataRecord extends UnifiedRecordValue implements RpaMetadata
   }
 
   @Override
-  public String getRpaId() {
-    return bufferAsString(rpaIdProp.getValue());
-  }
-
-  public RpaMetadataRecord setRpaId(final String rpaId) {
-    rpaIdProp.setValue(rpaId);
-    return this;
+  public String getResourceId() {
+    return bufferAsString(resourceIdProp.getValue());
   }
 
   @Override
@@ -60,8 +55,8 @@ public class RpaMetadataRecord extends UnifiedRecordValue implements RpaMetadata
     return versionProp.getValue();
   }
 
-  public RpaMetadataRecord setVersion(final int rpaVersion) {
-    versionProp.setValue(rpaVersion);
+  public ResourceMetadataRecord setVersion(final int resourceVersion) {
+    versionProp.setValue(resourceVersion);
     return this;
   }
 
@@ -70,19 +65,14 @@ public class RpaMetadataRecord extends UnifiedRecordValue implements RpaMetadata
     return bufferAsString(versionTagProp.getValue());
   }
 
-  public RpaMetadataRecord setVersionTag(final String versionTag) {
+  public ResourceMetadataRecord setVersionTag(final String versionTag) {
     versionTagProp.setValue(versionTag);
     return this;
   }
 
   @Override
-  public long getRpaKey() {
-    return rpaKeyProp.getValue();
-  }
-
-  public RpaMetadataRecord setRpaKey(final long rpaKey) {
-    rpaKeyProp.setValue(rpaKey);
-    return this;
+  public long getResourceKey() {
+    return resourceKeyProp.getValue();
   }
 
   @Override
@@ -90,7 +80,7 @@ public class RpaMetadataRecord extends UnifiedRecordValue implements RpaMetadata
     return bufferAsArray(checksumProp.getValue());
   }
 
-  public RpaMetadataRecord setChecksum(final DirectBuffer checksum) {
+  public ResourceMetadataRecord setChecksum(final DirectBuffer checksum) {
     checksumProp.setValue(checksum);
     return this;
   }
@@ -100,7 +90,7 @@ public class RpaMetadataRecord extends UnifiedRecordValue implements RpaMetadata
     return isDuplicateProp.getValue();
   }
 
-  public RpaMetadataRecord setDuplicate(final boolean isDuplicate) {
+  public ResourceMetadataRecord setDuplicate(final boolean isDuplicate) {
     isDuplicateProp.setValue(isDuplicate);
     return this;
   }
@@ -110,16 +100,25 @@ public class RpaMetadataRecord extends UnifiedRecordValue implements RpaMetadata
     return deploymentKeyProp.getValue();
   }
 
-  public RpaMetadataRecord setDeploymentKey(final long deploymentKey) {
+  public ResourceMetadataRecord setDeploymentKey(final long deploymentKey) {
     deploymentKeyProp.setValue(deploymentKey);
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getRpaIdBuffer() {
-    return rpaIdProp.getValue();
+  public ResourceMetadataRecord setResourceId(final String resourceId) {
+    resourceIdProp.setValue(resourceId);
+    return this;
   }
 
+  public ResourceMetadataRecord setResourceKey(final long resourceKey) {
+    resourceKeyProp.setValue(resourceKey);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getResourceIdBuffer() {
+    return resourceIdProp.getValue();
+  }
 
   @JsonIgnore
   public DirectBuffer getChecksumBuffer() {
@@ -131,7 +130,7 @@ public class RpaMetadataRecord extends UnifiedRecordValue implements RpaMetadata
     return bufferAsString(tenantIdProp.getValue());
   }
 
-  public RpaMetadataRecord setTenantId(final String tenantId) {
+  public ResourceMetadataRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
   }
