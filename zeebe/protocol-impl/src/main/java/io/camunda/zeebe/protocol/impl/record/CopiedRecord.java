@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -150,6 +151,11 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   @Override
   public Map<String, Object> getAuthorizations() {
     return authorization.toDecodedMap();
+  }
+
+  @Override
+  public boolean isAnonymous() {
+    return authorization != null && authorization.getFormat() == AuthDataFormat.ANONYMOUS;
   }
 
   @Override

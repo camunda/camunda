@@ -72,6 +72,11 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   }
 
   @Override
+  public void enabledAnonymousAuthorization() {
+    request.setAuthorization(new AuthInfo().setFormatProp(AuthDataFormat.ANONYMOUS));
+  }
+
+  @Override
   public boolean addressesSpecificPartition() {
     return getPartitionId() != ExecuteCommandRequestEncoder.partitionIdNullValue();
   }
@@ -113,6 +118,10 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
   @Override
   public String getType() {
     return type;
+  }
+
+  public boolean isAnonymous() {
+    return request.getAuthorization() != null && request.getAuthorization().getFormat() == AuthDataFormat.ANONYMOUS;
   }
 
   @Override

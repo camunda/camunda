@@ -47,6 +47,10 @@ public abstract class BrokerRequest<T> implements ClientRequest {
     // Unsupported by default
   }
 
+  public void enabledAnonymousAuthorization() {
+    // Unsupported by default
+  }
+
   public abstract boolean addressesSpecificPartition();
 
   public abstract boolean requiresPartitionId();

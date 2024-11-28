@@ -86,6 +86,11 @@ final class IncidentRecordWrapper implements TypedRecord<ProcessInstanceRecord> 
   }
 
   @Override
+  public boolean isAnonymous() {
+    return false;
+  }
+
+  @Override
   public int getRecordVersion() {
     return 1;
   }

@@ -137,8 +137,9 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     return authorizations;
   }
 
-  public void setAuthorizations(final Map<String, Object> authorizations) {
-    this.authorizations = authorizations;
+  @Override
+  public boolean isAnonymous() {
+    return false;
   }
 
   @Override
@@ -176,6 +177,10 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
 
   public void setOperationReference(final long operationReference) {
     this.operationReference = operationReference;
+  }
+
+  public void setAuthorizations(final Map<String, Object> authorizations) {
+    this.authorizations = authorizations;
   }
 
   @Override

@@ -102,6 +102,11 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   @Override
+  public boolean isAnonymous() {
+    return false;
+  }
+
+  @Override
   public int getRecordVersion() {
     return recordVersion;
   }

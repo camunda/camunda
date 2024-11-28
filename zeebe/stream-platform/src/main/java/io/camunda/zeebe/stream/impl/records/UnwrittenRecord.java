@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl.records;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -81,6 +82,11 @@ public class UnwrittenRecord implements TypedRecord {
   @Override
   public Map<String, Object> getAuthorizations() {
     return metadata.getAuthorization().toDecodedMap();
+  }
+
+  @Override
+  public boolean isAnonymous() {
+    return metadata.getAuthorization().getFormat() == AuthDataFormat.ANONYMOUS;
   }
 
   @Override

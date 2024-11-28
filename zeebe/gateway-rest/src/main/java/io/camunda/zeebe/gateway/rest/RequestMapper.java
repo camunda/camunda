@@ -475,6 +475,11 @@ public class RequestMapper {
   }
 
   public static Authentication getAuthentication() {
+    final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
+    if (requestAuthentication == null) {
+      return null;
+    }
+
     Long authenticatedUserKey = null;
     final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
 
@@ -484,8 +489,6 @@ public class RequestMapper {
             .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
             .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
             .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
-
-    final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
 
     if (requestAuthentication != null) {
 
