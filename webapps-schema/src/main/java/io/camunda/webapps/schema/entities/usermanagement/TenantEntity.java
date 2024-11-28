@@ -8,35 +8,22 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import java.util.Set;
 
 public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
 
-  public static final String DEFAULT_TENANT_IDENTIFIER = "<default>";
-
-  private String id;
-  private Long key;
+  private Long tenantKey;
   private String tenantId;
   private String name;
-  private Set<Long> assignedMemberKeys;
+  private Long memberKey;
 
-  @Override
-  public String getId() {
-    return id;
+  private EntityJoinRelation join;
+
+  public Long getTenantKey() {
+    return tenantKey;
   }
 
-  @Override
-  public TenantEntity setId(final String id) {
-    this.id = id;
-    return this;
-  }
-
-  public Long getKey() {
-    return key;
-  }
-
-  public TenantEntity setKey(final Long key) {
-    this.key = key;
+  public TenantEntity setTenantKey(final Long tenantKey) {
+    this.tenantKey = tenantKey;
     return this;
   }
 
@@ -58,11 +45,25 @@ public class TenantEntity extends AbstractExporterEntity<TenantEntity> {
     return this;
   }
 
-  public Set<Long> getAssignedMemberKeys() {
-    return assignedMemberKeys;
+  public Long getMemberKey() {
+    return memberKey;
   }
 
-  public void setAssignedMemberKeys(final Set<Long> assignedMemberKeys) {
-    this.assignedMemberKeys = assignedMemberKeys;
+  public TenantEntity setMemberKey(final Long memberKey) {
+    this.memberKey = memberKey;
+    return this;
+  }
+
+  public EntityJoinRelation getJoin() {
+    return join;
+  }
+
+  public TenantEntity setJoin(final EntityJoinRelation join) {
+    this.join = join;
+    return this;
+  }
+
+  public static String getChildKey(final long tenantKey, final long memberKey) {
+    return String.format("%d-%d", tenantKey, memberKey);
   }
 }
