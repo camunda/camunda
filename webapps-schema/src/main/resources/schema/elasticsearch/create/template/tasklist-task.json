@@ -7,10 +7,10 @@
         "eager_global_ordinals": true,
         "relations": {
           "task": [
-            "taskVariable"
+            "localVariable"
           ],
           "process": [
-            "processVariable",
+            "variable",
             "task"
           ]
         }
