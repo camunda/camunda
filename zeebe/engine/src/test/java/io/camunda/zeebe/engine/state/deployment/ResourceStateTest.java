@@ -34,7 +34,8 @@ public class ResourceStateTest {
   @Test
   void shouldReturnEmptyIfNoResourceIsDeployedForResourceId() {
     // when
-    final var persistedResource = resourceState.findLatestResourceById(wrapString("form-1"), tenantId);
+    final var persistedResource =
+        resourceState.findLatestResourceById(wrapString("form-1"), tenantId);
 
     // then
     assertThat(persistedResource).isEmpty();
@@ -70,7 +71,7 @@ public class ResourceStateTest {
   }
 
   @Test
-  void shouldStoreAndDeleteResourceInByKeyColumFamily(){
+  void shouldStoreAndDeleteResourceInByKeyColumFamily() {
     resourceState.storeResourceInResourceColumnFamily(sampleResourceRecord());
 
     final Optional<PersistedResource> resourceByKey = resourceState.findResourceByKey(1L, tenantId);
@@ -86,12 +87,12 @@ public class ResourceStateTest {
   }
 
   @Test
-  void shouldStoreAndDeleteResourceInByIdColumFamily(){
+  void shouldStoreAndDeleteResourceInByIdColumFamily() {
     final ResourceRecord resourceRecord = sampleResourceRecord();
     resourceState.storeResourceInResourceByIdAndVersionColumnFamily(resourceRecord);
 
-    final Optional<PersistedResource> resourceByKey = resourceState.findLatestResourceById(
-        resourceRecord.getResourceIdBuffer(), tenantId);
+    final Optional<PersistedResource> resourceByKey =
+        resourceState.findLatestResourceById(resourceRecord.getResourceIdBuffer(), tenantId);
     assertThat(resourceByKey).isPresent();
     assertThat(bufferAsString(resourceByKey.get().getResourceId())).isEqualTo("resource-id");
     assertThat(resourceByKey.get().getVersion()).isEqualTo(0);
@@ -100,37 +101,44 @@ public class ResourceStateTest {
 
     resourceState.deleteResourceInResourceByIdAndVersionColumnFamily(resourceRecord);
     resourceState.clearCache();
-    final Optional<PersistedResource> deleted = resourceState.findLatestResourceById(resourceRecord.getResourceIdBuffer(), tenantId);
+    final Optional<PersistedResource> deleted =
+        resourceState.findLatestResourceById(resourceRecord.getResourceIdBuffer(), tenantId);
     assertThat(deleted).isEmpty();
   }
 
   @Test
-  void shouldStoreAndDeleteResourceInResourceIdAndDeploymentKeyColumFamily(){
+  void shouldStoreAndDeleteResourceInResourceIdAndDeploymentKeyColumFamily() {
     final ResourceRecord resourceRecord = sampleResourceRecord();
     resourceState.storeResourceInResourceColumnFamily(resourceRecord);
-    resourceState.storeResourceInResourceKeyByResourceIdAndDeploymentKeyColumnFamily(resourceRecord);
+    resourceState.storeResourceInResourceKeyByResourceIdAndDeploymentKeyColumnFamily(
+        resourceRecord);
 
-    final Optional<PersistedResource> resourceByKey = resourceState.findResourceByIdAndDeploymentKey(
-        resourceRecord.getResourceIdBuffer(), 1L, tenantId);
+    final Optional<PersistedResource> resourceByKey =
+        resourceState.findResourceByIdAndDeploymentKey(
+            resourceRecord.getResourceIdBuffer(), 1L, tenantId);
     assertThat(resourceByKey).isPresent();
     assertThat(bufferAsString(resourceByKey.get().getResourceId())).isEqualTo("resource-id");
     assertThat(resourceByKey.get().getVersion()).isEqualTo(0);
     assertThat(resourceByKey.get().getDeploymentKey()).isEqualTo(1L);
     assertThat(resourceByKey.get().getVersionTag()).isEqualTo("v1.0");
 
-    resourceState.deleteResourceInResourceKeyByResourceIdAndDeploymentKeyColumnFamily(resourceRecord);
-    final Optional<PersistedResource> deleted = resourceState.findResourceByIdAndDeploymentKey(resourceRecord.getResourceIdBuffer(), 1L, tenantId);
+    resourceState.deleteResourceInResourceKeyByResourceIdAndDeploymentKeyColumnFamily(
+        resourceRecord);
+    final Optional<PersistedResource> deleted =
+        resourceState.findResourceByIdAndDeploymentKey(
+            resourceRecord.getResourceIdBuffer(), 1L, tenantId);
     assertThat(deleted).isEmpty();
   }
 
   @Test
-  void shouldStoreAndDeleteResourceInResourceIdAndVersionTagColumFamily(){
+  void shouldStoreAndDeleteResourceInResourceIdAndVersionTagColumFamily() {
     final ResourceRecord resourceRecord = sampleResourceRecord();
     resourceState.storeResourceInResourceColumnFamily(resourceRecord);
     resourceState.storeResourceInResourceKeyByResourceIdAndVersionTagColumnFamily(resourceRecord);
 
-    final Optional<PersistedResource> resourceByKey = resourceState.findResourceByIdAndVersionTag(
-        resourceRecord.getResourceIdBuffer(), "v1.0", tenantId);
+    final Optional<PersistedResource> resourceByKey =
+        resourceState.findResourceByIdAndVersionTag(
+            resourceRecord.getResourceIdBuffer(), "v1.0", tenantId);
     assertThat(resourceByKey).isPresent();
     assertThat(bufferAsString(resourceByKey.get().getResourceId())).isEqualTo("resource-id");
     assertThat(resourceByKey.get().getVersion()).isEqualTo(0);
@@ -138,7 +146,9 @@ public class ResourceStateTest {
     assertThat(resourceByKey.get().getVersionTag()).isEqualTo("v1.0");
 
     resourceState.deleteResourceInResourceKeyByResourceIdAndVersionTagColumnFamily(resourceRecord);
-    final Optional<PersistedResource> deleted = resourceState.findResourceByIdAndVersionTag(resourceRecord.getResourceIdBuffer(), "v1.0", tenantId);
+    final Optional<PersistedResource> deleted =
+        resourceState.findResourceByIdAndVersionTag(
+            resourceRecord.getResourceIdBuffer(), "v1.0", tenantId);
     assertThat(deleted).isEmpty();
   }
 
