@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -53,11 +54,12 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Autowired private RecordsReaderHolder recordsReaderHolder;
   @Autowired private ImportPositionIndex importPositionIndex;
   @Autowired private RestHighLevelClient esClient;
+  @Autowired private MeterRegistry registry;
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @Before
   public void beforeEach() {
-    operateProperties.getImporter().setImportPositionUpdateInterval(1000);
+    operateProperties.getImporter().setImportPositionUpdateInterval(5000);
     CONFIG.index.prefix = operateProperties.getZeebeElasticsearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
     CONFIG.index.setNumberOfReplicas(0);
@@ -76,10 +78,8 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.open(new ExporterTestController());
 
     recordsReaderHolder.resetCountEmptyBatches();
-
-    final var metrics = beanFactory.getBean(Metrics.class);
-    final Gauge partitionTwoImportStatus = getGauge(metrics, "1");
-    assertThat(partitionTwoImportStatus.value()).isEqualTo(0.0);
+    recordsReaderHolder.resetPartitionsCompletedImporting();
+    registry.clear();
   }
 
   @Test
@@ -202,16 +202,9 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .untilAsserted(
             () -> {
               final var metrics = beanFactory.getBean(Metrics.class);
-              final Gauge partitionTwoImportStatus = getGauge(metrics, "1");
-              assertThat(partitionTwoImportStatus.value()).isEqualTo(0.0);
-            });
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () -> {
-              final var metrics = beanFactory.getBean(Metrics.class);
+              final Gauge partitionOneImportStatus = getGauge(metrics, "1");
               final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
+              assertThat(partitionOneImportStatus.value()).isEqualTo(0.0);
               assertThat(partitionTwoImportStatus.value()).isEqualTo(0.0);
             });
   }
@@ -252,16 +245,9 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .untilAsserted(
             () -> {
               final var metrics = beanFactory.getBean(Metrics.class);
-              final Gauge partitionTwoImportStatus = getGauge(metrics, "1");
-              assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
-            });
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () -> {
-              final var metrics = beanFactory.getBean(Metrics.class);
+              final Gauge partitionOneImportStatus = getGauge(metrics, "1");
               final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
+              assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
               assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
             });
   }
