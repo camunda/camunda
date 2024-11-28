@@ -154,7 +154,7 @@ public class UserTaskVariableHandlerTest {
             inputEntity.getId(),
             inputEntity,
             updateFieldsMap,
-            String.valueOf(inputEntity.getScopeKey()));
+            String.valueOf(inputEntity.getProcessInstanceId()));
   }
 
   @Test

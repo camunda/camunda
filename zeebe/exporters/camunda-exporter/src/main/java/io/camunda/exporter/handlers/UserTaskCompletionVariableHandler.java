@@ -128,7 +128,11 @@ public class UserTaskCompletionVariableHandler
     updateFields.put(TaskTemplate.JOIN_FIELD_NAME, entity.getJoin());
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(entity.getScopeKey()));
+        indexName,
+        entity.getId(),
+        entity,
+        updateFields,
+        String.valueOf(entity.getProcessInstanceId()));
   }
 
   @Override

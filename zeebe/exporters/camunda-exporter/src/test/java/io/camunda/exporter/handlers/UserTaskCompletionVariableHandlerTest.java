@@ -160,7 +160,7 @@ public class UserTaskCompletionVariableHandlerTest {
             inputEntity.getId(),
             inputEntity,
             updateFieldsMap,
-            String.valueOf(inputEntity.getScopeKey()));
+            String.valueOf(inputEntity.getProcessInstanceId()));
   }
 
   @Test

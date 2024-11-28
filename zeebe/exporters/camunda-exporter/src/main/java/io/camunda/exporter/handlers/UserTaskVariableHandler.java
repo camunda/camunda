@@ -113,7 +113,11 @@ public class UserTaskVariableHandler
     updateFields.put(TaskTemplate.IS_TRUNCATED, entity.getIsTruncated());
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(entity.getScopeKey()));
+        indexName,
+        entity.getId(),
+        entity,
+        updateFields,
+        String.valueOf(entity.getProcessInstanceId()));
   }
 
   @Override
