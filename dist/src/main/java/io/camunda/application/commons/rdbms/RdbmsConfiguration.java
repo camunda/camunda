@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.read.service.FormReader;
 import io.camunda.db.rdbms.read.service.MappingReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
+import io.camunda.db.rdbms.read.service.TenantReader;
 import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
@@ -28,6 +29,7 @@ import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.MappingMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
+import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
@@ -85,6 +87,11 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public TenantReader tenantReader(final TenantMapper tenantMapper) {
+    return new TenantReader(tenantMapper);
+  }
+
+  @Bean
   public UserReader userRdbmsReader(final UserMapper userTaskMapper) {
     return new UserReader(userTaskMapper);
   }
@@ -121,6 +128,7 @@ public class RdbmsConfiguration {
       final FlowNodeInstanceReader flowNodeInstanceReader,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceReader processInstanceReader,
+      final TenantReader tenantReader,
       final UserReader userReader,
       final UserTaskReader userTaskReader,
       final FormReader formReader,
@@ -133,6 +141,7 @@ public class RdbmsConfiguration {
         flowNodeInstanceReader,
         processDefinitionReader,
         processInstanceReader,
+        tenantReader,
         variableReader,
         userReader,
         userTaskReader,

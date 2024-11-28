@@ -140,6 +140,8 @@ public class RdbmsExporter implements Exporter {
             new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()),
             new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter())));
     registeredHandlers.put(
+        ValueType.TENANT, List.of(new TenantExportHandler(rdbmsWriter.getTenantWriter())));
+    registeredHandlers.put(
         ValueType.VARIABLE, List.of(new VariableExportHandler(rdbmsWriter.getVariableWriter())));
     registeredHandlers.put(
         ValueType.USER, List.of(new UserExportHandler(rdbmsWriter.getUserWriter())));

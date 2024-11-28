@@ -14,6 +14,7 @@ public enum ContextType {
   PROCESS_DEFINITION,
   PROCESS_INSTANCE,
   FLOW_NODE,
+  TENANT,
   VARIABLE,
   USER,
   USER_TASK,

@@ -17,13 +17,17 @@ import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRecordValue;
@@ -202,6 +206,30 @@ public class RecordFixtures {
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
         .withPartitionId(1)
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getTenantRecord(
+      final Long tenantKey, final TenantIntent intent) {
+    return getTenantRecord(tenantKey, intent, null);
+  }
+
+  protected static ImmutableRecord<RecordValue> getTenantRecord(
+      final Long tenantKey, final TenantIntent intent, final Long entityKey) {
+    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.TENANT);
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(intent)
+        .withPosition(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withKey(tenantKey)
+        .withValue(
+            ImmutableTenantRecordValue.builder()
+                .from((TenantRecordValue) recordValueRecord.getValue())
+                .withTenantKey(tenantKey)
+                .withEntityKey(entityKey != null ? entityKey : 0)
+                .withEntityType(entityKey != null ? EntityType.USER : null)
+                .build())
         .build();
   }
 

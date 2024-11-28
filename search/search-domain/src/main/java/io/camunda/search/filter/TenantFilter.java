@@ -8,10 +8,16 @@
 package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.function.Function;
 
 public record TenantFilter(Long key, String tenantId, String name) implements FilterBase {
 
+  public static TenantFilter of(Function<Builder, Builder> builderFunction) {
+    return builderFunction.apply(new Builder()).build();
+  }
+
   public static final class Builder implements ObjectBuilder<TenantFilter> {
+
     private Long key;
     private String tenantId;
     private String name;
