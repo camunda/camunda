@@ -101,24 +101,14 @@ public class FlowNodeInstanceFromProcessInstanceHandler
       // hierarchy:
       // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/
       // PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>/PI_<currentProcessInstanceKey>
-      //      final TreePath treePath = new TreePath();
-      //      for (int i = 0; i < elementInstancePath.size(); i++) {
-      //        final List<Long> keysWithinOnePI = elementInstancePath.get(i);
-      //        treePath.appendProcessInstance(processInstanceKey);
-      //        for (final var elementInstanceKEy : keysWithinOnePI) {
-      //          treePath.appendFlowNodeInstance(String.valueOf(elementInstanceKEy));
-      //        }
-      //      }
+      final StringBuilder treeBuilder = new StringBuilder(Long.toString(processInstanceKey));
+      for (final List<Long> keysWithinOnePI : elementInstancePath) {
+        for (final var elementInstanceKEy : keysWithinOnePI) {
+          treeBuilder.append('/').append(elementInstanceKEy);
+        }
+      }
 
-      final var elementInstancePathString =
-          String.join(
-              "/",
-              elementInstancePath.get(0).stream()
-                  .map(l -> Long.toString(l))
-                  .toArray(String[]::new));
-      final String treePathString =
-          String.format("%s/%s", processInstanceKey, elementInstancePathString);
-
+      final String treePathString = treeBuilder.toString();
       // we set the default value here, which may be updated later within incident export
       entity.setTreePath(treePathString);
       entity.setLevel(treePathString.split("/").length);
