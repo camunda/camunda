@@ -24,7 +24,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
-import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 
 public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
@@ -67,16 +67,16 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
       return;
     }
 
-    if (!isAuthorizedToUpdate(command, persistedRecord.get())) {
+    if (!StringUtils.isEmpty(record.getTenantId())) {
+      rejectCommand(
+          command,
+          RejectionType.INVALID_ARGUMENT,
+          "Tenant ID cannot be updated. Expected no tenant ID, but received '%s'."
+              .formatted(record.getTenantId()));
       return;
     }
 
-    if (tenantIdConflict(record)) {
-      rejectCommand(
-          command,
-          RejectionType.ALREADY_EXISTS,
-          "Expected to update tenant with ID '%s', but a tenant with this ID already exists."
-              .formatted(record.getTenantId()));
+    if (!isAuthorizedToUpdate(command, persistedRecord.get())) {
       return;
     }
 
@@ -102,11 +102,6 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
       return false;
     }
     return true;
-  }
-
-  private boolean tenantIdConflict(final TenantRecord record) {
-    final Optional<Long> tenantKeyById = tenantState.getTenantKeyById(record.getTenantId());
-    return tenantKeyById.isPresent() && !tenantKeyById.get().equals(record.getTenantKey());
   }
 
   private void updateExistingTenant(
