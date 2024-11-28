@@ -32,7 +32,7 @@ public final class EngineConfiguration {
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
   private int formCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
-  private int rpaCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
+  private int resourceCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
   private int processCacheCapacity = DEFAULT_FORM_CACHE_CAPACITY;
 
   private Duration jobsTimeoutCheckerPollingInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
@@ -80,12 +80,12 @@ public final class EngineConfiguration {
     return this;
   }
 
-  public int getRpaCacheCapacity() {
-    return rpaCacheCapacity;
+  public int getResourceCacheCapacity() {
+    return resourceCacheCapacity;
   }
 
-  public EngineConfiguration setRpaCacheCapacity(final int rpaCacheCapacity) {
-    this.rpaCacheCapacity = formCacheCapacity;
+  public EngineConfiguration setResourceCacheCapacity(final int resourceCacheCapacity) {
+    this.resourceCacheCapacity = resourceCacheCapacity;
     return this;
   }
 
