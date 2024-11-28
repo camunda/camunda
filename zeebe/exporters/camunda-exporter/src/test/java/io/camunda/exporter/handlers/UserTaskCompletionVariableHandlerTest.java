@@ -115,7 +115,8 @@ public class UserTaskCompletionVariableHandlerTest {
     // then
     assertThat(idList)
         .containsExactlyInAnyOrder(
-            elementInstanceKey + "-" + "var1", elementInstanceKey + "-" + "var2");
+            elementInstanceKey + "-" + "var1" + TaskTemplate.LOCAL_VARIABLE_SUFFIX,
+            elementInstanceKey + "-" + "var2" + TaskTemplate.LOCAL_VARIABLE_SUFFIX);
   }
 
   @Test

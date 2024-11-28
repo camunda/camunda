@@ -31,7 +31,7 @@ public class UserTaskCompletionVariableHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(UserTaskCompletionVariableHandler.class);
 
-  private static final String ID_PATTERN = "%s-%s";
+  private static final String ID_PATTERN = "%s-%s" + TaskTemplate.LOCAL_VARIABLE_SUFFIX;
   private static final ObjectMapper MAPPER = new ObjectMapper();
   protected final int variableSizeThreshold;
   private final String indexName;

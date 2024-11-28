@@ -19,7 +19,6 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +53,18 @@ public class UserTaskVariableHandler
 
   @Override
   public List<String> generateIds(final Record<VariableRecordValue> record) {
-    return List.of(
-        ID_PATTERN.formatted(record.getValue().getScopeKey(), record.getValue().getName()));
+    final String id =
+        ID_PATTERN.formatted(record.getValue().getScopeKey(), record.getValue().getName());
+
+    /* Process Variable */
+    if (record.getValue().getScopeKey() == record.getValue().getProcessInstanceKey()) {
+      return List.of(id);
+    }
+    /*
+     * Local Variable
+     * Generate two IDs for process variable and local
+     * */
+    return List.of(id, id + TaskTemplate.LOCAL_VARIABLE_SUFFIX);
   }
 
   @Override
@@ -86,12 +95,12 @@ public class UserTaskVariableHandler
     }
 
     final TaskJoinRelationship joinRelationship = new TaskJoinRelationship();
-    joinRelationship.setParent(entity.getScopeKey());
+    joinRelationship.setParent(
+        isLocalVariable(entity) ? entity.getScopeKey() : entity.getProcessInstanceId());
     joinRelationship.setName(
-        // Whether it's a process or a task variable
-        Objects.equals(entity.getProcessInstanceId(), entity.getScopeKey())
-            ? TaskJoinRelationshipType.PROCESS_VARIABLE.getType()
-            : TaskJoinRelationshipType.TASK_VARIABLE.getType());
+        isLocalVariable(entity)
+            ? TaskJoinRelationshipType.LOCAL_VARIABLE.getType()
+            : TaskJoinRelationshipType.PROCESS_VARIABLE.getType());
     entity.setJoin(joinRelationship);
   }
 
@@ -110,5 +119,9 @@ public class UserTaskVariableHandler
   @Override
   public String getIndexName() {
     return indexName;
+  }
+
+  private boolean isLocalVariable(final TaskVariableEntity entity) {
+    return entity.getId().endsWith(TaskTemplate.LOCAL_VARIABLE_SUFFIX);
   }
 }

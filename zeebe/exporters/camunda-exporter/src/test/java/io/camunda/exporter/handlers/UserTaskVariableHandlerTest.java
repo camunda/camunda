@@ -68,9 +68,9 @@ public class UserTaskVariableHandlerTest {
   }
 
   @Test
-  void shouldGenerateIds() {
+  void shouldGenerateSingleIdForProcessVariable() {
     // given
-    final long expectedId = 123;
+    final long processInstanceKey = 123L;
     final String name = "name";
     final Record<VariableRecordValue> processInstanceRecord =
         factory.generateRecord(
@@ -80,14 +80,42 @@ public class UserTaskVariableHandlerTest {
                     .withValue(
                         ImmutableVariableRecordValue.builder()
                             .withName("name")
-                            .withScopeKey(expectedId)
+                            .withProcessInstanceKey(processInstanceKey)
+                            .withScopeKey(processInstanceKey)
                             .build()));
 
     // when
     final var idList = underTest.generateIds(processInstanceRecord);
 
     // then
-    assertThat(idList).containsExactly(expectedId + "-" + name);
+    assertThat(idList).containsExactly(processInstanceKey + "-" + name);
+  }
+
+  @Test
+  void shouldGenerateTwoIdsForLocalVariable() {
+    // given
+    final long processInstanceKey = 123L;
+    final long scopeKey = 456L;
+    final String name = "name";
+    final Record<VariableRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.VARIABLE,
+            r ->
+                r.withIntent(VariableIntent.CREATED)
+                    .withValue(
+                        ImmutableVariableRecordValue.builder()
+                            .withName("name")
+                            .withProcessInstanceKey(processInstanceKey)
+                            .withScopeKey(scopeKey)
+                            .build()));
+
+    // when
+    final var idList = underTest.generateIds(processInstanceRecord);
+
+    // then
+    assertThat(idList)
+        .containsExactlyInAnyOrder(
+            scopeKey + "-" + name, scopeKey + "-" + name + TaskTemplate.LOCAL_VARIABLE_SUFFIX);
   }
 
   @Test
@@ -149,12 +177,21 @@ public class UserTaskVariableHandlerTest {
 
     // when
     final TaskVariableEntity variableEntity =
-        new TaskVariableEntity().setId(variableScopeKey + "-" + variableRecordValue.getName());
+        new TaskVariableEntity()
+            .setId(
+                variableScopeKey
+                    + "-"
+                    + variableRecordValue.getName()
+                    + TaskTemplate.LOCAL_VARIABLE_SUFFIX);
     underTest.updateEntity(variableRecord, variableEntity);
 
     // then
     assertThat(variableEntity.getId())
-        .isEqualTo(variableRecordValue.getScopeKey() + "-" + variableRecordValue.getName());
+        .isEqualTo(
+            variableRecordValue.getScopeKey()
+                + "-"
+                + variableRecordValue.getName()
+                + TaskTemplate.LOCAL_VARIABLE_SUFFIX);
     assertThat(variableEntity.getKey()).isEqualTo(variableRecord.getKey());
     assertThat(variableEntity.getName()).isEqualTo(variableRecordValue.getName());
     assertThat(variableEntity.getScopeKey()).isEqualTo(variableRecordValue.getScopeKey());
@@ -225,7 +262,7 @@ public class UserTaskVariableHandlerTest {
             r -> r.withIntent(ProcessIntent.CREATED).withValue(variableRecordValue));
 
     // when
-    final TaskVariableEntity variableEntity = new TaskVariableEntity();
+    final TaskVariableEntity variableEntity = new TaskVariableEntity().setId("id");
     underTest.updateEntity(variableRecord, variableEntity);
 
     // then
