@@ -16,59 +16,49 @@ import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.deployment.Rpa;
+import io.camunda.zeebe.protocol.record.value.deployment.Resource;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class RpaRecord extends UnifiedRecordValue implements Rpa {
-  private final StringProperty rpaIdProp = new StringProperty("rpaId");
+public class ResourceRecord extends UnifiedRecordValue implements Resource {
+  private final StringProperty resourceIdProp = new StringProperty("resourceId");
   private final IntegerProperty versionProp = new IntegerProperty("version");
-  private final LongProperty rpaKeyProp = new LongProperty("rpaKey");
+  private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
-  private final StringProperty robotScriptProp = new StringProperty("robotScript", "");
+  private final StringProperty resourceProp = new StringProperty("resourceProp", "");
 
-  public RpaRecord() {
-    super(9);
-    declareProperty(rpaIdProp)
+  public ResourceRecord() {
+    super(8);
+    declareProperty(resourceIdProp)
         .declareProperty(versionProp)
-        .declareProperty(rpaKeyProp)
+        .declareProperty(resourceKeyProp)
         .declareProperty(checksumProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
         .declareProperty(versionTagProp)
-        .declareProperty(robotScriptProp);
+        .declareProperty(resourceProp);
   }
 
-  public RpaRecord wrap(final RpaMetadataRecord metadata, final String robotScript) {
-    rpaIdProp.setValue(metadata.getRpaId());
+  public ResourceRecord wrap(final ResourceMetadataRecord metadata, final String robotScript) {
+    resourceIdProp.setValue(metadata.getResourceId());
     versionProp.setValue(metadata.getVersion());
     checksumProp.setValue(metadata.getChecksumBuffer());
-    rpaKeyProp.setValue(metadata.getRpaKey());
+    resourceKeyProp.setValue(metadata.getResourceKey());
     tenantIdProp.setValue(metadata.getTenantId());
     deploymentKeyProp.setValue(metadata.getDeploymentKey());
     versionTagProp.setValue(metadata.getVersionTag());
-    robotScriptProp.setValue(robotScript);
+    resourceProp.setValue(robotScript);
     return this;
   }
 
   @Override
-  public String getRpaId() {
-    return BufferUtil.bufferAsString(rpaIdProp.getValue());
-  }
-
-  public RpaRecord setRpaId(final String rpaId) {
-    rpaIdProp.setValue(rpaId);
-    return this;
-  }
-
-  public RpaRecord setRpaId(final DirectBuffer rpaId) {
-    rpaIdProp.setValue(rpaId);
-    return this;
+  public String getResourceId() {
+    return BufferUtil.bufferAsString(resourceIdProp.getValue());
   }
 
   @Override
@@ -76,7 +66,7 @@ public class RpaRecord extends UnifiedRecordValue implements Rpa {
     return versionProp.getValue();
   }
 
-  public RpaRecord setVersion(final int version) {
+  public ResourceRecord setVersion(final int version) {
     versionProp.setValue(version);
     return this;
   }
@@ -86,19 +76,14 @@ public class RpaRecord extends UnifiedRecordValue implements Rpa {
     return bufferAsString(versionTagProp.getValue());
   }
 
-  public RpaRecord setVersionTag(final String versionTag) {
+  public ResourceRecord setVersionTag(final String versionTag) {
     versionTagProp.setValue(versionTag);
     return this;
   }
 
   @Override
-  public long getRpaKey() {
-    return rpaKeyProp.getValue();
-  }
-
-  public RpaRecord setRpaKey(final long key) {
-    rpaKeyProp.setValue(key);
-    return this;
+  public long getResourceKey() {
+    return resourceKeyProp.getValue();
   }
 
   @Override
@@ -106,7 +91,7 @@ public class RpaRecord extends UnifiedRecordValue implements Rpa {
     return BufferUtil.bufferAsArray(checksumProp.getValue());
   }
 
-  public RpaRecord setChecksum(final DirectBuffer checksumBuffer) {
+  public ResourceRecord setChecksum(final DirectBuffer checksumBuffer) {
     checksumProp.setValue(checksumBuffer);
     return this;
   }
@@ -121,8 +106,23 @@ public class RpaRecord extends UnifiedRecordValue implements Rpa {
     return deploymentKeyProp.getValue();
   }
 
-  public RpaRecord setDeploymentKey(final long deploymentKey) {
+  public ResourceRecord setDeploymentKey(final long deploymentKey) {
     deploymentKeyProp.setValue(deploymentKey);
+    return this;
+  }
+
+  public ResourceRecord setResourceId(final DirectBuffer resourceId) {
+    resourceIdProp.setValue(resourceId);
+    return this;
+  }
+
+  public ResourceRecord setResourceId(final String resourceId) {
+    resourceIdProp.setValue(resourceId);
+    return this;
+  }
+
+  public ResourceRecord setResourceKey(final long resourceKey) {
+    resourceKeyProp.setValue(resourceKey);
     return this;
   }
 
@@ -132,8 +132,8 @@ public class RpaRecord extends UnifiedRecordValue implements Rpa {
   }
 
   @JsonIgnore
-  public DirectBuffer getRpaIdBuffer() {
-    return rpaIdProp.getValue();
+  public DirectBuffer getResourceIdBuffer() {
+    return resourceIdProp.getValue();
   }
 
   @Override
@@ -148,28 +148,23 @@ public class RpaRecord extends UnifiedRecordValue implements Rpa {
     return super.getEncodedLength();
   }
 
-  public RpaRecord setRpaId(final DirectBuffer rpaId, final int offset, final int length) {
-    rpaIdProp.setValue(rpaId, offset, length);
-    return this;
-  }
-
   @Override
   public String getTenantId() {
     return bufferAsString(tenantIdProp.getValue());
   }
 
-  public RpaRecord setTenantId(final String tenantId) {
+  public ResourceRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
   }
 
   @Override
-  public String getRobotScript() {
-    return bufferAsString(robotScriptProp.getValue());
+  public String getResourceProp() {
+    return bufferAsString(resourceProp.getValue());
   }
 
-  public RpaRecord setRobotScript(final String robotScript) {
-    robotScriptProp.setValue(robotScript);
+  public ResourceRecord setResourceProp(final String robotScript) {
+    resourceProp.setValue(robotScript);
     return this;
   }
 }

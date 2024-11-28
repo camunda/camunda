@@ -21,13 +21,13 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.immutables.value.Value;
 
 @Value.Immutable
-@ImmutableProtocol(builder = ImmutableRpaMetadataValue.Builder.class)
-public interface RpaMetadataValue extends RecordValue, TenantOwned {
+@ImmutableProtocol(builder = ImmutableResourceMetadataValue.Builder.class)
+public interface ResourceMetadataValue extends RecordValue, TenantOwned {
 
   /**
    * @return the ID of the RPA script
    */
-  String getRpaId();
+  String getResourceId();
 
   /**
    * @return the version of the deployed RPA script
@@ -42,7 +42,7 @@ public interface RpaMetadataValue extends RecordValue, TenantOwned {
   /**
    * @return the key of the deployed RPA script
    */
-  long getRpaKey();
+  long getResourceKey();
 
   /**
    * @return the checksum of the RPA resource (MD5)
