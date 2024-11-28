@@ -10,13 +10,10 @@ import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
-import {
-  UpdateDeleteTenantParams,
-  updateTenant,
-} from "src/utility/api/tenants";
+import { UpdateTenantParams, updateTenant } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
 
-const EditTenantModal: FC<UseEntityModalProps<UpdateDeleteTenantParams>> = ({
+const EditTenantModal: FC<UseEntityModalProps<UpdateTenantParams>> = ({
   open,
   onClose,
   onSuccess,

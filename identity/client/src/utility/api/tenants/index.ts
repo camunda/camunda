@@ -40,16 +40,17 @@ export const createTenant: ApiDefinition<undefined, CreateTenantParams> = (
   tenant,
 ) => apiPost(TENANTS_ENDPOINT, tenant);
 
-export type UpdateDeleteTenantParams = {
+export type UpdateTenantParams = {
   tenantKey: string;
   name: string;
 };
 
-export const updateTenant: ApiDefinition<
-  undefined,
-  UpdateDeleteTenantParams
-> = ({ tenantKey, name }) =>
-  apiPatch(`${TENANTS_ENDPOINT}/${tenantKey}`, { name });
+export type DeleteTenantParams = UpdateTenantParams;
+
+export const updateTenant: ApiDefinition<undefined, UpdateTenantParams> = ({
+  tenantKey,
+  name,
+}) => apiPatch(`${TENANTS_ENDPOINT}/${tenantKey}`, { name });
 
 export const deleteTenant: ApiDefinition<undefined, { tenantKey: string }> = ({
   tenantKey,

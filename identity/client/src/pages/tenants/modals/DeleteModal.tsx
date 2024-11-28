@@ -11,13 +11,10 @@ import {
   DeleteModal as Modal,
   UseEntityModalProps,
 } from "src/components/modal";
-import {
-  deleteTenant,
-  UpdateDeleteTenantParams,
-} from "src/utility/api/tenants";
+import { deleteTenant, DeleteTenantParams } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
 
-const DeleteTenantModal: FC<UseEntityModalProps<UpdateDeleteTenantParams>> = ({
+const DeleteTenantModal: FC<UseEntityModalProps<DeleteTenantParams>> = ({
   open,
   onClose,
   onSuccess,
