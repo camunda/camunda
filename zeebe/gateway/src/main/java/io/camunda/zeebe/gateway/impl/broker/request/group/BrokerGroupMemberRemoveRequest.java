@@ -31,9 +31,8 @@ public class BrokerGroupMemberRemoveRequest extends BrokerExecuteCommand<GroupRe
     return this;
   }
 
-  public BrokerGroupMemberRemoveRequest setMemberType(final String memberType) {
-    final EntityType entityType = "user".equals(memberType) ? EntityType.USER : EntityType.MAPPING;
-    requestDto.setEntityType(entityType);
+  public BrokerGroupMemberRemoveRequest setMemberType(final EntityType memberType) {
+    requestDto.setEntityType(memberType);
     return this;
   }
 

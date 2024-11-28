@@ -162,7 +162,7 @@ public class GroupServiceTest {
     // given
     final var groupKey = 123L;
     final var memberKey = 456L;
-    final var memberType = "user";
+    final var memberType = EntityType.USER;
 
     // when
     services.assignMember(groupKey, memberKey, memberType);
@@ -184,7 +184,7 @@ public class GroupServiceTest {
     // given
     final var groupKey = 123L;
     final var memberKey = 456L;
-    final var memberType = "user";
+    final var memberType = EntityType.USER;
 
     // when
     services.removeMember(groupKey, memberKey, memberType);
