@@ -261,8 +261,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.18.2</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -289,8 +287,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>2.18.2</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
