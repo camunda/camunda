@@ -21,6 +21,7 @@ import io.camunda.zeebe.client.api.worker.JobHandler;
 import io.camunda.zeebe.client.impl.Loggers;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.time.Duration;
 import org.slf4j.Logger;
 
 public final class JobRunnableFactoryImpl implements JobRunnableFactory {
@@ -42,6 +43,16 @@ public final class JobRunnableFactoryImpl implements JobRunnableFactory {
 
   private void executeJob(final ActivatedJob job, final Runnable doneCallback) {
     try {
+      final long now = System.currentTimeMillis();
+      if (job.getDeadline() > now) {
+        LOG.debug(
+            "Worker {} is not handling job with key {} of type {}, it already expired {} ago",
+            job.getWorker(),
+            job.getKey(),
+            job.getType(),
+            Duration.ofMillis(job.getDeadline() - now));
+        return;
+      }
       handler.handle(jobClient, job);
     } catch (final Exception e) {
       LOG.warn(
