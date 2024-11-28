@@ -131,6 +131,8 @@ public class ExporterConfiguration {
 
     private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
+    private boolean waitForImporters = false;
+
     public String getPrefix() {
       return prefix;
     }
@@ -161,6 +163,14 @@ public class ExporterConfiguration {
 
     public void setVariableSizeThreshold(final Integer variableSizeThreshold) {
       this.variableSizeThreshold = variableSizeThreshold;
+    }
+
+    public boolean isWaitForImporters() {
+      return waitForImporters;
+    }
+
+    public void setWaitForImporters(final boolean waitForImporters) {
+      this.waitForImporters = waitForImporters;
     }
 
     @Override

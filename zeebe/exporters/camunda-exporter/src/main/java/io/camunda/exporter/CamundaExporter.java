@@ -170,7 +170,7 @@ public class CamundaExporter implements Exporter {
 
     writer.addRecord(record);
 
-    if (!importersCompleted) {
+    if (configuration.getIndex().isWaitForImporters() && !importersCompleted) {
       return;
     }
 
