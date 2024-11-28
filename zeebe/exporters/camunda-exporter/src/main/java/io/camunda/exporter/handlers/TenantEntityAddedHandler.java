@@ -9,16 +9,18 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
+import io.camunda.webapps.schema.entities.usermanagement.GroupEntity;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 
 public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, TenantRecordValue> {
+
   private final String indexName;
 
   public TenantEntityAddedHandler(final String indexName) {
@@ -37,13 +39,14 @@ public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, Ten
 
   @Override
   public boolean handlesRecord(final Record<TenantRecordValue> record) {
-    return record.getIntent() == TenantIntent.ENTITY_ADDED
-        && record.getValueType() == ValueType.TENANT;
+    return TenantIntent.ENTITY_ADDED.equals(record.getIntent());
   }
 
   @Override
   public List<String> generateIds(final Record<TenantRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    final var tenantRecord = record.getValue();
+    return List.of(
+        GroupEntity.getChildKey(tenantRecord.getTenantKey(), tenantRecord.getEntityKey()));
   }
 
   @Override
@@ -53,26 +56,20 @@ public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, Ten
 
   @Override
   public void updateEntity(final Record<TenantRecordValue> record, final TenantEntity entity) {
-    if (entity.getAssignedMemberKeys() == null) {
-      entity.setAssignedMemberKeys(new HashSet<>());
-    }
-    entity.getAssignedMemberKeys().add(record.getValue().getEntityKey());
+    final TenantRecordValue value = record.getValue();
+    final EntityJoinRelation joinRelation =
+        TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantKey());
+    entity
+        .setTenantKey(value.getTenantKey())
+        .setTenantId(value.getTenantId())
+        .setName(value.getName())
+        .setJoin(joinRelation);
   }
 
   @Override
   public void flush(final TenantEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    // the script to add a single value to the assignedMemberKeys field
-    final String script =
-        "if (ctx._source.assignedMemberKeys == null) "
-            + "{ ctx._source.assignedMemberKeys = [params.newKey]; } "
-            + "else if (!ctx._source.assignedMemberKeys.contains(params.newKey)) "
-            + "{ ctx._source.assignedMemberKeys.add(params.newKey); }";
-
-    final Map<String, Object> params =
-        Map.of("newKey", entity.getAssignedMemberKeys().iterator().next());
-
-    batchRequest.updateWithScript(indexName, entity.getId(), script, params);
+    batchRequest.addWithRouting(indexName, entity, String.valueOf(entity.getJoin().parent()));
   }
 
   @Override

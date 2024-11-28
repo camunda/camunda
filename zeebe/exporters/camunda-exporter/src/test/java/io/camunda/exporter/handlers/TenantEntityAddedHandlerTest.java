@@ -12,16 +12,13 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
-import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 public class TenantEntityAddedHandlerTest {
@@ -36,13 +33,18 @@ public class TenantEntityAddedHandlerTest {
   }
 
   @Test
+  void testGetEntityType() {
+    assertThat(underTest.getEntityType()).isEqualTo(TenantEntity.class);
+  }
+
+  @Test
   void shouldHandleRecord() {
     // given
-    final Record<TenantRecordValue> entityAddedRecord =
+    final Record<TenantRecordValue> tenantAddedRecord =
         factory.generateRecordWithIntent(ValueType.TENANT, TenantIntent.ENTITY_ADDED);
 
     // when - then
-    assertThat(underTest.handlesRecord(entityAddedRecord)).isTrue();
+    assertThat(underTest.handlesRecord(tenantAddedRecord)).isTrue();
   }
 
   @Test
@@ -55,58 +57,34 @@ public class TenantEntityAddedHandlerTest {
     final var idList = underTest.generateIds(tenantRecord);
 
     // then
-    assertThat(idList).containsExactly(String.valueOf(tenantRecord.getKey()));
+    final var value = tenantRecord.getValue();
+    assertThat(idList)
+        .containsExactly(TenantEntity.getChildKey(value.getTenantKey(), value.getEntityKey()));
   }
 
   @Test
-  void shouldAddEntityKeyToAssignedMembers() {
-    // given
-    final long existingKey = 100L;
-    final long newKey = 123L;
-
-    // Create a TenantEntity with an existing key in a mutable assignedMemberKeys set
-    final TenantEntity tenantEntity = new TenantEntity();
-    tenantEntity.setAssignedMemberKeys(new HashSet<>(Set.of(existingKey)));
-
-    // Create a record for the new key to be added
-    final TenantRecordValue tenantRecordValue =
-        ImmutableTenantRecordValue.builder()
-            .from(factory.generateObject(TenantRecordValue.class))
-            .withEntityKey(newKey)
-            .build();
-
-    final Record<TenantRecordValue> tenantRecord =
-        factory.generateRecord(
-            ValueType.TENANT,
-            r -> r.withIntent(TenantIntent.ENTITY_ADDED).withValue(tenantRecordValue));
-
+  void shouldCreateNewEntity() {
     // when
-    underTest.updateEntity(tenantRecord, tenantEntity);
+    final var result = underTest.createNewEntity("id");
 
     // then
-    assertThat(tenantEntity.getAssignedMemberKeys()).containsExactlyInAnyOrder(existingKey, newKey);
+    assertThat(result).isNotNull();
+    assertThat(result.getId()).isEqualTo("id");
   }
 
   @Test
-  void shouldFlushOnlyAssignedMemberKeysField() throws PersistenceException {
+  void shouldUpdateTenantEntityOnFlush() throws PersistenceException {
     // given
-    final TenantEntity tenantEntity = new TenantEntity().setId("tenant-1");
-    tenantEntity.setAssignedMemberKeys(new HashSet<>(Set.of(123L)));
+    final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createChild(111L);
+    final TenantEntity inputEntity =
+        new TenantEntity().setId("111").setMemberKey(222L).setJoin(joinRelation);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
-    final String expectedScript =
-        "if (ctx._source.assignedMemberKeys == null) "
-            + "{ ctx._source.assignedMemberKeys = [params.newKey]; } "
-            + "else if (!ctx._source.assignedMemberKeys.contains(params.newKey))"
-            + " { ctx._source.assignedMemberKeys.add(params.newKey); }";
-
-    final Map<String, Object> expectedParams = Map.of("newKey", 123L);
-
     // when
-    underTest.flush(tenantEntity, mockRequest);
+    underTest.flush(inputEntity, mockRequest);
 
     // then
     verify(mockRequest, times(1))
-        .updateWithScript(indexName, tenantEntity.getId(), expectedScript, expectedParams);
+        .addWithRouting(indexName, inputEntity, String.valueOf(joinRelation.parent()));
   }
 }
