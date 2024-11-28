@@ -25,38 +25,38 @@ import org.immutables.value.Value;
 public interface ResourceMetadataValue extends RecordValue, TenantOwned {
 
   /**
-   * @return the ID of the RPA script
+   * @return the ID of the Resource
    */
   String getResourceId();
 
   /**
-   * @return the version of the deployed RPA script
+   * @return the version of the deployed Resource
    */
   int getVersion();
 
   /**
-   * @return the custom version tag of the RPA script
+   * @return the custom version tag of the Resource
    */
   String getVersionTag();
 
   /**
-   * @return the key of the deployed RPA script
+   * @return the key of the deployed Resource
    */
   long getResourceKey();
 
   /**
-   * @return the checksum of the RPA resource (MD5)
+   * @return the checksum of the Resource (MD5)
    */
   byte[] getChecksum();
 
   /**
-   * @return {@code true} if the RPA is a duplicate (and has been deployed previously), otherwise
-   *     {@code false}
+   * @return {@code true} if the Resource is a duplicate (and has been deployed previously),
+   *     otherwise {@code false}
    */
   boolean isDuplicate();
 
   /**
-   * @return the key of the deployment this form was deployed with
+   * @return the key of the deployment this Resource was deployed with
    */
   long getDeploymentKey();
 }
