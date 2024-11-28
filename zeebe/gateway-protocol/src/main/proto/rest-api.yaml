@@ -86,7 +86,7 @@ paths:
   /authentication/me:
     get:
       tags:
-        - authentication
+        - Authentication
       operationId: getAuthentication
       summary: Get current user
       description: Retrieves the current authenticated user.
