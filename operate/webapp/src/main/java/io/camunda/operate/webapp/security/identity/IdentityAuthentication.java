@@ -17,7 +17,6 @@ import io.camunda.identity.sdk.impl.rest.exception.RestException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
 import io.camunda.operate.webapp.security.Permission;
-import io.camunda.operate.webapp.security.SessionRepository;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
 import java.io.Serial;
@@ -39,7 +38,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   @Serial private static final long serialVersionUID = 1L;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IdentityAuthentication.class);
-
+  private static final String POLLING_HEADER = "x-is-polling";
   private Tokens tokens;
   private String id;
   private String name;
@@ -264,8 +263,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
         (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
     if (requestAttributes != null) {
       return Boolean.TRUE.equals(
-          Boolean.parseBoolean(
-              requestAttributes.getRequest().getHeader(SessionRepository.POLLING_HEADER)));
+          Boolean.parseBoolean(requestAttributes.getRequest().getHeader(POLLING_HEADER)));
     } else {
       return false;
     }

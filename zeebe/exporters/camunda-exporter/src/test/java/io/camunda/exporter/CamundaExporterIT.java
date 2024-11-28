@@ -293,6 +293,7 @@ final class CamundaExporterIT {
             "custom-prefix-identity-role-8.7.0_",
             "custom-prefix-identity-tenants-8.7.0_",
             "custom-prefix-identity-users-8.7.0_",
+            "custom-prefix-identity-web-session-8.7.0_",
             "custom-prefix-operate-batch-operation-1.0.0_",
             "custom-prefix-operate-decision-8.3.0_",
             "custom-prefix-operate-decision-instance-8.3.0_",

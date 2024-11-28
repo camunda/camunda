@@ -13,7 +13,7 @@
         "type": "long"
       },
       "maxInactiveIntervalInSeconds": {
-        "type": "integer"
+        "type": "long"
       },
       "attributes": {
         "type": "object"
