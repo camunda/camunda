@@ -16,9 +16,9 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 import org.springframework.context.annotation.Profile;
 
 /**
- * Entry point for the Operate modules by using the the
- * {@link io.camunda.application.Profile#OPERATE} profile, so that the appropriate Operate
- * application properties are applied.
+ * Entry point for the Operate modules by using the the {@link
+ * io.camunda.application.Profile#OPERATE} profile, so that the appropriate Operate application
+ * properties are applied.
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
