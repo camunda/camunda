@@ -137,8 +137,7 @@ public class TaskService {
           taskId,
           task.getFormKey());
 
-      final Optional<FormIdView> linkedForm =
-          formStore.getHighestVersionFormByKey(task.getFormKey());
+      final Optional<FormIdView> linkedForm = formStore.getFormByKey(task.getFormKey());
 
       linkedForm.ifPresent(
           form -> {
