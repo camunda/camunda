@@ -725,7 +725,7 @@ public final class NativeUserTaskTest {
                 .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
         .extracting(Record::getValueType, Record::getIntent)
         .containsSubsequence(
-            tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNING),
+            tuple(ValueType.USER_TASK, UserTaskIntent.CLAIMING),
             tuple(ValueType.USER_TASK, UserTaskIntent.ASSIGNED));
 
     Assertions.assertThat(

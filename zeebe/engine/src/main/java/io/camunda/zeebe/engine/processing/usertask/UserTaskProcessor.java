@@ -245,7 +245,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final LifecycleState lifecycleState) {
     return switch (lifecycleState) {
       case CREATING -> ZeebeTaskListenerEventType.create;
-      case ASSIGNING -> ZeebeTaskListenerEventType.assignment;
+      case ASSIGNING, CLAIMING -> ZeebeTaskListenerEventType.assignment;
       case UPDATING -> ZeebeTaskListenerEventType.update;
       case COMPLETING -> ZeebeTaskListenerEventType.complete;
       case CANCELING -> ZeebeTaskListenerEventType.cancel;
@@ -280,6 +280,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var userTaskIntent =
         switch (lifecycleState) {
           case ASSIGNING -> UserTaskIntent.ASSIGN;
+          case CLAIMING -> UserTaskIntent.CLAIM;
           case UPDATING -> UserTaskIntent.UPDATE;
           case COMPLETING -> UserTaskIntent.COMPLETE;
           case CREATING, CANCELING ->
