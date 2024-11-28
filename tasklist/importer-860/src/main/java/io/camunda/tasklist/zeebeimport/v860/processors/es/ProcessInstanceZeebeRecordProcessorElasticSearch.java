@@ -10,10 +10,7 @@ package io.camunda.tasklist.zeebeimport.v860.processors.es;
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
-import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.zeebeimport.util.EnvironmentUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
@@ -25,14 +22,11 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.elasticsearch.action.DocWriteRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -51,7 +45,6 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
 
   private static final List<BpmnElementType> VARIABLE_SCOPE_TYPES =
       Arrays.asList(
-          BpmnElementType.PROCESS,
           BpmnElementType.SUB_PROCESS,
           BpmnElementType.EVENT_SUB_PROCESS,
           BpmnElementType.SERVICE_TASK,
@@ -72,22 +65,16 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistFlowNodeInstanceTemplate")
   private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
-  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
-
   public void processProcessInstanceRecord(final Record record, final BulkRequest bulkRequest)
       throws PersistenceException {
 
     final ProcessInstanceRecordValueImpl recordValue =
         (ProcessInstanceRecordValueImpl) record.getValue();
-    if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
+    if (environment.isTestProfileEnabled()
+        && isVariableScopeType(recordValue)
+        && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
-      if (isNotProcessType(recordValue) && environment.isTestProfileEnabled()) {
-        bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
-      }
-      final IndexRequest processRequest = persistFlowNodeDataToListView(flowNodeInstance);
-      if (processRequest != null) {
-        bulkRequest.add(processRequest);
-      }
+      bulkRequest.add(getFlowNodeInstanceQuery(flowNodeInstance));
     }
   }
 
@@ -132,53 +119,5 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
       return false;
     }
     return VARIABLE_SCOPE_TYPES.contains(bpmnElementType);
-  }
-
-  private boolean isNotProcessType(final ProcessInstanceRecordValueImpl recordValue) {
-    final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
-    if (bpmnElementType == null) {
-      return false;
-    }
-    return !BpmnElementType.PROCESS.equals(bpmnElementType);
-  }
-
-  private IndexRequest persistFlowNodeDataToListView(final FlowNodeInstanceEntity flowNodeInstance)
-      throws PersistenceException {
-    final ProcessInstanceListViewEntity processInstanceListViewEntity =
-        new ProcessInstanceListViewEntity();
-
-    if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
-      final ListViewJoinRelation listViewJoinRelation = new ListViewJoinRelation();
-      processInstanceListViewEntity.setId(flowNodeInstance.getId());
-      processInstanceListViewEntity.setPartitionId(flowNodeInstance.getPartitionId());
-      processInstanceListViewEntity.setTenantId(flowNodeInstance.getTenantId());
-      listViewJoinRelation.setName("process");
-      processInstanceListViewEntity.setJoin(listViewJoinRelation);
-      return getUpdateRequest(processInstanceListViewEntity);
-    } else {
-      return null;
-    }
-  }
-
-  private IndexRequest getUpdateRequest(
-      final ProcessInstanceListViewEntity processInstanceListViewEntity)
-      throws PersistenceException {
-    try {
-      // Convert the entity to a JSON map using ObjectMapper
-      final Map<String, Object> jsonMap =
-          objectMapper.readValue(
-              objectMapper.writeValueAsString(processInstanceListViewEntity), HashMap.class);
-
-      final IndexRequest indexRequest =
-          new IndexRequest()
-              .index(tasklistListViewTemplate.getFullQualifiedName())
-              .id(processInstanceListViewEntity.getId())
-              .source(jsonMap, XContentType.JSON)
-              .opType(DocWriteRequest.OpType.INDEX);
-
-      return indexRequest;
-    } catch (final IOException e) {
-      throw new PersistenceException("Error preparing the query to index snapshot entity", e);
-    }
   }
 }

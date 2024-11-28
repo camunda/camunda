@@ -12,8 +12,6 @@ import static io.camunda.tasklist.util.OpenSearchUtil.UPDATE_RETRY_COUNT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
-import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v870.processors.common.UserTaskRecordToTaskEntityMapper;
 import io.camunda.tasklist.zeebeimport.v870.processors.common.UserTaskRecordToVariableEntityMapper;
@@ -54,14 +52,12 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
 
   @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
-  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processUserTaskRecord(
       final Record<UserTaskRecordValue> record, final List<BulkOperation> operations) {
     final Optional<TaskEntity> taskEntity = userTaskRecordToTaskEntityMapper.map(record);
     if (taskEntity.isPresent()) {
       operations.add(getTaskQuery(taskEntity.get(), record));
-      operations.add(persistUserTaskToListView(taskEntity.get(), record));
     }
 
     if (!record.getValue().getVariables().isEmpty()) {
@@ -105,26 +101,6 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
                         .document(CommonUtils.getJsonObjectFromEntity(updateFields))
                         .upsert(CommonUtils.getJsonObjectFromEntity(variable))
                         .retryOnConflict(UPDATE_RETRY_COUNT)))
-        .build();
-  }
-
-  private BulkOperation persistUserTaskToListView(
-      final TaskEntity taskEntity, final Record record) {
-
-    final UserTaskListViewEntity tasklistListViewEntity = new UserTaskListViewEntity(taskEntity);
-
-    final Map<String, Object> updateFields =
-        userTaskRecordToTaskEntityMapper.getUpdateFieldsListViewMap(tasklistListViewEntity, record);
-
-    return new BulkOperation.Builder()
-        .update(
-            up ->
-                up.index(tasklistListViewTemplate.getFullQualifiedName())
-                    .id(tasklistListViewEntity.getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(updateFields))
-                    .upsert(CommonUtils.getJsonObjectFromEntity(tasklistListViewEntity))
-                    .routing(tasklistListViewEntity.getProcessInstanceId())
-                    .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
         .build();
   }
 }

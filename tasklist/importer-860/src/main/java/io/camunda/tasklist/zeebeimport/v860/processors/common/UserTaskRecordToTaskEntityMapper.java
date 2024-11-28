@@ -10,8 +10,6 @@ package io.camunda.tasklist.zeebeimport.v860.processors.common;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.listview.UserTaskListViewEntity;
-import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.util.DateUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.Intent;
@@ -192,57 +190,6 @@ public class UserTaskRecordToTaskEntityMapper {
             case "followUpDate" ->
                 updateFields.put(TaskTemplate.FOLLOW_UP_DATE, entity.getFollowUpDate());
             case "priority" -> updateFields.put(TaskTemplate.PRIORITY, entity.getPriority());
-            default -> {
-              LOGGER.warn(
-                  "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}", attribute);
-            }
-          }
-        }
-      }
-      default -> {}
-        // TODO handle update of other fields in https://github.com/camunda/tasklist/issues/4306
-    }
-    return updateFields;
-  }
-
-  public Map<String, Object> getUpdateFieldsListViewMap(
-      final UserTaskListViewEntity entity, final Record<UserTaskRecordValue> record) {
-    final Map<String, Object> updateFields = new HashMap<>();
-    final Intent intent = (Intent) record.getIntent();
-    if (entity.getState() != null) {
-      updateFields.put(TasklistListViewTemplate.STATE, entity.getState());
-    }
-    switch (intent) {
-      case MIGRATED -> {
-        updateFields.put(TasklistListViewTemplate.FLOW_NODE_BPMN_ID, entity.getFlowNodeBpmnId());
-        updateFields.put(TasklistListViewTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
-        updateFields.put(
-            TasklistListViewTemplate.PROCESS_DEFINITION_ID, entity.getProcessDefinitionId());
-      }
-      case COMPLETED, CANCELED -> {
-        updateFields.put(TasklistListViewTemplate.STATE, entity.getState());
-        updateFields.put(TasklistListViewTemplate.COMPLETION_TIME, entity.getCompletionTime());
-      }
-      case ASSIGNED -> {
-        updateFields.put(TasklistListViewTemplate.ASSIGNEE, entity.getAssignee());
-      }
-      case UPDATED -> {
-        final UserTaskRecordValue recordValue = record.getValue();
-        final List<String> changedAttributes = recordValue.getChangedAttributes();
-        for (final String attribute : changedAttributes) {
-          switch (attribute) {
-            case "candidateGroupsList" ->
-                updateFields.put(
-                    TasklistListViewTemplate.CANDIDATE_GROUPS, entity.getCandidateGroups());
-            case "candidateUsersList" ->
-                updateFields.put(
-                    TasklistListViewTemplate.CANDIDATE_USERS, entity.getCandidateUsers());
-            case "dueDate" ->
-                updateFields.put(TasklistListViewTemplate.DUE_DATE, entity.getDueDate());
-            case "followUpDate" ->
-                updateFields.put(TasklistListViewTemplate.FOLLOW_UP_DATE, entity.getFollowUpDate());
-            case "priority" ->
-                updateFields.put(TasklistListViewTemplate.PRIORITY, entity.getPriority());
             default -> {
               LOGGER.warn(
                   "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}", attribute);
