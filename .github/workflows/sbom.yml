@@ -80,7 +80,7 @@ jobs:
           maven-cache-key-modifier: sbom
 
       - name: Generate Backend SBOM
-        run: ./mvnw org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom
+        run: ./mvnw org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom -Dcyclonedx.includeTestScope=false
 
       - name: Upload Backend SBOM Artifact
         uses: actions/upload-artifact@v4
