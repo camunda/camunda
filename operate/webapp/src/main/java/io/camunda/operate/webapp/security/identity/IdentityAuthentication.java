@@ -20,6 +20,7 @@ import io.camunda.operate.webapp.security.Permission;
 import io.camunda.operate.webapp.security.SessionRepository;
 import io.camunda.operate.webapp.security.tenant.OperateTenant;
 import io.camunda.operate.webapp.security.tenant.TenantAwareAuthentication;
+import io.camunda.security.configuration.SecurityConfiguration;
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -189,7 +190,7 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   }
 
   private void retrieveResourcePermissions() {
-    if (getOperateProperties().getIdentity().isResourcePermissionsEnabled()) {
+    if (getSecurityConfiguration().getAuthorizations().isEnabled()) {
       try {
         authorizations =
             IdentityAuthorization.createFrom(
@@ -308,5 +309,9 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
 
   private PermissionConverter getPermissionConverter() {
     return SpringContextHolder.getBean(PermissionConverter.class);
+  }
+
+  private SecurityConfiguration getSecurityConfiguration() {
+    return SpringContextHolder.getBean(SecurityConfiguration.class);
   }
 }
