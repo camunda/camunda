@@ -8,7 +8,7 @@ info:
     url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
 externalDocs:
   description: Find out more
-  url: https://docs.camunda.io/docs/apis-tools/camunda-api-rest/overview/
+  url: https://docs.camunda.io/docs/apis-tools/camunda-api-rest/camunda-api-rest-overview/
 
 servers:
   - url: "{schema}://{host}:{port}/v2"
@@ -36,6 +36,7 @@ tags:
   - name: Incident
   - name: Job
   - name: License
+  - name: Mapping rule
   - name: Message
   - name: Process definition
   - name: Process instance
@@ -46,7 +47,6 @@ tags:
   - name: User
   - name: User task
   - name: Variable
-  - name: Mapping Rule
 
 paths:
   /topology:
@@ -2346,7 +2346,7 @@ paths:
   /mapping-rules:
     post:
       tags:
-        - Mapping Rule
+        - Mapping rule
       operationId: createMappingRule
       summary: Create mapping rule
       description: |
