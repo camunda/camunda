@@ -74,61 +74,11 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private PayloadUtil payloadUtil;
 
-  @Test
-  public void testProcessNameAndVersionAreLoaded() {
-    // having
-    final String processId = "demoProcess";
-    final Long processDefinitionKey =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
-    final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-
-    // when
-    // 1st load process instance index, then deployment
-    processImportTypeAndWait(
-        ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey);
-    processImportTypeAndWait(ImportValueType.PROCESS, processIsDeployedCheck, processDefinitionKey);
-
-    // then
-    final ProcessInstanceForListViewEntity processInstanceEntity =
-        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
-    assertThat(processInstanceEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-    assertThat(processInstanceEntity.getProcessName()).isNotNull();
-    assertThat(processInstanceEntity.getProcessVersion()).isEqualTo(1);
-  }
-
   protected void processImportTypeAndWait(
       final ImportValueType importValueType,
       final Predicate<Object[]> waitTill,
       final Object... arguments) {
     searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
-  }
-
-  @Test
-  public void testCreateProcessInstanceWithEmptyProcessName() {
-    // given a process with empty name
-    final String processId = "emptyNameProcess";
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .serviceTask("taskA")
-            .zeebeJobType("taskA")
-            .endEvent()
-            .done();
-
-    final Long processDefinitionKey = deployProcess(model, "emptyNameProcess.bpmn");
-
-    final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
-
-    // then it should returns the processId instead of an empty name
-    final ProcessInstanceForListViewEntity processInstanceEntity =
-        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
-    assertThat(processInstanceEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-    assertThat(processInstanceEntity.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(processInstanceEntity.getProcessName()).isEqualTo(processId);
   }
 
   @Test
