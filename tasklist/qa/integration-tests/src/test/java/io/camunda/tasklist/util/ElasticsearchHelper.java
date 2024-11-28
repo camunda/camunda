@@ -12,10 +12,8 @@ import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
@@ -57,8 +55,6 @@ public class ElasticsearchHelper implements NoSqlHelper {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private ProcessInstanceIndex processInstanceIndex;
-
   @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private VariableIndex variableIndex;
@@ -83,44 +79,6 @@ public class ElasticsearchHelper implements NoSqlHelper {
     } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the task: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public ProcessInstanceEntity getProcessInstance(final String processInstanceId) {
-    try {
-      final GetRequest getRequest =
-          new GetRequest(processInstanceIndex.getAlias()).id(processInstanceId);
-      final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
-      if (response.isExists()) {
-        return fromSearchHit(
-            response.getSourceAsString(), objectMapper, ProcessInstanceEntity.class);
-      } else {
-        throw new NotFoundApiException(
-            String.format("Could not find task for processInstanceId [%s].", processInstanceId));
-      }
-    } catch (final IOException e) {
-      final String message =
-          String.format("Exception occurred, while obtaining the process: %s", e.getMessage());
-      throw new TasklistRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public List<ProcessInstanceEntity> getProcessInstances(final List<String> processInstanceIds) {
-    try {
-      final SearchRequest request =
-          new SearchRequest(processInstanceIndex.getAlias())
-              .source(
-                  new SearchSourceBuilder()
-                      .query(idsQuery().addIds(processInstanceIds.toArray(String[]::new))));
-      final SearchResponse searchResponse = esClient.search(request, RequestOptions.DEFAULT);
-      return scroll(request, ProcessInstanceEntity.class, objectMapper, esClient);
-    } catch (final IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining list of processes: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }

@@ -10,15 +10,14 @@ package io.camunda.tasklist.schema.indices;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
-import io.camunda.tasklist.schema.backup.Prio3Backup;
+import io.camunda.tasklist.schema.backup.Prio2Backup;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
 @Component
-public class VariableIndex extends AbstractIndexDescriptor
-    implements ProcessInstanceDependant, Prio3Backup {
+public class VariableIndex extends AbstractIndexDescriptor implements Prio2Backup {
 
   public static final String INDEX_NAME = "variable";
   public static final String INDEX_VERSION = "8.3.0";
@@ -31,18 +30,14 @@ public class VariableIndex extends AbstractIndexDescriptor
   public static final String FULL_VALUE = "fullValue";
   public static final String IS_PREVIEW = "isPreview";
   public static final String TENANT_ID = "tenantId";
+  public static final String PROCESS_INSTANCE_ID = "processInstanceId";
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
   }
 
-  @Override
-  public String getAllIndicesPattern() {
-    return getFullQualifiedName();
-  }
-
-  private static Optional<String> getElsFieldByGraphqlField(String fieldName) {
+  private static Optional<String> getElsFieldByGraphqlField(final String fieldName) {
     switch (fieldName) {
       case ("id"):
         return of(ID);
@@ -59,7 +54,7 @@ public class VariableIndex extends AbstractIndexDescriptor
     }
   }
 
-  public static Set<String> getElsFieldsByGraphqlFields(Set<String> fieldNames) {
+  public static Set<String> getElsFieldsByGraphqlFields(final Set<String> fieldNames) {
     return fieldNames.stream()
         .map((fn) -> getElsFieldByGraphqlField(fn))
         .flatMap(Optional::stream)

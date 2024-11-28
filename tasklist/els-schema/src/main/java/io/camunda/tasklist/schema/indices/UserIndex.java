@@ -7,11 +7,11 @@
  */
 package io.camunda.tasklist.schema.indices;
 
-import io.camunda.tasklist.schema.backup.Prio4Backup;
+import io.camunda.tasklist.schema.backup.Prio3Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserIndex extends AbstractIndexDescriptor implements Prio4Backup {
+public class UserIndex extends AbstractIndexDescriptor implements Prio3Backup {
 
   public static final String ID = "id";
   public static final String USER_ID = "userId";

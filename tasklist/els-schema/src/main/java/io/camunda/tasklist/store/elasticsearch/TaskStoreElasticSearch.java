@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
@@ -126,7 +125,7 @@ public class TaskStoreElasticSearch implements TaskStore {
         ElasticsearchUtil.createSearchRequest(taskTemplate.getAlias())
             .source(
                 SearchSourceBuilder.searchSource()
-                    .query(termQuery(PROCESS_INSTANCE_ID, processInstanceId))
+                    .query(termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId))
                     .fetchField(TaskTemplate.ID));
     try {
       return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
@@ -508,7 +507,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     QueryBuilder processInstanceIdQ = null;
     if (query.getProcessInstanceId() != null) {
-      processInstanceIdQ = termQuery(PROCESS_INSTANCE_ID, query.getProcessInstanceId());
+      processInstanceIdQ =
+          termQuery(TaskTemplate.PROCESS_INSTANCE_ID, query.getProcessInstanceId());
     }
 
     QueryBuilder processDefinitionIdQ = null;

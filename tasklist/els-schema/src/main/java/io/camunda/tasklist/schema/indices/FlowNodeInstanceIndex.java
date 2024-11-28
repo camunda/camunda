@@ -7,12 +7,11 @@
  */
 package io.camunda.tasklist.schema.indices;
 
-import io.camunda.tasklist.schema.backup.Prio3Backup;
+import io.camunda.tasklist.schema.backup.Prio2Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FlowNodeInstanceIndex extends AbstractIndexDescriptor
-    implements ProcessInstanceDependant, Prio3Backup {
+public class FlowNodeInstanceIndex extends AbstractIndexDescriptor implements Prio2Backup {
 
   public static final String INDEX_NAME = "flownode-instance";
   public static final String INDEX_VERSION = "8.3.0";
@@ -22,15 +21,11 @@ public class FlowNodeInstanceIndex extends AbstractIndexDescriptor
   public static final String POSITION = "position";
   public static final String PARENT_FLOW_NODE_ID = "parentFlowNodeId";
   public static final String TENANT_ID = "tenantId";
+  public static final String PROCESS_INSTANCE_ID = "processInstanceId";
 
   @Override
   public String getIndexName() {
     return INDEX_NAME;
-  }
-
-  @Override
-  public String getAllIndicesPattern() {
-    return getFullQualifiedName();
   }
 
   @Override
