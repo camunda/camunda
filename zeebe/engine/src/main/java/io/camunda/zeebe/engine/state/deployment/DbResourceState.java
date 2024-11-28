@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -41,7 +42,9 @@ public class DbResourceState implements MutableResourceState {
   private final DbLong resourceVersion;
   private final DbCompositeKey<DbString, DbLong> idAndVersionKey;
   private final DbTenantAwareKey<DbCompositeKey<DbString, DbLong>> tenantAwareIdAndVersionKey;
-  private final ColumnFamily<DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>, PersistedResource>
+  private final ColumnFamily<
+          DbTenantAwareKey<DbCompositeKey<DbString, DbLong>>,
+          DbForeignKey<DbTenantAwareKey<DbLong>>>
       resourceByIdAndVersionColumnFamily;
 
   private final DbLong dbDeploymentKey;
@@ -62,7 +65,7 @@ public class DbResourceState implements MutableResourceState {
           DbForeignKey<DbTenantAwareKey<DbLong>>>
       resourceKeyByResourceIdAndVersionTagColumnFamily;
 
-  private final Cache<DbResourceState.TenantIdAndResourceId, PersistedResource>
+  private final LoadingCache<TenantIdAndResourceId, PersistedResource>
       resourcesByTenantIdAndIdCache;
 
   public DbResourceState(
@@ -73,11 +76,14 @@ public class DbResourceState implements MutableResourceState {
     dbResourceKey = new DbLong();
     tenantAwareResourceKey =
         new DbTenantAwareKey<>(tenantIdKey, dbResourceKey, PlacementType.PREFIX);
-    fkResourceKey = new DbForeignKey<>(tenantAwareResourceKey, ZbColumnFamilies.RPAS);
+    fkResourceKey = new DbForeignKey<>(tenantAwareResourceKey, ZbColumnFamilies.RESOURCES);
     dbPersistedResource = new PersistedResource();
     resourcesByKey =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.RPAS, transactionContext, tenantAwareResourceKey, dbPersistedResource);
+            ZbColumnFamilies.RESOURCES,
+            transactionContext,
+            tenantAwareResourceKey,
+            dbPersistedResource);
 
     dbResourceId = new DbString();
     resourceVersion = new DbLong();
@@ -86,10 +92,10 @@ public class DbResourceState implements MutableResourceState {
         new DbTenantAwareKey<>(tenantIdKey, idAndVersionKey, PlacementType.PREFIX);
     resourceByIdAndVersionColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.RPA_BY_ID_AND_VERSION,
+            ZbColumnFamilies.RESOURCE_BY_ID_AND_VERSION,
             transactionContext,
             tenantAwareIdAndVersionKey,
-            dbPersistedResource);
+            fkResourceKey);
 
     dbDeploymentKey = new DbLong();
     tenantAwareResourceIdAndDeploymentKey =
@@ -97,7 +103,7 @@ public class DbResourceState implements MutableResourceState {
             tenantIdKey, new DbCompositeKey<>(dbResourceId, dbDeploymentKey), PlacementType.PREFIX);
     resourceKeyByResourceIdAndDeploymentKeyColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.RPA_KEY_BY_RPA_ID_AND_DEPLOYMENT_KEY,
+            ZbColumnFamilies.RESOURCE_KEY_BY_RESOURCE_ID_AND_DEPLOYMENT_KEY,
             transactionContext,
             tenantAwareResourceIdAndDeploymentKey,
             fkResourceKey);
@@ -108,17 +114,27 @@ public class DbResourceState implements MutableResourceState {
             tenantIdKey, new DbCompositeKey<>(dbResourceId, dbVersionTag), PlacementType.PREFIX);
     resourceKeyByResourceIdAndVersionTagColumnFamily =
         zeebeDb.createColumnFamily(
-            ZbColumnFamilies.RPA_KEY_BY_RPA_ID_AND_VERSION_TAG,
+            ZbColumnFamilies.RESOURCE_KEY_BY_RESOURCE_ID_AND_VERSION_TAG,
             transactionContext,
             tenantAwareResourceIdAndVersionTagKey,
             fkResourceKey);
 
     versionManager =
         new VersionManager(
-            DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.RPA_VERSION, transactionContext);
+            DEFAULT_VERSION_VALUE, zeebeDb, ZbColumnFamilies.RESOURCE_VERSION, transactionContext);
 
     resourcesByTenantIdAndIdCache =
-        CacheBuilder.newBuilder().maximumSize(config.getResourceCacheCapacity()).build();
+        CacheBuilder.newBuilder()
+            .maximumSize(config.getResourceCacheCapacity())
+            .build(
+                new CacheLoader<>() {
+                  @Override
+                  public PersistedResource load(final TenantIdAndResourceId key) {
+                    Optional<PersistedResource> latestResourceById =
+                        findLatestResourceById(key.resourceId, key.tenantId);
+                    return latestResourceById.orElse(null);
+                  }
+                });
   }
 
   @Override
@@ -139,7 +155,7 @@ public class DbResourceState implements MutableResourceState {
     dbResourceId.wrapString(record.getResourceId());
     resourceVersion.wrapLong(record.getVersion());
     dbPersistedResource.wrap(record);
-    resourceByIdAndVersionColumnFamily.upsert(tenantAwareIdAndVersionKey, dbPersistedResource);
+    resourceByIdAndVersionColumnFamily.upsert(tenantAwareIdAndVersionKey, fkResourceKey);
   }
 
   @Override
@@ -230,8 +246,6 @@ public class DbResourceState implements MutableResourceState {
     if (persistedResource == null) {
       return Optional.empty();
     }
-    resourcesByTenantIdAndIdCache.put(
-        new DbResourceState.TenantIdAndResourceId(tenantId, resourceId), persistedResource);
     return Optional.of(persistedResource);
   }
 
@@ -284,12 +298,10 @@ public class DbResourceState implements MutableResourceState {
     dbResourceId.wrapBuffer(resourceId);
     final long latestVersion = versionManager.getLatestResourceVersion(resourceId, tenantId);
     resourceVersion.wrapLong(latestVersion);
-    final PersistedResource persistedResource =
-        resourceByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey);
-    if (persistedResource == null) {
-      return null;
-    }
-    return persistedResource.copy();
+    final Optional<PersistedResource> persistedResource =
+        Optional.ofNullable(resourceByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey))
+            .flatMap(key -> findResourceByKey(key.inner().wrappedKey().getValue(), tenantId));
+    return persistedResource.map(PersistedResource::copy).orElse(null);
   }
 
   private Optional<PersistedResource> getResourceFromCache(

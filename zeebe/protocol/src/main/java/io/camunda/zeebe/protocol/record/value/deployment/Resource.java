@@ -22,7 +22,7 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableResource.Builder.class)
 public interface Resource extends ResourceMetadataValue {
   /**
-   * @return returns the corresponding robot script
+   * @return returns the corresponding Resource
    */
   String getResourceProp();
 }
