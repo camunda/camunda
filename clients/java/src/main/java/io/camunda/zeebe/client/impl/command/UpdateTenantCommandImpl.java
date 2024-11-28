@@ -59,7 +59,6 @@ public final class UpdateTenantCommandImpl implements UpdateTenantCommandStep1 {
 
   @Override
   public ZeebeFuture<UpdateTenantResponse> send() {
-    ArgumentUtil.ensureGreaterThan("tenantKey", tenantKey, 0);
     ArgumentUtil.ensureNotNull("name", request.getName());
     final HttpZeebeFuture<UpdateTenantResponse> result = new HttpZeebeFuture<>();
     final UpdateTenantResponseImpl response = new UpdateTenantResponseImpl();

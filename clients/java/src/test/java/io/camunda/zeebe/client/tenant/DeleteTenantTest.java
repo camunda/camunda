@@ -40,14 +40,6 @@ public class DeleteTenantTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnNullTenantKey() {
-    // when / then
-    assertThatThrownBy(() -> client.newDeleteTenantCommand(-1L).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("tenantKey must be greater than 0");
-  }
-
-  @Test
   void shouldRaiseExceptionOnNotFoundTenant() {
     // given
     gatewayService.errorOnRequest(
