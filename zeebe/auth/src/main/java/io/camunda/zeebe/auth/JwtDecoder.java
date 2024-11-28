@@ -18,7 +18,7 @@ import java.util.Map;
 
 public class JwtDecoder {
 
-  private static final ObjectMapper objectMapper = new ObjectMapper();
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final String token;
   private DecodedJWT decodedJwt;
 
@@ -88,7 +88,7 @@ public class JwtDecoder {
     }
 
     try {
-      return objectMapper.readValue(claim.asString(), new TypeReference<Map<String, Object>>() {});
+      return OBJECT_MAPPER.readValue(claim.asString(), new TypeReference<Map<String, Object>>() {});
     } catch (final Exception e) {
       // Fallback to basic types
       if (claim.asBoolean() != null) {
