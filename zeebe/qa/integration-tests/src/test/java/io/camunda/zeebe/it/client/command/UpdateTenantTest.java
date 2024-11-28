@@ -21,8 +21,6 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 
 @ZeebeIntegration
 @AutoCloseResources
@@ -67,16 +65,6 @@ class UpdateTenantTest {
     assertThatThrownBy(() -> client.newUpdateTenantCommand(tenantKey).name(null).send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("name must not be null");
-  }
-
-  @ParameterizedTest
-  @CsvSource({"-1", "0", "-45"})
-  void shouldRejectUpdateIfInputsAreInvalid(final Long tenantKey) {
-    // when / then
-    assertThatThrownBy(
-            () -> client.newUpdateTenantCommand(tenantKey).name(UPDATED_TENANT_NAME).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("tenantKey must be greater than 0");
   }
 
   @Test

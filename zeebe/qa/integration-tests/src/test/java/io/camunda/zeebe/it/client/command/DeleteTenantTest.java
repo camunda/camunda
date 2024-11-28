@@ -21,8 +21,6 @@ import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
 import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 
 @ZeebeIntegration
 @AutoCloseResources
@@ -56,15 +54,6 @@ class DeleteTenantTest {
     // then
     ZeebeAssertHelper.assertTenantDeleted(
         "tenant-id", tenant -> assertThat(tenant.getTenantKey()).isEqualTo(tenantKey));
-  }
-
-  @ParameterizedTest
-  @CsvSource({"-1", "0"})
-  void shouldRejectInvalidTenantKey(final long invalidKey) {
-    // when / then
-    assertThatThrownBy(() -> client.newDeleteTenantCommand(invalidKey).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("tenantKey must be greater than 0");
   }
 
   @Test

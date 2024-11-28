@@ -49,7 +49,6 @@ public final class DeleteTenantCommandImpl implements DeleteTenantCommandStep1 {
 
   @Override
   public ZeebeFuture<DeleteTenantResponse> send() {
-    ArgumentUtil.ensureGreaterThan("tenantKey", tenantKey, 0);
     final HttpZeebeFuture<DeleteTenantResponse> result = new HttpZeebeFuture<>();
     httpClient.delete("/tenants/" + tenantKey, httpRequestConfig.build(), result);
     return result;

@@ -41,14 +41,6 @@ public class UpdateTenantTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnNullTenantKey() {
-    // when / then
-    assertThatThrownBy(() -> client.newUpdateTenantCommand(-1).name(UPDATED_NAME).send().join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("tenantKey must be greater than 0");
-  }
-
-  @Test
   void shouldRaiseExceptionOnNullName() {
     // when / then
     assertThatThrownBy(() -> client.newUpdateTenantCommand(TENANT_KEY).name(null).send().join())
