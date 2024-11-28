@@ -130,9 +130,7 @@ public class DbResourceState implements MutableResourceState {
                 new CacheLoader<>() {
                   @Override
                   public PersistedResource load(final TenantIdAndResourceId key) {
-                    Optional<PersistedResource> latestResourceById =
-                        findLatestResourceById(key.resourceId, key.tenantId);
-                    return latestResourceById.orElse(null);
+                    return findLatestResourceById(key.resourceId, key.tenantId).orElse(null);
                   }
                 });
   }
