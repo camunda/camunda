@@ -24,6 +24,7 @@ servers:
         description: The schema of the Camunda 8 REST API server.
 
 tags:
+  - name: Authentication
   - name: Authorization
   - name: Clock
   - name: Cluster
