@@ -37,6 +37,7 @@ import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateMappingCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
+import io.camunda.zeebe.client.api.command.CreateRoleCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
@@ -100,6 +101,7 @@ import io.camunda.zeebe.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateMappingCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
+import io.camunda.zeebe.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
@@ -689,6 +691,11 @@ public final class ZeebeClientImpl implements ZeebeClient {
   @Override
   public IncidentGetRequest newIncidentGetRequest(final long incidentKey) {
     return new IncidentGetRequestImpl(httpClient, incidentKey);
+  }
+
+  @Override
+  public CreateRoleCommandStep1 newCreateRoleCommand() {
+    return new CreateRoleCommandImpl(httpClient, jsonMapper);
   }
 
   @Override
