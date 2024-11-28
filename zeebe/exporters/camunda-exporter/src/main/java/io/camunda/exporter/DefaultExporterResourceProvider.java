@@ -50,6 +50,7 @@ import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
 import io.camunda.exporter.handlers.TenantEntityAddedHandler;
+import io.camunda.exporter.handlers.TenantEntityRemovedHandler;
 import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
@@ -200,6 +201,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new TenantCreateUpdateHandler(
                 indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
             new TenantEntityAddedHandler(
+                indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
+            new TenantEntityRemovedHandler(
                 indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
             new GroupCreatedUpdatedHandler(
                 indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
