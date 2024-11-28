@@ -20,14 +20,14 @@ public class WebSessionTest {
   public void changeSessionId() {
     // given
     final var sessionId = "sessionId";
-    final var session = new WebSession(sessionId);
+    final var webSession = new WebSession(sessionId);
 
     // when
-    session.changeSessionId();
+    webSession.changeSessionId();
 
     // then
-    assertThat(session.getId()).isNotEqualTo(sessionId);
-    assertThat(session.isChanged()).isTrue();
+    assertThat(webSession.getId()).isNotEqualTo(sessionId);
+    assertThat(webSession.isChanged()).isTrue();
   }
 
   @Test
@@ -35,14 +35,14 @@ public class WebSessionTest {
     // given
     final var now = Instant.now();
     final var sessionId = "sessionId";
-    final var session = new WebSession(sessionId);
+    final var webSession = new WebSession(sessionId);
 
     // when
-    session.setCreationTime(now);
+    webSession.setCreationTime(now);
 
     // then
-    assertThat(session.getCreationTime()).isEqualTo(now);
-    assertThat(session.isChanged()).isTrue();
+    assertThat(webSession.getCreationTime()).isEqualTo(now);
+    assertThat(webSession.isChanged()).isTrue();
   }
 
   @Test
@@ -50,14 +50,14 @@ public class WebSessionTest {
     // given
     final var now = Instant.now();
     final var sessionId = "sessionId";
-    final var session = new WebSession(sessionId);
+    final var webSession = new WebSession(sessionId);
 
     // when
-    session.setLastAccessedTime(now);
+    webSession.setLastAccessedTime(now);
 
     // then
-    assertThat(session.getLastAccessedTime()).isEqualTo(now);
-    assertThat(session.isChanged()).isTrue();
+    assertThat(webSession.getLastAccessedTime()).isEqualTo(now);
+    assertThat(webSession.isChanged()).isTrue();
   }
 
   @Test
@@ -66,17 +66,17 @@ public class WebSessionTest {
     final var now = Instant.now();
     final var lastAccessedTime = now.plus(Duration.ofSeconds(60));
     final var sessionId = "sessionId";
-    final var session = new WebSession(sessionId);
-    session.setLastAccessedTime(now);
-    session.clearChangeFlag();
-    session.setPolling(true);
+    final var webSession = new WebSession(sessionId);
+    webSession.setLastAccessedTime(now);
+    webSession.clearChangeFlag();
+    webSession.setPolling(true);
 
     // when
-    session.setLastAccessedTime(lastAccessedTime);
+    webSession.setLastAccessedTime(lastAccessedTime);
 
     // then
-    assertThat(session.getLastAccessedTime()).isEqualTo(now);
-    assertThat(session.isChanged()).isFalse();
+    assertThat(webSession.getLastAccessedTime()).isEqualTo(now);
+    assertThat(webSession.isChanged()).isFalse();
   }
 
   @Test
@@ -84,44 +84,44 @@ public class WebSessionTest {
     // given
     final var duration = Duration.ofSeconds(1800);
     final var sessionId = "sessionId";
-    final var session = new WebSession(sessionId);
+    final var webSession = new WebSession(sessionId);
 
     // when
-    session.setMaxInactiveInterval(duration);
+    webSession.setMaxInactiveInterval(duration);
 
     // then
-    assertThat(session.getMaxInactiveInterval()).isEqualTo(duration);
-    assertThat(session.isChanged()).isTrue();
+    assertThat(webSession.getMaxInactiveInterval()).isEqualTo(duration);
+    assertThat(webSession.isChanged()).isTrue();
   }
 
   @Test
   public void setAttribute() {
     // given
     final var sessionId = "sessionId";
-    final var session = new WebSession(sessionId);
+    final var webSession = new WebSession(sessionId);
 
     // when
-    session.setAttribute("foo", "bar");
+    webSession.setAttribute("foo", "bar");
 
     // then
-    assertThat((String) session.getAttribute("foo")).isEqualTo("bar");
-    assertThat(session.isChanged()).isTrue();
+    assertThat((String) webSession.getAttribute("foo")).isEqualTo("bar");
+    assertThat(webSession.isChanged()).isTrue();
   }
 
   @Test
   public void removeAttribute() {
     // given
     final var sessionId = "sessionId";
-    final var session = new WebSession(sessionId);
-    session.setAttribute("foo", "bar");
-    session.clearChangeFlag();
+    final var webSession = new WebSession(sessionId);
+    webSession.setAttribute("foo", "bar");
+    webSession.clearChangeFlag();
 
     // when
-    session.removeAttribute("foo");
+    webSession.removeAttribute("foo");
 
     // then
-    assertThat((Object) session.getAttribute("foo")).isNull();
-    assertThat(session.isChanged()).isTrue();
+    assertThat((Object) webSession.getAttribute("foo")).isNull();
+    assertThat(webSession.isChanged()).isTrue();
   }
 
   @Test
@@ -130,13 +130,13 @@ public class WebSessionTest {
     final var now = Instant.now();
     final var duration = Duration.ofSeconds(MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS);
     final var sessionId = "sessionId";
-    final var session = new WebSession(sessionId);
-    session.setMaxInactiveInterval(duration);
-    session.setLastAccessedTime(
+    final var webSession = new WebSession(sessionId);
+    webSession.setMaxInactiveInterval(duration);
+    webSession.setLastAccessedTime(
         now.minus(Duration.ofSeconds(MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS * 2)));
 
     // when + then
-    assertThat(session.isExpired()).isTrue();
+    assertThat(webSession.isExpired()).isTrue();
   }
 
   @Test
@@ -145,12 +145,12 @@ public class WebSessionTest {
     final var now = Instant.now();
     final var duration = Duration.ofSeconds(MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS);
     final var sessionId = "sessionId";
-    final var session = new WebSession(sessionId);
-    session.setMaxInactiveInterval(duration);
-    session.setLastAccessedTime(
+    final var webSession = new WebSession(sessionId);
+    webSession.setMaxInactiveInterval(duration);
+    webSession.setLastAccessedTime(
         now.minus(Duration.ofSeconds(MapSession.DEFAULT_MAX_INACTIVE_INTERVAL_SECONDS * 2)));
 
     // when + then
-    assertThat(session.shouldBeDeleted()).isTrue();
+    assertThat(webSession.shouldBeDeleted()).isTrue();
   }
 }

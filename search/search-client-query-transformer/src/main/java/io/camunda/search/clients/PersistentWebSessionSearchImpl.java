@@ -15,49 +15,52 @@ import io.camunda.search.entities.PersistentWebSessionEntity;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebSessionIndexDescriptor;
 import java.util.List;
 
-public class PersistentWebSessionSearchClientImpl implements PersistentSessionSearchClient {
+public class PersistentWebSessionSearchImpl implements PersistentWebSessionClient {
 
   private final DocumentBasedSearchClient readClient;
   private final DocumentBasedWriteClient writeClient;
-  private final PersistentWebSessionIndexDescriptor indexDescriptor;
+  private final PersistentWebSessionIndexDescriptor persistentWebSessionIndex;
 
-  public PersistentWebSessionSearchClientImpl(
+  public PersistentWebSessionSearchImpl(
       final DocumentBasedSearchClient readClient,
       final DocumentBasedWriteClient writeClient,
-      final PersistentWebSessionIndexDescriptor indexDescriptor) {
+      final PersistentWebSessionIndexDescriptor persistentWebSessionIndex) {
     this.readClient = readClient;
     this.writeClient = writeClient;
-    this.indexDescriptor = indexDescriptor;
+    this.persistentWebSessionIndex = persistentWebSessionIndex;
   }
 
   @Override
   public PersistentWebSessionEntity getPersistentWebSession(final String sessionId) {
     final var request =
-        SearchGetRequest.of(b -> b.id(sessionId).index(indexDescriptor.getFullQualifiedName()));
+        SearchGetRequest.of(
+            b -> b.id(sessionId).index(persistentWebSessionIndex.getFullQualifiedName()));
     final var session = readClient.get(request, PersistentWebSessionEntity.class);
     return session.source();
   }
 
   @Override
-  public void upsertPersistentWebSession(final PersistentWebSessionEntity webSession) {
+  public void upsertPersistentWebSession(
+      final PersistentWebSessionEntity persistentWebSessionEntity) {
     writeClient.index(
         SearchIndexRequest.of(
             b ->
-                b.id(webSession.id())
-                    .index(indexDescriptor.getFullQualifiedName())
-                    .document(webSession)));
+                b.id(persistentWebSessionEntity.id())
+                    .index(persistentWebSessionIndex.getFullQualifiedName())
+                    .document(persistentWebSessionEntity)));
   }
 
   @Override
   public void deletePersistentWebSession(final String sessionId) {
     writeClient.delete(
-        SearchDeleteRequest.of(b -> b.id(sessionId).index(indexDescriptor.getFullQualifiedName())));
+        SearchDeleteRequest.of(
+            b -> b.id(sessionId).index(persistentWebSessionIndex.getFullQualifiedName())));
   }
 
   @Override
   public List<PersistentWebSessionEntity> getAllPersistentWebSessions() {
     return readClient.findAll(
-        SearchQueryRequest.of(b -> b.index(indexDescriptor.getFullQualifiedName())),
+        SearchQueryRequest.of(b -> b.index(persistentWebSessionIndex.getFullQualifiedName())),
         PersistentWebSessionEntity.class);
   }
 }
