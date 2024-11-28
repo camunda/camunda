@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.gateway.interceptors.impl;
 
-import com.auth0.jwt.JWT;
+import io.camunda.zeebe.auth.JwtDecoder;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
@@ -50,8 +50,8 @@ public class AuthenticationInterceptor implements ServerInterceptor {
 
     try {
       // get user claims and set them in the context
-      final var decodedJWT = JWT.decode(token);
-      final var claims = decodedJWT.getClaims();
+      final JwtDecoder jwtDecoder = new JwtDecoder(token);
+      final var claims = jwtDecoder.decode().getClaims();
       final var context = InterceptorUtil.setUserClaims(claims);
       return Contexts.interceptCall(context, call, headers, next);
 

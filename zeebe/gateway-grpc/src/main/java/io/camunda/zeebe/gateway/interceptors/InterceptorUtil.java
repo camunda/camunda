@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.interceptors;
 
-import com.auth0.jwt.interfaces.Claim;
 import io.camunda.zeebe.gateway.query.QueryApi;
 import io.grpc.Context;
 import io.grpc.Context.Key;
@@ -19,7 +18,7 @@ public final class InterceptorUtil {
   private static final Key<QueryApi> QUERY_API_KEY = Context.key("zeebe-query-api");
   private static final Context.Key<List<String>> AUTHORIZED_TENANTS_KEY =
       Context.key("io.camunda.zeebe:authorized_tenants");
-  private static final Context.Key<Map<String, Claim>> USER_CLAIMS =
+  private static final Context.Key<Map<String, Object>> USER_CLAIMS =
       Context.key("io.camunda.zeebe:user_claim");
 
   private InterceptorUtil() {}
@@ -113,19 +112,19 @@ public final class InterceptorUtil {
     return Context.current().withValue(getAuthorizedTenantsKey(), authorizedTenants);
   }
 
-  public static Key<Map<String, Claim>> getUserClaimsKey() {
+  public static Key<Map<String, Object>> getUserClaimsKey() {
     return USER_CLAIMS;
   }
 
   /**
-   * A helper method to set a {@link Map<String, Claim>} of user claims on the {@code USER_CLAIMS}
+   * A helper method to set a {@link Map<String, Object>} of user claims on the {@code USER_CLAIMS}
    * gRPC Context key.
    *
    * @param userClaims - a Map of Strings to Claims that specify the user claims for the gRPC
    *     request
    * @return the current {@link Context}
    */
-  public static Context setUserClaims(final Map<String, Claim> userClaims) {
+  public static Context setUserClaims(final Map<String, Object> userClaims) {
     return Context.current().withValue(getUserClaimsKey(), userClaims);
   }
 }
