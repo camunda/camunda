@@ -448,6 +448,7 @@ class TaskServiceTest {
     when(userReader.getCurrentUser()).thenReturn(mockedUser);
     final var taskBefore = mock(TaskEntity.class);
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
+    when(taskBefore.getKey()).thenReturn(Long.valueOf(taskId));
     final var completedTask =
         new TaskEntity()
             .setId(taskId)
@@ -531,6 +532,7 @@ class TaskServiceTest {
     problemDetail.setDetail("detail");
 
     when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
+    when(taskBefore.getKey()).thenReturn(Long.valueOf(taskId));
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     when(user.getUserId()).thenReturn(providedAssignee);
@@ -561,6 +563,7 @@ class TaskServiceTest {
     final var taskBefore = mock(TaskEntity.class);
 
     when(taskBefore.getImplementation()).thenReturn(TaskImplementation.ZEEBE_USER_TASK);
+    when(taskBefore.getKey()).thenReturn(Long.valueOf(taskId));
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
     final var assignedTask = new TaskEntity().setAssignee(expectedAssignee);
