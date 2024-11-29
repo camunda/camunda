@@ -52,8 +52,4 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
     this.join = join;
     return this;
   }
-
-  public static String getChildKey(final long groupKey, final long memberKey) {
-    return String.format("%d-%d", groupKey, memberKey);
-  }
 }
