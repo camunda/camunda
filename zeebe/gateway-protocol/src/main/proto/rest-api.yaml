@@ -102,6 +102,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/JobActivationResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/JobActivationResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/JobActivationResponseStringKeys"
         "400":
           description: >
             The provided data is not valid.
@@ -444,6 +450,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TenantItem"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/TenantItem"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/TenantItemStringKeys"
         "400":
           description: The provided data is not valid.
           content:
@@ -850,6 +862,12 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UserTaskSearchQueryRequest"
+          application/vnd.camunda.api.keys.number+json:
+            schema:
+              $ref: "#/components/schemas/UserTaskSearchQueryRequest"
+          application/vnd.camunda.api.keys.string+json:
+            schema:
+              $ref: "#/components/schemas/UserTaskSearchQueryRequestStringKeys"
       responses:
         "200":
           description: >
@@ -858,6 +876,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserTaskSearchQueryResponse"
+            application/vnd.camunda.api.keys.number+json:
+              schema:
+                $ref: "#/components/schemas/UserTaskSearchQueryResponse"
+            application/vnd.camunda.api.keys.string+json:
+              schema:
+                $ref: "#/components/schemas/UserTaskSearchQueryResponseStringKeys"
         "400":
           description: >
             The user task search query failed.
@@ -3133,6 +3157,25 @@ components:
             type: integer
             format: int64
 
+    TenantItemStringKeys:
+      description: Tenant search response item.
+      type: object
+      properties:
+        tenantKey:
+          type: string
+          description: The unique system-generated internal tenant ID.
+        name:
+          type: string
+          description: The tenant name.
+        tenantId:
+          type: string
+          description: The unique external tenant ID.
+        assignedMemberKeys:
+          type: array
+          description: The set of keys of members assigned to the tenant.
+          items:
+            type: string
+
     TenantSearchQueryRequest:
       description: Tenant search request
       type: object
@@ -3177,6 +3220,16 @@ components:
           description: The user task search filters.
           allOf:
             - $ref: "#/components/schemas/UserTaskFilterRequest"
+    UserTaskSearchQueryRequestStringKeys:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      description: User task search query request.
+      type: object
+      properties:
+        filter:
+          description: The user task search filters.
+          allOf:
+            - $ref: "#/components/schemas/UserTaskFilterRequestStringKeys"
     UserTaskVariableSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -3193,6 +3246,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/UserTaskItem"
+    UserTaskSearchQueryResponseStringKeys:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      description: User task search query response.
+      type: object
+      properties:
+        items:
+          description: The matching user tasks.
+          type: array
+          items:
+            $ref: "#/components/schemas/UserTaskItemStringKeys"
     UserTaskFilterRequest:
       description: User task filter request.
       type: object
@@ -3251,6 +3315,60 @@ components:
           description: Variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
+    UserTaskFilterRequestStringKeys:
+      description: User task filter request.
+      type: object
+      properties:
+        userTaskKey:
+          type: string
+          description: The key for this user task.
+        state:
+          type: string
+          description: The state of the user task.
+          enum:
+            - CREATED
+            - COMPLETED
+            - CANCELED
+            - FAILED
+        assignee:
+          description: The assignee of the user task.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        priority:
+          description: The priority of the user task.
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
+        elementId:
+          type: string
+          description: The element ID of the user task.
+        candidateGroup:
+          description: The candidate group for this user task.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        candidateUser:
+          description: The candidate user for this user task.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionKey:
+          type: string
+          description: The key of the process definition.
+        processInstanceKey:
+          type: string
+          description: The key of the process instance.
+        tenantId:
+          type: string
+          description: Tenant ID of this user task.
+        processDefinitionId:
+          type: string
+          description: The ID of the process definition.
+        elementInstanceKey:
+          type: string
+          description: The key of the element instance.
+        variables:
+          type: array
+          description: Variables associated with the user task.
+          items:
+            $ref: "#/components/schemas/UserTaskVariableFilterRequest"
     UserTaskVariableFilterRequest:
       type: object
       properties:
@@ -3260,13 +3378,9 @@ components:
         value:
           type: string
           description: The value of the variable.
-    UserTaskItem:
+    UserTaskItemBase:
       type: object
       properties:
-        userTaskKey:
-          description: The key of the user task.
-          type: integer
-          format: int64
         state:
           type: string
           description: The state of the user task.
@@ -3281,10 +3395,6 @@ components:
         elementId:
           type: string
           description: The element ID of the user task.
-        elementInstanceKey:
-          type: integer
-          description: The key of the element instance.
-          format: int64
         candidateGroups:
           type: array
           description: The candidate groups for this user task.
@@ -3298,18 +3408,6 @@ components:
         processDefinitionId:
           type: string
           description: The ID of the process definition.
-        processDefinitionKey:
-          type: integer
-          description: The key of the process definition.
-          format: int64
-        processInstanceKey:
-          type: integer
-          description: The key of the process instance.
-          format: int64
-        formKey:
-          type: integer
-          description: The key of the form.
-          format: int64
         creationDate:
           type: string
           description: The creation date of a user task.
@@ -3347,6 +3445,51 @@ components:
           minimum: 0
           maximum: 100
           default: 50
+    UserTaskItem:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserTaskItemBase"
+      properties:
+        userTaskKey:
+          description: The key of the user task.
+          type: integer
+          format: int64
+        elementInstanceKey:
+          type: integer
+          description: The key of the element instance.
+          format: int64
+        processDefinitionKey:
+          type: integer
+          description: The key of the process definition.
+          format: int64
+        processInstanceKey:
+          type: integer
+          description: The key of the process instance.
+          format: int64
+        formKey:
+          type: integer
+          description: The key of the form.
+          format: int64
+    UserTaskItemStringKeys:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/UserTaskItemBase"
+      properties:
+        userTaskKey:
+          description: The key of the user task.
+          type: string
+        elementInstanceKey:
+          type: string
+          description: The key of the element instance.
+        processDefinitionKey:
+          type: string
+          description: The key of the process definition.
+        processInstanceKey:
+          type: string
+          description: The key of the process instance.
+        formKey:
+          type: string
+          description: The key of the form.
     VariableSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -4829,28 +4972,29 @@ components:
         - timeout
         - maxJobsToActivate
     JobActivationResponse:
-      description: The list of activated jobs
+      description: The list of activated jobs with keys as numbers.
       type: object
       properties:
         jobs:
-          description: The activated jobs.
+          description: The activated jobs with keys as numbers.
           type: array
           items:
             $ref: "#/components/schemas/ActivatedJob"
-    ActivatedJob:
+    JobActivationResponseStringKeys:
+      description: The list of activated jobs with keys as strings.
       type: object
       properties:
-        jobKey:
-          description: the key, a unique identifier for the job
-          type: integer
-          format: int64
+        jobs:
+          description: The activated jobs with keys as strings.
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivatedJobStringKeys"
+    ActivatedJobBase:
+      type: object
+      properties:
         type:
           description: the type of the job (should match what was requested)
           type: string
-        processInstanceKey:
-          description: the job's process instance key
-          type: integer
-          format: int64
         processDefinitionId:
           description: the bpmn process ID of the job's process definition
           type: string
@@ -4858,19 +5002,9 @@ components:
           description: the version of the job's process definition
           type: integer
           format: int32
-        processDefinitionKey:
-          description: the key of the job's process definition
-          type: integer
-          format: int64
         elementId:
           description: the associated task element ID
           type: string
-        elementInstanceKey:
-          description: >
-            the unique key identifying the associated task, unique within the scope of the
-            process instance
-          type: integer
-          format: int64
         customHeaders:
           description: a set of custom headers defined during modelling; returned as a serialized JSON document
           type: object
@@ -4892,6 +5026,48 @@ components:
           additionalProperties: true
         tenantId:
           description: The ID of the tenant that owns the job
+          type: string
+    ActivatedJob:
+      allOf:
+        - $ref: "#/components/schemas/ActivatedJobBase"
+      type: object
+      properties:
+        jobKey:
+          description: the key, a unique identifier for the job
+          type: integer
+          format: int64
+        processInstanceKey:
+          description: the job's process instance key
+          type: integer
+          format: int64
+        processDefinitionKey:
+          description: the key of the job's process definition
+          type: integer
+          format: int64
+        elementInstanceKey:
+          description: >
+            the unique key identifying the associated task, unique within the scope of the
+            process instance
+          type: integer
+          format: int64
+    ActivatedJobStringKeys:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/ActivatedJobBase"
+      properties:
+        jobKey:
+          description: the key, a unique identifier for the job
+          type: string
+        processInstanceKey:
+          description: the job's process instance key
+          type: string
+        processDefinitionKey:
+          description: the key of the job's process definition
+          type: string
+        elementInstanceKey:
+          description: >
+            the unique key identifying the associated task, unique within the scope of the
+            process instance
           type: string
     JobFailRequest:
       type: object

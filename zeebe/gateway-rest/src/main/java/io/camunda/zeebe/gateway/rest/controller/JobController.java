@@ -11,6 +11,7 @@ import io.camunda.service.JobServices;
 import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponseStringKeys;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobFailRequest;
@@ -36,17 +37,37 @@ public class JobController {
 
   private final ResponseObserverProvider responseObserverProvider;
   private final JobServices<JobActivationResponse> jobServices;
+  private final ResponseWithStringKeysObserverProvider responseWithStringKeysObserverProvider;
+  private final JobServices<JobActivationResponseStringKeys> jobServicesWithStringKeys;
 
   public JobController(
       final JobServices<JobActivationResponse> jobServices,
-      final ResponseObserverProvider responseObserverProvider) {
+      final JobServices<JobActivationResponseStringKeys> jobServicesWithStringKeys,
+      final ResponseObserverProvider responseObserverProvider,
+      final ResponseWithStringKeysObserverProvider responseWithStringKeysObserverProvider) {
     this.jobServices = jobServices;
+    this.jobServicesWithStringKeys = jobServicesWithStringKeys;
     this.responseObserverProvider = responseObserverProvider;
+    this.responseWithStringKeysObserverProvider = responseWithStringKeysObserverProvider;
   }
 
   @PostMapping(
       path = "/activation",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      produces = {RequestMapper.MEDIA_TYPE_KEYS_STRING, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> activateJobsStringKeys(
+      @RequestBody final JobActivationRequest activationRequest) {
+    return RequestMapper.toJobsActivationRequest(activationRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::activateJobsWithStringKeys);
+  }
+
+  @PostMapping(
+      path = "/activation",
+      produces = {
+        //        MediaType.APPLICATION_JSON_VALUE,
+        RequestMapper.MEDIA_TYPE_KEYS_NUMBER,
+        MediaType.APPLICATION_PROBLEM_JSON_VALUE
+      },
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> activateJobs(
       @RequestBody final JobActivationRequest activationRequest) {
@@ -92,6 +113,20 @@ public class JobController {
       @PathVariable final long jobKey, @RequestBody final JobUpdateRequest jobUpdateRequest) {
     return RequestMapper.toJobUpdateRequest(jobUpdateRequest, jobKey)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateJob);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> activateJobsWithStringKeys(
+      final ActivateJobsRequest activationRequest) {
+    final var result = new CompletableFuture<ResponseEntity<Object>>();
+    final var responseObserver = responseWithStringKeysObserverProvider.apply(result);
+    jobServicesWithStringKeys
+        .withAuthentication(RequestMapper.getAuthentication())
+        .activateJobs(activationRequest, responseObserver, responseObserver::setCancelationHandler);
+    return result.handleAsync(
+        (res, ex) -> {
+          responseObserver.invokeCancelationHandler();
+          return res;
+        });
   }
 
   private CompletableFuture<ResponseEntity<Object>> activateJobs(

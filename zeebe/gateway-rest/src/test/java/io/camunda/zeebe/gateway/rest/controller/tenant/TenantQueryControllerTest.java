@@ -20,6 +20,7 @@ import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.TenantServices;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
@@ -121,6 +122,74 @@ public class TenantQueryControllerTest extends RestControllerTest {
             """
             {
               "tenantKey": %d,
+              "name": "%s",
+              "tenantId": "%s",
+              "assignedMemberKeys": []
+            }
+            """
+                .formatted(tenant.tenantKey(), tenantName, tenantId));
+
+    // then
+    verify(tenantServices, times(1)).getByKey(tenant.tenantKey());
+  }
+
+  @Test
+  void getTenantShouldReturnOkWithNumberKeys() {
+    // given
+    final var tenantName = "Tenant Name";
+    final var tenantId = "tenant-id";
+    final var tenant = new TenantEntity(100L, tenantId, tenantName, Set.of());
+    when(tenantServices.getByKey(tenant.tenantKey())).thenReturn(tenant);
+
+    // when
+    webClient
+        .get()
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.tenantKey()))
+        .header("Accept", RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
+        .expectBody()
+        .json(
+            """
+            {
+              "tenantKey": %d,
+              "name": "%s",
+              "tenantId": "%s",
+              "assignedMemberKeys": []
+            }
+            """
+                .formatted(tenant.tenantKey(), tenantName, tenantId));
+
+    // then
+    verify(tenantServices, times(1)).getByKey(tenant.tenantKey());
+  }
+
+  @Test
+  void getTenantShouldReturnOkWithStringKeys() {
+    // given
+    final var tenantName = "Tenant Name";
+    final var tenantId = "tenant-id";
+    final var tenant = new TenantEntity(100L, tenantId, tenantName, Set.of());
+    when(tenantServices.getByKey(tenant.tenantKey())).thenReturn(tenant);
+
+    // when
+    webClient
+        .get()
+        .uri("%s/%s".formatted(TENANT_BASE_URL, tenant.tenantKey()))
+        .header("Accept", RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .expectBody()
+        .json(
+            """
+            {
+              "tenantKey": "%s",
               "name": "%s",
               "tenantId": "%s",
               "assignedMemberKeys": []

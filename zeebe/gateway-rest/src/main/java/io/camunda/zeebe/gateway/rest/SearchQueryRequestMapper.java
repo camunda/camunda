@@ -282,6 +282,22 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
   }
 
+  public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
+      final UserTaskSearchQueryRequestStringKeys request) {
+
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.userTaskSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        toSearchQuerySort(
+            request.getSort(),
+            SortOptionBuilders::userTask,
+            SearchQueryRequestMapper::applyUserTaskSortField);
+    final var filter = toUserTaskFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::userTaskSearchQuery);
+  }
+
   public static Either<ProblemDetail, VariableQuery> toUserTaskVariableQuery(
       final UserTaskVariableSearchQueryRequest request) {
     if (request == null) {
@@ -548,6 +564,50 @@ public final class SearchQueryRequestMapper {
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
               Optional.ofNullable(f.getElementInstanceKey())
+                  .ifPresent(builder::elementInstanceKeys);
+              Optional.ofNullable(f.getVariables())
+                  .filter(variables -> !variables.isEmpty())
+                  .ifPresent(vars -> builder.variable(toVariableValueFilters(vars)));
+            });
+
+    return builder.build();
+  }
+
+  private static UserTaskFilter toUserTaskFilter(final UserTaskFilterRequestStringKeys filter) {
+    final var builder = FilterBuilders.userTask();
+
+    Optional.ofNullable(filter)
+        .ifPresent(
+            f -> {
+              Optional.ofNullable(f.getUserTaskKey())
+                  .map(Long::parseLong)
+                  .ifPresent(builder::userTaskKeys);
+              Optional.ofNullable(f.getState())
+                  .map(s -> String.valueOf(UserTaskState.valueOf(s.getValue())))
+                  .ifPresent(builder::states);
+              Optional.ofNullable(f.getProcessDefinitionId()).ifPresent(builder::bpmnProcessIds);
+              Optional.ofNullable(f.getElementId()).ifPresent(builder::elementIds);
+              Optional.ofNullable(f.getAssignee())
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::assigneeOperations);
+              Optional.ofNullable(f.getPriority())
+                  .map(mapToOperations(Integer.class))
+                  .ifPresent(builder::priorityOperations);
+              Optional.ofNullable(f.getCandidateGroup())
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::candidateGroupOperations);
+              Optional.ofNullable(f.getCandidateUser())
+                  .map(mapToOperations(String.class))
+                  .ifPresent(builder::candidateUserOperations);
+              Optional.ofNullable(f.getProcessDefinitionKey())
+                  .map(Long::parseLong)
+                  .ifPresent(builder::processDefinitionKeys);
+              Optional.ofNullable(f.getProcessInstanceKey())
+                  .map(Long::parseLong)
+                  .ifPresent(builder::processInstanceKeys);
+              Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
+              Optional.ofNullable(f.getElementInstanceKey())
+                  .map(Long::parseLong)
                   .ifPresent(builder::elementInstanceKeys);
               Optional.ofNullable(f.getVariables())
                   .filter(variables -> !variables.isEmpty())

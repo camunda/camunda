@@ -61,11 +61,14 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleItem;
 import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
+import io.camunda.zeebe.gateway.protocol.rest.TenantItemStringKeys;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskItemStringKeys;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponseStringKeys;
 import io.camunda.zeebe.gateway.protocol.rest.VariableItem;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
 import java.util.Arrays;
@@ -171,6 +174,17 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toUserTasks)
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static UserTaskSearchQueryResponseStringKeys toUserTaskSearchQueryResponseStringKeys(
+      final SearchQueryResult<UserTaskEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new UserTaskSearchQueryResponseStringKeys()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toUserTasksStringKeys)
                 .orElseGet(Collections::emptyList));
   }
 
@@ -283,6 +297,20 @@ public final class SearchQueryResponseMapper {
                 : tenantEntity.assignedMemberKeys().stream().sorted().toList());
   }
 
+  public static TenantItemStringKeys toTenantStringKeys(final TenantEntity tenantEntity) {
+    return new TenantItemStringKeys()
+        .tenantKey(String.valueOf(tenantEntity.tenantKey()))
+        .name(tenantEntity.name())
+        .tenantId(tenantEntity.tenantId())
+        .assignedMemberKeys(
+            tenantEntity.assignedMemberKeys() == null
+                ? null
+                : tenantEntity.assignedMemberKeys().stream()
+                    .sorted()
+                    .map(Object::toString)
+                    .toList());
+  }
+
   private static List<DecisionDefinitionItem> toDecisionDefinitions(
       final List<DecisionDefinitionEntity> instances) {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionDefinition).toList();
@@ -341,6 +369,11 @@ public final class SearchQueryResponseMapper {
     return tasks.stream().map(SearchQueryResponseMapper::toUserTask).toList();
   }
 
+  private static List<UserTaskItemStringKeys> toUserTasksStringKeys(
+      final List<UserTaskEntity> tasks) {
+    return tasks.stream().map(SearchQueryResponseMapper::toUserTaskStringKeys).toList();
+  }
+
   private static List<IncidentItem> toIncidents(final List<IncidentEntity> incidents) {
     return incidents.stream().map(SearchQueryResponseMapper::toIncident).toList();
   }
@@ -375,6 +408,30 @@ public final class SearchQueryResponseMapper {
         .candidateUsers(t.candidateUsers())
         .candidateGroups(t.candidateGroups())
         .formKey(t.formKey())
+        .elementId(t.elementId())
+        .creationDate(formatDate(t.creationDate()))
+        .completionDate(formatDate(t.completionDate()))
+        .dueDate(formatDate(t.dueDate()))
+        .followUpDate(formatDate(t.followUpDate()))
+        .externalFormReference(t.externalFormReference())
+        .processDefinitionVersion(t.processDefinitionVersion())
+        .customHeaders(t.customHeaders())
+        .priority(t.priority());
+  }
+
+  public static UserTaskItemStringKeys toUserTaskStringKeys(final UserTaskEntity t) {
+    return new UserTaskItemStringKeys()
+        .tenantId(t.tenantId())
+        .userTaskKey(String.valueOf(t.userTaskKey()))
+        .processInstanceKey(String.valueOf(t.processInstanceKey()))
+        .processDefinitionKey(String.valueOf(t.processDefinitionKey()))
+        .elementInstanceKey(String.valueOf(t.elementInstanceKey()))
+        .processDefinitionId(t.processDefinitionId())
+        .state(UserTaskItemStringKeys.StateEnum.fromValue(t.state().name()))
+        .assignee(t.assignee())
+        .candidateUsers(t.candidateUsers())
+        .candidateGroups(t.candidateGroups())
+        .formKey(String.valueOf(t.formKey()))
         .elementId(t.elementId())
         .creationDate(formatDate(t.creationDate()))
         .completionDate(formatDate(t.completionDate()))

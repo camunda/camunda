@@ -18,6 +18,7 @@ import io.camunda.service.DocumentServices.DocumentReferenceResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.job.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.rest.ActivatedJob;
+import io.camunda.zeebe.gateway.protocol.rest.ActivatedJobStringKeys;
 import io.camunda.zeebe.gateway.protocol.rest.CreateProcessInstanceResponse;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecision;
 import io.camunda.zeebe.gateway.protocol.rest.DeploymentDecisionRequirements;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionItem;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponseStringKeys;
 import io.camunda.zeebe.gateway.protocol.rest.MappingRuleCreateResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationResponse;
@@ -126,6 +128,26 @@ public final class ResponseMapper {
     return new RestJobActivationResult(response);
   }
 
+  public static JobActivationResult<JobActivationResponseStringKeys>
+      toActivateJobsResponseWithStringKeys(
+          final io.camunda.zeebe.gateway.impl.job.JobActivationResponse activationResponse) {
+    final Iterator<LongValue> jobKeys = activationResponse.brokerResponse().jobKeys().iterator();
+    final Iterator<JobRecord> jobs = activationResponse.brokerResponse().jobs().iterator();
+
+    final JobActivationResponseStringKeys response = new JobActivationResponseStringKeys();
+
+    while (jobKeys.hasNext() && jobs.hasNext()) {
+      final LongValue jobKey = jobKeys.next();
+      final JobRecord job = jobs.next();
+      final ActivatedJobStringKeys activatedJob =
+          toActivatedJobWithStringKeys(jobKey.getValue(), job);
+
+      response.addJobsItem(activatedJob);
+    }
+
+    return new RestJobActivationResultWithStringKeys(response);
+  }
+
   private static ActivatedJob toActivatedJob(final long jobKey, final JobRecord job) {
     return new ActivatedJob()
         .jobKey(jobKey)
@@ -136,6 +158,25 @@ public final class ResponseMapper {
         .processDefinitionVersion(job.getProcessDefinitionVersion())
         .processDefinitionKey(job.getProcessDefinitionKey())
         .elementInstanceKey(job.getElementInstanceKey())
+        .worker(bufferAsString(job.getWorkerBuffer()))
+        .retries(job.getRetries())
+        .deadline(job.getDeadline())
+        .variables(job.getVariables())
+        .customHeaders(job.getCustomHeadersObjectMap())
+        .tenantId(job.getTenantId());
+  }
+
+  private static ActivatedJobStringKeys toActivatedJobWithStringKeys(
+      final long jobKey, final JobRecord job) {
+    return new ActivatedJobStringKeys()
+        .jobKey(String.valueOf(jobKey))
+        .type(job.getType())
+        .processDefinitionId(job.getBpmnProcessId())
+        .elementId(job.getElementId())
+        .processInstanceKey(String.valueOf(job.getProcessInstanceKey()))
+        .processDefinitionVersion(job.getProcessDefinitionVersion())
+        .processDefinitionKey(String.valueOf(job.getProcessDefinitionKey()))
+        .elementInstanceKey(String.valueOf(job.getElementInstanceKey()))
         .worker(bufferAsString(job.getWorkerBuffer()))
         .retries(job.getRetries())
         .deadline(job.getDeadline())
@@ -456,6 +497,38 @@ public final class ResponseMapper {
 
     @Override
     public JobActivationResponse getActivateJobsResponse() {
+      return response;
+    }
+
+    @Override
+    public List<ActivatedJob> getJobsToDefer() {
+      return Collections.emptyList();
+    }
+  }
+
+  static class RestJobActivationResultWithStringKeys
+      implements JobActivationResult<JobActivationResponseStringKeys> {
+
+    private final JobActivationResponseStringKeys response;
+
+    RestJobActivationResultWithStringKeys(final JobActivationResponseStringKeys response) {
+      this.response = response;
+    }
+
+    @Override
+    public int getJobsCount() {
+      return response.getJobs().size();
+    }
+
+    @Override
+    public List<ActivatedJob> getJobs() {
+      return response.getJobs().stream()
+          .map(j -> new ActivatedJob(Long.parseLong(j.getJobKey()), j.getRetries()))
+          .toList();
+    }
+
+    @Override
+    public JobActivationResponseStringKeys getActivateJobsResponse() {
       return response;
     }
 

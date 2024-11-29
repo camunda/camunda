@@ -13,10 +13,13 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponseStringKeys;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseObserver;
+import io.camunda.zeebe.gateway.rest.controller.JobActivationRequestResponseWithStringKeysObserver;
 import io.camunda.zeebe.gateway.rest.controller.ResponseObserverProvider;
+import io.camunda.zeebe.gateway.rest.controller.ResponseWithStringKeysObserverProvider;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import java.util.concurrent.CompletableFuture;
@@ -49,9 +52,28 @@ public class JobHandlerConfiguration {
   }
 
   @Bean
+  public ResponseWithStringKeysObserverProvider responseWithStringKeysObserverProvider() {
+    return JobActivationRequestResponseWithStringKeysObserver::new;
+  }
+
+  @Bean
   public ActivateJobsHandler<JobActivationResponse> activateJobsHandler() {
     final var handler = buildActivateJobsHandler(brokerClient);
     final var future = new CompletableFuture<ActivateJobsHandler<JobActivationResponse>>();
+    final var actor =
+        Actor.newActor()
+            .name(config.actorName())
+            .actorStartedHandler(handler.andThen(t -> future.complete(handler)))
+            .build();
+    scheduler.submitActor(actor);
+    return handler;
+  }
+
+  @Bean
+  public ActivateJobsHandler<JobActivationResponseStringKeys> activateJobsWithStringKeysHandler() {
+    final var handler = buildActivateJobsHandlerWithStringKeys(brokerClient);
+    final var future =
+        new CompletableFuture<ActivateJobsHandler<JobActivationResponseStringKeys>>();
     final var actor =
         Actor.newActor()
             .name(config.actorName())
@@ -74,6 +96,19 @@ public class JobHandlerConfiguration {
     }
   }
 
+  private ActivateJobsHandler<JobActivationResponseStringKeys>
+      buildActivateJobsHandlerWithStringKeys(final BrokerClient brokerClient) {
+    if (config.longPolling().isEnabled()) {
+      return buildLongPollingHandlerWithStringKeys(brokerClient);
+    } else {
+      return new RoundRobinActivateJobsHandler<>(
+          brokerClient,
+          config.maxMessageSize().toBytes(),
+          ResponseMapper::toActivateJobsResponseWithStringKeys,
+          RuntimeException::new);
+    }
+  }
+
   private LongPollingActivateJobsHandler<JobActivationResponse> buildLongPollingHandler(
       final BrokerClient brokerClient) {
     return LongPollingActivateJobsHandler.<JobActivationResponse>newBuilder()
@@ -83,6 +118,20 @@ public class JobHandlerConfiguration {
         .setProbeTimeoutMillis(config.longPolling().getProbeTimeout())
         .setMinEmptyResponses(config.longPolling().getMinEmptyResponses())
         .setActivationResultMapper(ResponseMapper::toActivateJobsResponse)
+        .setNoJobsReceivedExceptionProvider(RuntimeException::new)
+        .setRequestCanceledExceptionProvider(RuntimeException::new)
+        .build();
+  }
+
+  private LongPollingActivateJobsHandler<JobActivationResponseStringKeys>
+      buildLongPollingHandlerWithStringKeys(final BrokerClient brokerClient) {
+    return LongPollingActivateJobsHandler.<JobActivationResponseStringKeys>newBuilder()
+        .setBrokerClient(brokerClient)
+        .setMaxMessageSize(config.maxMessageSize().toBytes())
+        .setLongPollingTimeout(config.longPolling().getTimeout())
+        .setProbeTimeoutMillis(config.longPolling().getProbeTimeout())
+        .setMinEmptyResponses(config.longPolling().getMinEmptyResponses())
+        .setActivationResultMapper(ResponseMapper::toActivateJobsResponseWithStringKeys)
         .setNoJobsReceivedExceptionProvider(RuntimeException::new)
         .setRequestCanceledExceptionProvider(RuntimeException::new)
         .build();
