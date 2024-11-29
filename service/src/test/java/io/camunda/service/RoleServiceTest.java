@@ -8,16 +8,20 @@
 package io.camunda.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.exception.NotFoundException;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.auth.Authorization;
+import io.camunda.service.exception.ForbiddenException;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
@@ -35,6 +39,7 @@ public class RoleServiceTest {
   private RoleSearchClient client;
   private Authentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
+  private SecurityContextProvider securityContextProvider;
 
   @BeforeEach
   public void before() {
@@ -42,9 +47,9 @@ public class RoleServiceTest {
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(RoleSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
+    securityContextProvider = mock(SecurityContextProvider.class);
     services =
-        new RoleServices(
-            stubbedBrokerClient, mock(SecurityContextProvider.class), client, authentication);
+        new RoleServices(stubbedBrokerClient, securityContextProvider, client, authentication);
   }
 
   @Test
@@ -75,14 +80,37 @@ public class RoleServiceTest {
   public void shouldReturnSingleVariableForGet() {
     // given
     final var entity = mock(RoleEntity.class);
+    final var roleName = "name";
+    when(entity.name()).thenReturn(roleName);
     final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
     when(client.searchRoles(any())).thenReturn(result);
+    when(securityContextProvider.isAuthorized(
+            roleName, authentication, Authorization.of(a -> a.role().read())))
+        .thenReturn(true);
 
     // when
-    final var searchQueryResult = services.findRole(1L);
+    final var searchQueryResult = services.getRole(1L);
 
     // then
-    assertThat(searchQueryResult).contains(entity);
+    assertThat(searchQueryResult).isEqualTo(entity);
+  }
+
+  @Test
+  public void shouldThrowForbiddenExceptionWhenNotAuthorizedToReadRole() {
+    // given
+    final var entity = mock(RoleEntity.class);
+    final var roleName = "name";
+    when(entity.name()).thenReturn(roleName);
+    final var result = new SearchQueryResult<>(1, List.of(entity), Arrays.array());
+    when(client.searchRoles(any())).thenReturn(result);
+    when(securityContextProvider.isAuthorized(
+            roleName, authentication, Authorization.of(a -> a.role().read())))
+        .thenReturn(false);
+
+    // when / then
+    final var exception = assertThrowsExactly(ForbiddenException.class, () -> services.getRole(1L));
+    assertThat(exception.getMessage())
+        .isEqualTo("Unauthorized to perform operation 'READ' on resource 'ROLE'");
   }
 
   @Test
@@ -92,7 +120,8 @@ public class RoleServiceTest {
     when(client.searchRoles(any())).thenReturn(new SearchQueryResult(0, List.of(), null));
 
     // when / then
-    assertThat(services.findRole(key)).isEmpty();
+    final var exception = assertThrowsExactly(NotFoundException.class, () -> services.getRole(key));
+    assertThat(exception.getMessage()).isEqualTo("Role with key 100 not found");
   }
 
   @Test
