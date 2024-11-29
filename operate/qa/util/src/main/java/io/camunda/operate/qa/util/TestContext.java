@@ -35,7 +35,6 @@ public class TestContext<T extends TestContext<T>> {
 
   private String externalZeebeContactPoint;
   private String internalZeebeContactPoint;
-  private Integer internalZeebeHttpPort;
 
   private String zeebeIndexPrefix = "zeebe-record";
 
@@ -228,15 +227,6 @@ public class TestContext<T extends TestContext<T>> {
   public T setInternalZeebeContactPoint(final String internalZeebeContactPoint) {
     this.internalZeebeContactPoint = internalZeebeContactPoint;
     return (T) this;
-  }
-
-  public Integer getInternalZeebeHttpPort() {
-    return internalZeebeHttpPort;
-  }
-
-  public TestContext<T> setInternalZeebeHttpPort(final Integer internalZeebeHttpPort) {
-    this.internalZeebeHttpPort = internalZeebeHttpPort;
-    return this;
   }
 
   public String getZeebeIndexPrefix() {
