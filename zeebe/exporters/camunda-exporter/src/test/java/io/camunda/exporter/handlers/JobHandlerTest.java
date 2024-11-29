@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.CUSTOM_HEADERS;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_CODE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_MESSAGE;
@@ -14,6 +15,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DEADLINE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_WORKER;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.TIME;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -134,6 +136,7 @@ final class JobHandlerTest {
     final long recordKey = 789;
     final int partitionId = 10;
     final int processInstanceKey = 123;
+    final long processDefinitionKey = 555L;
     final int elementInstanceKey = 456;
     final String elementId = "elementId";
     final String bpmnProcessId = "bpmnProcessId";
@@ -152,6 +155,7 @@ final class JobHandlerTest {
             .withElementInstanceKey(elementInstanceKey)
             .withElementId(elementId)
             .withBpmnProcessId(bpmnProcessId)
+            .withProcessDefinitionKey(processDefinitionKey)
             .withType(jobType)
             .withRetries(retries)
             .withWorker(jobWorker)
@@ -172,7 +176,7 @@ final class JobHandlerTest {
                     .withPartitionId(partitionId)
                     .withValueType(ValueType.JOB)
                     .withValue(recordValue));
-    final var entity = new JobEntity();
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
 
     // when
     underTest.updateEntity(record, entity);
@@ -182,12 +186,14 @@ final class JobHandlerTest {
     assertThat(entity.getKey()).isEqualTo(recordKey);
     assertThat(entity.getPartitionId()).isEqualTo(partitionId);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(entity.getBpmnProcessId()).isEqualTo(bpmnProcessId);
     assertThat(entity.getFlowNodeInstanceId()).isEqualTo(elementInstanceKey);
     assertThat(entity.getFlowNodeId()).isEqualTo(elementId);
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
     assertThat(entity.getType()).isEqualTo(jobType);
-    assertThat(entity.getJobKind()).isEqualTo(jobKind);
-    assertThat(entity.getListenerEventType()).isEqualTo(jobListenerEventType);
+    assertThat(entity.getJobKind()).isEqualTo(jobKind.name());
+    assertThat(entity.getListenerEventType()).isEqualTo(jobListenerEventType.name());
     assertThat(entity.getRetries()).isEqualTo(retries);
     assertThat(entity.getWorker()).isEqualTo(jobWorker);
     assertThat(entity.getCustomHeaders()).isEqualTo(Map.of("key", "val"));
@@ -213,6 +219,8 @@ final class JobHandlerTest {
     final String errorCode = "errorCode";
     final OffsetDateTime deadline = OffsetDateTime.now().plus(1, ChronoUnit.DAYS);
     final String state = "CREATED";
+    final String bpmnProcessId = "bpmnProcessId";
+    final long processDefinitionKey = 555L;
     final OffsetDateTime endTime = OffsetDateTime.now();
 
     final Map<String, String> customHeaders = Map.of("key", "val");
@@ -227,7 +235,9 @@ final class JobHandlerTest {
             .setErrorCode(errorCode)
             .setEndTime(endTime)
             .setCustomHeaders(customHeaders)
-            .setDeadline(deadline);
+            .setDeadline(deadline)
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setBpmnProcessId(bpmnProcessId);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
@@ -239,6 +249,8 @@ final class JobHandlerTest {
     expectedUpdateFields.put(TIME, jobEntity.getEndTime());
     expectedUpdateFields.put(CUSTOM_HEADERS, jobEntity.getCustomHeaders());
     expectedUpdateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
+    expectedUpdateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
+    expectedUpdateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
 
     final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
 

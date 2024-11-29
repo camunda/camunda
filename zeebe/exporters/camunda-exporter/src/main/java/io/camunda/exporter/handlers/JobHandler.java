@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.CUSTOM_HEADERS;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_CODE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_MESSAGE;
@@ -14,6 +15,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DEADLINE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_WORKER;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.RETRIES;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.TIME;
 
@@ -87,6 +89,8 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
         .setPartitionId(record.getPartitionId())
         .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setFlowNodeInstanceId(recordValue.getElementInstanceKey())
+        .setBpmnProcessId(recordValue.getBpmnProcessId())
+        .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
         .setTenantId(recordValue.getTenantId())
         .setType(recordValue.getType())
         .setWorker(recordValue.getWorker())
@@ -132,6 +136,8 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     updateFields.put(TIME, jobEntity.getEndTime());
     updateFields.put(CUSTOM_HEADERS, jobEntity.getCustomHeaders());
     updateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
+    updateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
+    updateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
     batchRequest.upsert(indexName, jobEntity.getId(), jobEntity, updateFields);
   }
 

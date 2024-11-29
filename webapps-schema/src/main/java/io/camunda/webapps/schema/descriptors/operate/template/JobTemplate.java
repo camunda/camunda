@@ -21,6 +21,8 @@ public class JobTemplate extends OperateTemplateDescriptor
   // String - human readable name
   public static final String FLOW_NODE_ID = "flowNodeId";
   public static final String TENANT_ID = "tenantId";
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String JOB_TYPE = "type";
   public static final String JOB_WORKER = "worker";
   public static final String RETRIES = "retries";
