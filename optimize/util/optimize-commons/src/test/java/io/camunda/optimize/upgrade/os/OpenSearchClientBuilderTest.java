@@ -39,12 +39,12 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
 // commit https://github.com/camunda/camunda/commit/d9bc7a5b380b80c69a7e86f4f295686fc697c85d
 class OpenSearchClientBuilderTest {
 
-  private static final String BASE_URL = "http://localhost:9876";
+  private static final String BASE_URL = "http://localhost:8090/";
   private static ClientAndServer mockServer;
 
   @BeforeAll
   static void before() {
-    mockServer = startClientAndServer(9876);
+    mockServer = startClientAndServer(8090);
     mockServer.when(HttpRequest.request().withMethod("GET").withPath("/"))
         .respond(HttpResponse.response().withStatusCode(200).withBody("mocked response"));
   }
