@@ -31,7 +31,6 @@ public class DateFilter {
   @GraphQLNonNull
   private Date to;
 
-  @GraphQLConstructor
   public DateFilter(final Date from, final Date to) {
     this.from = from;
     this.to = to;
