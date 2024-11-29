@@ -46,7 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      # Setup: checkout branch
+      # Setup: checkout branch TODO: REDUNDANT
       - name: Checkout '${{ inputs.branch }}' branch
         uses: actions/checkout@cbb722410c2e876e24abbe8de2cc27693e501dcb
         with:
@@ -54,7 +54,7 @@ jobs:
           fetch-depth: 0 # fetches all history for all branches and tags
 
       #########################################################################
-      # Setup: define env variables
+      # Setup: define env variables TODO: REDUNDANT
       - name: Set GitHub environment variables
         run: |
           GIT_COMMIT_HASH=$(git rev-parse ${{ inputs.branch }})
@@ -64,7 +64,7 @@ jobs:
           echo "PR_IMAGE_TAG=pr-$GIT_COMMIT_HASH" >> $GITHUB_ENV
 
       #########################################################################
-      # Setup and configure Maven, Docker, and settings
+      # Setup and configure Maven, Docker, and settings TODO: REDUNDANT
       - uses: ./.github/actions/setup-build
         name: Build setup
         with:
@@ -78,13 +78,13 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
       #########################################################################
-      # Build frontend
+      # Build frontend TODO: REDUNDANT
       - name: Build frontend
         uses: ./.github/actions/build-frontend
         with:
           directory: ./tasklist/client
       #########################################################################
-      # Build backend
+      # Build backend TODO: REDUNDANT
       - name: Build backend
         run: |
           ./mvnw -T1C clean deploy -B -PskipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
@@ -104,7 +104,7 @@ jobs:
           dockerfile: tasklist.Dockerfile
 
       #########################################################################
-      # Build SNAPSHOT Docker image
+      # Build SNAPSHOT Docker image TODO: REDUNDANT
       - name: Build SNAPSHOT Docker image
         if: ${{ env.IS_DEFAULT_BRANCH == 'true' }}
         uses: ./.github/actions/build-platform-docker

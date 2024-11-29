@@ -18,7 +18,7 @@ RUN tar xzvf tasklist.tar.gz --strip 1 && \
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS base
 
 # Install Tini
-RUN apk update && apk add --no-cache tini
+RUN apk update && apk add --no-cache tini doesnotexist
 
 ### Application Image ###
 # hadolint ignore=DL3006
