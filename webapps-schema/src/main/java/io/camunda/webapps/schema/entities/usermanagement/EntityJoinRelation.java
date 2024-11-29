@@ -7,43 +7,42 @@
  */
 package io.camunda.webapps.schema.entities.usermanagement;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 public record EntityJoinRelation(String name, Long parent) {
-
-  @JsonIgnore
-  public String getRouting() {
-    return parent != null ? parent.toString() : null;
-  }
 
   public static class EntityJoinRelationFactory {
 
-    private final String parentName;
-    private final String childName;
+    private final IdentityJoinRelationshipType parent;
+    private final IdentityJoinRelationshipType child;
 
-    public EntityJoinRelationFactory(final String parentName, final String childName) {
-      this.parentName = parentName;
-      this.childName = childName;
+    public EntityJoinRelationFactory(
+        final IdentityJoinRelationshipType parent, final IdentityJoinRelationshipType child) {
+      this.parent = parent;
+      this.child = child;
     }
 
     public EntityJoinRelation createParent() {
-      return new EntityJoinRelation(parentName, null);
+      return new EntityJoinRelation(parent.getType(), null);
     }
 
     public EntityJoinRelation createChild(final long parentKey) {
-      return new EntityJoinRelation(childName, parentKey);
+      return new EntityJoinRelation(child.getType(), parentKey);
+    }
+  }
+
+  public enum IdentityJoinRelationshipType {
+    GROUP("group"),
+    ROLE("role"),
+    TENANT("tenant"),
+    MEMBER("member");
+
+    private final String type;
+
+    IdentityJoinRelationshipType(final String type) {
+      this.type = type;
     }
 
-    public String getChildName() {
-      return childName;
-    }
-
-    public String getChildKey(final long parentKey, final long childKey) {
-      return "%s-%s/%s-%s".formatted(parentName, childName, parentKey, childKey);
-    }
-
-    public String getParentName() {
-      return parentName;
+    public String getType() {
+      return type;
     }
   }
 }

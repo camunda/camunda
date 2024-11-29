@@ -43,7 +43,7 @@ public class RoleMemberRemovedHandler implements ExportHandler<RoleEntity, RoleR
   @Override
   public List<String> generateIds(final Record<RoleRecordValue> record) {
     final RoleRecordValue value = record.getValue();
-    return List.of(RoleIndex.MEMBER_RELATION.getChildKey(value.getRoleKey(), value.getEntityKey()));
+    return List.of(RoleEntity.getChildKey(value.getRoleKey(), value.getEntityKey()));
   }
 
   @Override
@@ -55,13 +55,13 @@ public class RoleMemberRemovedHandler implements ExportHandler<RoleEntity, RoleR
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     entity
         .setMemberKey(record.getValue().getEntityKey())
-        .setJoin(RoleIndex.MEMBER_RELATION.createChild(record.getValue().getRoleKey()));
+        .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createChild(record.getValue().getRoleKey()));
   }
 
   @Override
   public void flush(final RoleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.deleteWithRouting(indexName, entity.getId(), entity.getJoin().getRouting());
+    batchRequest.deleteWithRouting(indexName, entity.getId(), entity.getJoin().parent().toString());
   }
 
   @Override
