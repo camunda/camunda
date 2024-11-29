@@ -217,7 +217,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
               command.getValue(),
               command.getValueType(),
               RejectionType.INVALID_STATE,
-              mapDeniedIntentToResponseReasonFormat(intent, persistedRecord.getUserTaskKey()),
+              mapDeniedIntentToResponseRejectionReason(intent, persistedRecord.getUserTaskKey()),
               metadata.getRequestId(),
               metadata.getRequestStreamId());
         });
@@ -264,7 +264,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     };
   }
 
-  private String mapDeniedIntentToResponseReasonFormat(
+  private String mapDeniedIntentToResponseRejectionReason(
       final UserTaskIntent intent, final long userTaskKey) {
     return switch (intent) {
       case COMPLETION_DENIED -> USER_TASK_COMPLETION_REJECTION.formatted(userTaskKey);

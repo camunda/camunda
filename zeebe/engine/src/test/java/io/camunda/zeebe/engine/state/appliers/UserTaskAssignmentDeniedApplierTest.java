@@ -14,7 +14,6 @@ import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import org.assertj.core.api.Assertions;
-import org.assertj.core.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,10 +54,9 @@ public class UserTaskAssignmentDeniedApplierTest {
     testSetup.applyEventToState(
         userTaskKey, UserTaskIntent.ASSIGNING, given.setAssignee(newAssignee));
 
-    Assumptions.assumeThat(userTaskState.getUserTask(userTaskKey)).isNotNull();
-    Assumptions.assumeThat(userTaskState.getUserTask(userTaskKey).getAssignee())
+    Assertions.assertThat(userTaskState.getUserTask(userTaskKey).getAssignee())
         .isEqualTo(initialAssignee);
-    Assumptions.assumeThat(userTaskState.getLifecycleState(userTaskKey))
+    Assertions.assertThat(userTaskState.getLifecycleState(userTaskKey))
         .isEqualTo(LifecycleState.ASSIGNING);
 
     // when
