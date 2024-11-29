@@ -7,22 +7,34 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.element;
 
-import java.util.ArrayList;
-import java.util.List;
+import io.camunda.zeebe.el.Expression;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ExecutableAdHocSubProcess extends ExecutableFlowElementContainer {
 
-  private final List<ExecutableFlowNode> adHocActivities = new ArrayList<>();
+  private Expression activeElementsCollection;
+  private final Map<String, ExecutableFlowNode> adHocActivitiesById = new HashMap<>();
 
   public ExecutableAdHocSubProcess(final String id) {
     super(id);
   }
 
-  public List<ExecutableFlowNode> getAdHocActivities() {
-    return adHocActivities;
+  public Expression getActiveElementsCollection() {
+    return activeElementsCollection;
+  }
+
+  public void setActiveElementsCollection(final Expression activeElementsCollection) {
+    this.activeElementsCollection = activeElementsCollection;
+  }
+
+  public Map<String, ExecutableFlowNode> getAdHocActivitiesById() {
+    return adHocActivitiesById;
   }
 
   public void addAdHocActivity(final ExecutableFlowNode adHocActivity) {
-    adHocActivities.add(adHocActivity);
+    final String elementId = BufferUtil.bufferAsString(adHocActivity.getId());
+    adHocActivitiesById.put(elementId, adHocActivity);
   }
 }
