@@ -43,12 +43,12 @@ public class XmlUtil {
     this.processDefinitionServices = processDefinitionServices;
   }
 
-  public Map<Long, Map<Long, String>> getFlowNodesNames(
+  public Map<Long, Map<String, String>> getFlowNodesNames(
       final List<FlowNodeInstanceEntity> flowNodes) {
     return getNamesForEntities(
         flowNodes,
         FlowNodeInstanceEntity::processDefinitionKey,
-        FlowNodeInstanceEntity::flowNodeInstanceKey,
+        FlowNodeInstanceEntity::flowNodeId,
         this::getFlowNodeName);
   }
 
@@ -58,7 +58,7 @@ public class XmlUtil {
     return getFlowNodeName(processDefinition, flowNode);
   }
 
-  protected String getFlowNodeName(
+  private String getFlowNodeName(
       final ProcessDefinitionEntity processDefinition, final FlowNodeInstanceEntity flowNode) {
     final var type = BpmnElementType.valueOf(flowNode.type().name());
     if (type.getElementTypeName().isEmpty()) {
@@ -71,11 +71,11 @@ public class XmlUtil {
         flowNode.flowNodeId());
   }
 
-  public HashMap<Long, Map<Long, String>> getUserTasksNames(final List<UserTaskEntity> userTasks) {
+  public Map<Long, Map<String, String>> getUserTasksNames(final List<UserTaskEntity> userTasks) {
     return getNamesForEntities(
         userTasks,
         UserTaskEntity::processDefinitionKey,
-        UserTaskEntity::userTaskKey,
+        UserTaskEntity::elementId,
         this::getUserTaskName);
   }
 
@@ -85,7 +85,7 @@ public class XmlUtil {
     return getUserTaskName(processDefinition, userTask);
   }
 
-  protected String getUserTaskName(
+  private String getUserTaskName(
       final ProcessDefinitionEntity processDefinition, final UserTaskEntity userTask) {
     return extractFlowNodeName(
         processDefinition.bpmnXml(),
@@ -94,13 +94,13 @@ public class XmlUtil {
         userTask.elementId());
   }
 
-  protected <T> HashMap<Long, Map<Long, String>> getNamesForEntities(
+  private <T> Map<Long, Map<String, String>> getNamesForEntities(
       final List<T> items,
       final Function<T, Long> fnProcessDefinitionKey,
-      final Function<T, Long> fnEntityKey,
+      final Function<T, String> fnEntityKey,
       final BiFunction<ProcessDefinitionEntity, T, String> fnGetFlowNodeName) {
 
-    final var processDefinitionFlowNodesMap = new HashMap<Long, Map<Long, String>>();
+    final var processDefinitionFlowNodesMap = new HashMap<Long, Map<String, String>>();
     if (items.isEmpty()) {
       return processDefinitionFlowNodesMap;
     }
