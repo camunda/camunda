@@ -17,7 +17,7 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-@Component
+@ComponentXXXXXX
 @DependsOn("tasklistSchemaStartup")
 @Profile("!test")
 public class StartupBean {
