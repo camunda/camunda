@@ -79,7 +79,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
       return;
     }
     record.setName(persistedRecord.get().getName());
-
+    removeMembers(record);
     stateWriter.appendFollowUpEvent(roleKey, RoleIntent.DELETED, record);
     responseWriter.writeEventOnCommand(roleKey, RoleIntent.DELETED, record, command);
 
@@ -92,7 +92,27 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
 
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
+    removeMembers(command.getValue());
     stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.DELETED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void removeMembers(final RoleRecord record) {
+    final var roleKey = record.getRoleKey();
+    roleState
+        .getEntitiesByType(roleKey)
+        .forEach(
+            (entityType, entityKeys) -> {
+              entityKeys.forEach(
+                  entityKey -> {
+                    final var entityRecord =
+                        new RoleRecord()
+                            .setRoleKey(roleKey)
+                            .setEntityKey(entityKey)
+                            .setEntityType(entityType);
+                    stateWriter.appendFollowUpEvent(
+                        roleKey, RoleIntent.ENTITY_REMOVED, entityRecord);
+                  });
+            });
   }
 }

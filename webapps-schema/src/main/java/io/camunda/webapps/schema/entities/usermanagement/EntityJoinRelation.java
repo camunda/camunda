@@ -31,6 +31,7 @@ public record EntityJoinRelation(String name, Long parent) {
 
   public enum IdentityJoinRelationshipType {
     GROUP("group"),
+    ROLE("role"),
     TENANT("tenant"),
     MEMBER("member");
 

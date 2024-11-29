@@ -46,6 +46,8 @@ import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.RoleDeletedHandler;
+import io.camunda.exporter.handlers.RoleMemberAddedHandler;
+import io.camunda.exporter.handlers.RoleMemberRemovedHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
@@ -193,6 +195,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new RoleCreateUpdateHandler(
                 indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
             new RoleDeletedHandler(indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+            new RoleMemberAddedHandler(
+                indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+            new RoleMemberRemovedHandler(
+                indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
             new UserCreatedUpdatedHandler(
                 indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new UserDeletedHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),

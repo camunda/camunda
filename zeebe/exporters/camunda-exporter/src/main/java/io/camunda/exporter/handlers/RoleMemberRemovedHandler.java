@@ -17,10 +17,10 @@ import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import java.util.List;
 
-public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
+public class RoleMemberRemovedHandler implements ExportHandler<RoleEntity, RoleRecordValue> {
   private final String indexName;
 
-  public RoleCreateUpdateHandler(final String indexName) {
+  public RoleMemberRemovedHandler(final String indexName) {
     this.indexName = indexName;
   }
 
@@ -36,14 +36,14 @@ public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRe
 
   @Override
   public boolean handlesRecord(final Record<RoleRecordValue> record) {
-    return getHandledValueType().equals(record.getValueType())
-        && (record.getIntent().equals(RoleIntent.CREATED)
-            || record.getIntent().equals(RoleIntent.UPDATED));
+    return getHandledValueType() == record.getValueType()
+        && record.getIntent() == RoleIntent.ENTITY_REMOVED;
   }
 
   @Override
   public List<String> generateIds(final Record<RoleRecordValue> record) {
-    return List.of(String.valueOf(record.getKey()));
+    final RoleRecordValue value = record.getValue();
+    return List.of(RoleEntity.getChildKey(value.getRoleKey(), value.getEntityKey()));
   }
 
   @Override
@@ -53,17 +53,15 @@ public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRe
 
   @Override
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
-    final RoleRecordValue value = record.getValue();
     entity
-        .setKey(value.getRoleKey())
-        .setName(value.getName())
-        .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createParent());
+        .setMemberKey(record.getValue().getEntityKey())
+        .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createChild(record.getValue().getRoleKey()));
   }
 
   @Override
   public void flush(final RoleEntity entity, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+    batchRequest.deleteWithRouting(indexName, entity.getId(), entity.getJoin().parent().toString());
   }
 
   @Override
