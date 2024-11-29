@@ -15,7 +15,7 @@ public class GroupIndex extends UserManagementIndexDescriptor {
   public static final String INDEX_NAME = "groups";
   public static final String INDEX_VERSION = "8.7.0";
 
-  public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
+  public static final EntityJoinRelationFactory MEMBER_RELATION =
       new EntityJoinRelationFactory("group", "member");
 
   public GroupIndex(final String indexPrefix, final boolean isElasticsearch) {
