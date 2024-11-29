@@ -174,12 +174,10 @@ public class TaskService {
 
     if (taskBefore.getImplementation().equals(TaskImplementation.ZEEBE_USER_TASK)) {
       try {
+        final Long taskKey = taskBefore.getKey();
+
         final AssignUserTaskResponse assigneeResponse =
-            zeebeClient
-                .newUserTaskAssignCommand(Long.parseLong(taskId))
-                .assignee(taskAssignee)
-                .send()
-                .join();
+            zeebeClient.newUserTaskAssignCommand(taskKey).assignee(taskAssignee).send().join();
       } catch (final ClientException exception) {
         throw new TasklistRuntimeException(exception.getMessage());
       }

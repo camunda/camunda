@@ -133,8 +133,8 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   }
 
   private void assertAllInstancesInAlias(final int count, final String id) throws IOException {
-    assertThat(tester.getAllTasks().get("$.data.tasks.length()")).isEqualTo(String.valueOf(count));
-    final String taskId = tester.getTaskById(id).get("$.data.task.id");
+    assertThat(tester.getAllTasks().size() == count);
+    final String taskId = tester.getTaskById(id).getId();
     assertThat(taskId).isEqualTo(id);
   }
 

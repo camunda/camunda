@@ -12,7 +12,7 @@ public class ZeebeProperties {
   private String gatewayAddress = "localhost:26500";
   private boolean isSecure = false;
   private String certificatePath = null;
-  private String restAddress = "http://localhost:8089";
+  private String restAddress = "http://localhost:8080";
 
   public boolean isSecure() {
     return isSecure;
@@ -28,7 +28,7 @@ public class ZeebeProperties {
   }
 
   public ZeebeProperties setCertificatePath(final String caCertificatePath) {
-    this.certificatePath = caCertificatePath;
+    certificatePath = caCertificatePath;
     return this;
   }
 
@@ -38,8 +38,8 @@ public class ZeebeProperties {
   }
 
   @Deprecated
-  public void setBrokerContactPoint(String brokerContactPoint) {
-    this.gatewayAddress = brokerContactPoint;
+  public void setBrokerContactPoint(final String brokerContactPoint) {
+    gatewayAddress = brokerContactPoint;
   }
 
   public String getGatewayAddress() {
