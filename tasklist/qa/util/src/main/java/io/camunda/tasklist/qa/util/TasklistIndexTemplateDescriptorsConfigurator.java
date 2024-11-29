@@ -14,6 +14,7 @@ import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
@@ -121,6 +122,19 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
     return new UserIndex(getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties)) {
+      @Override
+      public String getIndexPrefix() {
+        return indexPrefixHolder.getIndexPrefix();
+      }
+    };
+  }
+
+  @Bean
+  public TasklistImportPositionIndex tasklistImportPositionIndex(
+      final TasklistProperties tasklistProperties,
+      final TasklistIndexPrefixHolder indexPrefixHolder) {
+    return new TasklistImportPositionIndex(
+        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties)) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();

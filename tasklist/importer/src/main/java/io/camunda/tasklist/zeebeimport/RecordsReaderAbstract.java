@@ -10,13 +10,13 @@ package io.camunda.tasklist.zeebeimport;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 
 import io.camunda.tasklist.Metrics;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.util.BackoffIdleStrategy;
 import io.camunda.tasklist.zeebe.ImportValueType;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.zeebe.protocol.Protocol;
 import jakarta.annotation.PostConstruct;
 import java.time.Duration;
@@ -37,7 +37,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
 
-  public static final String PARTITION_ID_FIELD_NAME = ImportPositionIndex.PARTITION_ID;
+  public static final String PARTITION_ID_FIELD_NAME = TasklistImportPositionIndex.PARTITION_ID;
   private static final Logger LOGGER = LoggerFactory.getLogger(RecordsReaderAbstract.class);
 
   @Autowired protected TasklistProperties tasklistProperties;
