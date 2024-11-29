@@ -8,7 +8,9 @@
 package io.camunda.zeebe.gateway.rest.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,9 +18,13 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.UserTaskEntity;
+import io.camunda.search.query.ProcessDefinitionQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,6 +39,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 class XmlUtilTest {
 
   public static final String PROCESS_DEFINITION_ID = "testProcess";
+  public static final long PROCESS_DEFINITION_KEY = 1L;
   @Autowired XmlUtil xmlUtil;
   @MockBean ProcessDefinitionServices processDefinitionServices;
   @Mock ProcessDefinitionEntity processDefinition;
@@ -47,10 +54,12 @@ class XmlUtilTest {
             getClass().getClassLoader().getResourceAsStream("./user-task.bpmn").readAllBytes(),
             StandardCharsets.UTF_8);
     when(processDefinition.bpmnXml()).thenReturn(bpmn);
+    when(processDefinition.processDefinitionKey()).thenReturn(PROCESS_DEFINITION_KEY);
     when(processDefinition.processDefinitionId()).thenReturn(PROCESS_DEFINITION_ID);
-    when(processDefinitionServices.getByKey(eq(1L))).thenReturn(processDefinition);
-    when(userTaskEntity.processDefinitionKey()).thenReturn(1L);
-    when(flowNodeInstanceEntity.processDefinitionKey()).thenReturn(1L);
+    when(processDefinitionServices.getByKey(eq(PROCESS_DEFINITION_KEY)))
+        .thenReturn(processDefinition);
+    when(userTaskEntity.processDefinitionKey()).thenReturn(PROCESS_DEFINITION_KEY);
+    when(flowNodeInstanceEntity.processDefinitionKey()).thenReturn(PROCESS_DEFINITION_KEY);
     when(flowNodeInstanceEntity.type()).thenReturn(FlowNodeType.START_EVENT);
   }
 
@@ -61,7 +70,7 @@ class XmlUtilTest {
     // when
     final var actual = xmlUtil.getFlowNodeName(flowNodeInstanceEntity);
     // then
-    verify(processDefinitionServices).getByKey(eq(1L));
+    verify(processDefinitionServices).getByKey(eq(PROCESS_DEFINITION_KEY));
     assertThat(actual).isEqualTo("Start");
   }
 
@@ -72,7 +81,7 @@ class XmlUtilTest {
     // when
     final var actual = xmlUtil.getUserTaskName(userTaskEntity);
     // then
-    verify(processDefinitionServices).getByKey(eq(1L));
+    verify(processDefinitionServices).getByKey(eq(PROCESS_DEFINITION_KEY));
     assertThat(actual).isEqualTo("Task B");
   }
 
@@ -162,5 +171,35 @@ class XmlUtilTest {
             "taskE");
     // then
     assertThat(actual).isEqualTo("taskE");
+  }
+
+  @Test
+  void shouldSearchProcessDefinitionsAndResolveNames() {
+    // given
+    when(userTaskEntity.userTaskKey()).thenReturn(10L);
+    final BiFunction<ProcessDefinitionEntity, UserTaskEntity, String> fnGetFlowNodeName =
+        mock(BiFunction.class);
+    when(fnGetFlowNodeName.apply(any(), any())).thenReturn("userTaskName");
+    when(processDefinitionServices.search(any()))
+        .thenReturn(
+            new SearchQueryResult.Builder<ProcessDefinitionEntity>()
+                .items(List.of(processDefinition))
+                .build());
+    // when
+    final var actual =
+        xmlUtil.getNamesForEntities(
+            List.of(userTaskEntity),
+            UserTaskEntity::processDefinitionKey,
+            UserTaskEntity::userTaskKey,
+            fnGetFlowNodeName);
+    // then
+    verify(processDefinitionServices)
+        .search(
+            ProcessDefinitionQuery.of(
+                q -> q.filter(f -> f.processDefinitionKeys(List.of(PROCESS_DEFINITION_KEY)))));
+    verify(fnGetFlowNodeName).apply(processDefinition, userTaskEntity);
+    assertThat(actual).hasSize(1);
+    assertThat(actual.get(PROCESS_DEFINITION_KEY)).hasSize(1);
+    assertThat(actual.get(PROCESS_DEFINITION_KEY).get(10L)).isEqualTo("userTaskName");
   }
 }

@@ -144,7 +144,8 @@ public final class SearchQueryResponseMapper {
   }
 
   public static FlowNodeInstanceSearchQueryResponse toFlowNodeInstanceSearchQueryResponse(
-      final SearchQueryResult<FlowNodeInstanceEntity> result, final HashMap<Long, String> nameMap) {
+      final SearchQueryResult<FlowNodeInstanceEntity> result,
+      final Map<Long, Map<Long, String>> nameMap) {
     final var page = toSearchQueryPageResponse(result);
     return new FlowNodeInstanceSearchQueryResponse()
         .page(page)
@@ -166,7 +167,8 @@ public final class SearchQueryResponseMapper {
   }
 
   public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
-      final SearchQueryResult<UserTaskEntity> result, final Map<Long, String> nameMap) {
+      final SearchQueryResult<UserTaskEntity> result,
+      final HashMap<Long, Map<Long, String>> nameMap) {
     final var page = toSearchQueryPageResponse(result);
     return new UserTaskSearchQueryResponse()
         .page(page)
@@ -290,9 +292,15 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<FlowNodeInstanceItem> toFlowNodeInstance(
-      final List<FlowNodeInstanceEntity> instances, final HashMap<Long, String> nameMap) {
+      final List<FlowNodeInstanceEntity> instances, final Map<Long, Map<Long, String>> nameMap) {
     return instances.stream()
-        .map(instance -> toFlowNodeInstance(instance, nameMap.get(instance.flowNodeInstanceKey())))
+        .map(
+            instance ->
+                toFlowNodeInstance(
+                    instance,
+                    nameMap
+                        .get(instance.processDefinitionKey())
+                        .get(instance.flowNodeInstanceKey())))
         .toList();
   }
 
@@ -338,9 +346,11 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<UserTaskItem> toUserTasks(
-      final List<UserTaskEntity> tasks, final Map<Long, String> nameMap) {
+      final List<UserTaskEntity> tasks, final HashMap<Long, Map<Long, String>> nameMap) {
     return tasks.stream()
-        .map((UserTaskEntity t) -> toUserTask(t, nameMap.get(t.userTaskKey())))
+        .map(
+            (UserTaskEntity t) ->
+                toUserTask(t, nameMap.get(t.processDefinitionKey()).get(t.userTaskKey())))
         .toList();
   }
 

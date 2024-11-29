@@ -24,7 +24,6 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.util.XmlUtil;
-import java.util.HashMap;
 import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -60,8 +59,7 @@ public class UserTaskQueryController {
     try {
       final var result =
           userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
-      final var nameMap = new HashMap<Long, String>();
-      result.items().forEach(u -> nameMap.put(u.userTaskKey(), xmlUtil.getUserTaskName(u)));
+      final var nameMap = xmlUtil.getUserTasksNames(result.items());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result, nameMap));
     } catch (final Exception e) {
@@ -79,7 +77,7 @@ public class UserTaskQueryController {
           userTaskServices
               .withAuthentication(RequestMapper.getAuthentication())
               .getByKey(userTaskKey);
-      final String name = xmlUtil.getUserTaskName(userTask);
+      final var name = xmlUtil.getUserTaskName(userTask);
       return ResponseEntity.ok().body(SearchQueryResponseMapper.toUserTask(userTask, name));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
