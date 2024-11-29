@@ -29,6 +29,8 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch.core.GetRequest;
+import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -51,6 +53,7 @@ public class FormStoreOpenSearch implements FormStore {
   @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
+  @Override
   public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {
     final FormEntity formEmbedded =
         version == null ? getFormEmbedded(id, processDefinitionId) : null;
@@ -112,7 +115,7 @@ public class FormStoreOpenSearch implements FormStore {
       final var searchResponse = tenantAwareClient.search(searchRequest, TaskTemplate.class);
 
       return searchResponse.hits().total().value() > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format(
               "Error retrieving the association for the formId: [%s] and processDefinitionId: [%s]",
@@ -147,7 +150,7 @@ public class FormStoreOpenSearch implements FormStore {
       final var searchResponse = tenantAwareClient.search(searchRequest, ProcessIndex.class);
 
       return searchResponse.hits().total().value() > 0;
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format(
               "Error retrieving the association for the formId: [%s] and processDefinitionId: [%s]",
@@ -223,7 +226,7 @@ public class FormStoreOpenSearch implements FormStore {
       } else {
         return null;
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String formIdNotFoundMessage =
           String.format("Error retrieving the version for the formId: [%s]", formId);
       throw new TasklistRuntimeException(formIdNotFoundMessage);
@@ -237,7 +240,7 @@ public class FormStoreOpenSearch implements FormStore {
           formId, formIndex, ONLY_RUNTIME, tenantAwareClient, FormEntity.class);
     } catch (IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
-    } catch (NotFoundException e) {
+    } catch (final NotFoundException e) {
       return null;
     }
   }
@@ -261,31 +264,17 @@ public class FormStoreOpenSearch implements FormStore {
   }
 
   @Override
-  public Optional<FormIdView> getHighestVersionFormByKey(String formKey) {
+  public Optional<FormIdView> getFormByKey(final String formKey) {
+    final GetRequest request =
+        new GetRequest.Builder().index(formIndex.getFullQualifiedName()).id(formKey).build();
     try {
-      final var formEntityResponse =
-          osClient.search(
-              b ->
-                  b.index(formIndex.getFullQualifiedName())
-                      .query(q -> q.term(t -> t.field(FormIndex.ID).value(FieldValue.of(formKey))))
-                      .sort(s -> s.field(f -> f.field(FormIndex.VERSION).order(SortOrder.Desc)))
-                      .source(
-                          s ->
-                              s.filter(
-                                  f ->
-                                      f.includes(
-                                          List.of(
-                                              FormIndex.ID, FormIndex.BPMN_ID, FormIndex.VERSION))))
-                      .size(1),
-              FormEntity.class);
-      if (formEntityResponse.hits().total().value() == 1L) {
-        final FormEntity formEntity = formEntityResponse.hits().hits().get(0).source();
-        return Optional.of(
-            new FormIdView(formEntity.getId(), formEntity.getBpmnId(), formEntity.getVersion()));
+      final GetResponse<FormIdView> response = osClient.get(request, FormIdView.class);
+      if (response.found() && response.source() != null) {
+        return Optional.of(response.source());
       } else {
         return Optional.empty();
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new TasklistRuntimeException(e);
     }
   }

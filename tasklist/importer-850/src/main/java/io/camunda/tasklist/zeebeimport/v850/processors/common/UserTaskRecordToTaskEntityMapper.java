@@ -121,7 +121,7 @@ public class UserTaskRecordToTaskEntityMapper {
       final String strFromKey = String.valueOf(formKey);
       entity.setFormKey(strFromKey).setIsFormEmbedded(false);
       formStore
-          .getHighestVersionFormByKey(strFromKey)
+          .getFormByKey(strFromKey)
           .ifPresentOrElse(
               linkedForm -> {
                 entity.setFormVersion(linkedForm.version());

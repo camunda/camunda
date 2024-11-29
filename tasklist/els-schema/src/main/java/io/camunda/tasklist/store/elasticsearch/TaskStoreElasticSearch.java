@@ -270,6 +270,14 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
   }
 
+  @Override
+  public void updateTaskLinkedForm(
+      final TaskEntity task, final String formBpmnId, final long formVersion) {
+    updateTask(
+        task.getId(),
+        asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
+  }
+
   private SearchHit[] getTasksRawResponse(final List<String> ids) throws IOException {
 
     final QueryBuilder query = idsQuery().addIds(Arrays.toString(ids.toArray()));

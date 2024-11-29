@@ -270,6 +270,14 @@ public class TaskStoreOpenSearch implements TaskStore {
     }
   }
 
+  @Override
+  public void updateTaskLinkedForm(
+      final TaskEntity task, final String formBpmnId, final long formVersion) {
+    updateTask(
+        task.getId(),
+        asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
+  }
+
   /**
    * In case of searchAfterOrEqual and searchBeforeOrEqual add additional task either at the
    * beginning of the list, or at the end, to conform with "orEqual" part.
