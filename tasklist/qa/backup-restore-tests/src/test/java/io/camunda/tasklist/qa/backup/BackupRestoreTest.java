@@ -158,7 +158,6 @@ public class BackupRestoreTest {
   private void startTasklist() {
     testContainerUtil.startTasklistContainer(tasklistContainer, VERSION, testContext);
     LOGGER.info("************ Tasklist started  ************");
-    testContext.setTasklistRestClient(tasklistAPICaller.createGraphQLTestTemplate(testContext));
   }
 
   private void stopTasklist() {
@@ -289,7 +288,7 @@ public class BackupRestoreTest {
 @ComponentScan(
     basePackages = {
       "io.camunda.tasklist.qa.backup",
-      "io.camunda.tasklist.webapp.graphql.entity",
+      "io.camunda.tasklist.webapp.dto",
       "io.camunda.tasklist.qa.util.rest"
     })
 class TestConfig {}

@@ -21,8 +21,12 @@ import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.views.TaskSearchView;
+import io.camunda.tasklist.webapp.dto.TaskDTO;
+import io.camunda.tasklist.webapp.dto.TaskQueryDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
+import io.camunda.tasklist.webapp.dto.VariableDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.tasklist.webapp.es.TaskValidator;
-import io.camunda.tasklist.webapp.graphql.entity.*;
 import io.camunda.tasklist.webapp.rest.exception.ForbiddenActionException;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
@@ -208,7 +212,7 @@ public class TaskService {
 
       final TaskEntity task = taskStore.getTask(taskId);
       taskValidator.validateCanComplete(task);
-
+      final Long taskKey = task.getKey();
       try {
         if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
           // complete
@@ -217,11 +221,7 @@ public class TaskService {
           completeJobCommand = completeJobCommand.variables(variablesMap);
           completeJobCommand.send().join();
         } else {
-          zeebeClient
-              .newUserTaskCompleteCommand(Long.parseLong(taskId))
-              .variables(variablesMap)
-              .send()
-              .join();
+          zeebeClient.newUserTaskCompleteCommand(taskKey).variables(variablesMap).send().join();
         }
       } catch (final ClientException exception) {
         throw new TasklistRuntimeException(exception.getMessage());

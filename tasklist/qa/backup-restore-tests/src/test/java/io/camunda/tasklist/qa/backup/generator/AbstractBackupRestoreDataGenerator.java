@@ -17,8 +17,8 @@ import io.camunda.tasklist.qa.backup.TasklistAPICaller;
 import io.camunda.tasklist.qa.util.ZeebeTestUtil;
 import io.camunda.tasklist.util.ThreadUtil;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.SaveVariablesRequest;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.dto.TaskDTO;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
@@ -40,10 +40,11 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
   public static final String PROCESS_BPMN_PROCESS_ID = "basicProcess";
   public static final String PROCESS_BPMN_PROCESS_ID_2 = "basicProcess2";
   public static final int PROCESS_INSTANCE_COUNT = 49;
-  private static final int ALL_DRAFT_TASK_VARIABLES_COUNT = PROCESS_INSTANCE_COUNT * 2;
   private static final int COMPLETED_TASKS_COUNT = 11;
+  private static final int ALL_DRAFT_TASK_VARIABLES_COUNT = PROCESS_INSTANCE_COUNT * 2;
   private static final int DRAFT_TASK_VARIABLES_COUNT_AFTER_TASKS_COMPLETION =
       ALL_DRAFT_TASK_VARIABLES_COUNT - COMPLETED_TASKS_COUNT * 2;
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(AbstractBackupRestoreDataGenerator.class);
 
