@@ -18,10 +18,12 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleEntityRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerRoleUpdateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.role.BrokerRoleDeleteRequest;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -45,6 +47,11 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             securityContextProvider.provideSecurityContext(
                 authentication, Authorization.of(a -> a.role().read())))
         .searchRoles(query);
+  }
+
+  public SearchQueryResult<RoleEntity> getMemberRoles(final long memberKey, final RoleQuery query) {
+    return search(
+        query.toBuilder().filter(query.filter().toBuilder().memberKey(memberKey).build()).build());
   }
 
   @Override
@@ -76,5 +83,21 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
 
   public CompletableFuture<RoleRecord> deleteRole(final long roleKey) {
     return sendBrokerRequest(new BrokerRoleDeleteRequest(roleKey));
+  }
+
+  public CompletableFuture<?> addMember(
+      final Long roleKey, final EntityType entityType, final long entityKey) {
+    return sendBrokerRequest(
+        BrokerRoleEntityRequest.createAddRequest()
+            .setRoleKey(roleKey)
+            .setEntity(entityType, entityKey));
+  }
+
+  public CompletableFuture<?> removeMember(
+      final Long roleKey, final EntityType entityType, final long entityKey) {
+    return sendBrokerRequest(
+        BrokerRoleEntityRequest.createRemoveRequest()
+            .setRoleKey(roleKey)
+            .setEntity(entityType, entityKey));
   }
 }

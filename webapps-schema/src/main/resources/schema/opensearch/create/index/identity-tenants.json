@@ -14,8 +14,12 @@
       "name": {
         "type": "keyword"
       },
-      "assignedMemberKeys": {
-        "type": "long"
+      "join": {
+        "type": "join",
+        "eager_global_ordinals": true,
+        "relations": {
+          "tenant": ["member"]
+        }
       }
     }
   }

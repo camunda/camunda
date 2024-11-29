@@ -12,14 +12,6 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.ref == 'refs/heads/main' && github.sha || github.ref) }}
 
 jobs:
-  run-build:
-    name: run-build
-    uses: ./.github/workflows/tasklist-ci-build-reusable.yml
-    secrets: inherit
-    with:
-      branch: ${{ github.head_ref || github.ref_name }} # head_ref = branch name on PR, ref_name = `main` or `stable/**`
-      pushDocker: false
-
   run-fe-ci:
     name: run-frontend-tests
     uses: ./.github/workflows/tasklist-ci-fe-reusable.yml
@@ -32,7 +24,6 @@ jobs:
     if: always()
     runs-on: ubuntu-latest
     needs:
-      - run-build
       - run-fe-ci
     steps:
       - run: exit ${{ ((contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure')) && 1) || 0 }}

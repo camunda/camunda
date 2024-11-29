@@ -140,7 +140,7 @@ public class IndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean
+  @Bean("operateFlowNodeInstanceTemplate")
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate(
       final OperateProperties operateProperties,
       final DatabaseInfo databaseInfo,

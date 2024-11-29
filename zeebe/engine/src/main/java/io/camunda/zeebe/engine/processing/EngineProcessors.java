@@ -34,6 +34,7 @@ import io.camunda.zeebe.engine.processing.dmn.DecisionEvaluationEvaluteProcessor
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationProcessors;
 import io.camunda.zeebe.engine.processing.identity.GroupProcessors;
+import io.camunda.zeebe.engine.processing.identity.IdentitySetupProcessors;
 import io.camunda.zeebe.engine.processing.identity.MappingProcessors;
 import io.camunda.zeebe.engine.processing.identity.RoleProcessors;
 import io.camunda.zeebe.engine.processing.incident.IncidentEventProcessors;
@@ -233,7 +234,6 @@ public final class EngineProcessors {
         processingState,
         writers,
         commandDistributionBehavior,
-        config,
         authCheckBehavior);
 
     ClockProcessors.addClockProcessors(
@@ -288,6 +288,14 @@ public final class EngineProcessors {
         keyGenerator,
         writers,
         commandDistributionBehavior);
+
+    IdentitySetupProcessors.addIdentitySetupProcessors(
+        keyGenerator,
+        typedRecordProcessors,
+        processingState,
+        writers,
+        commandDistributionBehavior,
+        config);
 
     return typedRecordProcessors;
   }

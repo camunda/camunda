@@ -8,8 +8,8 @@
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
-import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 
 public class GroupIndex extends UserManagementIndexDescriptor {
 
@@ -18,8 +18,7 @@ public class GroupIndex extends UserManagementIndexDescriptor {
 
   public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
       new EntityJoinRelationFactory(
-          EntityJoinRelation.IdentityJoinRelationshipType.GROUP,
-          EntityJoinRelation.IdentityJoinRelationshipType.MEMBER);
+          IdentityJoinRelationshipType.GROUP, IdentityJoinRelationshipType.MEMBER);
 
   public GroupIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

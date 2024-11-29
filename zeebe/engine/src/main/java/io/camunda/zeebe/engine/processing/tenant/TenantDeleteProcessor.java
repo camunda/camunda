@@ -77,6 +77,8 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     record.setTenantId(persistedTenantRecord.get().getTenantId());
     record.setName(persistedTenantRecord.get().getName());
 
+    removeAssignedEntities(record);
+
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.DELETED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.DELETED, record, command);
     distributeCommand(command);
@@ -84,6 +86,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
+    removeAssignedEntities(command.getValue());
     stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.DELETED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
@@ -113,5 +116,24 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
         .withKey(keyGenerator.nextKey())
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
+  }
+
+  private void removeAssignedEntities(final TenantRecord record) {
+    final var tenantKey = record.getTenantKey();
+    tenantState
+        .getEntitiesByType(tenantKey)
+        .forEach(
+            (entityType, entityKeys) -> {
+              entityKeys.forEach(
+                  entityKey -> {
+                    final var entityRecord =
+                        new TenantRecord()
+                            .setTenantKey(tenantKey)
+                            .setEntityKey(entityKey)
+                            .setEntityType(entityType);
+                    stateWriter.appendFollowUpEvent(
+                        tenantKey, TenantIntent.ENTITY_REMOVED, entityRecord);
+                  });
+            });
   }
 }
