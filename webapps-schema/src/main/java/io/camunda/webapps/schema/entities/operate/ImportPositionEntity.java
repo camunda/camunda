@@ -7,6 +7,7 @@
  */
 package io.camunda.webapps.schema.entities.operate;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.util.Objects;
 
@@ -20,6 +21,7 @@ public class ImportPositionEntity extends AbstractExporterEntity<ImportPositionE
 
   private long sequence;
 
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long postImporterPosition;
 
   private String indexName;

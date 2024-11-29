@@ -10,11 +10,11 @@ package io.camunda.tasklist.zeebeimport;
 import static io.camunda.tasklist.util.ElasticsearchUtil.ZEEBE_INDEX_DELIMITER;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.SemanticVersion;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.slf4j.Logger;
@@ -120,7 +120,7 @@ public abstract class ImportJobAbstract implements ImportJob {
                 previousPosition,
                 lastRecordPosition,
                 importBatch.getLastRecordIndexName(),
-                previousPosition.isCompleted());
+                previousPosition.getCompleted());
       } else {
         lastProcessedPosition = previousPosition;
       }
