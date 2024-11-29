@@ -17,6 +17,7 @@ public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVaria
   private String value;
   private String fullValue;
   private boolean isPreview;
+  private Long processInstanceKey;
 
   public SnapshotTaskVariableEntity() {}
 
@@ -62,6 +63,15 @@ public class SnapshotTaskVariableEntity extends TasklistEntity<SnapshotTaskVaria
 
   public SnapshotTaskVariableEntity setIsPreview(final boolean preview) {
     isPreview = preview;
+    return this;
+  }
+
+  public Long getProcessInstanceKey() {
+    return processInstanceKey;
+  }
+
+  public SnapshotTaskVariableEntity setProcessInstanceKey(final Long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
     return this;
   }
 
