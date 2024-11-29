@@ -23,7 +23,7 @@ public class DateFilter {
       description =
           "End date range to search to in date-time format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard.")
   private Date to;
-  
+
   public DateFilter(final Date from, final Date to) {
     this.from = from;
     this.to = to;

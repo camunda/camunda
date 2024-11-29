@@ -18,7 +18,7 @@ public class TaskOrderBy {
 
   @Schema(description = "* `ASC`: Ascending<br>" + "* `DESC`: Descending")
   private Sort order;
-  
+
   public TaskOrderBy(final TaskSortFields field, final Sort order) {
     this.field = field;
     this.order = order;
