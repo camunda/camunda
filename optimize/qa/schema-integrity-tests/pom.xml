@@ -207,6 +207,7 @@
             <dep>org.springframework.boot:spring-boot-starter-test</dep>
             <dep>io.netty:netty-codec-http</dep>
             <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
+            <dep>io.camunda:zeebe-build-tools</dep>
             <dep>org.apache.logging.log4j:log4j-core</dep>
             <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
             <dep>io.github.netmikey.logunit:logunit-log4j2</dep>

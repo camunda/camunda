@@ -829,6 +829,7 @@
             <dep>org.springframework.boot:spring-boot-starter-test</dep>
             <dep>com.sun.mail:jakarta.mail</dep>
             <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
+            <dep>io.camunda:zeebe-build-tools</dep>
             <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
           </ignoredUnusedDeclaredDependencies>
           <ignoredNonTestScopedDependencies combine.children="append">

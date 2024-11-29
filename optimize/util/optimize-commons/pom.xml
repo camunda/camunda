@@ -295,6 +295,7 @@
               <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
 
               <!-- test dependencies -->
+              <dep>io.camunda:zeebe-build-tools</dep>
             </ignoredUnusedDeclaredDependencies>
           </configuration>
         </plugin>

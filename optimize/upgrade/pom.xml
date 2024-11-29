@@ -203,6 +203,7 @@
           <ignoredUnusedDeclaredDependencies>
             <!-- test dependencies -->
             <dep>io.camunda.optimize:optimize-backend:test-jar</dep>
+            <dep>io.camunda:zeebe-build-tools</dep>
             <dep>org.apache.logging.log4j:log4j-core</dep>
             <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
             <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
