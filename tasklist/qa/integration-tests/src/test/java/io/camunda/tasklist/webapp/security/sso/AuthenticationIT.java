@@ -183,7 +183,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testLoginSuccess(final BiFunction<String, String, Tokens> orgExtractor)
       throws Exception {
     final HttpEntity<?> cookies = loginWithSSO(orgExtractor);
-    final ResponseEntity<String> response = get(ROOT, cookies);
+    final ResponseEntity<String> response = get("/", cookies);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThatClientConfigContains("\"canLogout\":false");
@@ -201,7 +201,7 @@ public class AuthenticationIT implements AuthenticationTestable {
       final BiFunction<String, String, Tokens> orgExtractor) throws Exception {
     mockPermissionAllowed();
     // Step 1 try to access document root
-    ResponseEntity<String> response = get(ROOT);
+    ResponseEntity<String> response = get("/tasklist");
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
