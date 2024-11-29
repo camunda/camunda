@@ -16,9 +16,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Profile("auth-oidc")
-public class CamundaOidcUserService extends OidcUserService {
+public class CamundaOidcUserDetailsService extends OidcUserService {
 
-  public CamundaOidcUserService() {}
+  public CamundaOidcUserDetailsService() {}
 
   @Override
   public OidcUser loadUser(final OidcUserRequest userRequest) throws OAuth2AuthenticationException {
