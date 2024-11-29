@@ -22,7 +22,6 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.ImportProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -38,6 +37,7 @@ import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.DraftTaskVariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
@@ -93,6 +93,7 @@ class VariableServiceTest {
         new TaskEntity()
             .setId(taskId)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
+            .setProcessInstanceId("123")
             .setTenantId("tenant_a");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
@@ -185,6 +186,7 @@ class VariableServiceTest {
         new TaskEntity()
             .setId(taskId)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
+            .setProcessInstanceId("123")
             .setState(TaskState.CREATED);
     when(taskStore.getTask(taskId)).thenReturn(task);
     final int variableSizeThreshold = 100;
@@ -264,6 +266,7 @@ class VariableServiceTest {
                     .setTaskId(taskId)
                     .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
                     .setState(TaskState.CREATED)
+                    .setProcessInstanceId("123")
                     .setVarNames(List.of("A_numVar", "C_objVar"))));
 
     // then
@@ -478,6 +481,7 @@ class VariableServiceTest {
         new TaskEntity()
             .setId(taskId)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
+            .setProcessInstanceId("123")
             .setTenantId("tenant_b");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);
@@ -521,6 +525,7 @@ class VariableServiceTest {
         new TaskEntity()
             .setId(taskId)
             .setFlowNodeInstanceId(String.valueOf(flowNodeInstanceId))
+            .setProcessInstanceId("123")
             .setTenantId("tenant_c");
     when(taskStore.getTask(taskId)).thenReturn(task);
     final ImportProperties importProperties = mock(ImportProperties.class);

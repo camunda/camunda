@@ -59,7 +59,9 @@ public class MigrateProcessInstanceOperationZeebeIT extends OperateZeebeAbstract
   @Qualifier("operateVariableTemplate")
   private VariableTemplate variableTemplate;
 
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   private Long initialBatchOperationMaxSize;
 

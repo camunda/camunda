@@ -30,11 +30,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
 public class BatchModifyProcessInstanceOperationIT extends OperateZeebeSearchAbstractIT {
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired
   @Qualifier("operateVariableTemplate")
   private VariableTemplate variableTemplate;
+
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired private ModifyProcessInstanceHandler modifyProcessInstanceHandler;
 

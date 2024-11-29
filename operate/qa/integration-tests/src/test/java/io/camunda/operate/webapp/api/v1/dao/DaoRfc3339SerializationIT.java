@@ -42,6 +42,7 @@ import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForLis
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
@@ -84,7 +85,11 @@ public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
   @Autowired private ProcessInstanceDao processInstanceDao;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceIndex;
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
+
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
+
   @Autowired private IncidentTemplate incidentIndex;
   @Autowired private ListViewTemplate processInstanceIndex;
 

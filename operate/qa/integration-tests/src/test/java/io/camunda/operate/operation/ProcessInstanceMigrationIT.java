@@ -22,10 +22,14 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 class ProcessInstanceMigrationIT extends OperateZeebeSearchAbstractIT {
 
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+
   @Autowired private MigrateProcessInstanceHandler migrateProcessInstanceHandler;
 
   @Test

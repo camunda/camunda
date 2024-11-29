@@ -19,17 +19,18 @@ import static java.util.stream.Collectors.toList;
 
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.tasklist.SnapshotTaskVariableEntity;
 import java.io.IOException;
@@ -52,6 +53,8 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
 import org.opensearch.client.opensearch._types.query_dsl.ConstantScoreQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
+import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
@@ -72,11 +75,14 @@ public class VariableStoreOpenSearch implements VariableStore {
   private OpenSearchClient osClient;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
-  @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 
   @Autowired
   @Qualifier("tasklistVariableTemplate")
   private VariableTemplate variableIndex;
+
+  @Autowired
+  @Qualifier("tasklistFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
   @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
   @Autowired private TasklistProperties tasklistProperties;
@@ -238,32 +244,44 @@ public class VariableStoreOpenSearch implements VariableStore {
   }
 
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
-
+    final var processInstanceKeyQuery =
+        TermsQuery.of(
+                t ->
+                    t.field(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY)
+                        .terms(
+                            v ->
+                                v.value(
+                                    processInstanceIds.stream()
+                                        .map(FieldValue::of)
+                                        .collect(toList()))))
+            .toQuery();
+    final var flowNodeInstanceStateQuery =
+        TermQuery.of(
+                t ->
+                    t.field(FlowNodeInstanceTemplate.STATE)
+                        .value(v -> v.stringValue(FlowNodeState.ACTIVE.toString())))
+            .toQuery();
     final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
     searchRequestBuilder
-        .index(flowNodeInstanceIndex.getAlias())
+        .index(flowNodeInstanceIndex.getFullQualifiedName())
         .query(
             q ->
                 q.constantScore(
                     cs ->
                         cs.filter(
                             f ->
-                                f.terms(
-                                    terms ->
-                                        terms
-                                            .field(FlowNodeInstanceIndex.PROCESS_INSTANCE_ID)
-                                            .terms(
-                                                t ->
-                                                    t.value(
-                                                        processInstanceIds.stream()
-                                                            .map(m -> FieldValue.of(m))
-                                                            .collect(toList())))))))
-        .sort(sort -> sort.field(f -> f.field(FlowNodeInstanceIndex.POSITION).order(SortOrder.Asc)))
+                                f.bool(
+                                    b ->
+                                        b.must(
+                                            processInstanceKeyQuery, flowNodeInstanceStateQuery)))))
+        .sort(
+            sort ->
+                sort.field(f -> f.field(FlowNodeInstanceTemplate.POSITION).order(SortOrder.Asc)))
         .size(tasklistProperties.getOpenSearch().getBatchSize());
 
     try {
       return OpenSearchUtil.scroll(searchRequestBuilder, FlowNodeInstanceEntity.class, osClient);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all flow nodes: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);

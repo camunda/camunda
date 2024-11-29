@@ -12,24 +12,27 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.FlowNodeInstanceEntity;
-import io.camunda.tasklist.entities.FlowNodeType;
 import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.indices.FlowNodeInstanceIndex;
 import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ConversionUtils;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.zeebeimport.util.EnvironmentUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
+import io.camunda.webapps.schema.entities.operate.FlowNodeState;
+import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
-import org.opensearch.client.opensearch.core.bulk.IndexOperation;
+import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,11 +62,15 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     FLOW_NODE_STATES.add(ELEMENT_ACTIVATING.name());
   }
 
+  @Autowired private EnvironmentUtil environment;
+
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
+  @Autowired
+  @Qualifier("tasklistFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
   @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
@@ -74,7 +81,9 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
         (ProcessInstanceRecordValueImpl) record.getValue();
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
-      operations.add(getFlowNodeInstanceQuery(flowNodeInstance));
+      if (isNotProcessType(recordValue) && environment.isTestProfileEnabled()) {
+        operations.add(getFlowNodeInstanceQuery(flowNodeInstance));
+      }
       final BulkOperation persistFlowNodeDataToListView =
           persistFlowNodeDataToListView(flowNodeInstance);
       if (persistFlowNodeDataToListView != null) {
@@ -90,8 +99,9 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     entity.setId(ConversionUtils.toStringOrNull(record.getKey()));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
-    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
-    entity.setParentFlowNodeId(String.valueOf(recordValue.getFlowScopeKey()));
+    entity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
+    entity.setScopeKey(recordValue.getFlowScopeKey());
+    entity.setState(FlowNodeState.ACTIVE);
     entity.setType(
         FlowNodeType.fromZeebeBpmnElementType(
             recordValue.getBpmnElementType() == null
@@ -106,12 +116,15 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     LOGGER.debug("Flow node instance: id {}", entity.getId());
 
     return new BulkOperation.Builder()
-        .index(
-            IndexOperation.of(
+        .update(
+            UpdateOperation.of(
                 io ->
                     io.index(flowNodeInstanceIndex.getFullQualifiedName())
                         .id(entity.getId())
-                        .document(CommonUtils.getJsonObjectFromEntity(entity))))
+                        .upsert(CommonUtils.getJsonObjectFromEntity(entity))
+                        .document(
+                            CommonUtils.getJsonObjectFromEntity(
+                                Map.of(FlowNodeInstanceTemplate.KEY, entity.getKey())))))
         .build();
   }
 
@@ -121,6 +134,14 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
       return false;
     }
     return VARIABLE_SCOPE_TYPES.contains(bpmnElementType);
+  }
+
+  private boolean isNotProcessType(final ProcessInstanceRecordValueImpl recordValue) {
+    final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
+    if (bpmnElementType == null) {
+      return false;
+    }
+    return !BpmnElementType.PROCESS.equals(bpmnElementType);
   }
 
   private BulkOperation persistFlowNodeDataToListView(
