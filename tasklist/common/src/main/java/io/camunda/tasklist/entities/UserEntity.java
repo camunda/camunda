@@ -7,10 +7,11 @@
  */
 package io.camunda.tasklist.entities;
 
+import io.camunda.webapps.schema.entities.AbstractExporterEntity;
 import java.util.List;
 import java.util.Objects;
 
-public class UserEntity extends TasklistEntity<UserEntity> {
+public class UserEntity extends AbstractExporterEntity<UserEntity> {
 
   private String userId;
   private String password;
