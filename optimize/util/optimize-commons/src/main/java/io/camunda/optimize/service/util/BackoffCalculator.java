@@ -44,7 +44,7 @@ public class BackoffCalculator {
 
   public long calculateSleepTime() {
     currentTimeToWait =
-        Math.min(Math.round(currentTimeToWait * BACKOFF_MULTIPLIER), maximumBackoff);
+        Math.min(Math.round((long) (currentTimeToWait * BACKOFF_MULTIPLIER)), maximumBackoff);
     nextRetryTime = OffsetDateTime.now().plus(Math.round(currentTimeToWait), ChronoUnit.MILLIS);
     return currentTimeToWait;
   }
