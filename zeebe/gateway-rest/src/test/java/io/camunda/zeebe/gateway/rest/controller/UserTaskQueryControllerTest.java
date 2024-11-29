@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -237,6 +238,11 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 String.format("User Task with key %d not found", INVALID_USER_TASK_KEY)));
     final ProcessDefinitionEntity processDefinition = mock(ProcessDefinitionEntity.class);
     when(xmlUtil.getUserTaskName(any())).thenReturn("name");
+    final var processDefinitionMap = mock(HashMap.class);
+    final var userTaskNamesMap = mock(HashMap.class);
+    when(userTaskNamesMap.get(any())).thenReturn("name");
+    when(processDefinitionMap.get(any())).thenReturn(userTaskNamesMap);
+    when(xmlUtil.getUserTasksNames(any())).thenReturn(processDefinitionMap);
   }
 
   @Test
@@ -256,7 +262,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
-    verify(xmlUtil).getUserTaskName(any());
+    verify(xmlUtil).getUserTasksNames(any());
   }
 
   @Test
@@ -280,7 +286,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
-    verify(xmlUtil).getUserTaskName(any());
+    verify(xmlUtil).getUserTasksNames(any());
   }
 
   @Test
@@ -322,7 +328,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 .sort(
                     new UserTaskSort.Builder().creationDate().desc().completionDate().asc().build())
                 .build());
-    verify(xmlUtil).getUserTaskName(any());
+    verify(xmlUtil).getUserTasksNames(any());
   }
 
   @Test
@@ -677,6 +683,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().filter(filter).build());
-    verify(xmlUtil).getUserTaskName(any());
+    verify(xmlUtil).getUserTasksNames(any());
   }
 }

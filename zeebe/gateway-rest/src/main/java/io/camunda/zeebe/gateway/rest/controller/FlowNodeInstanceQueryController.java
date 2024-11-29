@@ -20,7 +20,6 @@ import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.util.XmlUtil;
-import java.util.HashMap;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -76,8 +75,7 @@ public class FlowNodeInstanceQueryController {
           flownodeInstanceServices
               .withAuthentication(RequestMapper.getAuthentication())
               .search(query);
-      final var nameMap = new HashMap<Long, String>();
-      result.items().forEach(f -> nameMap.put(f.flowNodeInstanceKey(), xmlUtil.getFlowNodeName(f)));
+      final var nameMap = xmlUtil.getFlowNodesNames(result.items());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toFlowNodeInstanceSearchQueryResponse(result, nameMap));
     } catch (final Exception e) {

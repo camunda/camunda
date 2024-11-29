@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -26,6 +27,7 @@ import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.util.XmlUtil;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -135,6 +137,11 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
     when(flowNodeInstanceServices.withAuthentication(any(Authentication.class)))
         .thenReturn(flowNodeInstanceServices);
     when(xmlUtil.getFlowNodeName(any())).thenReturn("flowNodeName");
+    final var processDefinitionMap = mock(HashMap.class);
+    final var userTaskNamesMap = mock(HashMap.class);
+    when(userTaskNamesMap.get(any())).thenReturn("flowNodeName");
+    when(processDefinitionMap.get(any())).thenReturn(userTaskNamesMap);
+    when(xmlUtil.getFlowNodesNames(any())).thenReturn(processDefinitionMap);
   }
 
   @Test
@@ -155,7 +162,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
-    verify(xmlUtil).getFlowNodeName(any());
+    verify(xmlUtil).getFlowNodesNames(any());
   }
 
   @Test
@@ -180,7 +187,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(flowNodeInstanceServices).search(new FlowNodeInstanceQuery.Builder().build());
-    verify(xmlUtil).getFlowNodeName(any());
+    verify(xmlUtil).getFlowNodesNames(any());
   }
 
   @Test
@@ -308,7 +315,7 @@ public class FlowNodeInstanceQueryControllerTest extends RestControllerTest {
                         .asc()
                         .build())
                 .build());
-    verify(xmlUtil).getFlowNodeName(any());
+    verify(xmlUtil).getFlowNodesNames(any());
   }
 
   @Test
