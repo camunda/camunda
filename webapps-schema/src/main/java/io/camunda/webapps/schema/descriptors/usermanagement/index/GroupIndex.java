@@ -9,14 +9,16 @@ package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 
 public class GroupIndex extends UserManagementIndexDescriptor {
 
   public static final String INDEX_NAME = "groups";
   public static final String INDEX_VERSION = "8.7.0";
 
-  public static final EntityJoinRelationFactory MEMBER_RELATION =
-      new EntityJoinRelationFactory("group", "member");
+  public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
+      new EntityJoinRelationFactory(
+          IdentityJoinRelationshipType.GROUP, IdentityJoinRelationshipType.MEMBER);
 
   public GroupIndex(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

@@ -14,6 +14,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 import java.util.List;
 
 public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
@@ -21,13 +22,13 @@ public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
   @Override
   public SearchQuery toSearchQuery(final RoleFilter filter) {
     return and(
-        term(RoleIndex.JOIN, RoleIndex.MEMBER_RELATION.getParentName()),
+        term(RoleIndex.JOIN, IdentityJoinRelationshipType.ROLE.getType()),
         filter.roleKey() == null ? null : term(RoleIndex.KEY, filter.roleKey()),
         filter.name() == null ? null : term(RoleIndex.NAME, filter.name()),
         filter.memberKey() == null
             ? null
             : hasChildQuery(
-                RoleIndex.MEMBER_RELATION.getChildName(),
+                IdentityJoinRelationshipType.MEMBER.getType(),
                 term(RoleIndex.MEMBER_KEY, filter.memberKey())));
   }
 
