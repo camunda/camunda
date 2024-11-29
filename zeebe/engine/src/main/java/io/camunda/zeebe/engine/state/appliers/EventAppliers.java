@@ -44,6 +44,7 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceResultIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
@@ -97,6 +98,8 @@ public final class EventAppliers implements EventApplier {
     registerDecisionEvaluationAppliers();
 
     registerFormAppliers(state);
+
+    registerResourceAppliers(state);
 
     registerUserTaskAppliers(state);
 
@@ -372,6 +375,11 @@ public final class EventAppliers implements EventApplier {
     register(FormIntent.CREATED, 1, new FormCreatedV1Applier(state.getFormState()));
     register(FormIntent.CREATED, 2, new FormCreatedV2Applier(state.getFormState()));
     register(FormIntent.DELETED, new FormDeletedApplier(state.getFormState()));
+  }
+
+  private void registerResourceAppliers(final MutableProcessingState state) {
+    register(ResourceIntent.CREATED, new ResourceCreatedApplier(state.getResourceState()));
+    register(ResourceIntent.DELETED, new ResourceDeletedApplier(state.getResourceState()));
   }
 
   private void registerUserTaskAppliers(final MutableProcessingState state) {
