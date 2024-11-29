@@ -10,7 +10,6 @@ package io.camunda.operate.util;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
@@ -18,7 +17,6 @@ import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
-import io.camunda.zeebe.client.api.response.CompleteUserTaskResponse;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.worker.JobClient;
@@ -246,11 +244,6 @@ public abstract class ZeebeTestUtil {
           }
           command.send().join();
         });
-  }
-
-  public static ZeebeFuture<CompleteUserTaskResponse> completeUserTask(
-      final ZeebeClient client, final long userTaskKey) {
-    return client.newUserTaskCompleteCommand(userTaskKey).send();
   }
 
   public static Long failTask(
