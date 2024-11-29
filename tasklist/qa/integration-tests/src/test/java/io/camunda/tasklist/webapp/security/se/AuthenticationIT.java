@@ -37,7 +37,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
-/** This tests: authentication and security over GraphQL API /currentUser to get current user */
+/** This tests: authentication and security over REST API /currentUser to get current user */
 @ActiveProfiles({AUTH_PROFILE, "tasklist", "test"})
 public class AuthenticationIT extends TasklistIntegrationTest implements AuthenticationTestable {
 
