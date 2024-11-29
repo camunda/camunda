@@ -71,7 +71,6 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
                   .requestMatchers(getAuthWhitelist(introspector))
                   .permitAll()
                   .requestMatchers(
-                      AntPathRequestMatcher.antMatcher(GRAPHQL_URL),
                       AntPathRequestMatcher.antMatcher(ALL_REST_VERSION_API),
                       AntPathRequestMatcher.antMatcher(ERROR_URL))
                   .authenticated()
@@ -90,7 +89,7 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
 
     final String requestedUrl = getRequestedUrl(req);
 
-    if (containsAny(requestedUrl.toLowerCase(), GRAPHQL_URL, REST_V1_API)) {
+    if (containsAny(requestedUrl.toLowerCase(), REST_V1_API)) {
       req.getSession().invalidate();
       sendJSONErrorMessage(res, ex.getMessage());
     } else {

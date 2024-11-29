@@ -22,7 +22,6 @@ import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNotNull;
@@ -38,11 +37,9 @@ import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
-import io.camunda.tasklist.webapp.graphql.entity.C8AppLink;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.AuthenticationTestable;
 import io.camunda.tasklist.webapp.security.Permission;
@@ -187,7 +184,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testLoginSuccess(final BiFunction<String, String, Tokens> orgExtractor)
       throws Exception {
     final HttpEntity<?> cookies = loginWithSSO(orgExtractor);
-    final ResponseEntity<String> response = get(ROOT, cookies);
+    final ResponseEntity<String> response = get("/", cookies);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThatClientConfigContains("\"canLogout\":false");
@@ -205,7 +202,7 @@ public class AuthenticationIT implements AuthenticationTestable {
       final BiFunction<String, String, Tokens> orgExtractor) throws Exception {
     mockPermissionAllowed();
     // Step 1 try to access document root
-    ResponseEntity<String> response = get(ROOT);
+    ResponseEntity<String> response = get("/tasklist");
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -355,8 +352,8 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testLoginAndUsageOfGraphQlApi(final BiFunction<String, String, Tokens> orgExtractor)
       throws Exception {
     // Step 1: try to access current user
-    final ResponseEntity<String> currentUserResponse =
-        getCurrentUserByGraphQL(new HttpEntity<>(new HttpHeaders()));
+    final ResponseEntity<UserDTO> currentUserResponse =
+        getCurrentUserByRestApi(new HttpEntity<>(new HttpHeaders()));
     final HttpEntity<?> cookies = httpEntityWithCookie(currentUserResponse);
 
     assertThatUnauthorizedIsReturned(currentUserResponse);
@@ -383,34 +380,19 @@ public class AuthenticationIT implements AuthenticationTestable {
     mockEmptyClusterMetadata();
 
     final HttpEntity<?> loggedCookies = loginWithSSO(orgExtractor);
-    ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(loggedCookies);
-    GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
-    assertThat(graphQLResponse.get("$.data.currentUser.c8Links", List.class)).isEmpty();
+    ResponseEntity<UserDTO> responseEntity = getCurrentUserByRestApi(loggedCookies);
     // Test with ClusterMetadata
     mockClusterMetadata();
     // when
-    responseEntity = getCurrentUserByGraphQL(loggedCookies);
+    responseEntity = getCurrentUserByRestApi(loggedCookies);
 
     // then
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-    graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
-    assertThat(graphQLResponse.get("$.data.currentUser.userId")).isEqualTo(TASKLIST_TESTUSER_EMAIL);
-    assertThat(graphQLResponse.get("$.data.currentUser.displayName")).isEqualTo(TASKLIST_TESTUSER);
-    assertThat(graphQLResponse.get("$.data.currentUser.salesPlanType"))
+    assertThat(responseEntity.getBody().getUserId()).isEqualTo(TASKLIST_TESTUSER_EMAIL);
+    assertThat(responseEntity.getBody().getDisplayName()).isEqualTo(TASKLIST_TESTUSER);
+    assertThat(responseEntity.getBody().getSalesPlanType())
         .isEqualTo(TASKLIST_TEST_SALESPLAN.getType());
-    assertThat(graphQLResponse.get("$.data.currentUser.roles", List.class))
-        .asList()
-        .isEqualTo(TASKLIST_TEST_ROLES);
-    assertThat(graphQLResponse.getList("$.data.currentUser.c8Links", C8AppLink.class))
-        .containsExactly(
-            new C8AppLink()
-                .setName("console")
-                .setLink("https://console.audience/org/3/cluster/test-clusterId"),
-            new C8AppLink().setName("operate").setLink("http://operate-url"),
-            new C8AppLink().setName("optimize").setLink("http://optimize-url"),
-            new C8AppLink().setName("modeler").setLink("https://modeler.audience/org/3"),
-            new C8AppLink().setName("tasklist").setLink("http://tasklist-url"),
-            new C8AppLink().setName("zeebe").setLink("grpc://zeebe-url"));
+    assertThat(responseEntity.getBody().getRoles()).isEqualTo(TASKLIST_TEST_ROLES);
   }
 
   @ParameterizedTest
@@ -419,7 +401,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testLoginAndUsageOfRestApi(final BiFunction<String, String, Tokens> orgExtractor)
       throws Exception {
     // Step 1: try to access current user
-    final ResponseEntity<String> currentUserResponse =
+    final ResponseEntity<UserDTO> currentUserResponse =
         getCurrentUserByRestApi(new HttpEntity<>(new HttpHeaders()));
     final HttpEntity<?> cookies = httpEntityWithCookie(currentUserResponse);
     assertThatUnauthorizedIsReturned(currentUserResponse);
@@ -446,10 +428,9 @@ public class AuthenticationIT implements AuthenticationTestable {
     mockClusterMetadata();
 
     // when
-    final ResponseEntity<String> currentUserResponseAfterLogin =
+    final ResponseEntity<UserDTO> currentUserResponseAfterLogin =
         getCurrentUserByRestApi(loginWithSSO(orgExtractor));
-    final UserDTO currentUserAfterLogin =
-        objectMapper.readValue(currentUserResponseAfterLogin.getBody(), UserDTO.class);
+    final UserDTO currentUserAfterLogin = currentUserResponseAfterLogin.getBody();
 
     // then
     assertThat(currentUserResponseAfterLogin.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -458,15 +439,6 @@ public class AuthenticationIT implements AuthenticationTestable {
     assertThat(currentUserAfterLogin.getSalesPlanType())
         .isEqualTo(TASKLIST_TEST_SALESPLAN.getType());
     assertThat(currentUserAfterLogin.getRoles()).isEqualTo(TASKLIST_TEST_ROLES);
-    assertThat(currentUserAfterLogin.getC8Links())
-        .extracting("name", "link")
-        .containsExactly(
-            tuple("console", "https://console.audience/org/3/cluster/test-clusterId"),
-            tuple("operate", "http://operate-url"),
-            tuple("optimize", "http://optimize-url"),
-            tuple("modeler", "https://modeler.audience/org/3"),
-            tuple("tasklist", "http://tasklist-url"),
-            tuple("zeebe", "grpc://zeebe-url"));
   }
 
   @Test
@@ -524,7 +496,7 @@ public class AuthenticationIT implements AuthenticationTestable {
     return cookies;
   }
 
-  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<String> response) {
+  private HttpEntity<?> httpEntityWithCookie(final ResponseEntity<?> response) {
     final HttpHeaders headers = new HttpHeaders();
     if (response.getHeaders().containsKey(HttpHeaders.SET_COOKIE)) {
       headers.add(

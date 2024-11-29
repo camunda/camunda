@@ -8,7 +8,6 @@
 package io.camunda.tasklist.webapp.security;
 
 import static io.camunda.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.USERS_URL_V1;
@@ -17,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -36,9 +36,6 @@ public interface AuthenticationTestable {
   String SET_COOKIE_HEADER = "Set-Cookie";
 
   String CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
-
-  String CURRENT_USER_QUERY =
-      "{currentUser{ userId \n displayName roles salesPlanType c8Links { name link } }}";
 
   TestRestTemplate getTestRestTemplate();
 
@@ -98,22 +95,13 @@ public interface AuthenticationTestable {
     return getTestRestTemplate().postForEntity(LOGOUT_RESOURCE, request, String.class);
   }
 
-  default ResponseEntity<String> getCurrentUserByGraphQL(final HttpEntity<?> cookies) {
-    return getTestRestTemplate()
-        .exchange(
-            GRAPHQL_URL,
-            HttpMethod.POST,
-            prepareRequestWithCookies(cookies.getHeaders(), CURRENT_USER_QUERY),
-            String.class);
-  }
-
-  default ResponseEntity<String> getCurrentUserByRestApi(final HttpEntity<?> cookies) {
+  default ResponseEntity<UserDTO> getCurrentUserByRestApi(final HttpEntity<?> cookies) {
     return getTestRestTemplate()
         .exchange(
             USERS_URL_V1.concat("/current"),
             HttpMethod.GET,
             prepareRequestWithCookies(cookies.getHeaders(), null),
-            String.class);
+            UserDTO.class);
   }
 
   default void assertThatCookiesAreSet(
