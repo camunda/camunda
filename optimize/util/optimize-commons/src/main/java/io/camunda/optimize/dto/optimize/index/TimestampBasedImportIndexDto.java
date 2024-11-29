@@ -14,15 +14,12 @@ import java.time.OffsetDateTime;
 
 public class TimestampBasedImportIndexDto extends ImportIndexDto<IngestedDataSourceDto>
     implements OptimizeDto {
-
-  protected String dbTypeIndexRefersTo;
-
   public TimestampBasedImportIndexDto(
       final OffsetDateTime lastImportExecutionTimestamp,
       final OffsetDateTime timestampOfLastEntity,
+      final String dbTypeIndexRefersTo,
       final IngestedDataSourceDto dataSourceDto) {
-    super(lastImportExecutionTimestamp, timestampOfLastEntity, dataSourceDto);
-    dbTypeIndexRefersTo = dbTypeIndexRefersTo;
+    super(lastImportExecutionTimestamp, timestampOfLastEntity, dbTypeIndexRefersTo, dataSourceDto);
   }
 
   public TimestampBasedImportIndexDto() {}
