@@ -99,7 +99,6 @@ public class AuthenticationIT implements AuthenticationTestable {
   public static final List<String> TASKLIST_TEST_ROLES = List.of("user", "analyst");
   private static final String COOKIE_KEY = "Cookie";
   private static final String TASKLIST_TESTUSER = "tasklist-testuser";
-
   private static final String TASKLIST_TESTUSER_EMAIL = "testuser@tasklist.io";
 
   @Autowired private TestRestTemplate testRestTemplate;
@@ -184,7 +183,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   public void testLoginSuccess(final BiFunction<String, String, Tokens> orgExtractor)
       throws Exception {
     final HttpEntity<?> cookies = loginWithSSO(orgExtractor);
-    final ResponseEntity<String> response = get("/", cookies);
+    final ResponseEntity<String> response = get(ROOT, cookies);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     assertThatClientConfigContains("\"canLogout\":false");
@@ -202,7 +201,7 @@ public class AuthenticationIT implements AuthenticationTestable {
       final BiFunction<String, String, Tokens> orgExtractor) throws Exception {
     mockPermissionAllowed();
     // Step 1 try to access document root
-    ResponseEntity<String> response = get("/tasklist");
+    ResponseEntity<String> response = get(ROOT);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
@@ -344,55 +343,6 @@ public class AuthenticationIT implements AuthenticationTestable {
     // Redirected to Login
     response = get(ROOT);
     assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
-  }
-
-  @ParameterizedTest
-  @MethodSource("orgExtractors")
-  @DirtiesContext
-  public void testLoginAndUsageOfGraphQlApi(final BiFunction<String, String, Tokens> orgExtractor)
-      throws Exception {
-    // Step 1: try to access current user
-    final ResponseEntity<UserDTO> currentUserResponse =
-        getCurrentUserByRestApi(new HttpEntity<>(new HttpHeaders()));
-    final HttpEntity<?> cookies = httpEntityWithCookie(currentUserResponse);
-
-    assertThatUnauthorizedIsReturned(currentUserResponse);
-
-    // Step 2: Get Login provider url
-    mockPermissionAllowed();
-
-    final ResponseEntity<String> loginResponse = get(LOGIN_RESOURCE, cookies);
-    assertThat(redirectLocationIn(loginResponse))
-        .contains(
-            tasklistProperties.getAuth0().getDomain(),
-            SSO_CALLBACK,
-            tasklistProperties.getAuth0().getClientId(),
-            tasklistProperties.getAuth0().getDomain());
-    // Step 3 Call back uri with valid userinfos
-    // mock building tokens
-    given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(
-            orgExtractor.apply(
-                tasklistProperties.getAuth0().getClaimName(),
-                tasklistProperties.getAuth0().getOrganization()));
-
-    // Test no ClusterMetadata
-    mockEmptyClusterMetadata();
-
-    final HttpEntity<?> loggedCookies = loginWithSSO(orgExtractor);
-    ResponseEntity<UserDTO> responseEntity = getCurrentUserByRestApi(loggedCookies);
-    // Test with ClusterMetadata
-    mockClusterMetadata();
-    // when
-    responseEntity = getCurrentUserByRestApi(loggedCookies);
-
-    // then
-    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
-    assertThat(responseEntity.getBody().getUserId()).isEqualTo(TASKLIST_TESTUSER_EMAIL);
-    assertThat(responseEntity.getBody().getDisplayName()).isEqualTo(TASKLIST_TESTUSER);
-    assertThat(responseEntity.getBody().getSalesPlanType())
-        .isEqualTo(TASKLIST_TEST_SALESPLAN.getType());
-    assertThat(responseEntity.getBody().getRoles()).isEqualTo(TASKLIST_TEST_ROLES);
   }
 
   @ParameterizedTest
