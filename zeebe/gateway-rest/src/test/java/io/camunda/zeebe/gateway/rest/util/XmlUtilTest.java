@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.util;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,7 +23,6 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.function.BiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -176,30 +174,21 @@ class XmlUtilTest {
   @Test
   void shouldSearchProcessDefinitionsAndResolveNames() {
     // given
-    when(userTaskEntity.userTaskKey()).thenReturn(10L);
-    final BiFunction<ProcessDefinitionEntity, UserTaskEntity, String> fnGetFlowNodeName =
-        mock(BiFunction.class);
-    when(fnGetFlowNodeName.apply(any(), any())).thenReturn("userTaskName");
+    when(userTaskEntity.elementId()).thenReturn("taskB");
     when(processDefinitionServices.search(any()))
         .thenReturn(
             new SearchQueryResult.Builder<ProcessDefinitionEntity>()
                 .items(List.of(processDefinition))
                 .build());
     // when
-    final var actual =
-        xmlUtil.getNamesForEntities(
-            List.of(userTaskEntity),
-            UserTaskEntity::processDefinitionKey,
-            UserTaskEntity::userTaskKey,
-            fnGetFlowNodeName);
+    final var actual = xmlUtil.getUserTasksNames(List.of(userTaskEntity));
     // then
     verify(processDefinitionServices)
         .search(
             ProcessDefinitionQuery.of(
                 q -> q.filter(f -> f.processDefinitionKeys(List.of(PROCESS_DEFINITION_KEY)))));
-    verify(fnGetFlowNodeName).apply(processDefinition, userTaskEntity);
     assertThat(actual).hasSize(1);
     assertThat(actual.get(PROCESS_DEFINITION_KEY)).hasSize(1);
-    assertThat(actual.get(PROCESS_DEFINITION_KEY).get(10L)).isEqualTo("userTaskName");
+    assertThat(actual.get(PROCESS_DEFINITION_KEY).get("taskB")).isEqualTo("Task B");
   }
 }

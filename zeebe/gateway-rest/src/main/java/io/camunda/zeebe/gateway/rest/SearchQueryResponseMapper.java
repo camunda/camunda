@@ -70,7 +70,6 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableItem;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -145,7 +144,7 @@ public final class SearchQueryResponseMapper {
 
   public static FlowNodeInstanceSearchQueryResponse toFlowNodeInstanceSearchQueryResponse(
       final SearchQueryResult<FlowNodeInstanceEntity> result,
-      final Map<Long, Map<Long, String>> nameMap) {
+      final Map<Long, Map<String, String>> nameMap) {
     final var page = toSearchQueryPageResponse(result);
     return new FlowNodeInstanceSearchQueryResponse()
         .page(page)
@@ -168,7 +167,7 @@ public final class SearchQueryResponseMapper {
 
   public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
       final SearchQueryResult<UserTaskEntity> result,
-      final HashMap<Long, Map<Long, String>> nameMap) {
+      final Map<Long, Map<String, String>> nameMap) {
     final var page = toSearchQueryPageResponse(result);
     return new UserTaskSearchQueryResponse()
         .page(page)
@@ -292,15 +291,13 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<FlowNodeInstanceItem> toFlowNodeInstance(
-      final List<FlowNodeInstanceEntity> instances, final Map<Long, Map<Long, String>> nameMap) {
+      final List<FlowNodeInstanceEntity> instances, final Map<Long, Map<String, String>> nameMap) {
     return instances.stream()
         .map(
             instance ->
                 toFlowNodeInstance(
                     instance,
-                    nameMap
-                        .get(instance.processDefinitionKey())
-                        .get(instance.flowNodeInstanceKey())))
+                    nameMap.get(instance.processDefinitionKey()).get(instance.flowNodeId())))
         .toList();
   }
 
@@ -346,11 +343,11 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<UserTaskItem> toUserTasks(
-      final List<UserTaskEntity> tasks, final HashMap<Long, Map<Long, String>> nameMap) {
+      final List<UserTaskEntity> tasks, final Map<Long, Map<String, String>> nameMap) {
     return tasks.stream()
         .map(
             (UserTaskEntity t) ->
-                toUserTask(t, nameMap.get(t.processDefinitionKey()).get(t.userTaskKey())))
+                toUserTask(t, nameMap.get(t.processDefinitionKey()).get(t.elementId())))
         .toList();
   }
 
