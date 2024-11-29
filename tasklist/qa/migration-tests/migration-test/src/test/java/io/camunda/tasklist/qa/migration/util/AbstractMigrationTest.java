@@ -16,12 +16,13 @@ import io.camunda.tasklist.qa.util.TestContext;
 import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.schema.indices.UserIndex;
-import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.manager.ElasticsearchSchemaManager;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -45,7 +46,9 @@ public abstract class AbstractMigrationTest {
 
   @Autowired protected TaskTemplate taskTemplate;
 
-  @Autowired protected VariableIndex variableIndex;
+  @Autowired
+  @Qualifier("tasklistVariableTemplate")
+  protected VariableTemplate variableIndex;
 
   @Autowired protected ProcessIndex processIndex;
 

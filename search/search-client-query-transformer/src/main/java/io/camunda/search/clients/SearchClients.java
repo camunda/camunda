@@ -118,7 +118,14 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
-    throw new UnsupportedOperationException("Not implemented");
+    final var executor =
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
   }
 
   @Override

@@ -12,10 +12,13 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getDecisionRequirement
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeActivatingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getGroupRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceStartedRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getRoleRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getTenantRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getUserTaskCreatedRecord;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,11 +34,17 @@ import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
@@ -291,6 +300,221 @@ class RdbmsExporterIT {
     // then
     final var deletedUser = rdbmsService.getUserReader().findOne(userRecord.getKey());
     assertThat(deletedUser).isEmpty();
+  }
+
+  @Test
+  public void shouldExportAndUpdateTenant() {
+    // given
+    final var tenantRecord = getTenantRecord(42L, TenantIntent.CREATED);
+    final var tenantRecordValue = ((TenantRecordValue) tenantRecord.getValue());
+
+    // when
+    exporter.export(tenantRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var tenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    assertThat(tenant).isNotEmpty();
+    assertThat(tenant.get().tenantKey()).isEqualTo(tenantRecord.getKey());
+    assertThat(tenant.get().tenantKey()).isEqualTo(tenantRecordValue.getTenantKey());
+    assertThat(tenant.get().tenantId()).isEqualTo(tenantRecordValue.getTenantId());
+    assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
+
+    // given
+    final var updateTenantRecord = getTenantRecord(42L, TenantIntent.UPDATED);
+    final var updateTenantRecordValue = ((TenantRecordValue) updateTenantRecord.getValue());
+
+    // when
+    exporter.export(updateTenantRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedTenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    assertThat(updatedTenant).isNotEmpty();
+    assertThat(updatedTenant.get().tenantKey()).isEqualTo(updateTenantRecordValue.getTenantKey());
+    assertThat(updatedTenant.get().tenantId()).isEqualTo(updateTenantRecordValue.getTenantId());
+    assertThat(updatedTenant.get().name()).isEqualTo(updateTenantRecordValue.getName());
+  }
+
+  @Test
+  public void shouldExportTenantAndAddAndDeleteMember() {
+    // given
+    final var tenantRecord = getTenantRecord(43L, TenantIntent.CREATED);
+    final var tenantRecordValue = ((TenantRecordValue) tenantRecord.getValue());
+
+    // when
+    exporter.export(tenantRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var tenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
+    assertThat(tenant).isNotEmpty();
+    assertThat(tenant.get().tenantKey()).isEqualTo(tenantRecordValue.getTenantKey());
+    assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
+
+    // when
+    exporter.export(getTenantRecord(43L, TenantIntent.ENTITY_ADDED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedTenant =
+        rdbmsService.getTenantReader().findOne(tenantRecord.getKey()).orElseThrow();
+    assertThat(updatedTenant.assignedMemberKeys()).containsExactly(1337L);
+
+    // when
+    exporter.export(getTenantRecord(43L, TenantIntent.ENTITY_REMOVED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedTenant =
+        rdbmsService.getTenantReader().findOne(tenantRecord.getKey()).orElseThrow();
+    assertThat(deletedTenant.assignedMemberKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldExportUpdateAndDeleteRole() {
+    // given
+    final var roleRecord = getRoleRecord(42L, RoleIntent.CREATED);
+    final var roleRecordValue = ((RoleRecordValue) roleRecord.getValue());
+
+    // when
+    exporter.export(roleRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var role = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    assertThat(role).isNotEmpty();
+    assertThat(role.get().roleKey()).isEqualTo(roleRecordValue.getRoleKey());
+    assertThat(role.get().name()).isEqualTo(roleRecordValue.getName());
+
+    // given
+    final var updateRoleRecord = getRoleRecord(42L, RoleIntent.UPDATED);
+    final var updateRoleRecordValue = ((RoleRecordValue) updateRoleRecord.getValue());
+
+    // when
+    exporter.export(updateRoleRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    assertThat(updatedRole).isNotEmpty();
+    assertThat(updatedRole.get().roleKey()).isEqualTo(updateRoleRecordValue.getRoleKey());
+    assertThat(updatedRole.get().name()).isEqualTo(updateRoleRecordValue.getName());
+
+    // when
+    exporter.export(getRoleRecord(42L, RoleIntent.DELETED));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    assertThat(deletedRole).isEmpty();
+  }
+
+  @Test
+  public void shouldExportRoleAndAddAndDeleteMember() {
+    // given
+    final var roleRecord = getRoleRecord(42L, RoleIntent.CREATED);
+    final var roleRecordValue = ((RoleRecordValue) roleRecord.getValue());
+
+    // when
+    exporter.export(roleRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var role = rdbmsService.getRoleReader().findOne(roleRecord.getKey());
+    assertThat(role).isNotEmpty();
+    assertThat(role.get().roleKey()).isEqualTo(roleRecordValue.getRoleKey());
+    assertThat(role.get().name()).isEqualTo(roleRecordValue.getName());
+
+    // when
+    exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_ADDED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
+    assertThat(updatedRole.assignedMemberKeys()).containsExactly(1337L);
+
+    // when
+    exporter.export(getRoleRecord(42L, RoleIntent.ENTITY_REMOVED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedRole = rdbmsService.getRoleReader().findOne(roleRecord.getKey()).orElseThrow();
+    assertThat(deletedRole.assignedMemberKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldExportUpdateAndDeleteGroup() {
+    // given
+    final var groupRecord = getGroupRecord(42L, GroupIntent.CREATED);
+    final var groupRecordValue = ((GroupRecordValue) groupRecord.getValue());
+
+    // when
+    exporter.export(groupRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    assertThat(group).isNotEmpty();
+    assertThat(group.get().key()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
+
+    // given
+    final var updateGroupRecord = getGroupRecord(42L, GroupIntent.UPDATED);
+    final var updateGroupRecordValue = ((GroupRecordValue) updateGroupRecord.getValue());
+
+    // when
+    exporter.export(updateGroupRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    assertThat(updatedGroup).isNotEmpty();
+    assertThat(updatedGroup.get().key()).isEqualTo(updateGroupRecordValue.getGroupKey());
+    assertThat(updatedGroup.get().name()).isEqualTo(updateGroupRecordValue.getName());
+
+    // when
+    exporter.export(getGroupRecord(42L, GroupIntent.DELETED));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedGroup = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    assertThat(deletedGroup).isEmpty();
+  }
+
+  @Test
+  public void shouldExportGroupAndAddAndDeleteMember() {
+    // given
+    final var groupRecord = getGroupRecord(43L, GroupIntent.CREATED);
+    final var groupRecordValue = ((GroupRecordValue) groupRecord.getValue());
+
+    // when
+    exporter.export(groupRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var group = rdbmsService.getGroupReader().findOne(groupRecord.getKey());
+    assertThat(group).isNotEmpty();
+    assertThat(group.get().key()).isEqualTo(groupRecordValue.getGroupKey());
+    assertThat(group.get().name()).isEqualTo(groupRecordValue.getName());
+
+    // when
+    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_ADDED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedGroup =
+        rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
+    assertThat(updatedGroup.assignedMemberKeys()).containsExactly(1337L);
+
+    // when
+    exporter.export(getGroupRecord(43L, GroupIntent.ENTITY_REMOVED, 1337L));
+    exporter.flushExecutionQueue();
+
+    // then
+    final var deletedGroup =
+        rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
+    assertThat(deletedGroup.assignedMemberKeys()).isEmpty();
   }
 
   @Test

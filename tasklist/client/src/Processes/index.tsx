@@ -37,8 +37,6 @@ import {NewProcessInstanceTasksPolling} from './NewProcessInstanceTasksPolling';
 import {tracking} from 'modules/tracking';
 import {useProcesses} from 'modules/queries/useProcesses';
 import {usePermissions} from 'modules/hooks/usePermissions';
-import {History} from './History';
-import {IS_PROCESS_INSTANCES_ENABLED} from 'modules/featureFlags';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {pages} from 'modules/routing';
@@ -416,12 +414,6 @@ const Processes: React.FC = observer(() => {
           </div>
         </Stack>
       </div>
-
-      {IS_PROCESS_INSTANCES_ENABLED ? (
-        <aside className={styles.historyAside}>
-          <History />
-        </aside>
-      ) : null}
 
       <FirstTimeModal />
     </main>

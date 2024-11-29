@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.GroupMapper">
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.GroupDbQuery">
+    SELECT COUNT(*)
+    FROM GROUPS g
+    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.GroupDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.GroupMapper.groupResultMap">
+    SELECT * FROM (
+    SELECT
+    g.GROUP_KEY,
+    g.NAME,
+    gm.GROUP_KEY AS MEMBER_GROUP_KEY,
+    gm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
+    gm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
+    FROM GROUPS g
+    LEFT JOIN GROUP_MEMBER gm ON g.GROUP_KEY = gm.GROUP_KEY
+    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <if test="filter.groupKey != null">AND g.GROUP_KEY = #{filter.groupKey}</if>
+    <if test="filter.name != null">AND g.NAME = #{filter.name}</if>
+  </sql>
+
+  <resultMap id="groupResultMap" type="io.camunda.db.rdbms.write.domain.GroupDbModel">
+    <id column="GROUP_KEY" property="groupKey" />
+    <result column="NAME" property="name"/>
+    <collection property="members" ofType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
+      javaType="java.util.List">
+      <constructor>
+        <idArg column="MEMBER_GROUP_KEY" javaType="java.lang.Long"/>
+        <idArg column="MEMBER_ENTITY_KEY" javaType="java.lang.Long"/>
+        <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
+      </constructor>
+    </collection>
+  </resultMap>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel"
+    flushCache="true">
+    INSERT INTO GROUPS (GROUP_KEY, NAME)
+    VALUES (#{groupKey}, #{name})
+  </insert>
+
+  <update
+    id="update"
+    parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel"
+    flushCache="true">
+    UPDATE GROUPS
+    SET NAME = #{name}
+    WHERE GROUP_KEY = #{groupKey}
+  </update>
+
+  <delete id="delete" parameterType="java.lang.Long" flushCache="true">
+    DELETE
+    FROM GROUPS
+    WHERE GROUP_KEY = #{groupKey}
+  </delete>
+
+  <insert
+    id="insertMember"
+    parameterType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
+    flushCache="true">
+    INSERT INTO GROUP_MEMBER (GROUP_KEY, ENTITY_KEY, ENTITY_TYPE)
+    VALUES (#{groupKey}, #{entityKey}, #{entityType})
+  </insert>
+
+  <delete
+    id="deleteMember"
+    parameterType="io.camunda.db.rdbms.write.domain.GroupMemberDbModel"
+    flushCache="true">
+    DELETE
+    FROM GROUP_MEMBER
+    WHERE GROUP_KEY = #{groupKey}
+      AND ENTITY_KEY = #{entityKey}
+      AND ENTITY_TYPE = #{entityType}
+  </delete>
+
+  <delete
+    id="deleteAllMembers"
+    parameterType="java.lang.Long"
+    flushCache="true">
+    DELETE
+    FROM GROUP_MEMBER
+    WHERE GROUP_KEY = #{groupKey}
+  </delete>
+
+</mapper>

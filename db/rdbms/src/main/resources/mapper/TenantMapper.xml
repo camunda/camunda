@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.TenantMapper">
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.TenantDbQuery">
+    SELECT COUNT(*)
+    FROM TENANT t
+    <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.TenantDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.TenantMapper.tenantResultMap">
+    SELECT * FROM (
+    SELECT
+    t.TENANT_KEY,
+    t.TENANT_ID,
+    t.NAME,
+    tm.TENANT_KEY AS MEMBER_TENANT_KEY,
+    tm.ENTITY_KEY AS MEMBER_ENTITY_KEY,
+    tm.ENTITY_TYPE AS MEMBER_ENTITY_TYPE
+    FROM TENANT t
+    LEFT JOIN TENANT_MEMBER tm ON t.TENANT_KEY = tm.TENANT_KEY
+    <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchFilter">
+    WHERE 1 = 1
+    <if test="filter.key != null">AND t.TENANT_KEY = #{filter.key}</if>
+    <if test="filter.tenantId != null">AND t.TENANT_ID = #{filter.tenantId}</if>
+    <if test="filter.name != null">AND t.NAME = #{filter.name}</if>
+  </sql>
+
+  <resultMap id="tenantResultMap" type="io.camunda.db.rdbms.write.domain.TenantDbModel">
+    <id column="TENANT_KEY" property="tenantKey" />
+    <result column="TENANT_ID" property="tenantId"/>
+    <result column="NAME" property="name"/>
+    <collection property="members" ofType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
+      javaType="java.util.List">
+      <constructor>
+        <idArg column="MEMBER_TENANT_KEY" javaType="java.lang.Long"/>
+        <idArg column="MEMBER_ENTITY_KEY" javaType="java.lang.Long"/>
+        <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
+      </constructor>
+    </collection>
+  </resultMap>
+
+  <insert
+    id="insert"
+    parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
+    flushCache="true">
+    INSERT INTO TENANT (TENANT_KEY, TENANT_ID, NAME)
+    VALUES (#{tenantKey}, #{tenantId}, #{name})
+  </insert>
+
+  <update
+    id="update"
+    parameterType="io.camunda.db.rdbms.write.domain.TenantDbModel"
+    flushCache="true">
+    UPDATE TENANT SET
+                    TENANT_ID = #{tenantId},
+                    NAME = #{name}
+    WHERE TENANT_KEY = #{tenantKey}
+  </update>
+
+  <delete id="delete" parameterType="java.lang.Long" flushCache="true">
+    DELETE
+    FROM TENANT
+    WHERE TENANT_KEY = #{tenantKey}
+  </delete>
+
+  <insert
+    id="insertMember"
+    parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
+    flushCache="true">
+    INSERT INTO TENANT_MEMBER (TENANT_KEY, ENTITY_KEY, ENTITY_TYPE)
+    VALUES (#{tenantKey}, #{entityKey}, #{entityType})
+  </insert>
+
+  <delete
+    id="deleteMember"
+    parameterType="io.camunda.db.rdbms.write.domain.TenantMemberDbModel"
+    flushCache="true">
+    DELETE
+    FROM TENANT_MEMBER
+    WHERE TENANT_KEY = #{tenantKey}
+      AND ENTITY_KEY = #{entityKey}
+      AND ENTITY_TYPE = #{entityType}
+  </delete>
+
+  <delete
+    id="deleteAllMembers"
+    parameterType="java.lang.Long"
+    flushCache="true">
+    DELETE
+    FROM TENANT_MEMBER
+    WHERE TENANT_KEY = #{tenantKey}
+  </delete>
+
+</mapper>

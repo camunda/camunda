@@ -393,7 +393,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
-      <version>2.18.1</version>
       <scope>compile</scope>
     </dependency>
 
@@ -408,8 +407,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jdk8</artifactId>
-      <version>2.18.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -443,8 +440,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
-      <version>2.18.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -485,7 +480,7 @@
     <dependency>
       <groupId>com.nimbusds</groupId>
       <artifactId>oauth2-oidc-sdk</artifactId>
-      <version>9.43.4</version>
+      <version>11.20.1</version>
       <scope>compile</scope>
     </dependency>
 
@@ -506,8 +501,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
-      <version>2.18.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -613,8 +606,6 @@
     <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jsr310</artifactId>
-      <version>2.18.1</version>
-      <scope>compile</scope>
     </dependency>
 
     <dependency>
@@ -722,7 +713,7 @@
     <dependency>
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
-      <version>3.2.2</version>
+      <version>20040616</version>
       <scope>compile</scope>
     </dependency>
 

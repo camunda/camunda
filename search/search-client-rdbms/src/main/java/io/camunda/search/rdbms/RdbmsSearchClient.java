@@ -138,8 +138,10 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
-      final DecisionRequirementsQuery filter) {
-    return null;
+      final DecisionRequirementsQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for decisionRequirements: {}", query);
+
+    return rdbmsService.getDecisionRequirementsReader().search(query);
   }
 
   @Override
@@ -164,8 +166,10 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery filter) {
-    return null;
+  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for groups: {}", query);
+
+    return rdbmsService.getGroupReader().search(query);
   }
 
   @Override
@@ -188,13 +192,17 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
-    return null;
+  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for roles: {}", query);
+
+    return rdbmsService.getRoleReader().search(query);
   }
 
   @Override
-  public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
-    return null;
+  public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for tenants: {}", query);
+
+    return rdbmsService.getTenantReader().search(query);
   }
 
   @Override

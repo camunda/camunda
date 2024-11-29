@@ -19,11 +19,9 @@ public class TenantEntityTransformer
   public TenantEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.TenantEntity source) {
     return new TenantEntity(
-        source.getKey(),
+        source.getTenantKey(),
         source.getTenantId(),
         source.getName(),
-        source.getAssignedMemberKeys() != null
-            ? Set.copyOf(source.getAssignedMemberKeys())
-            : Set.of());
+        source.getJoin() != null ? Set.of(source.getJoin().parent()) : Set.of());
   }
 }

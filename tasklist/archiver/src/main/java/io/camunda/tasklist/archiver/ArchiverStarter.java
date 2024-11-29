@@ -60,10 +60,6 @@ public class ArchiverStarter {
           final TaskArchiverJob batchOperationArchiverJob =
               beanFactory.getBean(TaskArchiverJob.class, partitionIdsSubset);
           taskScheduler.execute(batchOperationArchiverJob);
-
-          final ProcessInstanceArchiverJob processInstanceArchiverJob =
-              beanFactory.getBean(ProcessInstanceArchiverJob.class, partitionIdsSubset);
-          taskScheduler.execute(processInstanceArchiverJob);
         }
       }
     }

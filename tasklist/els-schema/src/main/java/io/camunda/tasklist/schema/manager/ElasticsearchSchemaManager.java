@@ -24,8 +24,8 @@ import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.AbstractTemplateDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.ElasticsearchJSONUtil;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -94,7 +94,7 @@ public class ElasticsearchSchemaManager implements SchemaManager {
   @Autowired private List<TemplateDescriptor> tasklistTemplateDescriptors;
 
   @Autowired(required = false)
-  private List<TasklistTemplateDescriptor> commonTemplateDescriptors;
+  private List<IndexTemplateDescriptor> commonTemplateDescriptors;
 
   @Override
   public void createSchema() {
@@ -325,6 +325,11 @@ public class ElasticsearchSchemaManager implements SchemaManager {
                               @Override
                               public String getVersion() {
                                 return t.getVersion();
+                              }
+
+                              @Override
+                              public String getFullQualifiedName() {
+                                return t.getFullQualifiedName();
                               }
                             })
                     .forEach(this::createTemplate));

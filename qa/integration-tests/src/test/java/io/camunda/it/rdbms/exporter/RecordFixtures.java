@@ -14,16 +14,26 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ImmutableDecisionRecordValue;
@@ -205,6 +215,30 @@ public class RecordFixtures {
         .build();
   }
 
+  protected static ImmutableRecord<RecordValue> getTenantRecord(
+      final Long tenantKey, final TenantIntent intent) {
+    return getTenantRecord(tenantKey, intent, null);
+  }
+
+  protected static ImmutableRecord<RecordValue> getTenantRecord(
+      final Long tenantKey, final TenantIntent intent, final Long entityKey) {
+    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.TENANT);
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(intent)
+        .withPosition(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withKey(tenantKey)
+        .withValue(
+            ImmutableTenantRecordValue.builder()
+                .from((TenantRecordValue) recordValueRecord.getValue())
+                .withTenantKey(tenantKey)
+                .withEntityKey(entityKey != null ? entityKey : 0)
+                .withEntityType(entityKey != null ? EntityType.USER : null)
+                .build())
+        .build();
+  }
+
   protected static ImmutableRecord<RecordValue> getUserRecord(
       final Long userKey, final UserIntent intent) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.USER);
@@ -233,6 +267,54 @@ public class RecordFixtures {
         .withPosition(position)
         .withTimestamp(System.currentTimeMillis())
         .withPartitionId(1)
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getRoleRecord(
+      final Long roleKey, final RoleIntent intent) {
+    return getRoleRecord(roleKey, intent, null);
+  }
+
+  protected static ImmutableRecord<RecordValue> getRoleRecord(
+      final Long roleKey, final RoleIntent intent, final Long entityKey) {
+    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.ROLE);
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(intent)
+        .withPosition(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withKey(roleKey)
+        .withValue(
+            ImmutableRoleRecordValue.builder()
+                .from((RoleRecordValue) recordValueRecord.getValue())
+                .withRoleKey(roleKey)
+                .withEntityKey(entityKey != null ? entityKey : 0)
+                .withEntityType(entityKey != null ? EntityType.USER : null)
+                .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getGroupRecord(
+      final Long groupKey, final GroupIntent intent) {
+    return getGroupRecord(groupKey, intent, null);
+  }
+
+  protected static ImmutableRecord<RecordValue> getGroupRecord(
+      final Long groupKey, final GroupIntent intent, final Long entityKey) {
+    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.GROUP);
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(intent)
+        .withPosition(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withKey(groupKey)
+        .withValue(
+            ImmutableGroupRecordValue.builder()
+                .from((GroupRecordValue) recordValueRecord.getValue())
+                .withGroupKey(groupKey)
+                .withEntityKey(entityKey != null ? entityKey : 0)
+                .withEntityType(entityKey != null ? EntityType.USER : null)
+                .build())
         .build();
   }
 }

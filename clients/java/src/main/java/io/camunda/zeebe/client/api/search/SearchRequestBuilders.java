@@ -24,7 +24,6 @@ import io.camunda.zeebe.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.zeebe.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
 import io.camunda.zeebe.client.api.search.filter.VariableFilter;
-import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
 import io.camunda.zeebe.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.zeebe.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.zeebe.client.api.search.sort.DecisionRequirementsSort;
@@ -44,7 +43,6 @@ import io.camunda.zeebe.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.ProcessInstanceFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.UserTaskFilterImpl;
 import io.camunda.zeebe.client.impl.search.filter.VariableFilterImpl;
-import io.camunda.zeebe.client.impl.search.filter.VariableValueFilterImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.zeebe.client.impl.search.sort.DecisionRequirementsSortImpl;
@@ -82,18 +80,6 @@ public final class SearchRequestBuilders {
   public static ProcessInstanceFilter processInstanceFilter(
       final Consumer<ProcessInstanceFilter> fn) {
     final ProcessInstanceFilter filter = processInstanceFilter();
-    fn.accept(filter);
-    return filter;
-  }
-
-  /** Create a variable value filter. */
-  public static VariableValueFilter variableValueFilter() {
-    return new VariableValueFilterImpl();
-  }
-
-  /** Create a variable value filter by using a fluent builder. */
-  public static VariableValueFilter variableValueFilter(final Consumer<VariableValueFilter> fn) {
-    final VariableValueFilter filter = variableValueFilter();
     fn.accept(filter);
     return filter;
   }

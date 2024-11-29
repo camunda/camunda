@@ -80,14 +80,6 @@ public class TasklistTester {
   private TestCheck processIsDeletedCheck;
 
   @Autowired
-  @Qualifier(PROCESS_INSTANCE_IS_CANCELED_CHECK)
-  private TestCheck processInstanceIsCanceledCheck;
-
-  @Autowired
-  @Qualifier(PROCESS_INSTANCE_IS_COMPLETED_CHECK)
-  private TestCheck processInstanceIsCompletedCheck;
-
-  @Autowired
   @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCreatedCheck;
 
@@ -539,18 +531,6 @@ public class TasklistTester {
         taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.FAILED);
-    return this;
-  }
-
-  public TasklistTester processInstanceIsCanceled() {
-    databaseTestExtension.processAllRecordsAndWait(
-        processInstanceIsCanceledCheck, processInstanceId);
-    return this;
-  }
-
-  public TasklistTester processInstanceIsCompleted() {
-    databaseTestExtension.processAllRecordsAndWait(
-        processInstanceIsCompletedCheck, processInstanceId);
     return this;
   }
 

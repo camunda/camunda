@@ -11,10 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import feign.FeignException;
-import io.camunda.zeebe.management.backups.BackupInfo;
-import io.camunda.zeebe.management.backups.PartitionBackupInfo;
-import io.camunda.zeebe.management.backups.StateCode;
-import io.camunda.zeebe.management.backups.TakeBackupRuntimeResponse;
+import io.camunda.management.backups.BackupInfo;
+import io.camunda.management.backups.PartitionBackupInfo;
+import io.camunda.management.backups.StateCode;
+import io.camunda.management.backups.TakeBackupRuntimeResponse;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.time.Duration;

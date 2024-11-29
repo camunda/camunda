@@ -11,7 +11,6 @@ import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 
@@ -330,42 +329,6 @@ public class ProcessInternalControllerIT extends TasklistZeebeIntegrationTest {
               processInstanceDTO -> {
                 Assertions.assertThat(processInstanceDTO.getId()).isNotNull();
               });
-    }
-
-    @Test
-    public void deleteProcessInstance() {
-      final String bpmnProcessId = "testProcess";
-      final String flowNodeBpmnId = "taskA";
-      final String processInstanceId =
-          tester
-              .createAndDeploySimpleProcess(bpmnProcessId, flowNodeBpmnId)
-              .waitUntil()
-              .processIsDeployed()
-              .and()
-              .startProcessInstance(bpmnProcessId)
-              .waitUntil()
-              .taskIsCreated(flowNodeBpmnId)
-              .claimAndCompleteHumanTask(
-                  flowNodeBpmnId,
-                  "delete",
-                  "\"me\"",
-                  "by",
-                  "\"REST API\"",
-                  "when",
-                  "\"processInstance is completed\"")
-              .then()
-              .waitUntil()
-              .processInstanceIsCompleted()
-              .getProcessInstanceId();
-
-      // when
-      final var result =
-          mockMvcHelper.doRequest(
-              delete(
-                  TasklistURIs.PROCESSES_URL_V1.concat("/{processInstanceId}"), processInstanceId));
-
-      // then
-      assertThat(result).hasHttpStatus(HttpStatus.NO_CONTENT).hasNoContent();
     }
   }
 

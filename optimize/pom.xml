@@ -47,8 +47,7 @@
     <opensearch.test.version>2.10.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
     <previous.optimize.opensearch.version>2.9.0</previous.optimize.opensearch.version>
-    <awssdk.version>2.29.22</awssdk.version>
-    <jackson.version>2.18.1</jackson.version>
+    <awssdk.version>2.29.23</awssdk.version>
     <jsonpath.version>2.9.0</jsonpath.version>
     <apache.http5-client.version>5.4.1</apache.http5-client.version>
     <apache.http5-core.version>5.3.1</apache.http5-core.version>
@@ -64,8 +63,10 @@
     <slf4j.version>2.0.16</slf4j.version>
     <commons.io.version>2.18.0</commons.io.version>
 
+    <!-- remove these versions.anything properties once we inherit from zeebe-parent -->
     <version.node>v20.9.0</version.node>
     <version.yarn>v1.22.19</version.yarn>
+    <version.jackson>2.18.1</version.jackson>
 
     <!-- lucene config-->
     <lucene.version>8.11.3</lucene.version>
@@ -121,7 +122,7 @@
       <dependency>
         <groupId>com.fasterxml.jackson</groupId>
         <artifactId>jackson-bom</artifactId>
-        <version>${jackson.version}</version>
+        <version>${version.jackson}</version>
         <scope>import</scope>
         <type>pom</type>
       </dependency>
