@@ -5,7 +5,7 @@
       "id": {
         "type": "keyword"
       },
-      "mappingKey": {
+      "key": {
         "type": "long"
       },
       "claimName": {
