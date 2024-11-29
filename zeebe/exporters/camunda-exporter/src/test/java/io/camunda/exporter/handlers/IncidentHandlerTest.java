@@ -393,6 +393,34 @@ public class IncidentHandlerTest {
             io.camunda.webapps.schema.entities.operate.ErrorType.EXECUTION_LISTENER_NO_RETRIES);
   }
 
+  @Test
+  void shouldHandleTaskListenerNoRetriesErrorType() {
+    // given
+    final long expectedId = 123;
+    final IncidentRecordValue incidentRecordValue =
+        ImmutableIncidentRecordValue.builder()
+            .from(factory.generateObject(IncidentRecordValue.class))
+            .withErrorType(ErrorType.TASK_LISTENER_NO_RETRIES)
+            .build();
+
+    final Record<IncidentRecordValue> incidentRecord =
+        factory.generateRecord(
+            ValueType.INCIDENT,
+            r ->
+                r.withIntent(ProcessIntent.CREATED)
+                    .withValue(incidentRecordValue)
+                    .withKey(expectedId));
+
+    final IncidentEntity incidentEntity = new IncidentEntity();
+
+    // when
+    underTest.updateEntity(incidentRecord, incidentEntity);
+
+    // then
+    assertThat(incidentEntity.getErrorType())
+        .isEqualTo(io.camunda.webapps.schema.entities.operate.ErrorType.TASK_LISTENER_NO_RETRIES);
+  }
+
   private String concurrencyScriptMock() {
     return String.format(
         "if (ctx._source.%s == null || ctx._source.%s < params.%s) { "
