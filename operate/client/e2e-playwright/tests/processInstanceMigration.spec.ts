@@ -188,7 +188,7 @@ test.describe.serial('Process Instance Migration', () => {
     await processesPage.migrationModal.confirmButton.click();
 
     // Expect auto mapping for each flow node
-    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(40);
+    await expect(page.getByLabel(/target flow node for/i)).toHaveCount(41);
 
     await expect(
       page.getByLabel(/target flow node for check payment/i),
@@ -286,6 +286,9 @@ test.describe.serial('Process Instance Migration', () => {
     await expect(
       page.getByLabel(/target flow node for multi instance task/i),
     ).toHaveValue('MultiInstanceTask');
+    await expect(
+      page.getByLabel(/target flow node for message start event/i),
+    ).toHaveValue('MessageStartEvent');
 
     // Expect pre-selected process and version
     await expect(migrationView.targetProcessComboBox).toHaveValue(
