@@ -158,6 +158,7 @@ public class BackupRestoreTest {
   private void startTasklist() {
     testContainerUtil.startTasklistContainer(tasklistContainer, VERSION, testContext);
     LOGGER.info("************ Tasklist started  ************");
+    tasklistAPICaller.createRestContext(testContext);
   }
 
   private void stopTasklist() {
