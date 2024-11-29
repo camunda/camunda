@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.entities.usermanagement.TenantEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -56,10 +57,12 @@ public class TenantCreateUpdateHandler implements ExportHandler<TenantEntity, Te
   @Override
   public void updateEntity(final Record<TenantRecordValue> record, final TenantEntity entity) {
     final TenantRecordValue value = record.getValue();
+    final var joinRelation = TenantIndex.JOIN_RELATION_FACTORY.createParent();
     entity
         .setTenantKey(value.getTenantKey())
         .setTenantId(value.getTenantId())
-        .setName(value.getName());
+        .setName(value.getName())
+        .setJoin(joinRelation);
   }
 
   @Override
