@@ -691,7 +691,7 @@
 
     <dependency>
       <groupId>io.camunda.optimize</groupId>
-      <artifactId>optimize-backend</artifactId>
+      <artifactId>optimize-commons</artifactId>
       <version>8.7.0-SNAPSHOT</version>
     </dependency>
 

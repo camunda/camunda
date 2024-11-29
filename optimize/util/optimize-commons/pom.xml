@@ -193,12 +193,22 @@
       <artifactId>opensearch-rest-client</artifactId>
     </dependency>
 
-    <!-- used/undeclared block -->
-
     <dependency>
-      <groupId>org.wiremock</groupId>
-      <artifactId>wiremock</artifactId>
-      <version>3.9.2</version>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-netty</artifactId>
+      <version>5.15.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-core</artifactId>
+      <version>5.15.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mock-server</groupId>
+      <artifactId>mockserver-client-java</artifactId>
+      <version>5.15.0</version>
       <scope>test</scope>
     </dependency>
 

@@ -45,7 +45,8 @@ class OpenSearchClientBuilderTest {
   @BeforeAll
   static void before() {
     mockServer = startClientAndServer(8090);
-    mockServer.when(HttpRequest.request().withMethod("GET").withPath("/"))
+    mockServer
+        .when(HttpRequest.request().withMethod("GET").withPath("/"))
         .respond(HttpResponse.response().withStatusCode(200).withBody("mocked response"));
   }
 
@@ -78,10 +79,7 @@ class OpenSearchClientBuilderTest {
     final var client =
         getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
     final var asyncResp =
-        client.execute(
-            SimpleHttpRequest.create("GET", BASE_URL),
-            context,
-            NoopCallback.INSTANCE);
+        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
 
     try {
       asyncResp.get(2000, TimeUnit.MILLISECONDS);
@@ -120,10 +118,7 @@ class OpenSearchClientBuilderTest {
     final var client =
         getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
     final var asyncResp =
-        client.execute(
-            SimpleHttpRequest.create("GET", BASE_URL),
-            context,
-            NoopCallback.INSTANCE);
+        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
 
     try {
       asyncResp.get(2000, TimeUnit.MILLISECONDS);
@@ -160,10 +155,7 @@ class OpenSearchClientBuilderTest {
     final var client =
         getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
     final var asyncResp =
-        client.execute(
-            SimpleHttpRequest.create("GET", BASE_URL),
-            context,
-            NoopCallback.INSTANCE);
+        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
 
     try {
       asyncResp.get(2000, TimeUnit.MILLISECONDS);
@@ -204,10 +196,7 @@ class OpenSearchClientBuilderTest {
     final var client =
         getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
     final var asyncResp =
-        client.execute(
-            SimpleHttpRequest.create("GET", BASE_URL),
-            context,
-            NoopCallback.INSTANCE);
+        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
 
     try {
       asyncResp.get(2000, TimeUnit.MILLISECONDS);
@@ -233,15 +222,12 @@ class OpenSearchClientBuilderTest {
     private static final NoopCallback INSTANCE = new NoopCallback();
 
     @Override
-    public void completed(final SimpleHttpResponse result) {
-    }
+    public void completed(final SimpleHttpResponse result) {}
 
     @Override
-    public void failed(final Exception ex) {
-    }
+    public void failed(final Exception ex) {}
 
     @Override
-    public void cancelled() {
-    }
+    public void cancelled() {}
   }
 }
