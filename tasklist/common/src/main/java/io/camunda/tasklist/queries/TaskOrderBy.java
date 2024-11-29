@@ -24,7 +24,6 @@ public class TaskOrderBy {
   @GraphQLNonNull
   private Sort order;
 
-  @GraphQLConstructor
   public TaskOrderBy(final TaskSortFields field, final Sort order) {
     this.field = field;
     this.order = order;
