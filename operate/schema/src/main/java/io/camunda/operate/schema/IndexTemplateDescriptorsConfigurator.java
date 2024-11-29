@@ -67,7 +67,7 @@ public class IndexTemplateDescriptorsConfigurator {
         databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
+  @Bean("operateProcessIndex")
   public ProcessIndex getProcessIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new ProcessIndex(

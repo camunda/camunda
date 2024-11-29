@@ -16,7 +16,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.ProcessStore;
@@ -31,6 +30,7 @@ import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.tenant.TenantService;
 import io.camunda.tasklist.webapp.service.ProcessService;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -81,7 +81,7 @@ public class ProcessExternalControllerTest {
             .setName("Process Name")
             .setVersion(1)
             .setFormKey("camunda-forms:bpmn:testForm")
-            .setStartedByForm(true)
+            .setIsPublic(true)
             .setTenantId(DEFAULT_TENANT_IDENTIFIER);
     final var expectedFormResponse =
         new FormResponse()
@@ -135,7 +135,7 @@ public class ProcessExternalControllerTest {
             .setVersion(1)
             .setFormId("testForm")
             .setIsFormEmbedded(false)
-            .setStartedByForm(true)
+            .setIsPublic(true)
             .setTenantId(DEFAULT_TENANT_IDENTIFIER);
     final var expectedFormResponse =
         new FormResponse()
@@ -187,7 +187,7 @@ public class ProcessExternalControllerTest {
             .setBpmnProcessId("orderProcess")
             .setName("")
             .setVersion(1)
-            .setStartedByForm(false);
+            .setIsPublic(false);
 
     when(processStore.getProcessByBpmnProcessId(bpmnProcessId)).thenReturn(processEntity);
 
@@ -225,7 +225,7 @@ public class ProcessExternalControllerTest {
         new ProcessEntity()
             .setBpmnProcessId(bpmnProcessId)
             .setId("1")
-            .setStartedByForm(true)
+            .setIsPublic(true)
             .setName("StartFormProcess")
             .setVersion(1)
             .setFormKey("camundaForm:bpmn:startForm")
@@ -243,7 +243,7 @@ public class ProcessExternalControllerTest {
         new ProcessEntity()
             .setBpmnProcessId(bpmnProcessId)
             .setId("1")
-            .setStartedByForm(true)
+            .setIsPublic(true)
             .setName("StartFormProcess")
             .setVersion(1)
             .setFormId("startForm")
@@ -262,7 +262,7 @@ public class ProcessExternalControllerTest {
         new ProcessEntity()
             .setBpmnProcessId(bpmnProcessId)
             .setId("1")
-            .setStartedByForm(false)
+            .setIsPublic(false)
             .setName("StartFormProcess")
             .setVersion(1)
             .setFormKey("camundaForm:bpmn:startForm")
@@ -277,7 +277,7 @@ public class ProcessExternalControllerTest {
         new ProcessEntity()
             .setBpmnProcessId(bpmnProcessId)
             .setId("1")
-            .setStartedByForm(false)
+            .setIsPublic(false)
             .setName("StartFormProcess")
             .setVersion(1)
             .setFormId("startForm")

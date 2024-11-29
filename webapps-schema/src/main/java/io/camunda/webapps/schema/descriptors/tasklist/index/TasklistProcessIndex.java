@@ -5,12 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.schema.indices;
+package io.camunda.webapps.schema.descriptors.tasklist.index;
 
-import org.springframework.stereotype.Component;
+import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 
-@Component
-public class ProcessIndex extends AbstractIndexDescriptor {
+/**
+ * This class is used for the old Tasklist 8.6.0 importer to ensure that all processes are imported
+ * while migrating them to the new process index schema.
+ *
+ * @deprecated use {@link io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex}
+ */
+@Deprecated(forRemoval = true, since = "8.7.0")
+public class TasklistProcessIndex extends TasklistIndexDescriptor {
 
   public static final String INDEX_NAME = "process";
   public static final String INDEX_VERSION = "8.4.0";
@@ -29,6 +35,10 @@ public class ProcessIndex extends AbstractIndexDescriptor {
   public static final String FORM_KEY = "formKey";
   public static final String FORM_ID = "formId";
   public static final String TENANT_ID = "tenantId";
+
+  public TasklistProcessIndex(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
 
   @Override
   public String getIndexName() {

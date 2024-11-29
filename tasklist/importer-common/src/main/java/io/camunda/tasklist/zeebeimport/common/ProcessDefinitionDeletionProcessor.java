@@ -7,11 +7,11 @@
  */
 package io.camunda.tasklist.zeebeimport.common;
 
-import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.store.DraftVariableStore;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import java.util.ArrayList;
@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /*
@@ -40,7 +41,9 @@ public class ProcessDefinitionDeletionProcessor {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessDefinitionDeletionProcessor.class);
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("tasklistProcessIndex")
+  private ProcessIndex processIndex;
 
   @Autowired private FormIndex formIndex;
 

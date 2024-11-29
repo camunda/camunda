@@ -11,14 +11,14 @@ import static io.camunda.tasklist.util.ConversionUtils.toStringOrNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.deployment.DeployedProcessImpl;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistProcessIndex;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
+import io.camunda.webapps.schema.entities.tasklist.TasklistProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
@@ -52,7 +52,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired private TasklistProcessIndex processIndex;
 
   @Autowired private FormIndex formIndex;
 
@@ -96,7 +96,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
       final BiConsumer<String, String> userTaskFormCollector)
       throws PersistenceException {
 
-    final ProcessEntity processEntity = createEntity(process, userTaskFormCollector);
+    final var processEntity = createEntity(process, userTaskFormCollector);
     LOGGER.debug("Process: key {}", processEntity.getKey());
 
     try {
@@ -112,9 +112,9 @@ public class ProcessZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private ProcessEntity createEntity(
+  private TasklistProcessEntity createEntity(
       final Process process, final BiConsumer<String, String> userTaskFormCollector) {
-    final ProcessEntity processEntity = new ProcessEntity();
+    final TasklistProcessEntity processEntity = new TasklistProcessEntity();
 
     processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
     processEntity.setKey(process.getProcessDefinitionKey());

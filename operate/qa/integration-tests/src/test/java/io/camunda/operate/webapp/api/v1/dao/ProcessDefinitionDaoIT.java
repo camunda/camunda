@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import javax.xml.parsers.ParserConfigurationException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
@@ -35,7 +36,9 @@ public class ProcessDefinitionDaoIT extends OperateSearchAbstractIT {
 
   @Autowired private ProcessDefinitionDao dao;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("operateProcessIndex")
+  private ProcessIndex processIndex;
 
   @Override
   protected void runAdditionalBeforeAllSetup() throws Exception {

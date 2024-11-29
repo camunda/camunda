@@ -12,10 +12,10 @@ import static io.camunda.tasklist.util.OpenSearchUtil.getRawResponseWithTenantCh
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
@@ -44,7 +44,9 @@ public class FormStoreOpenSearch implements FormStore {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("tasklistProcessIndex")
+  private ProcessIndex processIndex;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 
@@ -160,7 +162,7 @@ public class FormStoreOpenSearch implements FormStore {
   private Boolean isFormAssociatedToProcess(final String formId, final String processDefinitionId) {
     try {
       final SearchRequest.Builder searchRequest =
-          OpenSearchUtil.createSearchRequest(processIndex, OpenSearchUtil.QueryType.ALL)
+          OpenSearchUtil.createSearchRequest(processIndex.getFullQualifiedName())
               .size(1) // only need to know if at least one exists
               .query(
                   b ->

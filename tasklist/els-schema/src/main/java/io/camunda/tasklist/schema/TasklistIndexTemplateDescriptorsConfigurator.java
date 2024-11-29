@@ -11,15 +11,18 @@ import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.indices.UserIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -79,6 +82,22 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
   @Bean
   public TasklistImportPositionIndex tasklistImportPositionIndex() {
     return new TasklistImportPositionIndex(
+        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+  }
+
+  @Bean
+  @ConditionalOnProperty(
+      name = "camunda.tasklist.importerEnabled",
+      havingValue = "true",
+      matchIfMissing = true)
+  public TasklistProcessIndex deprecatedTasklistProcessIndex() {
+    return new TasklistProcessIndex(
+        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+  }
+
+  @Bean("tasklistProcessIndex")
+  public ProcessIndex processIndex() {
+    return new ProcessIndex(
         getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
   }
 
