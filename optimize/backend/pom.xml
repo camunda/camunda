@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -810,38 +812,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <ignoredUnusedDeclaredDependencies>
-            <dep>org.codehaus.janino:janino</dep>
-            <dep>io.camunda:identity-spring-boot-starter</dep>
-            <dep>org.springframework:spring-tx</dep>
-            <dep>org.springframework.boot:spring-boot-starter-web</dep>
-            <dep>org.springframework.boot:spring-boot-starter-jersey</dep>
-            <dep>io.micrometer:micrometer-registry-prometheus</dep>
-            <dep>org.apache.httpcomponents.core5:httpcore5</dep>
-            <dep>org.eclipse.angus:jakarta.mail</dep>
-            <dep>org.springframework.boot:spring-boot-starter-tomcat</dep>
-            <dep>jakarta.servlet:jakarta.servlet-api</dep>
-            <dep>jakarta.annotation:jakarta.annotation-api</dep>
-            <dep>org.apache.logging.log4j:log4j-core</dep>
-
-            <!-- test dependencies -->
-            <dep>org.springframework.boot:spring-boot-starter-test</dep>
-            <dep>com.sun.mail:jakarta.mail</dep>
-            <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
-            <dep>io.camunda:zeebe-build-tools</dep>
-            <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
-          </ignoredUnusedDeclaredDependencies>
-          <ignoredNonTestScopedDependencies combine.children="append">
-            <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
-            <dep>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dep>
-            <dep>org.apache.httpcomponents:httpcore-nio</dep>
-            <dep>org.glassfish.jersey.core:jersey-client</dep>
-            <dep>org.apache.tika:tika-core</dep>
-            <dep>commons-collections:commons-collections</dep>
-            <dep>org.opensearch.client:opensearch-rest-client</dep>
-          </ignoredNonTestScopedDependencies>
-        </configuration>
         <executions>
           <execution>
             <id>copy-dependencies-to-lib-folder</id>

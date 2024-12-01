@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -199,23 +201,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <configuration>
-          <ignoredUnusedDeclaredDependencies>
-            <!-- test dependencies -->
-            <dep>io.camunda.optimize:optimize-backend</dep>
-            <dep>io.camunda.optimize:upgrade-optimize</dep>
-            <dep>org.springframework.boot:spring-boot-starter-test</dep>
-            <dep>io.netty:netty-codec-http</dep>
-            <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
-            <dep>io.camunda:zeebe-build-tools</dep>
-            <dep>org.apache.logging.log4j:log4j-core</dep>
-            <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
-            <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
-          </ignoredUnusedDeclaredDependencies>
-          <ignoredNonTestScopedDependencies combine.children="append">
-            <dep>org.opensearch.client:opensearch-java</dep>
-          </ignoredNonTestScopedDependencies>
-        </configuration>
         <executions>
           <execution>
             <id>unpack-previous-and-current-optimize</id>
@@ -236,7 +221,8 @@
                   <!-- thus excluding the default environment-config -->
                   <excludes>**/environment-config.yaml</excludes>
                   <overWrite>true</overWrite>
-                  <outputDirectory>${project.build.directory}/${project.previousVersion}</outputDirectory>
+                  <outputDirectory>${project.build.directory}/${project.previousVersion}
+                  </outputDirectory>
                 </artifactItem>
                 <artifactItem>
                   <groupId>io.camunda.optimize</groupId>

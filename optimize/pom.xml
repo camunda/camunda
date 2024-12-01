@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -31,8 +33,12 @@
   </modules>
 
   <scm>
-    <connection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</connection>
-    <developerConnection>scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git</developerConnection>
+    <connection>
+      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
+    </connection>
+    <developerConnection>
+      scm:git:https://${env.GITHUB_TOKEN_USR}:${env.GITHUB_TOKEN_PSW}@github.com/camunda/camunda.git
+    </developerConnection>
     <tag>HEAD</tag>
     <url>https://github.com/camunda/camunda</url>
   </scm>
@@ -70,7 +76,8 @@
 
     <!-- maven dependency plugin -->
     <dependencyAnalyzeFailOnWarning>false</dependencyAnalyzeFailOnWarning>
-    <dependencyAnalyze.failOnWarning>${dependencyAnalyzeFailOnWarning}</dependencyAnalyze.failOnWarning>
+    <dependencyAnalyze.failOnWarning>${dependencyAnalyzeFailOnWarning}
+    </dependencyAnalyze.failOnWarning>
 
     <!-- DATABASE -->
     <!-- Elasticsearch-->
@@ -332,7 +339,36 @@
           <configuration>
             <failOnWarning>${dependencyAnalyze.failOnWarning}</failOnWarning>
             <ignoredUnusedDeclaredDependencies combine.children="append">
-              <!-- ignore common test dependencies -->
+              <dep>software.amazon.awssdk:sdk-core</dep>
+              <dep>software.amazon.awssdk:sts</dep>
+              <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+              <dep>org.codehaus.janino:janino</dep>
+              <dep>io.camunda:identity-spring-boot-starter</dep>
+              <dep>org.springframework:spring-tx</dep>
+              <dep>org.springframework.boot:spring-boot-starter-web</dep>
+              <dep>org.springframework.boot:spring-boot-starter-jersey</dep>
+              <dep>io.micrometer:micrometer-registry-prometheus</dep>
+              <dep>org.apache.httpcomponents.core5:httpcore5</dep>
+              <dep>org.eclipse.angus:jakarta.mail</dep>
+              <dep>org.springframework.boot:spring-boot-starter-tomcat</dep>
+              <dep>jakarta.servlet:jakarta.servlet-api</dep>
+              <dep>jakarta.annotation:jakarta.annotation-api</dep>
+              <dep>org.apache.logging.log4j:log4j-core</dep>
+
+              <!-- test dependencies -->
+              <dep>io.camunda.optimize:optimize-backend</dep>
+              <dep>io.camunda.optimize:upgrade-optimize</dep>
+              <dep>io.netty:netty-codec-http</dep>
+              <dep>org.apache.logging.log4j:log4j-slf4j-impl</dep>
+              <dep>org.apache.logging.log4j:log4j-core</dep>
+              <dep>org.apache.logging.log4j:log4j-slf4j2-impl</dep>
+              <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
+              <dep>io.camunda.optimize:optimize-backend:test-jar</dep>
+              <dep>org.apache.logging.log4j:log4j-core</dep>
+              <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
+              <dep>org.springframework.boot:spring-boot-starter-test</dep>
+              <dep>com.sun.mail:jakarta.mail</dep>
+              <dep>io.github.netmikey.logunit:logunit-log4j2</dep>
               <dep>org.junit.jupiter:junit-jupiter-api</dep>
               <dep>org.junit.platform:junit-platform-launcher</dep>
               <dep>org.junit.jupiter:junit-jupiter-engine</dep>
@@ -347,6 +383,16 @@
               <dep>org.awaitility:awaitility</dep>
               <dep>io.camunda:zeebe-build-tools</dep>
             </ignoredUnusedDeclaredDependencies>
+            <ignoredNonTestScopedDependencies combine.children="append">
+              <dep>com.fasterxml.jackson.datatype:jackson-datatype-jdk8</dep>
+              <dep>com.fasterxml.jackson.datatype:jackson-datatype-jsr310</dep>
+              <dep>org.apache.httpcomponents:httpcore-nio</dep>
+              <dep>org.glassfish.jersey.core:jersey-client</dep>
+              <dep>org.apache.tika:tika-core</dep>
+              <dep>commons-collections:commons-collections</dep>
+              <dep>org.opensearch.client:opensearch-rest-client</dep>
+              <dep>org.opensearch.client:opensearch-java</dep>
+            </ignoredNonTestScopedDependencies>
           </configuration>
         </plugin>
         <plugin>
@@ -373,7 +419,8 @@
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
             <useModulePath>false</useModulePath>
             <argLine>--add-opens java.base/java.lang=ALL-UNNAMED
-              --add-opens java.base/java.util=ALL-UNNAMED</argLine>
+              --add-opens java.base/java.util=ALL-UNNAMED
+            </argLine>
             <systemPropertyVariables>
               <database.type>${database.type}</database.type>
             </systemPropertyVariables>
