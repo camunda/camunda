@@ -24,6 +24,7 @@ import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.client.protocol.rest.UserRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.util.Base64Util;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +71,7 @@ public class BasicAuthIT {
     content =
         objectMapper.writeValueAsString(
             new UserRequest()
-                .username("demo")
+                .username("demo-".concat(UUID.randomUUID().toString()))
                 .name("Demo")
                 .password("password")
                 .email("demo@email.com"));
