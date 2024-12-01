@@ -39,7 +39,7 @@ public class TenantSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.tenantKey().asc(),
-        Comparator.comparing(TenantEntity::tenantKey));
+        Comparator.comparing(TenantEntity::key));
   }
 
   @TestTemplate
@@ -47,7 +47,7 @@ public class TenantSortIT {
     testSorting(
         testApplication.getRdbmsService(),
         b -> b.tenantKey().desc(),
-        Comparator.comparing(TenantEntity::tenantKey).reversed());
+        Comparator.comparing(TenantEntity::key).reversed());
   }
 
   @TestTemplate
