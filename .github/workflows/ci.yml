@@ -480,7 +480,7 @@ jobs:
 
   build-tasklist-backend:
     if: needs.detect-changes.outputs.tasklist-backend-changes == 'true'
-    needs: [detect-changes]
+    needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
@@ -583,6 +583,10 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Build zeebe-bom
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f bom/pom.xml install
       - name: Test
         uses: ./.github/actions/run-maven
         with:
