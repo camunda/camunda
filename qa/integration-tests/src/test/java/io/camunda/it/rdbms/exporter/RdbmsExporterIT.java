@@ -315,8 +315,8 @@ class RdbmsExporterIT {
     // then
     final var tenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
     assertThat(tenant).isNotEmpty();
-    assertThat(tenant.get().tenantKey()).isEqualTo(tenantRecord.getKey());
-    assertThat(tenant.get().tenantKey()).isEqualTo(tenantRecordValue.getTenantKey());
+    assertThat(tenant.get().key()).isEqualTo(tenantRecord.getKey());
+    assertThat(tenant.get().key()).isEqualTo(tenantRecordValue.getTenantKey());
     assertThat(tenant.get().tenantId()).isEqualTo(tenantRecordValue.getTenantId());
     assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
 
@@ -331,7 +331,7 @@ class RdbmsExporterIT {
     // then
     final var updatedTenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
     assertThat(updatedTenant).isNotEmpty();
-    assertThat(updatedTenant.get().tenantKey()).isEqualTo(updateTenantRecordValue.getTenantKey());
+    assertThat(updatedTenant.get().key()).isEqualTo(updateTenantRecordValue.getTenantKey());
     assertThat(updatedTenant.get().tenantId()).isEqualTo(updateTenantRecordValue.getTenantId());
     assertThat(updatedTenant.get().name()).isEqualTo(updateTenantRecordValue.getName());
   }
@@ -349,7 +349,7 @@ class RdbmsExporterIT {
     // then
     final var tenant = rdbmsService.getTenantReader().findOne(tenantRecord.getKey());
     assertThat(tenant).isNotEmpty();
-    assertThat(tenant.get().tenantKey()).isEqualTo(tenantRecordValue.getTenantKey());
+    assertThat(tenant.get().key()).isEqualTo(tenantRecordValue.getTenantKey());
     assertThat(tenant.get().name()).isEqualTo(tenantRecordValue.getName());
 
     // when

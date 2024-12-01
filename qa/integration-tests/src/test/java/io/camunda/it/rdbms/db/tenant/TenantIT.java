@@ -173,7 +173,7 @@ public class TenantIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().tenantKey()).isEqualTo(instance.tenantKey());
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(instance.tenantKey());
   }
 
   @TestTemplate
@@ -204,7 +204,7 @@ public class TenantIT {
                                         new Object[] {
                                           instanceAfter.name(),
                                           instanceAfter.tenantId(),
-                                          instanceAfter.tenantKey()
+                                          instanceAfter.key()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);

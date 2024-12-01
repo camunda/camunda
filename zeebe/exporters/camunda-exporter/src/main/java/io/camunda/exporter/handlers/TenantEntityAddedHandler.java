@@ -60,7 +60,7 @@ public class TenantEntityAddedHandler implements ExportHandler<TenantEntity, Ten
     final EntityJoinRelation joinRelation =
         TenantIndex.JOIN_RELATION_FACTORY.createChild(value.getTenantKey());
     entity
-        .setTenantKey(value.getTenantKey())
+        .setKey(value.getTenantKey())
         .setTenantId(value.getTenantId())
         .setName(value.getName())
         .setJoin(joinRelation);

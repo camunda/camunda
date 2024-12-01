@@ -69,7 +69,7 @@ public class TenantSpecificFilterIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().tenantKey()).isEqualTo(42L);
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(42L);
   }
 
   static List<TenantFilter> shouldFindTenantWithSpecificFilterParameters() {
