@@ -583,10 +583,10 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Build zeebe-bom
+      - name: Build zeebe-build-tools
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f bom/pom.xml install
+          parameters: -f build-tools/pom.xml install
       - name: Test
         uses: ./.github/actions/run-maven
         with:
