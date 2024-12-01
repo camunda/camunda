@@ -215,7 +215,9 @@ public class TenantIT {
   private static void compareTenant(final TenantEntity actual, final TenantDbModel expected) {
     assertThat(actual)
         .usingRecursiveComparison()
-        .ignoringFields("assignedMemberKeys")
+        .ignoringFields("assignedMemberKeys", "key")
         .isEqualTo(expected);
+
+    assertThat(actual.key()).isEqualTo(expected.tenantKey());
   }
 }
