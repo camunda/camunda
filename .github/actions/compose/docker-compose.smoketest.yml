@@ -70,6 +70,15 @@ services:
       - elasticsearch
     ports:
       - 8090:8090
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -q -f -I http://localhost:8090/api/readyz | grep -q '200 OK'",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
   zeebe:
     image: camunda/zeebe:${ZEEBE_VERSION:-latest}
     container_name: zeebe
