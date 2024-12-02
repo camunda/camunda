@@ -42,7 +42,8 @@ public class TaskListenerValidator implements ModelElementValidator<ZeebeTaskLis
     if (eventType != null && !SUPPORTED_VALUES.contains(eventType)) {
       final String errorMessage =
           String.format(
-              "Task listener event type '%s' is not supported. Currently, only %s event types are supported.",
+              "Task listener event type '%s' is not supported. Currently, only %s event types are supported. "
+                  + "Support for it is planned for version 8.8.",
               eventType, SUPPORTED_VALUES.stream().map(Enum::name).collect(joining(", ")));
       validationResultCollector.addError(0, errorMessage);
     }

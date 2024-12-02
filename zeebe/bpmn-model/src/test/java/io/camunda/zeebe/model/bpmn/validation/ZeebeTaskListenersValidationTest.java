@@ -21,9 +21,12 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.TaskListenerBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListener;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class ZeebeTaskListenersValidationTest {
 
@@ -60,20 +63,36 @@ public class ZeebeTaskListenersValidationTest {
         expect(ZeebeTaskListener.class, "Attribute 'eventType' must be present and not empty"));
   }
 
-  @Test
   @DisplayName("task listener with unsupported `eventType` property")
-  void testEventTypeNotSupported() {
+  @ParameterizedTest(name = "unsupported event type: ''{0}''")
+  @EnumSource(
+      value = ZeebeTaskListenerEventType.class,
+      mode = EnumSource.Mode.EXCLUDE,
+      // supported event types
+      names = {"assignment", "complete"})
+  void testEventTypeNotSupported(final ZeebeTaskListenerEventType unsupportedEventType) {
     // given
     final BpmnModelInstance process =
-        Bpmn.readModelFromStream(
-            ReflectUtil.getResourceAsStream(
-                "io/camunda/zeebe/model/bpmn/validation/ZeebeTaskListenersValidationTest.testEventTypeNotSupported.bpmn"));
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .userTask(
+                "user_task",
+                ut ->
+                    ut.zeebeUserTask()
+                        .zeebeTaskListener(
+                            l -> l.eventType(unsupportedEventType).type("not_supported_listener")))
+            .endEvent()
+            .done();
 
     // when/then
     ProcessValidationUtil.assertThatProcessHasViolations(
         process,
         expect(
             ZeebeTaskListener.class,
-            "Task listener event type 'cancel' is not supported. Currently, only assignment, complete event types are supported."));
+            String.format(
+                "Task listener event type '%s' is not supported. "
+                    + "Currently, only assignment, complete event types are supported. "
+                    + "Support for it is planned for version 8.8.",
+                unsupportedEventType)));
   }
 }
