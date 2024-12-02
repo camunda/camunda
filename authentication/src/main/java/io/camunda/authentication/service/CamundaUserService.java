@@ -7,12 +7,10 @@
  */
 package io.camunda.authentication.service;
 
-import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.authentication.entity.CamundaUserDTO;
 
 public interface CamundaUserService {
-  CamundaUser getCurrentUser();
+  CamundaUserDTO getCurrentUser();
 
   String getUserToken();
-
-  String getCurrentUsername();
 }

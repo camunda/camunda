@@ -24,6 +24,7 @@ servers:
         description: The schema of the Camunda 8 REST API server.
 
 tags:
+  - name: Authentication
   - name: Authorization
   - name: Clock
   - name: Cluster
@@ -81,6 +82,26 @@ paths:
                 $ref: "#/components/schemas/LicenseResponse"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /authentication/me:
+    get:
+      tags:
+        - Authentication
+      operationId: getAuthentication
+      summary: Get current user
+      description: Retrieves the current authenticated user.
+      responses:
+        "200":
+          description: The current user is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /jobs/activation:
     post:
       tags:
@@ -4270,6 +4291,7 @@ components:
     PermissionTypeEnum:
       description: Specifies the type of permissions.
       enum:
+        - ACCESS
         - CREATE
         - CREATE_PROCESS_INSTANCE
         - CREATE_DECISION_INSTANCE
@@ -4441,6 +4463,63 @@ components:
         email:
           description: The email of the user.
           type: "string"
+    CamundaUser:
+      type: "object"
+      properties:
+          userId:
+            description: The ID of the user.
+            type: "string"
+          userKey:
+            description: The system generated key of the User
+            type: "integer"
+            format: "int64"
+          displayName:
+            description: The display name of the User
+            type: "string"
+          authorizedApplications:
+            description: The applications the User is authorized to use
+            type: array
+            items:
+              type: "string"
+          tenants:
+            description: The tenants the User is a member of
+            type: array
+            items:
+              type: "object"
+              properties:
+                tenantId:
+                  type: "string"
+                name:
+                  type: "string"
+          groups:
+            description: The groups assigned to the user
+            type: array
+            items:
+              type: "string"
+          roles:
+            description: The roles assigned to the user
+            type: array
+            items:
+              type: "string"
+          salesPlanType:
+            description: The plan of the user
+            type: "string"
+          c8Links:
+            description: The links to the components in the C8 stack
+            type: array
+            items:
+              type: "object"
+              properties:
+                name:
+                  type: "string"
+                link:
+                  type: "string"
+          canLogout:
+            description: Flag for understanding if the user is able to perform logout
+            type: boolean
+          apiUser:
+            description: Flag for understanding if the user is an API user
+            type: boolean
     UserResponse:
       type: "object"
       properties:
