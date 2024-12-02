@@ -232,6 +232,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>operate-data-generator</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -285,6 +289,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-elasticsearch</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-high-level-client</artifactId>
     </dependency>
 
     <dependency>

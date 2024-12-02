@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.webapp;
 
+import static io.camunda.application.commons.backup.ElasticsearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static io.camunda.management.backups.HistoryStateCode.*;
 import static io.camunda.operate.util.CollectionUtil.asMap;
-import static io.camunda.operate.webapp.elasticsearch.backup.ElasticsearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;

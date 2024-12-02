@@ -5,12 +5,13 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.backup;
+package io.camunda.application.commons.backup;
 
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupServiceImpl;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.profiles.ProfileOperateTasklist;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Configuration
+@ProfileOperateTasklist
 public class BackupComponent {
 
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
