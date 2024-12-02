@@ -5,20 +5,18 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.graphql.entity;
+package io.camunda.tasklist.webapp.dto;
 
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 
 public class ProcessDTO {
 
-  @GraphQLField @GraphQLNonNull private String id;
+  private String id;
 
-  @GraphQLField private String name;
+  private String name;
 
-  @GraphQLField private String processDefinitionId;
+  private String processDefinitionId;
 
   private String[] sortValues;
 
@@ -30,13 +28,14 @@ public class ProcessDTO {
 
   private Boolean isFormEmbedded;
 
-  @GraphQLField private Integer version;
+  private Integer version;
 
-  public static ProcessDTO createFrom(ProcessEntity processEntity) {
+  public static ProcessDTO createFrom(final ProcessEntity processEntity) {
     return createFrom(processEntity, null);
   }
 
-  public static ProcessDTO createFrom(ProcessEntity processEntity, Object[] sortValues) {
+  public static ProcessDTO createFrom(
+      final ProcessEntity processEntity, final Object[] sortValues) {
     final ProcessDTO processDTO =
         new ProcessDTO()
             .setId(processEntity.getId())
@@ -58,7 +57,7 @@ public class ProcessDTO {
     return id;
   }
 
-  public ProcessDTO setId(String id) {
+  public ProcessDTO setId(final String id) {
     this.id = id;
     return this;
   }
@@ -67,7 +66,7 @@ public class ProcessDTO {
     return name;
   }
 
-  public ProcessDTO setName(String name) {
+  public ProcessDTO setName(final String name) {
     this.name = name;
     return this;
   }
@@ -76,7 +75,7 @@ public class ProcessDTO {
     return sortValues;
   }
 
-  public ProcessDTO setSortValues(String[] sortValues) {
+  public ProcessDTO setSortValues(final String[] sortValues) {
     this.sortValues = sortValues;
     return this;
   }
@@ -85,7 +84,7 @@ public class ProcessDTO {
     return processDefinitionId;
   }
 
-  public ProcessDTO setProcessDefinitionId(String processDefinitionId) {
+  public ProcessDTO setProcessDefinitionId(final String processDefinitionId) {
     this.processDefinitionId = processDefinitionId;
     return this;
   }
@@ -94,7 +93,7 @@ public class ProcessDTO {
     return version;
   }
 
-  public ProcessDTO setVersion(Integer version) {
+  public ProcessDTO setVersion(final Integer version) {
     this.version = version;
     return this;
   }
@@ -103,7 +102,7 @@ public class ProcessDTO {
     return startedByForm;
   }
 
-  public ProcessDTO setStartedByForm(boolean startedByForm) {
+  public ProcessDTO setStartedByForm(final boolean startedByForm) {
     this.startedByForm = startedByForm;
     return this;
   }
@@ -112,7 +111,7 @@ public class ProcessDTO {
     return formKey;
   }
 
-  public ProcessDTO setFormKey(String formKey) {
+  public ProcessDTO setFormKey(final String formKey) {
     this.formKey = formKey;
     return this;
   }
@@ -121,7 +120,7 @@ public class ProcessDTO {
     return isFormEmbedded;
   }
 
-  public ProcessDTO setFormEmbedded(Boolean formEmbedded) {
+  public ProcessDTO setFormEmbedded(final Boolean formEmbedded) {
     isFormEmbedded = formEmbedded;
     return this;
   }
@@ -130,7 +129,7 @@ public class ProcessDTO {
     return formId;
   }
 
-  public ProcessDTO setFormId(String formId) {
+  public ProcessDTO setFormId(final String formId) {
     this.formId = formId;
     return this;
   }
