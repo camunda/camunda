@@ -18,10 +18,10 @@ public class DecisionVariableHelperTest {
   @Test
   void shouldGetVariableValueFieldReturnCorrectFieldPath() {
     // given
-    String variablePath = "testPath";
+    final String variablePath = "testPath";
 
     // when
-    String result = DecisionVariableHelper.getVariableValueField(variablePath);
+    final String result = DecisionVariableHelper.getVariableValueField(variablePath);
 
     // then
     assertThat(result).isEqualTo("testPath.value");
@@ -32,7 +32,7 @@ public class DecisionVariableHelperTest {
     // given
 
     // when
-    var result = DecisionVariableHelper.getVariableMultivalueFields();
+    final var result = DecisionVariableHelper.getVariableMultivalueFields();
 
     // then
     assertThat(result)
@@ -43,10 +43,10 @@ public class DecisionVariableHelperTest {
   @Test
   void shouldGetVariableStringValueFieldReturnCorrectStringValueField() {
     // given
-    String variablePath = "testPath";
+    final String variablePath = "testPath";
 
     // when
-    String result = DecisionVariableHelper.getVariableStringValueField(variablePath);
+    final String result = DecisionVariableHelper.getVariableStringValueField(variablePath);
 
     // then
     assertThat(result).isEqualTo("testPath.value");
@@ -55,11 +55,11 @@ public class DecisionVariableHelperTest {
   @Test
   void shouldGetValueSearchFieldReturnSearchFieldPath() {
     // given
-    String variablePath = "testPath";
-    String searchFieldName = "field";
+    final String variablePath = "testPath";
+    final String searchFieldName = "field";
 
     // when
-    String result = DecisionVariableHelper.getValueSearchField(variablePath, searchFieldName);
+    final String result = DecisionVariableHelper.getValueSearchField(variablePath, searchFieldName);
 
     // then
     assertThat(result).isEqualTo("testPath.value.field");
@@ -68,10 +68,10 @@ public class DecisionVariableHelperTest {
   @Test
   void shouldBuildWildcardQueryReturnWildcardString() {
     // given
-    String valueFilter = "query";
+    final String valueFilter = "query";
 
     // when
-    String result = DecisionVariableHelper.buildWildcardQuery(valueFilter);
+    final String result = DecisionVariableHelper.buildWildcardQuery(valueFilter);
 
     // then
     assertThat(result).isEqualTo("*query*");
@@ -80,11 +80,11 @@ public class DecisionVariableHelperTest {
   @Test
   void shouldGetVariableValueFieldForTypeHandleStringType() {
     // given
-    String variablePath = "testPath";
-    VariableType type = VariableType.STRING;
+    final String variablePath = "testPath";
+    final VariableType type = VariableType.STRING;
 
     // when
-    String result = DecisionVariableHelper.getVariableValueFieldForType(variablePath, type);
+    final String result = DecisionVariableHelper.getVariableValueFieldForType(variablePath, type);
 
     // then
     assertThat(result).isEqualTo("testPath.value");
@@ -93,11 +93,11 @@ public class DecisionVariableHelperTest {
   @Test
   void shouldGetVariableValueFieldForTypeHandleDateType() {
     // given
-    String variablePath = "testPath";
-    VariableType type = VariableType.DATE;
+    final String variablePath = "testPath";
+    final VariableType type = VariableType.DATE;
 
     // when
-    String result = DecisionVariableHelper.getVariableValueFieldForType(variablePath, type);
+    final String result = DecisionVariableHelper.getVariableValueFieldForType(variablePath, type);
 
     // then
     assertThat(result).isEqualTo("testPath.value.date");
@@ -106,8 +106,8 @@ public class DecisionVariableHelperTest {
   @Test
   void shouldGetVariableValueFieldForTypeThrowExceptionForNullType() {
     // given
-    String variablePath = "testPath";
-    VariableType type = null;
+    final String variablePath = "testPath";
+    final VariableType type = null;
 
     // then
     assertThatThrownBy(
@@ -119,10 +119,10 @@ public class DecisionVariableHelperTest {
   @Test
   void shouldGetVariableClauseIdFieldReturnCorrectFieldPath() {
     // given
-    String variablePath = "testPath";
+    final String variablePath = "testPath";
 
     // when
-    String result = DecisionVariableHelper.getVariableClauseIdField(variablePath);
+    final String result = DecisionVariableHelper.getVariableClauseIdField(variablePath);
 
     // then
     assertThat(result).isEqualTo("testPath.clauseId");
@@ -131,10 +131,10 @@ public class DecisionVariableHelperTest {
   @Test
   void shouldGetVariableTypeFieldReturnCorrectFieldPath() {
     // given
-    String variablePath = "testPath";
+    final String variablePath = "testPath";
 
     // when
-    String result = DecisionVariableHelper.getVariableTypeField(variablePath);
+    final String result = DecisionVariableHelper.getVariableTypeField(variablePath);
 
     // then
     assertThat(result).isEqualTo("testPath.type");
