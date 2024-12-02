@@ -129,7 +129,6 @@ public class ImportPositionHolder {
           ImportPositionEntity importPosition = inflightImportPositions.get(key);
           if (importPosition == null) {
             importPosition = lastProcessedPosition;
-            LOGGER.error("SET import position {}; NOT EXIST BEFORE", importPosition);
             importPositionCompletedGauges.put(
                 key,
                 metrics.registerGauge(
@@ -146,7 +145,6 @@ public class ImportPositionHolder {
                 .setSequence(lastProcessedPosition.getSequence())
                 .setIndexName(lastProcessedPosition.getIndexName())
                 .setCompleted(lastProcessedPosition.getCompleted());
-            LOGGER.error("SET import position {}; HAS EXIST BEFORE", importPosition);
           }
           inflightImportPositions.put(key, importPosition);
         },
@@ -219,12 +217,12 @@ public class ImportPositionHolder {
 
   private void withInflightImportPositionLock(final Runnable action, final String name) {
     try {
-      LOGGER.error("access LOCK {} - {}", Thread.currentThread().getName(), name);
+      LOGGER.trace("access LOCK {} - {}", Thread.currentThread().getName(), name);
       inflightImportPositionLock.lock();
       action.run();
     } finally {
       inflightImportPositionLock.unlock();
-      LOGGER.error("release LOCK {} - {}", Thread.currentThread().getName(), name);
+      LOGGER.trace("release LOCK {} - {}", Thread.currentThread().getName(), name);
     }
   }
 }
