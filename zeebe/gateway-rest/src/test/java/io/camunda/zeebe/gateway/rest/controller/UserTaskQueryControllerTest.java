@@ -27,6 +27,7 @@ import io.camunda.search.sort.UserTaskSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.rest.JacksonConfig;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -68,6 +69,42 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                       "candidateUsers": [],
                       "candidateGroups": [],
                       "formKey": 0,
+                      "elementId": "e",
+                      "creationDate": "2020-11-11T00:00:00.000Z",
+                      "completionDate": "2020-11-11T00:00:00.000Z",
+                      "dueDate": "2020-11-11T00:00:00.000Z",
+                      "followUpDate": "2020-11-11T00:00:00.000Z",
+                      "externalFormReference": "efr",
+                      "processDefinitionVersion": 1,
+                      "customHeaders": {},
+                      "priority": 50
+                  }
+              ],
+              "page": {
+                  "totalItems": 1,
+                  "firstSortValues": ["v"],
+                  "lastSortValues": [
+                      "v"
+                  ]
+              }
+          }""";
+
+  private static final String EXPECTED_SEARCH_RESPONSE_STRING_KEYS =
+      """
+          {
+              "items": [
+                  {
+                      "tenantId": "t",
+                      "userTaskKey": "0",
+                      "processInstanceKey": "1",
+                      "processDefinitionKey": "2",
+                      "elementInstanceKey": "3",
+                      "processDefinitionId": "b",
+                      "state": "CREATED",
+                      "assignee": "a",
+                      "candidateUsers": [],
+                      "candidateGroups": [],
+                      "formKey": "0",
                       "elementId": "e",
                       "creationDate": "2020-11-11T00:00:00.000Z",
                       "completionDate": "2020-11-11T00:00:00.000Z",
@@ -245,6 +282,46 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .contentType(APPLICATION_JSON)
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(userTaskServices).search(new UserTaskQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSearchUserTasksWithEmptyBodyNumberKeys() {
+    // given
+    when(userTaskServices.search(any(UserTaskQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .header("Accept", RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_NUMBER)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
+
+    verify(userTaskServices).search(new UserTaskQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSearchUserTasksWithEmptyBodyStringKeys() {
+    // given
+    when(userTaskServices.search(any(UserTaskQuery.class))).thenReturn(SEARCH_QUERY_RESULT);
+    // when / then
+    webClient
+        .post()
+        .uri(USER_TASKS_SEARCH_URL)
+        .header("Accept", RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE_STRING_KEYS);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
   }

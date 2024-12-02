@@ -11,9 +11,8 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.TenantQuery;
 import io.camunda.service.TenantServices;
-import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -33,11 +32,27 @@ public class TenantQueryController {
 
   @GetMapping(
       path = "/{tenantKey}",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<TenantItem> getTenant(@PathVariable final long tenantKey) {
+      produces = {
+        MediaType.APPLICATION_JSON_VALUE,
+        RequestMapper.MEDIA_TYPE_KEYS_NUMBER,
+        MediaType.APPLICATION_PROBLEM_JSON_VALUE
+      })
+  public ResponseEntity<?> getTenant(@PathVariable final long tenantKey) {
     try {
       return ResponseEntity.ok()
           .body(SearchQueryResponseMapper.toTenant(tenantServices.getByKey(tenantKey)));
+    } catch (final Exception exception) {
+      return RestErrorMapper.mapErrorToResponse(exception);
+    }
+  }
+
+  @GetMapping(
+      path = "/{tenantKey}",
+      produces = {RequestMapper.MEDIA_TYPE_KEYS_STRING, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public ResponseEntity<?> getTenantStringKeys(@PathVariable final long tenantKey) {
+    try {
+      return ResponseEntity.ok()
+          .body(SearchQueryResponseMapper.toTenantStringKeys(tenantServices.getByKey(tenantKey)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -47,13 +62,13 @@ public class TenantQueryController {
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<TenantSearchQueryResponse> searchTenants(
+  public ResponseEntity<?> searchTenants(
       @RequestBody(required = false) final TenantSearchQueryRequest query) {
     return SearchQueryRequestMapper.toTenantQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<TenantSearchQueryResponse> search(final TenantQuery query) {
+  private ResponseEntity<?> search(final TenantQuery query) {
     try {
       final var result = tenantServices.search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantSearchQueryResponse(result));

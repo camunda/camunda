@@ -23,9 +23,12 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.gateway.protocol.rest.JobActivationResponseStringKeys;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseObserver;
+import io.camunda.zeebe.gateway.rest.controller.util.ResettableJobActivationRequestResponseStringKeysObserver;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -52,8 +55,10 @@ public class JobControllerLongPollingTest extends RestControllerTest {
   static final String JOBS_BASE_URL = "/v2/jobs";
 
   @Autowired ActivateJobsHandler<JobActivationResponse> activateJobsHandler;
+  @Autowired ActivateJobsHandler<JobActivationResponseStringKeys> activateJobsHandlerStringKeys;
   @Autowired StubbedBrokerClient stubbedBrokerClient;
   @SpyBean ResettableJobActivationRequestResponseObserver responseObserver;
+  @SpyBean ResettableJobActivationRequestResponseStringKeysObserver responseStringKeysObserver;
 
   @BeforeEach
   void setup() {
@@ -298,6 +303,245 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     assertThat(callCounter).hasValue(1);
   }
 
+  @Test
+  void shouldActivateJobsImmediatelyIfAvailableStringKeys() {
+    // given
+    final ActivateJobsStub stub = new ActivateJobsStub();
+    stub.addAvailableJobs("TEST", 2);
+    stub.registerWith(stubbedBrokerClient);
+
+    final var request =
+        """
+          {
+            "type": "TEST",
+            "maxJobsToActivate": 2,
+            "requestTimeout": 100,
+            "timeout": 100,
+            "fetchVariable": [],
+            "tenantIds": ["default"],
+            "worker": "bar"
+          }""";
+    final var expectedBody =
+        """
+          {
+            "jobs": [
+              {
+                "jobKey": "2251799813685248",
+                "type": "TEST",
+                "processInstanceKey": "123",
+                "processDefinitionKey": "4532",
+                "processDefinitionVersion": 23,
+                "elementInstanceKey": "459",
+                "retries": 12,
+                "deadline": 123123123,
+                "tenantId": "default",
+                "variables": {},
+                "customHeaders": {},
+                "processDefinitionId": "stubProcess",
+                "elementId": "stubActivity",
+                "worker": "bar"
+              },
+              {
+                "jobKey": "2251799813685249",
+                "type": "TEST",
+                "processInstanceKey": "123",
+                "processDefinitionKey": "4532",
+                "processDefinitionVersion": 23,
+                "elementInstanceKey": "459",
+                "retries": 12,
+                "deadline": 123123123,
+                "tenantId": "default",
+                "variables": {},
+                "customHeaders": {},
+                "processDefinitionId": "stubProcess",
+                "elementId": "stubActivity",
+                "worker": "bar"
+              }
+            ]
+          }""";
+    // when / then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        //        .header("Accept", RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedBody);
+
+    Mockito.verify(responseStringKeysObserver, Mockito.times(1)).onNext(any());
+    Mockito.verify(responseStringKeysObserver).onCompleted();
+  }
+
+  @Test
+  void shouldReturnNoJobsImmediatelyIfNoneAvailableStringKeys() {
+    // given
+    final ActivateJobsStub stub = new ActivateJobsStub();
+    stub.registerWith(stubbedBrokerClient);
+
+    final var request =
+        """
+          {
+            "type": "TEST",
+            "maxJobsToActivate": 10,
+            "requestTimeout": 100,
+            "timeout": 100,
+            "fetchVariable": ["foo"],
+            "tenantIds": ["default"],
+            "worker": "bar"
+          }""";
+    final var expectedBody =
+        """
+          {
+            "jobs": []
+          }""";
+    // when / then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .header("Accept", RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .expectBody()
+        .json(expectedBody);
+
+    Mockito.verify(responseStringKeysObserver, Mockito.never()).onNext(any());
+    Mockito.verify(responseStringKeysObserver).onCompleted();
+  }
+
+  @Test
+  void shouldActivateJobsRoundRobinStringKeys() {
+    // given
+    final ActivateJobsStub stub = new ActivateJobsStub();
+    stub.registerWith(stubbedBrokerClient);
+
+    final var request =
+        """
+          {
+            "type": "TEST",
+            "maxJobsToActivate": 2,
+            "requestTimeout": 100,
+            "timeout": 100,
+            "tenantIds": ["default"],
+            "worker": "bar"
+          }""";
+
+    /*
+     * Get the baseline partition since the current one could be any partition.
+     * The job activation handler is created once for all tests, so previous tests can have moved
+     * the round-robin index by any number already.
+     */
+    stub.addAvailableJobs("TEST", 1);
+    final String result =
+        webClient
+            .post()
+            .uri(JOBS_BASE_URL + "/activation")
+            .header("Accept", RequestMapper.MEDIA_TYPE_KEYS_STRING)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk()
+            .expectHeader()
+            .contentType(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+            .expectBody(String.class)
+            .returnResult()
+            .getResponseBody();
+
+    final int basePartition =
+        Protocol.decodePartitionId(Long.parseLong(JsonPath.read(result, "$.jobs[0].jobKey")));
+    final int partitionsCount =
+        stubbedBrokerClient.getTopologyManager().getTopology().getPartitionsCount();
+
+    // try activating jobs on each partition round-robin
+    for (int partitionOffset = 1; partitionOffset <= partitionsCount; partitionOffset++) {
+      // calculate the expected partition ID to build the assertion key for
+      final int expectedPartitionId = (basePartition + partitionOffset - 1) % partitionsCount + 1;
+      // reset the results and add new jobs that can be fetched
+      responseStringKeysObserver.reset();
+      stub.addAvailableJobs("TEST", 2);
+      // when/then
+      webClient
+          .post()
+          .uri(JOBS_BASE_URL + "/activation")
+          .header("Accept", RequestMapper.MEDIA_TYPE_KEYS_STRING)
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(request)
+          .exchange()
+          .expectStatus()
+          .isOk()
+          .expectHeader()
+          .contentType(RequestMapper.MEDIA_TYPE_KEYS_STRING)
+          .expectBody()
+          .jsonPath("$.jobs[0].jobKey")
+          .isEqualTo(String.valueOf(Protocol.encodePartitionId(expectedPartitionId, 0)))
+          .jsonPath("$.jobs[1].jobKey")
+          .isEqualTo(String.valueOf(Protocol.encodePartitionId(expectedPartitionId, 1)));
+    }
+  }
+
+  @Test
+  void shouldSendRejectionWithoutRetryingStringKeys() {
+    // given
+    final AtomicInteger callCounter = new AtomicInteger();
+    stubbedBrokerClient.registerHandler(
+        BrokerActivateJobsRequest.class,
+        request -> {
+          callCounter.incrementAndGet();
+          return new BrokerRejectionResponse<>(
+              new BrokerRejection(Intent.UNKNOWN, 1, RejectionType.INVALID_ARGUMENT, "expected"));
+        });
+
+    final var request =
+        """
+          {
+            "type": "TEST",
+            "maxJobsToActivate": 10,
+            "requestTimeout": 100,
+            "timeout": 100,
+            "fetchVariable": ["foo"],
+            "tenantIds": ["default"],
+            "worker": "bar"
+          }""";
+    final var expectedBody =
+        """
+          {
+            "type": "about:blank",
+            "status": 400,
+            "title": "INVALID_ARGUMENT",
+            "detail": "Command 'UNKNOWN' rejected with code 'INVALID_ARGUMENT': expected",
+            "instance": "%s"
+          }"""
+            .formatted(JOBS_BASE_URL + "/activation");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .header("Accept", RequestMapper.MEDIA_TYPE_KEYS_STRING)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody);
+
+    assertThat(callCounter).hasValue(1);
+  }
+
   @TestConfiguration
   static class TestJobApplication {
 
@@ -330,9 +574,21 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     }
 
     @Bean
+    public ResettableJobActivationRequestResponseStringKeysObserver responseStringKeysObserver() {
+      return new ResettableJobActivationRequestResponseStringKeysObserver(
+          new CompletableFuture<>());
+    }
+
+    @Bean
     public ResponseObserverProvider responseObserverProvider(
         final ResettableJobActivationRequestResponseObserver responseObserver) {
       return responseObserver::setResult;
+    }
+
+    @Bean
+    public ResponseWithStringKeysObserverProvider responseStringKeysObserverProvider(
+        final ResettableJobActivationRequestResponseStringKeysObserver responseObserverStringKeys) {
+      return responseObserverStringKeys::setResult;
     }
 
     @Bean
@@ -357,6 +613,27 @@ public class JobControllerLongPollingTest extends RestControllerTest {
     }
 
     @Bean
+    public ActivateJobsHandler<JobActivationResponseStringKeys> activateJobsHandlerStringKeys(
+        final BrokerClient brokerClient, final ActorScheduler actorScheduler) {
+      final var handler =
+          LongPollingActivateJobsHandler.<JobActivationResponseStringKeys>newBuilder()
+              .setBrokerClient(brokerClient)
+              .setMaxMessageSize(DataSize.ofMegabytes(4L).toBytes())
+              .setActivationResultMapper(ResponseMapper::toActivateJobsResponseWithStringKeys)
+              .setNoJobsReceivedExceptionProvider(RuntimeException::new)
+              .setRequestCanceledExceptionProvider(reason -> new RuntimeException(reason))
+              .build();
+      final var future = new CompletableFuture<>();
+      final var actor =
+          Actor.newActor()
+              .name("JobActivationHandlerStringKeys-JobControllerLongPollingTest")
+              .actorStartedHandler(handler.andThen(future::complete))
+              .build();
+      actorScheduler.submitActor(actor);
+      return handler;
+    }
+
+    @Bean
     public JobServices<JobActivationResponse> jobServices(
         final BrokerClient brokerClient,
         final ActivateJobsHandler<JobActivationResponse> activateJobsHandler) {
@@ -364,6 +641,17 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           brokerClient,
           new SecurityContextProvider(new SecurityConfiguration(), null),
           activateJobsHandler,
+          null);
+    }
+
+    @Bean
+    public JobServices<JobActivationResponseStringKeys> jobServicesStringKeys(
+        final BrokerClient brokerClient,
+        final ActivateJobsHandler<JobActivationResponseStringKeys> activateJobsHandlerStringKeys) {
+      return new JobServices<>(
+          brokerClient,
+          new SecurityContextProvider(new SecurityConfiguration(), null),
+          activateJobsHandlerStringKeys,
           null);
     }
   }

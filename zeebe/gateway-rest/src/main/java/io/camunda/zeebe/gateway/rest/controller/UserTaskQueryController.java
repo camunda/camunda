@@ -16,6 +16,7 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.protocol.rest.FormItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequestStringKeys;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -43,12 +44,26 @@ public class UserTaskQueryController {
 
   @PostMapping(
       path = "/search",
-      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
-      consumes = MediaType.APPLICATION_JSON_VALUE)
+      produces = {
+        MediaType.APPLICATION_JSON_VALUE,
+        RequestMapper.MEDIA_TYPE_KEYS_NUMBER,
+        MediaType.APPLICATION_PROBLEM_JSON_VALUE
+      },
+      consumes = {MediaType.APPLICATION_JSON_VALUE, RequestMapper.MEDIA_TYPE_KEYS_NUMBER})
   public ResponseEntity<Object> searchUserTasks(
       @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserTaskQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  @PostMapping(
+      path = "/search",
+      produces = {RequestMapper.MEDIA_TYPE_KEYS_STRING, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = {MediaType.APPLICATION_JSON_VALUE, RequestMapper.MEDIA_TYPE_KEYS_STRING})
+  public ResponseEntity<Object> searchUserTasksStringKeys(
+      @RequestBody(required = false) final UserTaskSearchQueryRequestStringKeys query) {
+    return SearchQueryRequestMapper.toUserTaskQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::searchStringKeys);
   }
 
   private ResponseEntity<Object> search(final UserTaskQuery query) {
@@ -56,6 +71,17 @@ public class UserTaskQueryController {
       final var result =
           userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<Object> searchStringKeys(final UserTaskQuery query) {
+    try {
+      final var result =
+          userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toUserTaskSearchQueryResponseStringKeys(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
