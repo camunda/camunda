@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceLifecycle;
+import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
@@ -96,6 +97,26 @@ public final class BpmnStateTransitionBehavior {
           context.copy(newElementInstanceKey, context.getRecordValue(), context.getIntent());
     }
 
+    // Create intra tree path - potential spanning over multiple process instances (via call
+    // activities)
+    //
+    // Be aware that the ELEMENT INSTANCE doesn't exist yet. It is created in the applier.
+    // This is the reason why we have to pass in the flow scope and record value directly to the
+    // tree path builder.
+    //
+    // For the process instance in ACTIVATING then the flow scope is -1.
+    final ElementTreePathProperties elementTreePath =
+        stateBehavior.getElementTreePath(
+            transitionContext.getElementInstanceKey(),
+            transitionContext.getFlowScopeKey(),
+            transitionContext.getRecordValue());
+    // We only set the tree path properties on the ACTIVATING event
+    transitionContext
+        .getRecordValue()
+        .setElementInstancePath(elementTreePath.elementInstancePath())
+        .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
+        .setCallingElementPath(elementTreePath.callingElementPath());
+
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
 
@@ -104,6 +125,13 @@ public final class BpmnStateTransitionBehavior {
    */
   public BpmnElementContext transitionToActivated(
       final BpmnElementContext context, final BpmnEventType eventType) {
+    // reset the tree path, so we are not writing this always (optimization)
+    context
+        .getRecordValue()
+        .resetCallingElementPath()
+        .resetElementInstancePath()
+        .resetProcessDefinitionPath();
+
     final BpmnElementContext transitionedContext =
         transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
     metrics.elementInstanceActivated(context, eventType);
