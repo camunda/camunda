@@ -60,7 +60,7 @@ public class ElementTreePathBuilder {
 
     if (processInstanceRecordValue != null) {
       Objects.requireNonNull(flowScopeKey, "flowScopeKey cannot be null");
-      buildElementTreePathProperties(flowScopeKey, processInstanceRecordValue);
+      buildElementTreePathProperties(elementInstanceKey, flowScopeKey, processInstanceRecordValue);
     } else {
       buildElementTreePathProperties(elementInstanceKey);
     }
@@ -77,17 +77,20 @@ public class ElementTreePathBuilder {
     }
 
     final long parentElementInstanceKey = instance.getParentKey();
-    buildElementTreePathProperties(parentElementInstanceKey, instance.getValue());
+    buildElementTreePathProperties(
+        elementInstanceKey, parentElementInstanceKey, instance.getValue());
   }
 
   private void buildElementTreePathProperties(
-      long parentElementInstanceKey, final ProcessInstanceRecordValue processInstanceRecord) {
+      final long currentElementInstanceKey,
+      long parentElementInstanceKey,
+      final ProcessInstanceRecordValue processInstanceRecord) {
 
     properties.processDefinitionPath.addFirst(processInstanceRecord.getProcessDefinitionKey());
 
     // collect all element instance keys in one process instance
     final List<Long> elementInstancePath = new LinkedList<>();
-    elementInstancePath.add(elementInstanceKey);
+    elementInstancePath.add(currentElementInstanceKey);
     while (parentElementInstanceKey != -1) {
       final var instance = elementInstanceProvider.getInstance(parentElementInstanceKey);
       elementInstancePath.addFirst(parentElementInstanceKey);

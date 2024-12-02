@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
@@ -176,7 +177,7 @@ public class ElementTreePathBuilderTest {
   @Test
   public void shouldIncludeProcessDefinitionAndCallingElementTreePaths() {
     // given
-    final var processARecord = createProcessInstanceRecord();
+    final var processARecord = createProcessInstanceRecord(1001L);
     final ElementInstance processAInstance =
         createElementInstanceForRecord(100, processARecord, "processA");
 
@@ -186,12 +187,14 @@ public class ElementTreePathBuilderTest {
         createElementInstanceWithParentForRecord(
             101, processAInstance, callActivityRecord, "callActivity");
 
-    final var processBRecord = createProcessInstanceRecord();
+    final var processBRecord = createProcessInstanceRecord(1002L);
     processBRecord.setParentElementInstanceKey(callActivityElementInstance.getKey());
     final ElementInstance processB =
         createElementInstanceForRecord(102, processBRecord, "processB");
 
-    final var subProcessCRecord = createProcessInstanceRecord();
+    final var subProcessCRecord =
+        createProcessInstanceRecord(processBRecord.getProcessDefinitionKey());
+    subProcessCRecord.setParentElementInstanceKey(callActivityElementInstance.getKey());
     final ElementInstance subProcessC =
         createElementInstanceWithParentForRecord(103, processB, subProcessCRecord, "subProcessC");
 
@@ -205,9 +208,8 @@ public class ElementTreePathBuilderTest {
     final ElementTreePathProperties properties = builder.build();
 
     assertThat(properties.elementInstancePath()).isNotNull();
-    assertThat(properties.elementInstancePath()).hasSize(2);
-    assertThat(properties.elementInstancePath().getFirst()).containsExactly(100L, 101L);
-    assertThat(properties.elementInstancePath().getLast()).containsExactly(102L, 103L);
+    assertThat(properties.elementInstancePath())
+        .containsExactly(List.of(100L, 101L), List.of(102L, 103L));
     assertThat(properties.processDefinitionPath()).hasSize(2);
     assertThat(properties.processDefinitionPath())
         .containsExactly(
