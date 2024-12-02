@@ -125,12 +125,7 @@ public final class BpmnStateTransitionBehavior {
    */
   public BpmnElementContext transitionToActivated(
       final BpmnElementContext context, final BpmnEventType eventType) {
-    // reset the tree path, so we are not writing this always (optimization)
-    context
-        .getRecordValue()
-        .resetCallingElementPath()
-        .resetElementInstancePath()
-        .resetProcessDefinitionPath();
+    resetTreePathProperties(context);
 
     final BpmnElementContext transitionedContext =
         transitionTo(context, ProcessInstanceIntent.ELEMENT_ACTIVATED);
@@ -142,6 +137,8 @@ public final class BpmnStateTransitionBehavior {
    * @return context with updated intent
    */
   public BpmnElementContext transitionToCompleting(final BpmnElementContext context) {
+    resetTreePathProperties(context);
+
     final var elementInstance = stateBehavior.getElementInstance(context);
     if (elementInstance.getState() == ProcessInstanceIntent.ELEMENT_COMPLETING) {
       verifyIncidentResolving(context, "#transitionToCompleting");
@@ -155,6 +152,21 @@ public final class BpmnStateTransitionBehavior {
     }
 
     return transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETING);
+  }
+
+  /**
+   * In several places we need to reset the treePath properties, this is especially useful when we
+   * directly transition from ACTIVATING to COMPLETING or TERMINATING.
+   *
+   * @param context the current element context
+   */
+  private static void resetTreePathProperties(final BpmnElementContext context) {
+    // reset the tree path, so we are not writing this always (optimization)
+    context
+        .getRecordValue()
+        .resetCallingElementPath()
+        .resetElementInstancePath()
+        .resetProcessDefinitionPath();
   }
 
   /**
@@ -185,6 +197,8 @@ public final class BpmnStateTransitionBehavior {
    */
   public <T extends ExecutableFlowNode> Either<Failure, BpmnElementContext> transitionToCompleted(
       final T element, final BpmnElementContext context) {
+    resetTreePathProperties(context);
+
     final boolean endOfExecutionPath;
     if (context.getBpmnElementType() == BpmnElementType.PROCESS) {
       // a completing child process is not considered here.
@@ -223,6 +237,8 @@ public final class BpmnStateTransitionBehavior {
    * @return context with updated intent
    */
   public BpmnElementContext transitionToTerminating(final BpmnElementContext context) {
+    resetTreePathProperties(context);
+
     if (context.getIntent() == ProcessInstanceIntent.ELEMENT_TERMINATING) {
       throw new IllegalStateException(
           String.format(
@@ -238,6 +254,8 @@ public final class BpmnStateTransitionBehavior {
    */
   public BpmnElementContext transitionToTerminated(
       final BpmnElementContext context, final BpmnEventType eventType) {
+    resetTreePathProperties(context);
+
     final var transitionedContext = transitionTo(context, ProcessInstanceIntent.ELEMENT_TERMINATED);
     metrics.elementInstanceTerminated(context, eventType);
     return transitionedContext;
