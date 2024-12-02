@@ -618,7 +618,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     // when and then
     webClient
         .post()
-        .uri("/v2/user-tasks/" + VALID_USER_TASK_KEY + "/variables")
+        .uri("/v2/user-tasks/" + VALID_USER_TASK_KEY + "/variables/search")
         .accept(APPLICATION_JSON)
         .exchange()
         .expectStatus()
