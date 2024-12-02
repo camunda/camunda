@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -1054,6 +1055,54 @@ public final class CallActivityTest {
             parentInstance.getProcessDefinitionKey(),
             childInstance.getProcessDefinitionKey())
         .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  @Test
+  public void shouldCreateInstanceOfCalledElementWithBindingTypeDeploymentIfRedeployedTogether() {
+    // given
+    final var parentProcessV1 =
+        parentProcess(
+            callActivity ->
+                callActivity
+                    .zeebeProcessId(PROCESS_ID_CHILD)
+                    .zeebeBindingType(ZeebeBindingType.deployment));
+    final var childProcessV1 =
+        Bpmn.createExecutableProcess(PROCESS_ID_CHILD).startEvent("v1").endEvent().done();
+
+    // separate deployments
+    ENGINE.deployment().withXmlResource("wf-parent.bpmn", parentProcessV1).deploy();
+    ENGINE.deployment().withXmlResource("wf-child.bpmn", childProcessV1).deploy();
+
+    final var firstProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+        .withProcessInstanceKey(firstProcessInstanceKey)
+        .withErrorType(ErrorType.CALLED_ELEMENT_ERROR)
+        .await();
+
+    // redeploy the resources (unchanged) together
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource("wf-parent.bpmn", parentProcessV1)
+            .withXmlResource("wf-child.bpmn", childProcessV1)
+            .deploy();
+    final var versionInSameDeployment =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(metadata -> PROCESS_ID_CHILD.equals(metadata.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow();
+
+    // when
+    final var secondProcessInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // then
+    Assertions.assertThat(getChildInstanceOf(secondProcessInstanceKey))
+        .describedAs("Expect child instance of the process deployed together")
+        .hasBpmnProcessId(PROCESS_ID_CHILD)
+        .hasProcessDefinitionKey(versionInSameDeployment.getProcessDefinitionKey());
   }
 
   private void deployDefaultParentAndChildProcess() {
