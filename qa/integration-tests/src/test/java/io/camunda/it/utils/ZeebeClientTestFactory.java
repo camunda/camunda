@@ -28,8 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.awaitility.Awaitility;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ZeebeClientTestFactory implements AutoCloseable {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeClientTestFactory.class);
 
   private final Map<String, User> usersRegistry = new HashMap<>();
   private final Map<String, ZeebeClient> cachedClients = new ConcurrentHashMap<>();
@@ -46,7 +50,14 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
   public ZeebeClient createZeebeClient(
       final TestGateway<?> gateway, final Authenticated authenticated) {
     if (authenticated == null) {
+      LOGGER.info(
+          "Creating unauthorized Zeebe client for broker address '{}", gateway.restAddress());
       return gateway.newClientBuilder().build();
+    } else {
+      LOGGER.info(
+          "Creating Zeebe client for user '{}' and broker address '{}",
+          authenticated.value(),
+          gateway.restAddress());
     }
     final ZeebeClient defaultClient =
         cachedClients.computeIfAbsent(
@@ -152,9 +163,9 @@ public final class ZeebeClientTestFactory implements AutoCloseable {
   }
 
   /**
-   * Annotation to be passed along with {@link BrokerWithCamundaExporterITInvocationProvider}'s
-   * {@link org.junit.jupiter.api.TestTemplate}. When applied, this indicates that the ZeebeClient
-   * should be created with the provided user's credentials.
+   * Annotation to be passed along with {@link BrokerITInvocationProvider}'s {@link
+   * org.junit.jupiter.api.TestTemplate}. When applied, this indicates that the ZeebeClient should
+   * be created with the provided user's credentials.
    */
   @Target(ElementType.PARAMETER)
   @Retention(RetentionPolicy.RUNTIME)

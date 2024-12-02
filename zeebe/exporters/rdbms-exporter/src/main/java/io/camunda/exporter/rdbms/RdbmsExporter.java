@@ -211,7 +211,7 @@ public class RdbmsExporter implements Exporter {
 
   private void flushAndReschedule() {
     flushExecutionQueue();
-    controller.scheduleCancellableTask(Duration.ofSeconds(5), this::flushAndReschedule);
+    controller.scheduleCancellableTask(Duration.ofMillis(100), this::flushAndReschedule);
   }
 
   @VisibleForTesting(
