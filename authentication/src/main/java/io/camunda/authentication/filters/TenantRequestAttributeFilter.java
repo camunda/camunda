@@ -57,6 +57,7 @@ public class TenantRequestAttributeFilter extends OncePerRequestFilter {
     final Principal userPrincipal = request.getUserPrincipal();
 
     final Long key = getEntityKey(userPrincipal);
+
     if (key == null) {
       response.sendError(HttpStatus.UNAUTHORIZED.value());
       return;
