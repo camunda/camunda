@@ -10,12 +10,12 @@ package io.camunda.tasklist.schema.templates;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
 
-import io.camunda.tasklist.schema.backup.Prio2Backup;
+import io.camunda.tasklist.schema.backup.Prio1Backup;
 import java.util.Optional;
 import org.springframework.stereotype.Component;
 
 @Component
-public class TasklistListViewTemplate extends AbstractTemplateDescriptor implements Prio2Backup {
+public class TasklistListViewTemplate extends AbstractTemplateDescriptor implements Prio1Backup {
 
   public static final String INDEX_NAME = "list-view";
   public static final String INDEX_VERSION = "8.6.0";

@@ -28,6 +28,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTempla
 import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
@@ -187,5 +188,11 @@ public class IndexTemplateDescriptorsConfigurator {
   public FlowNodeInstanceTemplate getTasklistFlowNodeInstanceTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new FlowNodeInstanceTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public TasklistImportPositionIndex getTasklistImportPositionIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new TasklistImportPositionIndex("", databaseInfo.isElasticsearchDb());
   }
 }

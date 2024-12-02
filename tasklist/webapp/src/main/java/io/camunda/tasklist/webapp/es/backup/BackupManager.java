@@ -12,7 +12,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.backup.BackupPriority;
 import io.camunda.tasklist.schema.backup.Prio1Backup;
 import io.camunda.tasklist.schema.backup.Prio2Backup;
-import io.camunda.tasklist.schema.backup.Prio3Backup;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.webapps.backup.BackupService;
@@ -22,9 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class BackupManager implements BackupService {
 
-  @Autowired private List<Prio1Backup> prio1BackupIndices;
-  @Autowired private List<Prio2Backup> prio2BackupTemplates;
-  @Autowired private List<Prio3Backup> prio3BackupIndices;
+  @Autowired private List<Prio1Backup> prio1BackupTemplates;
+  @Autowired private List<Prio2Backup> prio2BackupIndices;
   @Autowired private TasklistProperties tasklistProperties;
 
   private String[][] indexPatternsOrdered;
@@ -43,10 +41,9 @@ public abstract class BackupManager implements BackupService {
     if (indexPatternsOrdered == null) {
       indexPatternsOrdered =
           new String[][] {
-            prio1BackupIndices.stream().map(this::getFullQualifiedName).toArray(String[]::new),
-            prio2BackupTemplates.stream().map(this::getFullQualifiedName).toArray(String[]::new),
+            prio1BackupTemplates.stream().map(this::getFullQualifiedName).toArray(String[]::new),
             // dated indices
-            prio2BackupTemplates.stream()
+            prio1BackupTemplates.stream()
                 .filter(i -> i instanceof TemplateDescriptor)
                 .map(
                     index ->
@@ -55,7 +52,7 @@ public abstract class BackupManager implements BackupService {
                         })
                 .flatMap(x -> Arrays.stream(x))
                 .toArray(String[]::new),
-            prio3BackupIndices.stream().map(this::getFullQualifiedName).toArray(String[]::new)
+            prio2BackupIndices.stream().map(this::getFullQualifiedName).toArray(String[]::new)
           };
     }
     return indexPatternsOrdered;
