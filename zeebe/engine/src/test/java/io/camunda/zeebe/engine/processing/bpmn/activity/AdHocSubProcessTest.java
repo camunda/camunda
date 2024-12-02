@@ -223,15 +223,23 @@ public final class AdHocSubProcessTest {
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
-              adHocSubProcess.zeebeInputExpression("x+1", "local_x");
+              adHocSubProcess
+                  .zeebeInputExpression("append(activateElements, \"B\")", "activateElements")
+                  .zeebeActiveElementsCollectionExpression("activateElements");
               adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
             });
 
     ENGINE.deployment().withXmlResource(process).deploy();
 
     // when
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("x", 1).create();
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A"))
+            .create();
 
     // then
     final Record<ProcessInstanceRecordValue> adHocSubProcessActivated =
@@ -248,8 +256,19 @@ public final class AdHocSubProcessTest {
             VariableRecordValue::getValue,
             VariableRecordValue::getScopeKey)
         .contains(
-            tuple("x", "1", processInstanceKey),
-            tuple("local_x", "2", adHocSubProcessActivated.getKey()));
+            tuple("activateElements", "[\"A\"]", processInstanceKey),
+            tuple("activateElements", "[\"A\",\"B\"]", adHocSubProcessActivated.getKey()));
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED))
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED));
   }
 
   @Test
