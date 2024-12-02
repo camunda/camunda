@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
+import java.util.function.LongConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -85,12 +86,19 @@ public class FormStateTest {
     formState.storeFormInFormColumnFamily(form3);
 
     // when -- iterating through all forms
-    final var visitor = Mockito.mock(PersistedFormVisitor.class);
-    when(visitor.visit(any())).thenReturn(true);
-    formState.forEachForm(null, visitor);
+    final var visitor = Mockito.mock(LongConsumer.class);
+
+    formState.forEachForm(
+        null,
+        (form) -> {
+          visitor.accept(form.getFormKey());
+          return true;
+        });
 
     // then -- visited all three forms
-    verify(visitor, times(3)).visit(any());
+    verify(visitor).accept(form1.getFormKey());
+    verify(visitor).accept(form2.getFormKey());
+    verify(visitor).accept(form3.getFormKey());
   }
 
   @Test
