@@ -10,15 +10,21 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.ArrayValue;
+import io.camunda.zeebe.msgpack.value.IntegerValue;
+import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public final class ProcessInstanceRecord extends UnifiedRecordValue
@@ -59,8 +65,15 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final LongProperty parentElementInstanceKeyProp =
       new LongProperty("parentElementInstanceKey", -1L);
 
+  private final ArrayProperty<ArrayValue<LongValue>> elementInstancePathProp =
+      new ArrayProperty<>("elementInstancePath", () -> new ArrayValue<>(LongValue::new));
+  private final ArrayProperty<LongValue> processDefinitionPathProp =
+      new ArrayProperty<>("processDefinitionPath", LongValue::new);
+  private final ArrayProperty<IntegerValue> callingElementPathProp =
+      new ArrayProperty<>("callingElementPath", IntegerValue::new);
+
   public ProcessInstanceRecord() {
-    super(11);
+    super(14);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -71,7 +84,10 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(bpmnEventTypeProp)
         .declareProperty(parentProcessInstanceKeyProp)
         .declareProperty(parentElementInstanceKeyProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(elementInstancePathProp)
+        .declareProperty(processDefinitionPathProp)
+        .declareProperty(callingElementPathProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -169,6 +185,57 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
+  @Override
+  @JsonIgnore
+  public List<List<Long>> getElementInstancePath() {
+    final var elementInstancePath = new ArrayList<List<Long>>();
+    elementInstancePathProp.forEach(
+        pe -> {
+          final var pathEntry = new ArrayList<Long>();
+          pe.forEach(e -> pathEntry.add(e.getValue()));
+          elementInstancePath.add(pathEntry);
+        });
+    return elementInstancePath;
+  }
+
+  public ProcessInstanceRecord setElementInstancePath(final List<List<Long>> elementInstancePath) {
+    elementInstancePathProp.reset();
+    elementInstancePath.forEach(
+        pathEntry -> {
+          final var entry = elementInstancePathProp.add();
+          pathEntry.forEach(element -> entry.add().setValue(element));
+        });
+    return this;
+  }
+
+  @Override
+  @JsonIgnore
+  public List<Long> getProcessDefinitionPath() {
+    final var processDefinitionPath = new ArrayList<Long>();
+    processDefinitionPathProp.forEach(e -> processDefinitionPath.add(e.getValue()));
+    return processDefinitionPath;
+  }
+
+  public ProcessInstanceRecord setProcessDefinitionPath(final List<Long> processDefinitionPath) {
+    processDefinitionPathProp.reset();
+    processDefinitionPath.forEach(e -> processDefinitionPathProp.add().setValue(e));
+    return this;
+  }
+
+  @Override
+  @JsonIgnore
+  public List<Integer> getCallingElementPath() {
+    final var callingElementPath = new ArrayList<Integer>();
+    callingElementPathProp.forEach(e -> callingElementPath.add(e.getValue()));
+    return callingElementPath;
+  }
+
+  public ProcessInstanceRecord setCallingElementPath(final List<Integer> callingElementPath) {
+    callingElementPathProp.reset();
+    callingElementPath.forEach(e -> callingElementPathProp.add().setValue(e));
+    return this;
+  }
+
   public ProcessInstanceRecord setParentProcessInstanceKey(final long parentProcessInstanceKey) {
     parentProcessInstanceKeyProp.setValue(parentProcessInstanceKey);
     return this;
@@ -210,6 +277,21 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setBpmnProcessId(final DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
+    return this;
+  }
+
+  public ProcessInstanceRecord resetElementInstancePath() {
+    elementInstancePathProp.reset();
+    return this;
+  }
+
+  public ProcessInstanceRecord resetCallingElementPath() {
+    callingElementPathProp.reset();
+    return this;
+  }
+
+  public ProcessInstanceRecord resetProcessDefinitionPath() {
+    processDefinitionPathProp.reset();
     return this;
   }
 
