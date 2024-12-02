@@ -379,13 +379,14 @@ final class DeploymentReconstructProcessorTest {
         .satisfies(
             record -> {
               assertThat(record.getIntent()).isEqualTo(DeploymentIntent.RECONSTRUCTED);
-              assertThat(record.getKey()).isEqualTo(decisionKey);
+              assertThat(record.getKey()).isEqualTo(decisionRequirementsKey);
               assertThat(record.getValue())
                   .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
                   .satisfies(
                       deploymentRecord -> {
                         assertThat(deploymentRecord.getDecisionsMetadata()).hasSize(1);
-                        assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(decisionKey);
+                        assertThat(deploymentRecord.getDeploymentKey())
+                            .isEqualTo(decisionRequirementsKey);
                       });
             });
   }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormMetadataRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessMetadata;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -47,5 +48,16 @@ public final class DeploymentResourceUtil {
     target.setDecisionRequirementsId(BufferUtil.bufferAsString(source.getDecisionRequirementsId()));
     target.setTenantId(source.getTenantId());
     target.setDeploymentKey(source.getDeploymentKey());
+  }
+
+  public void applyDecisionRequirementsMetadata(
+      final PersistedDecisionRequirements source, final DecisionRequirementsMetadataRecord target) {
+    target.setDecisionRequirementsKey(source.getDecisionRequirementsKey());
+    target.setDecisionRequirementsId(BufferUtil.bufferAsString(source.getDecisionRequirementsId()));
+    target.setDecisionRequirementsName(
+        BufferUtil.bufferAsString(source.getDecisionRequirementsName()));
+    target.setResourceName(BufferUtil.bufferAsString(source.getResourceName()));
+    target.setTenantId(source.getTenantId());
+    target.setChecksum(checksumGenerator.checksum(source.getResource()));
   }
 }
