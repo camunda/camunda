@@ -894,7 +894,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /user-tasks/{userTaskKey}/variables:
+  /user-tasks/{userTaskKey}/variables/search:
     post:
       tags:
         - User task

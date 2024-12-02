@@ -97,13 +97,14 @@ public class UserTaskQueryController {
   }
 
   @PostMapping(
-      path = "/{userTaskKey}/variables",
+      path = "/{userTaskKey}/variables/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<VariableSearchQueryResponse> searchVariables(
       @PathVariable("userTaskKey") final long userTaskKey,
       @RequestBody(required = false)
           final UserTaskVariableSearchQueryRequest userTaskVariablesSearchQueryRequest) {
+
     return SearchQueryRequestMapper.toUserTaskVariableQuery(userTaskVariablesSearchQueryRequest)
         .fold(
             RestErrorMapper::mapProblemToResponse,
