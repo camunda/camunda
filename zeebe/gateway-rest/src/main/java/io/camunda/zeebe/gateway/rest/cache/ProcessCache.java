@@ -14,12 +14,14 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.util.XmlUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class ProcessCache implements CacheLoader<Long, ProcessCacheItem> {
 
@@ -41,7 +43,7 @@ public class ProcessCache implements CacheLoader<Long, ProcessCacheItem> {
   public ProcessCacheItem load(final Long key) throws Exception {
     final var flowNodes = new ConcurrentHashMap<String, String>();
     xmlUtil.extractFlowNodeNames(key, (pdId, node) -> flowNodes.put(node.id(), node.name()));
-    return new ProcessCacheItem(key, flowNodes);
+    return new ProcessCacheItem(flowNodes);
   }
 
   @Override
@@ -52,7 +54,7 @@ public class ProcessCache implements CacheLoader<Long, ProcessCacheItem> {
         (pdId, node) -> {
           final var flowNodeMap =
               processMap.computeIfAbsent(
-                  pdId, key -> new ProcessCacheItem(key, new ConcurrentHashMap<>()));
+                  pdId, key -> new ProcessCacheItem(new ConcurrentHashMap<>()));
           flowNodeMap.putFlowNode(node.id(), node.name());
         });
     return processMap;
@@ -62,8 +64,13 @@ public class ProcessCache implements CacheLoader<Long, ProcessCacheItem> {
     return cache.get(processDefinitionKey);
   }
 
-  public Map<Long, ProcessCacheItem> getCacheItems(final List<Long> processDefinitionKeys) {
-    return cache.getAll(processDefinitionKeys);
+  public ProcessCacheItems getCacheItems(final Set<Long> processDefinitionKeys) {
+    return new ProcessCacheItems(cache.getAll(processDefinitionKeys));
+  }
+
+  public ProcessCacheItems getUserTaskNames(final List<UserTaskEntity> items) {
+    return getCacheItems(
+        items.stream().map(UserTaskEntity::processDefinitionKey).collect(Collectors.toSet()));
   }
 
   public String getUserTaskName(final UserTaskEntity userTask) {
@@ -72,13 +79,21 @@ public class ProcessCache implements CacheLoader<Long, ProcessCacheItem> {
         .getOrDefault(userTask.elementId(), userTask.elementId());
   }
 
+  public ProcessCacheItems getFlowNodeNames(final List<FlowNodeInstanceEntity> items) {
+    return getCacheItems(
+        items.stream()
+            .map(FlowNodeInstanceEntity::processDefinitionKey)
+            .collect(Collectors.toSet()));
+  }
+
   public String getFlowNodeName(final FlowNodeInstanceEntity flowNode) {
     return getCacheItem(flowNode.processDefinitionKey())
         .flowNodes()
         .getOrDefault(flowNode.flowNodeId(), flowNode.flowNodeId());
   }
 
-  protected LoadingCache<Long, ProcessCacheItem> getCache() {
+  @VisibleForTesting
+  LoadingCache<Long, ProcessCacheItem> getCache() {
     return cache;
   }
 }

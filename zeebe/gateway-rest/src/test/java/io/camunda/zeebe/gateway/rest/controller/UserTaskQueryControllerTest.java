@@ -30,6 +30,7 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItems;
 import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -241,7 +242,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     when(processCacheItem.getFlowNodeName(any())).thenReturn("name");
     final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
     when(processDefinitionMap.get(any())).thenReturn(processCacheItem);
-    when(processCache.getCacheItems(any())).thenReturn(processDefinitionMap);
+    when(processCache.getUserTaskNames(any()))
+        .thenReturn(new ProcessCacheItems(processDefinitionMap));
   }
 
   @Test
@@ -261,7 +263,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
-    verify(processCache).getCacheItems(any());
+    verify(processCache).getUserTaskNames(any());
   }
 
   @Test
@@ -285,7 +287,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().build());
-    verify(processCache).getCacheItems(any());
+    verify(processCache).getUserTaskNames(any());
   }
 
   @Test
@@ -327,7 +329,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                 .sort(
                     new UserTaskSort.Builder().creationDate().desc().completionDate().asc().build())
                 .build());
-    verify(processCache).getCacheItems(any());
+    verify(processCache).getUserTaskNames(any());
   }
 
   @Test
@@ -682,6 +684,6 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(userTaskServices).search(new UserTaskQuery.Builder().filter(filter).build());
-    verify(processCache).getCacheItems(any());
+    verify(processCache).getUserTaskNames(any());
   }
 }

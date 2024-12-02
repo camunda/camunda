@@ -75,9 +75,7 @@ public class FlowNodeInstanceQueryController {
           flownodeInstanceServices
               .withAuthentication(RequestMapper.getAuthentication())
               .search(query);
-      final var processCacheItems =
-          processCache.getCacheItems(
-              result.items().stream().map(FlowNodeInstanceEntity::processDefinitionKey).toList());
+      final var processCacheItems = processCache.getFlowNodeNames(result.items());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toFlowNodeInstanceSearchQueryResponse(
               result, processCacheItems));
