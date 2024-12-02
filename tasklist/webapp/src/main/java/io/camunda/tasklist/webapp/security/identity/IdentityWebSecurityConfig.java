@@ -9,7 +9,7 @@ package io.camunda.tasklist.webapp.security.identity;
 
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.*;
-import static org.apache.commons.lang3.StringUtils.containsAny;
+import static org.apache.commons.lang3.StringUtils.contains;
 
 import io.camunda.tasklist.webapp.security.BaseWebConfigurer;
 import io.camunda.tasklist.webapp.security.oauth.IdentityOAuth2WebConfigurer;
@@ -76,7 +76,7 @@ public class IdentityWebSecurityConfig extends BaseWebConfigurer {
       requestedUrl = requestedUrl + "?" + req.getQueryString();
     }
 
-    if (containsAny(requestedUrl.toLowerCase(), REST_V1_API)) {
+    if (contains(requestedUrl.toLowerCase(), REST_V1_API)) {
       req.getSession().invalidate();
       sendJSONErrorMessage(res, ex.getMessage());
     } else {

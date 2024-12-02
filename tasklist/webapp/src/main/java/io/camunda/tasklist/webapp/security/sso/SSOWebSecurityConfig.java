@@ -9,7 +9,7 @@ package io.camunda.tasklist.webapp.security.sso;
 
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.*;
-import static org.apache.commons.lang3.StringUtils.containsAny;
+import static org.apache.commons.lang3.StringUtils.contains;
 
 import com.auth0.AuthenticationController;
 import io.camunda.tasklist.webapp.security.BaseWebConfigurer;
@@ -91,7 +91,7 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
       requestedUrl = requestedUrl + "?" + req.getQueryString();
     }
 
-    if (containsAny(requestedUrl.toLowerCase(), REST_V1_API)) {
+    if (contains(requestedUrl.toLowerCase(), REST_V1_API)) {
       req.getSession().invalidate();
       sendJSONErrorMessage(res, ex.getMessage());
     } else {
