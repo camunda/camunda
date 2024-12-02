@@ -82,6 +82,14 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE.
       # maxMessageSize: 4MB
 
+      # Sets the size of the socket receive buffer (SO_RCVBUF).
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SOCKETRECEIVEBUFFER.
+      # socketReceiveBuffer: 1MB
+
+      # Sets the size of the socket send buffer (SO_SNDBUF).
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_NETWORK_SOCKETSENDBUFFER.
+      # socketSendBuffer: 1MB
+
       # security:
         # Enables TLS authentication between this gateway and other nodes in the cluster
         # If this setting is enabled then the certificate and private key must either be provided separately

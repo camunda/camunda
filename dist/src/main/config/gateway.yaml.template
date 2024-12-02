@@ -60,6 +60,14 @@
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_MAXMESSAGESIZE.
       # maxMessageSize: 4MB
 
+      # Sets the size of the socket receive buffer (SO_RCVBUF).
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_SOCKETRECEIVEBUFFER.
+      # socketReceiveBuffer: 1MB
+
+      # Sets the size of the socket send buffer (SO_SNDBUF).
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_SOCKETSENDBUFFER.
+      # socketSendBuffer: 1MB
+
     # cluster:
       # Sets initial contact points (brokers), which the gateway should contact to
       # The contact points of the internal network configuration must be specified.
