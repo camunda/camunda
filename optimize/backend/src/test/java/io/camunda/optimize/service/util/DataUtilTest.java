@@ -18,7 +18,7 @@ public class DataUtilTest {
   @Test
   public void shouldNewHashSetWithMultipleElements() {
     // when
-    HashSet<String> result = DataUtil.newHashSet("apple", "banana", "cherry");
+    final HashSet<String> result = DataUtil.newHashSet("apple", "banana", "cherry");
 
     // then
     assertThat(result).isNotNull().hasSize(3).contains("apple", "banana", "cherry");
@@ -27,7 +27,8 @@ public class DataUtilTest {
   @Test
   public void shouldNewHashSetWithDuplicateElements() {
     // when
-    HashSet<String> result = DataUtil.newHashSet("apple", "banana", "apple", "cherry", "banana");
+    final HashSet<String> result =
+        DataUtil.newHashSet("apple", "banana", "apple", "cherry", "banana");
 
     // then
     assertThat(result).isNotNull().hasSize(3).contains("apple", "banana", "cherry");
@@ -36,7 +37,7 @@ public class DataUtilTest {
   @Test
   public void shouldNewHashSetWithEmptyArray() {
     // when
-    HashSet<String> result = DataUtil.newHashSet();
+    final HashSet<String> result = DataUtil.newHashSet();
 
     // then
     assertThat(result).isNotNull().isEmpty();
@@ -45,7 +46,7 @@ public class DataUtilTest {
   @Test
   public void shouldNewHashSetWithSingleElement() {
     // when
-    HashSet<String> result = DataUtil.newHashSet("apple");
+    final HashSet<String> result = DataUtil.newHashSet("apple");
 
     // then
     assertThat(result).isNotNull().hasSize(1).contains("apple");
