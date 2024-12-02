@@ -186,7 +186,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  @JsonIgnore
   public List<List<Long>> getElementInstancePath() {
     final var elementInstancePath = new ArrayList<List<Long>>();
     elementInstancePathProp.forEach(
@@ -209,7 +208,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  @JsonIgnore
   public List<Long> getProcessDefinitionPath() {
     final var processDefinitionPath = new ArrayList<Long>();
     processDefinitionPathProp.forEach(e -> processDefinitionPath.add(e.getValue()));
@@ -223,7 +221,6 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   }
 
   @Override
-  @JsonIgnore
   public List<Integer> getCallingElementPath() {
     final var callingElementPath = new ArrayList<Integer>();
     callingElementPathProp.forEach(e -> callingElementPath.add(e.getValue()));
