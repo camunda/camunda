@@ -27,6 +27,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.List;
 import java.util.Map;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -70,13 +71,125 @@ public final class CreateProcessInstanceTest {
             .withElementType(BpmnElementType.PROCESS)
             .getFirst();
 
-    Assertions.assertThat(process.getValue())
+    final ProcessInstanceRecordValue value = process.getValue();
+    Assertions.assertThat(value)
         .hasElementId("process")
         .hasBpmnElementType(BpmnElementType.PROCESS)
         .hasFlowScopeKey(-1)
         .hasBpmnProcessId("process")
         .hasProcessInstanceKey(processInstanceKey)
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    assertThat(value.getCallingElementPath()).isEmpty();
+    assertThat(value.getElementInstancePath()).hasSize(1);
+    final List<Long> elementInstances = value.getElementInstancePath().get(0);
+    assertThat(elementInstances).containsExactly(processInstanceKey);
+  }
+
+  @Test
+  public void shouldContainTreePathOnProcessActivating() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.PROCESS))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    final Record<ProcessInstanceRecordValue> process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    final ProcessInstanceRecordValue value = process.getValue();
+    assertThat(value.getCallingElementPath()).isEmpty();
+    assertThat(value.getElementInstancePath()).hasSize(1);
+    final List<Long> elementInstances = value.getElementInstancePath().get(0);
+    assertThat(elementInstances).containsExactly(processInstanceKey);
+    assertThat(value.getProcessDefinitionPath()).containsExactly(value.getProcessDefinitionKey());
+  }
+
+  @Test
+  public void shouldNotContainTreePathOnProcessActivated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.PROCESS))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    final Record<ProcessInstanceRecordValue> process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementType(BpmnElementType.PROCESS)
+            .getFirst();
+
+    final ProcessInstanceRecordValue value = process.getValue();
+    assertThat(value.getCallingElementPath()).isEmpty();
+    assertThat(value.getElementInstancePath()).isEmpty();
+    assertThat(value.getProcessDefinitionPath()).isEmpty();
+  }
+
+  @Test
+  public void shouldContainTreePathOnStartEventActivating() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
+        .deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId("process").create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withElementType(BpmnElementType.PROCESS))
+        .extracting(Record::getIntent)
+        .containsSequence(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, ProcessInstanceIntent.ELEMENT_ACTIVATED);
+
+    final Record<ProcessInstanceRecordValue> process =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementType(BpmnElementType.START_EVENT)
+            .getFirst();
+
+    final ProcessInstanceRecordValue value = process.getValue();
+    assertThat(value.getCallingElementPath()).isEmpty();
+    assertThat(value.getElementInstancePath()).hasSize(1);
+    final List<Long> elementInstances = value.getElementInstancePath().get(0);
+    assertThat(elementInstances).containsExactly(processInstanceKey, process.getKey());
+    assertThat(value.getProcessDefinitionPath()).containsExactly(value.getProcessDefinitionKey());
   }
 
   @Test
