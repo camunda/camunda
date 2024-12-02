@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-
 import io.camunda.tasklist.webapp.dto.ProcessDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
