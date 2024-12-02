@@ -16,6 +16,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -177,7 +178,12 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
         Named.of(
             "getActiveIncidentsByTreePaths",
             new ScrollTestCase<>(
-                new IncidentEntity(), r -> r.getActiveIncidentsByTreePaths(List.of("1", "2")))));
+                new IncidentEntity(), r -> r.getActiveIncidentsByTreePaths(List.of("1", "2")))),
+        Named.of(
+            "getProcessInstances",
+            new ScrollTestCase<>(
+                new ProcessInstanceForListViewEntity(),
+                r -> r.getProcessInstances(List.of("1", "2")))));
   }
 
   record ScrollTestCase<T>(
