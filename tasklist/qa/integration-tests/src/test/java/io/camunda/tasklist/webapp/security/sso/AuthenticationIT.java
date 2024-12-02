@@ -36,7 +36,6 @@ import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.sso.AuthSSOApplication;
 import io.camunda.tasklist.webapp.dto.UserDTO;
@@ -63,7 +62,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
@@ -114,11 +112,7 @@ public class AuthenticationIT implements AuthenticationTestable {
   @Qualifier("auth0_restTemplate")
   private RestTemplate restTemplate;
 
-  @Autowired private ObjectMapper objectMapper;
-
   @LocalServerPort private int randomServerPort;
-
-  @SpyBean private Auth0Service auth0Service;
 
   public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
     return List.of(AuthenticationIT::tokensWithOrgAsMapFrom);
@@ -197,6 +191,7 @@ public class AuthenticationIT implements AuthenticationTestable {
 
   @ParameterizedTest
   @MethodSource("orgExtractors")
+  @DirtiesContext
   public void testLoginFailedWithNoPermissions(
       final BiFunction<String, String, Tokens> orgExtractor) throws Exception {
     mockPermissionAllowed();
