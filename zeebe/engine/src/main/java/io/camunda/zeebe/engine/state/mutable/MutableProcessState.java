@@ -34,6 +34,18 @@ public interface MutableProcessState extends ProcessState {
   void updateProcessState(final ProcessRecord processRecord, final PersistedProcessState state);
 
   /**
+   * Sets the deployment key of a process that was not previously associated with a deployment. This
+   * method updates both the ColumnFamily and the in memory cache. Throws an exception if the
+   * process is already associated with another deployment.
+   *
+   * @param tenantId tenant id of the process that is updated
+   * @param processDefinitionKey the key of the process definition that is updated
+   * @param deploymentKey the new deployment key
+   */
+  void setMissingDeploymentKey(
+      final String tenantId, final long processDefinitionKey, final long deploymentKey);
+
+  /**
    * Deletes a process from the state and cache
    *
    * @param processRecord the record of the process that is deleted

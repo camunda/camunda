@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.agrona.DirectBuffer;
 
 public final class PersistedProcess extends UnpackedObject implements DbValue {
+  private static final long NO_DEPLOYMENT_KEY = -1L;
   private final IntegerProperty versionProp = new IntegerProperty("version", -1);
   private final LongProperty keyProp = new LongProperty("key", -1L);
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId");
@@ -30,7 +31,8 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
       new EnumProperty<>("state", PersistedProcessState.class, PersistedProcessState.ACTIVE);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
+  private final LongProperty deploymentKeyProp =
+      new LongProperty("deploymentKey", NO_DEPLOYMENT_KEY);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public PersistedProcess() {
@@ -100,8 +102,17 @@ public final class PersistedProcess extends UnpackedObject implements DbValue {
     return this;
   }
 
+  public boolean hasDeploymentKey() {
+    return deploymentKeyProp.getValue() != NO_DEPLOYMENT_KEY;
+  }
+
   public long getDeploymentKey() {
     return deploymentKeyProp.getValue();
+  }
+
+  public PersistedProcess setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
   }
 
   public enum PersistedProcessState {
