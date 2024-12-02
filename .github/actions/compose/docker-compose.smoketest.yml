@@ -16,6 +16,10 @@ services:
       - http.port=9200
       - ES_JAVA_OPTS=-Xms${ELASTIC_JVM_MEMORY:-1}g -Xmx${ELASTIC_JVM_MEMORY:-1}g
       - path.repo=/var/tmp
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
     ports:
       - 9200:9200
     healthcheck:
