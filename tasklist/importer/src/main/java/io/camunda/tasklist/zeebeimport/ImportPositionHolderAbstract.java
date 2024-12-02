@@ -114,10 +114,19 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
         () -> {
           final var aliasName = lastProcessedPosition.getAliasName();
           final var partition = lastProcessedPosition.getPartitionId();
-          if (!inflightProcessedPositions.containsKey(aliasName)) {
-            markPositionCompletedGauge(partition, aliasName, lastProcessedPosition);
+          final var key = getKey(aliasName, partition);
+          var importPosition = inflightProcessedPositions.get(key);
+          if (importPosition == null) {
+            importPosition = lastProcessedPosition;
+            markPositionCompletedGauge(partition, aliasName, importPosition);
+          } else {
+            importPosition
+                .setPosition(lastProcessedPosition.getPosition())
+                .setSequence(lastProcessedPosition.getSequence())
+                .setIndexName(lastProcessedPosition.getIndexName())
+                .setCompleted(lastProcessedPosition.isCompleted());
           }
-          inflightProcessedPositions.put(getKey(aliasName, partition), lastProcessedPosition);
+          inflightProcessedPositions.put(key, importPosition);
         },
         "record last loaded position");
   }
