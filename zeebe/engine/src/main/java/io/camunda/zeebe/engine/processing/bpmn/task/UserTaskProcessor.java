@@ -25,7 +25,6 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.util.Either;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<ExecutableUserTask> {
 
@@ -82,15 +81,13 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
     return userTaskBehavior
         .evaluateUserTaskExpressions(element, context)
         .flatMap(j -> eventSubscriptionBehavior.subscribeToEvents(element, context).map(ok -> j))
-        .flatMap(userTaskProperties -> createUserTask(element, context, userTaskProperties))
+        .map(userTaskProperties -> createUserTask(element, context, userTaskProperties))
         .thenDo(
             ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()))
         .thenDo(
-            propertiesToRecordPair -> {
-              final var assignee = propertiesToRecordPair.getLeft().getAssignee();
-              final var userTaskRecord = propertiesToRecordPair.getRight();
-              if (StringUtils.isNotEmpty(assignee)) {
-                assignUserTask(element, context, userTaskRecord, assignee);
+            result -> {
+              if (result.hasAssigneeProp()) {
+                assignUserTask(element, context, result.task(), result.getAssigneeProp());
               }
             });
   }
@@ -150,14 +147,14 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
             });
   }
 
-  private Either<Failure, Pair<UserTaskProperties, UserTaskRecord>> createUserTask(
+  private UserTaskCreationResult createUserTask(
       final ExecutableUserTask element,
       final BpmnElementContext context,
       final UserTaskProperties userTaskProperties) {
     final var userTaskRecord =
         userTaskBehavior.createNewUserTask(context, element, userTaskProperties);
     userTaskBehavior.userTaskCreated(userTaskRecord);
-    return Either.right(Pair.of(userTaskProperties, userTaskRecord));
+    return new UserTaskCreationResult(userTaskProperties, userTaskRecord);
   }
 
   private void assignUserTask(
@@ -171,5 +168,16 @@ public final class UserTaskProcessor extends JobWorkerTaskSupportingProcessor<Ex
         .ifPresentOrElse(
             listener -> jobBehavior.createNewTaskListenerJob(context, userTaskRecord, listener),
             () -> userTaskBehavior.userTaskAssigned(userTaskRecord, assignee));
+  }
+
+  private record UserTaskCreationResult(UserTaskProperties props, UserTaskRecord task) {
+
+    public String getAssigneeProp() {
+      return props.getAssignee();
+    }
+
+    public boolean hasAssigneeProp() {
+      return StringUtils.isNotEmpty(getAssigneeProp());
+    }
   }
 }
