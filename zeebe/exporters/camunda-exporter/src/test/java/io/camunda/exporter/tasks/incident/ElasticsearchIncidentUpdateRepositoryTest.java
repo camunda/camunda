@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -98,6 +99,29 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
     // when
     final var result = testCase.executeScrollingMethod(repository);
+
+    // then
+    final var inOrder = Mockito.inOrder(client);
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    inOrder.verify(client, Mockito.times(1)).clearScroll(Mockito.any(ClearScrollRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  void shouldClearScrollOnTransformerFailure() {
+    // given - the transformer here will fail because there is no incident source to get the tree
+    // path from, but we should still clear the scroll anyway
+    final var repository = createRepository();
+    final var hit = new Hit.Builder<>().id("1").index("index").source(null).build();
+    final SearchResponse<?> searchResponse =
+        buildMinimalSearchResponse(b -> b.hits(h -> h.hits(hit)));
+    Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.any(Class.class)))
+        .thenReturn(CompletableFuture.completedFuture(searchResponse));
+    Mockito.when(client.clearScroll(Mockito.any(ClearScrollRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(buildMinimalClearScrollResponse()));
+
+    // when
+    final var result = repository.getActiveIncidentsByTreePaths(List.of("1"));
 
     // then
     final var inOrder = Mockito.inOrder(client);
