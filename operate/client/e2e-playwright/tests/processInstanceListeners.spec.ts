@@ -11,6 +11,7 @@ import {test} from '../test-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
+import {zeebeRestApi} from '../api/zeebe-rest';
 
 let initialData: Awaited<ReturnType<typeof setup>>;
 
@@ -41,11 +42,13 @@ test.describe('Process Instance Listeners', () => {
     processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
     // Start flow node should NOT enable listeners tab
-    await page.getByLabel('StartEvent_1').click();
+    await processInstancePage.instanceHistory.getByText('StartEvent_1').click();
     await expect(processInstancePage.listenersTabButton).not.toBeVisible();
 
     // Service task flow node should enable listeners tab
-    await page.getByLabel(/service task b/i).click();
+    await processInstancePage.instanceHistory
+      .getByText(/service task b/i)
+      .click();
     await expect(processInstancePage.listenersTabButton).toBeVisible();
   });
 
@@ -53,7 +56,9 @@ test.describe('Process Instance Listeners', () => {
     const processInstanceKey = initialData.instance.processInstanceKey;
     processInstancePage.navigateToProcessInstance({id: processInstanceKey});
 
-    await page.getByLabel(/service task b/i).click();
+    await processInstancePage.instanceHistory
+      .getByText(/service task b/i)
+      .click();
     await processInstancePage.listenersTabButton.click();
 
     await expect(page.getByText('Execution listener')).toBeVisible();
@@ -112,5 +117,85 @@ test.describe('Process Instance Listeners', () => {
         .filter({hasText: /execution listener/i})
         .count(),
     ).toBe(1);
+  });
+
+  test('Listeners list filtered by listener type @roundtrip', async ({
+    page,
+    processInstancePage,
+  }) => {
+    const processInstanceKey =
+      initialData.userTaskProcessInstance.processInstanceKey;
+    processInstancePage.navigateToProcessInstance({id: processInstanceKey});
+
+    const userTaskKeyRegex = new RegExp('\\d{16}');
+    let userTaskKey = '';
+
+    const responsePromise = page.waitForResponse('**/flow-node-metadata');
+
+    await expect(
+      processInstancePage.diagram.getFlowNode('Service Task B'),
+    ).toBeVisible();
+    await processInstancePage.diagram.clickFlowNode('Service Task B');
+
+    const response = await responsePromise;
+    const data = await response.json();
+    userTaskKey = String(data.instanceMetadata.userTaskKey);
+
+    expect(userTaskKey).toMatch(userTaskKeyRegex);
+
+    await expect(page.getByTestId('state-overlay-active')).toBeVisible();
+
+    const {statusCode} = await zeebeRestApi.completeUserTask({userTaskKey});
+    expect(statusCode).toBe(204);
+
+    // check if user task is completed and listener showed up
+    await expect(page.getByTestId('state-overlay-active')).not.toBeVisible();
+    await expect(
+      page.getByTestId('state-overlay-completedEndEvents'),
+    ).toBeVisible();
+    await expect
+      .poll(async () => {
+        await processInstancePage.diagram.clickFlowNode('Service Task B');
+        await processInstancePage.diagram.moveCanvasHorizontally(-200);
+        return processInstancePage.listenersTabButton.isVisible();
+      })
+      .toBeTruthy();
+
+    // check if both types of listeners are visible (default filter)
+    await processInstancePage.listenersTabButton.click();
+    await expect(page.getByText('Execution listener')).toBeVisible();
+    await expect(page.getByText('Task listener')).toBeVisible();
+
+    // select only execution listeners on filter
+    await processInstancePage.listenerTypeFilter.click();
+    await processInstancePage
+      .getListenerTypeFilterOption('Execution listeners')
+      .click();
+    await expect(
+      page.getByText('Execution listener', {exact: true}),
+    ).toBeVisible();
+    await expect(
+      page.getByText('Task listener', {exact: true}),
+    ).not.toBeVisible();
+
+    // select only task listeners on filter
+    await processInstancePage.listenerTypeFilter.click();
+    await processInstancePage
+      .getListenerTypeFilterOption('User task listeners')
+      .click();
+    await expect(page.getByText('Task listener', {exact: true})).toBeVisible();
+    await expect(
+      page.getByText('Execution listener', {exact: true}),
+    ).not.toBeVisible();
+
+    // select all listeners on filter
+    await processInstancePage.listenerTypeFilter.click();
+    await processInstancePage
+      .getListenerTypeFilterOption('All listeners')
+      .click();
+    await expect(
+      page.getByText('Execution listener', {exact: true}),
+    ).toBeVisible();
+    await expect(page.getByText('Task listener', {exact: true})).toBeVisible();
   });
 });

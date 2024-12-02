@@ -26,9 +26,22 @@ const VariablePanel = observer(function VariablePanel() {
   const flowNodeInstanceId =
     flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
 
-  const {fetchListeners, state, listenersFailureCount, hasFlowNodeListeners} =
-    processInstanceListenersStore;
-  const {listeners} = state;
+  const {
+    fetchListeners,
+    state,
+    listenersFailureCount,
+    hasFlowNodeListeners,
+    reset,
+  } = processInstanceListenersStore;
+  const {listeners, listenerTypeFilter} = state;
+
+  const shouldUseFlowNodeId = !flowNodeInstanceId && flowNodeId;
+  const shouldUseFlowNodeInstanceId =
+    flowNodeInstanceId && !flowNodeSelectionStore.isRootNodeSelected;
+
+  useEffect(() => {
+    reset();
+  }, [flowNodeId, reset]);
 
   useEffect(() => {
     variablesStore.init(processInstanceId);
@@ -39,23 +52,34 @@ const VariablePanel = observer(function VariablePanel() {
   }, [processInstanceId]);
 
   useEffect(() => {
-    if (!flowNodeInstanceId && flowNodeId) {
+    if (shouldUseFlowNodeId) {
       fetchListeners({
         fetchType: 'initial',
         processInstanceId: processInstanceId,
-        payload: {flowNodeId},
+        payload: {
+          flowNodeId,
+          ...(listenerTypeFilter && {listenerTypeFilter}),
+        },
       });
-    } else if (
-      flowNodeInstanceId &&
-      !flowNodeSelectionStore.isRootNodeSelected
-    ) {
+    } else if (shouldUseFlowNodeInstanceId) {
       fetchListeners({
         fetchType: 'initial',
         processInstanceId: processInstanceId,
-        payload: {flowNodeInstanceId},
+        payload: {
+          flowNodeInstanceId,
+          ...(listenerTypeFilter && {listenerTypeFilter}),
+        },
       });
     }
-  }, [fetchListeners, processInstanceId, flowNodeId, flowNodeInstanceId]);
+  }, [
+    fetchListeners,
+    processInstanceId,
+    flowNodeId,
+    flowNodeInstanceId,
+    shouldUseFlowNodeId,
+    shouldUseFlowNodeInstanceId,
+    listenerTypeFilter,
+  ]);
 
   return (
     <TabView
