@@ -17,6 +17,8 @@ import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -46,5 +48,16 @@ public class MappingController {
                 .withAuthentication(RequestMapper.getAuthentication())
                 .createMapping(request),
         ResponseMapper::toMappingCreateResponse);
+  }
+
+  @DeleteMapping(
+      path = "/{mappingKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> deleteRole(@PathVariable final long mappingKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            mappingServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .deleteMapping(mappingKey));
   }
 }

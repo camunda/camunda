@@ -2406,6 +2406,33 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Mapping rule
+      operationId: deleteMappingRule
+      summary: Delete a mapping rule
+      description: Deletes the mapping rule with the given key.
+      parameters:
+        - name: mappingKey
+          in: path
+          required: true
+          description: The key of the mapping rule to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The mapping rule was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The mapping rule with the mappingKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /messages/publication:
     post:
