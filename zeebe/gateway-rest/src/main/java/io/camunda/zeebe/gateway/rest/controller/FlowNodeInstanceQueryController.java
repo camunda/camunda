@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.service.FlowNodeInstanceServices;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceItem;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.util.XmlUtil;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,9 +33,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class FlowNodeInstanceQueryController {
 
   private final FlowNodeInstanceServices flownodeInstanceServices;
+  private final XmlUtil xmlUtil;
 
-  public FlowNodeInstanceQueryController(final FlowNodeInstanceServices flownodeInstanceServices) {
+  public FlowNodeInstanceQueryController(
+      final FlowNodeInstanceServices flownodeInstanceServices, final XmlUtil xmlUtil) {
     this.flownodeInstanceServices = flownodeInstanceServices;
+    this.xmlUtil = xmlUtil;
   }
 
   @PostMapping(
@@ -52,12 +57,12 @@ public class FlowNodeInstanceQueryController {
   public ResponseEntity<FlowNodeInstanceItem> getByKey(
       @PathVariable("flowNodeInstanceKey") final Long flowNodeInstanceKey) {
     try {
-      return ResponseEntity.ok()
-          .body(
-              SearchQueryResponseMapper.toFlowNodeInstance(
-                  flownodeInstanceServices
-                      .withAuthentication(RequestMapper.getAuthentication())
-                      .getByKey(flowNodeInstanceKey)));
+      final FlowNodeInstanceEntity flowNode =
+          flownodeInstanceServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .getByKey(flowNodeInstanceKey);
+      final String name = xmlUtil.getFlowNodeName(flowNode);
+      return ResponseEntity.ok().body(SearchQueryResponseMapper.toFlowNodeInstance(flowNode, name));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -70,8 +75,9 @@ public class FlowNodeInstanceQueryController {
           flownodeInstanceServices
               .withAuthentication(RequestMapper.getAuthentication())
               .search(query);
+      final var nameMap = xmlUtil.getFlowNodesNames(result.items());
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toFlownodeInstanceSearchQueryResponse(result));
+          SearchQueryResponseMapper.toFlowNodeInstanceSearchQueryResponse(result, nameMap));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

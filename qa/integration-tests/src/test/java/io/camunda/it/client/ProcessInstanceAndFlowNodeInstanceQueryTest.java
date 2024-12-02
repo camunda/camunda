@@ -789,6 +789,30 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
   }
 
   @Test
+  void shouldHaveCorrectFlowNodeInstanceFlowNodeName() {
+    // when
+    final var result =
+        zeebeClient.newFlownodeInstanceQuery().filter(f -> f.flowNodeId("noOpTask")).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getFlowNodeName()).isEqualTo("No Op");
+  }
+
+  @Test
+  void shouldUseFlowNodeInstanceFlowNodeIdIfNameNotSet() {
+    // when
+    final var result =
+        zeebeClient
+            .newFlownodeInstanceQuery()
+            .filter(f -> f.flowNodeId("Event_1p0nsc7"))
+            .send()
+            .join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getFlowNodeName()).isEqualTo("Event_1p0nsc7");
+  }
+
+  @Test
   void shouldQueryFlowNodeInstanceByProcessDefinitionKey() {
     // given
     final var processDefinitionKey = flowNodeInstance.getProcessDefinitionKey();

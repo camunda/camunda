@@ -81,6 +81,26 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldHaveCorrectUserTaskName() {
+    // when
+    final var result =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("form_process")).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getName()).isEqualTo("Form");
+  }
+
+  @Test
+  public void shouldUseUserTaskElementIdIfNameNotSet() {
+    // when
+    final var result =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("test-2")).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getName()).isEqualTo("test-2");
+  }
+
+  @Test
   public void shouldRetrieveVariablesFromUserTask() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
