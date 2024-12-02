@@ -79,16 +79,25 @@ public class AdHocSubProcessProcessor
     eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
     incidentBehavior.resolveIncidents(terminating);
 
-    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(terminating);
+    final boolean noActiveChildInstances =
+        stateTransitionBehavior.terminateChildInstances(terminating);
+    if (noActiveChildInstances) {
+      terminate(element, terminating);
+    }
+  }
+
+  private void terminate(
+      final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     eventSubscriptionBehavior
-        .findEventTrigger(terminating)
+        .findEventTrigger(context)
         .filter(eventTrigger -> flowScopeInstance.isActive() && !flowScopeInstance.isInterrupted())
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated =
-                  stateTransitionBehavior.transitionToTerminated(
-                      terminating, element.getEventType());
+                  stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
 
               eventSubscriptionBehavior.activateTriggeredEvent(
                   terminated.getElementInstanceKey(),
@@ -98,8 +107,7 @@ public class AdHocSubProcessProcessor
             },
             () -> {
               final var terminated =
-                  stateTransitionBehavior.transitionToTerminated(
-                      terminating, element.getEventType());
+                  stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
 
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
@@ -166,6 +174,11 @@ public class AdHocSubProcessProcessor
   @Override
   public void onChildTerminated(
       final ExecutableAdHocSubProcess element,
-      final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext) {}
+      final BpmnElementContext adHocSubProcessContext,
+      final BpmnElementContext childContext) {
+
+    if (stateBehavior.canBeTerminated(childContext)) {
+      terminate(element, adHocSubProcessContext);
+    }
+  }
 }
