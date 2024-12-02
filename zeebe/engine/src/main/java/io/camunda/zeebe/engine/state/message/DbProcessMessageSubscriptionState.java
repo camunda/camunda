@@ -92,11 +92,6 @@ public final class DbProcessMessageSubscriptionState
     processMessageSubscription.setKey(key).setRecord(record);
 
     subscriptionColumnFamily.insert(elementKeyAndMessageName, processMessageSubscription);
-
-    transientState.add(
-        new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-        ActorClock.currentTimeMillis());
   }
 
   @Override
@@ -111,18 +106,11 @@ public final class DbProcessMessageSubscriptionState
   @Override
   public void updateToOpenedState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setOpened());
-    transientState.remove(
-        new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
   }
 
   @Override
   public void updateToClosingState(final ProcessMessageSubscriptionRecord record) {
     update(record, s -> s.setRecord(record).setClosing());
-    transientState.update(
-        new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()),
-        ActorClock.currentTimeMillis());
   }
 
   @Override
@@ -224,10 +212,6 @@ public final class DbProcessMessageSubscriptionState
         record.getElementInstanceKey(), record.getMessageNameBuffer(), record.getTenantId());
 
     subscriptionColumnFamily.deleteExisting(elementKeyAndMessageName);
-
-    transientState.remove(
-        new PendingSubscription(
-            record.getElementInstanceKey(), record.getMessageName(), record.getTenantId()));
   }
 
   private void wrapSubscriptionKeys(
