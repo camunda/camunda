@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.function.LongConsumer;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -1057,14 +1058,20 @@ public final class ProcessStateTest {
     processState.putProcess(process1.getKey(), process1);
     processState.putProcess(process2.getKey(), process2);
     processState.putProcess(process3.getKey(), process3);
-    final var visitor = mock(PersistedProcessVisitor.class);
-    when(visitor.visit(any())).thenReturn(true);
+    final var visitor = mock(LongConsumer.class);
 
     // when
-    processState.forEachProcess(null, visitor);
+    processState.forEachProcess(
+        null,
+        (process) -> {
+          visitor.accept(process.getKey());
+          return true;
+        });
 
     // then
-    verify(visitor, times(3)).visit(any());
+    verify(visitor).accept(process1.getKey());
+    verify(visitor).accept(process2.getKey());
+    verify(visitor).accept(process3.getKey());
   }
 
   @Test
