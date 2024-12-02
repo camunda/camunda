@@ -240,11 +240,19 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
     return client
         .search(request, type)
         .thenComposeAsync(
-            r ->
-                clearScrollOnComplete(
+            r -> {
+              try {
+                return clearScrollOnComplete(
                     r.scrollId(),
                     scrollDocuments(
-                        r.hits().hits(), r.scrollId(), new ArrayList<>(), transformer, type)),
+                        r.hits().hits(), r.scrollId(), new ArrayList<>(), transformer, type));
+              } catch (final Exception e) {
+                // scrollDocuments may fail, in which case we still want to clear the scroll anyway
+                // we don't need to do this later on however, since at this point our async pipeline
+                // is set up already to clear it
+                return clearScroll(r.scrollId(), null, e);
+              }
+            },
             executor);
   }
 
