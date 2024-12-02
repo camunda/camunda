@@ -63,8 +63,8 @@ public final class BpmnIncidentBehavior {
 
     final var treePathProperties =
         new ElementTreePathBuilder()
-            .withElementInstanceState(elementInstanceState)
-            .withProcessState(processState)
+            .withElementInstanceProvider(elementInstanceState::getInstance)
+            .withCallActivityIndexProvider(processState::getFlowElement)
             .withElementInstanceKey(context.getElementInstanceKey())
             .build();
 

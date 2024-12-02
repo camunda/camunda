@@ -1056,6 +1056,143 @@ public final class CallActivityTest {
         .hasOnlyCallingElementPath(ca1Index, ca2Index);
   }
 
+  @Test
+  public void shouldPropagateTreePathPropertiesOnProcessInstanceRecord() {
+    // given
+    final String rootProcessId = "root";
+    final String callActivity1Id = "callParent";
+    final String callActivity2Id = "callChild";
+    // every deployment resource will have indexes starting from zero
+    final var ca1Index = 0;
+    final var ca2Index = 0;
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-root.bpmn",
+            Bpmn.createExecutableProcess(rootProcessId)
+                .startEvent()
+                .callActivity(callActivity1Id, c -> c.zeebeProcessId(PROCESS_ID_PARENT))
+                .done())
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(c -> c.id(callActivity2Id).zeebeProcessId(PROCESS_ID_CHILD)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    // when
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    // then
+    final var rootInstance = getProcessInstanceRecordValue(rootInstanceKey);
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+    final var callActivity1Key = getCallActivityInstanceKey(rootInstanceKey);
+    final var callActivity2Key = getCallActivityInstanceKey(parentInstanceKey);
+
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(childInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst();
+
+    final ProcessInstanceRecordValue value = record.getValue();
+    Assertions.assertThat(value)
+        .hasOnlyElementInstancePath(
+            List.of(rootInstanceKey, callActivity1Key),
+            List.of(parentInstanceKey, callActivity2Key),
+            List.of(childInstanceKey, record.getKey()))
+        .hasOnlyProcessDefinitionPath(
+            rootInstance.getProcessDefinitionKey(),
+            parentInstance.getProcessDefinitionKey(),
+            childInstance.getProcessDefinitionKey())
+        .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
+  @Test
+  public void shouldNotPropagateTreePathPropertiesOnProcessInstanceRecordOnActivatedIntent() {
+    // given
+    final String rootProcessId = "root";
+    final String callActivity1Id = "callParent";
+    final String callActivity2Id = "callChild";
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-root.bpmn",
+            Bpmn.createExecutableProcess(rootProcessId)
+                .startEvent()
+                .callActivity(callActivity1Id, c -> c.zeebeProcessId(PROCESS_ID_PARENT))
+                .done())
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentProcess(c -> c.id(callActivity2Id).zeebeProcessId(PROCESS_ID_CHILD)))
+        .withXmlResource("wf-child.bpmn", childProcess(jobType, ServiceTaskBuilder::done))
+        .deploy();
+
+    // when
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    // then
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(childInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst();
+
+    final ProcessInstanceRecordValue value = record.getValue();
+    Assertions.assertThat(value)
+        .hasOnlyElementInstancePath(List.of())
+        .hasOnlyProcessDefinitionPath(List.of())
+        .hasOnlyCallingElementPath(List.of());
+  }
+
+  @Test
+  public void
+      shouldPropagateCorrectIndexesInCallingElementPathWhenMultipleProcessesInSameFileOnProcessInstanceRecord() {
+    // given
+    final String rootProcessId = "root-process";
+    // call activities { "call-parent", "call-child" } when sorted wll be {"call-child",
+    // "call-parent"}
+    final var ca1Index = 1;
+    final var ca2Index = 0;
+
+    ENGINE.deployment().withXmlClasspathResource("/processes/callActivity.bpmn").deploy();
+    final var rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
+
+    final var rootInstance = getProcessInstanceRecordValue(rootInstanceKey);
+    final var parentInstance = getChildInstanceOf(rootInstanceKey);
+    final var parentInstanceKey = parentInstance.getProcessInstanceKey();
+    final var childInstance = getChildInstanceOf(parentInstanceKey);
+    final long childInstanceKey = childInstance.getProcessInstanceKey();
+    final var callActivity1Key = getCallActivityInstanceKey(rootInstanceKey);
+    final var callActivity2Key = getCallActivityInstanceKey(parentInstanceKey);
+
+    // then
+    final Record<ProcessInstanceRecordValue> record =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .withProcessInstanceKey(childInstanceKey)
+            .withElementType(BpmnElementType.SERVICE_TASK)
+            .getFirst();
+
+    final ProcessInstanceRecordValue value = record.getValue();
+    Assertions.assertThat(value)
+        .hasOnlyElementInstancePath(
+            List.of(rootInstanceKey, callActivity1Key),
+            List.of(parentInstanceKey, callActivity2Key),
+            List.of(childInstanceKey, record.getKey()))
+        .hasOnlyProcessDefinitionPath(
+            rootInstance.getProcessDefinitionKey(),
+            parentInstance.getProcessDefinitionKey(),
+            childInstance.getProcessDefinitionKey())
+        .hasOnlyCallingElementPath(ca1Index, ca2Index);
+  }
+
   private void deployDefaultParentAndChildProcess() {
     final var parentProcess = parentProcess(CallActivityBuilder::done);
 
