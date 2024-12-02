@@ -3288,6 +3288,9 @@ components:
           description: The key of the user task.
           type: integer
           format: int64
+        name:
+          type: string
+          description: The name for this user task.
         state:
           type: string
           description: The state of the user task.
@@ -4011,6 +4014,9 @@ components:
           format: date-time
         flowNodeId:
           description: The flow node ID for this flow node instance.
+          type: string
+        flowNodeName:
+          description: The flow node name for this flow node instance.
           type: string
         treePath:
           description: The path from process instance leading to this flow node instance.

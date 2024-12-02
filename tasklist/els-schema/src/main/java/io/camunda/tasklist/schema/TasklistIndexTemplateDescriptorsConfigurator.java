@@ -10,9 +10,11 @@ package io.camunda.tasklist.schema;
 import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 
 import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.tasklist.schema.indices.UserIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
@@ -66,6 +68,17 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
   @Bean("tasklistFlowNodeInstanceTemplate")
   public FlowNodeInstanceTemplate flowNodeInstanceTemplate() {
     return new FlowNodeInstanceTemplate(
+        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+  }
+
+  @Bean
+  public UserIndex userIndex() {
+    return new UserIndex(getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
+  }
+
+  @Bean
+  public TasklistImportPositionIndex tasklistImportPositionIndex() {
+    return new TasklistImportPositionIndex(
         getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties));
   }
 

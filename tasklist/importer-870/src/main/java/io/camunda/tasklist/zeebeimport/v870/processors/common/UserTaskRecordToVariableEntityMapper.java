@@ -52,6 +52,7 @@ public class UserTaskRecordToVariableEntityMapper {
             String.format("%s-%s", String.valueOf(recordValue.getUserTaskKey()), varMap.getKey()));
         variableEntity.setName(varMap.getKey());
         variableEntity.setTaskId(String.valueOf(recordValue.getUserTaskKey()));
+        variableEntity.setProcessInstanceKey(recordValue.getProcessInstanceKey());
         variableEntity.setPartitionId(record.getPartitionId());
         variableEntity.setTenantId(recordValue.getTenantId());
         variableEntity.setFullValue(varValue);

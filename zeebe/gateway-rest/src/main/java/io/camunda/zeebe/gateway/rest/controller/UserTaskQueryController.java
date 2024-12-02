@@ -16,12 +16,14 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.protocol.rest.FormItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskVariableSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
+import io.camunda.zeebe.gateway.rest.util.XmlUtil;
 import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -36,26 +38,30 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class UserTaskQueryController {
 
   private final UserTaskServices userTaskServices;
+  private final XmlUtil xmlUtil;
 
-  public UserTaskQueryController(final UserTaskServices userTaskServices) {
+  public UserTaskQueryController(final UserTaskServices userTaskServices, final XmlUtil xmlUtil) {
     this.userTaskServices = userTaskServices;
+    this.xmlUtil = xmlUtil;
   }
 
   @PostMapping(
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<Object> searchUserTasks(
+  public ResponseEntity<UserTaskSearchQueryResponse> searchUserTasks(
       @RequestBody(required = false) final UserTaskSearchQueryRequest query) {
     return SearchQueryRequestMapper.toUserTaskQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<Object> search(final UserTaskQuery query) {
+  private ResponseEntity<UserTaskSearchQueryResponse> search(final UserTaskQuery query) {
     try {
       final var result =
           userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result));
+      final var nameMap = xmlUtil.getUserTasksNames(result.items());
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result, nameMap));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
@@ -67,12 +73,12 @@ public class UserTaskQueryController {
   public ResponseEntity<UserTaskItem> getByKey(
       @PathVariable("userTaskKey") final Long userTaskKey) {
     try {
-      return ResponseEntity.ok()
-          .body(
-              SearchQueryResponseMapper.toUserTask(
-                  userTaskServices
-                      .withAuthentication(RequestMapper.getAuthentication())
-                      .getByKey(userTaskKey)));
+      final var userTask =
+          userTaskServices
+              .withAuthentication(RequestMapper.getAuthentication())
+              .getByKey(userTaskKey);
+      final var name = xmlUtil.getUserTaskName(userTask);
+      return ResponseEntity.ok().body(SearchQueryResponseMapper.toUserTask(userTask, name));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

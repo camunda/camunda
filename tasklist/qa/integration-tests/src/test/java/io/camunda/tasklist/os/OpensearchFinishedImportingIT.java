@@ -9,14 +9,14 @@ package io.camunda.tasklist.os;
 
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestSupport;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -52,7 +52,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
 
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
-  @Autowired private ImportPositionIndex importPositionIndex;
+  @Autowired private TasklistImportPositionIndex importPositionIndex;
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @BeforeAll
@@ -242,7 +242,7 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
         .filter(hit -> hit.getId().equals(partitionIdFieldValue))
         .findFirst()
         .orElseThrow()
-        .isCompleted();
+        .getCompleted();
   }
 
   private <T extends RecordValue> Record<T> generateRecord(

@@ -251,11 +251,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-archiver</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-importer</artifactId>
     </dependency>
 

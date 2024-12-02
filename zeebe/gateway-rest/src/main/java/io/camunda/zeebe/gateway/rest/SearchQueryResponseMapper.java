@@ -71,6 +71,7 @@ import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
@@ -141,14 +142,15 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
-  public static FlowNodeInstanceSearchQueryResponse toFlownodeInstanceSearchQueryResponse(
-      final SearchQueryResult<FlowNodeInstanceEntity> result) {
+  public static FlowNodeInstanceSearchQueryResponse toFlowNodeInstanceSearchQueryResponse(
+      final SearchQueryResult<FlowNodeInstanceEntity> result,
+      final Map<Long, Map<String, String>> nameMap) {
     final var page = toSearchQueryPageResponse(result);
     return new FlowNodeInstanceSearchQueryResponse()
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toFlownodeInstance)
+                .map(instances -> toFlowNodeInstance(instances, nameMap))
                 .orElseGet(Collections::emptyList));
   }
 
@@ -164,13 +166,14 @@ public final class SearchQueryResponseMapper {
   }
 
   public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
-      final SearchQueryResult<UserTaskEntity> result) {
+      final SearchQueryResult<UserTaskEntity> result,
+      final Map<Long, Map<String, String>> nameMap) {
     final var page = toSearchQueryPageResponse(result);
     return new UserTaskSearchQueryResponse()
         .page(page)
         .items(
             ofNullable(result.items())
-                .map(SearchQueryResponseMapper::toUserTasks)
+                .map(tasks -> toUserTasks(tasks, nameMap))
                 .orElseGet(Collections::emptyList));
   }
 
@@ -287,15 +290,23 @@ public final class SearchQueryResponseMapper {
     return instances.stream().map(SearchQueryResponseMapper::toDecisionRequirements).toList();
   }
 
-  private static List<FlowNodeInstanceItem> toFlownodeInstance(
-      final List<FlowNodeInstanceEntity> instances) {
-    return instances.stream().map(SearchQueryResponseMapper::toFlowNodeInstance).toList();
+  private static List<FlowNodeInstanceItem> toFlowNodeInstance(
+      final List<FlowNodeInstanceEntity> instances, final Map<Long, Map<String, String>> nameMap) {
+    return instances.stream()
+        .map(
+            instance ->
+                toFlowNodeInstance(
+                    instance,
+                    nameMap.get(instance.processDefinitionKey()).get(instance.flowNodeId())))
+        .toList();
   }
 
-  public static FlowNodeInstanceItem toFlowNodeInstance(final FlowNodeInstanceEntity instance) {
+  public static FlowNodeInstanceItem toFlowNodeInstance(
+      final FlowNodeInstanceEntity instance, final String name) {
     return new FlowNodeInstanceItem()
         .flowNodeInstanceKey(instance.flowNodeInstanceKey())
         .flowNodeId(instance.flowNodeId())
+        .flowNodeName(name)
         .processDefinitionKey(instance.processDefinitionKey())
         .processDefinitionId(instance.processDefinitionId())
         .processInstanceKey(instance.processInstanceKey())
@@ -331,8 +342,13 @@ public final class SearchQueryResponseMapper {
         .decisionRequirementsId(d.decisionRequirementsId());
   }
 
-  private static List<UserTaskItem> toUserTasks(final List<UserTaskEntity> tasks) {
-    return tasks.stream().map(SearchQueryResponseMapper::toUserTask).toList();
+  private static List<UserTaskItem> toUserTasks(
+      final List<UserTaskEntity> tasks, final Map<Long, Map<String, String>> nameMap) {
+    return tasks.stream()
+        .map(
+            (UserTaskEntity t) ->
+                toUserTask(t, nameMap.get(t.processDefinitionKey()).get(t.elementId())))
+        .toList();
   }
 
   private static List<IncidentItem> toIncidents(final List<IncidentEntity> incidents) {
@@ -356,10 +372,11 @@ public final class SearchQueryResponseMapper {
         .tenantId(t.tenantId());
   }
 
-  public static UserTaskItem toUserTask(final UserTaskEntity t) {
+  public static UserTaskItem toUserTask(final UserTaskEntity t, final String name) {
     return new UserTaskItem()
         .tenantId(t.tenantId())
         .userTaskKey(t.userTaskKey())
+        .name(name)
         .processInstanceKey(t.processInstanceKey())
         .processDefinitionKey(t.processDefinitionKey())
         .elementInstanceKey(t.elementInstanceKey())
