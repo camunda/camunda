@@ -63,8 +63,6 @@ import org.springframework.web.client.HttpClientErrorException;
 public class TasklistAPICaller {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TasklistAPICaller.class);
-  private static final String COMPLETE_TASK_MUTATION_PATTERN =
-      "mutation {completeTask(taskId: \"%s\", variables: [%s]){id name assignee taskState completionTime}}";
   private static final String USERNAME = "demo";
   private static final String PASSWORD = "demo";
 
@@ -74,7 +72,6 @@ public class TasklistAPICaller {
 
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
 
-  private GraphQLTestTemplate graphQLTestTemplate;
   private StatefulRestTemplate statefulRestTemplate;
   private StatefulRestTemplate mgmtRestTemplate;
 

@@ -7,9 +7,6 @@
  */
 package io.camunda.tasklist.queries;
 
-import graphql.annotations.annotationTypes.GraphQLConstructor;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -17,11 +14,10 @@ import java.util.StringJoiner;
 @Schema(description = "Sort results by a specific field.")
 public class TaskOrderBy {
 
-  @GraphQLField @GraphQLNonNull private TaskSortFields field;
-
+  private TaskSortFields field;
   @Schema(description = "* `ASC`: Ascending<br>" + "* `DESC`: Descending")
-  @GraphQLField
-  @GraphQLNonNull
+
+
   private Sort order;
 
   public TaskOrderBy(final TaskSortFields field, final Sort order) {
@@ -50,6 +46,11 @@ public class TaskOrderBy {
   }
 
   @Override
+  public int hashCode() {
+    return Objects.hash(field, order);
+  }
+
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -59,11 +60,6 @@ public class TaskOrderBy {
     }
     final TaskOrderBy that = (TaskOrderBy) o;
     return field == that.field && order == that.order;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(field, order);
   }
 
   @Override
