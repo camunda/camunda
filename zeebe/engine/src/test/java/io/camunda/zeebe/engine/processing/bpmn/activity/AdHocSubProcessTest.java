@@ -277,8 +277,12 @@ public final class AdHocSubProcessTest {
     final BpmnModelInstance process =
         process(
             adHocSubProcess -> {
-              adHocSubProcess.zeebeStartExecutionListener("start-EL");
+              adHocSubProcess
+                  .zeebeStartExecutionListener("start-EL")
+                  .zeebeActiveElementsCollectionExpression("activateElements");
               adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
             });
 
     ENGINE.deployment().withXmlResource(process).deploy();
@@ -290,7 +294,7 @@ public final class AdHocSubProcessTest {
         .job()
         .ofInstance(processInstanceKey)
         .withType("start-EL")
-        .withVariable("x", 1)
+        .withVariable("activateElements", List.of("A", "B"))
         .complete();
 
     // then
@@ -298,21 +302,21 @@ public final class AdHocSubProcessTest {
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
                 .limit(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED))
-        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSequence(
-            tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
-            tuple(
-                BpmnElementType.AD_HOC_SUB_PROCESS,
-                ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
-            tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
+            tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED));
 
     final Record<VariableRecordValue> variableCreated =
         RecordingExporter.variableRecords()
             .withProcessInstanceKey(processInstanceKey)
-            .withName("x")
+            .withName("activateElements")
             .getFirst();
 
-    assertThat(variableCreated.getValue()).hasValue("1");
+    assertThat(variableCreated.getValue()).hasValue("[\"A\",\"B\"]");
   }
 
   @Test
