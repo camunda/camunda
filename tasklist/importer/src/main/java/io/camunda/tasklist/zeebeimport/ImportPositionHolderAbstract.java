@@ -124,7 +124,7 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
                 .setPosition(lastProcessedPosition.getPosition())
                 .setSequence(lastProcessedPosition.getSequence())
                 .setIndexName(lastProcessedPosition.getIndexName())
-                .setCompleted(lastProcessedPosition.isCompleted());
+                .setCompleted(lastProcessedPosition.getCompleted());
           }
           inflightProcessedPositions.put(key, importPosition);
         },
@@ -169,7 +169,7 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
         metrics.registerGauge(
             Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED,
             lastProcessedPosition,
-            (pos) -> pos.isCompleted() ? 1.0 : 0.0,
+            (pos) -> pos.getCompleted() ? 1.0 : 0.0,
             Metrics.TAG_KEY_PARTITION,
             Integer.toString(partition),
             Metrics.TAG_KEY_IMPORT_POS_ALIAS,
