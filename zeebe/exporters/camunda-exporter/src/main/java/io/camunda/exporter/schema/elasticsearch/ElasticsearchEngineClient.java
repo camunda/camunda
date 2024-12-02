@@ -191,7 +191,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     try {
       final var docs = client.search(importPositionSearchRequest, ImportPositionEntity.class);
       return allImportersCompleted(
-          docs.hits().hits().stream().map(Hit::source).toList(), ImportValueType.values());
+          docs.hits().hits().stream().map(Hit::source).toList(), ImportValueType.values().length);
     } catch (final IOException e) {
       final var errMsg =
           String.format(

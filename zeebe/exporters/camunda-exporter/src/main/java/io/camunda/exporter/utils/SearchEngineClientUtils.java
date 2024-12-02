@@ -10,7 +10,6 @@ package io.camunda.exporter.utils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
-import io.camunda.webapps.schema.descriptors.ImportValueType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.ByteArrayInputStream;
@@ -66,8 +65,7 @@ public final class SearchEngineClientUtils {
   }
 
   public static boolean allImportersCompleted(
-      final List<ImportPositionEntity> recordReaderStatuses,
-      final ImportValueType[] allImportValueTypes) {
+      final List<ImportPositionEntity> recordReaderStatuses, final int totalValueTypesCount) {
     // For a fresh install where there are no import position documents
     if (recordReaderStatuses.isEmpty()) {
       return true;
@@ -78,7 +76,7 @@ public final class SearchEngineClientUtils {
 
     // If all record readers have an import position document we can check their completed values
 
-    if (recordReaderStatuses.size() == allImportValueTypes.length) {
+    if (recordReaderStatuses.size() == totalValueTypesCount) {
       return recordReaderStatuses.stream().allMatch(ImportPositionEntity::getCompleted);
     }
 
