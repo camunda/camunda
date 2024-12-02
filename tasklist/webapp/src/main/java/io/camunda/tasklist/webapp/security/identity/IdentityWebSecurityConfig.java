@@ -13,7 +13,6 @@ import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
 import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 import static org.apache.commons.lang3.StringUtils.contains;
 
-
 import io.camunda.tasklist.webapp.security.BaseWebConfigurer;
 import io.camunda.tasklist.webapp.security.oauth.IdentityOAuth2WebConfigurer;
 import jakarta.servlet.http.HttpServletRequest;
