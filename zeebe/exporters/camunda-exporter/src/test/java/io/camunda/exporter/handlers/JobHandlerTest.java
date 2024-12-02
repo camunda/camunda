@@ -208,6 +208,70 @@ final class JobHandlerTest {
   }
 
   @Test
+  void testUpdateEntityWithFailedIntentAndRetriesLeft() {
+    // given
+    final long recordKey = 789;
+    final String elementId = "elementId";
+    final int retries = 1;
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withElementId(elementId)
+            .withRetries(retries)
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.FAILED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getId()).isEqualTo(String.valueOf(recordKey));
+    assertThat(entity.getKey()).isEqualTo(recordKey);
+    assertThat(entity.getFlowNodeId()).isNull();
+    assertThat(entity.isJobFailedWithRetriesLeft()).isTrue();
+  }
+
+  @Test
+  void testUpdateEntityWithFailedIntentAndRetriesExhausted() {
+    // given
+    final long recordKey = 789;
+    final String elementId = "elementId";
+    final int retries = 0;
+    final var recordValue =
+        ImmutableJobRecordValue.builder()
+            .withElementId(elementId)
+            .withRetries(retries)
+            .withJobKind(JobKind.BPMN_ELEMENT)
+            .build();
+    final Record<JobRecordValue> record =
+        factory.generateRecord(
+            ValueType.JOB,
+            r ->
+                r.withIntent(JobIntent.FAILED)
+                    .withKey(recordKey)
+                    .withValueType(ValueType.JOB)
+                    .withValue(recordValue));
+    final var entity = new JobEntity().setId(String.valueOf(recordKey));
+
+    // when
+    underTest.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getId()).isEqualTo(String.valueOf(recordKey));
+    assertThat(entity.getKey()).isEqualTo(recordKey);
+    assertThat(entity.getFlowNodeId()).isNull();
+    assertThat(entity.isJobFailedWithRetriesLeft()).isFalse();
+  }
+
+  @Test
   void shouldUpsertEntityOnFlush() {
     // given
     final String jobId = "111";

@@ -111,7 +111,7 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
       entity.setDeadline(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(jobDeadline)));
     }
 
-    if (FAILED_JOB_EVENTS.contains(record.getIntent().name())) {
+    if (FAILED_JOB_EVENTS.contains(record.getIntent())) {
       // set flowNodeId to null to not overwrite it (because zeebe puts an error message there)
       entity.setFlowNodeId(null);
       if (recordValue.getRetries() > 0) {

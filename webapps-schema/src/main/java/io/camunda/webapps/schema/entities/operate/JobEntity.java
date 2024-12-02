@@ -271,26 +271,56 @@ public class JobEntity extends OperateZeebeEntity<JobEntity> {
 
   @Override
   public String toString() {
-    return "JobEntity{" +
-        "processInstanceKey=" + processInstanceKey +
-        ", flowNodeInstanceId=" + flowNodeInstanceId +
-        ", flowNodeId='" + flowNodeId + '\'' +
-        ", processDefinitionKey=" + processDefinitionKey +
-        ", bpmnProcessId='" + bpmnProcessId + '\'' +
-        ", tenantId='" + tenantId + '\'' +
-        ", type='" + type + '\'' +
-        ", worker='" + worker + '\'' +
-        ", retries=" + retries +
-        ", state='" + state + '\'' +
-        ", errorMessage='" + errorMessage + '\'' +
-        ", errorCode='" + errorCode + '\'' +
-        ", deadline=" + deadline +
-        ", endTime=" + endTime +
-        ", customHeaders=" + customHeaders +
-        ", jobFailedWithRetriesLeft=" + jobFailedWithRetriesLeft +
-        ", jobKind='" + jobKind + '\'' +
-        ", listenerEventType='" + listenerEventType + '\'' +
-        ", position=" + position +
-        "} " + super.toString();
+    return "JobEntity{"
+        + "processInstanceKey="
+        + processInstanceKey
+        + ", flowNodeInstanceId="
+        + flowNodeInstanceId
+        + ", flowNodeId='"
+        + flowNodeId
+        + '\''
+        + ", processDefinitionKey="
+        + processDefinitionKey
+        + ", bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", type='"
+        + type
+        + '\''
+        + ", worker='"
+        + worker
+        + '\''
+        + ", retries="
+        + retries
+        + ", state='"
+        + state
+        + '\''
+        + ", errorMessage='"
+        + errorMessage
+        + '\''
+        + ", errorCode='"
+        + errorCode
+        + '\''
+        + ", deadline="
+        + deadline
+        + ", endTime="
+        + endTime
+        + ", customHeaders="
+        + customHeaders
+        + ", jobFailedWithRetriesLeft="
+        + jobFailedWithRetriesLeft
+        + ", jobKind='"
+        + jobKind
+        + '\''
+        + ", listenerEventType='"
+        + listenerEventType
+        + '\''
+        + ", position="
+        + position
+        + "} "
+        + super.toString();
   }
 }
