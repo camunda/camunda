@@ -24,17 +24,21 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.gateway.api.util.StubbedBrokerClient;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerTenantEntityRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantCreateRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantDeleteRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.tenant.BrokerTenantUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
 import java.util.Set;
 import org.assertj.core.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class TenantServiceTest {
 
@@ -157,5 +161,49 @@ public class TenantServiceTest {
     assertThat(request.getIntent()).isEqualTo(TenantIntent.DELETE);
     assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
     assertThat(request.getRequestWriter().getTenantKey()).isEqualTo(100L);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = EntityType.class,
+      names = {"USER", "MAPPING"})
+  public void shouldAddEntityToTenant(final EntityType entityType) {
+    // given
+    final var tenantKey = 100L;
+    final var entityKey = 42;
+
+    // when
+    services.addMember(tenantKey, entityType, entityKey);
+
+    // then
+    final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(TenantIntent.ADD_ENTITY);
+    assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
+    final TenantRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getTenantKey()).isEqualTo(tenantKey);
+    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = EntityType.class,
+      names = {"USER", "MAPPING"})
+  public void shouldRemoveEntityFromTenant(final EntityType entityType) {
+    // given
+    final var tenantKey = 100L;
+    final var entityKey = 42;
+
+    // when
+    services.removeMember(tenantKey, entityType, entityKey);
+
+    // then
+    final BrokerTenantEntityRequest request = stubbedBrokerClient.getSingleBrokerRequest();
+    assertThat(request.getIntent()).isEqualTo(TenantIntent.REMOVE_ENTITY);
+    assertThat(request.getValueType()).isEqualTo(ValueType.TENANT);
+    final TenantRecord brokerRequestValue = request.getRequestWriter();
+    assertThat(brokerRequestValue.getTenantKey()).isEqualTo(tenantKey);
+    assertThat(brokerRequestValue.getEntityKey()).isEqualTo(entityKey);
+    assertThat(brokerRequestValue.getEntityType()).isEqualTo(entityType);
   }
 }
