@@ -57,11 +57,11 @@ public final class OAuthCredentialsCache {
   private static final ReentrantReadWriteLock.WriteLock WRITE_LOCK = READ_WRITE_LOCK.writeLock();
 
   private final File cacheFile;
-  private final AtomicReference<Map<String, OAuthCachedCredentials>> audiences;
+  private final AtomicReference<Map<String, OAuthCachedCredentials>> credentialsByClientId;
 
   public OAuthCredentialsCache(final File cacheFile) {
     this.cacheFile = cacheFile;
-    audiences = new AtomicReference<>(new HashMap<>());
+    credentialsByClientId = new AtomicReference<>(new HashMap<>());
   }
 
   public OAuthCredentialsCache readCache() throws IOException {
@@ -72,7 +72,7 @@ public final class OAuthCredentialsCache {
       }
 
       final Map<String, OAuthCachedCredentials> cache = MAPPER.readValue(cacheFile, TYPE_REFERENCE);
-      audiences.set(cache);
+      credentialsByClientId.set(cache);
     } finally {
       READ_LOCK.unlock();
     }
@@ -81,11 +81,11 @@ public final class OAuthCredentialsCache {
   }
 
   public void writeCache() throws IOException {
-    final Map<String, OAuthCachedCredentials> values = audiences.get();
+    final Map<String, OAuthCachedCredentials> values = credentialsByClientId.get();
 
     final Map<String, Map<String, OAuthCachedCredentials>> cache = new HashMap<>(values.size());
-    for (final Entry<String, OAuthCachedCredentials> audience : values.entrySet()) {
-      cache.put(audience.getKey(), Collections.singletonMap(KEY_AUTH, audience.getValue()));
+    for (final Entry<String, OAuthCachedCredentials> clients : values.entrySet()) {
+      cache.put(clients.getKey(), Collections.singletonMap(KEY_AUTH, clients.getValue()));
     }
 
     WRITE_LOCK.lock();
@@ -97,18 +97,18 @@ public final class OAuthCredentialsCache {
     }
   }
 
-  public Optional<ZeebeClientCredentials> get(final String endpoint) {
-    final Map<String, OAuthCachedCredentials> cache = audiences.get();
-    return Optional.ofNullable(cache.get(endpoint)).map(OAuthCachedCredentials::getCredentials);
+  public Optional<ZeebeClientCredentials> get(final String clientId) {
+    final Map<String, OAuthCachedCredentials> cache = credentialsByClientId.get();
+    return Optional.ofNullable(cache.get(clientId)).map(OAuthCachedCredentials::getCredentials);
   }
 
   public synchronized ZeebeClientCredentials computeIfMissingOrInvalid(
-      final String endpoint,
+      final String clientId,
       final SupplierWithIO<ZeebeClientCredentials> zeebeClientCredentialsConsumer)
       throws IOException {
     final Optional<ZeebeClientCredentials> optionalCredentials =
         readCache()
-            .get(endpoint)
+            .get(clientId)
             .flatMap(
                 zeebeClientCredentials -> {
                   if (!zeebeClientCredentials.isValid()) {
@@ -121,15 +121,15 @@ public final class OAuthCredentialsCache {
       return optionalCredentials.get();
     } else {
       final ZeebeClientCredentials credentials = zeebeClientCredentialsConsumer.get();
-      put(endpoint, credentials).writeCache();
+      put(clientId, credentials).writeCache();
       return credentials;
     }
   }
 
   public <T> Optional<T> withCache(
-      final String endpoint, final FunctionWithIO<ZeebeClientCredentials, T> function)
+      final String clientId, final FunctionWithIO<ZeebeClientCredentials, T> function)
       throws IOException {
-    final Optional<ZeebeClientCredentials> optionalCredentials = readCache().get(endpoint);
+    final Optional<ZeebeClientCredentials> optionalCredentials = readCache().get(clientId);
     if (optionalCredentials.isPresent()) {
       return Optional.ofNullable(function.apply(optionalCredentials.get()));
     } else {
@@ -138,18 +138,18 @@ public final class OAuthCredentialsCache {
   }
 
   public OAuthCredentialsCache put(
-      final String endpoint, final ZeebeClientCredentials credentials) {
-    audiences.getAndUpdate(
+      final String clientId, final ZeebeClientCredentials credentials) {
+    credentialsByClientId.getAndUpdate(
         current -> {
           final HashMap<String, OAuthCachedCredentials> cache = new HashMap<>(current);
-          cache.put(endpoint, new OAuthCachedCredentials(credentials));
+          cache.put(clientId, new OAuthCachedCredentials(credentials));
           return cache;
         });
     return this;
   }
 
   public int size() {
-    return audiences.get().size();
+    return credentialsByClientId.get().size();
   }
 
   private void ensureCacheFileExists() throws IOException {
