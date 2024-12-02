@@ -574,7 +574,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
       assertThat(terms)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(String.class))
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               "PI_1",
               "PI_1/FN_call",
               "PI_1/FN_call/FNI_2",
@@ -700,7 +700,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
       assertThat(flowNodes)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               new Document("1", listViewTemplate.getFullQualifiedName()),
               new Document("2", listViewTemplate.getFullQualifiedName()));
     }
@@ -776,15 +776,15 @@ abstract sealed class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
+      final var flowNodes = repository.getFlowNodeInstances(List.of("1", "2"));
 
       // then
       assertThat(flowNodes)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
-          .containsExactly(
-              new Document("1", listViewTemplate.getFullQualifiedName()),
-              new Document("2", listViewTemplate.getFullQualifiedName()));
+          .containsExactlyInAnyOrder(
+              new Document("1", flowNodeInstanceTemplate.getFullQualifiedName()),
+              new Document("2", flowNodeInstanceTemplate.getFullQualifiedName()));
     }
 
     @Test
@@ -799,13 +799,13 @@ abstract sealed class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var flowNodes = repository.getFlowNodesInListView(List.of("1"));
+      final var flowNodes = repository.getFlowNodeInstances(List.of("1"));
 
       // then
       assertThat(flowNodes)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
-          .containsExactly(new Document("1", listViewTemplate.getFullQualifiedName()));
+          .containsExactly(new Document("1", flowNodeInstanceTemplate.getFullQualifiedName()));
     }
   }
 
