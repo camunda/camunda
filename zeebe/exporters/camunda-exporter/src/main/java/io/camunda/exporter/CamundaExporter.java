@@ -170,7 +170,10 @@ public class CamundaExporter implements Exporter {
 
     writer.addRecord(record);
 
-    if (configuration.getIndex().isWaitForImporters() && !importersCompleted) {
+    if (configuration.getIndex().shouldWaitForImporters() && !importersCompleted) {
+      LOG.info(
+          "Waiting for importers to finish, cached record with key {} but did not flush",
+          record.getKey());
       return;
     }
 
@@ -240,7 +243,10 @@ public class CamundaExporter implements Exporter {
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred checking importers completed, will retry later.", e);
     }
-    scheduleImportersCompletedCheck();
+
+    if (!importersCompleted) {
+      scheduleImportersCompletedCheck();
+    }
   }
 
   private void flush() {
