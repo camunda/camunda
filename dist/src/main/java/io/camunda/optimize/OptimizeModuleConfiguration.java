@@ -14,9 +14,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 /**
- * Entry point for the Operate modules by using the the
- * {@link io.camunda.application.Profile#OPERATE} profile, so that the appropriate Operate
- * application properties are applied.
+ * Entry point for the Operate modules by using the the {@link
+ * io.camunda.application.Profile#OPERATE} profile, so that the appropriate Operate application
+ * properties are applied.
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
@@ -29,8 +29,7 @@ public class OptimizeModuleConfiguration {
   // that the gateway is started first
   private final Gateway gateway;
 
-  public OptimizeModuleConfiguration(
-      @Autowired(required = false) final Gateway gateway) {
+  public OptimizeModuleConfiguration(@Autowired(required = false) final Gateway gateway) {
     this.gateway = gateway;
   }
 }
