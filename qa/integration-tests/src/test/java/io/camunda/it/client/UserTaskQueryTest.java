@@ -116,7 +116,7 @@ class UserTaskQueryTest {
     final var userTaskKey = resultUserTaskQuery.items().getFirst().getUserTaskKey();
 
     final var resultVariableQuery =
-        camundaClient.newUserTaskVariableRequest(userTaskKey).send().join();
+        camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
     assertThat(resultVariableQuery.items().size()).isEqualTo(2);
   }
 

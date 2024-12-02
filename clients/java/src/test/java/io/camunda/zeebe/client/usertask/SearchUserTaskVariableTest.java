@@ -28,7 +28,7 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
     final long userTaskKey = 1L;
 
     // when
-    client.newUserTaskVariableRequest(userTaskKey).send().join();
+    client.newUserTaskVariableQuery(userTaskKey).send().join();
 
     // then
     final VariableSearchQueryRequest request =
