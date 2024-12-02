@@ -1094,6 +1094,84 @@ public final class ProcessStateTest {
     verify(visitor, times(2)).visit(any());
   }
 
+  @Test
+  public void shouldSetDeploymentKey() {
+    // given
+    final var noDeploymentKey = -1L;
+    final var someDeploymentKey = 1L;
+    final var process1 =
+        creatingProcessRecord(processingState, "process1", 1).setDeploymentKey(noDeploymentKey);
+    processState.putProcess(process1.getKey(), process1);
+    final var initialDeploymentKey =
+        processState
+            .getProcessByKeyAndTenant(process1.getKey(), process1.getTenantId())
+            .getDeploymentKey();
+
+    // when
+    processState.setMissingDeploymentKey(process1.getTenantId(), process1.getKey(), 1L);
+
+    // then
+    final var updatedDeploymentKey =
+        processState
+            .getProcessByKeyAndTenant(process1.getKey(), process1.getTenantId())
+            .getDeploymentKey();
+
+    assertThat(initialDeploymentKey).isEqualTo(noDeploymentKey);
+    assertThat(updatedDeploymentKey).isEqualTo(someDeploymentKey);
+  }
+
+  @Test
+  public void shouldSetDeploymentKeyPersistently() {
+    // given
+    final var noDeploymentKey = -1L;
+    final var someDeploymentKey = 1L;
+    final var process =
+        creatingProcessRecord(processingState, "process1", 1).setDeploymentKey(noDeploymentKey);
+    processState.putProcess(process.getKey(), process);
+    final var initialDeploymentKey =
+        processState
+            .getProcessByKeyAndTenant(process.getKey(), process.getTenantId())
+            .getDeploymentKey();
+    processState.setMissingDeploymentKey(process.getTenantId(), process.getKey(), 1L);
+
+    // when
+    processState.clearCache();
+
+    // then
+    final var updatedDeploymentKey =
+        processState
+            .getProcessByKeyAndTenant(process.getKey(), process.getTenantId())
+            .getDeploymentKey();
+
+    assertThat(initialDeploymentKey).isEqualTo(noDeploymentKey);
+    assertThat(updatedDeploymentKey).isEqualTo(someDeploymentKey);
+  }
+
+  @Test
+  public void shouldFindProcessByDeploymentKeyAfterUpdating() {
+    // given
+    final var noDeploymentKey = -1L;
+    final var someDeploymentKey = 1L;
+    final var process =
+        creatingProcessRecord(processingState, "process1", 1).setDeploymentKey(noDeploymentKey);
+    processState.putProcess(process.getKey(), process);
+
+    final var initialLookupByDeploymentKey =
+        processState.getProcessByProcessIdAndDeploymentKey(
+            process.getBpmnProcessIdBuffer(), someDeploymentKey, process.getTenantId());
+
+    // when
+    processState.setMissingDeploymentKey(process.getTenantId(), process.getKey(), 1L);
+
+    // then
+    final var lookupAfterUpdating =
+        processState.getProcessByProcessIdAndDeploymentKey(
+            process.getBpmnProcessIdBuffer(), someDeploymentKey, process.getTenantId());
+
+    assertThat(initialLookupByDeploymentKey).isNull();
+    assertThat(lookupAfterUpdating.getKey()).isEqualTo(process.getKey());
+  }
+
   public static DeploymentRecord creatingDeploymentRecord(
       final MutableProcessingState processingState) {
     return creatingDeploymentRecord(processingState, "processId");
