@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.common;
 
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -18,6 +19,8 @@ public class ElementTreePathBuilder {
   private CallActivityIndexProvider callActivityIndexProvider;
   private Long elementInstanceKey;
   private ElementTreePathProperties properties;
+  private Long flowScopeKey;
+  private ProcessInstanceRecordValue processInstanceRecordValue;
 
   public ElementTreePathBuilder withElementInstanceProvider(
       final ElementInstanceProvider elementInstanceState) {
@@ -36,6 +39,17 @@ public class ElementTreePathBuilder {
     return this;
   }
 
+  public ElementTreePathBuilder withFlowScopeKey(final long flowScopeKey) {
+    this.flowScopeKey = flowScopeKey;
+    return this;
+  }
+
+  public ElementTreePathBuilder withRecordValue(
+      final ProcessInstanceRecordValue processInstanceRecordValue) {
+    this.processInstanceRecordValue = processInstanceRecordValue;
+    return this;
+  }
+
   public ElementTreePathProperties build() {
     Objects.requireNonNull(elementInstanceProvider, "elementInstanceProvider cannot be null");
     Objects.requireNonNull(
@@ -43,14 +57,18 @@ public class ElementTreePathBuilder {
     Objects.requireNonNull(elementInstanceKey, "elementInstanceKey cannot be null");
     properties =
         new ElementTreePathProperties(new LinkedList<>(), new LinkedList<>(), new LinkedList<>());
-    buildElementTreePathProperties(elementInstanceKey);
+
+    if (processInstanceRecordValue != null) {
+      Objects.requireNonNull(flowScopeKey, "flowScopeKey cannot be null");
+      buildElementTreePathProperties(flowScopeKey, processInstanceRecordValue);
+    } else {
+      buildElementTreePathProperties(elementInstanceKey);
+    }
     return properties;
   }
 
   private void buildElementTreePathProperties(final long elementInstanceKey) {
-    final List<Long> elementInstancePath = new LinkedList<>();
-    elementInstancePath.add(elementInstanceKey);
-    ElementInstance instance = elementInstanceProvider.getInstance(elementInstanceKey);
+    final ElementInstance instance = elementInstanceProvider.getInstance(elementInstanceKey);
     if (instance == null) {
       throw new IllegalStateException(
           String.format(
@@ -58,16 +76,26 @@ public class ElementTreePathBuilder {
               elementInstanceKey));
     }
 
-    long parentElementInstanceKey = instance.getParentKey();
+    final long parentElementInstanceKey = instance.getParentKey();
+    buildElementTreePathProperties(parentElementInstanceKey, instance.getValue());
+  }
+
+  private void buildElementTreePathProperties(
+      long parentElementInstanceKey, final ProcessInstanceRecordValue processInstanceRecord) {
+
+    properties.processDefinitionPath.addFirst(processInstanceRecord.getProcessDefinitionKey());
+
+    // collect all element instance keys in one process instance
+    final List<Long> elementInstancePath = new LinkedList<>();
+    elementInstancePath.add(elementInstanceKey);
     while (parentElementInstanceKey != -1) {
-      instance = elementInstanceProvider.getInstance(parentElementInstanceKey);
+      final var instance = elementInstanceProvider.getInstance(parentElementInstanceKey);
       elementInstancePath.addFirst(parentElementInstanceKey);
       parentElementInstanceKey = instance.getParentKey();
     }
     properties.elementInstancePath.addFirst(elementInstancePath);
-    final var processInstanceRecord = instance.getValue();
-    properties.processDefinitionPath.addFirst(processInstanceRecord.getProcessDefinitionKey());
 
+    // recursion - when call activity in execution tree - to collect all element instances
     final long callingElementInstanceKey = processInstanceRecord.getParentElementInstanceKey();
     if (callingElementInstanceKey != -1) {
       properties.callingElementPath.addFirst(getCallActivityIndex(callingElementInstanceKey));

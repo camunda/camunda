@@ -60,6 +60,34 @@ public class ElementTreePathBuilderTest {
   }
 
   @Test
+  public void shouldBuildSimpleElementInstanceTreePathWithNotExistingElementInstanceNorParent() {
+    // given
+    final var parentProcessInstanceRecord = createProcessInstanceRecord();
+    final ElementInstance parentInstance =
+        new ElementInstance(
+            100, ProcessInstanceIntent.ELEMENT_ACTIVATING, parentProcessInstanceRecord);
+
+    // when
+    final ElementTreePathBuilder builder =
+        new ElementTreePathBuilder()
+            .withElementInstanceProvider(elementInstanceMap::get)
+            .withCallActivityIndexProvider(new CallActivityIdProvider(null))
+            .withFlowScopeKey(-1)
+            .withRecordValue(parentProcessInstanceRecord)
+            .withElementInstanceKey(parentInstance.getKey());
+
+    final ElementTreePathProperties properties = builder.build();
+
+    assertThat(properties.elementInstancePath()).isNotNull();
+    assertThat(properties.elementInstancePath()).hasSize(1); // no call activities
+    assertThat(properties.elementInstancePath().getFirst()).containsExactly(100L);
+    assertThat(properties.processDefinitionPath()).hasSize(1);
+    assertThat(properties.processDefinitionPath())
+        .containsExactly(parentProcessInstanceRecord.getProcessDefinitionKey());
+    assertThat(properties.callingElementPath()).isEmpty();
+  }
+
+  @Test
   public void shouldThrowWhenElementInstanceDoesntExist() {
     // given
     final ElementTreePathBuilder builder =
@@ -102,7 +130,46 @@ public class ElementTreePathBuilderTest {
     assertThat(properties.elementInstancePath().getFirst()).containsExactly(100L, 102L);
     assertThat(properties.processDefinitionPath()).hasSize(1);
     assertThat(properties.processDefinitionPath())
-        .containsExactly(parentProcessInstanceRecord.getProcessDefinitionKey());
+        .containsExactly(subProcess2InstanceRecord.getProcessDefinitionKey());
+    assertThat(properties.callingElementPath()).isEmpty();
+  }
+
+  @Test
+  public void shouldBuildMoreComplexElementInstanceTreePathWithNotExistingLeafElementInstance() {
+    // given
+    final var parentProcessInstanceRecord = createProcessInstanceRecord();
+    final ElementInstance parentInstance =
+        createElementInstanceForRecord(100, parentProcessInstanceRecord, "Process");
+
+    createElementInstanceForRecord(101, createProcessInstanceRecord(), "subProcess");
+
+    final var subProcess2InstanceRecord = createProcessInstanceRecord();
+    subProcess2InstanceRecord.setElementId("subProcess2");
+    final ElementInstance subProcess2 =
+        new ElementInstance(
+            102,
+            parentInstance,
+            ProcessInstanceIntent.ELEMENT_ACTIVATING,
+            subProcess2InstanceRecord);
+    // ElementInstance 102 doesn't exist in state
+
+    // when
+    final ElementTreePathBuilder builder =
+        new ElementTreePathBuilder()
+            .withElementInstanceProvider(elementInstanceMap::get)
+            .withCallActivityIndexProvider(new CallActivityIdProvider(null))
+            .withFlowScopeKey(parentInstance.getKey())
+            .withRecordValue(subProcess2InstanceRecord)
+            .withElementInstanceKey(subProcess2.getKey());
+
+    final ElementTreePathProperties properties = builder.build();
+
+    assertThat(properties.elementInstancePath()).isNotNull();
+    assertThat(properties.elementInstancePath()).hasSize(1); // no call activities
+    assertThat(properties.elementInstancePath().getFirst()).containsExactly(100L, 102L);
+    assertThat(properties.processDefinitionPath()).hasSize(1);
+    assertThat(properties.processDefinitionPath())
+        .containsExactly(subProcess2InstanceRecord.getProcessDefinitionKey());
     assertThat(properties.callingElementPath()).isEmpty();
   }
 
