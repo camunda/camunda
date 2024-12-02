@@ -173,7 +173,7 @@ public class TenantIT {
 
     assertThat(searchResult.total()).isEqualTo(1);
     assertThat(searchResult.items()).hasSize(1);
-    assertThat(searchResult.items().getFirst().tenantKey()).isEqualTo(instance.tenantKey());
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(instance.tenantKey());
   }
 
   @TestTemplate
@@ -204,7 +204,7 @@ public class TenantIT {
                                         new Object[] {
                                           instanceAfter.name(),
                                           instanceAfter.tenantId(),
-                                          instanceAfter.tenantKey()
+                                          instanceAfter.key()
                                         }))));
 
     assertThat(nextPage.total()).isEqualTo(20);
@@ -215,7 +215,9 @@ public class TenantIT {
   private static void compareTenant(final TenantEntity actual, final TenantDbModel expected) {
     assertThat(actual)
         .usingRecursiveComparison()
-        .ignoringFields("assignedMemberKeys")
+        .ignoringFields("assignedMemberKeys", "key")
         .isEqualTo(expected);
+
+    assertThat(actual.key()).isEqualTo(expected.tenantKey());
   }
 }
