@@ -29,6 +29,10 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   private long parentElementInstanceKey;
   private String tenantId;
 
+  private List<List<Long>> elementInstancePath;
+  private List<Long> processDefinitionPath;
+  private List<Integer> callingElementPath;
+
   public ProcessInstanceRecordValueImpl() {}
 
   @Override
@@ -83,17 +87,17 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
 
   @Override
   public List<List<Long>> getElementInstancePath() {
-    return List.of();
+    return elementInstancePath;
   }
 
   @Override
   public List<Long> getProcessDefinitionPath() {
-    return List.of();
+    return processDefinitionPath;
   }
 
   @Override
   public List<Integer> getCallingElementPath() {
-    return List.of();
+    return callingElementPath;
   }
 
   @Override
