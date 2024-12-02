@@ -41,6 +41,7 @@ import io.camunda.optimize.service.db.os.util.DefinitionQueryUtilOS;
 import io.camunda.optimize.service.db.reader.DurationOutliersReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessVariableReader;
+import io.camunda.optimize.service.db.util.AggregationNameUtil;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -54,8 +55,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -324,11 +327,17 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
 
     try {
       // #1 get top variable value terms of outliers
+      final List<String> variableNames = getVariableNames(outlierParams);
+      final Map<String, String> sanitisedNameToVarName =
+          getVariableNames(outlierParams).stream()
+              .filter(AggregationNameUtil::containsIllegalChar)
+              .collect(Collectors.toMap(AggregationNameUtil::sanitiseAggName, Function.identity()));
       final ReverseNestedAggregate outlierNestedProcessInstancesAgg =
-          getTopVariableTermsOfOutliers(outlierAnalysisParams);
+          getTopVariableTermsOfOutliers(outlierAnalysisParams, variableNames);
       final Map<String, Map<String, Long>> outlierVariableTermOccurrences =
           createVariableTermOccurrencesMap(
-              outlierNestedProcessInstancesAgg.aggregations().get(AGG_VARIABLES).nested());
+              outlierNestedProcessInstancesAgg.aggregations().get(AGG_VARIABLES).nested(),
+              sanitisedNameToVarName);
       final long outlierProcessInstanceCount = outlierNestedProcessInstancesAgg.docCount();
       final Map<String, Set<String>> outlierVariableTerms =
           outlierVariableTermOccurrences.entrySet().stream()
@@ -347,7 +356,8 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
           getVariableTermOccurrencesOfNonOutliers(outlierAnalysisParams, outlierVariableTerms);
       final Map<String, Map<String, Long>> nonOutlierVariableTermOccurrence =
           createVariableTermOccurrencesMap(
-              nonOutlierNestedProcessInstancesAgg.aggregations().get(AGG_VARIABLES).nested());
+              nonOutlierNestedProcessInstancesAgg.aggregations().get(AGG_VARIABLES).nested(),
+              sanitisedNameToVarName);
       final long nonOutlierProcessInstanceCount = nonOutlierNestedProcessInstancesAgg.docCount();
 
       // #3 compare both data sets and only keep terms whose frequency is considered significant
@@ -518,11 +528,16 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
   }
 
   private ReverseNestedAggregate getTopVariableTermsOfOutliers(
-      final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams)
+      final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams,
+      final List<String> variableNames)
       throws IOException {
-    final FlowNodeOutlierParametersDto outlierParams =
-        outlierAnalysisParams.getProcessDefinitionParametersDto();
+    final SearchRequest outlierTopVariableTermsRequest =
+        createTopVariableTermsOfOutliersQuery(outlierAnalysisParams, variableNames);
+    return extractNestedProcessInstanceAgg(
+        osClient.searchUnsafe(outlierTopVariableTermsRequest, Object.class));
+  }
 
+  private List<String> getVariableNames(final FlowNodeOutlierParametersDto outlierParams) {
     final List<String> variableNames =
         processVariableReader
             .getVariableNames(
@@ -535,11 +550,7 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
             .stream()
             .map(ProcessVariableNameResponseDto::getName)
             .collect(Collectors.toList());
-
-    final SearchRequest outlierTopVariableTermsRequest =
-        createTopVariableTermsOfOutliersQuery(outlierAnalysisParams, variableNames);
-    return extractNestedProcessInstanceAgg(
-        osClient.searchUnsafe(outlierTopVariableTermsRequest, Object.class));
+    return variableNames;
   }
 
   private SearchRequest createTopVariableTermsOfOutliersQuery(
@@ -556,7 +567,7 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
                   .forEach(
                       variableName ->
                           nested.aggregations(
-                              variableName,
+                              AggregationNameUtil.sanitiseAggName(variableName),
                               Aggregation.of(
                                   aa ->
                                       aa.filter(
@@ -686,7 +697,8 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
   }
 
   private Map<String, Map<String, Long>> createVariableTermOccurrencesMap(
-      final NestedAggregate allVariableAggregations) {
+      final NestedAggregate allVariableAggregations,
+      final Map<String, String> sanitisedVarsToVarNames) {
     final Map<String, Map<String, Long>> outlierVariableTermOccurrences = new HashMap<>();
     allVariableAggregations
         .aggregations()
@@ -707,7 +719,12 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
                                 AbstractMap.SimpleEntry::getKey,
                                 AbstractMap.SimpleEntry::getValue));
 
-                outlierVariableTermOccurrences.put(variableName, termOccurrences);
+                // We resolve this back to its original name in the case that it was sanitised
+                // during query time
+                outlierVariableTermOccurrences.put(
+                    Optional.ofNullable(sanitisedVarsToVarNames.get(variableName))
+                        .orElse(variableName),
+                    termOccurrences);
               }
             });
     return outlierVariableTermOccurrences;
