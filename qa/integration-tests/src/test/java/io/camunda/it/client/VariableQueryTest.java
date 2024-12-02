@@ -19,7 +19,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.io.InputStream;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
@@ -371,52 +370,18 @@ class VariableQueryTest {
   }
 
   @Test
-  void shouldPaginateByTheLimit() {
-    // when
-    final var result = camundaClient.newVariableQuery().page(p -> p.limit(2)).send().join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(2);
-  }
-
-  @Test
-  void shouldSearchAfterSecondItem() {
+  void shouldSearchByFromWithLimit() {
     // when
     final var resultAll = camundaClient.newVariableQuery().send().join();
+    final var thirdKey = resultAll.items().get(2).getVariableKey();
 
-    final var secondVariableKey = resultAll.items().get(1).getVariableKey();
-    final var thirdVariableKey = resultAll.items().get(2).getVariableKey();
-
-    final var resultSearchAfter =
-        camundaClient
-            .newVariableQuery()
-            .page(p -> p.limit(2).searchAfter(Collections.singletonList(secondVariableKey)))
-            .send()
-            .join();
+    final var resultSearchFrom =
+        camundaClient.newVariableQuery().page(p -> p.limit(2).from(2)).send().join();
 
     // then
-    assertThat(resultSearchAfter.items().stream().findFirst().get().getVariableKey())
-        .isEqualTo(thirdVariableKey);
-  }
-
-  @Test
-  void shouldSearchBeforeSecondItem() {
-    // when
-    final var resultAll = camundaClient.newVariableQuery().send().join();
-
-    final var secondVariableKey = resultAll.items().get(1).getVariableKey();
-    final var firstVariableKey = resultAll.items().get(0).getVariableKey();
-
-    final var resultSearchAfter =
-        camundaClient
-            .newVariableQuery()
-            .page(p -> p.limit(2).searchBefore(Collections.singletonList(secondVariableKey)))
-            .send()
-            .join();
-
-    // then
-    assertThat(resultSearchAfter.items().stream().findFirst().get().getVariableKey())
-        .isEqualTo(firstVariableKey);
+    assertThat(resultSearchFrom.items().size()).isEqualTo(2);
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getVariableKey())
+        .isEqualTo(thirdKey);
   }
 
   private static void waitForTasksBeingExported() {

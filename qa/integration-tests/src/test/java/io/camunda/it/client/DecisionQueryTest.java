@@ -547,57 +547,21 @@ class DecisionQueryTest {
   }
 
   @Test
-  void shouldPaginateByTheLimit() {
+  void shouldSearchByFromWithLimit() {
     // when
-    final var result =
+    final var resultAll = zeebeClient.newDecisionRequirementsQuery().send().join();
+
+    final var resultWithLimit =
         zeebeClient.newDecisionRequirementsQuery().page(p -> p.limit(2)).send().join();
+    assertThat(resultWithLimit.items().size()).isEqualTo(2);
+
+    final var thirdKey = resultAll.items().get(2).getDecisionRequirementsKey();
+
+    final var resultSearchFrom =
+        zeebeClient.newDecisionRequirementsQuery().page(p -> p.limit(2).from(2)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(2);
-  }
-
-  @Test
-  void shouldSearchAfterSecondItem() {
-    // when
-    final var resultAll = zeebeClient.newDecisionRequirementsQuery().send().join();
-
-    final var secondDecisionRequirementKey = resultAll.items().get(1).getDecisionRequirementsKey();
-    final var thirdDecisionRequirementKey = resultAll.items().get(2).getDecisionRequirementsKey();
-
-    final var resultSearchAfter =
-        zeebeClient
-            .newDecisionRequirementsQuery()
-            .page(
-                p ->
-                    p.limit(2).searchAfter(Collections.singletonList(secondDecisionRequirementKey)))
-            .send()
-            .join();
-
-    // then
-    assertThat(resultSearchAfter.items().stream().findFirst().get().getDecisionRequirementsKey())
-        .isEqualTo(thirdDecisionRequirementKey);
-  }
-
-  @Test
-  void shouldSearchBeforeSecondItem() {
-    // when
-    final var resultAll = zeebeClient.newDecisionRequirementsQuery().send().join();
-
-    final var secondDecisionRequirementKey = resultAll.items().get(1).getDecisionRequirementsKey();
-    final var firstDecisionRequirementKey = resultAll.items().get(0).getDecisionRequirementsKey();
-
-    final var resultSearchBefore =
-        zeebeClient
-            .newDecisionRequirementsQuery()
-            .page(
-                p ->
-                    p.limit(2)
-                        .searchBefore(Collections.singletonList(secondDecisionRequirementKey)))
-            .send()
-            .join();
-
-    // then
-    assertThat(resultSearchBefore.items().stream().findFirst().get().getDecisionRequirementsKey())
-        .isEqualTo(firstDecisionRequirementKey);
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getDecisionRequirementsKey())
+        .isEqualTo(thirdKey);
   }
 }

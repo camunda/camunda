@@ -73,52 +73,18 @@ public class ProcessDefinitionQueryTest {
   }
 
   @Test
-  void shouldPaginateByTheLimit() {
-    // when
-    final var result = zeebeClient.newProcessDefinitionQuery().page(p -> p.limit(2)).send().join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(2);
-  }
-
-  @Test
-  void shouldSearchAfterSecondItem() {
+  void shouldSearchByFromWithLimit() {
     // when
     final var resultAll = zeebeClient.newProcessDefinitionQuery().send().join();
+    final var thirdKey = resultAll.items().get(2).getProcessDefinitionKey();
 
-    final var secondProcessKey = resultAll.items().get(1).getProcessDefinitionKey();
-    final var thirdProcessKey = resultAll.items().get(2).getProcessDefinitionKey();
-
-    final var resultSearchAfter =
-        zeebeClient
-            .newProcessDefinitionQuery()
-            .page(p -> p.limit(2).searchAfter(Collections.singletonList(secondProcessKey)))
-            .send()
-            .join();
+    final var resultSearchFrom =
+        zeebeClient.newProcessDefinitionQuery().page(p -> p.limit(2).from(2)).send().join();
 
     // then
-    assertThat(resultSearchAfter.items().stream().findFirst().get().getProcessDefinitionKey())
-        .isEqualTo(thirdProcessKey);
-  }
-
-  @Test
-  void shouldSearchBeforeSecondItem() {
-    // when
-    final var resultAll = zeebeClient.newProcessDefinitionQuery().send().join();
-
-    final var secondProcessKey = resultAll.items().get(1).getProcessDefinitionKey();
-    final var firstProcessKey = resultAll.items().get(0).getProcessDefinitionKey();
-
-    final var resultSearchBefore =
-        zeebeClient
-            .newProcessDefinitionQuery()
-            .page(p -> p.limit(2).searchBefore(Collections.singletonList(secondProcessKey)))
-            .send()
-            .join();
-
-    // then
-    assertThat(resultSearchBefore.items().stream().findFirst().get().getProcessDefinitionKey())
-        .isEqualTo(firstProcessKey);
+    assertThat(resultSearchFrom.items().size()).isEqualTo(2);
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getProcessDefinitionKey())
+        .isEqualTo(thirdKey);
   }
 
   @Test

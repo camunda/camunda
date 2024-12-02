@@ -454,15 +454,6 @@ class IncidentQueryTest {
   }
 
   @Test
-  void shouldPaginateByTheLimit() {
-    // when
-    final var result = zeebeClient.newIncidentQuery().page(p -> p.limit(2)).send().join();
-
-    // then
-    assertThat(result.items().size()).isEqualTo(2);
-  }
-
-  @Test
   void shouldSearchAfterSecondItem() {
     // when
     final var resultAll = zeebeClient.newIncidentQuery().send().join();
@@ -500,5 +491,23 @@ class IncidentQueryTest {
     // then
     assertThat(resultSearchBefore.items().stream().findFirst().get().getIncidentKey())
         .isEqualTo(firstIncidentKey);
+  }
+
+  @Test
+  void shouldSearchByFromWithLimit() {
+    // when
+    final var resultAll = zeebeClient.newIncidentQuery().send().join();
+
+    final var resultWithLimit = zeebeClient.newIncidentQuery().page(p -> p.limit(2)).send().join();
+    assertThat(resultWithLimit.items().size()).isEqualTo(2);
+
+    final var thirdKey = resultAll.items().get(2).getIncidentKey();
+
+    final var resultSearchFrom =
+        zeebeClient.newIncidentQuery().page(p -> p.limit(2).from(2)).send().join();
+
+    // then
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getIncidentKey())
+        .isEqualTo(thirdKey);
   }
 }
