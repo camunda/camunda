@@ -61,7 +61,7 @@ jobs:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: "1.7.4"
     steps:
-      - uses: camunda/infra-global-github-actions/actionlint@main
+      - uses: camunda/infra-global-github-actions/actionlint@gh-620-centralized-infracheck-workflow
         with:
           version: $ACTIONLINT_VERSION
           custom-config-file: .github/actionlint.yaml
@@ -507,7 +507,7 @@ jobs:
         uses: ./.github/actions/build-platform-docker
         with:
           dockerfile: tasklist.Dockerfile
-          repository: 'registry.camunda.cloud/team-hto/tasklist'
+          repository: "registry.camunda.cloud/team-hto/tasklist"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -742,7 +742,7 @@ jobs:
           distribution: "temurin"
           java-version: "21"
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
-      - name: 'Create settings.xml'
+      - name: "Create settings.xml"
         uses: s4u/maven-settings-action@v3.1.0
         with:
           githubServer: false
