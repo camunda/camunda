@@ -8,30 +8,41 @@
 package io.camunda.application.commons.backup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.webapp.backup.OperateSnapshotNameProvider;
+import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
 
 @ConditionalOnProperty(
     prefix = "camunda.database",
     name = "type",
     havingValue = "elasticsearch",
     matchIfMissing = true)
-@Component
+@Configuration
 @Profile("operate")
-public class ElasticsearchOperateBackupRepository
-    extends io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository {
+public class ElasticsearchBackupRepository {
 
-  @Autowired
-  public ElasticsearchOperateBackupRepository(
+  private final RestHighLevelClient esClient;
+  private final ObjectMapper objectMapper;
+  private final BackupRepositoryProps backupRepositoryProps;
+
+  public ElasticsearchBackupRepository(
       @Qualifier("esClient") final RestHighLevelClient esClient,
       final ObjectMapper objectMapper,
       final BackupRepositoryProps backupRepositoryProps) {
-    super(esClient, objectMapper, backupRepositoryProps, new OperateSnapshotNameProvider());
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.backupRepositoryProps = backupRepositoryProps;
+  }
+
+  @Bean
+  public BackupRepository backupRepository() {
+    return new io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository(
+        esClient, objectMapper, backupRepositoryProps, new WebappsSnapshotNameProvider());
   }
 }

@@ -8,12 +8,14 @@
 package io.camunda.application.commons.backup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.webapp.backup.OperateSnapshotNameProvider;
+import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
+import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -25,14 +27,24 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("tasklist & standalone")
 // only active if standalone, otherwise the operate one is used
-public class ElasticsearchTasklistBackupRepository
-    extends io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository {
+public class ElasticsearchTasklistBackupRepository {
 
-  @Autowired
+  private final RestHighLevelClient esClient;
+  private final ObjectMapper objectMapper;
+  private final BackupRepositoryProps backupRepositoryProps;
+
   public ElasticsearchTasklistBackupRepository(
       @Qualifier("tasklistEsClient") final RestHighLevelClient esClient,
       final ObjectMapper objectMapper,
       final BackupRepositoryProps backupRepositoryProps) {
-    super(esClient, objectMapper, backupRepositoryProps, new OperateSnapshotNameProvider());
+    this.esClient = esClient;
+    this.objectMapper = objectMapper;
+    this.backupRepositoryProps = backupRepositoryProps;
+  }
+
+  @Bean
+  public BackupRepository backupRepository() {
+    return new ElasticsearchBackupRepository(
+        esClient, objectMapper, backupRepositoryProps, new WebappsSnapshotNameProvider());
   }
 }

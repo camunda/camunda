@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @ProfileOperateTasklist
-public class BackupComponent {
+public class HistoryBackupComponent {
 
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
   private final List<Prio1Backup> prio1BackupIndices;
@@ -36,7 +36,7 @@ public class BackupComponent {
   private final BackupRepositoryProps backupRepositoryProps;
   private final BackupRepository backupRepository;
 
-  public BackupComponent(
+  public HistoryBackupComponent(
       @Qualifier("backupThreadPoolExecutor") final ThreadPoolTaskExecutor threadPoolTaskExecutor,
       final List<Prio1Backup> prio1BackupIndices,
       final List<Prio2Backup> prio2BackupTemplates,

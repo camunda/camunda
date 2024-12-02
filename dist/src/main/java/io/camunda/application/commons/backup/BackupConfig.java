@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.config;
+package io.camunda.application.commons.backup;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;

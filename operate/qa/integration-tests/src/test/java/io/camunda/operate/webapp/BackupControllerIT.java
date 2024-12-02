@@ -7,9 +7,9 @@
  */
 package io.camunda.operate.webapp;
 
-import static io.camunda.application.commons.backup.ElasticsearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static io.camunda.management.backups.HistoryStateCode.*;
 import static io.camunda.operate.util.CollectionUtil.asMap;
+import static io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -27,8 +27,8 @@ import io.camunda.management.backups.HistoryBackupInfo;
 import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.webapp.backup.OperateSnapshotNameProvider;
 import io.camunda.webapps.backup.Metadata;
+import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import io.camunda.webapps.controllers.BackupController;
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -679,7 +679,7 @@ public class BackupControllerIT {
     if (metadata != null) {
       when(snapshotInfo.snapshotId())
           .thenReturn(
-              new SnapshotId(new OperateSnapshotNameProvider().getSnapshotName(metadata), uuid));
+              new SnapshotId(new WebappsSnapshotNameProvider().getSnapshotName(metadata), uuid));
       when(snapshotInfo.userMetadata())
           .thenReturn(objectMapper.convertValue(metadata, new TypeReference<>() {}));
     } else {
