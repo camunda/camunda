@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
+import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -16,13 +17,19 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 public final class DeploymentReconstructedApplier
     implements TypedEventApplier<DeploymentIntent, DeploymentRecord> {
   private final MutableDeploymentState deploymentState;
+  private final MutableProcessState processState;
 
   public DeploymentReconstructedApplier(final MutableProcessingState processingState) {
     deploymentState = processingState.getDeploymentState();
+    processState = processingState.getProcessState();
   }
 
   @Override
-  public void applyState(final long key, final DeploymentRecord value) {
-    deploymentState.storeDeploymentRecord(key, value);
+  public void applyState(final long deploymentKey, final DeploymentRecord value) {
+    deploymentState.storeDeploymentRecord(deploymentKey, value);
+    for (final var processMetadata : value.processesMetadata()) {
+      processState.setMissingDeploymentKey(
+          processMetadata.getTenantId(), processMetadata.getKey(), deploymentKey);
+    }
   }
 }
