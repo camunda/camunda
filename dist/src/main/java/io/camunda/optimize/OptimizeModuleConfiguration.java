@@ -12,18 +12,16 @@ import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 import org.springframework.context.annotation.Profile;
 
 /**
- * Entry point for the Operate modules by using the the {@link
- * io.camunda.application.Profile#OPERATE} profile, so that the appropriate Operate application
- * properties are applied.
+ * Entry point for the Operate modules by using the the
+ * {@link io.camunda.application.Profile#OPERATE} profile, so that the appropriate Operate
+ * application properties are applied.
  */
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(
-    basePackages = "io.camunda.optimize",
-    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
+    basePackages = "io.camunda.optimize")
 @Profile("optimize")
 public class OptimizeModuleConfiguration {
 
