@@ -7,11 +7,13 @@
  */
 package io.camunda.tasklist.schema.indices;
 
-import io.camunda.tasklist.schema.backup.Prio3Backup;
-import org.springframework.stereotype.Component;
+import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 
-@Component
-public class UserIndex extends AbstractIndexDescriptor implements Prio3Backup {
+import io.camunda.tasklist.property.TasklistProperties;
+import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
+
+public class UserIndex extends TasklistIndexDescriptor implements Prio4Backup {
 
   public static final String ID = "id";
   public static final String USER_ID = "userId";
@@ -22,6 +24,10 @@ public class UserIndex extends AbstractIndexDescriptor implements Prio3Backup {
   private static final String INDEX_NAME = "user";
   private static final String INDEX_VERSION = "1.4.0";
 
+  public UserIndex(final String indexPrefix, final boolean isElasticsearch) {
+    super(indexPrefix, isElasticsearch);
+  }
+
   @Override
   public String getIndexName() {
     return INDEX_NAME;
@@ -30,5 +36,15 @@ public class UserIndex extends AbstractIndexDescriptor implements Prio3Backup {
   @Override
   public String getVersion() {
     return INDEX_VERSION;
+  }
+
+  private boolean isElasticsearch(final TasklistProperties tasklistProperties) {
+    return ELASTIC_SEARCH.equals(tasklistProperties.getDatabase());
+  }
+
+  private String getIndexPrefix(final TasklistProperties tasklistProperties) {
+    return isElasticsearch(tasklistProperties)
+        ? tasklistProperties.getElasticsearch().getIndexPrefix()
+        : tasklistProperties.getOpenSearch().getIndexPrefix();
   }
 }
