@@ -7,6 +7,8 @@
  */
 package io.camunda.application;
 
+import io.camunda.application.initializers.DefaultAuthenticationInitializer;
+import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.optimize.OptimizeModuleConfiguration;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -43,6 +45,8 @@ public class StandaloneOptimize {
             .profiles(Profile.OPTIMIZE.getId(), Profile.STANDALONE.getId())
             .addCommandLineProperties(true)
             .properties(getDefaultProperties())
+            .initializers(
+                new DefaultAuthenticationInitializer(), new WebappsConfigurationInitializer())
             .listeners(new ApplicationErrorListener())
             .build(args);
 
