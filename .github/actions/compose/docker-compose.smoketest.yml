@@ -148,36 +148,3 @@ services:
       KEYCLOAK_USERS_0_FIRST_NAME: "demo"
       KEYCLOAK_USERS_0_ROLES_0: "Optimize"
       KEYCLOAK_USERS_0_ROLES_1: "Identity"
-  operate:
-    image: camunda/operate:${OPERATE_VERSION:-latest}
-    container_name: operate
-    environment:
-      - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
-      - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
-      - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
-      - SPRING_PROFILES_ACTIVE=dev-data
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_ISSUER_BACKEND_URL=http://localhost:18080/auth/realms/camunda-platform
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_ID=operate
-      - CAMUNDA_OPERATE_IDENTITY_CLIENT_SECRET=the-cake-is-alive
-      - CAMUNDA_OPERATE_IDENTITY_AUDIENCE=operate-api
-      - CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME=test
-      - SERVER_SERVLET_CONTEXT_PATH=/
-      - CAMUNDA_OPERATE_CLUSTERNODE_PARTITIONIDS=1,2
-    ports:
-      - "8080:8080"
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "wget -O - -q 'http://localhost:9600/actuator/health/readiness'",
-        ]
-      interval: 30s
-      timeout: 1s
-      retries: 5
-      start_period: 30s
-    depends_on:
-      - elasticsearch
-      - zeebe
-    restart: always
