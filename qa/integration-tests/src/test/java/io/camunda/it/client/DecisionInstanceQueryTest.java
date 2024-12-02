@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.search.response.DecisionInstance;
 import io.camunda.zeebe.client.api.search.response.DecisionInstanceState;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,6 +90,60 @@ class DecisionInstanceQueryTest {
             evaluatedDecisions.values().stream()
                 .map(EvaluateDecisionResponse::getDecisionInstanceKey)
                 .collect(Collectors.toSet()));
+  }
+
+  @TestTemplate
+  void shouldPaginateByTheLimit(final ZeebeClient zeebeClient) {
+    // when
+    final var result = zeebeClient.newDecisionInstanceQuery().page(p -> p.limit(2)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+  }
+
+  @TestTemplate
+  void shouldSearchAfterSecondItem(final ZeebeClient zeebeClient) {
+    // when
+    final var resultAll = zeebeClient.newDecisionInstanceQuery().send().join();
+
+    final var secondDecisionRequirementKey = resultAll.items().get(1).getDecisionInstanceKey();
+    final var thirdDecisionRequirementKey = resultAll.items().get(2).getDecisionInstanceKey();
+
+    final var resultSearchAfter =
+        zeebeClient
+            .newDecisionInstanceQuery()
+            .page(
+                p ->
+                    p.limit(2).searchAfter(Collections.singletonList(secondDecisionRequirementKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(resultSearchAfter.items().stream().findFirst().get().getDecisionInstanceKey())
+        .isEqualTo(thirdDecisionRequirementKey);
+  }
+
+  @TestTemplate
+  void shouldSearchBeforeSecondItem(final ZeebeClient zeebeClient) {
+    // when
+    final var resultAll = zeebeClient.newDecisionInstanceQuery().send().join();
+
+    final var secondDecisionRequirementKey = resultAll.items().get(1).getDecisionInstanceKey();
+    final var firstDecisionRequirementKey = resultAll.items().get(0).getDecisionInstanceKey();
+
+    final var resultSearchBefore =
+        zeebeClient
+            .newDecisionInstanceQuery()
+            .page(
+                p ->
+                    p.limit(2)
+                        .searchBefore(Collections.singletonList(secondDecisionRequirementKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(resultSearchBefore.items().stream().findFirst().get().getDecisionInstanceKey())
+        .isEqualTo(firstDecisionRequirementKey);
   }
 
   @TestTemplate

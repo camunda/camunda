@@ -23,8 +23,10 @@ import io.camunda.zeebe.client.api.search.response.Incident;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -62,9 +64,11 @@ class IncidentQueryTest {
     startProcessInstance(zeebeClient, "service_tasks_v1");
     startProcessInstance(zeebeClient, "service_tasks_v2", "{\"path\":222}");
     startProcessInstance(zeebeClient, "incident_process_v1");
+    startProcessInstance(zeebeClient, "incident_process_v1");
+    startProcessInstance(zeebeClient, "incident_process_v1");
 
-    waitForProcessInstancesToStart(zeebeClient, 3);
-    waitUntilProcessInstanceHasIncidents(zeebeClient, 1);
+    waitForProcessInstancesToStart(zeebeClient, 5);
+    waitUntilProcessInstanceHasIncidents(zeebeClient, 3);
 
     incident = zeebeClient.newIncidentQuery().send().join().items().getFirst();
   }
@@ -144,7 +148,7 @@ class IncidentQueryTest {
     final var result = zeebeClient.newIncidentQuery().filter(f -> f.state(state)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().getFirst().getState()).isEqualTo(state);
   }
 
@@ -180,7 +184,7 @@ class IncidentQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().getFirst().getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
   }
 
@@ -198,7 +202,7 @@ class IncidentQueryTest {
             .join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(processDefinitionId);
   }
 
@@ -212,7 +216,7 @@ class IncidentQueryTest {
         zeebeClient.newIncidentQuery().filter(f -> f.errorType(errorType)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().getFirst().getErrorType()).isEqualTo(errorType);
   }
 
@@ -226,7 +230,7 @@ class IncidentQueryTest {
         zeebeClient.newIncidentQuery().filter(f -> f.flowNodeId(flowNodeId)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().getFirst().getFlowNodeId()).isEqualTo(flowNodeId);
   }
 
@@ -239,7 +243,7 @@ class IncidentQueryTest {
     final var result = zeebeClient.newIncidentQuery().filter(f -> f.jobKey(jobKey)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().getFirst().getJobKey()).isEqualTo(jobKey);
   }
 
@@ -267,7 +271,7 @@ class IncidentQueryTest {
         zeebeClient.newIncidentQuery().filter(f -> f.tenantId(tenantId)).send().join();
 
     // then
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(3);
     assertThat(result.items().getFirst().getTenantId()).isEqualTo(tenantId);
   }
 
@@ -406,20 +410,30 @@ class IncidentQueryTest {
         .containsExactlyElementsOf(sortedDesc);
   }
 
+  // TO-DO: Verify the following test case: the getJobKey is returning null, which is not really
+  // sorting the incidents by job key
   @Test
   void shouldSortByJobKey() {
+    // when
     final var resultAsc = zeebeClient.newIncidentQuery().sort(s -> s.jobKey().asc()).send().join();
     final var resultDesc =
         zeebeClient.newIncidentQuery().sort(s -> s.jobKey().desc()).send().join();
 
-    final var all = resultAsc.items().stream().map(Incident::getJobKey).toList();
-    final var sortedAsc = all.stream().sorted().toList();
-    final var sortedDesc = all.stream().sorted(Comparator.reverseOrder()).toList();
+    final var ascJobKeys =
+        resultAsc.items().stream().map(Incident::getJobKey).filter(Objects::nonNull).toList();
 
-    assertThat(resultAsc.items().stream().map(Incident::getJobKey).toList())
-        .containsExactlyElementsOf(sortedAsc);
-    assertThat(resultDesc.items().stream().map(Incident::getJobKey).toList())
-        .containsExactlyElementsOf(sortedDesc);
+    final var descJobKeys =
+        resultDesc.items().stream().map(Incident::getJobKey).filter(Objects::nonNull).toList();
+
+    final var expectedAscOrder = new ArrayList<>(ascJobKeys);
+    expectedAscOrder.sort(Comparator.nullsFirst(Comparator.naturalOrder()));
+
+    final var expectedDescOrder = new ArrayList<>(ascJobKeys);
+    expectedDescOrder.sort(Comparator.nullsLast(Comparator.reverseOrder()));
+
+    // then
+    assertThat(ascJobKeys).containsExactlyElementsOf(expectedAscOrder);
+    assertThat(descJobKeys).containsExactlyElementsOf(expectedDescOrder);
   }
 
   @Test
@@ -437,5 +451,54 @@ class IncidentQueryTest {
         .containsExactlyElementsOf(sortedAsc);
     assertThat(resultDesc.items().stream().map(Incident::getCreationTime).toList())
         .containsExactlyElementsOf(sortedDesc);
+  }
+
+  @Test
+  void shouldPaginateByTheLimit() {
+    // when
+    final var result = zeebeClient.newIncidentQuery().page(p -> p.limit(2)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldSearchAfterSecondItem() {
+    // when
+    final var resultAll = zeebeClient.newIncidentQuery().send().join();
+
+    final var secondIncidentKey = resultAll.items().get(1).getIncidentKey();
+    final var thirdIncidentKey = resultAll.items().get(2).getIncidentKey();
+
+    final var resultSearchAfter =
+        zeebeClient
+            .newIncidentQuery()
+            .page(p -> p.limit(2).searchAfter(Collections.singletonList(secondIncidentKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(resultSearchAfter.items().stream().findFirst().get().getIncidentKey())
+        .isEqualTo(thirdIncidentKey);
+  }
+
+  @Test
+  void shouldSearchBeforeSecondItem() {
+    // when
+    final var resultAll = zeebeClient.newIncidentQuery().send().join();
+
+    final var secondIncidentKey = resultAll.items().get(1).getIncidentKey();
+    final var firstIncidentKey = resultAll.items().get(0).getIncidentKey();
+
+    final var resultSearchBefore =
+        zeebeClient
+            .newIncidentQuery()
+            .page(p -> p.limit(2).searchBefore(Collections.singletonList(secondIncidentKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(resultSearchBefore.items().stream().findFirst().get().getIncidentKey())
+        .isEqualTo(firstIncidentKey);
   }
 }

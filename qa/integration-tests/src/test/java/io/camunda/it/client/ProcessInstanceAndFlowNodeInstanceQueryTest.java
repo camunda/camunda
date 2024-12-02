@@ -1003,4 +1003,53 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(result.items().size()).isEqualTo(2);
     assertThat(resultBefore.items().getFirst().getFlowNodeInstanceKey()).isEqualTo(key);
   }
+
+  @Test
+  void shouldPaginateByTheLimit() {
+    // when
+    final var result = zeebeClient.newFlownodeInstanceQuery().page(p -> p.limit(2)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldSearchAfterSecondItem() {
+    // when
+    final var resultAll = zeebeClient.newFlownodeInstanceQuery().send().join();
+
+    final var secondFlowNodeInstanceKey = resultAll.items().get(1).getFlowNodeInstanceKey();
+    final var firstFlowNodeInstanceKey = resultAll.items().get(2).getFlowNodeInstanceKey();
+
+    final var resultSearchAfter =
+        zeebeClient
+            .newFlownodeInstanceQuery()
+            .page(p -> p.limit(2).searchAfter(Collections.singletonList(secondFlowNodeInstanceKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(resultSearchAfter.items().stream().findFirst().get().getFlowNodeInstanceKey())
+        .isEqualTo(firstFlowNodeInstanceKey);
+  }
+
+  @Test
+  void shouldSearchBeforeSecondItem() {
+    // when
+    final var resultAll = zeebeClient.newFlownodeInstanceQuery().send().join();
+
+    final var secondFloNodeInstanceKey = resultAll.items().get(1).getFlowNodeInstanceKey();
+    final var firstFlowNodeInstanceKey = resultAll.items().get(0).getFlowNodeInstanceKey();
+
+    final var resultSearchBefore =
+        zeebeClient
+            .newFlownodeInstanceQuery()
+            .page(p -> p.limit(2).searchBefore(Collections.singletonList(secondFloNodeInstanceKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(resultSearchBefore.items().stream().findFirst().get().getFlowNodeInstanceKey())
+        .isEqualTo(firstFlowNodeInstanceKey);
+  }
 }

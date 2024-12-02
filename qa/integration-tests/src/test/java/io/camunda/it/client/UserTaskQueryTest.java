@@ -498,6 +498,55 @@ class UserTaskQueryTest {
         .isEqualTo(userTaskElementInstanceKey);
   }
 
+  @Test
+  void shouldPaginateByTheLimit() {
+    // when
+    final var result = camundaClient.newUserTaskQuery().page(p -> p.limit(2)).send().join();
+
+    // then
+    assertThat(result.items().size()).isEqualTo(2);
+  }
+
+  @Test
+  void shouldSearchAfterSecondItem() {
+    // when
+    final var resultAll = camundaClient.newUserTaskQuery().send().join();
+
+    final var secondUserTaskKey = resultAll.items().get(1).getUserTaskKey();
+    final var thirdUserTaskKey = resultAll.items().get(2).getUserTaskKey();
+
+    final var resultSearchAfter =
+        camundaClient
+            .newUserTaskQuery()
+            .page(p -> p.limit(2).searchAfter(Collections.singletonList(secondUserTaskKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(resultSearchAfter.items().stream().findFirst().get().getUserTaskKey())
+        .isEqualTo(thirdUserTaskKey);
+  }
+
+  @Test
+  void shouldSearchBeforeSecondItem() {
+    // when
+    final var resultAll = camundaClient.newUserTaskQuery().send().join();
+
+    final var secondUserTaskKey = resultAll.items().get(1).getUserTaskKey();
+    final var firstUserTaskKey = resultAll.items().get(0).getUserTaskKey();
+
+    final var resultSearchAfter =
+        camundaClient
+            .newUserTaskQuery()
+            .page(p -> p.limit(2).searchBefore(Collections.singletonList(secondUserTaskKey)))
+            .send()
+            .join();
+
+    // then
+    assertThat(resultSearchAfter.items().stream().findFirst().get().getUserTaskKey())
+        .isEqualTo(firstUserTaskKey);
+  }
+
   private static void deployProcess(
       final String processId,
       final String resourceName,
