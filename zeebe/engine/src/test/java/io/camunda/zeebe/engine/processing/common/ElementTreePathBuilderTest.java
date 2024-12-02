@@ -73,7 +73,7 @@ public class ElementTreePathBuilderTest {
     // when
     final ElementTreePathBuilder builder =
         new ElementTreePathBuilder()
-            .withElementInstanceState(elementInstanceState)
+            .withElementInstanceProvider(elementInstanceState::getInstance)
             .withCallActivityIndexProvider(new CallActivityIdProvider(null))
             .withElementInstanceKey(subProcess2.getKey());
 
@@ -135,7 +135,7 @@ public class ElementTreePathBuilderTest {
     // when
     final ElementTreePathBuilder builder =
         new ElementTreePathBuilder()
-            .withElementInstanceState(elementInstanceState)
+            .withElementInstanceProvider(elementInstanceState::getInstance)
             .withCallActivityIndexProvider(new CallActivityIdProvider(0))
             .withElementInstanceKey(subProcessC.getKey());
 

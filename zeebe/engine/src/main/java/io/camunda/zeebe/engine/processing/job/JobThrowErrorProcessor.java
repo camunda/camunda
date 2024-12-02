@@ -170,7 +170,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
     final var treePathProperties =
         new ElementTreePathBuilder()
-            .withElementInstanceState(elementInstanceState)
+            .withElementInstanceProvider(elementInstanceState::getInstance)
             .withCallActivityIndexProvider(processState::getFlowElement)
             .withElementInstanceKey(job.getElementInstanceKey())
             .build();

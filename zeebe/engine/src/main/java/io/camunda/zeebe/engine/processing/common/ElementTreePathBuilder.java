@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import java.util.LinkedList;
 import java.util.List;
@@ -15,14 +14,14 @@ import java.util.Objects;
 
 public class ElementTreePathBuilder {
 
-  private ElementInstanceState elementInstanceState;
+  private ElementInstanceProvider elementInstanceProvider;
   private CallActivityIndexProvider callActivityIndexProvider;
   private Long elementInstanceKey;
   private ElementTreePathProperties properties;
 
-  public ElementTreePathBuilder withElementInstanceState(
-      final ElementInstanceState elementInstanceState) {
-    this.elementInstanceState = elementInstanceState;
+  public ElementTreePathBuilder withElementInstanceProvider(
+      final ElementInstanceProvider elementInstanceState) {
+    elementInstanceProvider = elementInstanceState;
     return this;
   }
 
@@ -38,7 +37,7 @@ public class ElementTreePathBuilder {
   }
 
   public ElementTreePathProperties build() {
-    Objects.requireNonNull(elementInstanceState, "elementInstanceState cannot be null");
+    Objects.requireNonNull(elementInstanceProvider, "elementInstanceProvider cannot be null");
     Objects.requireNonNull(
         callActivityIndexProvider, "call activity index provider cannot be null");
     Objects.requireNonNull(elementInstanceKey, "elementInstanceKey cannot be null");
@@ -51,10 +50,10 @@ public class ElementTreePathBuilder {
   private void buildElementTreePathProperties(final long elementInstanceKey) {
     final List<Long> elementInstancePath = new LinkedList<>();
     elementInstancePath.add(elementInstanceKey);
-    ElementInstance instance = elementInstanceState.getInstance(elementInstanceKey);
+    ElementInstance instance = elementInstanceProvider.getInstance(elementInstanceKey);
     long parentElementInstanceKey = instance.getParentKey();
     while (parentElementInstanceKey != -1) {
-      instance = elementInstanceState.getInstance(parentElementInstanceKey);
+      instance = elementInstanceProvider.getInstance(parentElementInstanceKey);
       elementInstancePath.addFirst(parentElementInstanceKey);
       parentElementInstanceKey = instance.getParentKey();
     }
@@ -71,7 +70,7 @@ public class ElementTreePathBuilder {
 
   private Integer getCallActivityIndex(final long callingElementInstanceKey) {
     final ElementInstance callActivityElementInstance =
-        elementInstanceState.getInstance(callingElementInstanceKey);
+        elementInstanceProvider.getInstance(callingElementInstanceKey);
     final var callActivityInstanceRecord = callActivityElementInstance.getValue();
 
     return callActivityIndexProvider.getLexicographicIndex(
