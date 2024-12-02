@@ -21,6 +21,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
 
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
@@ -240,6 +241,7 @@ public class CamundaExporter implements Exporter {
             PROCESS_INSTANCE,
             ROLE,
             VARIABLE,
+            VARIABLE_DOCUMENT,
             JOB,
             INCIDENT,
             DECISION_EVALUATION,
