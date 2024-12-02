@@ -8,7 +8,7 @@
 package io.camunda.tasklist.webapp.security;
 
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.rest.exception.UnauthenticatedUserException;
 import java.util.List;
 import java.util.Optional;

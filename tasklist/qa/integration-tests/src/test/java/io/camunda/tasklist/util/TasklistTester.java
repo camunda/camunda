@@ -11,16 +11,19 @@ import static io.camunda.tasklist.util.TestCheck.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.graphql.spring.boot.test.GraphQLResponse;
-import com.graphql.spring.boot.test.GraphQLTestTemplate;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
-import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskCompleteRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchRequest;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
+import io.camunda.tasklist.webapp.dto.VariableInputDTO;
+import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
@@ -33,13 +36,12 @@ import io.camunda.zeebe.protocol.Protocol;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.annotation.PostConstruct;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -49,18 +51,24 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.stereotype.Component;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class TasklistTester {
 
-  private static final String GRAPHQL_DEFAULT_VARIABLE_FRAGMENT =
-      "graphql/variableIT/full-variable-fragment.graphql";
-  private static final String TASK_RESULT_PATTERN = "{id name assignee taskState completionTime}";
-  private static final String COMPLETE_TASK_MUTATION_PATTERN =
-      "mutation {completeTask(taskId: \"%s\", variables: %s)" + TASK_RESULT_PATTERN + "}";
-  private static final String CLAIM_TASK_MUTATION_PATTERN =
-      "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
+  private static final String REST_SEARCH_ENDPOINT = TasklistURIs.TASKS_URL_V1.concat("/search");
+  private static final String REST_GET_TASK = TasklistURIs.TASKS_URL_V1.concat("/search/{taskId}");
+  private static final String REST_SEARCH_TASK_VARIABLES =
+      TasklistURIs.TASKS_URL_V1.concat("/{taskId}/variables/search");
+  private static final String REST_ASSIGN_ENDPOINT =
+      TasklistURIs.TASKS_URL_V1.concat("/{taskId}/assign");
+  private static final String REST_UNASSIGN_ENDPOINT =
+      TasklistURIs.TASKS_URL_V1.concat("/{taskId}/unassign");
+  private static final String REST_COMPLETE_ENDPOINT =
+      TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete");
+
   private static final String VARIABLE_INPUT_PATTERN = "{name: \"%s\", value: \"%s\"}";
 
   private final ZeebeClient zeebeClient;
@@ -111,24 +119,17 @@ public class TasklistTester {
   @Qualifier(VARIABLES_EXIST_CHECK)
   private TestCheck variablesExist;
 
-  @Autowired private TasklistProperties tasklistProperties;
-
   @Autowired private NoSqlHelper noSqlHelper;
 
-  @Autowired private GraphQLTestTemplate graphQLTestTemplate;
-
   @Autowired private ObjectMapper objectMapper;
+
+  @Autowired private WebApplicationContext context;
 
   @Autowired(required = false)
   private IdentityJwt2AuthenticationTokenConverter jwtAuthenticationConverter;
 
-  private GraphQLResponse graphQLResponse;
+  private MockMvcHelper mockMvcHelper;
 
-  //
-  //  private boolean operationExecutorEnabled = true;
-  //
-  //  private Long jobKey;
-  //
   public TasklistTester(
       final ZeebeClient zeebeClient, final DatabaseTestExtension elasticsearchTestRule) {
     this.zeebeClient = zeebeClient;
@@ -143,11 +144,12 @@ public class TasklistTester {
     this.jwtDecoder = jwtDecoder;
   }
 
-  //
-  //  public Long getProcessInstanceKey() {
-  //    return processInstanceKey;
-  //  }
-  //
+  @PostConstruct
+  public void init() {
+    mockMvcHelper =
+        new MockMvcHelper(MockMvcBuilders.webAppContextSetup(context).build(), objectMapper);
+  }
+
   @SafeVarargs
   public final TasklistTester createAndDeploySimpleProcess(
       final String processId,
@@ -240,192 +242,67 @@ public class TasklistTester {
     return this;
   }
 
-  public GraphQLResponse getByQueryResource(final String resource) throws IOException {
-    graphQLResponse = graphQLTestTemplate.postForResource(resource);
-    return graphQLResponse;
+  public List<TaskSearchResponse> getCreatedTasks() throws IOException {
+    final var searchRequest = new TaskSearchRequest().setState(TaskState.CREATED);
+
+    final var result = mockMvcHelper.doRequest(post(REST_SEARCH_ENDPOINT), searchRequest);
+
+    return objectMapper.readValue(
+        result.getContentAsString(), new TypeReference<List<TaskSearchResponse>>() {});
   }
 
-  public GraphQLResponse getByQuery(final String query) {
-    graphQLResponse = graphQLTestTemplate.postMultipart(query, "{}");
-    return graphQLResponse;
+  public List<TaskSearchResponse> getCompletedTasks() throws IOException {
+    final var searchRequest = new TaskSearchRequest().setState(TaskState.COMPLETED);
+
+    final var result = mockMvcHelper.doRequest(post(REST_SEARCH_ENDPOINT), searchRequest);
+
+    return objectMapper.readValue(
+        result.getContentAsString(), new TypeReference<List<TaskSearchResponse>>() {});
   }
 
-  public GraphQLResponse getTaskByQuery(final String query) {
-    graphQLResponse = graphQLTestTemplate.postMultipart(query, "{}");
-    return graphQLResponse;
+  public List<TaskSearchResponse> getAllTasks() throws IOException {
+    final var searchRequest = new TaskSearchRequest();
+
+    final var result = mockMvcHelper.doRequest(post(REST_SEARCH_ENDPOINT), searchRequest);
+
+    return objectMapper.readValue(
+        result.getContentAsString(), new TypeReference<List<TaskSearchResponse>>() {});
   }
 
-  public List<TaskDTO> getTasksByQuery(final String query) {
-    graphQLResponse = graphQLTestTemplate.postMultipart(query, "{}");
-    return getTasksByPath("$.data.tasks");
+  public TaskSearchResponse getTaskById(final String taskId) throws IOException {
+    final var result = mockMvcHelper.doRequest(get(REST_GET_TASK), taskId);
+    return objectMapper.readValue(result.getContentAsString(), TaskSearchResponse.class);
   }
 
-  public GraphQLResponse getGraphTasksByQuery(final String query) {
-    return graphQLTestTemplate.postMultipart(query, "{}");
-  }
-
-  public GraphQLResponse getTaskById(final String taskId) throws IOException {
-    return getTaskById(taskId, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
-  }
-
-  public GraphQLResponse getTaskById(final String taskId, final String fragmentResource)
-      throws IOException {
-    final ObjectNode taskIdQ = objectMapper.createObjectNode().put("taskId", taskId);
-    return graphQLTestTemplate.perform(
-        "graphql/taskIT/get-task.graphql", taskIdQ, Collections.singletonList(fragmentResource));
-  }
-
-  public List<TaskDTO> getCreatedTasks() throws IOException {
-    graphQLResponse =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-created-tasks.graphql");
-    return getTasksByPath("$.data.tasks");
-  }
-
-  public List<TaskDTO> getCompletedTasks() throws IOException {
-    graphQLResponse =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-completed-tasks.graphql");
-    return getTasksByPath("$.data.tasks");
-  }
-
-  public GraphQLResponse getAllTasks() throws IOException {
-    return getAllTasks(GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
-  }
-
-  public GraphQLResponse getAllTasks(final String fragmentResource) throws IOException {
-    final ObjectNode query = objectMapper.createObjectNode();
-    query.putObject("query");
-    return getTasksByQueryAsVariable(query, fragmentResource);
-  }
-
-  public GraphQLResponse getAllProcesses(final String search) throws IOException {
-    final ObjectNode query = objectMapper.createObjectNode().put("search", search);
-    return getProcessesByQuery(query);
-  }
-
-  public GraphQLResponse getAllProcessesWithBearerAuth(final String search, final String token)
-      throws IOException {
-    final ObjectNode query = objectMapper.createObjectNode().put("search", search);
-    return getProcessesByQueryWithBearerAuth(query, token);
-  }
-
-  public GraphQLResponse getProcessesByQuery(final ObjectNode variables) throws IOException {
-    graphQLResponse = graphQLTestTemplate.perform("graphql/get-processes.graphql", variables);
-    return graphQLResponse;
-  }
-
-  public GraphQLResponse getProcessesByQueryWithBearerAuth(
-      final ObjectNode variables, final String token) throws IOException {
-    graphQLResponse =
-        graphQLTestTemplate
-            .withBearerAuth(token)
-            .perform("graphql/get-processes.graphql", variables);
-    return graphQLResponse;
-  }
-
-  public GraphQLResponse getTasksByQueryAsVariable(final ObjectNode variables) throws IOException {
-    return getTasksByQueryAsVariable(variables, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
-  }
-
-  public GraphQLResponse getTasksByQueryAsVariable(
-      final ObjectNode variables, final String fragmentResource) throws IOException {
-    graphQLResponse =
-        graphQLTestTemplate.perform(
-            "graphql/get-tasks-by-query.graphql",
-            variables,
-            Collections.singletonList(fragmentResource));
-    return graphQLResponse;
-  }
-
-  public GraphQLResponse getVariablesByTaskIdAndNames(final ObjectNode variables)
-      throws IOException {
-    return getVariablesByTaskIdAndNames(variables, GRAPHQL_DEFAULT_VARIABLE_FRAGMENT);
-  }
-
-  public List<VariableDTO> getTaskVariables() throws IOException {
+  public List<VariableSearchResponse> getTaskVariables() throws IOException {
     assertThat(taskId).isNotNull();
-    return getTaskVariablesByTaskId(taskId).getList("$.data.variables", VariableDTO.class);
+
+    return getTaskVariablesByTaskId(taskId);
   }
 
-  public GraphQLResponse getTaskVariablesByTaskId(final String taskId) throws IOException {
-    final ObjectNode variablesQ = objectMapper.createObjectNode();
-    variablesQ.put("taskId", taskId).putArray("variableNames");
-    return getVariablesByTaskIdAndNames(variablesQ);
-  }
-
-  public GraphQLResponse getVariablesByTaskIdAndNames(
-      final ObjectNode variables, final String fragmentResource) throws IOException {
-    graphQLResponse =
-        graphQLTestTemplate.perform(
-            "graphql/variableIT/get-variables.graphql",
-            variables,
-            Collections.singletonList(fragmentResource));
-    return graphQLResponse;
-  }
-
-  public GraphQLResponse getVariableById(final String variableId) throws IOException {
-    final ObjectNode variableQ = objectMapper.createObjectNode().put("variableId", variableId);
-    graphQLResponse =
-        graphQLTestTemplate.perform(
-            "graphql/variableIT/get-variable.graphql",
-            variableQ,
-            Collections.singletonList(GRAPHQL_DEFAULT_VARIABLE_FRAGMENT));
-    return graphQLResponse;
-  }
-
-  public GraphQLResponse getVariableById(final String variableId, final String fragmentResource)
+  public List<VariableSearchResponse> getTaskVariablesByTaskId(final String taskId)
       throws IOException {
-    final ObjectNode variableQ = objectMapper.createObjectNode().put("variableId", variableId);
-    graphQLResponse =
-        graphQLTestTemplate.perform(
-            "graphql/variableIT/get-variable.graphql",
-            variableQ,
-            Collections.singletonList(fragmentResource));
-    return graphQLResponse;
+    final var result = mockMvcHelper.doRequest(post(REST_SEARCH_TASK_VARIABLES, taskId));
+    return objectMapper.readValue(
+        result.getContentAsString(), new TypeReference<List<VariableSearchResponse>>() {});
   }
 
-  public List<TaskDTO> getTasksByPath(final String path) {
-    return graphQLResponse.getList(path, TaskDTO.class);
-  }
-
-  @SuppressWarnings("unchecked")
-  public Map<String, Object> getByPath(final String path) {
-    return graphQLResponse.get(path, Map.class);
-  }
-
-  public String get(final String path) {
-    return graphQLResponse.get(path);
-  }
-
-  public GraphQLResponse getForm(final String id) throws IOException {
-    final ObjectNode args = objectMapper.createObjectNode();
-    args.put("id", id).put("processDefinitionId", processDefinitionKey);
-    graphQLResponse = graphQLTestTemplate.perform("graphql/formIT/get-form.graphql", args);
-    return graphQLResponse;
-  }
-
-  public TasklistTester claimTask(final String claimRequest) {
-    getByQuery(claimRequest);
+  public TasklistTester assignTask(final String taskKey) {
+    mockMvcHelper.doRequest(patch(REST_ASSIGN_ENDPOINT, taskKey));
     return this;
   }
 
-  public TasklistTester unclaimTask(final String unclaimRequest) {
-    getByQuery(unclaimRequest);
+  public TasklistTester unassignTask(final String taskKey) {
+    mockMvcHelper.doRequest(patch(REST_UNASSIGN_ENDPOINT, taskKey));
     return this;
   }
 
-  public Boolean deleteProcessInstance(final String processInstanceId) {
-    final String mutation =
-        String.format(
-            "mutation { deleteProcessInstance(processInstanceId: \"%s\") }", processInstanceId);
-    graphQLResponse = graphQLTestTemplate.postMultipart(mutation, "{}");
-    return graphQLResponse.get("$.data.deleteProcessInstance", Boolean.class);
-  }
-
-  public GraphQLResponse startProcess(final String processDefinitionId) {
-    final String mutation =
-        String.format(
-            "mutation { startProcess (processDefinitionId: \"%s\"){id}} ", processDefinitionId);
-    return graphQLTestTemplate.postMultipart(mutation, "{}");
+  public TasklistTester completeTask(final String taskKey, final List<VariableInputDTO> variables) {
+    final TaskCompleteRequest completeRequest = new TaskCompleteRequest();
+    completeRequest.setVariables(variables);
+    final var result =
+        mockMvcHelper.doRequest(patch(REST_COMPLETE_ENDPOINT, taskId), completeRequest);
+    return this;
   }
 
   public TasklistTester deployProcess(final String... classpathResources) {
@@ -476,24 +353,6 @@ public class TasklistTester {
         ZeebeTestUtil.startProcessInstance(tenantId, zeebeClient, bpmnProcessId, payload);
     return this;
   }
-
-  //  public TasklistTester failTask(String taskName, String errorMessage) {
-  //    jobKey = ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(),
-  // 3,errorMessage);
-  //    return this;
-  //  }
-  //
-  //  public TasklistTester throwError(String taskName,String errorCode,String errorMessage) {
-  //    ZeebeTestUtil.throwErrorInTask(zeebeClient, taskName, UUID.randomUUID().toString(), 1,
-  // errorCode, errorMessage);
-  //    return this;
-  //  }
-  //
-  //  public TasklistTester incidentIsActive() {
-  //    elasticsearchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
-  //    return this;
-  //  }
-  //
 
   public TasklistTester taskIsCreated(final String flowNodeBpmnId) {
     databaseTestExtension.processAllRecordsAndWait(
@@ -590,7 +449,7 @@ public class TasklistTester {
                 flowNodeBpmnId, processDefinitionKey, TaskState.CREATED));
       }
     }
-    claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
+    assignTask(taskId);
 
     taskIsAssigned(taskId);
 
@@ -609,11 +468,8 @@ public class TasklistTester {
       }
     }
 
-    final String variablesAsString =
-        createVariablesList(variables).stream()
-            .map(this::variableAsGraphqlInput)
-            .collect(Collectors.joining(", ", "[", "]"));
-    getByQuery(String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, variablesAsString));
+    final List<VariableInputDTO> variablesInput = createVariablesList(variables);
+    completeTask(taskId, variablesInput);
 
     return taskIsCompleted(flowNodeBpmnId);
   }

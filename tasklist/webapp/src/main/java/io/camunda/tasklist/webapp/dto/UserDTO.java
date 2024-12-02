@@ -5,10 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.graphql.entity;
+package io.camunda.tasklist.webapp.dto;
 
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
 import io.camunda.tasklist.webapp.security.Permission;
 import io.camunda.tasklist.webapp.security.tenant.TasklistTenant;
 import java.util.List;
@@ -17,13 +15,13 @@ import org.springframework.util.StringUtils;
 
 public class UserDTO {
 
-  @GraphQLField @GraphQLNonNull private String userId;
-  @GraphQLField private String displayName;
+  private String userId;
+  private String displayName;
   private boolean apiUser;
-  @GraphQLField private List<Permission> permissions;
-  @GraphQLField private List<String> roles;
-  @GraphQLField private String salesPlanType;
-  @GraphQLField private List<C8AppLink> c8Links = List.of();
+  private List<Permission> permissions;
+  private List<String> roles;
+  private String salesPlanType;
+  private List<C8AppLink> c8Links = List.of();
   private List<TasklistTenant> tenants = List.of();
   private List<String> groups = List.of();
 
@@ -52,7 +50,7 @@ public class UserDTO {
     return apiUser;
   }
 
-  public UserDTO setApiUser(boolean apiUser) {
+  public UserDTO setApiUser(final boolean apiUser) {
     this.apiUser = apiUser;
     return this;
   }
@@ -75,13 +73,13 @@ public class UserDTO {
     return this;
   }
 
+  public String getSalesPlanType() {
+    return salesPlanType;
+  }
+
   public UserDTO setSalesPlanType(final String salesPlanType) {
     this.salesPlanType = salesPlanType;
     return this;
-  }
-
-  public String getSalesPlanType() {
-    return salesPlanType;
   }
 
   public List<C8AppLink> getC8Links() {
@@ -99,7 +97,7 @@ public class UserDTO {
     return tenants;
   }
 
-  public UserDTO setTenants(List<TasklistTenant> tenants) {
+  public UserDTO setTenants(final List<TasklistTenant> tenants) {
     if (tenants != null) {
       this.tenants = tenants;
     }
@@ -110,13 +108,19 @@ public class UserDTO {
     return groups;
   }
 
-  public UserDTO setGroups(List<String> groups) {
+  public UserDTO setGroups(final List<String> groups) {
     this.groups = groups;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(
+        userId, displayName, apiUser, permissions, roles, salesPlanType, c8Links, tenants, groups);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -133,12 +137,6 @@ public class UserDTO {
         && Objects.equals(c8Links, userDTO.c8Links)
         && Objects.equals(tenants, userDTO.tenants)
         && Objects.equals(groups, userDTO.groups);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        userId, displayName, apiUser, permissions, roles, salesPlanType, c8Links, tenants, groups);
   }
 
   @Override
