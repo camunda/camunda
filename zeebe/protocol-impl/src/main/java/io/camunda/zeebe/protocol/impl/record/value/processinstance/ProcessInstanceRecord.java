@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.processinstance;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
@@ -25,7 +26,9 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
+import org.msgpack.core.annotations.Nullable;
 
 public final class ProcessInstanceRecord extends UnifiedRecordValue
     implements ProcessInstanceRecordValue {
@@ -187,7 +190,9 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   @Override
   @JsonIgnore
-  public List<List<Long>> getElementInstancePath() {
+  @Nullable
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public Optional<List<List<Long>>> getElementInstancePath() {
     final var elementInstancePath = new ArrayList<List<Long>>();
     elementInstancePathProp.forEach(
         pe -> {
@@ -195,7 +200,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
           pe.forEach(e -> pathEntry.add(e.getValue()));
           elementInstancePath.add(pathEntry);
         });
-    return elementInstancePath;
+    return Optional.of(elementInstancePath);
   }
 
   public ProcessInstanceRecord setElementInstancePath(final List<List<Long>> elementInstancePath) {
@@ -210,10 +215,12 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   @Override
   @JsonIgnore
-  public List<Long> getProcessDefinitionPath() {
+  @Nullable
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public Optional<List<Long>> getProcessDefinitionPath() {
     final var processDefinitionPath = new ArrayList<Long>();
     processDefinitionPathProp.forEach(e -> processDefinitionPath.add(e.getValue()));
-    return processDefinitionPath;
+    return Optional.of(processDefinitionPath);
   }
 
   public ProcessInstanceRecord setProcessDefinitionPath(final List<Long> processDefinitionPath) {
@@ -224,10 +231,12 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   @Override
   @JsonIgnore
-  public List<Integer> getCallingElementPath() {
+  @Nullable
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public Optional<List<Integer>> getCallingElementPath() {
     final var callingElementPath = new ArrayList<Integer>();
     callingElementPathProp.forEach(e -> callingElementPath.add(e.getValue()));
-    return callingElementPath;
+    return Optional.of(callingElementPath);
   }
 
   public ProcessInstanceRecord setCallingElementPath(final List<Integer> callingElementPath) {

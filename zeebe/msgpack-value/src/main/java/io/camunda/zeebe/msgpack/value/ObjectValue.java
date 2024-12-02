@@ -144,7 +144,7 @@ public class ObjectValue extends BaseValue {
     return length;
   }
 
-  private <T extends BaseProperty<?>> void writeJson(
+  protected <T extends BaseProperty<?>> void writeJson(
       final StringBuilder builder, final List<T> properties) {
     for (int i = 0; i < properties.size(); i++) {
       if (i > 0) {

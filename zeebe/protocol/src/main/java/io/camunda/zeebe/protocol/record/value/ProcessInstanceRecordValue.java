@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 
 /**
@@ -108,13 +109,13 @@ public interface ProcessInstanceRecordValue
    *
    * @return tree path information about all element instances in the call hierarchy
    */
-  List<List<Long>> getElementInstancePath();
+  Optional<List<List<Long>>> getElementInstancePath();
 
   /**
    * @return tree path information for all process definitions in the hierarchy. Each entry is a
    *     process definition key for the corresponding process instance
    */
-  List<Long> getProcessDefinitionPath();
+  Optional<List<Long>> getProcessDefinitionPath();
 
   /**
    * List of lexicographical ids of calling elements in BPMN Process models.
@@ -133,5 +134,5 @@ public interface ProcessInstanceRecordValue
    * @return tree path information about call activities in the hierarchy. Each entry is a reference
    *     to the call activity in BPMN model containing an incident.
    */
-  List<Integer> getCallingElementPath();
+  Optional<List<Integer>> getCallingElementPath();
 }

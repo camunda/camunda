@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     implements ProcessInstanceRecordValue {
@@ -82,18 +83,18 @@ public class ProcessInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public List<List<Long>> getElementInstancePath() {
-    return List.of();
+  public Optional<List<List<Long>>> getElementInstancePath() {
+    return Optional.empty();
   }
 
   @Override
-  public List<Long> getProcessDefinitionPath() {
-    return List.of();
+  public Optional<List<Long>> getProcessDefinitionPath() {
+    return Optional.empty();
   }
 
   @Override
-  public List<Integer> getCallingElementPath() {
-    return List.of();
+  public Optional<List<Integer>> getCallingElementPath() {
+    return Optional.empty();
   }
 
   @Override
