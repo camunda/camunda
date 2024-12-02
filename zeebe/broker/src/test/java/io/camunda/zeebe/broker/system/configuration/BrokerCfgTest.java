@@ -533,18 +533,18 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldUseSoSndbufFromEnvironment() {
-    environment.put(ZEEBE_BROKER_NETWORK_SOCKET_SEND_BUFFER, "2MB");
-    assertSocketBufferParameter(ZEEBE_BROKER_NETWORK_SOCKET_SEND_BUFFER, "2MB");
-  }
+  public void shouldUseSocketSendBufferFromEnvironment() {
+    // given no value is defined
 
-  private void assertSocketBufferParameter(
-      final String socketBufferParameter, final String number) {
-    assertThat(environment.get(socketBufferParameter)).isEqualTo(number);
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // then
+    assertThat(cfg.getNetwork().getSocketSendBuffer().toKilobytes()).isEqualTo(1024);
   }
 
   @Test
-  public void shouldOverrideSpecifiedSoSndbufFromEnvironment() {
+  public void shouldOverrideSpecifiedSocketSendBufferFromEnvironment() {
     // given
     environment.put(ZEEBE_BROKER_NETWORK_SOCKET_SEND_BUFFER, "2048KB");
 
@@ -556,13 +556,18 @@ public final class BrokerCfgTest {
   }
 
   @Test
-  public void shouldUseSoRcvbufFromEnvironment() {
-    environment.put(ZEEBE_BROKER_NETWORK_SOCKET_RECEIVE_BUFFER, "3MB");
-    assertSocketBufferParameter(ZEEBE_BROKER_NETWORK_SOCKET_RECEIVE_BUFFER, "3MB");
+  public void shouldUseDefaultSocketReceiveBufferFromEnvironment() {
+    // given no value is defined
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // then
+    assertThat(cfg.getNetwork().getSocketReceiveBuffer().toKilobytes()).isEqualTo(1024);
   }
 
   @Test
-  public void shouldOverrideSpecifiedSoRcvbufFromEnvironment() {
+  public void shouldOverrideSpecifiedSocketReceiveBufferFromEnvironment() {
     // given
     environment.put(ZEEBE_BROKER_NETWORK_SOCKET_RECEIVE_BUFFER, "2MB");
 
