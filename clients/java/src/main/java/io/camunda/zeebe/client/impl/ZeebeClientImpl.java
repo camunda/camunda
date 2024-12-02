@@ -755,7 +755,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public UserTaskVariableQuery newUserTaskVariableRequest(final long userTaskKey) {
+  public UserTaskVariableQuery newUserTaskVariableQuery(final long userTaskKey) {
     return new UserTaskVariableQueryImpl(httpClient, jsonMapper, userTaskKey);
   }
 
