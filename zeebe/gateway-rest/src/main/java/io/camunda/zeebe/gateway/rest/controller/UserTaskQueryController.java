@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.rest.controller;
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.entities.FormEntity;
-import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.service.UserTaskServices;
@@ -61,9 +60,7 @@ public class UserTaskQueryController {
     try {
       final var result =
           userTaskServices.withAuthentication(RequestMapper.getAuthentication()).search(query);
-      final var processCacheItems =
-          processCache.getCacheItems(
-              result.items().stream().map(UserTaskEntity::processDefinitionKey).toList());
+      final var processCacheItems = processCache.getUserTaskNames(result.items());
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toUserTaskSearchQueryResponse(result, processCacheItems));
     } catch (final Exception e) {
