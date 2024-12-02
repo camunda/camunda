@@ -15,9 +15,8 @@ import java.util.StringJoiner;
 public class TaskOrderBy {
 
   private TaskSortFields field;
+
   @Schema(description = "* `ASC`: Ascending<br>" + "* `DESC`: Descending")
-
-
   private Sort order;
 
   public TaskOrderBy(final TaskSortFields field, final Sort order) {

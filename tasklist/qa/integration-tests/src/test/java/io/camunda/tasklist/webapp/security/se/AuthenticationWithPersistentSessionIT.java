@@ -129,7 +129,7 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
     final ResponseEntity<UserDTO> responseEntity =
         testRestTemplate.exchange(
             REST_CURRENT_USER,
-            HttpMethod.POST,
+            HttpMethod.GET,
             prepareRequestWithCookies(loginResponse.getHeaders()),
             UserDTO.class);
 
@@ -148,7 +148,7 @@ public class AuthenticationWithPersistentSessionIT extends TasklistIntegrationTe
     ResponseEntity<UserDTO> responseEntity =
         testRestTemplate.exchange(
             REST_CURRENT_USER,
-            HttpMethod.POST,
+            HttpMethod.GET,
             prepareRequestWithCookies(loginResponse.getHeaders()),
             UserDTO.class);
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
