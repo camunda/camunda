@@ -21,6 +21,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -278,6 +279,13 @@ public final class SearchQueryResponseMapper {
             tenantEntity.assignedMemberKeys() == null
                 ? null
                 : tenantEntity.assignedMemberKeys().stream().sorted().toList());
+  }
+
+  public static MappingItem toMapping(final MappingEntity mappingEntity) {
+    return new MappingItem()
+        .mappingKey(mappingEntity.mappingKey())
+        .claimName(mappingEntity.claimName())
+        .claimValue(mappingEntity.claimValue());
   }
 
   private static List<DecisionDefinitionItem> toDecisionDefinitions(

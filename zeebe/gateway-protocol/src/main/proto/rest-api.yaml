@@ -2406,6 +2406,69 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Mapping rule
+      operationId: deleteMappingRule
+      summary: Delete a mapping rule
+      description: Deletes the mapping rule with the given key.
+      parameters:
+        - name: mappingKey
+          in: path
+          required: true
+          description: The key of the mapping rule to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The mapping rule was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The mapping rule with the mappingKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /mappings/search:
+    post:
+      tags:
+        - Mapping rule
+      operationId: findMappings
+      summary: Query mappings
+      description: |
+        Search for mapping rules based on given criteria.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserSearchQueryRequest"
+        required: true
+      responses:
+        "200":
+          description: The mapping rule search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MappingSearchResponse"
+        "400":
+          description: >
+            The mapping rule search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /messages/publication:
     post:
@@ -3187,6 +3250,27 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/TenantItem"
+
+    MappingItem:
+      description: Mapping rule search response item.
+      type: object
+      properties:
+        tenantKey:
+          type: integer
+          description: The unique system-generated internal tenant ID.
+          format: int64
+        name:
+          type: string
+          description: The tenant name.
+        tenantId:
+          type: string
+          description: The unique external tenant ID.
+        assignedMemberKeys:
+          type: array
+          description: The set of keys of members assigned to the tenant.
+          items:
+            type: integer
+            format: int64
 
     UserTaskSearchQueryRequest:
       allOf:
@@ -4456,6 +4540,15 @@ components:
           description: The user search filters.
           allOf:
             - $ref: "#/components/schemas/UserFilterRequest"
+    MappingSearchQueryRequest:
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      type: object
+      properties:
+        filter:
+          description: The mapping search filters.
+          allOf:
+            - $ref: "#/components/schemas/UserFilterRequest"
     UserFilterRequest:
       description: User search filter.
       type: object
@@ -4469,6 +4562,11 @@ components:
         email:
           description: The email of the user.
           type: "string"
+    MappingFilterRequest:
+      description: Mapping search filter.
+      type: object
+      properties:
+        tbd:
     CamundaUser:
       type: "object"
       properties:
