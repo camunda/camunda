@@ -12,6 +12,7 @@ import io.camunda.tasklist.Metrics;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.micrometer.core.instrument.Gauge;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -53,12 +54,15 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
   @Qualifier("tasklistImportPositionUpdateThreadPoolExecutor")
   protected ThreadPoolTaskScheduler importPositionUpdateExecutor;
 
+  private final Map<String, Gauge> importPositionCompletedGauges = new HashMap<>();
+
   @PostConstruct
   private void init() {
     LOGGER.info("INIT: Start import position updater...");
     scheduleImportPositionUpdateTask();
   }
 
+  @Override
   public void scheduleImportPositionUpdateTask() {
     final var interval = tasklistProperties.getImporter().getImportPositionUpdateInterval();
     scheduledTask =
@@ -67,6 +71,7 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
             OffsetDateTime.now().plus(interval, ChronoUnit.MILLIS).toInstant());
   }
 
+  @Override
   public CompletableFuture<Void> cancelScheduledImportPositionUpdateTask() {
     final var future = new CompletableFuture<Void>();
     importPositionUpdateExecutor.submit(
@@ -81,8 +86,9 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
     return future;
   }
 
-  public ImportPositionEntity getLatestScheduledPosition(String aliasTemplate, int partitionId)
-      throws IOException {
+  @Override
+  public ImportPositionEntity getLatestScheduledPosition(
+      final String aliasTemplate, final int partitionId) throws IOException {
     final String key = getKey(aliasTemplate, partitionId);
     if (lastScheduledPositions.containsKey(key)) {
       return lastScheduledPositions.get(key);
@@ -94,49 +100,44 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
     }
   }
 
-  private String getKey(String aliasTemplate, int partitionId) {
-    return String.format("%s-%d", aliasTemplate, partitionId);
-  }
-
+  @Override
   public void recordLatestScheduledPosition(
-      String aliasName, int partitionId, ImportPositionEntity importPositionEntity) {
+      final String aliasName,
+      final int partitionId,
+      final ImportPositionEntity importPositionEntity) {
     lastScheduledPositions.put(getKey(aliasName, partitionId), importPositionEntity);
   }
 
-  public void recordLatestLoadedPosition(ImportPositionEntity lastProcessedPosition) {
+  @Override
+  public void recordLatestLoadedPosition(final ImportPositionEntity lastProcessedPosition) {
     withInflightImportPositionLock(
         () -> {
           final var aliasName = lastProcessedPosition.getAliasName();
           final var partition = lastProcessedPosition.getPartitionId();
+          if (!inflightProcessedPositions.containsKey(aliasName)) {
+            markPositionCompletedGauge(partition, aliasName, lastProcessedPosition);
+          }
           inflightProcessedPositions.put(getKey(aliasName, partition), lastProcessedPosition);
-        });
+        },
+        "record last loaded position");
   }
 
+  @Override
   public void clearCache() {
     lastScheduledPositions.clear();
     pendingProcessedPositions.clear();
-    withInflightImportPositionLock(() -> inflightProcessedPositions.clear());
+    importPositionCompletedGauges.clear();
+    withInflightImportPositionLock(() -> inflightProcessedPositions.clear(), "clear");
   }
 
-  protected void withImportPositionTimer(final Callable<Void> action) throws Exception {
-    metrics.getTimer(Metrics.TIMER_NAME_IMPORT_POSITION_UPDATE).recordCallable(action);
-  }
-
-  protected void withInflightImportPositionLock(final Runnable action) {
-    try {
-      inflightImportPositionLock.lock();
-      action.run();
-    } finally {
-      inflightImportPositionLock.unlock();
-    }
-  }
-
+  @Override
   public void updateImportPositions() {
     withInflightImportPositionLock(
         () -> {
           pendingProcessedPositions.putAll(inflightProcessedPositions);
           inflightProcessedPositions.clear();
-        });
+        },
+        "update positions");
 
     final var result = updateImportPositions(pendingProcessedPositions);
 
@@ -148,5 +149,40 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
 
     // self scheduling just for the case the interval is set too short
     scheduleImportPositionUpdateTask();
+  }
+
+  private void markPositionCompletedGauge(
+      final int partition,
+      final String aliasName,
+      final ImportPositionEntity lastProcessedPosition) {
+    importPositionCompletedGauges.put(
+        getKey(aliasName, partition),
+        metrics.registerGauge(
+            Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED,
+            lastProcessedPosition,
+            (pos) -> pos.isCompleted() ? 1.0 : 0.0,
+            Metrics.TAG_KEY_PARTITION,
+            Integer.toString(partition),
+            Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+            aliasName));
+  }
+
+  private String getKey(final String aliasTemplate, final int partitionId) {
+    return String.format("%s-%d", aliasTemplate, partitionId);
+  }
+
+  protected void withImportPositionTimer(final Callable<Void> action) throws Exception {
+    metrics.getTimer(Metrics.TIMER_NAME_IMPORT_POSITION_UPDATE).recordCallable(action);
+  }
+
+  protected void withInflightImportPositionLock(final Runnable action, final String name) {
+    try {
+      LOGGER.error("access LOCK {} - {}", Thread.currentThread().getName(), name);
+      inflightImportPositionLock.lock();
+      action.run();
+    } finally {
+      inflightImportPositionLock.unlock();
+      LOGGER.error("release LOCK {} - {}", Thread.currentThread().getName(), name);
+    }
   }
 }

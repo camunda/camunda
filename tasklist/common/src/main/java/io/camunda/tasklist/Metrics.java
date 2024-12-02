@@ -7,8 +7,10 @@
  */
 package io.camunda.tasklist;
 
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.util.function.ToDoubleFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,11 +40,15 @@ public class Metrics {
 
   public static final String COUNTER_NAME_CLAIMED_TASKS = "claimed.tasks";
   public static final String COUNTER_NAME_COMPLETED_TASKS = "completed.tasks";
+
+  public static final String GAUGE_NAME_IMPORT_POSITION_COMPLETED =
+      TASKLIST_NAMESPACE + "import.completed";
   // Tags
   // -----
   //  Keys:
   public static final String TAG_KEY_NAME = "name",
       TAG_KEY_TYPE = "type",
+      TAG_KEY_IMPORT_POS_ALIAS = "importPositionAlias",
       TAG_KEY_PARTITION = "partition",
       TAG_KEY_STATUS = "status",
       TAG_KEY_BPMN_PROCESS_ID = "bpmnProcessId",
@@ -74,5 +80,19 @@ public class Metrics {
 
   public Timer getTimer(final String name, final String... tags) {
     return registry.timer(name, tags);
+  }
+
+  public <T> Gauge registerGauge(
+      final String name,
+      final T stateObject,
+      final ToDoubleFunction<T> valueFunction,
+      final String... tags) {
+    return Gauge.builder(name, () -> valueFunction.applyAsDouble(stateObject))
+        .tags(tags)
+        .register(registry);
+  }
+
+  public Gauge getGauge(final String name, final String... tags) {
+    return registry.get(name).tags(tags).gauge();
   }
 }
