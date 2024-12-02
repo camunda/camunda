@@ -19,12 +19,13 @@ import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
+import io.camunda.search.clients.transformers.filter.ProcessDefinitionFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
 import io.camunda.search.clients.types.TypedValue;
 import io.camunda.search.entities.ProcessInstanceEntity;
-import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.UserFilter;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
@@ -142,8 +143,8 @@ class SearchClientBasedQueryExecutorTest {
                         new Authentication(100L, List.of(), tenantIds, ""))));
 
     final var query =
-        new ProcessInstanceQuery.Builder()
-            .filter(new ProcessInstanceFilter.Builder().processDefinitionIds("x").build())
+        new ProcessDefinitionQuery.Builder()
+            .filter(new ProcessDefinitionFilter.Builder().processDefinitionIds("x").build())
             .build();
 
     // when
@@ -159,7 +160,8 @@ class SearchClientBasedQueryExecutorTest {
                         b ->
                             b.must(
                                 List.of(
-                                    new ProcessInstanceFilterTransformer(new ProcessIndex("", true))
+                                    new ProcessDefinitionFilterTransformer(
+                                            new ProcessIndex("", true))
                                         .toSearchQuery(query.filter()),
                                     SearchQuery.of(
                                         q2 ->
