@@ -107,4 +107,28 @@ public class TenantController {
                 .withAuthentication(RequestMapper.getAuthentication())
                 .removeMember(tenantKey, EntityType.USER, userKey));
   }
+
+  @PutMapping(
+      path = "/{tenantKey}/mapping-rules/{mappingKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> assignMappingToTenant(
+      @PathVariable final long tenantKey, @PathVariable final long mappingKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .addMember(tenantKey, EntityType.MAPPING, mappingKey));
+  }
+
+  @DeleteMapping(
+      path = "/{tenantKey}/mapping-rules/{mappingKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> removeMappingFromTenant(
+      @PathVariable final long tenantKey, @PathVariable final long mappingKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(tenantKey, EntityType.MAPPING, mappingKey));
+  }
 }

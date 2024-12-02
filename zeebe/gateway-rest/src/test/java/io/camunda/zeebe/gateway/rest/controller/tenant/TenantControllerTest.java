@@ -268,4 +268,48 @@ public class TenantControllerTest extends RestControllerTest {
     // then
     verify(tenantServices, times(1)).removeMember(tenantKey, EntityType.USER, userKey);
   }
+
+  @Test
+  void assignMappingToTenantShouldReturnNoContent() {
+    // given
+    final var tenantKey = 100L;
+    final var mappingKey = 42L;
+
+    when(tenantServices.addMember(tenantKey, EntityType.MAPPING, mappingKey))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/mapping-rules/%s".formatted(TENANT_BASE_URL, tenantKey, mappingKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(tenantServices, times(1)).addMember(tenantKey, EntityType.MAPPING, mappingKey);
+  }
+
+  @Test
+  void removeMappingFromTenantShouldReturnNoContent() {
+    // given
+    final var tenantKey = 100L;
+    final var mappingKey = 42L;
+
+    when(tenantServices.removeMember(tenantKey, EntityType.MAPPING, mappingKey))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/mapping-rules/%s".formatted(TENANT_BASE_URL, tenantKey, mappingKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(tenantServices, times(1)).removeMember(tenantKey, EntityType.MAPPING, mappingKey);
+  }
 }
