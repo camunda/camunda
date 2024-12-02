@@ -33,6 +33,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import org.agrona.collections.MutableLong;
 import org.agrona.collections.MutableReference;
@@ -84,7 +85,15 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
   }
 
   private Resource findNextResource() {
+    return findProcessResource()
+        .or(this::findFormResource)
+        .or(this::findDecisionRequirementsResource)
+        .orElse(null);
+  }
+
+  private Optional<Resource> findProcessResource() {
     final var foundProcess = new MutableReference<PersistedProcess>();
+
     processState.forEachProcess(
         null, // TODO: Continue where we left off
         process -> {
@@ -99,11 +108,12 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           return false;
         });
 
-    if (foundProcess.get() != null) {
-      return new ProcessResource(foundProcess.get());
-    }
+    return Optional.ofNullable(foundProcess.get()).map(ProcessResource::new);
+  }
 
+  private Optional<Resource> findFormResource() {
     final var foundForm = new MutableReference<PersistedForm>();
+
     formState.forEachForm(
         null, // TODO: Continue where we left off
         form -> {
@@ -117,13 +127,15 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           foundForm.set(copy);
           return false;
         });
-    if (foundForm.get() != null) {
-      return new FormResource(foundForm.get());
-    }
 
+    return Optional.ofNullable(foundForm.get()).map(FormResource::new);
+  }
+
+  private Optional<Resource> findDecisionRequirementsResource() {
     final var foundDecisionRequirements = new MutableReference<PersistedDecisionRequirements>();
     final var foundDecisions = new MutableReference<Collection<PersistedDecision>>();
     final var foundDecisionDeploymentKey = new MutableLong(NO_DEPLOYMENT_KEY);
+
     decisionState.forEachDecisionRequirements(
         null, // TODO: Continue where we left off
         decisionRequirements -> {
@@ -153,12 +165,12 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
           foundDecisionDeploymentKey.set(deploymentKey);
           return false;
         });
-    if (foundDecisionRequirements.get() != null) {
-      return new DecisionRequirementsResource(
-          foundDecisionDeploymentKey.get(), foundDecisionRequirements.get(), foundDecisions.get());
-    }
 
-    return null;
+    return Optional.ofNullable(foundDecisionRequirements.get())
+        .map(
+            decisionRequirements ->
+                new DecisionRequirementsResource(
+                    foundDecisionDeploymentKey.get(), decisionRequirements, foundDecisions.get()));
   }
 
   private Set<Resource> findResourcesWithDeploymentKey(
@@ -265,9 +277,9 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
         resourceUtil.applyFormMetadata(form, metadata);
       }
       case DecisionRequirementsResource(
-              final var deploymentKey,
-              final var decisionRequirements,
-              final var decisions) -> {
+          final var deploymentKey,
+          final var decisionRequirements,
+          final var decisions) -> {
         final var requirementsMetadata = deploymentRecord.decisionRequirementsMetadata().add();
         resourceUtil.applyDecisionRequirementsMetadata(decisionRequirements, requirementsMetadata);
         decisions.forEach(
