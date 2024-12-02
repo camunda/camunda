@@ -51,6 +51,13 @@ public class ElementTreePathBuilder {
     final List<Long> elementInstancePath = new LinkedList<>();
     elementInstancePath.add(elementInstanceKey);
     ElementInstance instance = elementInstanceProvider.getInstance(elementInstanceKey);
+    if (instance == null) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to find element instance for given key '%d', but didn't exist.",
+              elementInstanceKey));
+    }
+
     long parentElementInstanceKey = instance.getParentKey();
     while (parentElementInstanceKey != -1) {
       instance = elementInstanceProvider.getInstance(parentElementInstanceKey);

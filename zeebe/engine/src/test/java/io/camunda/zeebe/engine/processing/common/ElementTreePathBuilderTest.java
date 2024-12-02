@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.common;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
@@ -56,6 +57,21 @@ public class ElementTreePathBuilderTest {
     assertThat(properties.processDefinitionPath())
         .containsExactly(parentProcessInstanceRecord.getProcessDefinitionKey());
     assertThat(properties.callingElementPath()).isEmpty();
+  }
+
+  @Test
+  public void shouldThrowWhenElementInstanceDoesntExist() {
+    // given
+    final ElementTreePathBuilder builder =
+        new ElementTreePathBuilder()
+            .withElementInstanceProvider(elementInstanceMap::get)
+            .withCallActivityIndexProvider(new CallActivityIdProvider(null))
+            .withElementInstanceKey(0xCAFE);
+
+    // when
+    assertThatThrownBy(builder::build)
+        .hasMessageContaining("Expected to find element instance")
+        .isInstanceOf(IllegalStateException.class);
   }
 
   @Test
