@@ -518,6 +518,89 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /tenants/{tenantKey}/users/{userKey}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignUserToTenant
+      summary: Assign a user to a tenant
+      description: Assign a single user to a specified tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: userKey
+          in: path
+          required: true
+          description: The unique identifier of the user.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was successfully assigned to the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or user was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: removeUserFromTenant
+      summary: Remove a user from a tenant
+      description: Removes a single user from a specified tenant without deleting the user.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: userKey
+          in: path
+          required: true
+          description: The unique identifier of the user.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was successfully removed from the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or user was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
 
   /tenants/search:
     post:

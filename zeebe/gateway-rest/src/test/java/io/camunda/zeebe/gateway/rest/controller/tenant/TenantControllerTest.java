@@ -24,6 +24,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -201,7 +202,7 @@ public class TenantControllerTest extends RestControllerTest {
   }
 
   @Test
-  void deleteUserShouldReturnNoContent() {
+  void deleteTenantShouldReturnNoContent() {
     // given
     final long key = 1234L;
 
@@ -221,5 +222,50 @@ public class TenantControllerTest extends RestControllerTest {
 
     // then
     verify(tenantServices, times(1)).deleteTenant(key);
+  }
+
+  @Test
+  void assignUserToTenantShouldReturnNoContent() {
+    // given
+    final var tenantKey = 100L;
+    final var userKey = 42L;
+    final var tenantRecord = new TenantRecord().setTenantKey(tenantKey);
+
+    when(tenantServices.addMember(tenantKey, EntityType.USER, userKey))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .put()
+        .uri("%s/%s/users/%s".formatted(TENANT_BASE_URL, tenantKey, userKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(tenantServices, times(1)).addMember(tenantKey, EntityType.USER, userKey);
+  }
+
+  @Test
+  void removeUserFromTenantShouldReturnNoContent() {
+    // given
+    final var tenantKey = 100L;
+    final var userKey = 42L;
+
+    when(tenantServices.removeMember(tenantKey, EntityType.USER, userKey))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/users/%s".formatted(TENANT_BASE_URL, tenantKey, userKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(tenantServices, times(1)).removeMember(tenantKey, EntityType.USER, userKey);
   }
 }

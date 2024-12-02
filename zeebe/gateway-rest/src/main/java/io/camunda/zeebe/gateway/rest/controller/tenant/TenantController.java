@@ -15,6 +15,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -77,5 +78,33 @@ public class TenantController {
                 .withAuthentication(RequestMapper.getAuthentication())
                 .updateTenant(tenantDTO),
         ResponseMapper::toTenantUpdateResponse);
+  }
+
+  // The API will accept only a single userKey for now to maintain atomicity and align
+  // with REST principles.
+  // Bulk operations would require adapting the broker request and adding a new event like
+  // ENTITIES_ADDED, which is out of scope for this iteration.
+  @PutMapping(
+      path = "/{tenantKey}/users/{userKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> assignUsersToTenant(
+      @PathVariable final long tenantKey, @PathVariable final long userKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .addMember(tenantKey, EntityType.USER, userKey));
+  }
+
+  @DeleteMapping(
+      path = "/{tenantKey}/users/{userKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> removeUserFromTenant(
+      @PathVariable final long tenantKey, @PathVariable final long userKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            tenantServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(tenantKey, EntityType.USER, userKey));
   }
 }
