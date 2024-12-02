@@ -250,11 +250,6 @@
     </dependency>
 
     <dependency>
-      <groupId>com.graphql-java-kickstart</groupId>
-      <artifactId>graphql-java-servlet</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
     </dependency>
@@ -267,11 +262,6 @@
     <dependency>
       <groupId>com.auth0</groupId>
       <artifactId>java-jwt</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.graphql-java-kickstart</groupId>
-      <artifactId>graphql-java-kickstart</artifactId>
     </dependency>
 
     <dependency>
@@ -503,7 +493,6 @@
             <dependency>org.springframework.boot:spring-boot-starter-thymeleaf</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-actuator</dependency>
             <dependency>org.springdoc:springdoc-openapi-starter-webmvc-ui</dependency>
-            <dependency>com.graphql-java-kickstart:graphql-spring-boot-starter</dependency>
             <dependency>org.thymeleaf:thymeleaf</dependency>
             <dependency>jakarta.json:jakarta.json-api</dependency>
             <dependency>io.micrometer:micrometer-registry-prometheus-simpleclient</dependency>
@@ -546,10 +535,7 @@
             <exclude>io/camunda/tasklist/webapp/StartupBean.class</exclude>
             <exclude>io/camunda/tasklist/webapp/IndexController.class</exclude>
             <exclude>io/camunda/tasklist/WebappModuleConfiguration.class</exclude>
-            <exclude>io/camunda/tasklist/webapp/graphql/*</exclude>
-            <exclude>io/camunda/tasklist/webapp/graphql/mutation/*</exclude>
-            <exclude>io/camunda/tasklist/webapp/graphql/query/*</exclude>
-            <exclude>io/camunda/tasklist/webapp/graphql/entity/*</exclude>
+            <exclude>io/camunda/tasklist/webapp/dto/*</exclude>
             <exclude>io/camunda/tasklist/webapp/management/dto/*</exclude>
             <exclude>io/camunda/tasklist/webapp/es/dao/*</exclude>
             <exclude>io/camunda/tasklist/webapp/es/dao/response/*</exclude>
