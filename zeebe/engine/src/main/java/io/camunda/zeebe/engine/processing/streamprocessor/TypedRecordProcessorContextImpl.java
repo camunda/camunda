@@ -106,4 +106,9 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   public ControllableStreamClock getClock() {
     return clock;
   }
+
+  @Override
+  public TransientPendingSubscriptionState getTransientProcessMessageSubscriptionState() {
+    return transientProcessMessageSubscriptionState;
+  }
 }
