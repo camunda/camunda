@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
+import java.util.function.LongConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -971,12 +972,18 @@ public final class DecisionStateTest {
     decisionState.storeDecisionRequirements(drg3);
 
     // when
-    final var visitor = Mockito.mock(PersistedDecisionRequirementsVisitor.class);
-    Mockito.when(visitor.visit(any())).thenReturn(true);
-    decisionState.forEachDecisionRequirements(null, visitor);
+    final var visitor = Mockito.mock(LongConsumer.class);
+    decisionState.forEachDecisionRequirements(
+        null,
+        (drg) -> {
+          visitor.accept(drg.getDecisionRequirementsKey());
+          return true;
+        });
 
     // then
-    Mockito.verify(visitor, Mockito.times(3)).visit(any());
+    Mockito.verify(visitor).accept(1L);
+    Mockito.verify(visitor).accept(2L);
+    Mockito.verify(visitor).accept(3L);
   }
 
   @Test
@@ -1013,12 +1020,18 @@ public final class DecisionStateTest {
     decisionState.storeDecisionRecord(decision3);
 
     // when
-    final var visitor = Mockito.mock(PersistedDecisionVisitor.class);
-    Mockito.when(visitor.visit(any())).thenReturn(true);
-    decisionState.forEachDecision(null, visitor);
+    final var visitor = Mockito.mock(LongConsumer.class);
+    decisionState.forEachDecision(
+        null,
+        (decision) -> {
+          visitor.accept(decision.getDecisionKey());
+          return true;
+        });
 
     // then
-    Mockito.verify(visitor, Mockito.times(3)).visit(any());
+    Mockito.verify(visitor).accept(1L);
+    Mockito.verify(visitor).accept(2L);
+    Mockito.verify(visitor).accept(3L);
   }
 
   @Test
