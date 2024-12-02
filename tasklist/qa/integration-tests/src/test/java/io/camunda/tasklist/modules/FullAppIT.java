@@ -9,7 +9,6 @@ package io.camunda.tasklist.modules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.ArchiverModuleConfiguration;
 import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
 import io.camunda.tasklist.webapp.controllers.TasklistIndexController;
@@ -20,7 +19,6 @@ public class FullAppIT extends ModuleIntegrationTest {
   @Test
   public void testImportModuleIsPresent() {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
-    assertThat(applicationContext.getBean(ArchiverModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(TasklistIndexController.class)).isNotNull();
   }
