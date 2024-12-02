@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 public class DataUtilTest {
 
   @Test
-  public void testNewHashSetWithMultipleElements() {
+  public void shouldNewHashSetWithMultipleElements() {
     // when
     HashSet<String> result = DataUtil.newHashSet("apple", "banana", "cherry");
 
@@ -25,7 +25,7 @@ public class DataUtilTest {
   }
 
   @Test
-  public void testNewHashSetWithDuplicateElements() {
+  public void shouldNewHashSetWithDuplicateElements() {
     // when
     HashSet<String> result = DataUtil.newHashSet("apple", "banana", "apple", "cherry", "banana");
 
@@ -33,9 +33,8 @@ public class DataUtilTest {
     assertThat(result).isNotNull().hasSize(3).contains("apple", "banana", "cherry");
   }
 
-  // Тестируем создание множества с пустым массивом
   @Test
-  public void testNewHashSetWithEmptyArray() {
+  public void shouldNewHashSetWithEmptyArray() {
     // when
     HashSet<String> result = DataUtil.newHashSet();
 
@@ -43,9 +42,8 @@ public class DataUtilTest {
     assertThat(result).isNotNull().isEmpty();
   }
 
-  // Тестируем создание множества с массивом, содержащим один элемент
   @Test
-  public void testNewHashSetWithSingleElement() {
+  public void shouldNewHashSetWithSingleElement() {
     // when
     HashSet<String> result = DataUtil.newHashSet("apple");
 
@@ -54,7 +52,7 @@ public class DataUtilTest {
   }
 
   @Test
-  public void testNewHashSetWithNullArray() {
+  public void shouldNewHashSetWithNullArray() {
     // then
     assertThatThrownBy(() -> DataUtil.newHashSet((String[]) null))
         .isInstanceOf(NullPointerException.class);
