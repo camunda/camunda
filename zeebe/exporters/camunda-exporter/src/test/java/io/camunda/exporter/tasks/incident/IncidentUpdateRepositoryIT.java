@@ -27,6 +27,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdat
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
@@ -87,12 +88,12 @@ abstract sealed class IncidentUpdateRepositoryIT {
   protected final ListViewTemplate listViewTemplate;
   protected final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   protected final OperationTemplate operationTemplate;
-  private final String indexPrefix = UUID.randomUUID().toString();
   @AutoCloseResource private final ClientAdapter clientAdapter;
   private final SearchEngineClient engineClient;
 
   protected IncidentUpdateRepositoryIT(final String databaseUrl, final boolean isElastic) {
     final var config = new ExporterConfiguration();
+    final var indexPrefix = UUID.randomUUID().toString();
     config.getConnect().setIndexPrefix(indexPrefix);
     config.getConnect().setUrl(databaseUrl);
 
@@ -900,6 +901,87 @@ abstract sealed class IncidentUpdateRepositoryIT {
           .asInstanceOf(InstanceOfAssertFactories.collection(ActiveIncident.class))
           .containsExactlyInAnyOrder(
               new ActiveIncident("8", "PI_3/FNI_4"), new ActiveIncident("7", "PI_1/FNI_2"));
+    }
+  }
+
+  @Nested
+  final class GetProcessInstancesIT {
+    @Test
+    void shouldGetProcessInstances() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "1",
+          new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "2",
+          new ProcessInstanceForListViewEntity().setKey(2).setTreePath("PI_2"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var processInstances = repository.getProcessInstances(List.of("1", "2"));
+
+      // then
+      assertThat(processInstances)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(ProcessInstanceDocument.class))
+          .containsExactlyInAnyOrder(
+              new ProcessInstanceDocument("1", listViewTemplate.getFullQualifiedName(), 1, "PI_1"),
+              new ProcessInstanceDocument("2", listViewTemplate.getFullQualifiedName(), 2, "PI_2"));
+    }
+
+    @Test
+    void shouldNotGetProcessInstancesWithOtherKeys() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "1",
+          new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "2",
+          new ProcessInstanceForListViewEntity().setKey(2).setTreePath("PI_2"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var processInstances = repository.getProcessInstances(List.of("1"));
+
+      // then
+      assertThat(processInstances)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(ProcessInstanceDocument.class))
+          .containsExactly(
+              new ProcessInstanceDocument("1", listViewTemplate.getFullQualifiedName(), 1, "PI_1"));
+    }
+
+    @Test
+    void shouldNotGetWrongJoinRelation() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      final var flowNode = new FlowNodeInstanceForListViewEntity().setKey(2).setId("2");
+      flowNode.getJoinRelation().setParent(1L);
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "1",
+          new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
+      batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), flowNode, "1");
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var processInstances = repository.getProcessInstances(List.of("1", "2"));
+
+      // then
+      assertThat(processInstances)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(ProcessInstanceDocument.class))
+          .containsExactly(
+              new ProcessInstanceDocument("1", listViewTemplate.getFullQualifiedName(), 1, "PI_1"));
     }
   }
 }
