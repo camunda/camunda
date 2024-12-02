@@ -160,6 +160,7 @@ public class VariableService {
     // take current runtime variables values and
     final TaskEntity task = taskStore.getTask(taskId);
     final String taskFlowNodeInstanceId = task.getFlowNodeInstanceId();
+    final var processInstanceKey = Long.parseLong(task.getProcessInstanceId());
 
     final List<VariableEntity> taskVariables =
         getRuntimeVariablesByRequest(GetVariablesRequest.createFrom(task));
@@ -191,7 +192,7 @@ public class VariableService {
               draftTaskVariable ->
                   finalVariablesMap.put(
                       draftTaskVariable.getName(),
-                      createSnapshotVariableFrom(taskId, draftTaskVariable)));
+                      createSnapshotVariableFrom(taskId, processInstanceKey, draftTaskVariable)));
     }
 
     // update/append with variables passed for task completion
@@ -201,6 +202,7 @@ public class VariableService {
           createSnapshotVariableFrom(
               task.getTenantId(),
               taskId,
+              processInstanceKey,
               var.getName(),
               var.getValue(),
               tasklistProperties.getImporter().getVariableSizeThreshold()));
@@ -679,6 +681,7 @@ public class VariableService {
   public static SnapshotTaskVariableEntity createSnapshotVariableFrom(
       final String tenantId,
       final String taskId,
+      final Long processInstanceKey,
       final String name,
       final String value,
       final int variableSizeThreshold) {
@@ -686,6 +689,7 @@ public class VariableService {
         new SnapshotTaskVariableEntity()
             .setId(getSnapshotVariableId(taskId, name))
             .setTaskId(taskId)
+            .setProcessInstanceKey(processInstanceKey)
             .setName(name);
     if (value.length() > variableSizeThreshold) {
       // store preview
@@ -704,6 +708,7 @@ public class VariableService {
     return new SnapshotTaskVariableEntity()
         .setId(getSnapshotVariableId(taskId, variableEntity.getName()))
         .setTaskId(taskId)
+        .setProcessInstanceKey(variableEntity.getProcessInstanceKey())
         .setName(variableEntity.getName())
         .setValue(variableEntity.getValue())
         .setIsPreview(variableEntity.getIsPreview())
@@ -715,10 +720,13 @@ public class VariableService {
   }
 
   public static SnapshotTaskVariableEntity createSnapshotVariableFrom(
-      final String taskId, final DraftTaskVariableEntity draftTaskVariableEntity) {
+      final String taskId,
+      final Long processInstanceKey,
+      final DraftTaskVariableEntity draftTaskVariableEntity) {
     return new SnapshotTaskVariableEntity()
         .setId(getSnapshotVariableId(taskId, draftTaskVariableEntity.getName()))
         .setTaskId(taskId)
+        .setProcessInstanceKey(processInstanceKey)
         .setName(draftTaskVariableEntity.getName())
         .setValue(draftTaskVariableEntity.getValue())
         .setIsPreview(draftTaskVariableEntity.getIsPreview())
