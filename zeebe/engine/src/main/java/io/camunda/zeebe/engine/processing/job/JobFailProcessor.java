@@ -176,7 +176,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     final var treePathProperties =
         new ElementTreePathBuilder()
             .withElementInstanceState(elementInstanceState)
-            .withProcessState(processState)
+            .withCallActivityIndexProvider(processState::getFlowElement)
             .withElementInstanceKey(value.getElementInstanceKey())
             .build();
 

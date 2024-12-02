@@ -154,7 +154,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final var treePathProperties =
         new ElementTreePathBuilder()
             .withElementInstanceState(elementInstanceState)
-            .withProcessState(processState)
+            .withCallActivityIndexProvider(processState::getFlowElement)
             .withElementInstanceKey(job.getElementInstanceKey())
             .build();
 

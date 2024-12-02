@@ -11,6 +11,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
@@ -28,6 +30,7 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -71,7 +74,7 @@ public class ElementTreePathBuilderTest {
     final ElementTreePathBuilder builder =
         new ElementTreePathBuilder()
             .withElementInstanceState(elementInstanceState)
-            .withProcessState(processState)
+            .withCallActivityIndexProvider(new CallActivityIdProvider(null))
             .withElementInstanceKey(subProcess2.getKey());
 
     final ElementTreePathProperties properties = builder.build();
@@ -133,7 +136,7 @@ public class ElementTreePathBuilderTest {
     final ElementTreePathBuilder builder =
         new ElementTreePathBuilder()
             .withElementInstanceState(elementInstanceState)
-            .withProcessState(processState)
+            .withCallActivityIndexProvider(new CallActivityIdProvider(0))
             .withElementInstanceKey(subProcessC.getKey());
 
     final ElementTreePathProperties properties = builder.build();
@@ -204,5 +207,35 @@ public class ElementTreePathBuilderTest {
         .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
     return processRecord;
+  }
+
+  private class CallActivityIdProvider implements CallActivityIndexProvider {
+
+    private final Integer index;
+
+    private CallActivityIdProvider(final Integer index) {
+      this.index = index;
+    }
+
+    @Override
+    public <T extends ExecutableFlowElement> T getFlowElement(
+        final long processDefinitionKey,
+        final String tenantId,
+        final DirectBuffer elementId,
+        final Class<T> elementType) {
+      throw new UnsupportedOperationException("not implemented");
+    }
+
+    @Override
+    public Integer getLexicographicIndex(
+        final long processDefinitionKey, final String tenant, final DirectBuffer elementIdBuffer) {
+      return index;
+    }
+
+    @Override
+    public ExecutableCallActivity getCallActivityFlowElement(
+        final long processDefinitionKey, final String tenantId, final DirectBuffer elementId) {
+      throw new UnsupportedOperationException("not implemented");
+    }
   }
 }

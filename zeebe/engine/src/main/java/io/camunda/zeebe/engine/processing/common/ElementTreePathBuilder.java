@@ -7,17 +7,16 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
 public class ElementTreePathBuilder {
+
   private ElementInstanceState elementInstanceState;
-  private ProcessState processState;
+  private CallActivityIndexProvider callActivityIndexProvider;
   private Long elementInstanceKey;
   private ElementTreePathProperties properties;
 
@@ -27,8 +26,9 @@ public class ElementTreePathBuilder {
     return this;
   }
 
-  public ElementTreePathBuilder withProcessState(final ProcessState processState) {
-    this.processState = processState;
+  public ElementTreePathBuilder withCallActivityIndexProvider(
+      final CallActivityIndexProvider callActivityIndexProvider) {
+    this.callActivityIndexProvider = callActivityIndexProvider;
     return this;
   }
 
@@ -39,7 +39,8 @@ public class ElementTreePathBuilder {
 
   public ElementTreePathProperties build() {
     Objects.requireNonNull(elementInstanceState, "elementInstanceState cannot be null");
-    Objects.requireNonNull(processState, "processState cannot be null");
+    Objects.requireNonNull(
+        callActivityIndexProvider, "call activity index provider cannot be null");
     Objects.requireNonNull(elementInstanceKey, "elementInstanceKey cannot be null");
     properties =
         new ElementTreePathProperties(new LinkedList<>(), new LinkedList<>(), new LinkedList<>());
@@ -73,14 +74,10 @@ public class ElementTreePathBuilder {
         elementInstanceState.getInstance(callingElementInstanceKey);
     final var callActivityInstanceRecord = callActivityElementInstance.getValue();
 
-    final ExecutableCallActivity callActivity =
-        processState.getFlowElement(
-            callActivityInstanceRecord.getProcessDefinitionKey(),
-            callActivityInstanceRecord.getTenantId(),
-            callActivityInstanceRecord.getElementIdBuffer(),
-            ExecutableCallActivity.class);
-
-    return callActivity.getLexicographicIndex();
+    return callActivityIndexProvider.getLexicographicIndex(
+        callActivityInstanceRecord.getProcessDefinitionKey(),
+        callActivityInstanceRecord.getTenantId(),
+        callActivityInstanceRecord.getElementIdBuffer());
   }
 
   public record ElementTreePathProperties(
