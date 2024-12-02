@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist;
 
-import graphql.kickstart.autoconfigure.annotations.GraphQLAnnotationsAutoConfiguration;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +15,6 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
-import org.springframework.context.annotation.Import;
 
 @Configuration
 @ComponentScan(
@@ -34,7 +32,6 @@ import org.springframework.context.annotation.Import;
     name = "camunda.tasklist.webappEnabled",
     havingValue = "true",
     matchIfMissing = true)
-@Import(GraphQLAnnotationsAutoConfiguration.class)
 public class WebappModuleConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WebappModuleConfiguration.class);
