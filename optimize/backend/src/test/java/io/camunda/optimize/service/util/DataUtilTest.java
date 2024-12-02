@@ -21,10 +21,7 @@ public class DataUtilTest {
     HashSet<String> result = DataUtil.newHashSet("apple", "banana", "cherry");
 
     // then
-    assertThat(result)
-        .isNotNull()
-        .hasSize(3)
-        .contains("apple", "banana", "cherry");
+    assertThat(result).isNotNull().hasSize(3).contains("apple", "banana", "cherry");
   }
 
   @Test
@@ -33,10 +30,7 @@ public class DataUtilTest {
     HashSet<String> result = DataUtil.newHashSet("apple", "banana", "apple", "cherry", "banana");
 
     // then
-    assertThat(result)
-        .isNotNull()
-        .hasSize(3)
-        .contains("apple", "banana", "cherry");
+    assertThat(result).isNotNull().hasSize(3).contains("apple", "banana", "cherry");
   }
 
   // Тестируем создание множества с пустым массивом
@@ -46,9 +40,7 @@ public class DataUtilTest {
     HashSet<String> result = DataUtil.newHashSet();
 
     // then
-    assertThat(result)
-        .isNotNull()
-        .isEmpty();
+    assertThat(result).isNotNull().isEmpty();
   }
 
   // Тестируем создание множества с массивом, содержащим один элемент
@@ -58,10 +50,7 @@ public class DataUtilTest {
     HashSet<String> result = DataUtil.newHashSet("apple");
 
     // then
-    assertThat(result)
-        .isNotNull()
-        .hasSize(1)
-        .contains("apple");
+    assertThat(result).isNotNull().hasSize(1).contains("apple");
   }
 
   @Test
@@ -70,5 +59,4 @@ public class DataUtilTest {
     assertThatThrownBy(() -> DataUtil.newHashSet((String[]) null))
         .isInstanceOf(NullPointerException.class);
   }
-
 }
