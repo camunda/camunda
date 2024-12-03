@@ -2917,6 +2917,110 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /users/{userKey}/roles/search:
+    post:
+      tags:
+        - User
+        - Role
+      summary: "Query roles assigned to a user"
+      description: |
+        Search roles assigned to the given user.
+      operationId: searchUserRoles
+      parameters:
+        - name: userKey
+          in: path
+          required: true
+          description: The key of the user
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleSearchQueryRequest"
+        required: false
+      responses:
+        "200":
+          description: The user authorization search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleSearchQueryResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /users/{userKey}/roles/{roleKey}:
+    put:
+      tags:
+        - User
+        - Role
+      operationId: addUserRole
+      summary: "Assign roles to users"
+      description: |
+        Assigns the role to the user.
+      parameters:
+        - name: userKey
+          in: path
+          required: true
+          description: The key of the user
+          schema:
+            type: integer
+            format: int64
+        - name: roleKey
+          in: path
+          required: true
+          description: The key of the role to add.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "201":
+          description: The role was added successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - User
+        - Role
+      operationId: removeUserRole
+      summary: "Unassigns roles from users"
+      description: |
+        Unassigns the role from the user.
+      parameters:
+        - name: userKey
+          in: path
+          required: true
+          description: The key of the user
+          schema:
+            type: integer
+            format: int64
+        - name: roleKey
+          in: path
+          required: true
+          description: The key of the role to remove.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "201":
+          description: The role was removed successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /users/{userKey}/authorizations/search:
     post:
       tags:
