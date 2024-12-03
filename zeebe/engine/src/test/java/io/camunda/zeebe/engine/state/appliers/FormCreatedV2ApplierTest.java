@@ -44,8 +44,8 @@ public class FormCreatedV2ApplierTest extends AbstractFormCreatedApplierTest {
     assertPersistedForm(form1, formKey, formId, version, deploymentKey, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, deploymentKey, TENANT_2);
 
-    form1 = formState.findLatestFormById(wrapString(formId), TENANT_1).orElseThrow();
-    form2 = formState.findLatestFormById(wrapString(formId), TENANT_2).orElseThrow();
+    form1 = formState.findLatestFormById(formId, TENANT_1).orElseThrow();
+    form2 = formState.findLatestFormById(formId, TENANT_2).orElseThrow();
     assertPersistedForm(form1, formKey, formId, version, deploymentKey, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, deploymentKey, TENANT_2);
 

@@ -242,7 +242,7 @@ public final class BpmnUserTaskBehavior {
   private Either<Failure, PersistedForm> findLatestFormById(
       final String formId, final String tenantId, final long scopeKey) {
     return formState
-        .findLatestFormById(wrapString(formId), tenantId)
+        .findLatestFormById(formId, tenantId)
         .<Either<Failure, PersistedForm>>map(Either::right)
         .orElseGet(
             () ->
