@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -63,10 +64,19 @@ public class AdHocSubProcessProcessor
   public Either<Failure, ?> finalizeActivation(
       final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
 
-    return activateElements(element, context)
-        .flatMap(ok -> eventSubscriptionBehavior.subscribeToEvents(element, context))
+    return readActivateElementsCollection(element, context)
+        .flatMap(
+            elementsToActivate ->
+                eventSubscriptionBehavior
+                    .subscribeToEvents(element, context)
+                    .map(ok -> elementsToActivate))
         .thenDo(
-            ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()));
+            elementsToActivate -> {
+              final var activated =
+                  stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+
+              activateElements(element, activated, elementsToActivate);
+            });
   }
 
   @Override
@@ -113,12 +123,12 @@ public class AdHocSubProcessProcessor
             });
   }
 
-  private Either<Failure, ?> activateElements(
+  private Either<Failure, List<String>> readActivateElementsCollection(
       final ExecutableAdHocSubProcess adHocSubProcess, final BpmnElementContext context) {
     final Expression activeElementsCollection = adHocSubProcess.getActiveElementsCollection();
     if (activeElementsCollection == null) {
       // The expression is not defined. No elements to activate.
-      return SUCCESS;
+      return Either.right(Collections.emptyList());
 
     } else {
       return expressionProcessor
@@ -129,15 +139,7 @@ public class AdHocSubProcessProcessor
                   new Failure(
                       "Failed to activate ad-hoc elements. " + failure.getMessage(),
                       ErrorType.EXTRACT_VALUE_ERROR))
-          .flatMap(elements -> validateActiveElements(adHocSubProcess, elements))
-          .thenDo(
-              elements ->
-                  elements.stream()
-                      .map(adHocSubProcess.getAdHocActivitiesById()::get)
-                      .forEach(
-                          elementToActivate ->
-                              stateTransitionBehavior.activateChildInstance(
-                                  context, elementToActivate)));
+          .flatMap(elements -> validateActiveElements(adHocSubProcess, elements));
     }
   }
 
@@ -162,6 +164,18 @@ public class AdHocSubProcessProcessor
                   .formatted(elementIds),
               ErrorType.EXTRACT_VALUE_ERROR));
     }
+  }
+
+  private void activateElements(
+      final ExecutableAdHocSubProcess element,
+      final BpmnElementContext context,
+      final List<String> elementsToActivate) {
+
+    elementsToActivate.stream()
+        .map(element.getAdHocActivitiesById()::get)
+        .forEach(
+            elementToActivate ->
+                stateTransitionBehavior.activateChildInstance(context, elementToActivate));
   }
 
   @Override
