@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public class DbResourceState implements MutableResourceState {
 
@@ -142,8 +141,7 @@ public class DbResourceState implements MutableResourceState {
     dbPersistedResource.wrap(record);
     resourcesByKey.upsert(tenantAwareResourceKey, dbPersistedResource);
     resourcesByTenantIdAndIdCache.put(
-        new DbResourceState.TenantIdAndResourceId(
-            record.getTenantId(), record.getResourceIdBuffer()),
+        new DbResourceState.TenantIdAndResourceId(record.getTenantId(), record.getResourceId()),
         dbPersistedResource.copy());
   }
 
@@ -193,8 +191,7 @@ public class DbResourceState implements MutableResourceState {
     dbResourceKey.wrapLong(record.getResourceKey());
     resourcesByKey.deleteExisting(tenantAwareResourceKey);
     resourcesByTenantIdAndIdCache.invalidate(
-        new DbResourceState.TenantIdAndResourceId(
-            record.getTenantId(), record.getResourceIdBuffer()));
+        new DbResourceState.TenantIdAndResourceId(record.getTenantId(), record.getResourceId()));
   }
 
   @Override
@@ -233,7 +230,7 @@ public class DbResourceState implements MutableResourceState {
 
   @Override
   public Optional<PersistedResource> findLatestResourceById(
-      final DirectBuffer resourceId, final String tenantId) {
+      final String resourceId, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
     final Optional<PersistedResource> cachedResource = getResourceFromCache(tenantId, resourceId);
     if (cachedResource.isPresent()) {
@@ -258,9 +255,9 @@ public class DbResourceState implements MutableResourceState {
 
   @Override
   public Optional<PersistedResource> findResourceByIdAndDeploymentKey(
-      final DirectBuffer resourceId, final long deploymentKey, final String tenantId) {
+      final String resourceId, final long deploymentKey, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
-    dbResourceId.wrapBuffer(resourceId);
+    dbResourceId.wrapString(resourceId);
     dbDeploymentKey.wrapLong(deploymentKey);
     return Optional.ofNullable(
             resourceKeyByResourceIdAndDeploymentKeyColumnFamily.get(
@@ -270,9 +267,9 @@ public class DbResourceState implements MutableResourceState {
 
   @Override
   public Optional<PersistedResource> findResourceByIdAndVersionTag(
-      final DirectBuffer resourceId, final String versionTag, final String tenantId) {
+      final String resourceId, final String versionTag, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
-    dbResourceId.wrapBuffer(resourceId);
+    dbResourceId.wrapString(resourceId);
     dbVersionTag.wrapString(versionTag);
     return Optional.ofNullable(
             resourceKeyByResourceIdAndVersionTagColumnFamily.get(
@@ -292,8 +289,8 @@ public class DbResourceState implements MutableResourceState {
   }
 
   private PersistedResource getPersistedResourceById(
-      final DirectBuffer resourceId, final String tenantId) {
-    dbResourceId.wrapBuffer(resourceId);
+      final String resourceId, final String tenantId) {
+    dbResourceId.wrapString(resourceId);
     final long latestVersion = versionManager.getLatestResourceVersion(resourceId, tenantId);
     resourceVersion.wrapLong(latestVersion);
     final Optional<PersistedResource> persistedResource =
@@ -303,11 +300,11 @@ public class DbResourceState implements MutableResourceState {
   }
 
   private Optional<PersistedResource> getResourceFromCache(
-      final String tenantId, final DirectBuffer resourceId) {
+      final String tenantId, final String resourceId) {
     return Optional.ofNullable(
         resourcesByTenantIdAndIdCache.getIfPresent(
             new DbResourceState.TenantIdAndResourceId(tenantId, resourceId)));
   }
 
-  private record TenantIdAndResourceId(String tenantId, DirectBuffer resourceId) {}
+  private record TenantIdAndResourceId(String tenantId, String resourceId) {}
 }
