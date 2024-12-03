@@ -99,6 +99,7 @@
       <column name="TREE_PATH" type="VARCHAR(4000)" />
       <column name="TENANT_ID" type="VARCHAR(200)" />
       <column name="INCIDENT_KEY" type="BIGINT" />
+      <column name="NUM_SUBPROCESS_INCIDENTS" type="SMALLINT" />
     </createTable>
 
     <modifySql dbms="mariadb">

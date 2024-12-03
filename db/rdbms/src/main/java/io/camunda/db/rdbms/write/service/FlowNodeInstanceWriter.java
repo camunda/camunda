@@ -58,6 +58,36 @@ public class FlowNodeInstanceWriter {
     updateIncident(flowNodeInstanceKey, null);
   }
 
+  public void createSubprocessIncident(final long flowNodeInstanceKey) {
+    final boolean wasMerged =
+        mergeToQueue(
+            flowNodeInstanceKey, b -> b.numSubprocessIncidents(b.numSubprocessIncidents() + 1));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.FLOW_NODE,
+              flowNodeInstanceKey,
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.incrementIncidentCount",
+              flowNodeInstanceKey));
+    }
+  }
+
+  public void resolveSubprocessIncident(final long flowNodeInstanceKey) {
+    final boolean wasMerged =
+        mergeToQueue(
+            flowNodeInstanceKey, b -> b.numSubprocessIncidents(b.numSubprocessIncidents() - 1));
+
+    if (!wasMerged) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.FLOW_NODE,
+              flowNodeInstanceKey,
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.decrementIncidentCount",
+              flowNodeInstanceKey));
+    }
+  }
+
   private void updateIncident(final long flowNodeInstanceKey, final Long incidentKey) {
     final boolean wasMerged = mergeToQueue(flowNodeInstanceKey, b -> b.incidentKey(incidentKey));
 
