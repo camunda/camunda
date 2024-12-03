@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public class DbFormState implements MutableFormState {
 
@@ -238,9 +237,9 @@ public class DbFormState implements MutableFormState {
 
   @Override
   public Optional<PersistedForm> findFormByIdAndDeploymentKey(
-      final DirectBuffer formId, final long deploymentKey, final String tenantId) {
+      final String formId, final long deploymentKey, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
-    dbFormId.wrapBuffer(formId);
+    dbFormId.wrapString(formId);
     dbDeploymentKey.wrapLong(deploymentKey);
     return Optional.ofNullable(
             formKeyByFormIdAndDeploymentKeyColumnFamily.get(tenantAwareFormIdAndDeploymentKey))
@@ -249,9 +248,9 @@ public class DbFormState implements MutableFormState {
 
   @Override
   public Optional<PersistedForm> findFormByIdAndVersionTag(
-      final DirectBuffer formId, final String versionTag, final String tenantId) {
+      final String formId, final String versionTag, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
-    dbFormId.wrapBuffer(formId);
+    dbFormId.wrapString(formId);
     dbVersionTag.wrapString(versionTag);
     return Optional.ofNullable(
             formKeyByFormIdAndVersionTagColumnFamily.get(tenantAwareFormIdAndVersionTagKey))

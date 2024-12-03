@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public interface FormState {
 
@@ -42,7 +41,7 @@ public interface FormState {
    *     the given deployment
    */
   Optional<PersistedForm> findFormByIdAndDeploymentKey(
-      DirectBuffer formId, long deploymentKey, final String tenantId);
+      String formId, long deploymentKey, final String tenantId);
 
   /**
    * Query forms by the given form id and version tag and return the form.
@@ -54,7 +53,7 @@ public interface FormState {
    *     deployed
    */
   Optional<PersistedForm> findFormByIdAndVersionTag(
-      DirectBuffer formId, String versionTag, final String tenantId);
+      String formId, String versionTag, final String tenantId);
 
   /**
    * Gets the next version a form of a given id will receive. This is used, for example, when a new
