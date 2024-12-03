@@ -879,7 +879,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
       batchRequest.addWithId(
           incidentTemplate.getFullQualifiedName(),
           "7",
-          newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2"));
+          newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2/PI_7"));
       batchRequest.addWithId(
           incidentTemplate.getFullQualifiedName(),
           "8",
@@ -891,7 +891,8 @@ abstract sealed class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var incidents = repository.getActiveIncidentsByTreePaths(List.of("PI_1", "PI_3"));
+      final var incidents =
+          repository.getActiveIncidentsByTreePaths(List.of("PI_1/FNI_2", "PI_3/FNI_4"));
 
       // then
       assertThat(incidents)
