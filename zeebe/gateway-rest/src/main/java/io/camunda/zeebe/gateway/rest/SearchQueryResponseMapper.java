@@ -28,6 +28,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -69,6 +70,7 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.SearchQueryPageResponse;
 import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UsageMetricsSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
@@ -85,6 +87,14 @@ import java.util.stream.Collectors;
 public final class SearchQueryResponseMapper {
 
   private SearchQueryResponseMapper() {}
+
+  public static UsageMetricsSearchQueryResponse toUsageMetricsSearchQueryResponse(
+      final UsageMetricsEntity result) {
+    return new UsageMetricsSearchQueryResponse()
+        .assignees(result.assignees())
+        .processInstances(result.processInstances())
+        .decisionInstances(result.decisionInstances());
+  }
 
   public static ProcessDefinitionSearchQueryResponse toProcessDefinitionSearchQueryResponse(
       final SearchQueryResult<ProcessDefinitionEntity> result) {

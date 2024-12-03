@@ -54,6 +54,7 @@ import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.TypedSearchQueryBuilder;
+import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -91,6 +92,16 @@ import org.springframework.http.ProblemDetail;
 public final class SearchQueryRequestMapper {
 
   private SearchQueryRequestMapper() {}
+
+  public static Either<ProblemDetail, UsageMetricsQuery> toUsageMetricsQuery(
+      final UsageMetricsSearchQueryRequest request) {
+    if (request.getStartTime() == null || request.getEndTime() == null) {
+      return Either.left(
+          RequestValidator.createProblemDetail(List.of("startTime and endTime must not be null"))
+              .orElseThrow());
+    }
+    return Either.right(UsageMetricsQuery.of(request.getStartTime(), request.getEndTime()));
+  }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
       final ProcessDefinitionSearchQueryRequest request) {

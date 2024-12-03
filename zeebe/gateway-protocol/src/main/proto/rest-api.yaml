@@ -3599,7 +3599,48 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /usage-metrics/search:
+    post:
+      tags:
+        - Usage metrics
+      operationId: searchUsageMetrics
+      summary: Query usage metrics (alpha)
+      description: |
+        Search for usage metrics by given start date and end date
 
+        Note that this endpoint is an alpha feature and not enabled on Camunda clusters out of the box.
+        The Camunda 8 API (REST) Overview page provides further details.
+
+        This endpoint is an alpha feature and may be subject to change
+        in future releases.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsageMetricsSearchQueryRequest"
+      responses:
+        "200":
+          description: >
+            The usage metrics search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsageMetricsSearchQueryResponse"
+        "400":
+          description: >
+            The usage metrics search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /deployments:
     post:
       tags:
@@ -5260,6 +5301,35 @@ components:
         decisionRequirementsKey:
           type: string
           description: The assigned key of the decision requirements graph that the decision definition is part of.
+    UsageMetricsSearchQueryRequest:
+      type: object
+      properties:
+        startTime:
+          description: The start date and time for usage metrics.
+          type: string
+          format: date-time
+        endTime:
+          description: The end date and time for usage metrics.
+          type: string
+          format: date-time
+      required:
+        - startTime
+        - endTime
+    UsageMetricsSearchQueryResponse:
+      type: object
+      properties:
+        assignees:
+          description: The amount of unique active users.
+          type: integer
+          format: int64
+        processInstances:
+          description: The amount of created process instances.
+          type: integer
+          format: int64
+        decisionInstances:
+          description: The amount of executed decision instances.
+          type: integer
+          format: int64
     PermissionTypeEnum:
       description: Specifies the type of permissions.
       enum:
