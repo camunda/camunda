@@ -103,7 +103,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
       return client
           .search(request, PendingIncidentUpdate.class)
           .thenApplyAsync(this::createPendingIncidentBatch, executor);
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
   }
@@ -117,7 +117,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
       return client
           .search(request, IncidentEntity.class)
           .thenApplyAsync(this::createIncidentDocuments, executor);
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
   }
@@ -309,7 +309,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
                 }
               },
               executor);
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
   }
@@ -345,7 +345,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
               },
               executor)
           .thenComposeAsync(ignored -> endResult);
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
   }
@@ -369,7 +369,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
           .scroll(r -> r.scrollId(scrollId).scroll(SCROLL_KEEP_ALIVE), type)
           .thenComposeAsync(
               r -> scrollDocuments(r.hits().hits(), r.scrollId(), accumulator, transformer, type));
-    } catch (final IOException e) {
+    } catch (final Exception e) {
       return CompletableFuture.failedFuture(e);
     }
   }
