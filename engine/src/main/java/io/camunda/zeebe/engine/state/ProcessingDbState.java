@@ -61,16 +61,13 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 
 public class ProcessingDbState implements MutableProcessingState {
-
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final KeyGenerator keyGenerator;
-
   private final MutableProcessState processState;
   private final MutableTimerInstanceState timerInstanceState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
-
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
@@ -85,6 +82,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableSignalSubscriptionState signalSubscriptionState;
   private final MutableDistributionState distributionState;
   private final MutableUserTaskState userTaskState;
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -122,10 +120,9 @@ public class ProcessingDbState implements MutableProcessingState {
     formState = new DbFormState(zeebeDb, transactionContext, config);
     signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
-
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
-
     userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
   @Override
@@ -244,6 +241,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
+  }
+
+  @Override
+  public TransientPendingSubscriptionState getTransientPendingSubscriptionState() {
+    return transientProcessMessageSubscriptionState;
   }
 
   @Override
