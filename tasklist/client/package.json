@@ -87,7 +87,7 @@
     "axe-core": "4.10.2",
     "browserslist": "4.24.2",
     "browserslist-to-esbuild": "2.1.1",
-    "eslint": "8.57.1",
+    "eslint": "9.16.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-license-header": "^0.6.1",
     "eslint-plugin-prettier": "5.2.1",
