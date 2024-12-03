@@ -121,6 +121,72 @@ public class FormStateTest {
     verify(visitor, times(2)).visit(any());
   }
 
+  @Test
+  public void shouldSetFormDeploymentKey() {
+    // given
+    final var noDeploymentKey = -1L;
+    final var someDeploymentKey = 1L;
+    final var form1 = createFormRecord(1).setDeploymentKey(noDeploymentKey);
+    formState.storeFormInFormColumnFamily(form1);
+    final var initialDeploymentKey =
+        formState.findFormByKey(form1.getFormKey(), tenantId).get().getDeploymentKey();
+
+    // when
+    formState.setMissingDeploymentKey(tenantId, form1.getFormKey(), 1L);
+
+    // then
+    final var updatedDeploymentKey =
+        formState.findFormByKey(form1.getFormKey(), tenantId).get().getDeploymentKey();
+
+    assertThat(initialDeploymentKey).isEqualTo(noDeploymentKey);
+    assertThat(updatedDeploymentKey).isEqualTo(someDeploymentKey);
+  }
+
+  @Test
+  public void shouldSetFormDeploymentKeyPersistently() {
+    // given
+    final var noDeploymentKey = -1L;
+    final var someDeploymentKey = 1L;
+    final var form = createFormRecord(1).setDeploymentKey(noDeploymentKey);
+    formState.storeFormInFormColumnFamily(form);
+    final var initialDeploymentKey =
+        formState.findFormByKey(form.getFormKey(), tenantId).get().getDeploymentKey();
+    formState.setMissingDeploymentKey(tenantId, form.getFormKey(), 1L);
+
+    // when
+    formState.clearCache();
+
+    // then
+    final var updatedDeploymentKey =
+        formState.findFormByKey(form.getFormKey(), tenantId).get().getDeploymentKey();
+
+    assertThat(initialDeploymentKey).isEqualTo(noDeploymentKey);
+    assertThat(updatedDeploymentKey).isEqualTo(someDeploymentKey);
+  }
+
+  @Test
+  public void shouldFindFormByDeploymentKeyAfterUpdating() {
+    // given
+    final var noDeploymentKey = -1L;
+    final var someDeploymentKey = 1L;
+    final var form = createFormRecord(1).setDeploymentKey(noDeploymentKey);
+    formState.storeFormInFormColumnFamily(form);
+
+    final var initialLookupByDeploymentKey =
+        formState.findFormByIdAndDeploymentKey(form.getFormId(), someDeploymentKey, tenantId);
+
+    // when
+    formState.setMissingDeploymentKey(tenantId, form.getFormKey(), 1L);
+
+    // then
+    final var lookupAfterUpdating =
+        formState.findFormByIdAndDeploymentKey(form.getFormId(), someDeploymentKey, tenantId);
+
+    assertThat(initialLookupByDeploymentKey).isEmpty();
+    assertThat(lookupAfterUpdating).isPresent();
+    assertThat(lookupAfterUpdating.get().getFormKey()).isEqualTo(form.getFormKey());
+  }
+
   private FormRecord createFormRecord(final long key) {
     return new FormRecord()
         .setFormId("form")

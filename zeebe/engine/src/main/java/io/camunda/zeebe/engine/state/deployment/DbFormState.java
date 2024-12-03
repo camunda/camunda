@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 
 public class DbFormState implements MutableFormState {
@@ -210,6 +211,38 @@ public class DbFormState implements MutableFormState {
     dbFormId.wrapString(record.getFormId());
     dbVersionTag.wrapString(record.getVersionTag());
     formKeyByFormIdAndVersionTagColumnFamily.deleteIfExists(tenantAwareFormIdAndVersionTagKey);
+  }
+
+  @Override
+  public void setMissingDeploymentKey(
+      final String tenantId, final long formKey, final long deploymentKey) {
+    tenantIdKey.wrapString(tenantId);
+    dbFormKey.wrapLong(formKey);
+    dbDeploymentKey.wrapLong(deploymentKey);
+
+    final var form = formsByKey.get(tenantAwareFormKey);
+    if (form.getDeploymentKey() == deploymentKey) {
+      return;
+    }
+
+    if (form.hasDeploymentKey()) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to set deployment key '%d' on form with key '%d', but form already has deployment key '%d'.",
+              deploymentKey, formKey, form.getDeploymentKey()));
+    }
+    formVersion.wrapLong(form.getVersion());
+
+    form.setDeploymentKey(deploymentKey);
+    formsByKey.update(tenantAwareFormKey, form);
+    formByIdAndVersionColumnFamily.upsert(tenantAwareIdAndVersionKey, form);
+    formKeyByFormIdAndDeploymentKeyColumnFamily.insert(
+        tenantAwareFormIdAndDeploymentKey, fkFormKey);
+
+    final var copyForCache = form.copy();
+    formsByTenantIdAndIdCache.put(
+        new TenantIdAndFormId(tenantId, BufferUtil.bufferAsString(copyForCache.getFormId())),
+        copyForCache);
   }
 
   @Override
