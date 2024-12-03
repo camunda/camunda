@@ -49,20 +49,20 @@ public class FormDeletedApplierTest {
     formCreatedApplier.applyState(formV1.getFormKey(), formV1);
     formCreatedApplier.applyState(formV2.getFormKey(), formV2);
 
-      final var latestFormOpt =
-          formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
-      assertThat(latestFormOpt).isNotEmpty();
-      assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
+    final var latestFormOpt =
+        formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
+    assertThat(latestFormOpt).isNotEmpty();
+    assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
 
     // when
     formDeletedApplier.applyState(formV2.getFormKey(), formV2);
 
-      // then
-      final var latestFormV1Opt =
-          formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
-      assertThat(latestFormV1Opt).isNotEmpty();
-      assertThat(latestFormV1Opt.get().getVersion()).isEqualTo(1);
-    }
+    // then
+    final var latestFormV1Opt =
+        formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
+    assertThat(latestFormV1Opt).isNotEmpty();
+    assertThat(latestFormV1Opt.get().getVersion()).isEqualTo(1);
+  }
 
   @Test
   void shouldFindVersion2AsLatestFormAfterDeletion() {
@@ -72,20 +72,20 @@ public class FormDeletedApplierTest {
     formCreatedApplier.applyState(formV1.getFormKey(), formV1);
     formCreatedApplier.applyState(formV2.getFormKey(), formV2);
 
-      final var latestFormOpt =
-          formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
-      assertThat(latestFormOpt).isNotEmpty();
-      assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
+    final var latestFormOpt =
+        formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
+    assertThat(latestFormOpt).isNotEmpty();
+    assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
 
     // when
     formDeletedApplier.applyState(formV1.getFormKey(), formV1);
 
-      // then
-      final var latestFormV2Opt =
-          formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
-      assertThat(latestFormV2Opt).isNotEmpty();
-      assertThat(latestFormV2Opt.get().getVersion()).isEqualTo(2);
-    }
+    // then
+    final var latestFormV2Opt =
+        formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
+    assertThat(latestFormV2Opt).isNotEmpty();
+    assertThat(latestFormV2Opt.get().getVersion()).isEqualTo(2);
+  }
 
   @Test
   void shouldNotReuseADeletedVersionNumber() {
@@ -122,8 +122,8 @@ public class FormDeletedApplierTest {
     formDeletedApplier.applyState(tenant1Form.getFormKey(), tenant1Form);
 
     // then
-    assertThat(formState.findLatestFormById(tenant1Form.getFormIdBuffer(), TENANT_1)).isEmpty();
-    assertThat(formState.findLatestFormById(tenant2Form.getFormIdBuffer(), TENANT_2)).isNotEmpty();
+    assertThat(formState.findLatestFormById(tenant1Form.getFormId(), TENANT_1)).isEmpty();
+    assertThat(formState.findLatestFormById(tenant2Form.getFormId(), TENANT_2)).isNotEmpty();
   }
 
   private FormRecord sampleFormRecord() {

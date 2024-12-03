@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.state.immutable;
 
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public interface FormState {
 

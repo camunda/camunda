@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public class DbFormState implements MutableFormState {
 
