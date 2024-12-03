@@ -8,7 +8,17 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import io.camunda.service.GroupServices;
+import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
+import io.camunda.zeebe.gateway.rest.RequestMapper;
+import io.camunda.zeebe.gateway.rest.RequestMapper.CreateGroupRequest;
+import io.camunda.zeebe.gateway.rest.ResponseMapper;
+import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import java.util.concurrent.CompletableFuture;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
@@ -19,5 +29,24 @@ public class GroupController {
 
   public GroupController(final GroupServices groupServices) {
     this.groupServices = groupServices;
+  }
+
+  @PostMapping(
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> createGroup(
+      @RequestBody final GroupCreateRequest createGroupRequest) {
+    return RequestMapper.toGroupCreateRequest(createGroupRequest)
+        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createGroup);
+  }
+
+  private CompletableFuture<ResponseEntity<Object>> createGroup(
+      final CreateGroupRequest createRoleRequest) {
+    return RequestMapper.executeServiceMethod(
+        () ->
+            groupServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .createGroup(createRoleRequest.name()),
+        ResponseMapper::toGroupCreateResponse);
   }
 }
