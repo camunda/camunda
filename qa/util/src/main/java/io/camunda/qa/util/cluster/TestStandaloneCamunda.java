@@ -105,7 +105,7 @@ public final class TestStandaloneCamunda extends TestSpringApplication<TestStand
         .withAdditionalInitializer(new WebappsConfigurationInitializer());
 
     // default exporters
-    withRecordingExporter(true).withElasticsearchExporter(true);
+    withRecordingExporter(true).withCamundaExporter();
   }
 
   @Override
