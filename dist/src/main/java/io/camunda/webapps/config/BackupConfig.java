@@ -18,6 +18,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class BackupConfig {
 
+  public static String differentRepoNameFormat =
+      "Expected the same repository in operate and tasklist backup config: given backup repositories are operate={%s}, tasklist={%s}";
+
   final OperateProperties operateProperties;
   final TasklistProperties tasklistProperties;
 
@@ -34,11 +37,20 @@ public class BackupConfig {
       // both are available, check that repo is the same:
       final var operateBackup = operateProperties.getBackup();
       final var tasklistBackup = tasklistProperties.getBackup();
-      if (!Objects.equals(operateBackup.getRepositoryName(), tasklistBackup.getRepositoryName())) {
+      if (validRepoName(operateBackup.getRepositoryName())
+          && validRepoName(tasklistBackup.getRepositoryName())
+          && !Objects.equals(
+              operateBackup.getRepositoryName(), tasklistBackup.getRepositoryName())) {
         throw new IllegalArgumentException(
-            "Different repository name configured for operate & tasklist backups: if both are configured, they must point to the same repository");
+            String.format(
+                differentRepoNameFormat,
+                operateBackup.getRepositoryName(),
+                tasklistBackup.getRepositoryName()));
+      } else if (validRepoName(operateBackup.getRepositoryName())) {
+        return props(operateProperties.getVersion(), operateBackup);
+      } else {
+        return props(tasklistProperties.getVersion(), tasklistBackup);
       }
-      return props(operateProperties.getVersion(), operateBackup);
     } else if (operateProperties != null) {
       return props(operateProperties.getVersion(), operateProperties.getBackup());
     } else if (tasklistProperties != null) {
@@ -88,5 +100,9 @@ public class BackupConfig {
         return operateProperties.getIncompleteCheckTimeoutInSeconds();
       }
     };
+  }
+
+  private boolean validRepoName(final String s) {
+    return s != null && !s.isEmpty();
   }
 }
