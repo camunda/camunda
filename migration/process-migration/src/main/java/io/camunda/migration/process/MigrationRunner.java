@@ -100,10 +100,11 @@ public class MigrationRunner implements Migrator {
             .map(
                 p -> {
                   try {
-                    return metricRegistry.measureMigrationParseDuration(() -> MigrationUtil.map(p));
+                    return metricRegistry.measureMigrationParseDuration(
+                        () -> MigrationUtil.migrate(p));
                   } catch (final Exception e) {
                     LOG.warn("Failed to register processing duration for process {}", p.getId(), e);
-                    return MigrationUtil.map(p);
+                    return MigrationUtil.migrate(p);
                   }
                 })
             .toList();

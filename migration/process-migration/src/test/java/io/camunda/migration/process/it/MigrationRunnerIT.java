@@ -55,7 +55,8 @@ public class MigrationRunnerIT extends AdapterTest {
     awaitRecordsArePresent(ProcessEntity.class, processIndex.getFullQualifiedName());
 
     // when
-    final String migratedEntityId = adapter.migrate(List.of(MigrationUtil.map(entityToBeMigrated)));
+    final String migratedEntityId =
+        adapter.migrate(List.of(MigrationUtil.migrate(entityToBeMigrated)));
     adapter.writeLastMigratedEntity(migratedEntityId);
     awaitRecordsArePresent(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
     refreshIndices();

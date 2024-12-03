@@ -11,7 +11,7 @@ import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 
 public class MigrationUtil {
 
-  public static ProcessEntity map(final ProcessEntity entity) {
+  public static ProcessEntity migrate(final ProcessEntity entity) {
     final ProcessEntity processEntity = new ProcessEntity();
     processEntity.setId(entity.getId());
     processEntity.setBpmnProcessId(entity.getBpmnProcessId());
