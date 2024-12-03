@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
