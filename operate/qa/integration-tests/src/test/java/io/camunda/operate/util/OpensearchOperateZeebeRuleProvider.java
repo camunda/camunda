@@ -47,6 +47,7 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   @Autowired protected ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
   protected ZeebeContainer zeebeContainer;
   @Autowired private TestContainerUtil testContainerUtil;
+  @Autowired private IndexPrefixHolder indexPrefixHolder;
   private ZeebeClient client;
 
   private String prefix;
@@ -54,9 +55,10 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
   @Override
   public void starting(final Description description) {
-    prefix = TestUtil.createRandomString(10);
-    LOGGER.info("Starting Zeebe with OS prefix: " + prefix);
+    prefix = indexPrefixHolder.createNewIndexPrefix();
+    LOGGER.info("Starting Camunda Exporter with prefix: {}", prefix);
     operateProperties.getZeebeOpensearch().setPrefix(prefix);
+    operateProperties.getOpensearch().setIndexPrefix(prefix);
 
     startZeebe();
   }

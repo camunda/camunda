@@ -125,15 +125,11 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void starting(final Description description) {
-    final String prefix = operateProperties.getElasticsearch().getIndexPrefix();
-    if (prefix.isBlank()) {
-      if (indexPrefix == null) {
-        indexPrefix = indexPrefixHolder.createNewIndexPrefix();
-      }
+    indexPrefix = operateProperties.getElasticsearch().getIndexPrefix();
+    if (indexPrefix.isBlank()) {
+      indexPrefix =
+          Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       operateProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-    }
-    if (indexPrefix == null) {
-      indexPrefix = prefix;
     }
   }
 
