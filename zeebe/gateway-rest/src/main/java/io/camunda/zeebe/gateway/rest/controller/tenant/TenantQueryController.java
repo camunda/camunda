@@ -11,13 +11,17 @@ import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.TenantQuery;
 import io.camunda.service.TenantServices;
+import io.camunda.service.UserServices;
 import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.UserSearchResponse;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestQueryController;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,9 +30,12 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/v2/tenants")
 public class TenantQueryController {
   private final TenantServices tenantServices;
+  private final UserServices userServices;
 
-  public TenantQueryController(final TenantServices tenantServices) {
+  public TenantQueryController(
+      final TenantServices tenantServices, final UserServices userServices) {
     this.tenantServices = tenantServices;
+    this.userServices = userServices;
   }
 
   @GetMapping(
@@ -51,6 +58,54 @@ public class TenantQueryController {
       @RequestBody(required = false) final TenantSearchQueryRequest query) {
     return SearchQueryRequestMapper.toTenantQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  @PostMapping(
+      path = "/{tenantKey}/users/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<UserSearchResponse> listUsersOfTenant(
+      @PathVariable final long tenantKey,
+      @RequestBody(required = false) final UserSearchQueryRequest query) {
+    try {
+      // Retrieve tenant entity and its assigned user keys
+      final var tenantEntity = tenantServices.getByKey(tenantKey);
+      final var assignedUserKeys = tenantEntity.assignedMemberKeys();
+
+      // Return 404 if no users are assigned to the tenant
+      if (assignedUserKeys == null || assignedUserKeys.isEmpty()) {
+        final var problemDetail =
+            RestErrorMapper.createProblemDetail(
+                HttpStatus.NOT_FOUND,
+                "No users assigned to tenant with key: " + tenantKey,
+                "NotFound");
+        return RestErrorMapper.mapProblemToResponse(problemDetail);
+      }
+
+      final var userQueryEither = SearchQueryRequestMapper.toUserQuery(query);
+      final var mergedQueryEither =
+          userQueryEither.map(
+              userQuery ->
+                  SearchQueryRequestMapper.mergeWithTenantKeys(userQuery, assignedUserKeys));
+
+      return mergedQueryEither.fold(
+          RestErrorMapper::mapProblemToResponse,
+          q -> {
+            final var result = userServices.search(q);
+            if (result.items() == null || result.items().isEmpty()) {
+              // Return 404 if no users are found after the search
+              final var problemDetail =
+                  RestErrorMapper.createProblemDetail(
+                      HttpStatus.NOT_FOUND,
+                      "No users found for tenant with key: " + tenantKey,
+                      "NotFound");
+              return RestErrorMapper.mapProblemToResponse(problemDetail);
+            }
+            return ResponseEntity.ok(SearchQueryResponseMapper.toUserSearchQueryResponse(result));
+          });
+    } catch (final Exception exception) {
+      return mapErrorToResponse(exception);
+    }
   }
 
   private ResponseEntity<TenantSearchQueryResponse> search(final TenantQuery query) {
