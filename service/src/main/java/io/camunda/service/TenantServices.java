@@ -83,25 +83,18 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
 
   public CompletableFuture<?> addMember(
       final Long tenantKey, final EntityType entityType, final long entityKey) {
-    return modifyEntity(tenantKey, entityType, entityKey, true);
+    return sendBrokerRequest(
+        BrokerTenantEntityRequest.createAddRequest()
+            .setTenantKey(tenantKey)
+            .setEntity(entityType, entityKey));
   }
 
   public CompletableFuture<?> removeMember(
       final Long tenantKey, final EntityType entityType, final long entityKey) {
-    return modifyEntity(tenantKey, entityType, entityKey, false);
-  }
-
-  private CompletableFuture<?> modifyEntity(
-      final long parentKey,
-      final EntityType entityType,
-      final long entityKey,
-      final boolean isAdd) {
-    final var request =
-        isAdd
-            ? BrokerTenantEntityRequest.createAddRequest()
-            : BrokerTenantEntityRequest.createRemoveRequest();
-    request.setTenantKey(parentKey).setEntity(entityType, entityKey);
-    return sendBrokerRequest(request);
+    return sendBrokerRequest(
+        BrokerTenantEntityRequest.createRemoveRequest()
+            .setTenantKey(tenantKey)
+            .setEntity(entityType, entityKey));
   }
 
   public record TenantDTO(Long key, String tenantId, String name) {}

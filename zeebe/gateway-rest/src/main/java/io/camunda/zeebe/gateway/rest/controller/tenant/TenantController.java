@@ -80,10 +80,6 @@ public class TenantController {
         ResponseMapper::toTenantUpdateResponse);
   }
 
-  // The API will accept only a single userKey for now to maintain atomicity and align
-  // with REST principles.
-  // Bulk operations would require adapting the broker request and adding a new event like
-  // ENTITIES_ADDED, which is out of scope for this iteration.
   @PutMapping(
       path = "/{tenantKey}/users/{userKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
