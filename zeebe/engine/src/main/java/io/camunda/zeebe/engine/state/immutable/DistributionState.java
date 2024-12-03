@@ -121,6 +121,7 @@ public interface DistributionState {
      *
      * @param distributionKey The key of the pending distribution
      * @param pendingDistribution The pending distribution itself as command distribution record
+     * @return true if the visitor should continue visiting, false if it should stop
      */
     boolean visit(final long distributionKey, final CommandDistributionRecord pendingDistribution);
   }
