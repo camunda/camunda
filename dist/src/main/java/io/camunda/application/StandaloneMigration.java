@@ -27,11 +27,14 @@ public class StandaloneMigration {
     MainSupport.putSystemPropertyIfAbsent(
         "spring.config.location",
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
+    MainSupport.putSystemPropertyIfAbsent(
+        "management.endpoints.web.exposure.include", "health, prometheus, loggers");
+    MainSupport.putSystemPropertyIfAbsent("management.server.port", "9600");
 
     final SpringApplication application =
         new SpringApplicationBuilder()
             .logStartupInfo(true)
-            .web(WebApplicationType.NONE)
+            .web(WebApplicationType.SERVLET)
             .sources(MigrationsModuleConfiguration.class)
             .profiles(Profile.MIGRATION.getId())
             .addCommandLineProperties(true)
