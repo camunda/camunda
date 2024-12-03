@@ -44,14 +44,12 @@ public class TenantMigrationHandler implements MigrationHandler {
   private MigrationStatusUpdateRequest createTenant(final Tenant tenant) {
     try {
       client.newCreateTenantCommand().name(tenant.name()).tenantId(tenant.tenantId()).send().join();
-      return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, null);
     } catch (final Exception e) {
-      // if error code is conflict then ignore
       if (!isConflictError(e)) {
-        throw e;
+        return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, e);
       }
-      return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, e);
     }
+    return managementIdentityTransformer.toMigrationStatusUpdateRequest(tenant, null);
   }
 
   private boolean isConflictError(final Exception e) {

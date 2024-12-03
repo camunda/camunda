@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.times;
@@ -16,21 +17,25 @@ import static org.mockito.Mockito.when;
 import io.camunda.migration.identity.dto.Tenant;
 import io.camunda.migration.identity.midentity.ManagementIdentityClient;
 import io.camunda.migration.identity.midentity.ManagementIdentityTransformer;
+import io.camunda.migration.identity.midentity.MigrationStatusUpdateRequest;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.CreateTenantCommandStep1;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.api.response.CreateTenantResponse;
 import io.camunda.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.camunda.zeebe.client.impl.response.CreateTenantResponseImpl;
+import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class TenantMigrationHandlerTest {
+  final ArgumentCaptor<Collection<MigrationStatusUpdateRequest>> migrationStatusCaptor =
+      ArgumentCaptor.forClass(Collection.class);
   @Mock private ManagementIdentityClient managementIdentityClient;
   @Mock private ZeebeClient zeebeClient;
   @Mock private CreateTenantCommandStep1 createTenantCommandStep1;
@@ -93,7 +98,7 @@ public class TenantMigrationHandlerTest {
   }
 
   @Test
-  void stopWhenTenantCreationHasError() {
+  void setErrorWhenTenantCreationHasError() {
     // given
     final ZeebeClientFutureImpl<CreateTenantResponse, Object> future =
         new ZeebeClientFutureImpl<>();
@@ -103,11 +108,18 @@ public class TenantMigrationHandlerTest {
         .thenReturn(List.of(new Tenant("id1", "t1"), new Tenant("id2", "t2")))
         .thenReturn(List.of());
 
-    // when/then
-    Assertions.assertThrows(Exception.class, () -> migrationHandler.migrate());
+    // when
+    migrationHandler.migrate();
 
     // then
-    verify(managementIdentityClient, times(1)).fetchTenants(any(), anyInt());
-    verify(createTenantCommandStep1, times(1)).send();
+    verify(managementIdentityClient, times(2))
+        .updateMigrationStatus(migrationStatusCaptor.capture());
+    assertTrue(
+        migrationStatusCaptor.getAllValues().stream()
+            .flatMap(Collection::stream)
+            .allMatch(request -> request.error() != null),
+        "All requests should have a non-null error field");
+    verify(managementIdentityClient, times(2)).fetchTenants(any(), anyInt());
+    verify(createTenantCommandStep1, times(2)).send();
   }
 }
