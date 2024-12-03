@@ -577,6 +577,33 @@ public final class DbDecisionState implements MutableDecisionState {
         new TenantIdAndDrgKey(record.getTenantId(), record.getDecisionRequirementsKey()));
   }
 
+  @Override
+  public void setMissingDeploymentKey(
+      final String tenantId, final long decisionKey, final long deploymentKey) {
+    tenantIdKey.wrapString(tenantId);
+    dbDecisionKey.wrapLong(decisionKey);
+    dbDeploymentKey.wrapLong(deploymentKey);
+
+    final var decision = decisionsByKey.get(tenantAwareDecisionKey);
+    if (decision.getDeploymentKey() == deploymentKey) {
+      return;
+    }
+
+    if (decision.hasDeploymentKey()) {
+      throw new IllegalStateException(
+          String.format(
+              "Expected to set deployment key '%d' on decision with key '%d', but decision already has deployment key '%d'.",
+              deploymentKey, decisionKey, decision.getDeploymentKey()));
+    }
+
+    dbDecisionId.wrapBuffer(decision.getDecisionId());
+    decisionKeyByDecisionIdAndDeploymentKey.upsert(
+        tenantAwareDecisionIdAndDeploymentKey, fkDecision);
+
+    decision.setDeploymentKey(deploymentKey);
+    decisionsByKey.update(tenantAwareDecisionKey, decision);
+  }
+
   private void updateLatestDecisionVersion(final DecisionRecord record) {
     findLatestDecisionByIdAndTenant(record.getDecisionIdBuffer(), record.getTenantId())
         .ifPresentOrElse(

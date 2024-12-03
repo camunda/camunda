@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
@@ -20,11 +21,13 @@ public final class DeploymentReconstructedApplier
   private final MutableDeploymentState deploymentState;
   private final MutableProcessState processState;
   private final MutableFormState formState;
+  private final MutableDecisionState decisionState;
 
   public DeploymentReconstructedApplier(final MutableProcessingState processingState) {
     deploymentState = processingState.getDeploymentState();
     processState = processingState.getProcessState();
     formState = processingState.getFormState();
+    decisionState = processingState.getDecisionState();
   }
 
   @Override
@@ -38,6 +41,11 @@ public final class DeploymentReconstructedApplier
     for (final var formMetadata : value.formMetadata()) {
       formState.setMissingDeploymentKey(
           formMetadata.getTenantId(), formMetadata.getFormKey(), deploymentKey);
+    }
+
+    for (final var decisionMetadata : value.decisionsMetadata()) {
+      decisionState.setMissingDeploymentKey(
+          decisionMetadata.getTenantId(), decisionMetadata.getDecisionKey(), deploymentKey);
     }
   }
 }
