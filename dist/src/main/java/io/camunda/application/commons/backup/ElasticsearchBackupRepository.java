@@ -8,21 +8,19 @@
 package io.camunda.application.commons.backup;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
-@ConditionalOnProperty(
-    prefix = "camunda.database",
-    name = "type",
-    havingValue = "elasticsearch",
-    matchIfMissing = true)
+/** Note that the condition used refers to operate ElasticSearchCondition */
+@Conditional(ElasticsearchCondition.class)
 @Configuration
 @Profile("operate")
 public class ElasticsearchBackupRepository {
