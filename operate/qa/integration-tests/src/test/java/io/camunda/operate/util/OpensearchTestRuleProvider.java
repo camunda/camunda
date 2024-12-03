@@ -50,6 +50,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -110,15 +111,11 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void starting(final Description description) {
-    if (indexPrefix == null) {
-      indexPrefix = indexPrefixHolder.createNewIndexPrefix();
-    }
-    operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
-    if (operateProperties.getOpensearch().isCreateSchema()) {
-      schemaManager.createSchema();
-      assertThat(areIndicesCreatedAfterChecks(indexPrefix, 5, 5 * 60 /*sec*/))
-          .describedAs("Opensearch %s (min %d) indices are created", indexPrefix, 5)
-          .isTrue();
+    indexPrefix = operateProperties.getOpensearch().getIndexPrefix();
+    if (indexPrefix.isBlank()) {
+      indexPrefix =
+          Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
+      operateProperties.getOpensearch().setIndexPrefix(indexPrefix);
     }
   }
 
