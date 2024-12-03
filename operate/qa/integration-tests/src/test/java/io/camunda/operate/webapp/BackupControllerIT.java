@@ -7,12 +7,11 @@
  */
 package io.camunda.operate.webapp;
 
+import static io.camunda.management.backups.HistoryStateCode.*;
 import static io.camunda.operate.util.CollectionUtil.asMap;
 import static io.camunda.operate.webapp.elasticsearch.backup.ElasticsearchBackupRepository.SNAPSHOT_MISSING_EXCEPTION_TYPE;
-import static io.camunda.webapps.backup.BackupStateDto.*;
 import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -22,25 +21,22 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.exceptions.OperateElasticsearchConnectionException;
-import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.management.backups.Error;
+import io.camunda.management.backups.HistoryBackupDetail;
+import io.camunda.management.backups.HistoryBackupInfo;
+import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.backup.OperateSnapshotNameProvider;
-import io.camunda.operate.webapp.management.BackupController;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.webapps.backup.BackupService;
-import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
-import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.Metadata;
-import io.camunda.webapps.backup.TakeBackupRequestDto;
+import io.camunda.webapps.controllers.BackupController;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Supplier;
 import org.apache.http.HttpStatus;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
@@ -59,6 +55,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -68,6 +65,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+/* This class should be moved to the dist/ module as it does not really test anything operate specific
+anymore, it will be done in a follow-up PR
+*/
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {TestApplication.class},
@@ -75,13 +75,11 @@ import org.springframework.test.context.junit4.SpringRunner;
     properties = {
       OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
-      "management.endpoints.web.exposure.include = backups",
+      "management.endpoints.web.exposure.include = backup-history",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
-@ActiveProfiles({"test", "standalone"})
+@ActiveProfiles({"test", "operate", "standalone"})
 public class BackupControllerIT {
-  @SpyBean private BackupService backupService;
-
   @Mock private SnapshotClient snapshotClient;
 
   @MockBean
@@ -108,126 +106,12 @@ public class BackupControllerIT {
 
     final ResponseEntity<Map> result =
         testRestTemplate.getForEntity(
-            "http://localhost:" + managementPort + "/actuator/backups/2", Map.class);
+            "http://localhost:" + managementPort + "/actuator/backup-history/2", Map.class);
 
-    assertThat(result.getStatusCodeValue()).isEqualTo(HttpStatus.SC_NOT_FOUND);
+    assertThat(result.getStatusCode().value()).isEqualTo(HttpStatus.SC_NOT_FOUND);
 
     final Map<String, String> resultBody = (Map<String, String>) result.getBody();
-
     assertThat(resultBody.get("message")).isEqualTo("No backup with id [2] found.");
-  }
-
-  @Test
-  public void shouldFailCreateBackupOnEmptyBackupId() {
-    final Exception exception =
-        assertThrows(
-            InvalidRequestException.class,
-            () -> {
-              backupController.takeBackup(new TakeBackupRequestDto());
-            });
-    final String expectedMessage = "BackupId must be provided";
-    final String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
-  }
-
-  @Test
-  public void shouldFailOnWrongBackupId() {
-    String expectedMessage = "BackupId must be provided";
-
-    Exception exception =
-        assertThrows(
-            InvalidRequestException.class,
-            () -> {
-              backupController.takeBackup(new TakeBackupRequestDto().setBackupId(null));
-            });
-    assertTrue(exception.getMessage().contains(expectedMessage));
-
-    expectedMessage = "BackupId must be a non-negative Integer. Received value:";
-
-    exception =
-        assertThrows(
-            InvalidRequestException.class,
-            () -> {
-              backupController.takeBackup(new TakeBackupRequestDto().setBackupId(-1L));
-            });
-    assertTrue(exception.getMessage().contains(expectedMessage));
-
-    exception =
-        assertThrows(
-            InvalidRequestException.class,
-            () -> {
-              backupController.getBackupState(-1L);
-            });
-    assertTrue(exception.getMessage().contains(expectedMessage));
-
-    exception =
-        assertThrows(
-            InvalidRequestException.class,
-            () -> {
-              backupController.deleteBackup(-1L);
-            });
-    assertTrue(exception.getMessage().contains(expectedMessage));
-  }
-
-  @Test
-  public void shouldFailNoBackupRepositoryConfigured() {
-    when(operateProperties.getBackup()).thenReturn(null);
-    final String expectedMessage = "No backup repository configured.";
-    final Long backupId = 100L;
-
-    Exception exception =
-        assertThrows(
-            NotFoundException.class,
-            () -> {
-              backupController.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-            });
-    String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
-
-    exception =
-        assertThrows(
-            NotFoundException.class,
-            () -> {
-              backupController.getBackupState(backupId);
-            });
-    actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
-
-    exception =
-        assertThrows(
-            NotFoundException.class,
-            () -> {
-              backupController.deleteBackup(backupId);
-            });
-    actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
-
-    exception =
-        assertThrows(
-            NotFoundException.class,
-            () -> {
-              backupController.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-            });
-    actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
-
-    exception =
-        assertThrows(
-            NotFoundException.class,
-            () -> {
-              backupController.getBackupState(backupId);
-            });
-    actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
-
-    exception =
-        assertThrows(
-            NotFoundException.class,
-            () -> {
-              backupController.deleteBackup(backupId);
-            });
-    actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
   }
 
   @Test
@@ -241,30 +125,16 @@ public class BackupControllerIT {
     when(snapshotClient.getRepository(any(), any())).thenThrow(elsEx);
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    Exception exception =
-        assertThrows(
-            OperateRuntimeException.class,
-            () -> {
-              backupController.takeBackup(new TakeBackupRequestDto().setBackupId(1L));
-            });
-    String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertReturnsError(() -> backupController.takeBackup(1L), 404, expectedMessage);
 
-    exception =
-        assertThrows(
-            OperateRuntimeException.class,
-            () -> {
-              backupController.deleteBackup(1L);
-            });
-    actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertReturnsError(() -> backupController.takeBackup(1L), 404, expectedMessage);
 
     verify(esClient, times(2)).snapshot();
   }
 
   @Test
   public void shouldFailCreateBackupOnBackupIdNotFound() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     final SnapshotInfo snapshotInfo = mock(SnapshotInfo.class);
     when(snapshotInfo.snapshotId()).thenReturn(new SnapshotId("snapshotName", "uuid"));
     final List<SnapshotInfo> snapshotInfos = asList(new SnapshotInfo[] {snapshotInfo});
@@ -272,123 +142,88 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final Exception exception =
-        assertThrows(
-            InvalidRequestException.class,
-            () -> {
-              backupController.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-            });
     final String expectedMessage =
         String.format("A backup with ID [%s] already exists. Found snapshots:", backupId);
-    final String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertReturnsError(() -> backupController.takeBackup(backupId), 400, expectedMessage);
     verify(esClient, times(2)).snapshot();
   }
 
   @Test
   public void shouldFailCreateBackupOn1stRequestFailedWithConnectionError() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     when(snapshotClient.getRepository(any(), any()))
         .thenThrow(new TransportException("Elastic is not available"));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final Exception exception =
-        assertThrows(
-            OperateElasticsearchConnectionException.class,
-            () -> {
-              backupController.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-            });
     final String expectedMessage =
         String.format(
             "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
             operateProperties.getBackup().getRepositoryName());
-    final String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertReturnsError(() -> backupController.takeBackup(backupId), 502, expectedMessage);
   }
 
   @Test
   public void shouldFailCreateBackupOn2ndRequestFailedWithConnectionError() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     when(snapshotClient.getRepository(any(), any())).thenReturn(null);
     when(snapshotClient.get(any(), any()))
         .thenThrow(new TransportException("Elastic is not available"));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final Exception exception =
-        assertThrows(
-            OperateElasticsearchConnectionException.class,
-            () -> {
-              backupController.takeBackup(new TakeBackupRequestDto().setBackupId(backupId));
-            });
     final String expectedMessage =
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for duplicate backup. Repository name: [%s].",
             operateProperties.getBackup().getRepositoryName());
-    final String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertReturnsError(() -> backupController.takeBackup(backupId), 502, expectedMessage);
   }
 
   @Test
   public void shouldFailGetStateOnNoBackupFound() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     when(snapshotClient.get(any(), any()))
         .thenThrow(
             new ElasticsearchStatusException(
                 SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final Exception exception =
-        assertThrows(
-            ResourceNotFoundException.class,
-            () -> {
-              backupController.getBackupState(backupId);
-            });
     final String expectedMessage = String.format("No backup with id [%s] found.", backupId);
-    final String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertReturnsError(() -> backupController.getBackupState(backupId), 404, expectedMessage);
     verify(esClient, times(1)).snapshot();
   }
 
   @Test
   public void shouldFailGetStateOnConnectionError() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     when(esClient.snapshot()).thenThrow(new TransportException("Elastic is not available"));
 
-    final Exception exception =
-        assertThrows(
-            OperateElasticsearchConnectionException.class,
-            () -> {
-              backupController.getBackupState(backupId);
-            });
     final String expectedMessage =
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
             operateProperties.getBackup().getRepositoryName());
-    final String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertReturnsError(() -> backupController.getBackupState(backupId), 502, expectedMessage);
   }
 
   @Test
   public void shouldReturnCompletedState() throws IOException {
-    final Long backupId = 2L;
-    final SnapshotInfo snapshotInfo1 =
+    final long backupId = 2L;
+    final var snapshotInfo1 =
         createSnapshotInfoMock(
             "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo2 =
+    final var snapshotInfo2 =
         createSnapshotInfoMock(
             "snapshotName2", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
-    final SnapshotInfo snapshotInfo3 =
+    final var snapshotInfo3 =
         createSnapshotInfoMock(
             "snapshotName3", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final GetBackupStateResponseDto backupState = backupController.getBackupState(backupId);
+    final var response = backupController.getBackupState(backupId);
+    final var backupState = (HistoryBackupInfo) response.getBody();
     assertThat(backupState.getState()).isEqualTo(COMPLETED);
-    assertThat(backupState.getBackupId()).isEqualTo(backupId);
+    assertThat(backupState.getBackupId()).isEqualTo(new BigDecimal(backupId));
     assertThat(backupState.getFailureReason()).isNull();
 
     assertBackupDetails(snapshotInfos, backupState);
@@ -396,7 +231,7 @@ public class BackupControllerIT {
 
   @Test
   public void shouldReturnFailedState1() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
             "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
@@ -417,15 +252,15 @@ public class BackupControllerIT {
     final SnapshotInfo snapshotInfo3 =
         createSnapshotInfoMock(
             "snapshotName3", UUID.randomUUID().toString(), SnapshotState.FAILED, shardFailures);
-    final List<SnapshotInfo> snapshotInfos =
-        asList(new SnapshotInfo[] {snapshotInfo1, snapshotInfo2, snapshotInfo3});
+    final List<SnapshotInfo> snapshotInfos = asList(snapshotInfo1, snapshotInfo2, snapshotInfo3);
+
     when(snapshotClient.get(any(), any()))
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final GetBackupStateResponseDto backupState = backupController.getBackupState(backupId);
+    final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(FAILED);
-    assertThat(backupState.getBackupId()).isEqualTo(backupId);
+    assertThat(backupState.getBackupId()).isEqualTo(new BigDecimal(backupId));
     assertThat(backupState.getFailureReason())
         .isEqualTo("There were failures with the following snapshots: snapshotName3");
 
@@ -436,14 +271,12 @@ public class BackupControllerIT {
         .containsExactly(
             null,
             null,
-            snapshotInfos.get(2).shardFailures().stream()
-                .map(si -> si.toString())
-                .toArray(String[]::new));
+            snapshotInfos.get(2).shardFailures().stream().map(si -> si.toString()).toList());
   }
 
   @Test
   public void shouldReturnFailedState2() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
             "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
@@ -459,9 +292,9 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final GetBackupStateResponseDto backupState = backupController.getBackupState(backupId);
+    final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(FAILED);
-    assertThat(backupState.getBackupId()).isEqualTo(backupId);
+    assertThat(backupState.getBackupId()).isEqualTo(new BigDecimal(backupId));
     assertThat(backupState.getFailureReason())
         .isEqualTo("Some of the snapshots are partial: snapshotName3");
 
@@ -489,9 +322,9 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final GetBackupStateResponseDto backupState = backupController.getBackupState(backupId);
+    final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(FAILED);
-    assertThat(backupState.getBackupId()).isEqualTo(backupId);
+    assertThat(backupState.getBackupId()).isEqualTo(new BigDecimal(backupId));
     assertThat(backupState.getFailureReason()).isEqualTo("More snapshots found than expected.");
 
     assertBackupDetails(snapshotInfos, backupState);
@@ -499,7 +332,7 @@ public class BackupControllerIT {
 
   @Test
   public void shouldReturnIncompatibleState() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
             "snapshotName1", UUID.randomUUID().toString(), SnapshotState.SUCCESS);
@@ -515,9 +348,9 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final GetBackupStateResponseDto backupState = backupController.getBackupState(backupId);
+    final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(INCOMPATIBLE);
-    assertThat(backupState.getBackupId()).isEqualTo(backupId);
+    assertThat(backupState.getBackupId()).isEqualTo(new BigDecimal(backupId));
     assertThat(backupState.getFailureReason()).isNull();
 
     assertBackupDetails(snapshotInfos, backupState);
@@ -525,7 +358,7 @@ public class BackupControllerIT {
 
   @Test
   public void shouldReturnIncompleteState() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     // we have only 2 out of 3 snapshots + timeout
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
@@ -540,9 +373,9 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final GetBackupStateResponseDto backupState = backupController.getBackupState(backupId);
-    assertThat(backupState.getState()).isEqualTo(INCOMPLETE);
-    assertThat(backupState.getBackupId()).isEqualTo(backupId);
+    final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
+    assertThat(backupState.getState()).isEqualTo(HistoryStateCode.INCOMPLETE);
+    assertThat(backupState.getBackupId()).isEqualTo(new BigDecimal(backupId));
     assertThat(backupState.getFailureReason()).isNull();
 
     assertBackupDetails(snapshotInfos, backupState);
@@ -550,7 +383,7 @@ public class BackupControllerIT {
 
   @Test
   public void shouldReturnInProgressState1() throws IOException {
-    final Long backupId = 2L;
+    final long backupId = 2L;
     // we have only 2 out of 3 snapshots
     final SnapshotInfo snapshotInfo1 =
         createSnapshotInfoMock(
@@ -567,9 +400,9 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final GetBackupStateResponseDto backupState = backupController.getBackupState(backupId);
+    final var backupState = (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(IN_PROGRESS);
-    assertThat(backupState.getBackupId()).isEqualTo(backupId);
+    assertThat(backupState.getBackupId()).isEqualTo(new BigDecimal(backupId));
     assertThat(backupState.getFailureReason()).isNull();
 
     assertBackupDetails(snapshotInfos, backupState);
@@ -591,9 +424,10 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 1, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final GetBackupStateResponseDto backupState = backupController.getBackupState(backupId);
+    final HistoryBackupInfo backupState =
+        (HistoryBackupInfo) backupController.getBackupState(backupId).getBody();
     assertThat(backupState.getState()).isEqualTo(IN_PROGRESS);
-    assertThat(backupState.getBackupId()).isEqualTo(backupId);
+    assertThat(backupState.getBackupId()).isEqualTo(new BigDecimal(backupId));
     assertThat(backupState.getFailureReason()).isNull();
 
     assertBackupDetails(snapshotInfos, backupState);
@@ -605,18 +439,16 @@ public class BackupControllerIT {
     when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
     when(snapshotClient.getRepository(any(), any())).thenThrow(elsEx);
     when(esClient.snapshot()).thenReturn(snapshotClient);
-    final Exception exception =
-        assertThrows(
-            OperateRuntimeException.class,
-            () -> {
-              backupController.deleteBackup(3L);
-            });
+    final var webResponse = backupController.deleteBackup(3L);
+    assertThat(webResponse.getStatus()).isEqualTo(404);
+
+    final var error = (Error) webResponse.getBody();
 
     final String expectedMessage =
         String.format(
             "No repository with name [%s] could be found.",
             operateProperties.getBackup().getRepositoryName());
-    final String actualMessage = exception.getMessage();
+    final String actualMessage = error.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
     verify(esClient, times(1)).snapshot();
   }
@@ -626,18 +458,15 @@ public class BackupControllerIT {
     final ElasticsearchStatusException elsEx = mock(ElasticsearchStatusException.class);
     when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
     when(esClient.snapshot()).thenThrow(elsEx);
-    final Exception exception =
-        assertThrows(
-            OperateRuntimeException.class,
-            () -> {
-              backupController.getBackupState(3L);
-            });
+    final var webResponse = backupController.getBackupState(3L);
+    assertThat(webResponse.getStatus()).isEqualTo(WebEndpointResponse.STATUS_INTERNAL_SERVER_ERROR);
+    final var error = (Error) webResponse.getBody();
 
     final String expectedMessage =
         String.format(
             "No repository with name [%s] could be found.",
             operateProperties.getBackup().getRepositoryName());
-    final String actualMessage = exception.getMessage();
+    final String actualMessage = error.getMessage();
     assertTrue(actualMessage.contains(expectedMessage));
     verify(esClient, times(1)).snapshot();
   }
@@ -648,19 +477,12 @@ public class BackupControllerIT {
     when(elsEx.getDetailedMessage()).thenReturn("type=repository_missing_exception");
     when(esClient.snapshot()).thenThrow(elsEx);
 
-    final Exception exception =
-        assertThrows(
-            OperateRuntimeException.class,
-            () -> {
-              backupController.getBackups();
-            });
-
     final String expectedMessage =
         String.format(
             "No repository with name [%s] could be found.",
             operateProperties.getBackup().getRepositoryName());
-    final String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertReturnsError(() -> backupController.getBackups(), 404, expectedMessage);
+
     verify(esClient, times(1)).snapshot();
   }
 
@@ -672,32 +494,25 @@ public class BackupControllerIT {
                 SNAPSHOT_MISSING_EXCEPTION_TYPE, RestStatus.NOT_FOUND));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    assertThat(backupController.getBackups()).isEmpty();
+    assertThat((List<HistoryBackupInfo>) backupController.getBackups().getBody()).isEmpty();
   }
 
   @Test
   public void shouldFailGetBackupsOnConnectionError() throws IOException {
     when(esClient.snapshot()).thenThrow(new TransportException("Elastic is not available"));
 
-    final Exception exception =
-        assertThrows(
-            OperateElasticsearchConnectionException.class,
-            () -> {
-              backupController.getBackups();
-            });
     final String expectedMessage =
         String.format(
             "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
             operateProperties.getBackup().getRepositoryName());
-    final String actualMessage = exception.getMessage();
-    assertTrue(actualMessage.contains(expectedMessage));
+    assertReturnsError(() -> backupController.getBackups(), 502, expectedMessage);
   }
 
   @Test
   public void shouldReturnThreeBackups() throws IOException {
-    final Long backupId1 = 1L;
-    final Long backupId2 = 2L;
-    final Long backupId3 = 3L;
+    final long backupId1 = 1L;
+    final long backupId2 = 2L;
+    final long backupId3 = 3L;
     // COMPLETED
     final SnapshotInfo snapshotInfo11 =
         createSnapshotInfoMock(
@@ -747,39 +562,39 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final List<GetBackupStateResponseDto> backups = backupController.getBackups();
+    final var backups = (List<HistoryBackupInfo>) backupController.getBackups().getBody();
     assertThat(backups).hasSize(3);
 
-    final GetBackupStateResponseDto backup3 =
+    final var backup3 =
         backups.stream()
-            .filter(response -> backupId3.equals(response.getBackupId()))
+            .filter(response -> backupId3 == response.getBackupId().longValue())
             .findAny()
             .orElse(null);
     assertThat(backup3).isNotNull();
     assertThat(backup3.getState()).isEqualTo(IN_PROGRESS);
-    assertThat(backup3.getBackupId()).isEqualTo(backupId3);
+    assertThat(backup3.getBackupId()).isEqualTo(new BigDecimal(backupId3));
     assertThat(backup3.getFailureReason()).isNull();
     assertBackupDetails(List.of(snapshotInfo31, snapshotInfo32), backup3);
 
-    final GetBackupStateResponseDto backup2 =
+    final var backup2 =
         backups.stream()
-            .filter(response -> backupId2.equals(response.getBackupId()))
+            .filter(response -> backupId2 == response.getBackupId().longValue())
             .findAny()
             .orElse(null);
     assertThat(backup2).isNotNull();
     assertThat(backup2.getState()).isEqualTo(INCOMPLETE);
-    assertThat(backup2.getBackupId()).isEqualTo(backupId2);
+    assertThat(backup2.getBackupId()).isEqualTo(new BigDecimal(backupId2));
     assertThat(backup2.getFailureReason()).isNull();
     assertBackupDetails(List.of(snapshotInfo21, snapshotInfo22), backup2);
 
-    final GetBackupStateResponseDto backup1 =
+    final var backup1 =
         backups.stream()
-            .filter(response -> backupId1.equals(response.getBackupId()))
+            .filter(response -> backupId1 == response.getBackupId().longValue())
             .findAny()
             .orElse(null);
     assertThat(backup1).isNotNull();
     assertThat(backup1.getState()).isEqualTo(COMPLETED);
-    assertThat(backup1.getBackupId()).isEqualTo(backupId1);
+    assertThat(backup1.getBackupId()).isEqualTo(new BigDecimal(backupId1));
     assertThat(backup1.getFailureReason()).isNull();
     assertBackupDetails(List.of(snapshotInfo11, snapshotInfo12), backup1);
   }
@@ -808,24 +623,24 @@ public class BackupControllerIT {
         .thenReturn(new GetSnapshotsResponse(snapshotInfos, null, null, 6, 1));
     when(esClient.snapshot()).thenReturn(snapshotClient);
 
-    final List<GetBackupStateResponseDto> backups = backupController.getBackups();
+    final var backups = (List<HistoryBackupInfo>) backupController.getBackups().getBody();
     assertThat(backups).hasSize(1);
-    final GetBackupStateResponseDto backup1 = backups.get(0);
+    final HistoryBackupInfo backup1 = backups.get(0);
     assertThat(backup1.getState()).isEqualTo(COMPLETED);
-    assertThat(backup1.getBackupId()).isEqualTo(backupId1);
+    assertThat(backup1.getBackupId()).isEqualTo(new BigDecimal(backupId1));
     assertThat(backup1.getFailureReason()).isNull();
     assertBackupDetails(List.of(snapshotInfo11, snapshotInfo12), backup1);
   }
 
   private void assertBackupDetails(
-      final List<SnapshotInfo> snapshotInfos, final GetBackupStateResponseDto backupState) {
+      final List<SnapshotInfo> snapshotInfos, final HistoryBackupInfo backupState) {
     assertThat(backupState.getDetails()).hasSize(snapshotInfos.size());
     assertThat(backupState.getDetails())
-        .extracting(GetBackupStateResponseDetailDto::getSnapshotName)
+        .extracting(HistoryBackupDetail::getSnapshotName)
         .containsExactlyInAnyOrder(
             snapshotInfos.stream().map(si -> si.snapshotId().getName()).toArray(String[]::new));
     assertThat(backupState.getDetails())
-        .extracting(GetBackupStateResponseDetailDto::getState)
+        .extracting(d -> d.getState())
         .containsExactlyInAnyOrder(
             snapshotInfos.stream().map(si -> si.state().name()).toArray(String[]::new));
     assertThat(backupState.getDetails())
@@ -876,5 +691,17 @@ public class BackupControllerIT {
     when(snapshotInfo.shardFailures()).thenReturn(failures);
     when(snapshotInfo.startTime()).thenReturn(OffsetDateTime.now().toInstant().toEpochMilli());
     return snapshotInfo;
+  }
+
+  private void assertReturnsError(
+      final Supplier<WebEndpointResponse<?>> runnable,
+      final int httpStatusCode,
+      final String expectedMessage) {
+    final var webResponse = runnable.get();
+
+    assertThat(webResponse.getStatus()).isEqualTo(httpStatusCode);
+
+    final var error = (Error) webResponse.getBody();
+    assertThat(error.getMessage()).contains(expectedMessage);
   }
 }

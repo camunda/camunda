@@ -213,6 +213,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>operate-common</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -262,6 +266,10 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>webapps-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>webapps-backup</artifactId>
     </dependency>
 
     <dependency>
@@ -412,6 +420,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-transport</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-commons</artifactId>
     </dependency>
 
     <dependency>
