@@ -13,7 +13,6 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.not;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -67,37 +66,11 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     ofNullable(getTenantQuery(filter.tenantIds())).ifPresent(queries::add);
     ofNullable(getElementInstanceKeyQuery(filter.elementInstanceKeys())).ifPresent(queries::add);
 
-    // Task Variable Query: Check if taskVariable with specified varName and varValue exists
-    final var taskVariableQuery = getTaskVariablesQuery(filter.variableFilters());
+    // Process Instance Variable Query: Check if processVariable  with specified varName and
+    // varValue exists
+    ofNullable(getProcessVariablesQuery(filter.processInstanceVariableFilter()))
+        .ifPresent(f -> queries.add(hasParentQuery("process", f)));
 
-    // Process Variable Query: Check if processVariable  with specified varName and varValue exists
-    final var processVariableQuery = getProcessVariablesQuery(filter.variableFilters());
-
-    if (filter.variableFilters() != null && !filter.variableFilters().isEmpty()) {
-      // Task Variable Name Query
-      final var taskVarNameQuery =
-          filter.variableFilters() != null
-              ? stringTerms(
-                  "name",
-                  filter.variableFilters().stream()
-                      .map(VariableValueFilter::name)
-                      .collect(Collectors.toList()))
-              : null;
-
-      // Process Condition:
-      // 1. Check for process variables in the parent process.
-      // 2. Check for variables in subprocesses.
-      // 3. Ensure there is no overriding taskVariable.
-      final var processVariableCondition =
-          and(
-              hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), processVariableQuery),
-              not(
-                  hasChildQuery(
-                      TaskJoinRelationshipType.LOCAL_VARIABLE.getType(), taskVarNameQuery)));
-
-      // Combine taskVariable, processVariable, and subprocessVariable queries with OR logic
-      queries.add(or(taskVariableQuery, processVariableCondition));
-    }
     queries.add(exists("flowNodeInstanceId")); // Default to task
 
     return and(queries);

@@ -302,7 +302,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
 
     final VariableValueFilter variableFilterValue = variableValueFilterBuilder.build();
 
-    final var filter = FilterBuilders.userTask((f) -> f.variable(List.of(variableFilterValue)));
+    final var filter =
+        FilterBuilders.userTask((f) -> f.processInstanceVariables(List.of(variableFilterValue)));
     final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(filter));
 
     // when
