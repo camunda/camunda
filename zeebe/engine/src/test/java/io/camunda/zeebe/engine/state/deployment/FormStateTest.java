@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.deployment;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
@@ -50,8 +49,7 @@ public class FormStateTest {
   @Test
   void shouldReturnEmptyIfNoFormIsDeployedForFormIdAndDeploymentKey() {
     // when
-    final var persistedForm =
-        formState.findFormByIdAndDeploymentKey(wrapString("form-1"), 1L, tenantId);
+    final var persistedForm = formState.findFormByIdAndDeploymentKey("form-1", 1L, tenantId);
 
     // then
     assertThat(persistedForm).isEmpty();
@@ -60,8 +58,7 @@ public class FormStateTest {
   @Test
   void shouldReturnEmptyIfNoFormIsDeployedForFormIdAndVersionTag() {
     // when
-    final var persistedForm =
-        formState.findFormByIdAndVersionTag(wrapString("form-1"), "v1.0", tenantId);
+    final var persistedForm = formState.findFormByIdAndVersionTag("form-1", "v1.0", tenantId);
 
     // then
     assertThat(persistedForm).isEmpty();
