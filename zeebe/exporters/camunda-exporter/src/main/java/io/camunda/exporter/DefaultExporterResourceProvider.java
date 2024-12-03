@@ -29,6 +29,8 @@ import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
 import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GroupDeletedHandler;
+import io.camunda.exporter.handlers.GroupEntityAddedHandler;
+import io.camunda.exporter.handlers.GroupEntityRemovedHandler;
 import io.camunda.exporter.handlers.IncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromIncidentHandler;
 import io.camunda.exporter.handlers.ListViewFlowNodeFromJobHandler;
@@ -38,14 +40,19 @@ import io.camunda.exporter.handlers.ListViewProcessInstanceFromProcessInstanceHa
 import io.camunda.exporter.handlers.ListViewVariableFromVariableHandler;
 import io.camunda.exporter.handlers.MappingCreatedHandler;
 import io.camunda.exporter.handlers.MappingDeletedHandler;
+import io.camunda.exporter.handlers.MetricFromDecisionEvaluationHandler;
 import io.camunda.exporter.handlers.MetricFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.RoleDeletedHandler;
+import io.camunda.exporter.handlers.RoleMemberAddedHandler;
+import io.camunda.exporter.handlers.RoleMemberRemovedHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
+import io.camunda.exporter.handlers.TenantEntityAddedHandler;
+import io.camunda.exporter.handlers.TenantEntityRemovedHandler;
 import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
@@ -63,6 +70,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
@@ -83,6 +91,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
@@ -160,7 +169,12 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             entry(AuthorizationIndex.class, new AuthorizationIndex(globalPrefix, isElasticsearch)),
             entry(MappingIndex.class, new MappingIndex(globalPrefix, isElasticsearch)),
             entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
-            entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)));
+            entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)),
+            entry(
+                ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)),
+            entry(
+                PersistentWebSessionIndexDescriptor.class,
+                new PersistentWebSessionIndexDescriptor(globalPrefix, isElasticsearch)));
 
     final var processCache =
         new ExporterEntityCacheImpl<>(
@@ -181,6 +195,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new RoleCreateUpdateHandler(
                 indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
             new RoleDeletedHandler(indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+            new RoleMemberAddedHandler(
+                indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+            new RoleMemberRemovedHandler(
+                indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
             new UserCreatedUpdatedHandler(
                 indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new UserDeletedHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
@@ -188,7 +206,15 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),
             new TenantCreateUpdateHandler(
                 indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
+            new TenantEntityAddedHandler(
+                indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
+            new TenantEntityRemovedHandler(
+                indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
             new GroupCreatedUpdatedHandler(
+                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
+            new GroupEntityAddedHandler(
+                indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
+            new GroupEntityRemovedHandler(
                 indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
             new GroupDeletedHandler(
                 indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),
@@ -269,7 +295,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new MappingCreatedHandler(
                 indexDescriptorsMap.get(MappingIndex.class).getFullQualifiedName()),
             new MappingDeletedHandler(
-                indexDescriptorsMap.get(MappingIndex.class).getFullQualifiedName()));
+                indexDescriptorsMap.get(MappingIndex.class).getFullQualifiedName()),
+            new MetricFromDecisionEvaluationHandler(
+                indexDescriptorsMap.get(MetricIndex.class).getFullQualifiedName()));
   }
 
   @Override

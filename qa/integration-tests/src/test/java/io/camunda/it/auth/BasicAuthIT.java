@@ -16,14 +16,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.commons.CommonsModuleConfiguration;
+import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authentication;
+import io.camunda.security.entity.Permission;
+import io.camunda.service.AuthorizationServices;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.client.protocol.rest.UserRequest;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import org.apache.logging.log4j.util.Base64Util;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +58,7 @@ public class BasicAuthIT {
   private static final String USERNAME = "correct_username";
   private static final String PASSWORD = "correct_password";
   @MockBean UserServices userService;
+  @MockBean AuthorizationServices authorizationServices;
   @Autowired private ObjectMapper objectMapper;
   @Autowired private PasswordEncoder passwordEncoder;
   @Autowired private MockMvc mockMvc;
@@ -67,10 +76,22 @@ public class BasicAuthIT {
                 List.of(new UserEntity(1L, USERNAME, "name", "", passwordEncoder.encode(PASSWORD))),
                 null));
 
+    when(authorizationServices.search(any()))
+        .thenReturn(
+            new SearchQueryResult<>(
+                1,
+                List.of(
+                    new AuthorizationEntity(
+                        1L,
+                        AuthorizationOwnerType.USER.name(),
+                        AuthorizationResourceType.APPLICATION.name(),
+                        List.of(new Permission(PermissionType.ACCESS, Set.of("*"))))),
+                null));
+
     content =
         objectMapper.writeValueAsString(
             new UserRequest()
-                .username("demo")
+                .username("demo-".concat(UUID.randomUUID().toString()))
                 .name("Demo")
                 .password("password")
                 .email("demo@email.com"));

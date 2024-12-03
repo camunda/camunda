@@ -46,7 +46,7 @@ test.describe.parallel('login page', () => {
 
     await expect(page).toHaveURL('/tasklist/login');
     await expect(loginPage.errorMessage).toContainText(
-      'Credentials could not be verified',
+      'Username and password do not match',
     );
 
     const results = await makeAxeBuilder().analyze();

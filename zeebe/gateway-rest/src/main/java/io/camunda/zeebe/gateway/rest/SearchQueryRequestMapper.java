@@ -32,6 +32,7 @@ import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.ProcessDefinitionFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
+import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.UserFilter;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableFilter;
@@ -139,7 +140,8 @@ public final class SearchQueryRequestMapper {
             request.getSort(),
             SortOptionBuilders::tenant,
             SearchQueryRequestMapper::applyTenantSortField);
-    return buildSearchQuery(null, sort, page, SearchQueryBuilders::tenantSearchQuery);
+    final var filter = toTenantFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
   public static Either<ProblemDetail, DecisionDefinitionQuery> toDecisionDefinitionQuery(
@@ -443,6 +445,15 @@ public final class SearchQueryRequestMapper {
     return builder.build();
   }
 
+  private static TenantFilter toTenantFilter(final TenantFilterRequest filter) {
+    final var builder = FilterBuilders.tenant();
+    if (filter != null) {
+      ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+      ofNullable(filter.getName()).ifPresent(builder::name);
+    }
+    return builder.build();
+  }
+
   private static DecisionDefinitionFilter toDecisionDefinitionFilter(
       final DecisionDefinitionFilterRequest filter) {
     final var builder = FilterBuilders.decisionDefinition();
@@ -536,6 +547,8 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getProcessInstanceKey())
                   .ifPresent(builder::processInstanceKeys);
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
+              Optional.ofNullable(f.getElementInstanceKey())
+                  .ifPresent(builder::elementInstanceKeys);
               Optional.ofNullable(f.getVariables())
                   .filter(variables -> !variables.isEmpty())
                   .ifPresent(vars -> builder.variable(toVariableValueFilters(vars)));
@@ -649,7 +662,7 @@ public final class SearchQueryRequestMapper {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
     } else {
       switch (field) {
-        case "tenantKey" -> builder.tenantKey();
+        case "key" -> builder.tenantKey();
         case "name" -> builder.name();
         case "tenantId" -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
@@ -814,23 +827,6 @@ public final class SearchQueryRequestMapper {
     }
 
     return null;
-  }
-
-  private static VariableValueFilter toVariableValueFilter(
-      final VariableValueFilterRequest filter) {
-    return Optional.ofNullable(filter)
-        .map(
-            f ->
-                FilterBuilders.variableValue()
-                    .name(f.getName())
-                    .eq(f.getEq())
-                    .neq(f.getNeq())
-                    .gt(f.getGt())
-                    .gte(f.getGte())
-                    .lt(f.getLt())
-                    .lte(f.getLte())
-                    .build())
-        .orElse(null);
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(

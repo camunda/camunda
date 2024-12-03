@@ -12,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +30,7 @@ public final class RetryOperation<T> {
   private final RetryPredicate<T> retryPredicate;
   private final List<Class<? extends Throwable>> exceptionList;
   private final String message;
+  private final Supplier<Integer> delaySupplier;
 
   private RetryOperation(
       final RetryConsumer<T> retryConsumer,
@@ -37,7 +39,8 @@ public final class RetryOperation<T> {
       final TimeUnit timeUnit,
       final RetryPredicate<T> retryPredicate,
       final List<Class<? extends Throwable>> exceptionList,
-      final String message) {
+      final String message,
+      final Supplier<Integer> delaySupplier) {
     this.retryConsumer = retryConsumer;
     this.noOfRetry = noOfRetry;
     this.delayInterval = delayInterval;
@@ -45,6 +48,7 @@ public final class RetryOperation<T> {
     this.retryPredicate = retryPredicate;
     this.exceptionList = exceptionList;
     this.message = message;
+    this.delaySupplier = delaySupplier;
   }
 
   public static <T> OperationBuilder<T> newBuilder() {
@@ -94,16 +98,15 @@ public final class RetryOperation<T> {
 
   private int increaseRetryCountAndSleep(int retries) {
     retries++;
-    if (retries < noOfRetry && delayInterval > 0) {
+    final int delay = Objects.nonNull(delaySupplier) ? delaySupplier.get() : delayInterval;
+    if (retries < noOfRetry && delay > 0) {
       try {
         if (retries % 20 == 0) {
-          LOGGER.info(
-              "{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
+          LOGGER.info("{} - Waiting {} {}. {}/{}", message, delay, timeUnit, retries, noOfRetry);
         } else {
-          LOGGER.debug(
-              "{} - Waiting {} {}. {}/{}", message, delayInterval, timeUnit, retries, noOfRetry);
+          LOGGER.debug("{} - Waiting {} {}. {}/{}", message, delay, timeUnit, retries, noOfRetry);
         }
-        timeUnit.sleep(delayInterval);
+        timeUnit.sleep(delay);
       } catch (final InterruptedException ignore) {
         Thread.currentThread().interrupt();
       }
@@ -119,6 +122,7 @@ public final class RetryOperation<T> {
     private RetryPredicate<T> iRetryPredicate;
     private Class<? extends Throwable>[] exceptionClasses;
     private String message = "";
+    private Supplier<Integer> delaySupplier;
 
     private OperationBuilder() {}
 
@@ -154,6 +158,11 @@ public final class RetryOperation<T> {
       return this;
     }
 
+    public OperationBuilder<T> delaySupplier(final Supplier<Integer> delaySupplier) {
+      this.delaySupplier = delaySupplier;
+      return this;
+    }
+
     public RetryOperation<T> build() {
       if (Objects.isNull(iRetryConsumer)) {
         throw new RuntimeException("'#retryConsumer:RetryConsumer<T>' not set");
@@ -172,7 +181,8 @@ public final class RetryOperation<T> {
           iTimeUnit,
           iRetryPredicate,
           exceptionList,
-          message);
+          message,
+          delaySupplier);
     }
   }
 

@@ -15,7 +15,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.VariableReader;
+import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.VariableDbModel;
+import io.camunda.db.rdbms.write.domain.VariableDbModel.VariableDbModelBuilder;
 import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -46,6 +48,25 @@ public class VariableIT {
     assertVariableDbModelEqualToEntity(randomizedVariable, instance);
     assertThat(instance.fullValue()).isNull();
     assertThat(instance.isPreview()).isFalse();
+  }
+
+  @TestTemplate
+  public void shouldUpdateAndFindVariableByKey(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final VariableDbModel randomizedVariable = prepareRandomVariablesAndReturnOne(testApplication);
+
+    final var newValue = "new value";
+    final VariableDbModel updatedVariable =
+        randomizedVariable.copy(b -> ((VariableDbModelBuilder) b).value(newValue));
+
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(0L);
+    rdbmsWriter.getVariableWriter().update(updatedVariable);
+    rdbmsWriter.flush();
+
+    final var instance = rdbmsService.getVariableReader().findOne(randomizedVariable.variableKey());
+
+    assertThat(instance).isNotNull();
+    assertVariableDbModelEqualToEntity(updatedVariable, instance);
   }
 
   @TestTemplate

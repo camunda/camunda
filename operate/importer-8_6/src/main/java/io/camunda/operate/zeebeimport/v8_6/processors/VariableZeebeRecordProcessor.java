@@ -30,6 +30,7 @@ import java.util.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -37,7 +38,9 @@ public class VariableZeebeRecordProcessor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableZeebeRecordProcessor.class);
 
-  @Autowired private VariableTemplate variableTemplate;
+  @Autowired
+  @Qualifier("operateVariableTemplate")
+  private VariableTemplate variableTemplate;
 
   @Autowired private OperateProperties operateProperties;
 

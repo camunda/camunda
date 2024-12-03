@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.security.configuration.SecurityConfiguration;
 import jakarta.servlet.ServletContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,7 @@ public class ClientConfig {
   public boolean multiTenancyEnabled;
   @Autowired private OperateProfileService profileService;
   @Autowired private OperateProperties operateProperties;
+  @Autowired private SecurityConfiguration securityConfiguration;
   @Autowired private ServletContext context;
 
   public String asJson() {
@@ -45,7 +47,7 @@ public class ClientConfig {
     canLogout = profileService.currentProfileCanLogout();
     isLoginDelegated = profileService.isLoginDelegated();
     tasklistUrl = operateProperties.getTasklistUrl();
-    resourcePermissionsEnabled = operateProperties.getIdentity().isResourcePermissionsEnabled();
+    resourcePermissionsEnabled = securityConfiguration.getAuthorizations().isEnabled();
     multiTenancyEnabled = operateProperties.getMultiTenancy().isEnabled();
     try {
       return String.format(

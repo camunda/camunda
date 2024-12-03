@@ -10,10 +10,10 @@ package io.camunda.tasklist.zeebeimport.es;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.util.ElasticsearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportBatch;
 import io.camunda.tasklist.zeebeimport.ImportJobAbstract;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;

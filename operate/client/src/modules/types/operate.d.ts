@@ -102,7 +102,7 @@ interface DecisionInstanceEntity {
 }
 
 interface ListenerEntity {
-  listenerType: 'EXECUTION_LISTENER' | 'USER_TASK_LISTENER';
+  listenerType: 'EXECUTION_LISTENER' | 'TASK_LISTENER';
   listenerKey: string;
   state: 'ACTIVE' | 'COMPLETED' | 'FAILED';
   jobType: string;

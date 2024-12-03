@@ -32,7 +32,7 @@ public abstract class PositionBasedImportIndex<TBuilder>
   private static final String TIMESTAMP_OF_LAST_ENTITY =
       ImportIndexDto.Fields.timestampOfLastEntity;
   private static final String DB_TYPE_INDEX_REFERS_TO =
-      PositionBasedImportIndexDto.Fields.esTypeIndexRefersTo;
+      PositionBasedImportIndexDto.Fields.dbTypeIndexRefersTo;
   private static final String DATA_SOURCE = ImportIndexDto.Fields.dataSource;
 
   @Override
@@ -41,13 +41,13 @@ public abstract class PositionBasedImportIndex<TBuilder>
   }
 
   @Override
-  public int getVersion() {
-    return VERSION;
+  public boolean isImportIndex() {
+    return true;
   }
 
   @Override
-  public boolean isImportIndex() {
-    return true;
+  public int getVersion() {
+    return VERSION;
   }
 
   @Override

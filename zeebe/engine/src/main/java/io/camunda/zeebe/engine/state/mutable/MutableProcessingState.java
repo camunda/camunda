@@ -103,5 +103,8 @@ public interface MutableProcessingState extends ProcessingState {
   @Override
   MutableMappingState getMappingState();
 
+  @Override
+  MutableResourceState getResourceState();
+
   KeyGenerator getKeyGenerator();
 }

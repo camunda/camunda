@@ -8,10 +8,11 @@
 package io.camunda.webapps.schema.descriptors.tasklist.template;
 
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 
 public class SnapshotTaskVariableTemplate extends TasklistTemplateDescriptor
-    implements Prio3Backup {
+    implements ProcessInstanceDependant, Prio3Backup {
 
   public static final String INDEX_NAME = "task-variable";
   public static final String INDEX_VERSION = "8.3.0";

@@ -5,7 +5,7 @@ import { AddFormModal, UseEntityModalCustomProps } from "src/components/modal";
 import { useApi, useApiCall } from "src/utility/api/hooks";
 import { User } from "src/utility/api/users";
 import { assignUserRole } from "src/utility/api/users/roles";
-import { getRoles, Role } from "src/utility/api/roles";
+import { searchRoles, Role } from "src/utility/api/roles";
 import { useNavigate } from "react-router";
 import {
   TranslatedErrorInlineNotification,
@@ -23,15 +23,16 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
   const { t } = useTranslate();
   const navigate = useNavigate();
 
-  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
   const [showSelectRoleError, setShowSelectRoleError] = useState(false);
 
   const {
-    data: roles,
+    data: roleData,
     loading: loadingRoles,
     reload: reloadRoles,
     success: getRolesSuccess,
-  } = useApi(getRoles);
+  } = useApi(searchRoles);
+  const allRoles = roleData?.items ?? [];
 
   const [callAssignRole, { loading: loadingAssignRole }] =
     useApiCall(assignUserRole);
@@ -40,8 +41,10 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
 
   const unassignedRoles = (
     userRoles
-      ? roles?.filter(({ id }) => !userRoles.some((role) => role.id === id))
-      : roles
+      ? allRoles.filter(
+          ({ key }) => !userRoles.some((role) => role.key === key),
+        )
+      : allRoles
   )?.sort((a, b) => ascendingSort(a.name, b.name));
 
   const handleSubmit = async () => {
@@ -55,7 +58,9 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
     setShowSelectRoleError(false);
 
     const results = await Promise.all(
-      selectedRoles.map((roleId) => callAssignRole({ id: user.id!, roleId })),
+      selectedRoles.map((roleKey) =>
+        callAssignRole({ userKey: user.key!, roleKey }),
+      ),
     );
 
     if (results.every(({ success }) => success)) {
@@ -72,15 +77,12 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
     }
   }, [open]);
 
-  const onRoleChange =
-    (roleId: string) =>
-    (_: ChangeEvent, { checked }: { checked: boolean }) =>
-      setSelectedRoles(
-        checked
-          ? [...selectedRoles, roleId]
-          : selectedRoles.filter((id) => id !== roleId),
-      );
-
+  const setSelected = (roleKey: number, selected: boolean) =>
+    setSelectedRoles(
+      selected
+        ? [...selectedRoles, roleKey]
+        : selectedRoles.filter((selectedKey) => selectedKey !== roleKey),
+    );
   return (
     <AddFormModal
       open={open}
@@ -93,17 +95,20 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
       {showSelectRoleError && (
         <TranslatedErrorInlineNotification title="Please select at least one role." />
       )}
-      {loadingRoles && (!roles || roles.length === 0) && <CheckboxSkeleton />}
+      {loadingRoles && allRoles.length === 0 && <CheckboxSkeleton />}
       {unassignedRoles && (
         <fieldset>
           <legend>{t("Select one or multiple roles")}</legend>
-          {unassignedRoles.map(({ id, name, description }) => (
+          {unassignedRoles.map(({ key, name, description }) => (
             <Checkbox
               key={name}
-              id={id}
+              id={key}
               labelText={`${name} ${description ? `(${description})` : ""}`}
-              checked={selectedRoles.some((roleId) => roleId === id)}
-              onChange={onRoleChange(id)}
+              checked={selectedRoles.some((selectedKey) => selectedKey === key)}
+              onChange={(
+                _event: ChangeEvent,
+                { checked }: { checked: boolean },
+              ) => setSelected(key, checked)}
             />
           ))}
         </fieldset>
@@ -114,7 +119,7 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
           actionButton={{ label: "Retry", onClick: reloadRoles }}
         />
       )}
-      {!loading && getRolesSuccess && roles?.length === 0 && (
+      {!loading && getRolesSuccess && allRoles.length === 0 && (
         <TranslatedInlineNotification
           title="Please configure a role first, then come back to assign it."
           actionButton={{ label: "Go to roles", onClick: goToRolesPage }}
@@ -122,9 +127,9 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
       )}
       {!loading &&
         getRolesSuccess &&
-        roles &&
-        roles.length > 0 &&
-        roles.length === userRoles?.length && (
+        roleData &&
+        allRoles.length > 0 &&
+        allRoles.length === userRoles?.length && (
           <TranslatedInlineNotification
             title="All configured roles are already assigned to the user. You can configure a new role and then assign it to the user."
             actionButton={{ label: "Go to roles", onClick: goToRolesPage }}

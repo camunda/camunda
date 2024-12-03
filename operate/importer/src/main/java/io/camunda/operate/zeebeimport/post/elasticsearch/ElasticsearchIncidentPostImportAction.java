@@ -80,7 +80,9 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
 
   @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired private PostImporterQueueTemplate postImporterQueueTemplate;
 

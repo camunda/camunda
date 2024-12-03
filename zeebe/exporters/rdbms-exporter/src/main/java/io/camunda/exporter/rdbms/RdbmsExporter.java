@@ -135,14 +135,26 @@ public class RdbmsExporter implements Exporter {
         ValueType.DECISION_EVALUATION,
         List.of(new DecisionInstanceExportHandler(rdbmsWriter.getDecisionInstanceWriter())));
     registeredHandlers.put(
+        ValueType.GROUP, List.of(new GroupExportHandler(rdbmsWriter.getGroupWriter())));
+    registeredHandlers.put(
         ValueType.PROCESS_INSTANCE,
         List.of(
             new ProcessInstanceExportHandler(rdbmsWriter.getProcessInstanceWriter()),
             new FlowNodeExportHandler(rdbmsWriter.getFlowNodeInstanceWriter())));
     registeredHandlers.put(
+        ValueType.TENANT, List.of(new TenantExportHandler(rdbmsWriter.getTenantWriter())));
+    registeredHandlers.put(
         ValueType.VARIABLE, List.of(new VariableExportHandler(rdbmsWriter.getVariableWriter())));
     registeredHandlers.put(
+        ValueType.ROLE, List.of(new RoleExportHandler(rdbmsWriter.getRoleWriter())));
+    registeredHandlers.put(
+        ValueType.USER, List.of(new UserExportHandler(rdbmsWriter.getUserWriter())));
+    registeredHandlers.put(
         ValueType.USER_TASK, List.of(new UserTaskExportHandler(rdbmsWriter.getUserTaskWriter())));
+    registeredHandlers.put(
+        ValueType.FORM, List.of(new FormExportHandler(rdbmsWriter.getFormWriter())));
+    registeredHandlers.put(
+        ValueType.MAPPING, List.of(new MappingExportHandler(rdbmsWriter.getMappingWriter())));
   }
 
   private void updatePositionInBroker() {

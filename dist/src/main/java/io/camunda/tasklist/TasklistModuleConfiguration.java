@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist;
 
-import io.camunda.tasklist.archiver.security.ArchiverSecurityModuleConfiguration;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
 import io.camunda.tasklist.webapp.security.WebappSecurityModuleConfiguration;
 import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
@@ -64,11 +63,7 @@ public class TasklistModuleConfiguration {
   }
 
   @Configuration(proxyBeanMethods = false)
-  @Import({
-    WebappSecurityModuleConfiguration.class,
-    ArchiverSecurityModuleConfiguration.class,
-    ImporterSecurityModuleConfiguration.class
-  })
+  @Import({WebappSecurityModuleConfiguration.class, ImporterSecurityModuleConfiguration.class})
   @Profile("!operate")
   public static class TasklistSecurityModulesConfiguration {}
 

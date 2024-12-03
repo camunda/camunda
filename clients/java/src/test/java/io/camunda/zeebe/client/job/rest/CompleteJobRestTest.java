@@ -27,6 +27,8 @@ import java.io.ByteArrayInputStream;
 import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mockito;
 
 class CompleteJobRestTest extends ClientRestTest {
@@ -42,6 +44,7 @@ class CompleteJobRestTest extends ClientRestTest {
     // then
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     assertThat(request.getVariables()).isNull();
+    assertThat(request.getResult()).isNull();
   }
 
   @Test
@@ -140,5 +143,34 @@ class CompleteJobRestTest extends ClientRestTest {
 
     final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
     JsonUtil.assertEquality(JsonUtil.toJson(request.getVariables()), expectedVariable);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldCompleteWithResult(final boolean denied) {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).result().denied(denied).send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getDenied()).isEqualTo(denied);
+  }
+
+  @Test
+  void shouldCompleteWithResultDeniedNotSet() {
+    // given
+    final long jobKey = 12;
+
+    // when
+    client.newCompleteCommand(jobKey).result().send().join();
+
+    // then
+    final JobCompletionRequest request = gatewayService.getLastRequest(JobCompletionRequest.class);
+    assertThat(request.getResult()).isNotNull();
+    assertThat(request.getResult().getDenied()).isNull();
   }
 }

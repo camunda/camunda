@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.model.bpmn.validation.zeebe;
 
+import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.camunda.zeebe.model.bpmn.instance.BusinessRuleTask;
 import io.camunda.zeebe.model.bpmn.instance.CallActivity;
@@ -51,6 +52,7 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
   private static final Set<Class<?>> NON_EXECUTABLE_ELEMENT_TYPES = new HashSet<>();
 
   static {
+    SUPPORTED_ELEMENT_TYPES.add(AdHocSubProcess.class);
     SUPPORTED_ELEMENT_TYPES.add(BoundaryEvent.class);
     SUPPORTED_ELEMENT_TYPES.add(BusinessRuleTask.class);
     SUPPORTED_ELEMENT_TYPES.add(EndEvent.class);

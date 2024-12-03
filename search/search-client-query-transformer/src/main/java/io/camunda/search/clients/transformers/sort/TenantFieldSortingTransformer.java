@@ -16,7 +16,7 @@ public class TenantFieldSortingTransformer implements FieldSortingTransformer {
   @Override
   public String apply(final String domainField) {
     return switch (domainField) {
-      case "tenantKey" -> KEY;
+      case "key" -> KEY;
       case "tenantId" -> TENANT_ID;
       case "name" -> NAME;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);

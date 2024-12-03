@@ -7,11 +7,11 @@
  */
 package io.camunda.tasklist.zeebeimport;
 
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.CollectionUtil;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebe.PartitionHolder;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;

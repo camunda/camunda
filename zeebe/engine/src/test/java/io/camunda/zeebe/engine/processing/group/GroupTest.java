@@ -8,12 +8,16 @@
 package io.camunda.zeebe.engine.processing.group;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
@@ -269,6 +273,38 @@ public class GroupTest {
 
     // then
     assertThat(deletedGroup).hasGroupKey(groupKey);
+  }
+
+  @Test
+  public void shouldDeleteGroupWithAssignedEntities() {
+    // given
+    final var userKey =
+        engine
+            .user()
+            .newUser("foo")
+            .withEmail("foo@bar")
+            .withName("Foo Bar")
+            .withPassword("zabraboof")
+            .create()
+            .getKey();
+    final var name = UUID.randomUUID().toString();
+    final var groupKey = engine.group().newGroup(name).create().getValue().getGroupKey();
+    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+
+    // when
+    final var deletedGroup = engine.group().deleteGroup(groupKey).delete().getValue();
+
+    // then
+    final var groupRecords =
+        RecordingExporter.groupRecords()
+            .withIntents(GroupIntent.ENTITY_REMOVED, GroupIntent.DELETED)
+            .withGroupKey(groupKey)
+            .asList();
+    assertThat(deletedGroup).hasGroupKey(groupKey);
+    assertThat(groupRecords).hasSize(2);
+    assertThat(groupRecords)
+        .extracting(Record::getIntent)
+        .containsExactly(GroupIntent.ENTITY_REMOVED, GroupIntent.DELETED);
   }
 
   @Test

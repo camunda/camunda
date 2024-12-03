@@ -89,6 +89,11 @@ const elements = {
     name: 'Message event sub process',
     type: 'eventSubProcess',
   },
+  MessageStartEvent: {
+    id: 'MessageStartEvent',
+    name: 'Message start event',
+    type: 'startEvent',
+  },
   TimerEventSubProcess: {
     id: 'TimerEventSubProcess',
     name: 'Timer event sub process',
@@ -168,6 +173,26 @@ const elements = {
     id: 'MultiInstanceTask',
     name: 'Multi instance task',
     type: 'MultiInstanceTask',
+  },
+  EscalationEventSubProcess: {
+    id: 'EscalationEventSubProcess',
+    name: 'Escalation event sub process',
+    type: 'EscalationEventSubProcess',
+  },
+  EscalationStartEvent: {
+    id: 'EscalationStartEvent',
+    name: 'Escalation start event',
+    type: 'EscalationStartEvent',
+  },
+  CompensationTask: {
+    id: 'CompensationTask',
+    name: 'Compensation task',
+    type: 'CompensationTask',
+  },
+  CompensationBoundaryEvent: {
+    id: 'CompensationBoundaryEvent',
+    name: 'Compensation boundary event',
+    type: 'CompensationBoundaryEvent',
   },
 };
 

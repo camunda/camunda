@@ -7,9 +7,11 @@
  */
 package io.camunda.operate.zeebeimport;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.ImportStore;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
+import io.micrometer.core.instrument.Gauge;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -41,6 +43,7 @@ public class ImportPositionHolder {
       new HashMap<>();
   private final Map<String, ImportPositionEntity> inflightImportPositions = new HashMap<>();
   private final Map<String, ImportPositionEntity> inflightPostImportPositions = new HashMap<>();
+  private final Map<String, Gauge> importPositionCompletedGauges = new HashMap<>();
 
   private ScheduledFuture<?> scheduledImportPositionUpdateTask;
   private final ReentrantLock inflightImportPositionLock = new ReentrantLock();
@@ -52,6 +55,8 @@ public class ImportPositionHolder {
   @Autowired
   @Qualifier("importPositionUpdateThreadPoolExecutor")
   private ThreadPoolTaskScheduler importPositionUpdateExecutor;
+
+  @Autowired private Metrics metrics;
 
   @PostConstruct
   private void init() {
@@ -124,15 +129,28 @@ public class ImportPositionHolder {
           ImportPositionEntity importPosition = inflightImportPositions.get(key);
           if (importPosition == null) {
             importPosition = lastProcessedPosition;
+            LOGGER.error("SET import position {}; NOT EXIST BEFORE", importPosition);
+            importPositionCompletedGauges.put(
+                key,
+                metrics.registerGauge(
+                    Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED,
+                    importPosition,
+                    (pos) -> pos.getCompleted() ? 1.0 : 0.0,
+                    Metrics.TAG_KEY_PARTITION,
+                    Integer.toString(partition),
+                    Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+                    aliasName));
           } else {
             importPosition
                 .setPosition(lastProcessedPosition.getPosition())
                 .setSequence(lastProcessedPosition.getSequence())
                 .setIndexName(lastProcessedPosition.getIndexName())
                 .setCompleted(lastProcessedPosition.getCompleted());
+            LOGGER.error("SET import position {}; HAS EXIST BEFORE", importPosition);
           }
           inflightImportPositions.put(key, importPosition);
-        });
+        },
+        "record last loaded pos");
   }
 
   public void recordLatestPostImportedPosition(
@@ -151,7 +169,8 @@ public class ImportPositionHolder {
                 lastPostImportedPosition.getPostImporterPosition());
           }
           inflightPostImportPositions.put(key, importPosition);
-        });
+        },
+        "record latest post import");
   }
 
   public void updateImportPositions() {
@@ -161,7 +180,8 @@ public class ImportPositionHolder {
           inflightImportPositions.clear();
           pendingPostImportPositionUpdates.putAll(inflightPostImportPositions);
           inflightPostImportPositions.clear();
-        });
+        },
+        "update positions");
 
     final var result =
         importStore.updateImportPositions(
@@ -183,24 +203,28 @@ public class ImportPositionHolder {
     lastScheduledPositions.clear();
     pendingImportPositionUpdates.clear();
     pendingPostImportPositionUpdates.clear();
+    importPositionCompletedGauges.clear();
 
     withInflightImportPositionLock(
         () -> {
           inflightImportPositions.clear();
           inflightPostImportPositions.clear();
-        });
+        },
+        "clear");
   }
 
   private String getKey(final String aliasTemplate, final int partitionId) {
     return String.format("%s-%d", aliasTemplate, partitionId);
   }
 
-  private void withInflightImportPositionLock(final Runnable action) {
+  private void withInflightImportPositionLock(final Runnable action, final String name) {
     try {
+      LOGGER.error("access LOCK {} - {}", Thread.currentThread().getName(), name);
       inflightImportPositionLock.lock();
       action.run();
     } finally {
       inflightImportPositionLock.unlock();
+      LOGGER.error("release LOCK {} - {}", Thread.currentThread().getName(), name);
     }
   }
 }

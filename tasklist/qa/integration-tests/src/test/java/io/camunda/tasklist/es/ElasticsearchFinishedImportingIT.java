@@ -11,11 +11,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestSupport;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import io.camunda.tasklist.zeebeimport.ZeebeImporter;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -49,7 +49,7 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   @Autowired private RestHighLevelClient tasklistEsClient;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private RecordsReaderHolder recordsReaderHolder;
-  @Autowired private ImportPositionIndex importPositionIndex;
+  @Autowired private TasklistImportPositionIndex importPositionIndex;
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @BeforeAll
@@ -236,10 +236,10 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
     }
     return (Boolean)
         hits.stream()
-            .filter(hit -> hit.get(ImportPositionIndex.ID).equals(partitionIdFieldValue))
+            .filter(hit -> hit.get(TasklistImportPositionIndex.ID).equals(partitionIdFieldValue))
             .findFirst()
             .orElse(new HashMap<>())
-            .getOrDefault(ImportPositionIndex.COMPLETED, false);
+            .getOrDefault(TasklistImportPositionIndex.COMPLETED, false);
   }
 
   private <T extends RecordValue> Record<T> generateRecord(

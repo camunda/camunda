@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +37,9 @@ public class OpensearchFlowNodeStore implements FlowNodeStore {
 
   @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 

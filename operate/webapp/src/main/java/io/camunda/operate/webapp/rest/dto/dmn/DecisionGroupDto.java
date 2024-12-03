@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.rest.dto.dmn;
 
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.*;
@@ -46,9 +46,9 @@ public class DecisionGroupDto {
               groupDto.setTenantId(decision0.getTenantId());
               groupDto.setName(decision0.getName());
               groupDto.setPermissions(
-                  permissionsService == null
+                  (!permissionsService.permissionsEnabled())
                       ? new HashSet<>()
-                      : permissionsService.getDecisionDefinitionPermission(
+                      : permissionsService.getDecisionDefinitionPermissions(
                           decision0.getDecisionId()));
               groupDto.setDecisions(DtoCreator.create(group, DecisionDto.class));
               groups.add(groupDto);

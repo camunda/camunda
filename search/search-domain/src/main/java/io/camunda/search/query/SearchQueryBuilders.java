@@ -132,6 +132,15 @@ public final class SearchQueryBuilders {
     return fn.apply(tenantSearchQuery()).build();
   }
 
+  public static GroupQuery.Builder groupSearchQuery() {
+    return new GroupQuery.Builder();
+  }
+
+  public static GroupQuery groupSearchQuery(
+      final Function<GroupQuery.Builder, ObjectBuilder<GroupQuery>> fn) {
+    return fn.apply(groupSearchQuery()).build();
+  }
+
   public static AuthorizationQuery.Builder authorizationSearchQuery() {
     return new AuthorizationQuery.Builder();
   }

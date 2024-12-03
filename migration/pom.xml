@@ -29,10 +29,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <!-- release parent settings -->
-    <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/camunda-migration-snapshots/</nexus.snapshot.repository>
-    <nexus.release.repository>https://artifacts.camunda.com/artifactory/camunda-migration/</nexus.release.repository>
-
     <maven.compiler.target>21</maven.compiler.target>
     <maven.compiler.source>21</maven.compiler.source>
 

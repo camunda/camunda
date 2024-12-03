@@ -14,6 +14,7 @@ public final class CachesCfg implements ConfigurationEntry {
   private int drgCacheCapacity = EngineConfiguration.DEFAULT_DRG_CACHE_CAPACITY;
   private int formCacheCapacity = EngineConfiguration.DEFAULT_FORM_CACHE_CAPACITY;
   private int processCacheCapacity = EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY;
+  private int resourceCacheCapacity = EngineConfiguration.DEFAULT_PROCESS_CACHE_CAPACITY;
 
   public int getDrgCacheCapacity() {
     return drgCacheCapacity;
@@ -39,6 +40,14 @@ public final class CachesCfg implements ConfigurationEntry {
     this.processCacheCapacity = processCacheCapacity;
   }
 
+  public int getResourceCacheCapacity() {
+    return resourceCacheCapacity;
+  }
+
+  public void setResourceCacheCapacity(final int resourceCacheCapacity) {
+    this.resourceCacheCapacity = resourceCacheCapacity;
+  }
+
   @Override
   public String toString() {
     return "CachesCfg{"
@@ -48,6 +57,8 @@ public final class CachesCfg implements ConfigurationEntry {
         + formCacheCapacity
         + ", processCacheCapacity="
         + processCacheCapacity
+        + ", resourceCacheCapacity="
+        + resourceCacheCapacity
         + '}';
   }
 }

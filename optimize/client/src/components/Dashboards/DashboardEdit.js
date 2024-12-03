@@ -74,10 +74,7 @@ export class DashboardEdit extends React.Component {
     if (this.draggedItem) {
       // We need to prevent the browser scroll that occurs when resizing
       evt.preventDefault();
-
-      // We need to give the library time to process the grab before
-      // artificially generating mousemove events
-      setTimeout(this.autoScroll);
+      this.autoScroll();
     }
   };
 
@@ -94,19 +91,20 @@ export class DashboardEdit extends React.Component {
       } else if (deltaBottom < 30) {
         container.scrollTop += (30 - deltaBottom) / 5;
       }
-      this.draggedItem.dispatchEvent(createEvent('mousemove', this.mousePosition));
+
+      // We need to give the library time to process the grab before
+      // artificially generating mousemove events
+      setTimeout(() => {
+        this.draggedItem.dispatchEvent(createEvent('mousemove', this.mousePosition));
+      });
+
       this.autoScrollHandle = requestAnimationFrame(this.autoScroll);
     }
   };
 
   clearDraggedItem = () => {
     this.draggedItem = null;
-
-    // since we need to timeout the start of the autoscroll, we also need
-    // to timeout the cancel to prevent a "cancel before start" bug
-    setTimeout(() => {
-      cancelAnimationFrame(this.autoScrollHandle);
-    });
+    cancelAnimationFrame(this.autoScrollHandle);
   };
 
   updateLayout = (layout) => {

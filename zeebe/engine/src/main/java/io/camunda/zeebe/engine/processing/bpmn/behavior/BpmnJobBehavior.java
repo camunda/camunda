@@ -88,43 +88,6 @@ public final class BpmnJobBehavior {
     this.userTaskBehavior = userTaskBehavior;
   }
 
-  public Either<Failure, JobProperties> evaluateTaskListenerJobExpressions(
-      final JobWorkerProperties jobWorkerProps,
-      final BpmnElementContext context,
-      final UserTaskRecord taskRecordValue) {
-    return evaluateJobExpressions(jobWorkerProps, context)
-        .map(
-            p ->
-                Optional.of(taskRecordValue.getAssignee())
-                    .map(BpmnJobBehavior::notBlankOrNull)
-                    .map(p::assignee)
-                    .orElse(p))
-        .map(
-            p ->
-                Optional.ofNullable(taskRecordValue.getCandidateGroupsList())
-                    .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
-                    .map(p::candidateGroups)
-                    .orElse(p))
-        .map(
-            p ->
-                Optional.ofNullable(taskRecordValue.getCandidateUsersList())
-                    .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
-                    .map(p::candidateUsers)
-                    .orElse(p))
-        .map(
-            p ->
-                Optional.of(taskRecordValue.getDueDate())
-                    .map(BpmnJobBehavior::notBlankOrNull)
-                    .map(p::dueDate)
-                    .orElse(p))
-        .map(
-            p ->
-                Optional.of(taskRecordValue.getFollowUpDate())
-                    .map(BpmnJobBehavior::notBlankOrNull)
-                    .map(p::followUpDate)
-                    .orElse(p));
-  }
-
   public Either<Failure, JobProperties> evaluateJobExpressions(
       final JobWorkerProperties jobWorkerProps, final BpmnElementContext context) {
     final var scopeKey = context.getElementInstanceKey();
@@ -214,20 +177,60 @@ public final class BpmnJobBehavior {
 
   public void createNewTaskListenerJob(
       final BpmnElementContext context,
-      final JobProperties jobProperties,
-      final TaskListener taskListener,
-      final UserTaskRecord taskRecordValue) {
+      final UserTaskRecord taskRecordValue,
+      final TaskListener listener) {
+    evaluateTaskListenerJobExpressions(listener.getJobWorkerProperties(), context, taskRecordValue)
+        .thenDo(
+            listenerJobProperties -> {
+              final var taskHeaders =
+                  Collections.singletonMap(
+                      Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey",
+                      Objects.toString(taskRecordValue.getUserTaskKey()));
+              writeJobCreatedEvent(
+                  context,
+                  listenerJobProperties,
+                  JobKind.TASK_LISTENER,
+                  fromTaskListenerEventType(listener.getEventType()),
+                  taskHeaders);
+            })
+        .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+  }
 
-    final var taskHeaders =
-        Collections.singletonMap(
-            Protocol.RESERVED_HEADER_NAME_PREFIX + "userTaskKey",
-            Objects.toString(taskRecordValue.getUserTaskKey()));
-    writeJobCreatedEvent(
-        context,
-        jobProperties,
-        JobKind.TASK_LISTENER,
-        fromTaskListenerEventType(taskListener.getEventType()),
-        taskHeaders);
+  private Either<Failure, JobProperties> evaluateTaskListenerJobExpressions(
+      final JobWorkerProperties jobWorkerProps,
+      final BpmnElementContext context,
+      final UserTaskRecord taskRecordValue) {
+    return evaluateJobExpressions(jobWorkerProps, context)
+        .map(
+            p ->
+                Optional.of(taskRecordValue.getAssignee())
+                    .map(BpmnJobBehavior::notBlankOrNull)
+                    .map(p::assignee)
+                    .orElse(p))
+        .map(
+            p ->
+                Optional.ofNullable(taskRecordValue.getCandidateGroupsList())
+                    .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
+                    .map(p::candidateGroups)
+                    .orElse(p))
+        .map(
+            p ->
+                Optional.ofNullable(taskRecordValue.getCandidateUsersList())
+                    .map(BpmnJobBehavior::asNotEmptyListLiteralOrNull)
+                    .map(p::candidateUsers)
+                    .orElse(p))
+        .map(
+            p ->
+                Optional.of(taskRecordValue.getDueDate())
+                    .map(BpmnJobBehavior::notBlankOrNull)
+                    .map(p::dueDate)
+                    .orElse(p))
+        .map(
+            p ->
+                Optional.of(taskRecordValue.getFollowUpDate())
+                    .map(BpmnJobBehavior::notBlankOrNull)
+                    .map(p::followUpDate)
+                    .orElse(p));
   }
 
   private static JobListenerEventType fromExecutionListenerEventType(

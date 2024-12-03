@@ -22,6 +22,7 @@ import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.rest.ClientConfig;
 import io.camunda.operate.webapp.rest.ClientConfigRestService;
+import io.camunda.security.configuration.SecurityConfiguration;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,7 +38,8 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
       JacksonConfig.class,
       OperateDateTimeFormatter.class,
       DatabaseInfo.class,
-      OperateProperties.class
+      OperateProperties.class,
+      SecurityConfiguration.class
     },
     properties = {
       // OperateProperties.PREFIX + ".cloud.organizationId=organizationId",//  -- leave out to test

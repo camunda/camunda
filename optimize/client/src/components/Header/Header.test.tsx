@@ -213,18 +213,3 @@ it('should display the notifications component in cloud mode', async () => {
     isOpen: false,
   });
 });
-
-it('should display a warning if optimize is running in opensearch mode', async () => {
-  (useUiConfig as jest.Mock).mockReturnValue({
-    ...defaultUiConfig,
-    optimizeDatabase: 'opensearch',
-  });
-  const node = shallow(<Header />);
-
-  await runLastEffect();
-  await node.update();
-
-  const tags = node.find(C3Navigation).prop('navbar').tags;
-
-  expect(tags[0].key).toBe('opensearchWarning');
-});

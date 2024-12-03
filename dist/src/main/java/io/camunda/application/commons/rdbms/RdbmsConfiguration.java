@@ -12,8 +12,14 @@ import io.camunda.db.rdbms.read.service.DecisionDefinitionReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceReader;
+import io.camunda.db.rdbms.read.service.FormReader;
+import io.camunda.db.rdbms.read.service.GroupReader;
+import io.camunda.db.rdbms.read.service.MappingReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceReader;
+import io.camunda.db.rdbms.read.service.RoleReader;
+import io.camunda.db.rdbms.read.service.TenantReader;
+import io.camunda.db.rdbms.read.service.UserReader;
 import io.camunda.db.rdbms.read.service.UserTaskReader;
 import io.camunda.db.rdbms.read.service.VariableReader;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
@@ -21,8 +27,14 @@ import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
+import io.camunda.db.rdbms.sql.FormMapper;
+import io.camunda.db.rdbms.sql.GroupMapper;
+import io.camunda.db.rdbms.sql.MappingMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
+import io.camunda.db.rdbms.sql.RoleMapper;
+import io.camunda.db.rdbms.sql.TenantMapper;
+import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
@@ -67,6 +79,11 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public GroupReader groupReader(final GroupMapper groupMapper) {
+    return new GroupReader(groupMapper);
+  }
+
+  @Bean
   public ProcessDefinitionReader processDeploymentRdbmsReader(
       final ProcessDefinitionMapper processDefinitionMapper) {
     return new ProcessDefinitionReader(processDefinitionMapper);
@@ -79,8 +96,33 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public TenantReader tenantReader(final TenantMapper tenantMapper) {
+    return new TenantReader(tenantMapper);
+  }
+
+  @Bean
+  public UserReader userRdbmsReader(final UserMapper userTaskMapper) {
+    return new UserReader(userTaskMapper);
+  }
+
+  @Bean
+  public RoleReader roleRdbmsReader(final RoleMapper roleMapper) {
+    return new RoleReader(roleMapper);
+  }
+
+  @Bean
   public UserTaskReader userTaskRdbmsReader(final UserTaskMapper userTaskMapper) {
     return new UserTaskReader(userTaskMapper);
+  }
+
+  @Bean
+  public FormReader formRdbmsReader(final FormMapper formMapper) {
+    return new FormReader(formMapper);
+  }
+
+  @Bean
+  public MappingReader mappingRdbmsReader(final MappingMapper mappingMapper) {
+    return new MappingReader(mappingMapper);
   }
 
   @Bean
@@ -98,18 +140,30 @@ public class RdbmsConfiguration {
       final DecisionInstanceReader decisionInstanceReader,
       final DecisionRequirementsReader decisionRequirementsReader,
       final FlowNodeInstanceReader flowNodeInstanceReader,
+      final GroupReader groupReader,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessInstanceReader processInstanceReader,
-      final UserTaskReader userTaskReader) {
+      final RoleReader roleReader,
+      final TenantReader tenantReader,
+      final UserReader userReader,
+      final UserTaskReader userTaskReader,
+      final FormReader formReader,
+      final MappingReader mappingReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         decisionDefinitionReader,
         decisionInstanceReader,
         decisionRequirementsReader,
         flowNodeInstanceReader,
+        groupReader,
         processDefinitionReader,
         processInstanceReader,
         variableReader,
-        userTaskReader);
+        roleReader,
+        tenantReader,
+        userReader,
+        userTaskReader,
+        formReader,
+        mappingReader);
   }
 }

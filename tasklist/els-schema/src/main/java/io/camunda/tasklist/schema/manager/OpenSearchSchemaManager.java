@@ -7,6 +7,9 @@
  */
 package io.camunda.tasklist.schema.manager;
 
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,8 +24,8 @@ import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.templates.AbstractTemplateDescriptor;
 import io.camunda.tasklist.schema.templates.TemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
 import jakarta.json.JsonObject;
@@ -92,7 +95,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Autowired private List<TemplateDescriptor> tasklistTemplateDescriptors;
 
   @Autowired(required = false)
-  private List<TasklistTemplateDescriptor> commonTemplateDescriptors;
+  private List<IndexTemplateDescriptor> commonTemplateDescriptors;
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -381,7 +384,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
 
   private String settingsTemplateName() {
     final TasklistOpenSearchProperties osConfig = tasklistProperties.getOpenSearch();
-    return String.format("%s_template", osConfig.getIndexPrefix());
+    return String.format("%s%s_template", formatIndexPrefix(osConfig.getIndexPrefix()), TASK_LIST);
   }
 
   private void createTemplates() {
@@ -433,6 +436,11 @@ public class OpenSearchSchemaManager implements SchemaManager {
                               @Override
                               public String getVersion() {
                                 return t.getVersion();
+                              }
+
+                              @Override
+                              public String getFullQualifiedName() {
+                                return t.getFullQualifiedName();
                               }
                             })
                     .forEach(this::createTemplate));

@@ -81,6 +81,26 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldHaveCorrectUserTaskName() {
+    // when
+    final var result =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("form_process")).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getName()).isEqualTo("Form");
+  }
+
+  @Test
+  public void shouldUseUserTaskElementIdIfNameNotSet() {
+    // when
+    final var result =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("test-2")).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getName()).isEqualTo("test-2");
+  }
+
+  @Test
   public void shouldRetrieveVariablesFromUserTask() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
@@ -96,7 +116,7 @@ class UserTaskQueryTest {
     final var userTaskKey = resultUserTaskQuery.items().getFirst().getUserTaskKey();
 
     final var resultVariableQuery =
-        camundaClient.newUserTaskVariableRequest(userTaskKey).send().join();
+        camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
     assertThat(resultVariableQuery.items().size()).isEqualTo(2);
   }
 
@@ -351,6 +371,12 @@ class UserTaskQueryTest {
         .isLessThan(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
         .isLessThan(result.items().get(2).getCreationDate());
+
+    // Assert First and Last Sort Value matches the first and last item
+    assertThat(
+        result.page().firstSortValues().get(0).equals(result.items().get(0).getCreationDate()));
+    assertThat(
+        result.page().lastSortValues().get(0).equals(result.items().get(6).getUserTaskKey()));
   }
 
   @Test
@@ -450,6 +476,26 @@ class UserTaskQueryTest {
             .join();
     // then
     assertThat(result).isNull();
+  }
+
+  @Test
+  void shouldFilterByElementInstanceKey() {
+    // when
+    final var userTaskList = camundaClient.newUserTaskQuery().send().join();
+
+    final var userTaskElementInstanceKey =
+        userTaskList.items().stream().findFirst().get().getElementInstanceKey();
+
+    final var result =
+        camundaClient
+            .newUserTaskQuery()
+            .filter(f -> f.elementInstanceKey(userTaskElementInstanceKey))
+            .send()
+            .join();
+    // then
+    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().getFirst().getElementInstanceKey())
+        .isEqualTo(userTaskElementInstanceKey);
   }
 
   private static void deployProcess(
