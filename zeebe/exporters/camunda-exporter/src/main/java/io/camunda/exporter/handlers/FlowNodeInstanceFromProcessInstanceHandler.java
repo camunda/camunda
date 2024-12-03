@@ -99,8 +99,10 @@ public class FlowNodeInstanceFromProcessInstanceHandler
         // <processInstanceKey>/<flowNodeInstanceKey>/.../<flowNodeInstanceKey> where upper level
         // flowNodeInstanceKeys are normally subprocess(es) or multi-instance body This is an intra
         // tree path that shows position of flow node instance inside one process instance.
+        // We take last entry, as in intra path we're not interested in upper level process instance
+        // scope hierarchies.
         final List<String> treePathEntries =
-            value.getElementInstancePath().getFirst().stream().map(String::valueOf).toList();
+            value.getElementInstancePath().getLast().stream().map(String::valueOf).toList();
         entity.setTreePath(String.join("/", treePathEntries));
         entity.setLevel(treePathEntries.size() - 1);
       } else {
@@ -151,7 +153,6 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     updateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
     updateFields.put(FlowNodeInstanceTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
-    updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
     if (entity.getStartDate() != null) {
       updateFields.put(FlowNodeInstanceTemplate.START_DATE, entity.getStartDate());
     }

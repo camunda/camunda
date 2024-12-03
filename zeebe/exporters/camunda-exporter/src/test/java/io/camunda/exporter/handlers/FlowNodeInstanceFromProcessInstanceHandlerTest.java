@@ -30,6 +30,7 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -149,17 +150,18 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
         new FlowNodeInstanceEntity()
             .setId("111")
             .setKey(111)
+            .setProcessInstanceKey(444L)
             .setPartitionId(1)
             .setType(FlowNodeType.SERVICE_TASK)
             .setState(FlowNodeState.ACTIVE)
-            .setTreePath(null)
             .setFlowNodeId("flowNode1")
             .setProcessDefinitionKey(222L)
             .setBpmnProcessId("bpmnId")
             .setTenantId("tenantId")
-            .setLevel(0)
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
+            .setTreePath("444/356/111")
+            .setLevel(1)
             .setPosition(333L);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
@@ -174,9 +176,43 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(
         FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.LEVEL, inputEntity.getLevel());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.TREE_PATH, inputEntity.getTreePath());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.START_DATE, inputEntity.getStartDate());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.END_DATE, inputEntity.getEndDate());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.POSITION, inputEntity.getPosition());
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+    // then
+    verify(mockRequest, times(1))
+        .upsert(indexName, inputEntity.getId(), inputEntity, expectedUpdateFields);
+  }
+
+  @Test
+  public void shouldNotUpsertNullFields() {
+    final FlowNodeInstanceEntity inputEntity =
+        new FlowNodeInstanceEntity()
+            .setId("111")
+            .setKey(111)
+            .setProcessInstanceKey(444L)
+            .setPartitionId(1)
+            .setType(FlowNodeType.SERVICE_TASK)
+            .setState(FlowNodeState.ACTIVE)
+            .setFlowNodeId("flowNode1")
+            .setProcessDefinitionKey(222L)
+            .setBpmnProcessId("bpmnId");
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new HashMap<>();
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.ID, inputEntity.getId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, inputEntity.getPartitionId());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
+    expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
+    expectedUpdateFields.put(
+        FlowNodeInstanceTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
 
     // when
     underTest.flush(inputEntity, mockRequest);
@@ -193,12 +229,18 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
             .withBpmnElementType(BpmnElementType.SERVICE_TASK)
+            .withElementInstancePath(
+                List.of(
+                    List.of(111L, 777L, 999L),
+                    List.of(222L, 789L, 888L),
+                    List.of(333L, 444L, 555L, 666L)))
             .build();
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             r ->
-                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                r.withKey(666L)
+                    .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
                     .withTimestamp(timestamp)
                     .withValue(processInstanceRecordValue));
 
@@ -222,6 +264,41 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
         .isEqualTo(processInstanceRecordValue.getBpmnProcessId());
     assertThat(flowNodeInstanceEntity.getTenantId())
         .isEqualTo(processInstanceRecordValue.getTenantId());
+    assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo("333/444/555/666");
+    assertThat(flowNodeInstanceEntity.getLevel()).isEqualTo(3);
+    assertThat(flowNodeInstanceEntity.getState()).isEqualTo(FlowNodeState.ACTIVE);
+    assertThat(flowNodeInstanceEntity.getEndDate()).isNull();
+    assertThat(flowNodeInstanceEntity.getStartDate())
+        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
+    assertThat(flowNodeInstanceEntity.getPosition()).isEqualTo(processInstanceRecord.getPosition());
+  }
+
+  @Test
+  public void shouldUpdateDefaultTreePathFromRecord() {
+    // given
+    final long timestamp = new Date().getTime();
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.SERVICE_TASK)
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withKey(666L)
+                    .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                    .withTimestamp(timestamp)
+                    .withValue(processInstanceRecordValue));
+
+    // when
+    final FlowNodeInstanceEntity flowNodeInstanceEntity = new FlowNodeInstanceEntity();
+    underTest.updateEntity(processInstanceRecord, flowNodeInstanceEntity);
+
+    // then
+    assertThat(flowNodeInstanceEntity.getKey()).isEqualTo(processInstanceRecord.getKey());
+    assertThat(flowNodeInstanceEntity.getId())
+        .isEqualTo(String.valueOf(processInstanceRecord.getKey()));
     assertThat(flowNodeInstanceEntity.getTreePath())
         .isEqualTo(
             String.format(
@@ -229,11 +306,6 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
                 processInstanceRecordValue.getProcessInstanceKey(),
                 flowNodeInstanceEntity.getId()));
     assertThat(flowNodeInstanceEntity.getLevel()).isEqualTo(1);
-    assertThat(flowNodeInstanceEntity.getState()).isEqualTo(FlowNodeState.ACTIVE);
-    assertThat(flowNodeInstanceEntity.getEndDate()).isNull();
-    assertThat(flowNodeInstanceEntity.getStartDate())
-        .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));
-    assertThat(flowNodeInstanceEntity.getPosition()).isEqualTo(processInstanceRecord.getPosition());
   }
 
   @Test

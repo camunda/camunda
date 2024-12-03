@@ -55,7 +55,8 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneCamunda() {
-    testStandaloneCamunda = new TestStandaloneCamunda();
+    testStandaloneCamunda =
+        new TestStandaloneCamunda().withElasticsearchExporter(false).withCamundaExporter();
   }
 
   @BeforeAll
