@@ -191,7 +191,7 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
       action.run();
     } finally {
       inflightImportPositionLock.unlock();
-      LOGGER.error("release LOCK {} - {}", Thread.currentThread().getName(), name);
+      LOGGER.trace("release LOCK {} - {}", Thread.currentThread().getName(), name);
     }
   }
 }
