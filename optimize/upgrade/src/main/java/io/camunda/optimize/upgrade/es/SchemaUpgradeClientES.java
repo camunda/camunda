@@ -445,8 +445,6 @@ public class SchemaUpgradeClientES
     waitUntilTaskIsFinished(taskId, identifier);
   }
 
-  // TODO #12813 the getPending... methods below can be promoted to the parent class with some
-  //  mild refactoring
   private Optional<TaskInfo> getPendingReindexTask(final ReindexRequest reindexRequest) {
     return getPendingTask(reindexRequest, "indices:data/write/reindex");
   }
