@@ -8,8 +8,8 @@
 package io.camunda.operate.webapp.opensearch.backup;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import io.camunda.operate.webapp.backup.OperateSnapshotNameProvider;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
+import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Conditional;
@@ -24,6 +24,6 @@ public class OpensearchBackupRepository
       final OpenSearchClient openSearchClient,
       final OpenSearchAsyncClient openSearchAsyncClient,
       final BackupRepositoryProps backupProps) {
-    super(openSearchClient, openSearchAsyncClient, backupProps, new OperateSnapshotNameProvider());
+    super(openSearchClient, openSearchAsyncClient, backupProps, new WebappsSnapshotNameProvider());
   }
 }

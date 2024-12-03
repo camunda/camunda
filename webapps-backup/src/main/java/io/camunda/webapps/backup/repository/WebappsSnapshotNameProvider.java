@@ -5,15 +5,14 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.backup;
+package io.camunda.webapps.backup.repository;
 
-import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.Metadata;
-import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class OperateSnapshotNameProvider implements SnapshotNameProvider {
+public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
   public static final String SNAPSHOT_NAME_PREFIX = "camunda_operate_";
   private static final String SNAPSHOT_NAME_PATTERN = "{prefix}{version}_part_{index}_of_{count}";
   private static final String SNAPSHOT_NAME_PREFIX_PATTERN = SNAPSHOT_NAME_PREFIX + "{backupId}_";
@@ -40,8 +39,7 @@ public class OperateSnapshotNameProvider implements SnapshotNameProvider {
     if (matcher.matches()) {
       return Long.valueOf(matcher.group(1));
     } else {
-      throw new OperateRuntimeException(
-          "Unable to extract backupId. Snapshot name: " + snapshotName);
+      throw new BackupException("Unable to extract backupId. Snapshot name: " + snapshotName);
     }
   }
 
