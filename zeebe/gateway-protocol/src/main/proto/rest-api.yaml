@@ -43,6 +43,7 @@ tags:
   - name: Process instance
   - name: Resource
   - name: Role
+  - name: Group
   - name: Signal
   - name: Tenant
   - name: User
@@ -51,6 +52,15 @@ tags:
 
 paths:
   /topology:
+    get:
+      description: New endpoint
+      responses:
+        200:
+          description: New response
+          content:
+            application/json:
+              schema:
+                :
     get:
       tags:
         - Cluster
