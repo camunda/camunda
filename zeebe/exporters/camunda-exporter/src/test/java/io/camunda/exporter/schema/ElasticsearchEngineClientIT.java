@@ -19,7 +19,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.connect.es.ElasticsearchConnector;
-import io.camunda.webapps.schema.descriptors.ImportValueType;
+import io.camunda.webapps.schema.descriptors.ImportValueTypes;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
@@ -348,7 +348,7 @@ public class ElasticsearchEngineClientIT {
       final var decisionEntity =
           new ImportPositionEntity()
               .setPartitionId(partitionId)
-              .setAliasName(ImportValueType.DECISION.getAliasTemplate());
+              .setAliasName(ImportValueTypes.DECISION.getAliasTemplate());
 
       final var updateRequest =
           new UpdateRequest.Builder<>()
@@ -374,7 +374,7 @@ public class ElasticsearchEngineClientIT {
     private BulkRequest createImportPositionDocuments(
         final int partitionId, final IndexDescriptor importPositionIndex) {
       final BulkRequest.Builder br = new BulkRequest.Builder();
-      Arrays.stream(ImportValueType.values())
+      Arrays.stream(ImportValueTypes.values())
           .map(
               type ->
                   new ImportPositionEntity()

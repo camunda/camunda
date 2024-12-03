@@ -17,7 +17,7 @@ import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.OpensearchExporterException;
 import io.camunda.exporter.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.connect.os.OpensearchConnector;
-import io.camunda.webapps.schema.descriptors.ImportValueType;
+import io.camunda.webapps.schema.descriptors.ImportValueTypes;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
@@ -351,7 +351,7 @@ public class OpensearchEngineClientIT {
       final var decisionEntity =
           new ImportPositionEntity()
               .setPartitionId(partitionId)
-              .setAliasName(ImportValueType.DECISION.getAliasTemplate());
+              .setAliasName(ImportValueTypes.DECISION.getAliasTemplate());
 
       final var updateRequest =
           new UpdateRequest.Builder<ImportPositionEntity, Map<String, Boolean>>()
@@ -379,7 +379,7 @@ public class OpensearchEngineClientIT {
     private BulkRequest createImportPositionDocuments(
         final int partitionId, final IndexDescriptor importPositionIndex) {
       final BulkRequest.Builder br = new BulkRequest.Builder();
-      Arrays.stream(ImportValueType.values())
+      Arrays.stream(ImportValueTypes.values())
           .map(
               type ->
                   new ImportPositionEntity()

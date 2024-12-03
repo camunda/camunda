@@ -33,7 +33,7 @@ import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SchemaTestUtil;
 import io.camunda.exporter.utils.CamundaExporterITInvocationProvider;
 import io.camunda.exporter.utils.SearchClientAdapter;
-import io.camunda.webapps.schema.descriptors.ImportValueType;
+import io.camunda.webapps.schema.descriptors.ImportValueTypes;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -523,7 +523,7 @@ final class CamundaExporterIT {
       final var decisionEntity =
           new ImportPositionEntity()
               .setPartitionId(partitionId)
-              .setAliasName(ImportValueType.DECISION.getAliasTemplate())
+              .setAliasName(ImportValueTypes.DECISION.getAliasTemplate())
               .setCompleted(false);
 
       clientAdapter.index(
@@ -573,7 +573,7 @@ final class CamundaExporterIT {
 
       // mark all import position documents as completed which signals all record readers as
       // completed
-      for (final var type : ImportValueType.values()) {
+      for (final var type : ImportValueTypes.values()) {
         final var entity =
             new ImportPositionEntity()
                 .setPartitionId(partitionId)
