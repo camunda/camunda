@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway.interceptors.impl;
 
 import io.camunda.zeebe.auth.JwtDecoder;
-import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
+import io.grpc.Context;
 import io.grpc.Contexts;
 import io.grpc.Metadata;
 import io.grpc.ServerCall;
@@ -16,11 +16,14 @@ import io.grpc.ServerCall.Listener;
 import io.grpc.ServerCallHandler;
 import io.grpc.ServerInterceptor;
 import io.grpc.Status;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class AuthenticationInterceptor implements ServerInterceptor {
 
+  public static final Context.Key<Map<String, Object>> USER_CLAIMS =
+      Context.key("io.camunda.zeebe:user_claim");
   private static final Logger LOGGER = LoggerFactory.getLogger(AuthenticationInterceptor.class);
   private static final Metadata.Key<String> AUTH_KEY =
       Metadata.Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
@@ -52,7 +55,7 @@ public class AuthenticationInterceptor implements ServerInterceptor {
       // get user claims and set them in the context
       final JwtDecoder jwtDecoder = new JwtDecoder(token);
       final var claims = jwtDecoder.decode().getClaims();
-      final var context = InterceptorUtil.setUserClaims(claims);
+      final var context = Context.current().withValue(USER_CLAIMS, claims);
       return Contexts.interceptCall(context, call, headers, next);
 
     } catch (final RuntimeException e) {

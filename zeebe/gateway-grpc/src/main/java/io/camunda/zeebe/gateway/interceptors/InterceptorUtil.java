@@ -11,15 +11,12 @@ import io.camunda.zeebe.gateway.query.QueryApi;
 import io.grpc.Context;
 import io.grpc.Context.Key;
 import java.util.List;
-import java.util.Map;
 
 /** A set of utilities which interceptor authors can use in their interceptors. */
 public final class InterceptorUtil {
   private static final Key<QueryApi> QUERY_API_KEY = Context.key("zeebe-query-api");
   private static final Context.Key<List<String>> AUTHORIZED_TENANTS_KEY =
       Context.key("io.camunda.zeebe:authorized_tenants");
-  private static final Context.Key<Map<String, Object>> USER_CLAIMS =
-      Context.key("io.camunda.zeebe:user_claim");
 
   private InterceptorUtil() {}
 
@@ -110,21 +107,5 @@ public final class InterceptorUtil {
    */
   public static Context setAuthorizedTenants(final List<String> authorizedTenants) {
     return Context.current().withValue(getAuthorizedTenantsKey(), authorizedTenants);
-  }
-
-  public static Key<Map<String, Object>> getUserClaimsKey() {
-    return USER_CLAIMS;
-  }
-
-  /**
-   * A helper method to set a {@link Map<String, Object>} of user claims on the {@code USER_CLAIMS}
-   * gRPC Context key.
-   *
-   * @param userClaims - a Map of Strings to Claims that specify the user claims for the gRPC
-   *     request
-   * @return the current {@link Context}
-   */
-  public static Context setUserClaims(final Map<String, Object> userClaims) {
-    return Context.current().withValue(getUserClaimsKey(), userClaims);
   }
 }

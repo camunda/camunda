@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -506,7 +507,7 @@ public final class EndpointManager {
 
     // retrieve the user claims from the context and add them to the token
     final Map<String, Object> userClaims =
-        Context.current().call(() -> InterceptorUtil.getUserClaimsKey().get());
+        Context.current().call(AuthenticationInterceptor.USER_CLAIMS::get);
     if (userClaims != null) {
       userClaims.forEach(
           (key, value) -> {

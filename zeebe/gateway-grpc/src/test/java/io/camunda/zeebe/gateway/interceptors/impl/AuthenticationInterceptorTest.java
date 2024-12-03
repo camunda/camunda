@@ -12,7 +12,6 @@ import static org.mockito.Mockito.mock;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.grpc.Context;
 import io.grpc.Metadata;
 import io.grpc.Metadata.Key;
@@ -105,7 +104,7 @@ public class AuthenticationInterceptorTest {
 
   private static MapAssert<String, Object> assertUserClaims() {
     try {
-      return assertThat(Context.current().call(() -> InterceptorUtil.getUserClaimsKey().get()));
+      return assertThat(Context.current().call(() -> AuthenticationInterceptor.USER_CLAIMS.get()));
     } catch (final Exception e) {
       throw new RuntimeException("Unable to retrieve user claims from context", e);
     }
