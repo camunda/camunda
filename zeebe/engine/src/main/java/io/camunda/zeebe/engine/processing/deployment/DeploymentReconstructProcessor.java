@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
+import io.camunda.zeebe.engine.state.immutable.DecisionState.DecisionIdentifier;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.FormState.FormIdentifier;
@@ -208,7 +209,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
         });
 
     decisionState.forEachDecision(
-        null,
+        new DecisionIdentifier(tenantId, deploymentKey),
         decision -> {
           final var decisionDeploymentKey = decision.getDeploymentKey();
           if (decisionDeploymentKey == deploymentKey) {
@@ -233,7 +234,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
                     decisionRequirements.getPersistedDecisionRequirements(),
                     allDecisions));
           }
-          return true;
+          return decision.getTenantId().equals(tenantId) && decisionDeploymentKey == deploymentKey;
         });
 
     return resources;
@@ -277,9 +278,9 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
         resourceUtil.applyFormMetadata(form, metadata);
       }
       case DecisionRequirementsResource(
-          final var deploymentKey,
-          final var decisionRequirements,
-          final var decisions) -> {
+              final var deploymentKey,
+              final var decisionRequirements,
+              final var decisions) -> {
         final var requirementsMetadata = deploymentRecord.decisionRequirementsMetadata().add();
         resourceUtil.applyDecisionRequirementsMetadata(decisionRequirements, requirementsMetadata);
         decisions.forEach(
