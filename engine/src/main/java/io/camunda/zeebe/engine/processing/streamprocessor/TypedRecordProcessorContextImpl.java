@@ -95,4 +95,9 @@ public class TypedRecordProcessorContextImpl implements TypedRecordProcessorCont
   public EngineConfiguration getConfig() {
     return config;
   }
+
+  @Override
+  public TransientPendingSubscriptionState getTransientProcessMessageSubscriptionState() {
+    return transientProcessMessageSubscriptionState;
+  }
 }

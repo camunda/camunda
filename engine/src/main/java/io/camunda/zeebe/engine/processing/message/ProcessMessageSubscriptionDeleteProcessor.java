@@ -8,10 +8,13 @@
 package io.camunda.zeebe.engine.processing.message;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -27,25 +30,31 @@ public final class ProcessMessageSubscriptionDeleteProcessor
 
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final ProcessMessageSubscriptionState subscriptionState;
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
 
   public ProcessMessageSubscriptionDeleteProcessor(
-      final ProcessMessageSubscriptionState subscriptionState, final Writers writers) {
+      final ProcessMessageSubscriptionState subscriptionState,
+      final Writers writers,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     this.subscriptionState = subscriptionState;
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
   }
 
   @Override
   public void processRecord(final TypedRecord<ProcessMessageSubscriptionRecord> command) {
 
     final ProcessMessageSubscriptionRecord subscriptionRecord = command.getValue();
-
+    final long elementInstanceKey = subscriptionRecord.getElementInstanceKey();
+    final String messageName = subscriptionRecord.getMessageName();
+    final String tenantId = subscriptionRecord.getTenantId();
     final var subscription =
         subscriptionState.getSubscription(
-            command.getValue().getElementInstanceKey(),
-            subscriptionRecord.getMessageNameBuffer(),
-            subscriptionRecord.getTenantId());
+            elementInstanceKey, subscriptionRecord.getMessageNameBuffer(), tenantId);
 
     if (subscription == null) {
       rejectCommand(command);
@@ -54,6 +63,15 @@ public final class ProcessMessageSubscriptionDeleteProcessor
 
     stateWriter.appendFollowUpEvent(
         subscription.getKey(), ProcessMessageSubscriptionIntent.DELETED, subscription.getRecord());
+
+    // update transient state in a side-effect to ensure that these changes only take effect after
+    // the command has been successfully processed
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          transientProcessMessageSubscriptionState.remove(
+              new PendingSubscription(elementInstanceKey, messageName, tenantId));
+          return true;
+        });
   }
 
   private void rejectCommand(final TypedRecord<ProcessMessageSubscriptionRecord> command) {

@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.processing.variable.VariableDocumentUpdateProcess
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -56,7 +57,8 @@ public final class ProcessEventProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final SubscriptionCommandSender subscriptionCommandSender,
       final DueDateTimerChecker timerChecker,
-      final Writers writers) {
+      final Writers writers,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     final MutableProcessMessageSubscriptionState subscriptionState =
         processingState.getProcessMessageSubscriptionState();
     final var keyGenerator = processingState.getKeyGenerator();
@@ -76,7 +78,8 @@ public final class ProcessEventProcessors {
         bpmnBehaviors,
         processingState,
         scheduledTaskState,
-        writers);
+        writers,
+        transientProcessMessageSubscriptionState);
     addTimerStreamProcessors(
         typedRecordProcessors, timerChecker, processingState, bpmnBehaviors, writers);
     addVariableDocumentStreamProcessors(
@@ -123,13 +126,16 @@ public final class ProcessEventProcessors {
       final BpmnBehaviors bpmnBehaviors,
       final MutableProcessingState processingState,
       final Supplier<ScheduledTaskState> scheduledTaskState,
-      final Writers writers) {
+      final Writers writers,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     typedRecordProcessors
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CREATE,
             new ProcessMessageSubscriptionCreateProcessor(
-                processingState.getProcessMessageSubscriptionState(), writers))
+                processingState.getProcessMessageSubscriptionState(),
+                writers,
+                transientProcessMessageSubscriptionState))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.CORRELATE,
@@ -138,11 +144,13 @@ public final class ProcessEventProcessors {
                 subscriptionCommandSender,
                 processingState,
                 bpmnBehaviors,
-                writers))
+                writers,
+                transientProcessMessageSubscriptionState))
         .onCommand(
             ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
             ProcessMessageSubscriptionIntent.DELETE,
-            new ProcessMessageSubscriptionDeleteProcessor(subscriptionState, writers))
+            new ProcessMessageSubscriptionDeleteProcessor(
+                subscriptionState, writers, transientProcessMessageSubscriptionState))
         .withListener(
             new PendingProcessMessageSubscriptionChecker(
                 subscriptionCommandSender,
