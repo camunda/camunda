@@ -91,8 +91,8 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
         .ifPresentOrElse(
             tenant -> {
               removeAssignedEntities(command.getValue());
-                stateWriter.appendFollowUpEvent(
-                    command.getKey(), TenantIntent.DELETED, command.getValue());
+              stateWriter.appendFollowUpEvent(
+                  command.getKey(), TenantIntent.DELETED, command.getValue());
             },
             () ->
                 rejectCommand(

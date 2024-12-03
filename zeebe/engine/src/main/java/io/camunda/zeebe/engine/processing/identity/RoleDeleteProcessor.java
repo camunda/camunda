@@ -99,7 +99,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
             role -> {
               removeMembers(command.getValue());
               stateWriter.appendFollowUpEvent(
-                    command.getKey(), RoleIntent.DELETED, command.getValue());
+                  command.getKey(), RoleIntent.DELETED, command.getValue());
             },
             () -> {
               final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleKey());
