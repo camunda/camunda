@@ -12,7 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.security.configuration.AuthorizationsConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -36,11 +37,15 @@ public class AuthorizationCheckBehaviorTest {
   @Before
   public void before() {
     final var processingState = engine.getProcessingState();
+    final var securityConfig = new SecurityConfiguration();
+    final var authConfig = new AuthorizationsConfiguration();
+    authConfig.setEnabled(true);
+    securityConfig.setAuthorizations(authConfig);
     authorizationCheckBehavior =
         new AuthorizationCheckBehavior(
             processingState.getAuthorizationState(),
             processingState.getUserState(),
-            new EngineConfiguration().setEnableAuthorization(true));
+            securityConfig);
   }
 
   @Test
