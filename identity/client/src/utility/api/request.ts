@@ -127,8 +127,6 @@ export const apiPost = apiRequestWrapper("POST");
 
 export const apiPut = apiRequestWrapper("PUT");
 
-export const apiPatch = apiRequestWrapper("PATCH");
-
 export const apiDelete = apiRequestWrapper("DELETE");
 
 export const namedErrorsReducer = (
