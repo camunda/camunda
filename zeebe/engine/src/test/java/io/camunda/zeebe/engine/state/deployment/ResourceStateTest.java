@@ -34,8 +34,7 @@ public class ResourceStateTest {
   @Test
   void shouldReturnEmptyIfNoResourceIsDeployedForResourceId() {
     // when
-    final var persistedResource =
-        resourceState.findLatestResourceById(wrapString("form-1"), tenantId);
+    final var persistedResource = resourceState.findLatestResourceById("form-1", tenantId);
 
     // then
     assertThat(persistedResource).isEmpty();
@@ -93,7 +92,7 @@ public class ResourceStateTest {
     resourceState.storeResourceInResourceByIdAndVersionColumnFamily(resourceRecord);
 
     final Optional<PersistedResource> resourceByKey =
-        resourceState.findLatestResourceById(resourceRecord.getResourceIdBuffer(), tenantId);
+        resourceState.findLatestResourceById(resourceRecord.getResourceId(), tenantId);
     assertThat(resourceByKey).isPresent();
     assertThat(bufferAsString(resourceByKey.get().getResourceId())).isEqualTo("resource-id");
     assertThat(resourceByKey.get().getVersion()).isEqualTo(0);
@@ -103,7 +102,7 @@ public class ResourceStateTest {
     resourceState.deleteResourceInResourceByIdAndVersionColumnFamily(resourceRecord);
     resourceState.clearCache();
     final Optional<PersistedResource> deleted =
-        resourceState.findLatestResourceById(resourceRecord.getResourceIdBuffer(), tenantId);
+        resourceState.findLatestResourceById(resourceRecord.getResourceId(), tenantId);
     assertThat(deleted).isEmpty();
   }
 
