@@ -33,7 +33,10 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       "Required request body is missing";
   private static final String REQUEST_BODY_PARSE_EXCEPTION_MESSAGE =
       "Request property [%s] cannot be parsed";
-  private static final String INVALID_ENUM_VALUE_EXCEPTION_MESSAGE = "Invalid Enum value";
+  // Thrown by the OpenApi in case of an invalid enum value
+  private static final String INVALID_ENUM_VALUE_EXCEPTION_MESSAGE = "Unexpected value";
+
+
 
   @Override
   protected ProblemDetail createProblemDetail(
