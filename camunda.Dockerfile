@@ -7,7 +7,7 @@
 ARG BASE_IMAGE="ubuntu:noble"
 ARG BASE_DIGEST="sha256:278628f08d4979fb9af9ead44277dbc9c92c2465922310916ad0c46ec9999295"
 ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
-ARG JDK_DIGEST="sha256:d2f89957de28beea3143f58830bf800defce968dfeb6ebb077b641a0c9e38e77"
+ARG JDK_DIGEST="sha256:e6c3f748e5c958b0619fd2090c0992fc302e62f2bf51bca21c9da4c87d38e4a3"
 
 # set to "build" to build camunda from scratch instead of using a distball
 ARG DIST="distball"
