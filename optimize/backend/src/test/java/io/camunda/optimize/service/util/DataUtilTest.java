@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 public class DataUtilTest {
 
   @Test
-  public void shouldNewHashSetWithMultipleElements() {
+  public void shouldReturnHashSetWithMultipleElements() {
     // when
     final HashSet<String> result = DataUtil.newHashSet("apple", "banana", "cherry");
 
@@ -25,7 +25,7 @@ public class DataUtilTest {
   }
 
   @Test
-  public void shouldNewHashSetWithDuplicateElements() {
+  public void shouldDeduplicateDuplicateElements() {
     // when
     final HashSet<String> result =
         DataUtil.newHashSet("apple", "banana", "apple", "cherry", "banana");
@@ -35,7 +35,7 @@ public class DataUtilTest {
   }
 
   @Test
-  public void shouldNewHashSetWithEmptyArray() {
+  public void shouldReturnEmptyHashSet() {
     // when
     final HashSet<String> result = DataUtil.newHashSet();
 
@@ -44,7 +44,7 @@ public class DataUtilTest {
   }
 
   @Test
-  public void shouldNewHashSetWithSingleElement() {
+  public void shouldReturnHashSetWithSingleElement() {
     // when
     final HashSet<String> result = DataUtil.newHashSet("apple");
 
@@ -53,7 +53,7 @@ public class DataUtilTest {
   }
 
   @Test
-  public void shouldNewHashSetWithNullArray() {
+  public void shouldThrowExceptionForNullArray() {
     // then
     assertThatThrownBy(() -> DataUtil.newHashSet((String[]) null))
         .isInstanceOf(NullPointerException.class);
