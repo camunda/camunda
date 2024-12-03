@@ -135,6 +135,7 @@ runs:
           - '.github/actions/**'
           - '.github/workflows/**'
           - '.github/actionlint*'
+          - '.github/conftest-*.rego'
 
         # We use specific src/main and src/test path to:
         #  * react on java code (production + test) changes

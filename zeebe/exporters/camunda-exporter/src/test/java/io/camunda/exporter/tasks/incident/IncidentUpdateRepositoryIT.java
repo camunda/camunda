@@ -70,6 +70,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -96,6 +99,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
     final var indexPrefix = UUID.randomUUID().toString();
     config.getConnect().setIndexPrefix(indexPrefix);
     config.getConnect().setUrl(databaseUrl);
+    config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");
 
     clientAdapter = ClientAdapter.of(config);
     engineClient = clientAdapter.getSearchEngineClient();
@@ -185,6 +189,65 @@ abstract sealed class IncidentUpdateRepositoryIT {
       final var restClient =
           RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress())).build();
       return new RestClientTransport(restClient, new JacksonJsonpMapper());
+    }
+  }
+
+  static final class OpenSearchIT extends IncidentUpdateRepositoryIT {
+    @Container
+    private static final OpensearchContainer<?> CONTAINER =
+        TestSearchContainers.createDefaultOpensearchContainer();
+
+    @AutoCloseResource
+    private final org.opensearch.client.transport.rest_client.RestClientTransport transport =
+        createTransport();
+
+    private final OpenSearchAsyncClient client = new OpenSearchAsyncClient(transport);
+
+    public OpenSearchIT() {
+      super(CONTAINER.getHttpHostAddress(), false);
+    }
+
+    @Override
+    protected IncidentUpdateRepository createRepository() {
+      return new OpenSearchIncidentUpdateRepository(
+          PARTITION_ID,
+          postImporterQueueTemplate.getAlias(),
+          incidentTemplate.getAlias(),
+          listViewTemplate.getAlias(),
+          flowNodeInstanceTemplate.getAlias(),
+          operationTemplate.getAlias(),
+          client,
+          Runnable::run,
+          LOGGER);
+    }
+
+    @Override
+    protected <T> Collection<T> search(
+        final String index,
+        final String field,
+        final List<String> terms,
+        final Class<T> documentType)
+        throws IOException {
+      final var client = new OpenSearchClient(transport);
+      final var values =
+          terms.stream().map(org.opensearch.client.opensearch._types.FieldValue::of).toList();
+      final var query =
+          org.opensearch.client.opensearch._types.query_dsl.QueryBuilders.terms()
+              .field(field)
+              .terms(v -> v.value(values))
+              .build()
+              .toQuery();
+      return client.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
+          .map(org.opensearch.client.opensearch.core.search.Hit::source)
+          .toList();
+    }
+
+    private org.opensearch.client.transport.rest_client.RestClientTransport createTransport() {
+      final var restClient =
+          org.opensearch.client.RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress()))
+              .build();
+      return new org.opensearch.client.transport.rest_client.RestClientTransport(
+          restClient, new org.opensearch.client.json.jackson.JacksonJsonpMapper());
     }
   }
 
