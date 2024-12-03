@@ -186,7 +186,7 @@ public abstract class ImportPositionHolderAbstract implements ImportPositionHold
 
   protected void withInflightImportPositionLock(final Runnable action, final String name) {
     try {
-      LOGGER.error("access LOCK {} - {}", Thread.currentThread().getName(), name);
+      LOGGER.trace("access LOCK {} - {}", Thread.currentThread().getName(), name);
       inflightImportPositionLock.lock();
       action.run();
     } finally {
