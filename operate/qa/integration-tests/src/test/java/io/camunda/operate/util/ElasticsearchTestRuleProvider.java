@@ -91,7 +91,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   protected RestHighLevelClient zeebeEsClient;
 
   @Autowired protected OperateProperties operateProperties;
-  //  @Autowired protected ZeebeImporter zeebeImporter;
   @Autowired protected ZeebePostImporter zeebePostImporter;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
@@ -286,7 +285,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Override
   public void runPostImportActions() {
-    if (zeebePostImporter.getPostImportActions().size() == 0) {
+    if (zeebePostImporter.getPostImportActions().isEmpty()) {
       zeebePostImporter.initPostImporters();
     }
     for (final PostImportAction action : zeebePostImporter.getPostImportActions()) {
