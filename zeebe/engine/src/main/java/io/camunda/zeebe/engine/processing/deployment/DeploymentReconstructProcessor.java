@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
 import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
+import io.camunda.zeebe.engine.state.immutable.FormState.FormIdentifier;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -142,7 +143,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
         });
 
     formState.forEachForm(
-        null,
+        new FormIdentifier(tenantId, deploymentKey),
         form -> {
           final var formDeploymentKey = form.getDeploymentKey();
           if (formDeploymentKey == deploymentKey) {
@@ -150,7 +151,7 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
             BufferUtil.copy(form, copy);
             resources.add(new FormResource(copy));
           }
-          return true;
+          return form.getTenantId().equals(tenantId) && formDeploymentKey == deploymentKey;
         });
 
     // TODO: Continue with decisionState
