@@ -2406,6 +2406,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /mapping-rules/{mappingKey}:
     delete:
       tags:
         - Mapping rule
