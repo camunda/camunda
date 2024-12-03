@@ -124,7 +124,7 @@ public class CamundaExporter implements Exporter {
     writer = createBatchWriter();
 
     scheduleDelayedFlush();
-    scheduleImportersCompletedCheck();
+    checkImportersCompletedAndReschedule();
     controller.readMetadata().ifPresent(metadata::deserialize);
     taskManager.start();
 
