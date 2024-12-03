@@ -80,6 +80,25 @@ public class AdHocSubProcessProcessor
   }
 
   @Override
+  public Either<Failure, ?> onComplete(
+      final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+    return variableMappingBehavior
+        .applyOutputMappings(context, element)
+        .thenDo(ok -> eventSubscriptionBehavior.unsubscribeFromEvents(context));
+  }
+
+  @Override
+  public Either<Failure, ?> finalizeCompletion(
+      final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
+        .thenDo(
+            completed -> {
+              stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
+            });
+  }
+
+  @Override
   public void onTerminate(
       final ExecutableAdHocSubProcess element, final BpmnElementContext terminating) {
 
@@ -181,9 +200,14 @@ public class AdHocSubProcessProcessor
   @Override
   public void afterExecutionPathCompleted(
       final ExecutableAdHocSubProcess element,
-      final BpmnElementContext flowScopeContext,
+      final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext,
-      final Boolean satisfiesCompletionCondition) {}
+      final Boolean satisfiesCompletionCondition) {
+
+    if (stateBehavior.canBeCompleted(childContext)) {
+      stateTransitionBehavior.completeElement(adHocSubProcessContext);
+    }
+  }
 
   @Override
   public void onChildTerminated(
