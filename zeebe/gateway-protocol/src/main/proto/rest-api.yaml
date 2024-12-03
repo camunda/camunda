@@ -2406,33 +2406,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-    delete:
-      tags:
-        - Mapping rule
-      operationId: deleteMappingRule
-      summary: Delete a mapping rule
-      description: Deletes the mapping rule with the given key.
-      parameters:
-        - name: mappingKey
-          in: path
-          required: true
-          description: The key of the mapping rule to delete.
-          schema:
-            type: integer
-            format: int64
-      responses:
-        "204":
-          description: The mapping rule was deleted successfully.
-        "401":
-          $ref: "#/components/responses/Unauthorized"
-        "404":
-          description: The mapping rule with the mappingKey was not found.
-          content:
-            application/problem+json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetail"
-        "500":
-          $ref: "#/components/responses/InternalServerError"
 
   /mappings/search:
     post:
@@ -3255,22 +3228,16 @@ components:
       description: Mapping rule search response item.
       type: object
       properties:
-        tenantKey:
+        mappingKey:
           type: integer
-          description: The unique system-generated internal tenant ID.
+          description: The unique system-generated internal mapping ID.
           format: int64
-        name:
+        claimName:
           type: string
-          description: The tenant name.
-        tenantId:
+          description: The claim name, idk.
+        claimValue:
           type: string
-          description: The unique external tenant ID.
-        assignedMemberKeys:
-          type: array
-          description: The set of keys of members assigned to the tenant.
-          items:
-            type: integer
-            format: int64
+          description: The claim value, idk.
 
     UserTaskSearchQueryRequest:
       allOf:
@@ -4548,7 +4515,7 @@ components:
         filter:
           description: The mapping search filters.
           allOf:
-            - $ref: "#/components/schemas/UserFilterRequest"
+            - $ref: "#/components/schemas/MappingFilterRequest"
     UserFilterRequest:
       description: User search filter.
       type: object
@@ -4566,7 +4533,12 @@ components:
       description: Mapping search filter.
       type: object
       properties:
-        tbd:
+        claimName:
+          type: string
+          description: The claim name, idk.
+        claimValue:
+          type: string
+          description: The claim value, idk.
     CamundaUser:
       type: "object"
       properties:
@@ -4749,6 +4721,29 @@ components:
         - claimValue
     MappingRuleCreateResponse:
       type: object
+      properties:
+        mappingKey:
+          description: The key of the created mapping rule.
+          type: integer
+          format: int64
+        claimName:
+          type: string
+          description: The name of the claim to map.
+        claimValue:
+          type: string
+          description: The value of the claim to map.
+    MappingSearchResponse:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching mapping rules.
+          type: array
+          items:
+            $ref: "#/components/schemas/MappingResponse"
+    MappingResponse:
+      type: "object"
       properties:
         mappingKey:
           description: The key of the created mapping rule.

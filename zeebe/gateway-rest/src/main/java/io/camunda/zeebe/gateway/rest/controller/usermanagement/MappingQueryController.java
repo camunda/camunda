@@ -9,10 +9,10 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static io.camunda.zeebe.gateway.rest.RestErrorMapper.mapErrorToResponse;
 
-import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.MappingQuery;
 import io.camunda.service.MappingServices;
-import io.camunda.zeebe.gateway.protocol.rest.TenantItem;
-import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryRequest;
+import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
@@ -34,10 +34,10 @@ public class MappingQueryController {
   @GetMapping(
       path = "/{mappingKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public ResponseEntity<TenantItem> getTenant(@PathVariable final long mappingKey) {
+  public ResponseEntity<MappingItem> getMapping(@PathVariable final long mappingKey) {
     try {
       return ResponseEntity.ok()
-          .body(SearchQueryResponseMapper.toTenant(mappingServices.getMapping(mappingKey)));
+          .body(SearchQueryResponseMapper.toMapping(mappingServices.getMapping(mappingKey)));
     } catch (final Exception exception) {
       return RestErrorMapper.mapErrorToResponse(exception);
     }
@@ -47,13 +47,13 @@ public class MappingQueryController {
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<TenantSearchQueryResponse> searchTenants(
-      @RequestBody(required = false) final TenantSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toTenantQuery(query)
+  public ResponseEntity<TenantSearchQueryResponse> searchMappings(
+      @RequestBody(required = false) final MappingSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toMappingQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<TenantSearchQueryResponse> search(final TenantQuery query) {
+  private ResponseEntity<TenantSearchQueryResponse> search(final MappingQuery query) {
     try {
       final var result = mappingServices.search(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantSearchQueryResponse(result));
