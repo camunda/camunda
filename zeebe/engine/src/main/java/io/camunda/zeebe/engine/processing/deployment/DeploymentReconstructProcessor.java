@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.immutable.DecisionState;
 import io.camunda.zeebe.engine.state.immutable.DeploymentState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
@@ -61,7 +62,8 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
 
     final DeploymentRecord deploymentRecord;
     if (resource.deploymentKey() != NO_DEPLOYMENT_KEY) {
-      final var allResourcesOfDeployment = findResourcesWithDeploymentKey(resource.deploymentKey());
+      final var allResourcesOfDeployment =
+          findResourcesWithDeploymentKey(resource.tenantId(), resource.deploymentKey());
       deploymentRecord =
           recreateDeploymentForResources(
               resource.deploymentKey(), resource.tenantId(), allResourcesOfDeployment);
@@ -96,12 +98,15 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
     return null;
   }
 
-  private Set<Resource> findResourcesWithDeploymentKey(final long deploymentKey) {
+  private Set<Resource> findResourcesWithDeploymentKey(
+      final String tenantId, final long deploymentKey) {
     // Iterate through processState, formState, and decisionState to find resources that are marked
     // with the given deployment key.
     final var resources = new HashSet<Resource>();
     processState.forEachProcess(
-        null,
+        // Start at the deployment key because any processes for that deployment will have a key
+        // larger than that.
+        new ProcessIdentifier(tenantId, deploymentKey),
         process -> {
           final var processDeploymentKey = process.getDeploymentKey();
           if (processDeploymentKey == deploymentKey) {
@@ -109,7 +114,10 @@ public class DeploymentReconstructProcessor implements TypedRecordProcessor<Depl
             BufferUtil.copy(process, copy);
             resources.add(new ProcessResource(copy));
           }
-          return true;
+          // Stop searching when we arrived at a different tenant, as the processes are ordered by
+          // tenant and we are guaranteed to have visited all processes for the given deployment
+          // key.
+          return process.getTenantId().equals(tenantId) && processDeploymentKey == deploymentKey;
         });
     // TODO: Continue with formState and decisionState
     return resources;
