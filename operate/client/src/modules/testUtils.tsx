@@ -7,7 +7,7 @@
  */
 
 import {FlowNodeInstances} from 'modules/stores/flowNodeInstance';
-import {MeDto} from './api/v2/me';
+import {MeDto} from './api/v2/authentication/me';
 import {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import {ProcessInstanceByNameDto} from './api/incidents/fetchProcessInstancesByName';
 import {ProcessDto} from './api/processes/fetchGroupedProcesses';

@@ -7,7 +7,7 @@
  */
 
 import {makeObservable, observable, action, computed} from 'mobx';
-import {getMe, MeDto} from 'modules/api/v2/me';
+import {getMe, MeDto} from 'modules/api/v2/authentication/me';
 import {login, Credentials} from 'modules/api/login';
 import {logout} from 'modules/api/logout';
 import {NetworkError} from 'modules/networkError';

@@ -39,7 +39,7 @@ type MeDto = {
 };
 
 const getMe = async (options: Parameters<typeof requestAndParse>[1]) => {
-  return requestAndParse<MeDto>({url: '/v2/me'}, options);
+  return requestAndParse<MeDto>({url: '/v2/authentication/me'}, options);
 };
 
 export {getMe};
