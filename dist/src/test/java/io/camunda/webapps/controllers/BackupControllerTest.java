@@ -21,8 +21,8 @@ import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
 import io.camunda.management.backups.HistoryStateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
-import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.webapps.backup.BackupException.BackupRepositoryConnectionException;
+import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
@@ -35,7 +35,6 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -62,16 +61,21 @@ public abstract sealed class BackupControllerTest {
           .setFailures(new String[] {"Out of disk space"})
           .setStartTime(START_TIME);
 
-  private static final HistoryBackupInfo EXPECTED_INFO =
-      new HistoryBackupInfo(
-          new BigDecimal(1L),
-          HistoryStateCode.FAILED,
-          List.of(
-              new HistoryBackupDetail()
-                  .snapshotName("snapshot-1")
-                  .state("FAILED")
-                  .failures(Arrays.asList(DETAIL_DTO.getFailures()))
-                  .startTime(START_TIME)));
+  private static final HistoryBackupInfo EXPECTED_INFO;
+
+  static {
+    EXPECTED_INFO =
+        new HistoryBackupInfo(
+            new BigDecimal(1L),
+            HistoryStateCode.FAILED,
+            List.of(
+                new HistoryBackupDetail()
+                    .snapshotName("snapshot-1")
+                    .state("FAILED")
+                    .failures(Arrays.asList(DETAIL_DTO.getFailures()))
+                    .startTime(START_TIME)));
+    EXPECTED_INFO.setFailureReason(DETAIL_DTO.getFailures()[0]);
+  }
 
   @Mock private BackupService backupService;
   @Mock private BackupRepositoryProps backupProperties;
@@ -154,6 +158,7 @@ public abstract sealed class BackupControllerTest {
                 new GetBackupStateResponseDto()
                     .setBackupId(1L)
                     .setState(BackupStateDto.FAILED)
+                    .setFailureReason("Out of disk space")
                     .setDetails(List.of(DETAIL_DTO))));
     final var response = backupController.getBackups();
     assertThat(response.getStatus()).isEqualTo(200);
@@ -208,16 +213,10 @@ public abstract sealed class BackupControllerTest {
   abstract class ErrorTest {
     final int errorCode;
     private final Runnable setupMocks;
-    private final Consumer<Object> checkBody;
 
     ErrorTest(final int errorCode, final Runnable setupMocks) {
-      this(errorCode, null, setupMocks);
-    }
-
-    ErrorTest(final int errorCode, final Consumer<Object> checkBody, final Runnable setupMocks) {
       this.errorCode = errorCode;
       this.setupMocks = setupMocks;
-      this.checkBody = checkBody;
     }
 
     @Test
@@ -228,9 +227,6 @@ public abstract sealed class BackupControllerTest {
       final var response = backupController.getBackups();
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
-      if (checkBody != null) {
-        checkBody.accept(response.getBody());
-      }
     }
 
     @Test
@@ -241,9 +237,6 @@ public abstract sealed class BackupControllerTest {
       final var response = backupController.takeBackup(11L);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
-      if (checkBody != null) {
-        checkBody.accept(response.getBody());
-      }
     }
 
     @Test
@@ -255,9 +248,6 @@ public abstract sealed class BackupControllerTest {
       final var response = backupController.getBackupState(1L);
       // then
       assertThat(response.getStatus()).isEqualTo(errorCode);
-      if (checkBody != null) {
-        checkBody.accept(response.getBody());
-      }
     }
 
     @Test

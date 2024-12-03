@@ -42,16 +42,6 @@ public sealed class BackupException extends RuntimeException {
     }
   }
 
-  public static final class GenericBackupException extends BackupException {
-    public GenericBackupException(final String message) {
-      super(message);
-    }
-
-    public GenericBackupException(final String message, final Exception cause) {
-      super(message, cause);
-    }
-  }
-
   public static final class MissingRepositoryException extends BackupException {
     public MissingRepositoryException(final String message) {
       super(message);

@@ -18,8 +18,8 @@ import static org.elasticsearch.snapshots.SnapshotState.SUCCESS;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.BackupRepositoryConnectionException;
-import io.camunda.webapps.backup.BackupException.GenericBackupException;
 import io.camunda.webapps.backup.BackupException.InvalidRequestException;
 import io.camunda.webapps.backup.BackupException.MissingRepositoryException;
 import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
@@ -118,7 +118,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
           String.format(
               "Exception occurred when validating existence of repository with name [%s].",
               repositoryName);
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 
@@ -315,11 +315,11 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
-        throw new GenericBackupException(reason);
+        throw new BackupException(reason);
       }
       final String reason =
           String.format("Exception occurred when searching for backup with ID [%s].", backupId);
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 

@@ -23,6 +23,7 @@ import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.es.backup.Metadata;
+import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
@@ -180,7 +181,7 @@ public class BackupManagerElasticSearch extends BackupManager {
             String.format(
                 "No repository with name [%s] could be found.",
                 tasklistProperties.getBackup().getRepositoryName());
-        throw new GenericBackupException(reason);
+        throw new BackupException(reason);
       }
       if (isSnapshotMissingException(e)) {
         // no snapshots exist
@@ -188,7 +189,7 @@ public class BackupManagerElasticSearch extends BackupManager {
       }
       final String reason =
           String.format("Exception occurred when searching for backups: %s", e.getMessage());
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 
@@ -289,13 +290,13 @@ public class BackupManagerElasticSearch extends BackupManager {
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
-        throw new GenericBackupException(reason);
+        throw new BackupException(reason);
       }
       final String reason =
           String.format(
               "Exception occurred when validating existence of repository with name [%s].",
               repositoryName);
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 
@@ -327,7 +328,7 @@ public class BackupManagerElasticSearch extends BackupManager {
           String.format(
               "Exception occurred when validating whether backup with ID [%s] already exists.",
               backupId);
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
     if (!response.getSnapshots().isEmpty()) {
       final String reason =
@@ -442,11 +443,11 @@ public class BackupManagerElasticSearch extends BackupManager {
             String.format(
                 "No repository with name [%s] could be found.",
                 tasklistProperties.getBackup().getRepositoryName());
-        throw new GenericBackupException(reason);
+        throw new BackupException(reason);
       }
       final String reason =
           String.format("Exception occurred when searching for backup with ID [%s].", backupId);
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 

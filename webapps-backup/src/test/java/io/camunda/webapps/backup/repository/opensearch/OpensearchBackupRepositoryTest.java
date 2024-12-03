@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.webapps.backup.BackupException.GenericBackupException;
+import io.camunda.webapps.backup.BackupException;
 import io.camunda.webapps.backup.BackupException.InvalidRequestException;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupService.SnapshotRequest;
@@ -268,8 +268,7 @@ class OpensearchBackupRepositoryTest {
                     .build()));
 
     final var exception =
-        assertThrows(
-            GenericBackupException.class, () -> repository.validateRepositoryExists("repo"));
+        assertThrows(BackupException.class, () -> repository.validateRepositoryExists("repo"));
     assertThat(exception.getMessage()).isEqualTo("No repository with name [repo] could be found.");
   }
 

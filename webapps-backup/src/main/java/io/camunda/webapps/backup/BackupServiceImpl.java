@@ -8,7 +8,6 @@
 package io.camunda.webapps.backup;
 
 import io.camunda.webapps.backup.BackupException.*;
-import io.camunda.webapps.backup.BackupException.GenericBackupException;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriority;
 import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
@@ -173,7 +172,7 @@ public class BackupServiceImpl implements BackupService {
     if (index != null) {
       return index.getFullQualifiedName();
     } else {
-      throw new GenericBackupException("Can't find out index name for backup.");
+      throw new BackupException("Can't find out index name for backup.");
     }
   }
 }
