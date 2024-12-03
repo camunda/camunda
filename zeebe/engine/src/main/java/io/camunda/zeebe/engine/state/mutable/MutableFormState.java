@@ -81,4 +81,15 @@ public interface MutableFormState extends FormState {
    * @param record the record of the form that is deleted
    */
   void deleteFormInFormKeyByFormIdAndVersionTagColumnFamily(FormRecord record);
+
+  /**
+   * Sets the deployment key of a form that was not previously associated with a deployment. This
+   * method updates both the ColumnFamily and the in memory cache. Throws an exception if the form
+   * is already associated with another deployment.
+   *
+   * @param tenantId tenant id of the form that is updated
+   * @param formKey the key of the form that is updated
+   * @param deploymentKey the new deployment key
+   */
+  void setMissingDeploymentKey(String tenantId, long formKey, long deploymentKey);
 }

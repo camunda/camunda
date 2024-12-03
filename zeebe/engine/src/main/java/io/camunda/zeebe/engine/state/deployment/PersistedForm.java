@@ -22,6 +22,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class PersistedForm extends UnpackedObject implements DbValue {
+  private static final long NO_DEPLOYMENT_KEY = -1L;
+
   private final StringProperty formIdProp = new StringProperty("formId");
   private final IntegerProperty versionProp = new IntegerProperty("version");
   private final LongProperty formKeyProp = new LongProperty("formKey");
@@ -30,7 +32,8 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
   private final BinaryProperty checksumProp = new BinaryProperty("checksum", new UnsafeBuffer());
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
+  private final LongProperty deploymentKeyProp =
+      new LongProperty("deploymentKey", NO_DEPLOYMENT_KEY);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public PersistedForm() {
@@ -92,8 +95,17 @@ public final class PersistedForm extends UnpackedObject implements DbValue {
     return bufferAsString(tenantIdProp.getValue());
   }
 
+  public boolean hasDeploymentKey() {
+    return deploymentKeyProp.getValue() != NO_DEPLOYMENT_KEY;
+  }
+
   public long getDeploymentKey() {
     return deploymentKeyProp.getValue();
+  }
+
+  public PersistedForm setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+    return this;
   }
 
   public void wrap(final FormRecord record) {
