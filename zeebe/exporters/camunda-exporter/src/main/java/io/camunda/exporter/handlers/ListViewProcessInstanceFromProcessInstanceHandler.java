@@ -292,14 +292,16 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       final List<Integer> callingElementPath) {
     if (elementInstancePath == null || elementInstancePath.isEmpty()) {
       LOGGER.warn(
-          "No elementInstancePath is provided for process instance id: {}. TreePath will be set to default value.",
+          "No elementInstancePath is provided for process instance key: {}. TreePath will be set to default value (PI key).",
           processInstanceKey);
       return new TreePath().startTreePath(processInstanceKey);
     }
-    // example of how the tree path is built when current instance is on the third level of calling
+    // Example of how the tree path is built when current instance is on the third level of calling
+    //
     // hierarchy:
-    // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/
-    // PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>/PI_<currentProcessInstanceKey>
+    // <pre>
+    // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>/PI_<currentProcessInstanceKey>
+    // </pre>
     final TreePath treePath = new TreePath();
     for (int i = 0; i < elementInstancePath.size(); i++) {
       final List<Long> keysWithinOnePI = elementInstancePath.get(i);
@@ -314,12 +316,14 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       if (callActivityId.isPresent()) {
         treePath.appendFlowNode(callActivityId.get());
       } else {
+        final var index = callingElementPath.get(i);
         LOGGER.warn(
-            "No process found in cache. TreePath won't contain proper callActivityId. processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}",
+            "Expected to find process in cache. TreePath won't contain proper callActivityId, will use the lexicographic index instead {}. [processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}]",
             processInstanceKey,
             processDefinitionPath.get(i),
-            key);
-        treePath.appendFlowNode(String.valueOf(callingElementPath.get(i)));
+            key,
+            index);
+        treePath.appendFlowNode(String.valueOf(index));
       }
       treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.getLast()));
     }

@@ -95,10 +95,15 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     if (intent.equals(ELEMENT_ACTIVATING)) {
       final ProcessInstanceRecordValue value = record.getValue();
       if (value.getElementInstancePath() != null && !value.getElementInstancePath().isEmpty()) {
-        // Build the treePath in the format
-        // <processInstanceKey>/<flowNodeInstanceKey>/.../<flowNodeInstanceKey> where upper level
-        // flowNodeInstanceKeys are normally subprocess(es) or multi-instance body This is an intra
-        // tree path that shows position of flow node instance inside one process instance.
+        // Build the intra treePath in the format:
+        // <pre>
+        //   <processInstanceKey>/<flowNodeInstanceKey>/.../<flowNodeInstanceKey>
+        // </pre>
+        //
+        // Where upper level flowNodeInstanceKeys are normally subprocess(es) or multi-instance
+        // bodies.
+        // This is an intra tree path that shows position of flow node instance inside one process
+        // instance.
         // We take last entry, as in intra path we're not interested in upper level process instance
         // scope hierarchies.
         final List<String> treePathEntries =
