@@ -4671,6 +4671,10 @@ components:
         email:
           description: The email of the user.
           type: "string"
+        roleKey:
+          description: The key of a role assigned to the user
+          type: "integer"
+          format: "int64"
     CamundaUser:
       type: "object"
       properties:

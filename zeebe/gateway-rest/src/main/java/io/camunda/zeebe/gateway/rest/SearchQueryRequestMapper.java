@@ -568,6 +568,7 @@ public final class SearchQueryRequestMapper {
                     .username(f.getUsername())
                     .name(f.getName())
                     .email(f.getEmail())
+                    .roleKey(filter.getRoleKey())
                     .build())
         .orElse(null);
   }
