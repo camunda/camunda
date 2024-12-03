@@ -19,6 +19,7 @@ public class TenantIndex extends UserManagementIndexDescriptor {
   public static final String KEY = "key";
   public static final String TENANT_ID = "tenantId";
   public static final String NAME = "name";
+  public static final String JOIN = "join";
 
   public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
       new EntityJoinRelationFactory(
