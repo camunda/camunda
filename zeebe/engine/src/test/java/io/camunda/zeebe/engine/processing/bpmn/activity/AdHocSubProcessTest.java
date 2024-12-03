@@ -134,9 +134,9 @@ public final class AdHocSubProcessTest {
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSubsequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
             tuple("C", ProcessInstanceIntent.ACTIVATE_ELEMENT),
-            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("C", ProcessInstanceIntent.ELEMENT_ACTIVATED));
 
@@ -262,13 +262,13 @@ public final class AdHocSubProcessTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED))
+                .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
-            tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT),
-            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT));
   }
 
   @Test
@@ -301,14 +301,14 @@ public final class AdHocSubProcessTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED))
+                .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
-            tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT),
-            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT));
 
     final Record<VariableRecordValue> variableCreated =
         RecordingExporter.variableRecords()

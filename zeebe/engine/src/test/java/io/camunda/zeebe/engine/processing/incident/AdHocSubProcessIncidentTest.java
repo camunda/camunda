@@ -225,13 +225,13 @@ public class AdHocSubProcessIncidentTest {
     assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
-                .limit(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED))
+                .limit("B", ProcessInstanceIntent.ELEMENT_ACTIVATED))
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
         .containsSequence(
             tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple("A", ProcessInstanceIntent.ACTIVATE_ELEMENT),
-            tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT),
-            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+            tuple("B", ProcessInstanceIntent.ACTIVATE_ELEMENT));
   }
 
   @Test
