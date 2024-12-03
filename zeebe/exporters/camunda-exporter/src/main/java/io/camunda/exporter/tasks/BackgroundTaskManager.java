@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks;
 
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.List;
@@ -19,7 +20,8 @@ import org.slf4j.Logger;
 
 public final class BackgroundTaskManager implements CloseableSilently {
   private final int partitionId;
-  private final ArchiverRepository repository;
+  private final ArchiverRepository archiverRepository;
+  private final IncidentUpdateRepository incidentRepository;
   private final Logger logger;
   private final ScheduledThreadPoolExecutor executor;
   private final List<Runnable> tasks;
@@ -29,12 +31,16 @@ public final class BackgroundTaskManager implements CloseableSilently {
   @VisibleForTesting
   BackgroundTaskManager(
       final int partitionId,
-      final @WillCloseWhenClosed ArchiverRepository repository,
+      final @WillCloseWhenClosed ArchiverRepository archiverRepository,
+      final @WillCloseWhenClosed IncidentUpdateRepository incidentRepository,
       final Logger logger,
       final @WillCloseWhenClosed ScheduledThreadPoolExecutor executor,
       final List<Runnable> tasks) {
     this.partitionId = partitionId;
-    this.repository = Objects.requireNonNull(repository, "must specify a repository");
+    this.archiverRepository =
+        Objects.requireNonNull(archiverRepository, "must specify an archiver repository");
+    this.incidentRepository =
+        Objects.requireNonNull(incidentRepository, "must specify an archiver repository");
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
     this.executor = Objects.requireNonNull(executor, "must specify an executor");
     this.tasks = Objects.requireNonNull(tasks, "must specify tasks");
@@ -50,10 +56,10 @@ public final class BackgroundTaskManager implements CloseableSilently {
     // we also don't need to wait for the jobs to fully finish, as we should be able to handle
     // partial jobs (e.g. node crash/restart)
     executor.shutdownNow();
-    CloseHelper.close(
-        error ->
-            logger.warn("Failed to close archiver repository for partition {}", partitionId, error),
-        repository);
+    CloseHelper.closeAll(
+        error -> logger.warn("Failed to close resource for partition {}", partitionId, error),
+        archiverRepository,
+        incidentRepository);
   }
 
   public void start() {
