@@ -499,6 +499,8 @@ final class CamundaExporterIT {
     private final ExporterTestController controller = spy(new ExporterTestController());
     private final CamundaExporter camundaExporter = new CamundaExporter();
     private final int partitionId = 1;
+    private final String importPositionIndexName =
+        new ImportPositionIndex(CONFIG_PREFIX, true).getFullQualifiedName();
 
     @BeforeEach
     void setup() {
@@ -517,23 +519,13 @@ final class CamundaExporterIT {
       camundaExporter.open(controller);
 
       // when
-      final var importPositionIndex = importPositionIndex(config);
 
       // adds a not complete position index document so exporter sees importing as not yet completed
-      final var decisionEntity =
-          new ImportPositionEntity()
-              .setPartitionId(partitionId)
-              .setAliasName(ImportValueTypes.DECISION.getAliasTemplate())
-              .setCompleted(false);
-
-      clientAdapter.index(
-          decisionEntity.getId(), importPositionIndex.getFullQualifiedName(), decisionEntity);
-
+      indexImportPositionEntity(ImportValueTypes.DECISION, false, clientAdapter);
       clientAdapter.refresh();
 
       controller.runScheduledTasks(Duration.ofMinutes(1));
 
-      // then
       final var record =
           factory.generateRecord(
               ValueType.AUTHORIZATION,
@@ -569,17 +561,10 @@ final class CamundaExporterIT {
       camundaExporter.configure(context);
       camundaExporter.open(controller);
 
-      final var importPositionIndex = importPositionIndex(config);
-
       // mark all import position documents as completed which signals all record readers as
       // completed
       for (final var type : ImportValueTypes.values()) {
-        final var entity =
-            new ImportPositionEntity()
-                .setPartitionId(partitionId)
-                .setAliasName(type.getAliasTemplate())
-                .setCompleted(true);
-        clientAdapter.index(entity.getId(), importPositionIndex.getFullQualifiedName(), entity);
+        indexImportPositionEntity(type, true, clientAdapter);
       }
 
       controller.runScheduledTasks(Duration.ofMinutes(1));
@@ -610,9 +595,16 @@ final class CamundaExporterIT {
           .isNotNull();
     }
 
-    private ImportPositionIndex importPositionIndex(final ExporterConfiguration config) {
-      final var isElasticsearch = config.getConnect().getType().equals(ELASTICSEARCH.getType());
-      return new ImportPositionIndex(config.getIndex().getPrefix(), isElasticsearch);
+    private void indexImportPositionEntity(
+        final ImportValueTypes type, final boolean completed, final SearchClientAdapter client)
+        throws IOException {
+      final var entity =
+          new ImportPositionEntity()
+              .setPartitionId(partitionId)
+              .setAliasName(type.getAliasTemplate())
+              .setCompleted(completed);
+
+      client.index(entity.getId(), importPositionIndexName, entity);
     }
   }
 }

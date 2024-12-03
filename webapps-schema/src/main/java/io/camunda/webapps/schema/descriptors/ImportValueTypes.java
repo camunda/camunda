@@ -7,9 +7,6 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
-import static io.camunda.zeebe.protocol.record.ValueType.*;
-import static java.util.Map.*;
-
 public enum ImportValueTypes {
   PROCESS_INSTANCE("process-instance"),
   DECISION("decision"),
