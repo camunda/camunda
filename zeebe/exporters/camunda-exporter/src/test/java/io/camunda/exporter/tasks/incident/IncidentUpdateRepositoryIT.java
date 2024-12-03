@@ -21,6 +21,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
@@ -114,6 +115,22 @@ abstract sealed class IncidentUpdateRepositoryIT {
             flowNodeInstanceTemplate,
             operationTemplate)
         .forEach(template -> engineClient.createIndexTemplate(template, new IndexSettings(), true));
+  }
+
+  private IncidentEntity newIncident(final long key) {
+    final var incident = new IncidentEntity();
+    final var id = String.valueOf(key);
+
+    incident.setState(IncidentState.PENDING);
+    incident.setId(id);
+    incident.setKey(key);
+    incident.setProcessInstanceKey(key);
+    incident.setFlowNodeInstanceKey(key);
+    incident.setFlowNodeId(id);
+    incident.setPartitionId(PARTITION_ID);
+    incident.setErrorMessage("failure");
+
+    return incident;
   }
 
   protected abstract IncidentUpdateRepository createRepository();
@@ -217,22 +234,6 @@ abstract sealed class IncidentUpdateRepositoryIT {
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.add(incidentTemplate.getFullQualifiedName(), incident);
       batchRequest.executeWithRefresh();
-    }
-
-    private IncidentEntity newIncident(final long key) {
-      final var incident = new IncidentEntity();
-      final var id = String.valueOf(key);
-
-      incident.setState(IncidentState.PENDING);
-      incident.setId(id);
-      incident.setKey(key);
-      incident.setProcessInstanceKey(key);
-      incident.setFlowNodeInstanceKey(key);
-      incident.setFlowNodeId(id);
-      incident.setPartitionId(PARTITION_ID);
-      incident.setErrorMessage("failure");
-
-      return incident;
     }
   }
 
@@ -573,7 +574,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
       assertThat(terms)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(String.class))
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               "PI_1",
               "PI_1/FN_call",
               "PI_1/FN_call/FNI_2",
@@ -699,7 +700,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
       assertThat(flowNodes)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               new Document("1", listViewTemplate.getFullQualifiedName()),
               new Document("2", listViewTemplate.getFullQualifiedName()));
     }
@@ -775,15 +776,15 @@ abstract sealed class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
+      final var flowNodes = repository.getFlowNodeInstances(List.of("1", "2"));
 
       // then
       assertThat(flowNodes)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
-          .containsExactly(
-              new Document("1", listViewTemplate.getFullQualifiedName()),
-              new Document("2", listViewTemplate.getFullQualifiedName()));
+          .containsExactlyInAnyOrder(
+              new Document("1", flowNodeInstanceTemplate.getFullQualifiedName()),
+              new Document("2", flowNodeInstanceTemplate.getFullQualifiedName()));
     }
 
     @Test
@@ -798,13 +799,107 @@ abstract sealed class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var flowNodes = repository.getFlowNodesInListView(List.of("1"));
+      final var flowNodes = repository.getFlowNodeInstances(List.of("1"));
 
       // then
       assertThat(flowNodes)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
-          .containsExactly(new Document("1", listViewTemplate.getFullQualifiedName()));
+          .containsExactly(new Document("1", flowNodeInstanceTemplate.getFullQualifiedName()));
+    }
+  }
+
+  @Nested
+  final class GetActiveIncidentsTest {
+    @Test
+    void shouldGetActiveIncidentsWithSharedPath() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "7",
+          newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "8",
+          newIncident(8).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2/PI_3/FNI_4"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "9",
+          newIncident(9).setState(IncidentState.ACTIVE).setTreePath("PI_5/FNI_6"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var incidents = repository.getActiveIncidentsByTreePaths(List.of("PI_1"));
+
+      // then
+      assertThat(incidents)
+          .succeedsWithin(Duration.ofSeconds(10))
+          .asInstanceOf(InstanceOfAssertFactories.collection(ActiveIncident.class))
+          .containsExactlyInAnyOrder(
+              new ActiveIncident("8", "PI_1/FNI_2/PI_3/FNI_4"),
+              new ActiveIncident("7", "PI_1/FNI_2"));
+    }
+
+    @Test
+    void shouldNotReturnInactiveIncidents() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "7",
+          newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "8",
+          newIncident(8).setState(IncidentState.PENDING).setTreePath("PI_1/FNI_3"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "9",
+          newIncident(9).setState(IncidentState.RESOLVED).setTreePath("PI_1/FNI_4"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var incidents = repository.getActiveIncidentsByTreePaths(List.of("PI_1"));
+
+      // then
+      assertThat(incidents)
+          .succeedsWithin(Duration.ofSeconds(10))
+          .asInstanceOf(InstanceOfAssertFactories.collection(ActiveIncident.class))
+          .containsExactlyInAnyOrder(new ActiveIncident("7", "PI_1/FNI_2"));
+    }
+
+    @Test
+    void shouldGetActiveIncidents() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "7",
+          newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2/PI_7"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "8",
+          newIncident(8).setState(IncidentState.ACTIVE).setTreePath("PI_3/FNI_4"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "9",
+          newIncident(9).setState(IncidentState.ACTIVE).setTreePath("PI_5/FNI_6"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var incidents =
+          repository.getActiveIncidentsByTreePaths(List.of("PI_1/FNI_2", "PI_3/FNI_4"));
+
+      // then
+      assertThat(incidents)
+          .succeedsWithin(Duration.ofSeconds(10))
+          .asInstanceOf(InstanceOfAssertFactories.collection(ActiveIncident.class))
+          .containsExactlyInAnyOrder(
+              new ActiveIncident("8", "PI_3/FNI_4"), new ActiveIncident("7", "PI_1/FNI_2"));
     }
   }
 }

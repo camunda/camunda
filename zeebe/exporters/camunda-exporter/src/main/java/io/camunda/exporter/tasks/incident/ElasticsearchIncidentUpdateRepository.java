@@ -19,6 +19,7 @@ import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.ClearScrollRequest;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest.Builder;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
@@ -122,15 +123,23 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
             t ->
                 t.field(ListViewTemplate.JOIN_RELATION)
                     .value(ListViewTemplate.ACTIVITIES_JOIN_RELATION));
-    return fetchUnboundedDocumentCollection(
-        listViewAlias, QueryBuilders.bool(b -> b.must(idQ, typeQ)));
+    final var request =
+        new SearchRequest.Builder()
+            .index(listViewAlias)
+            .query(q -> q.bool(b -> b.must(idQ, typeQ)))
+            .source(s -> s.fetch(false));
+
+    return fetchUnboundedDocumentCollection(request, hit -> new Document(hit.id(), hit.index()));
   }
 
   @Override
   public CompletionStage<Collection<Document>> getFlowNodeInstances(
       final List<String> flowNodeKeys) {
     final var query = QueryBuilders.ids(i -> i.values(flowNodeKeys));
-    return fetchUnboundedDocumentCollection(flowNodeAlias, query);
+    final var request =
+        new SearchRequest.Builder().index(flowNodeAlias).query(query).source(s -> s.fetch(false));
+
+    return fetchUnboundedDocumentCollection(request, hit -> new Document(hit.id(), hit.index()));
   }
 
   @Override
@@ -186,28 +195,64 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
             response -> response.tokens().stream().map(AnalyzeToken::token).toList(), executor);
   }
 
-  private CompletableFuture<Collection<Document>> fetchUnboundedDocumentCollection(
-      final String indexAlias, final Query query) {
+  @Override
+  public CompletionStage<Collection<ActiveIncident>> getActiveIncidentsByTreePaths(
+      final Collection<String> treePathTerms) {
+    final var treePathValues = treePathTerms.stream().map(FieldValue::of).toList();
+    final var pathQ =
+        QueryBuilders.terms(
+            t -> t.field(IncidentTemplate.TREE_PATH).terms(v -> v.value(treePathValues)));
+    final var stateQ =
+        QueryBuilders.term(t -> t.field(IncidentTemplate.STATE).value(IncidentState.ACTIVE.name()));
     final var request =
         new SearchRequest.Builder()
-            .index(indexAlias)
+            .query(q -> q.bool(b -> b.must(pathQ, stateQ)))
+            .source(s -> s.filter(f -> f.includes(IncidentTemplate.TREE_PATH)))
+            .index(incidentAlias);
+
+    return fetchUnboundedDocumentCollection(
+        request, IncidentEntity.class, h -> new ActiveIncident(h.id(), h.source().getTreePath()));
+  }
+
+  /**
+   * Variant of {@link #fetchUnboundedDocumentCollection(Builder, Class, Function)} to use when you
+   * don't care about the source document, meaning you won't be using any deserialization
+   * functionality.
+   */
+  private <T> CompletionStage<Collection<T>> fetchUnboundedDocumentCollection(
+      final SearchRequest.Builder requestBuilder, final Function<Hit<Object>, T> transformer) {
+    return fetchUnboundedDocumentCollection(requestBuilder, Object.class, transformer);
+  }
+
+  private <TDocument, TResult>
+      CompletionStage<Collection<TResult>> fetchUnboundedDocumentCollection(
+          final SearchRequest.Builder requestBuilder,
+          final Class<TDocument> type,
+          final Function<Hit<TDocument>, TResult> transformer) {
+    final var request =
+        requestBuilder
             .allowNoIndices(true)
             .ignoreUnavailable(true)
-            .query(query)
-            .source(s -> s.fetch(false))
             .scroll(SCROLL_KEEP_ALIVE)
             .size(SCROLL_PAGE_SIZE)
             .build();
 
     return client
-        // pass Object as the document type, because we will not read the source anyway and we don't
-        // want to couple ourselves to whatever the entity type really be
-        .search(request, Object.class)
+        .search(request, type)
         .thenComposeAsync(
-            r ->
-                clearScrollOnComplete(
+            r -> {
+              try {
+                return clearScrollOnComplete(
                     r.scrollId(),
-                    scrollDocuments(r.hits().hits(), r.scrollId(), new ArrayList<>())),
+                    scrollDocuments(
+                        r.hits().hits(), r.scrollId(), new ArrayList<>(), transformer, type));
+              } catch (final Exception e) {
+                // scrollDocuments may fail, in which case we still want to clear the scroll anyway
+                // we don't need to do this later on however, since at this point our async pipeline
+                // is set up already to clear it
+                return clearScroll(r.scrollId(), null, e);
+              }
+            },
             executor);
   }
 
@@ -243,17 +288,24 @@ public final class ElasticsearchIncidentUpdateRepository extends NoopIncidentUpd
         .thenComposeAsync(ignored -> endResult);
   }
 
-  private CompletionStage<Collection<Document>> scrollDocuments(
-      final List<Hit<Object>> hits, final String scrollId, final List<Document> accumulator) {
+  private <TResult, TDocument> CompletionStage<Collection<TDocument>> scrollDocuments(
+      final List<Hit<TResult>> hits,
+      final String scrollId,
+      final List<TDocument> accumulator,
+      final Function<Hit<TResult>, TDocument> transformer,
+      final Class<TResult> type) {
     if (hits.isEmpty()) {
       return CompletableFuture.completedFuture(accumulator);
     }
 
-    hits.forEach(hit -> accumulator.add(new Document(hit.id(), hit.index())));
+    for (final var hit : hits) {
+      accumulator.add(transformer.apply(hit));
+    }
 
     return client
-        .scroll(r -> r.scrollId(scrollId).scroll(SCROLL_KEEP_ALIVE), Object.class)
-        .thenComposeAsync(r -> scrollDocuments(r.hits().hits(), r.scrollId(), accumulator));
+        .scroll(r -> r.scrollId(scrollId).scroll(SCROLL_KEEP_ALIVE), type)
+        .thenComposeAsync(
+            r -> scrollDocuments(r.hits().hits(), r.scrollId(), accumulator, transformer, type));
   }
 
   private Query createProcessInstanceDeletedQuery(final long processInstanceKey) {
