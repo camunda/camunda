@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.schema.elasticsearch;
 
-import static io.camunda.exporter.utils.SearchEngineClientUtils.allImportersCompleted;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSchemaSettings;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
@@ -16,8 +15,8 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
+import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
 import co.elastic.clients.elasticsearch.indices.CreateIndexRequest;
@@ -186,12 +185,24 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public boolean importersCompleted(final int partitionId, final String indexPrefix) {
-    final var importPositionSearchRequest = importPositionDocuments(partitionId, indexPrefix);
+    final var completedImportPositionDocumentsRequest =
+        completedImportPositionDocuments(partitionId, indexPrefix);
 
     try {
-      final var docs = client.search(importPositionSearchRequest, ImportPositionEntity.class);
-      return allImportersCompleted(
-          docs.hits().hits().stream().map(Hit::source).toList(), ImportValueTypes.values().length);
+      // brand new install no need to wait for importers to complete
+      if (isImportPositionIndexEmpty(indexPrefix)) {
+        return true;
+      }
+
+      final var totalCompletedRecordReaders =
+          client
+              .search(completedImportPositionDocumentsRequest, ImportPositionEntity.class)
+              .hits()
+              .hits()
+              .size();
+
+      return totalCompletedRecordReaders == ImportValueTypes.values().length;
+
     } catch (final IOException e) {
       final var errMsg =
           String.format(
@@ -202,14 +213,43 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private SearchRequest importPositionDocuments(final int partitionId, final String indexPrefix) {
-    final var importPositionIndexName =
-        new ImportPositionIndex(indexPrefix, true).getFullQualifiedName();
+  private SearchRequest completedImportPositionDocuments(
+      final int partitionId, final String indexPrefix) {
+    final var query =
+        QueryBuilders.bool()
+            .must(
+                QueryBuilders.match()
+                    .field(ImportPositionIndex.COMPLETED)
+                    .query(true)
+                    .build()
+                    ._toQuery())
+            .must(
+                QueryBuilders.match()
+                    .field(ImportPositionIndex.PARTITION_ID)
+                    .query(partitionId)
+                    .build()
+                    ._toQuery())
+            .build()
+            ._toQuery();
     return new SearchRequest.Builder()
-        .index(importPositionIndexName)
+        .index(importPositionIndexName(indexPrefix))
         .size(ImportValueTypes.values().length)
-        .query(q -> q.match(m -> m.field(ImportPositionIndex.PARTITION_ID).query(partitionId)))
+        .query(query)
         .build();
+  }
+
+  private boolean isImportPositionIndexEmpty(final String indexPrefix) throws IOException {
+    return client
+        .search(
+            new SearchRequest.Builder().index(importPositionIndexName(indexPrefix)).size(1).build(),
+            ImportPositionEntity.class)
+        .hits()
+        .hits()
+        .isEmpty();
+  }
+
+  private String importPositionIndexName(final String indexPrefix) {
+    return new ImportPositionIndex(indexPrefix, true).getFullQualifiedName();
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(

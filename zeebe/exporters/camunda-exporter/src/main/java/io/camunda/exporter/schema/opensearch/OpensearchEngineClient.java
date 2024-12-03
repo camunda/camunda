@@ -7,7 +7,6 @@
  */
 package io.camunda.exporter.schema.opensearch;
 
-import static io.camunda.exporter.utils.SearchEngineClientUtils.allImportersCompleted;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.appendToFileSchemaSettings;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.listIndices;
 import static io.camunda.exporter.utils.SearchEngineClientUtils.mapToSettings;
@@ -43,8 +42,8 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
@@ -197,11 +196,22 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public boolean importersCompleted(final int partitionId, final String indexPrefix) {
-    final var importPositionSearchRequest = importPositionDocuments(partitionId, indexPrefix);
+    final var completedImportPositionDocumentsRequest =
+        completedImportPositionDocuments(partitionId, indexPrefix);
     try {
-      final var docs = client.search(importPositionSearchRequest, ImportPositionEntity.class);
-      return allImportersCompleted(
-          docs.hits().hits().stream().map(Hit::source).toList(), ImportValueTypes.values().length);
+      // brand new install no need to wait for importers to complete
+      if (isImportPositionIndexEmpty(indexPrefix)) {
+        return true;
+      }
+
+      final var totalCompletedRecordReaders =
+          client
+              .search(completedImportPositionDocumentsRequest, ImportPositionEntity.class)
+              .hits()
+              .hits()
+              .size();
+
+      return totalCompletedRecordReaders == ImportValueTypes.values().length;
     } catch (final IOException e) {
       final var errMsg =
           String.format(
@@ -212,19 +222,43 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private SearchRequest importPositionDocuments(final int partitionId, final String indexPrefix) {
-    final var importPositionIndexName =
-        new ImportPositionIndex(indexPrefix, false).getFullQualifiedName();
+  private SearchRequest completedImportPositionDocuments(
+      final int partitionId, final String indexPrefix) {
+    final var query =
+        QueryBuilders.bool()
+            .must(
+                QueryBuilders.match()
+                    .field(ImportPositionIndex.COMPLETED)
+                    .query(q -> q.booleanValue(true))
+                    .build()
+                    .toQuery())
+            .must(
+                QueryBuilders.match()
+                    .field(ImportPositionIndex.PARTITION_ID)
+                    .query(q -> q.longValue(partitionId))
+                    .build()
+                    .toQuery())
+            .build()
+            .toQuery();
     return new SearchRequest.Builder()
-        .index(importPositionIndexName)
+        .index(importPositionIndexName(indexPrefix))
         .size(ImportValueTypes.values().length)
-        .query(
-            q ->
-                q.term(
-                    t ->
-                        t.field(ImportPositionIndex.PARTITION_ID)
-                            .value(v -> v.longValue(partitionId))))
+        .query(query)
         .build();
+  }
+
+  private boolean isImportPositionIndexEmpty(final String indexPrefix) throws IOException {
+    return client
+        .search(
+            new SearchRequest.Builder().index(importPositionIndexName(indexPrefix)).size(1).build(),
+            ImportPositionEntity.class)
+        .hits()
+        .hits()
+        .isEmpty();
+  }
+
+  private String importPositionIndexName(final String indexPrefix) {
+    return new ImportPositionIndex(indexPrefix, false).getFullQualifiedName();
   }
 
   public Request createIndexStateManagementPolicy(

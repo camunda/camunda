@@ -131,7 +131,7 @@ public class ExporterConfiguration {
 
     private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
 
-    private boolean shouldWaitForImporters = false;
+    private boolean shouldWaitForImporters = true;
 
     public String getPrefix() {
       return prefix;
