@@ -127,6 +127,18 @@ public final class UserTaskClient {
     return expectation.apply(position);
   }
 
+  public Record<UserTaskRecordValue> assign(
+      final Function<UserTaskRecord, UserTaskRecord> userTaskRecordBuilder) {
+    final long userTaskKey = findUserTaskKey();
+    final long position =
+        writer.writeCommand(
+            userTaskKey,
+            UserTaskIntent.ASSIGN,
+            userTaskRecordBuilder.apply(userTaskRecord.setUserTaskKey(userTaskKey)),
+            authorizedTenantIds.toArray(new String[0]));
+    return expectation.apply(position);
+  }
+
   public Record<UserTaskRecordValue> claim() {
     final long userTaskKey = findUserTaskKey();
     final long position =

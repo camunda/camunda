@@ -47,10 +47,16 @@ public class UserTaskAssignmentDeniedApplierTest {
     final var initialAssignee = "initial";
     final var newAssignee = "changed";
 
-    final var given = new UserTaskRecord().setUserTaskKey(userTaskKey).setAssignee(initialAssignee);
+    final var given = new UserTaskRecord().setUserTaskKey(userTaskKey);
 
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATING, given);
     testSetup.applyEventToState(userTaskKey, UserTaskIntent.CREATED, given);
+
+    testSetup.applyEventToState(
+        userTaskKey, UserTaskIntent.ASSIGNING, given.setAssignee(initialAssignee));
+    testSetup.applyEventToState(
+        userTaskKey, UserTaskIntent.ASSIGNED, given.setAssignee(initialAssignee));
+
     testSetup.applyEventToState(
         userTaskKey, UserTaskIntent.ASSIGNING, given.setAssignee(newAssignee));
 

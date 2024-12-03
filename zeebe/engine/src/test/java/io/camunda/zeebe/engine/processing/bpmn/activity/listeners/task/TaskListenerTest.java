@@ -168,9 +168,16 @@ public class TaskListenerTest {
     // given
     final long processInstanceKey =
         createProcessInstance(
-            createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.assignment, LISTENER_TYPE));
+            createUserTaskWithTaskListenersAndAssignee(LISTENER_TYPE, "default_assignee"));
 
-    ENGINE.userTask().ofInstance(processInstanceKey).assign();
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .assign(
+            ut -> {
+              ut.setAssignee("new_assignee");
+              return ut;
+            });
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -184,6 +191,13 @@ public class TaskListenerTest {
         UserTaskIntent.ASSIGNING,
         UserTaskIntent.DENY_TASK_LISTENER,
         UserTaskIntent.ASSIGNMENT_DENIED);
+
+    // validate the assignee
+    assertThat(
+            RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey).limit(1))
+        .extracting(Record::getValue)
+        .extracting(UserTaskRecordValue::getAssignee)
+        .containsExactly("default_assignee");
   }
 
   @Test
@@ -194,8 +208,15 @@ public class TaskListenerTest {
         createProcessInstance(
             createProcessWithAssignmentTaskListeners(
                 LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3"));
-
-    ENGINE.userTask().ofInstance(processInstanceKey).assign();
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .assign(
+            ut -> {
+              ut.setAssignee("new_assignee");
+              return ut;
+            });
+    // assignment fails
     ENGINE
         .job()
         .ofInstance(processInstanceKey)
@@ -203,21 +224,34 @@ public class TaskListenerTest {
         .withResult(new JobResult().setDenied(true))
         .complete();
 
-    ENGINE.userTask().ofInstance(processInstanceKey).assign();
+    ENGINE
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .assign(
+            ut -> {
+              ut.setAssignee("new_assignee");
+              return ut;
+            });
+    // assignment is successful
     completeRecreatedJobWithType(ENGINE, processInstanceKey, LISTENER_TYPE);
     completeJobs(processInstanceKey, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
 
     // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered
-    assertUserTaskIntentsSequence(
-        UserTaskIntent.ASSIGNING,
-        UserTaskIntent.DENY_TASK_LISTENER,
-        UserTaskIntent.ASSIGNMENT_DENIED,
-        UserTaskIntent.ASSIGN,
-        UserTaskIntent.ASSIGNING,
-        UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.COMPLETE_TASK_LISTENER,
-        UserTaskIntent.ASSIGNED);
+    // correct assignee value is present at all stages
+    assertThat(RecordingExporter.userTaskRecords())
+        .extracting(Record::getIntent, r -> r.getValue().getAssignee())
+        .describedAs("Verify that all task listeners were completed with `denied=false`")
+        .containsSequence(
+            tuple(UserTaskIntent.ASSIGN, "new_assignee"),
+            tuple(UserTaskIntent.ASSIGNING, "new_assignee"),
+            tuple(UserTaskIntent.DENY_TASK_LISTENER, "new_assignee"),
+            tuple(UserTaskIntent.ASSIGNMENT_DENIED, ""),
+            tuple(UserTaskIntent.ASSIGN, "new_assignee"),
+            tuple(UserTaskIntent.ASSIGNING, "new_assignee"),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "new_assignee"),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "new_assignee"),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, "new_assignee"),
+            tuple(UserTaskIntent.ASSIGNED, "new_assignee"));
   }
 
   @Test
@@ -916,6 +950,17 @@ public class TaskListenerTest {
   private BpmnModelInstance createProcessWithAssignmentTaskListeners(
       final String... listenerTypes) {
     return createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.assignment, listenerTypes);
+  }
+
+  private BpmnModelInstance createUserTaskWithTaskListenersAndAssignee(
+      final String listenerType, final String assignee) {
+    return createProcessWithZeebeUserTask(
+        taskBuilder -> {
+          taskBuilder.zeebeTaskListener(
+              l -> l.eventType(ZeebeTaskListenerEventType.assignment).type(listenerType));
+          taskBuilder.zeebeAssignee(assignee);
+          return taskBuilder;
+        });
   }
 
   private BpmnModelInstance createProcessWithCompleteTaskListeners(final String... listenerTypes) {

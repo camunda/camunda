@@ -40,10 +40,10 @@ import java.util.Optional;
 public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private static final String USER_TASK_COMPLETION_REJECTION =
-      "Completion of the User Task with key '%d' was rejected by Task Listener";
+      "Completion of the User Task with key '%d' was denied by Task Listener";
 
   private static final String USER_TASK_ASSIGNMENT_REJECTION =
-      "Assignment of the User Task with key '%d' was rejected by Task Listener";
+      "Assignment of the User Task with key '%d' was denied by Task Listener";
 
   private final UserTaskCommandProcessors commandProcessors;
   private final ProcessState processState;
