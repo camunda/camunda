@@ -171,6 +171,19 @@ public class CamundaExporter implements Exporter {
     writer.addRecord(record);
 
     if (configuration.getIndex().shouldWaitForImporters() && !importersCompleted) {
+
+      final var maxCachedRecords =
+          configuration.getIndex().getMaxCachedRecordsBeforeErrorWhileWaitingForImporters();
+
+      if (writer.getBatchSize() >= maxCachedRecords) {
+        final var errMsg =
+            String.format(
+                "Reached the configured max cached records count of [%d] while waiting for importers to finish, restarting exporter",
+                maxCachedRecords);
+        LOG.error(errMsg);
+        throw new IllegalStateException(errMsg);
+      }
+
       LOG.info(
           "Waiting for importers to finish, cached record with key {} but did not flush",
           record.getKey());
