@@ -50,7 +50,7 @@ public class FormDeletedApplierTest {
     formCreatedApplier.applyState(formV2.getFormKey(), formV2);
 
     final var latestFormOpt =
-        formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+        formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
     assertThat(latestFormOpt).isNotEmpty();
     assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
 
@@ -59,7 +59,7 @@ public class FormDeletedApplierTest {
 
     // then
     final var latestFormV1Opt =
-        formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+        formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
     assertThat(latestFormV1Opt).isNotEmpty();
     assertThat(latestFormV1Opt.get().getVersion()).isEqualTo(1);
   }
@@ -73,7 +73,7 @@ public class FormDeletedApplierTest {
     formCreatedApplier.applyState(formV2.getFormKey(), formV2);
 
     final var latestFormOpt =
-        formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+        formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
     assertThat(latestFormOpt).isNotEmpty();
     assertThat(latestFormOpt.get().getVersion()).isEqualTo(2);
 
@@ -82,7 +82,7 @@ public class FormDeletedApplierTest {
 
     // then
     final var latestFormV2Opt =
-        formState.findLatestFormById(formV2.getFormIdBuffer(), formV2.getTenantId());
+        formState.findLatestFormById(formV2.getFormId(), formV2.getTenantId());
     assertThat(latestFormV2Opt).isNotEmpty();
     assertThat(latestFormV2Opt.get().getVersion()).isEqualTo(2);
   }
@@ -122,8 +122,8 @@ public class FormDeletedApplierTest {
     formDeletedApplier.applyState(tenant1Form.getFormKey(), tenant1Form);
 
     // then
-    assertThat(formState.findLatestFormById(tenant1Form.getFormIdBuffer(), TENANT_1)).isEmpty();
-    assertThat(formState.findLatestFormById(tenant2Form.getFormIdBuffer(), TENANT_2)).isNotEmpty();
+    assertThat(formState.findLatestFormById(tenant1Form.getFormId(), TENANT_1)).isEmpty();
+    assertThat(formState.findLatestFormById(tenant2Form.getFormId(), TENANT_2)).isNotEmpty();
   }
 
   private FormRecord sampleFormRecord() {

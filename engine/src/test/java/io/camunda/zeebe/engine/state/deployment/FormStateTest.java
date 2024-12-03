@@ -32,7 +32,7 @@ public class FormStateTest {
   @Test
   void shouldReturnEmptyIfNoFormIsDeployedForFormId() {
     // when
-    final var persistedForm = formState.findLatestFormById(wrapString("form-1"), tenantId);
+    final var persistedForm = formState.findLatestFormById("form-1", tenantId);
 
     // then
     assertThat(persistedForm).isEmpty();
