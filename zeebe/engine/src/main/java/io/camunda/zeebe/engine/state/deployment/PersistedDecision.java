@@ -21,20 +21,19 @@ import org.agrona.DirectBuffer;
 
 public final class PersistedDecision extends UnpackedObject implements DbValue {
 
+  private static final long NO_DEPLOYMENT_KEY = -1L;
   private final StringProperty decisionIdProp = new StringProperty("decisionId");
   private final StringProperty decisionNameProp = new StringProperty("decisionName");
   private final IntegerProperty versionProp = new IntegerProperty("version");
   private final LongProperty decisionKeyProp = new LongProperty("decisionKey");
-
   private final StringProperty decisionRequirementsIdProp =
       new StringProperty("decisionRequirementsId");
   private final LongProperty decisionRequirementsKeyProp =
       new LongProperty("decisionRequirementsKey");
-
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-
-  private final LongProperty deploymentKeyProp = new LongProperty("deploymentKey", -1L);
+  private final LongProperty deploymentKeyProp =
+      new LongProperty("deploymentKey", NO_DEPLOYMENT_KEY);
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public PersistedDecision() {
@@ -110,6 +109,14 @@ public final class PersistedDecision extends UnpackedObject implements DbValue {
 
   public long getDeploymentKey() {
     return deploymentKeyProp.getValue();
+  }
+
+  public void setDeploymentKey(final long deploymentKey) {
+    deploymentKeyProp.setValue(deploymentKey);
+  }
+
+  public boolean hasDeploymentKey() {
+    return deploymentKeyProp.getValue() != NO_DEPLOYMENT_KEY;
   }
 
   public String getVersionTag() {

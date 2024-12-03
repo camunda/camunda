@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.function.LongConsumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -1003,6 +1004,79 @@ public final class DecisionStateTest {
 
     // then
     Mockito.verify(visitor, Mockito.times(2)).visit(any());
+  }
+
+  @Test
+  public void shouldSetDeploymentKey() {
+    // given
+    final var noDeploymentKey = -1L;
+    final var someDeploymentKey = 1L;
+
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decision = sampleDecisionRecord().setDeploymentKey(noDeploymentKey);
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decision);
+
+    // when
+    decisionState.setMissingDeploymentKey(
+        decision.getTenantId(), decision.getDecisionKey(), someDeploymentKey);
+
+    // then
+    final var updatedDecision =
+        decisionState
+            .findDecisionByTenantAndKey(decision.getTenantId(), decision.getDecisionKey())
+            .orElseThrow();
+    assertThat(updatedDecision.getDeploymentKey()).isEqualTo(someDeploymentKey);
+  }
+
+  @Test
+  public void shouldSetDeploymentKeyPersistently() {
+    // given
+    final var noDeploymentKey = -1L;
+    final var someDeploymentKey = 1L;
+
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decision = sampleDecisionRecord().setDeploymentKey(noDeploymentKey);
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decision);
+    decisionState.setMissingDeploymentKey(
+        decision.getTenantId(), decision.getDecisionKey(), someDeploymentKey);
+
+    // when
+    decisionState.clearCache();
+
+    // then
+    final var updatedDecision =
+        decisionState
+            .findDecisionByTenantAndKey(decision.getTenantId(), decision.getDecisionKey())
+            .orElseThrow();
+    assertThat(updatedDecision.getDeploymentKey()).isEqualTo(someDeploymentKey);
+  }
+
+  @Test
+  public void shouldFindDecisionByDeploymentKeyAfterUpdating() {
+    // given
+    final var noDeploymentKey = -1L;
+    final var someDeploymentKey = 1L;
+
+    final var drg = sampleDecisionRequirementsRecord();
+    final var decision = sampleDecisionRecord().setDeploymentKey(noDeploymentKey);
+    decisionState.storeDecisionRequirements(drg);
+    decisionState.storeDecisionRecord(decision);
+
+    // when
+    decisionState.setMissingDeploymentKey(
+        decision.getTenantId(), decision.getDecisionKey(), someDeploymentKey);
+
+    // then
+    final var foundDecision =
+        decisionState
+            .findDecisionByIdAndDeploymentKey(
+                decision.getTenantId(),
+                BufferUtil.wrapString(decision.getDecisionId()),
+                someDeploymentKey)
+            .orElseThrow();
+    assertThat(foundDecision.getDecisionKey()).isEqualTo(decision.getDecisionKey());
   }
 
   private DecisionRecord sampleDecisionRecord() {
