@@ -114,6 +114,11 @@ public class RecordsReaderHolder {
     countEmptyBatchesAfterImportingDone.replaceAll((k, v) -> v = 0);
   }
 
+  @VisibleForTesting
+  public void resetPartitionsCompletedImporting() {
+    partitionsCompletedImporting.clear();
+  }
+
   public RecordsReader getRecordsReader(
       final int partitionId, final ImportValueType importValueType) {
     for (final RecordsReader record : recordsReader) {
