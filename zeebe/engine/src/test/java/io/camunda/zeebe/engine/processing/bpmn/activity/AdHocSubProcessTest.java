@@ -309,6 +309,54 @@ public final class AdHocSubProcessTest {
   }
 
   @Test
+  public void shouldApplyOutputMappings() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess
+                  .zeebeInputExpression("[]", "result")
+                  .zeebeActiveElementsCollectionExpression("activateElements")
+                  .zeebeOutputExpression("result", "adHocResult");
+
+              adHocSubProcess
+                  .serviceTask("A")
+                  .zeebeJobType("A")
+                  .zeebeOutputExpression("append(result, 1)", "result");
+
+              adHocSubProcess
+                  .serviceTask("B")
+                  .zeebeJobType("B")
+                  .zeebeOutputExpression("append(result, 2)", "result");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A", "B"))
+            .create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords())
+        .extracting(Record::getValue)
+        .extracting(
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue,
+            VariableRecordValue::getScopeKey)
+        .contains(tuple("adHocResult", "[1,2]", processInstanceKey));
+  }
+
+  @Test
   public void shouldInvokeStartExecutionListener() {
     // given
     final BpmnModelInstance process =
