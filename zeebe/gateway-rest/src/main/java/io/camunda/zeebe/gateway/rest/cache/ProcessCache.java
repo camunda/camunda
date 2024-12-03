@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class ProcessCache implements CacheLoader<Long, ProcessCacheItem> {
+public class ProcessCache {
 
   private final LoadingCache<Long, ProcessCacheItem> cache;
   private final XmlUtil xmlUtil;
@@ -36,28 +36,7 @@ public class ProcessCache implements CacheLoader<Long, ProcessCacheItem> {
     if (ttlMillis != null && ttlMillis > 0) {
       cacheBuilder.expireAfterAccess(ttlMillis, TimeUnit.MILLISECONDS);
     }
-    cache = cacheBuilder.build(this);
-  }
-
-  @Override
-  public ProcessCacheItem load(final Long key) throws Exception {
-    final var flowNodes = new ConcurrentHashMap<String, String>();
-    xmlUtil.extractFlowNodeNames(key, (pdId, node) -> flowNodes.put(node.id(), node.name()));
-    return new ProcessCacheItem(flowNodes);
-  }
-
-  @Override
-  public Map<Long, ProcessCacheItem> loadAll(final Set<? extends Long> keys) {
-    final var processMap = new HashMap<Long, ProcessCacheItem>();
-    xmlUtil.extractFlowNodeNames(
-        (Set<Long>) keys,
-        (pdId, node) -> {
-          final var flowNodeMap =
-              processMap.computeIfAbsent(
-                  pdId, key -> new ProcessCacheItem(new ConcurrentHashMap<>()));
-          flowNodeMap.putFlowNode(node.id(), node.name());
-        });
-    return processMap;
+    cache = cacheBuilder.build(new ProcessCacheLoader());
   }
 
   public ProcessCacheItem getCacheItem(final long processDefinitionKey) {
@@ -74,9 +53,7 @@ public class ProcessCache implements CacheLoader<Long, ProcessCacheItem> {
   }
 
   public String getUserTaskName(final UserTaskEntity userTask) {
-    return getCacheItem(userTask.processDefinitionKey())
-        .flowNodes()
-        .getOrDefault(userTask.elementId(), userTask.elementId());
+    return getCacheItem(userTask.processDefinitionKey()).getFlowNodeName(userTask.elementId());
   }
 
   public ProcessCacheItems getFlowNodeNames(final List<FlowNodeInstanceEntity> items) {
@@ -87,13 +64,35 @@ public class ProcessCache implements CacheLoader<Long, ProcessCacheItem> {
   }
 
   public String getFlowNodeName(final FlowNodeInstanceEntity flowNode) {
-    return getCacheItem(flowNode.processDefinitionKey())
-        .flowNodes()
-        .getOrDefault(flowNode.flowNodeId(), flowNode.flowNodeId());
+    return getCacheItem(flowNode.processDefinitionKey()).getFlowNodeName(flowNode.flowNodeId());
   }
 
   @VisibleForTesting
   LoadingCache<Long, ProcessCacheItem> getCache() {
     return cache;
+  }
+
+  private final class ProcessCacheLoader implements CacheLoader<Long, ProcessCacheItem> {
+
+    @Override
+    public ProcessCacheItem load(final Long key) {
+      final var flowNodes = new ConcurrentHashMap<String, String>();
+      xmlUtil.extractFlowNodeNames(key, (pdId, node) -> flowNodes.put(node.id(), node.name()));
+      return new ProcessCacheItem(flowNodes);
+    }
+
+    @Override
+    public Map<Long, ProcessCacheItem> loadAll(final Set<? extends Long> keys) {
+      final var processMap = new HashMap<Long, ProcessCacheItem>();
+      xmlUtil.extractFlowNodeNames(
+          (Set<Long>) keys,
+          (pdId, node) -> {
+            final var flowNodeMap =
+                processMap.computeIfAbsent(
+                    pdId, key -> new ProcessCacheItem(new ConcurrentHashMap<>()));
+            flowNodeMap.putFlowNode(node.id(), node.name());
+          });
+      return processMap;
+    }
   }
 }
