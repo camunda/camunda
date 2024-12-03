@@ -30,10 +30,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FlowNodeInstanceFromProcessInstanceHandler
     implements ExportHandler<FlowNodeInstanceEntity, ProcessInstanceRecordValue> {
-
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(FlowNodeInstanceFromProcessInstanceHandler.class);
   private static final Set<Intent> AI_FINISH_STATES = Set.of(ELEMENT_COMPLETED, ELEMENT_TERMINATED);
   private static final Set<Intent> AI_START_STATES = Set.of(ELEMENT_ACTIVATING);
 
@@ -90,9 +93,23 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     entity.setScopeKey(recordValue.getFlowScopeKey());
 
     if (intent.equals(ELEMENT_ACTIVATING)) {
-      // we set the default value here, which may be updated later within incident export
-      entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
-      entity.setLevel(1);
+      final ProcessInstanceRecordValue value = record.getValue();
+      if (value.getElementInstancePath() != null && !value.getElementInstancePath().isEmpty()) {
+        // Build the treePath in the format
+        // <processInstanceKey>/<flowNodeInstanceKey>/.../<flowNodeInstanceKey> where upper level
+        // flowNodeInstanceKeys are normally subprocess(es) or multi-instance body This is an intra
+        // tree path that shows position of flow node instance inside one process instance.
+        final List<String> treePathEntries =
+            value.getElementInstancePath().getFirst().stream().map(String::valueOf).toList();
+        entity.setTreePath(String.join("/", treePathEntries));
+        entity.setLevel(treePathEntries.size() - 1);
+      } else {
+        LOGGER.warn(
+            "No elementInstancePath is provided for flow node instance id: {}. TreePath will be set to default value.",
+            entity.getId());
+        entity.setTreePath(recordValue.getProcessInstanceKey() + "/" + record.getKey());
+        entity.setLevel(1);
+      }
     }
 
     final OffsetDateTime recordTime =
@@ -126,7 +143,10 @@ public class FlowNodeInstanceFromProcessInstanceHandler
     updateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, entity.getPartitionId());
     updateFields.put(FlowNodeInstanceTemplate.TYPE, entity.getType());
     updateFields.put(FlowNodeInstanceTemplate.STATE, entity.getState());
-    updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, entity.getTreePath());
+    if (entity.getTreePath() != null) {
+      updateFields.put(FlowNodeInstanceTemplate.TREE_PATH, entity.getTreePath());
+      updateFields.put(FlowNodeInstanceTemplate.LEVEL, entity.getLevel());
+    }
     updateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, entity.getFlowNodeId());
     updateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());

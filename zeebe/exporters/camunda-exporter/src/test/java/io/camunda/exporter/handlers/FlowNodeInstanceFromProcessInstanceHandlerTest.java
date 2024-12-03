@@ -168,7 +168,6 @@ public class FlowNodeInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(FlowNodeInstanceTemplate.PARTITION_ID, inputEntity.getPartitionId());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.TYPE, inputEntity.getType());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.STATE, inputEntity.getState());
-    expectedUpdateFields.put(FlowNodeInstanceTemplate.TREE_PATH, inputEntity.getTreePath());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.FLOW_NODE_ID, inputEntity.getFlowNodeId());
     expectedUpdateFields.put(
         FlowNodeInstanceTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
