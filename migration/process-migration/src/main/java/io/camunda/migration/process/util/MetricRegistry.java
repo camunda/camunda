@@ -15,8 +15,8 @@ import java.util.concurrent.Callable;
 public class MetricRegistry {
 
   private static final String METRIC_PREFFIX = "camunda.migration.processes";
-  private static final String PROCESSES_MIGRATED_METRIC = METRIC_PREFFIX + ".migrated.total";
-  private static final String MIGRATION_ROUNDS = METRIC_PREFFIX + ".rounds.total";
+  private static final String PROCESSES_MIGRATED_METRIC = METRIC_PREFFIX + ".migrated";
+  private static final String MIGRATION_ROUNDS = METRIC_PREFFIX + ".rounds";
   private static final String MIGRATION_ROUND_DURATION = METRIC_PREFFIX + ".round.time";
   private static final String MIGRATION_SINGLE_PROCESS_DURATION =
       METRIC_PREFFIX + ".single.process.time";
