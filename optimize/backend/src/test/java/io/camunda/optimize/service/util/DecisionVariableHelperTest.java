@@ -24,7 +24,7 @@ public class DecisionVariableHelperTest {
     final String result = DecisionVariableHelper.getVariableValueField(variablePath);
 
     // then
-    assertThat(result).isEqualTo("testPath.value");
+    assertThat(result).isEqualTo(variablePath + ".value");
   }
 
   @Test
@@ -49,7 +49,7 @@ public class DecisionVariableHelperTest {
     final String result = DecisionVariableHelper.getVariableStringValueField(variablePath);
 
     // then
-    assertThat(result).isEqualTo("testPath.value");
+    assertThat(result).isEqualTo(variablePath + ".value");
   }
 
   @Test
@@ -62,7 +62,7 @@ public class DecisionVariableHelperTest {
     final String result = DecisionVariableHelper.getValueSearchField(variablePath, searchFieldName);
 
     // then
-    assertThat(result).isEqualTo("testPath.value.field");
+    assertThat(result).isEqualTo(variablePath + ".value.field");
   }
 
   @Test
@@ -87,7 +87,7 @@ public class DecisionVariableHelperTest {
     final String result = DecisionVariableHelper.getVariableValueFieldForType(variablePath, type);
 
     // then
-    assertThat(result).isEqualTo("testPath.value");
+    assertThat(result).isEqualTo(variablePath + ".value");
   }
 
   @Test
@@ -100,7 +100,7 @@ public class DecisionVariableHelperTest {
     final String result = DecisionVariableHelper.getVariableValueFieldForType(variablePath, type);
 
     // then
-    assertThat(result).isEqualTo("testPath.value.date");
+    assertThat(result).isEqualTo(variablePath + ".value.date");
   }
 
   @Test
@@ -125,7 +125,7 @@ public class DecisionVariableHelperTest {
     final String result = DecisionVariableHelper.getVariableClauseIdField(variablePath);
 
     // then
-    assertThat(result).isEqualTo("testPath.clauseId");
+    assertThat(result).isEqualTo(variablePath + ".clauseId");
   }
 
   @Test
@@ -137,6 +137,6 @@ public class DecisionVariableHelperTest {
     final String result = DecisionVariableHelper.getVariableTypeField(variablePath);
 
     // then
-    assertThat(result).isEqualTo("testPath.type");
+    assertThat(result).isEqualTo(variablePath + ".type");
   }
 }
