@@ -233,8 +233,8 @@ public class OpensearchBackupRepository implements BackupRepository {
             .ignoreUnavailable(
                 false) // ignoreUnavailable = false - indices defined by their exact name MUST be
             // present
+            .includeGlobalState(backupProps.includeGlobalState())
             .metadata(metadataJson)
-            // TODO Check with tasklist if they are the same
             .featureStates("none")
             .waitForCompletion(true)
             .build();
