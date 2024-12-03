@@ -9,12 +9,12 @@ package io.camunda.tasklist.zeebeimport.os;
 
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
-import io.camunda.tasklist.schema.indices.ImportPositionIndex;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolder;
 import io.camunda.tasklist.zeebeimport.ImportPositionHolderAbstract;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,6 +53,7 @@ public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
   @Autowired
   private OpenSearchClient osClient;
 
+  @Override
   public ImportPositionEntity getLatestLoadedPosition(
       final String aliasTemplate, final int partitionId) throws IOException {
     final Query query =
@@ -60,12 +61,12 @@ public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
             new Query.Builder()
                 .term(
                     t ->
-                        t.field(ImportPositionIndex.ALIAS_NAME)
+                        t.field(TasklistImportPositionIndex.ALIAS_NAME)
                             .value(FieldValue.of(aliasTemplate))),
             new Query.Builder()
                 .term(
                     t ->
-                        t.field(ImportPositionIndex.PARTITION_ID)
+                        t.field(TasklistImportPositionIndex.PARTITION_ID)
                             .value(FieldValue.of(partitionId))));
 
     final SearchRequest searchRequest =
@@ -96,6 +97,7 @@ public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
     return position;
   }
 
+  @Override
   public Either<Throwable, Boolean> updateImportPositions(
       final Map<String, ImportPositionEntity> positions) {
     final var preparedBulkRequest = prepareBulkRequest(positions);
@@ -163,10 +165,10 @@ public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
       final var source = objectMapper.writeValueAsString(position);
       final var updateFields = new HashMap<String, Object>();
 
-      updateFields.put(ImportPositionIndex.POSITION, position.getPosition());
-      updateFields.put(ImportPositionIndex.FIELD_INDEX_NAME, position.getIndexName());
-      updateFields.put(ImportPositionIndex.SEQUENCE, position.getSequence());
-      updateFields.put(ImportPositionIndex.COMPLETED, position.isCompleted());
+      updateFields.put(TasklistImportPositionIndex.POSITION, position.getPosition());
+      updateFields.put(TasklistImportPositionIndex.FIELD_INDEX_NAME, position.getIndexName());
+      updateFields.put(TasklistImportPositionIndex.SEQUENCE, position.getSequence());
+      updateFields.put(TasklistImportPositionIndex.COMPLETED, position.getCompleted());
 
       final UpdateRequest updateRequest =
           new UpdateRequest.Builder()

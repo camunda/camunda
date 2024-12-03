@@ -13,10 +13,12 @@ import io.camunda.migration.process.adapter.Adapter;
 import io.camunda.migration.process.adapter.es.ElasticsearchAdapter;
 import io.camunda.migration.process.adapter.os.OpensearchAdapter;
 import io.camunda.migration.process.config.ProcessMigrationProperties;
+import io.camunda.migration.process.util.MetricRegistry;
 import io.camunda.migration.process.util.MigrationUtil;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -41,15 +43,19 @@ public class MigrationRunner implements Migrator {
   private final ProcessMigrationProperties properties;
   private ScheduledFuture<?> countdownTask;
   private final ScheduledExecutorService scheduler;
+  private final MetricRegistry metricRegistry;
 
   public MigrationRunner(
-      final ProcessMigrationProperties properties, final ConnectConfiguration connect) {
+      final ProcessMigrationProperties properties,
+      final ConnectConfiguration connect,
+      final MeterRegistry meterRegistry) {
     this.properties = properties;
     adapter =
         connect.getType().equals(ELASTICSEARCH)
             ? new ElasticsearchAdapter(properties, connect)
             : new OpensearchAdapter(properties, connect);
     scheduler = Executors.newScheduledThreadPool(1);
+    metricRegistry = new MetricRegistry(meterRegistry);
   }
 
   @Override
@@ -60,7 +66,12 @@ public class MigrationRunner implements Migrator {
       List<ProcessEntity> items = adapter.nextBatch(lastMigratedProcessDefinitionKey);
       while (shouldContinue(items)) {
         if (!items.isEmpty()) {
-          lastMigratedProcessDefinitionKey = migrateBatch(items);
+          final List<ProcessEntity> finalItems = items;
+          lastMigratedProcessDefinitionKey =
+              metricRegistry.measureMigrationRoundDuration(() -> migrateBatch(finalItems));
+          metricRegistry.incrementMigrationRoundCounter();
+          metricRegistry.incrementMigratedProcessCounter(
+              migratedProcessesCount(lastMigratedProcessDefinitionKey, items));
         }
         if (countdownTask == null && isImporterFinished()) {
           startCountdown();
@@ -70,7 +81,7 @@ public class MigrationRunner implements Migrator {
       }
     } catch (final Exception e) {
       terminate(scheduler);
-      throw e;
+      throw new MigrationException(e.getMessage(), e);
     }
     terminate(scheduler);
     LOG.info("Process Migration completed");
@@ -84,7 +95,19 @@ public class MigrationRunner implements Migrator {
   }
 
   private String migrateBatch(final List<ProcessEntity> processes) {
-    final List<ProcessEntity> updatedProcesses = MigrationUtil.extractBatchData(processes);
+    final List<ProcessEntity> updatedProcesses =
+        processes.stream()
+            .map(
+                p -> {
+                  try {
+                    return metricRegistry.measureMigrationParseDuration(
+                        () -> MigrationUtil.migrate(p));
+                  } catch (final Exception e) {
+                    LOG.warn("Failed to register processing duration for process {}", p.getId(), e);
+                    return MigrationUtil.migrate(p);
+                  }
+                })
+            .toList();
     final String lastMigratedProcessDefinitionKey = adapter.migrate(updatedProcesses);
     adapter.writeLastMigratedEntity(lastMigratedProcessDefinitionKey);
     return lastMigratedProcessDefinitionKey;
@@ -124,6 +147,14 @@ public class MigrationRunner implements Migrator {
       LOG.error("Failed to read import position", e);
       return false;
     }
+  }
+
+  private double migratedProcessesCount(
+      final String lastMigratedProcessDefinitionKey, final List<ProcessEntity> processes) {
+    return processes.stream()
+            .takeWhile(process -> !process.getId().equals(lastMigratedProcessDefinitionKey))
+            .count()
+        + 1;
   }
 
   private void terminate(final ScheduledExecutorService scheduler) {

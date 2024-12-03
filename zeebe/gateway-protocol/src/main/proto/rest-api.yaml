@@ -8,7 +8,7 @@ info:
     url: https://github.com/camunda/camunda/blob/main/licenses/CAMUNDA-LICENSE-1.0.txt
 externalDocs:
   description: Find out more
-  url: https://docs.camunda.io/docs/apis-tools/camunda-api-rest/overview/
+  url: https://docs.camunda.io/docs/apis-tools/camunda-api-rest/camunda-api-rest-overview/
 
 servers:
   - url: "{schema}://{host}:{port}/v2"
@@ -24,6 +24,7 @@ servers:
         description: The schema of the Camunda 8 REST API server.
 
 tags:
+  - name: Authentication
   - name: Authorization
   - name: Clock
   - name: Cluster
@@ -36,6 +37,7 @@ tags:
   - name: Incident
   - name: Job
   - name: License
+  - name: Mapping rule
   - name: Message
   - name: Process definition
   - name: Process instance
@@ -46,7 +48,6 @@ tags:
   - name: User
   - name: User task
   - name: Variable
-  - name: Mapping Rule
 
 paths:
   /topology:
@@ -81,6 +82,26 @@ paths:
                 $ref: "#/components/schemas/LicenseResponse"
         "500":
           $ref: "#/components/responses/InternalServerError"
+
+  /authentication/me:
+    get:
+      tags:
+        - Authentication
+      operationId: getAuthentication
+      summary: Get current user
+      description: Retrieves the current authenticated user.
+      responses:
+        "200":
+          description: The current user is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CamundaUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /jobs/activation:
     post:
       tags:
@@ -497,6 +518,171 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /tenants/{tenantKey}/users/{userKey}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignUserToTenant
+      summary: Assign a user to a tenant
+      description: Assign a single user to a specified tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: userKey
+          in: path
+          required: true
+          description: The unique identifier of the user.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was successfully assigned to the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or user was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: removeUserFromTenant
+      summary: Remove a user from a tenant
+      description: Removes a single user from a specified tenant without deleting the user.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: userKey
+          in: path
+          required: true
+          description: The unique identifier of the user.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was successfully removed from the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or user was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants/{tenantKey}/mapping-rules/{mappingKey}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignMappingRuleToTenant
+      summary: Assign a mapping rule to a tenant
+      description: Assign a single mapping rule to a specified tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: mappingKey
+          in: path
+          required: true
+          description: The unique identifier of the mapping rule.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The mapping rule was successfully assigned to the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or mapping rule was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: removeMappingRuleFromTenant
+      summary: Remove a mapping rule from a tenant
+      description: Removes a single mapping rule from a specified tenant without deleting the rule.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: mappingKey
+          in: path
+          required: true
+          description: The unique identifier of the mapping rule.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The mapping rule was successfully removed from the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or mapping rule was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /tenants/search:
     post:
@@ -873,7 +1059,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /user-tasks/{userTaskKey}/variables:
+  /user-tasks/{userTaskKey}/variables/search:
     post:
       tags:
         - User task
@@ -2173,7 +2359,7 @@ paths:
       operationId: createRole
       summary: Create role
       description: |
-        Create a new role
+        Create a new role.
       requestBody:
         content:
           application/json:
@@ -2208,7 +2394,7 @@ paths:
       operationId: getRole
       summary: Get role
       description: |
-        Get a role by its key
+        Get a role by its key.
       parameters:
         - name: roleKey
           in: path
@@ -2346,7 +2532,7 @@ paths:
   /mapping-rules:
     post:
       tags:
-        - Mapping Rule
+        - Mapping rule
       operationId: createMappingRule
       summary: Create mapping rule
       description: |
@@ -2599,7 +2785,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /document/{documentId}/links:
+  /documents/{documentId}/links:
     post:
       tags:
         - Document
@@ -2652,6 +2838,7 @@ paths:
         - User
       operationId: createUser
       summary: Create user
+      description: Create a new user.
       requestBody:
         content:
           application/json:
@@ -3266,6 +3453,9 @@ components:
           description: The key of the user task.
           type: integer
           format: int64
+        name:
+          type: string
+          description: The name for this user task.
         state:
           type: string
           description: The state of the user task.
@@ -3990,6 +4180,9 @@ components:
         flowNodeId:
           description: The flow node ID for this flow node instance.
           type: string
+        flowNodeName:
+          description: The flow node name for this flow node instance.
+          type: string
         treePath:
           description: The path from process instance leading to this flow node instance.
           type: string
@@ -4269,6 +4462,7 @@ components:
     PermissionTypeEnum:
       description: Specifies the type of permissions.
       enum:
+        - ACCESS
         - CREATE
         - CREATE_PROCESS_INSTANCE
         - CREATE_DECISION_INSTANCE
@@ -4440,6 +4634,63 @@ components:
         email:
           description: The email of the user.
           type: "string"
+    CamundaUser:
+      type: "object"
+      properties:
+          userId:
+            description: The ID of the user.
+            type: "string"
+          userKey:
+            description: The system generated key of the User
+            type: "integer"
+            format: "int64"
+          displayName:
+            description: The display name of the User
+            type: "string"
+          authorizedApplications:
+            description: The applications the User is authorized to use
+            type: array
+            items:
+              type: "string"
+          tenants:
+            description: The tenants the User is a member of
+            type: array
+            items:
+              type: "object"
+              properties:
+                tenantId:
+                  type: "string"
+                name:
+                  type: "string"
+          groups:
+            description: The groups assigned to the user
+            type: array
+            items:
+              type: "string"
+          roles:
+            description: The roles assigned to the user
+            type: array
+            items:
+              type: "string"
+          salesPlanType:
+            description: The plan of the user
+            type: "string"
+          c8Links:
+            description: The links to the components in the C8 stack
+            type: array
+            items:
+              type: "object"
+              properties:
+                name:
+                  type: "string"
+                link:
+                  type: "string"
+          canLogout:
+            description: Flag for understanding if the user is able to perform logout
+            type: boolean
+          apiUser:
+            description: Flag for understanding if the user is an API user
+            type: boolean
     UserResponse:
       type: "object"
       properties:
@@ -4494,12 +4745,12 @@ components:
       properties:
         name:
           type: "string"
-          description: The display name of the new role
+          description: The display name of the new role.
     RoleCreateResponse:
       type: "object"
       properties:
         roleKey:
-          description: The key of the created role
+          description: The key of the created role.
           type: "integer"
           format: "int64"
     RoleUpdateRequest:

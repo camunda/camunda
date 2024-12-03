@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.util.client.ClockClient;
 import io.camunda.zeebe.engine.util.client.DecisionEvaluationClient;
 import io.camunda.zeebe.engine.util.client.DeploymentClient;
 import io.camunda.zeebe.engine.util.client.GroupClient;
+import io.camunda.zeebe.engine.util.client.IdentitySetupClient;
 import io.camunda.zeebe.engine.util.client.IncidentClient;
 import io.camunda.zeebe.engine.util.client.JobActivationClient;
 import io.camunda.zeebe.engine.util.client.JobClient;
@@ -344,6 +345,10 @@ public final class EngineRule extends ExternalResource {
 
   public UserClient user() {
     return new UserClient(environmentRule);
+  }
+
+  public IdentitySetupClient identitySetup() {
+    return new IdentitySetupClient(environmentRule);
   }
 
   public AuthorizationClient authorization() {

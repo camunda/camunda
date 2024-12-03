@@ -161,7 +161,7 @@ class UserTaskAuthorizationIT {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = zeebeClient.newUserTaskVariableRequest(userTaskKey).send().join();
+    final var result = zeebeClient.newUserTaskVariableQuery(userTaskKey).send().join();
     // then
     assertThat(result.items()).isNotEmpty();
   }
@@ -174,7 +174,7 @@ class UserTaskAuthorizationIT {
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
     final Executable executeSearchVariables =
-        () -> zeebeClient.newUserTaskVariableRequest(userTaskKey).send().join();
+        () -> zeebeClient.newUserTaskVariableQuery(userTaskKey).send().join();
     // then
     final var problemException = assertThrows(ProblemException.class, executeSearchVariables);
     assertThat(problemException.code()).isEqualTo(403);

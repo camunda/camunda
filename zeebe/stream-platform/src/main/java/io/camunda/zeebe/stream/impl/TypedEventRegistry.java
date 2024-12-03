@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistribu
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
@@ -101,6 +102,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.SIGNAL, SignalRecord.class);
     registry.put(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchRecord.class);
     registry.put(ValueType.FORM, FormRecord.class);
+    registry.put(ValueType.RESOURCE, ResourceRecord.class);
     registry.put(ValueType.USER_TASK, UserTaskRecord.class);
     registry.put(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionRecord.class);
     registry.put(ValueType.MESSAGE_CORRELATION, MessageCorrelationRecord.class);

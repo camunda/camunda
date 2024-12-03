@@ -15,7 +15,7 @@ public class BackupProperties {
     return repositoryName;
   }
 
-  public BackupProperties setRepositoryName(String repositoryName) {
+  public BackupProperties setRepositoryName(final String repositoryName) {
     this.repositoryName = repositoryName;
     return this;
   }

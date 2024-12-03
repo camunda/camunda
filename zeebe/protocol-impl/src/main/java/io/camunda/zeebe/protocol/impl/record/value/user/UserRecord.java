@@ -51,7 +51,7 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
     return userKeyProp.getValue();
   }
 
-  public UserRecord setUserKey(final Long userKey) {
+  public UserRecord setUserKey(final long userKey) {
     userKeyProp.setValue(userKey);
     return this;
   }

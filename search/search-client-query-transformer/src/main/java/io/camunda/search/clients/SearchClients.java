@@ -67,13 +67,10 @@ public class SearchClients
   private final ServiceTransformers transformers;
   private final SecurityContext securityContext;
 
-  public SearchClients(
-      final DocumentBasedSearchClient searchClient,
-      final boolean isCamundaExporterEnabled,
-      final String prefix) {
+  public SearchClients(final DocumentBasedSearchClient searchClient, final String prefix) {
     this(
         searchClient,
-        ServiceTransformers.newInstance(isCamundaExporterEnabled, prefix),
+        ServiceTransformers.newInstance(prefix),
         SecurityContext.withoutAuthentication());
   }
 
@@ -118,7 +115,14 @@ public class SearchClients
 
   @Override
   public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
-    throw new UnsupportedOperationException("Not implemented");
+    final var executor =
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(
+        filter, io.camunda.webapps.schema.entities.usermanagement.MappingEntity.class);
   }
 
   @Override

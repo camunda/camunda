@@ -22,6 +22,9 @@ public interface UserTask {
 
   Long getUserTaskKey();
 
+  /** Name of the task */
+  String getName();
+
   /** State of the task */
   String getState();
 

@@ -58,6 +58,9 @@ public class Metrics {
   public static final String GAUGE_BPMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.bpmn.count";
   public static final String GAUGE_DMN_MODEL_COUNT = OPERATE_NAMESPACE + "model.dmn.count";
 
+  public static final String GAUGE_NAME_IMPORT_POSITION_COMPLETED =
+      OPERATE_NAMESPACE + "import.completed";
+
   public static final String GAUGE_NAME_IMPORT_FNI_TREE_PATH_CACHE_SIZE =
       OPERATE_NAMESPACE + "import.fni.tree.path.cache.size";
 
@@ -66,6 +69,7 @@ public class Metrics {
   //  Keys:
   public static final String TAG_KEY_NAME = "name",
       TAG_KEY_TYPE = "type",
+      TAG_KEY_IMPORT_POS_ALIAS = "importPositionAlias",
       TAG_KEY_PARTITION = "partition",
       TAG_KEY_STATUS = "status",
       TAG_KEY_ORGANIZATIONID = "organizationId";
@@ -92,12 +96,18 @@ public class Metrics {
     registry.counter(OPERATE_NAMESPACE + name, tags).increment(count);
   }
 
-  public <T> void registerGauge(
+  public <T> Gauge registerGauge(
       final String name,
       final T stateObject,
       final ToDoubleFunction<T> valueFunction,
       final String... tags) {
-    Gauge.builder(name, stateObject, valueFunction).tags(tags).register(registry);
+    return Gauge.builder(name, () -> valueFunction.applyAsDouble(stateObject))
+        .tags(tags)
+        .register(registry);
+  }
+
+  public Gauge getGauge(final String name, final String... tags) {
+    return registry.get(name).tags(tags).gauge();
   }
 
   public void registerGaugeSupplier(

@@ -48,6 +48,7 @@ describe('stores/processXml/processXml.migration.source', () => {
       'TimerIntermediateCatch',
       'MessageEventSubProcess',
       'TaskX',
+      'MessageStartEvent',
       'TimerEventSubProcess',
       'TaskY',
       'TimerStartEvent',

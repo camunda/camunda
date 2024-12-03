@@ -26,9 +26,11 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
   public ImportIndexDto(
       final OffsetDateTime lastImportExecutionTimestamp,
       final OffsetDateTime timestampOfLastEntity,
+      final String dbTypeIndexRefersTo,
       final T dataSource) {
     this.lastImportExecutionTimestamp = lastImportExecutionTimestamp;
     this.timestampOfLastEntity = timestampOfLastEntity;
+    this.dbTypeIndexRefersTo = dbTypeIndexRefersTo;
     this.dataSource = dataSource;
   }
 

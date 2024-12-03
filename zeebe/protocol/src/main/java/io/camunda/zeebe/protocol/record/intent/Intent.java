@@ -15,8 +15,6 @@
  */
 package io.camunda.zeebe.protocol.record.intent;
 
-import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_CORRELATION;
-
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.RedistributionIntent;
@@ -58,6 +56,7 @@ public interface Intent {
           CommandDistributionIntent.class,
           ProcessInstanceBatchIntent.class,
           FormIntent.class,
+          ResourceIntent.class,
           UserTaskIntent.class,
           ProcessInstanceMigrationIntent.class,
           CompensationSubscriptionIntent.class,
@@ -149,6 +148,8 @@ public interface Intent {
         return ProcessInstanceBatchIntent.from(intent);
       case FORM:
         return FormIntent.from(intent);
+      case RESOURCE:
+        return ResourceIntent.from(intent);
       case USER_TASK:
         return UserTaskIntent.from(intent);
       case PROCESS_INSTANCE_MIGRATION:
@@ -246,6 +247,8 @@ public interface Intent {
         return ResourceDeletionIntent.valueOf(intent);
       case FORM:
         return FormIntent.valueOf(intent);
+      case RESOURCE:
+        return ResourceIntent.valueOf(intent);
       case USER_TASK:
         return UserTaskIntent.valueOf(intent);
       case PROCESS_INSTANCE_MIGRATION:

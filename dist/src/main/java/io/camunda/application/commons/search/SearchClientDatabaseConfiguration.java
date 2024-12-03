@@ -7,7 +7,6 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.DocumentBasedSearchClient;
@@ -19,7 +18,6 @@ import io.camunda.search.es.clients.ElasticsearchSearchClient;
 import io.camunda.search.os.clients.OpensearchSearchClient;
 import io.camunda.search.rdbms.RdbmsSearchClient;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -63,17 +61,8 @@ public class SearchClientDatabaseConfiguration {
   @ConditionalOnBean(DocumentBasedSearchClient.class)
   public SearchClients searchClients(
       final DocumentBasedSearchClient searchClient,
-      // TODO: Temporary solution to change index reference for tasklist-task
-      @Autowired(required = false) final BrokerBasedProperties brokerProperties,
       final ConnectConfiguration connectConfiguration) {
-    if (brokerProperties == null) {
-      return new SearchClients(searchClient, false, connectConfiguration.getIndexPrefix());
-    }
-    final boolean isCamundaExporterEnabled =
-        brokerProperties.getExporters().values().stream()
-            .anyMatch(v -> "io.camunda.exporter.CamundaExporter".equals(v.getClassName()));
-    return new SearchClients(
-        searchClient, isCamundaExporterEnabled, connectConfiguration.getIndexPrefix());
+    return new SearchClients(searchClient, connectConfiguration.getIndexPrefix());
   }
 
   @ConfigurationProperties("camunda.database")

@@ -20,7 +20,6 @@ import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
-import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.tasklist.util.NoSqlHelper;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import java.io.IOException;
@@ -45,7 +44,6 @@ public class ElasticSearchSchemaManagementIT extends TasklistZeebeIntegrationTes
   private static final String INDEX_NAME = "test";
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;
-  @Autowired private List<TemplateDescriptor> templateDescriptors;
   @Autowired private RetryElasticsearchClient retryElasticsearchClient;
   @Autowired private IndexSchemaValidator indexSchemaValidator;
   @Autowired private NoSqlHelper noSqlHelper;

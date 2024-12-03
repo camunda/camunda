@@ -56,7 +56,7 @@ public class MigrationRunnerIT extends AdapterTest {
 
     // when
     final String migratedEntityId =
-        adapter.migrate(MigrationUtil.extractBatchData(List.of(entityToBeMigrated)));
+        adapter.migrate(List.of(MigrationUtil.migrate(entityToBeMigrated)));
     adapter.writeLastMigratedEntity(migratedEntityId);
     awaitRecordsArePresent(ProcessorStep.class, migrationRepositoryIndex.getFullQualifiedName());
     refreshIndices();
@@ -380,7 +380,7 @@ public class MigrationRunnerIT extends AdapterTest {
     }
     // invalid URL
     connectConfiguration.setUrl("http://localhost:3333");
-    final var migrator = new MigrationRunner(properties, connectConfiguration);
+    final var migrator = new MigrationRunner(properties, connectConfiguration, meterRegistry);
     properties.setMaxRetries(2);
     properties.setMinRetryDelay(Duration.ofSeconds(1));
 

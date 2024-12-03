@@ -28,6 +28,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTempla
 import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
@@ -82,7 +83,7 @@ public class IndexTemplateDescriptorsConfigurator {
     return new EventTemplate("", databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
+  @Bean("operateFlowNodeInstanceTemplate")
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new FlowNodeInstanceTemplate("", databaseInfo.isElasticsearchDb());
@@ -130,7 +131,7 @@ public class IndexTemplateDescriptorsConfigurator {
     return new JobTemplate("", databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
+  @Bean("operateVariableTemplate")
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate("", databaseInfo.isElasticsearchDb());
@@ -175,5 +176,23 @@ public class IndexTemplateDescriptorsConfigurator {
   public TaskTemplate getTaskTemplate(final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new TaskTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean("tasklistVariableTemplate")
+  public VariableTemplate getTasklistVariableTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new VariableTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean("tasklistFlowNodeInstanceTemplate")
+  public FlowNodeInstanceTemplate getTasklistFlowNodeInstanceTemplate(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new FlowNodeInstanceTemplate("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean
+  public TasklistImportPositionIndex getTasklistImportPositionIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new TasklistImportPositionIndex("", databaseInfo.isElasticsearchDb());
   }
 }

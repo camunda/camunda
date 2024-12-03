@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import io.camunda.tasklist.entities.ProcessInstanceEntity;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.io.IOException;
@@ -16,10 +15,6 @@ import java.util.Map;
 
 public interface NoSqlHelper {
   TaskEntity getTask(String taskId);
-
-  ProcessInstanceEntity getProcessInstance(String processInstanceId);
-
-  List<ProcessInstanceEntity> getProcessInstances(List<String> processInstanceIds);
 
   List<TaskEntity> getTask(String processInstanceId, String flowNodeBpmnId);
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
+import io.camunda.service.RoleServices;
 import io.camunda.service.UserServices;
 import io.camunda.service.UserServices.UserDTO;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
@@ -16,14 +17,15 @@ import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateUserRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
@@ -31,9 +33,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequestMapping("/v2/users")
 public class UserController {
   private final UserServices userServices;
+  private final RoleServices roleServices;
 
-  public UserController(final UserServices userServices, final PasswordEncoder passwordEncoder) {
+  public UserController(final UserServices userServices, final RoleServices roleServices) {
     this.userServices = userServices;
+    this.roleServices = roleServices;
   }
 
   @PostMapping(
@@ -82,5 +86,31 @@ public class UserController {
                         request.name(),
                         request.email(),
                         request.password())));
+  }
+
+  @PutMapping(
+      path = "/{userKey}/roles/{roleKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> addRole(
+      @PathVariable final long userKey, @PathVariable final long roleKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            roleServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .addMember(roleKey, EntityType.USER, userKey));
+  }
+
+  @DeleteMapping(
+      path = "/{userKey}/roles/{roleKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public CompletableFuture<ResponseEntity<Object>> removeRole(
+      @PathVariable final long userKey, @PathVariable final long roleKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            roleServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(roleKey, EntityType.USER, userKey));
   }
 }

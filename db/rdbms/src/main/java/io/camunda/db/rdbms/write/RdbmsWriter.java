@@ -14,9 +14,12 @@ import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
+import io.camunda.db.rdbms.write.service.GroupWriter;
 import io.camunda.db.rdbms.write.service.MappingWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
+import io.camunda.db.rdbms.write.service.RoleWriter;
+import io.camunda.db.rdbms.write.service.TenantWriter;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.db.rdbms.write.service.UserWriter;
 import io.camunda.db.rdbms.write.service.VariableWriter;
@@ -29,9 +32,12 @@ public class RdbmsWriter {
   private final DecisionRequirementsWriter decisionRequirementsWriter;
   private final ExporterPositionService exporterPositionService;
   private final FlowNodeInstanceWriter flowNodeInstanceWriter;
+  private final GroupWriter groupWriter;
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessInstanceWriter processInstanceWriter;
+  private final TenantWriter tenantWriter;
   private final VariableWriter variableWriter;
+  private final RoleWriter roleWriter;
   private final UserWriter userWriter;
   private final UserTaskWriter userTaskWriter;
   private final FormWriter formWriter;
@@ -45,9 +51,12 @@ public class RdbmsWriter {
     decisionInstanceWriter = new DecisionInstanceWriter(executionQueue);
     decisionRequirementsWriter = new DecisionRequirementsWriter(executionQueue);
     flowNodeInstanceWriter = new FlowNodeInstanceWriter(executionQueue);
+    groupWriter = new GroupWriter(executionQueue);
     processDefinitionWriter = new ProcessDefinitionWriter(executionQueue);
     processInstanceWriter = new ProcessInstanceWriter(executionQueue);
+    tenantWriter = new TenantWriter(executionQueue);
     variableWriter = new VariableWriter(executionQueue);
+    roleWriter = new RoleWriter(executionQueue);
     userWriter = new UserWriter(executionQueue);
     userTaskWriter = new UserTaskWriter(executionQueue);
     formWriter = new FormWriter(executionQueue);
@@ -70,6 +79,10 @@ public class RdbmsWriter {
     return flowNodeInstanceWriter;
   }
 
+  public GroupWriter getGroupWriter() {
+    return groupWriter;
+  }
+
   public ProcessDefinitionWriter getProcessDefinitionWriter() {
     return processDefinitionWriter;
   }
@@ -78,8 +91,16 @@ public class RdbmsWriter {
     return processInstanceWriter;
   }
 
+  public TenantWriter getTenantWriter() {
+    return tenantWriter;
+  }
+
   public VariableWriter getVariableWriter() {
     return variableWriter;
+  }
+
+  public RoleWriter getRoleWriter() {
+    return roleWriter;
   }
 
   public UserWriter getUserWriter() {

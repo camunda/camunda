@@ -99,7 +99,11 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   protected boolean failed = false;
   Map<Class<? extends ExporterEntity>, String> entityToESAliasMap;
   @Autowired private ListViewTemplate listViewTemplate;
-  @Autowired private VariableTemplate variableTemplate;
+
+  @Autowired
+  @Qualifier("operateVariableTemplate")
+  private VariableTemplate variableTemplate;
+
   @Autowired private ProcessIndex processIndex;
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private BatchOperationTemplate batchOperationTemplate;

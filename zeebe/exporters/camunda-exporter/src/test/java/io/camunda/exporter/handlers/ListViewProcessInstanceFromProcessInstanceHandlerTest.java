@@ -175,6 +175,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setId("111")
             .setProcessName("process")
             .setProcessVersion(2)
+            .setProcessVersionTag("versionTag")
             .setProcessDefinitionKey(444L)
             .setBpmnProcessId("bpmnProcessId")
             .setPosition(123L)
@@ -186,6 +187,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(ListViewTemplate.PROCESS_NAME, "process");
     expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION, 2);
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION_TAG, "versionTag");
     expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
     expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
     expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
@@ -211,6 +213,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setProcessInstanceKey(111L)
             .setProcessName("process")
             .setProcessVersion(2)
+            .setProcessVersionTag("versionTag")
             .setProcessDefinitionKey(444L)
             .setBpmnProcessId("bpmnProcessId")
             .setPosition(123L)
@@ -222,6 +225,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(ListViewTemplate.PROCESS_NAME, "process");
     expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION, 2);
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION_TAG, "versionTag");
     expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
     expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
     expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
@@ -291,6 +295,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         .isEqualTo(processInstanceRecordValue.getBpmnProcessId());
     assertThat(processInstanceForListViewEntity.getProcessVersion())
         .isEqualTo(processInstanceRecordValue.getVersion());
+    assertThat(processInstanceForListViewEntity.getProcessVersionTag())
+        .isEqualTo("test-version-tag");
     assertThat(processInstanceForListViewEntity.getState()).isEqualTo(ProcessInstanceState.ACTIVE);
     assertThat(processInstanceForListViewEntity.getStartDate())
         .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(timestamp), ZoneOffset.UTC));

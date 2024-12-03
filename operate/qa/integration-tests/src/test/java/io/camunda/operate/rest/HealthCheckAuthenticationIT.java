@@ -20,14 +20,12 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.management.IndicesHealthIndicator;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.rest.HealthCheckIT.AddManagementPropertiesInitializer;
-import io.camunda.operate.schema.indices.OperateWebSessionIndex;
 import io.camunda.operate.store.TaskStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchTaskStore;
 import io.camunda.operate.store.elasticsearch.RetryElasticsearchClient;
 import io.camunda.operate.store.opensearch.OpensearchTaskStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
-import io.camunda.operate.webapp.security.SessionService;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
@@ -61,9 +59,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       CCSaaSJwtAuthenticationTokenValidator.class,
       WebSecurityConfig.class,
       ElasticsearchTaskStore.class,
-      SessionService.class,
       RetryElasticsearchClient.class,
-      OperateWebSessionIndex.class,
       OperateProfileService.class,
       ElasticsearchConnector.class,
       OpensearchTaskStore.class,

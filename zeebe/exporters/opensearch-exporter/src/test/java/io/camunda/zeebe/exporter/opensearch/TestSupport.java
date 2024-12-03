@@ -108,7 +108,8 @@ final class TestSupport {
             ValueType.TENANT,
             ValueType.GROUP,
             ValueType.MAPPING,
-            ValueType.IDENTITY_SETUP);
+            ValueType.IDENTITY_SETUP,
+            ValueType.RESOURCE);
     return EnumSet.complementOf(excludedValueTypes).stream();
   }
 }

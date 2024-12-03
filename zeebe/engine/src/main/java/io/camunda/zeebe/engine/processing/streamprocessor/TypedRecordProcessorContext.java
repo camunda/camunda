@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
@@ -34,4 +35,6 @@ public interface TypedRecordProcessorContext {
   EngineConfiguration getConfig();
 
   ControllableStreamClock getClock();
+
+  TransientPendingSubscriptionState getTransientProcessMessageSubscriptionState();
 }

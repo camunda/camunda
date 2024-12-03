@@ -7,11 +7,20 @@
  */
 package io.camunda.application.commons.rest;
 
+import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
+import io.camunda.zeebe.gateway.rest.util.XmlUtil;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
 @ComponentScan(basePackages = "io.camunda.zeebe.gateway.rest")
 @ConditionalOnRestGatewayEnabled
-public class RestApiConfiguration {}
+public class RestApiConfiguration {
+
+  @Bean
+  public XmlUtil xmlUtil(final ProcessDefinitionServices processDefinitionServices) {
+    return new XmlUtil(processDefinitionServices);
+  }
+}

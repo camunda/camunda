@@ -61,10 +61,11 @@ const {
   EscalationStartEvent,
   CompensationTask,
   CompensationBoundaryEvent,
+  MessageStartEvent,
 } = elements;
 
 const HEADER_ROW_COUNT = 1;
-const CONTENT_ROW_COUNT = 35;
+const CONTENT_ROW_COUNT = 36;
 
 /**
  * Returns a custom matcher function which ignores all option elements from comboboxes.
@@ -116,6 +117,7 @@ describe('MigrationView/BottomPanel', () => {
     expect(
       screen.getByText(CompensationBoundaryEvent.name),
     ).toBeInTheDocument();
+    expect(screen.getByText(MessageStartEvent.name)).toBeInTheDocument();
 
     expect(screen.getAllByRole('row')).toHaveLength(
       HEADER_ROW_COUNT + CONTENT_ROW_COUNT,
@@ -317,6 +319,9 @@ describe('MigrationView/BottomPanel', () => {
     const comboboxCompensationBoundaryEvent = await screen.findByLabelText(
       new RegExp(`target flow node for ${CompensationBoundaryEvent.name}`, 'i'),
     );
+    const comboboxMessageStartEvent = await screen.findByLabelText(
+      new RegExp(`target flow node for ${MessageStartEvent.name}`, 'i'),
+    );
 
     screen.getByRole('button', {name: /fetch target process/i}).click();
 
@@ -340,6 +345,7 @@ describe('MigrationView/BottomPanel', () => {
     expect(comboboxEscalationStartEvent).toHaveValue(
       comboboxEscalationStartEvent.id,
     );
+    expect(comboboxMessageStartEvent).toHaveValue(comboboxMessageStartEvent.id);
 
     // Expect auto-mapping (same id, boundary event, same event type)
     expect(comboboxMessageInterrupting).toHaveValue(MessageInterrupting.id);

@@ -13,21 +13,36 @@ package io.camunda.webapps.backup.repository;
  */
 public interface BackupRepositoryProps {
 
+  BackupRepositoryProps EMPTY =
+      new BackupRepositoryProps() {
+        @Override
+        public String version() {
+          return null;
+        }
+
+        @Override
+        public String repositoryName() {
+          return null;
+        }
+      };
+
   String version();
 
   String repositoryName();
 
-  int snapshotTimeout();
-
-  Long incompleteCheckTimeoutInSeconds();
-
-  boolean includeGlobalState();
-
-  static Integer defaultSnapshotTimeout() {
+  default int snapshotTimeout() {
     return 0;
+  }
+
+  default Long incompleteCheckTimeoutInSeconds() {
+    return defaultIncompleteCheckTimeoutInSeconds();
   }
 
   static Long defaultIncompleteCheckTimeoutInSeconds() {
     return 5 * 60L;
+  }
+
+  default boolean includeGlobalState() {
+    return true;
   }
 }

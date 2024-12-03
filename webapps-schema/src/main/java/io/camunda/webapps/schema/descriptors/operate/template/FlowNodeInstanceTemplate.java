@@ -31,6 +31,7 @@ public class FlowNodeInstanceTemplate extends OperateTemplateDescriptor
   public static final String TREE_PATH = "treePath";
   public static final String LEVEL = "level";
   public static final String INCIDENT = "incident"; // true/false
+  public static final String SCOPE_KEY = "scopeKey";
 
   public FlowNodeInstanceTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

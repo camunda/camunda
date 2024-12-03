@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.store.opensearch;
 
-import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
@@ -124,7 +123,7 @@ public class TaskStoreOpenSearch implements TaskStore {
                 q ->
                     q.term(
                         term ->
-                            term.field(PROCESS_INSTANCE_ID)
+                            term.field(TaskTemplate.PROCESS_INSTANCE_ID)
                                 .value(FieldValue.of(processInstanceId))))
             .fields(f -> f.field(TaskTemplate.ID));
 
@@ -273,6 +272,14 @@ public class TaskStoreOpenSearch implements TaskStore {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public void updateTaskLinkedForm(
+      final TaskEntity task, final String formBpmnId, final long formVersion) {
+    updateTask(
+        task.getId(),
+        asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
   }
 
   /**
@@ -550,7 +557,9 @@ public class TaskStoreOpenSearch implements TaskStore {
     if (query.getProcessInstanceId() != null) {
       processInstanceIdQ = new Query.Builder();
       processInstanceIdQ.term(
-          t -> t.field(PROCESS_INSTANCE_ID).value(FieldValue.of(query.getProcessInstanceId())));
+          t ->
+              t.field(TaskTemplate.PROCESS_INSTANCE_ID)
+                  .value(FieldValue.of(query.getProcessInstanceId())));
     }
 
     Query.Builder processDefinitionIdQ = null;

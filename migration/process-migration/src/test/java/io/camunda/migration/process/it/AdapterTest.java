@@ -36,6 +36,8 @@ import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -63,6 +65,8 @@ public abstract class AdapterTest {
   protected static MigrationRunner osMigrator;
   protected static MigrationRunner esMigrator;
 
+  protected static MeterRegistry meterRegistry = new SimpleMeterRegistry();
+
   @Container
   private static final ElasticsearchContainer ES_CONTAINER =
       TestSearchContainers.createDefeaultElasticsearchContainer();
@@ -85,8 +89,8 @@ public abstract class AdapterTest {
     OS_CONFIGURATION.setUrl("http://localhost:" + OS_CONTAINER.getMappedPort(9200));
     esClient = new ElasticsearchConnector(ES_CONFIGURATION).createClient();
     osClient = new OpensearchConnector(OS_CONFIGURATION).createClient();
-    esMigrator = new MigrationRunner(properties, ES_CONFIGURATION);
-    osMigrator = new MigrationRunner(properties, OS_CONFIGURATION);
+    esMigrator = new MigrationRunner(properties, ES_CONFIGURATION, meterRegistry);
+    osMigrator = new MigrationRunner(properties, OS_CONFIGURATION, meterRegistry);
     createIndices();
   }
 
@@ -114,7 +118,7 @@ public abstract class AdapterTest {
   public void cleanUp() throws IOException {
     properties.setBatchSize(5);
     if (isElasticsearch) {
-      esMigrator = new MigrationRunner(properties, ES_CONFIGURATION);
+      esMigrator = new MigrationRunner(properties, ES_CONFIGURATION, meterRegistry);
       esClient.deleteByQuery(
           DeleteByQueryRequest.of(
               d ->
@@ -127,7 +131,7 @@ public abstract class AdapterTest {
       esClient.indices().refresh();
 
     } else {
-      osMigrator = new MigrationRunner(properties, OS_CONFIGURATION);
+      osMigrator = new MigrationRunner(properties, OS_CONFIGURATION, meterRegistry);
       osClient.deleteByQuery(
           org.opensearch.client.opensearch.core.DeleteByQueryRequest.of(
               d ->

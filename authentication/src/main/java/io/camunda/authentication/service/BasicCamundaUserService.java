@@ -8,6 +8,7 @@
 package io.camunda.authentication.service;
 
 import io.camunda.authentication.entity.CamundaUser;
+import io.camunda.authentication.entity.CamundaUserDTO;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -17,17 +18,28 @@ import org.springframework.stereotype.Service;
 public class BasicCamundaUserService implements CamundaUserService {
 
   @Override
-  public CamundaUser getCurrentUser() {
-    return (CamundaUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+  public CamundaUserDTO getCurrentUser() {
+    final var authenticatedUser =
+        (CamundaUser) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+    return new CamundaUserDTO(
+        authenticatedUser.getUserId(),
+        authenticatedUser.getUserKey(),
+        authenticatedUser.getDisplayName(),
+        authenticatedUser
+            .getDisplayName(), // migrated for historical purposes username -> displayName
+        authenticatedUser.getAuthorizedApplications(),
+        authenticatedUser.getTenants(),
+        authenticatedUser.getGroups(),
+        authenticatedUser.getRoles(),
+        authenticatedUser.getSalesPlanType(),
+        authenticatedUser.getC8Links(),
+        authenticatedUser.canLogout(),
+        authenticatedUser.isApiUser());
   }
 
   @Override
   public String getUserToken() {
     return null;
-  }
-
-  @Override
-  public String getCurrentUsername() {
-    return getCurrentUser().getUsername();
   }
 }

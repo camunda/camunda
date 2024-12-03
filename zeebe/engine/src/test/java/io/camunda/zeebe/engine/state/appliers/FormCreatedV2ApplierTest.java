@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
@@ -44,26 +43,18 @@ public class FormCreatedV2ApplierTest extends AbstractFormCreatedApplierTest {
     assertPersistedForm(form1, formKey, formId, version, deploymentKey, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, deploymentKey, TENANT_2);
 
-    form1 = formState.findLatestFormById(wrapString(formId), TENANT_1).orElseThrow();
-    form2 = formState.findLatestFormById(wrapString(formId), TENANT_2).orElseThrow();
+    form1 = formState.findLatestFormById(formId, TENANT_1).orElseThrow();
+    form2 = formState.findLatestFormById(formId, TENANT_2).orElseThrow();
     assertPersistedForm(form1, formKey, formId, version, deploymentKey, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, deploymentKey, TENANT_2);
 
-    form1 =
-        formState
-            .findFormByIdAndDeploymentKey(wrapString(formId), deploymentKey, TENANT_1)
-            .orElseThrow();
-    form2 =
-        formState
-            .findFormByIdAndDeploymentKey(wrapString(formId), deploymentKey, TENANT_2)
-            .orElseThrow();
+    form1 = formState.findFormByIdAndDeploymentKey(formId, deploymentKey, TENANT_1).orElseThrow();
+    form2 = formState.findFormByIdAndDeploymentKey(formId, deploymentKey, TENANT_2).orElseThrow();
     assertPersistedForm(form1, formKey, formId, version, deploymentKey, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, deploymentKey, TENANT_2);
 
-    form1 =
-        formState.findFormByIdAndVersionTag(wrapString(formId), versionTag, TENANT_1).orElseThrow();
-    form2 =
-        formState.findFormByIdAndVersionTag(wrapString(formId), versionTag, TENANT_2).orElseThrow();
+    form1 = formState.findFormByIdAndVersionTag(formId, versionTag, TENANT_1).orElseThrow();
+    form2 = formState.findFormByIdAndVersionTag(formId, versionTag, TENANT_2).orElseThrow();
     assertPersistedForm(form1, formKey, formId, version, deploymentKey, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, deploymentKey, TENANT_2);
   }
@@ -81,14 +72,10 @@ public class FormCreatedV2ApplierTest extends AbstractFormCreatedApplierTest {
     formCreatedApplier.applyState(form1Version2.getFormKey(), form1Version2);
 
     // when
-    final var maybePersistedForm1 =
-        formState.findFormByIdAndDeploymentKey(wrapString("form-1"), 1L, TENANT_1);
-    final var maybePersistedForm2 =
-        formState.findFormByIdAndDeploymentKey(wrapString("form-2"), 1L, TENANT_1);
-    final var maybePersistedForm3 =
-        formState.findFormByIdAndDeploymentKey(wrapString("form-1"), 2L, TENANT_1);
-    final var maybePersistedForm4 =
-        formState.findFormByIdAndDeploymentKey(wrapString("form-2"), 2L, TENANT_1);
+    final var maybePersistedForm1 = formState.findFormByIdAndDeploymentKey("form-1", 1L, TENANT_1);
+    final var maybePersistedForm2 = formState.findFormByIdAndDeploymentKey("form-2", 1L, TENANT_1);
+    final var maybePersistedForm3 = formState.findFormByIdAndDeploymentKey("form-1", 2L, TENANT_1);
+    final var maybePersistedForm4 = formState.findFormByIdAndDeploymentKey("form-2", 2L, TENANT_1);
 
     // then
     assertThat(maybePersistedForm1).hasValueSatisfying(isEqualToFormRecord(form1Version1));
@@ -110,14 +97,10 @@ public class FormCreatedV2ApplierTest extends AbstractFormCreatedApplierTest {
     formCreatedApplier.applyState(form1Version2.getFormKey(), form1Version2);
 
     // when
-    final var maybePersistedForm1 =
-        formState.findFormByIdAndVersionTag(wrapString("form-1"), "v1.0", TENANT_1);
-    final var maybePersistedForm2 =
-        formState.findFormByIdAndVersionTag(wrapString("form-2"), "v1.0", TENANT_1);
-    final var maybePersistedForm3 =
-        formState.findFormByIdAndVersionTag(wrapString("form-1"), "v2.0", TENANT_1);
-    final var maybePersistedForm4 =
-        formState.findFormByIdAndVersionTag(wrapString("form-2"), "v2.0", TENANT_1);
+    final var maybePersistedForm1 = formState.findFormByIdAndVersionTag("form-1", "v1.0", TENANT_1);
+    final var maybePersistedForm2 = formState.findFormByIdAndVersionTag("form-2", "v1.0", TENANT_1);
+    final var maybePersistedForm3 = formState.findFormByIdAndVersionTag("form-1", "v2.0", TENANT_1);
+    final var maybePersistedForm4 = formState.findFormByIdAndVersionTag("form-2", "v2.0", TENANT_1);
 
     // then
     assertThat(maybePersistedForm1).hasValueSatisfying(isEqualToFormRecord(form1Version1));
@@ -137,7 +120,7 @@ public class FormCreatedV2ApplierTest extends AbstractFormCreatedApplierTest {
     formCreatedApplier.applyState(formV1New.getFormKey(), formV1New);
 
     // then
-    assertThat(formState.findFormByIdAndVersionTag(wrapString("form-id"), "v1.0", TENANT_1))
+    assertThat(formState.findFormByIdAndVersionTag("form-id", "v1.0", TENANT_1))
         .hasValueSatisfying(isEqualToFormRecord(formV1New));
   }
 

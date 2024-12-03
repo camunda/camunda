@@ -46,9 +46,13 @@ import io.camunda.exporter.handlers.PostImporterQueueFromIncidentHandler;
 import io.camunda.exporter.handlers.ProcessHandler;
 import io.camunda.exporter.handlers.RoleCreateUpdateHandler;
 import io.camunda.exporter.handlers.RoleDeletedHandler;
+import io.camunda.exporter.handlers.RoleMemberAddedHandler;
+import io.camunda.exporter.handlers.RoleMemberRemovedHandler;
 import io.camunda.exporter.handlers.SequenceFlowHandler;
 import io.camunda.exporter.handlers.TaskCompletedMetricHandler;
 import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
+import io.camunda.exporter.handlers.TenantEntityAddedHandler;
+import io.camunda.exporter.handlers.TenantEntityRemovedHandler;
 import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
@@ -87,6 +91,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.MappingIndex;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
@@ -166,7 +171,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             entry(TenantIndex.class, new TenantIndex(globalPrefix, isElasticsearch)),
             entry(GroupIndex.class, new GroupIndex(globalPrefix, isElasticsearch)),
             entry(
-                ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)));
+                ImportPositionIndex.class, new ImportPositionIndex(globalPrefix, isElasticsearch)),
+            entry(
+                PersistentWebSessionIndexDescriptor.class,
+                new PersistentWebSessionIndexDescriptor(globalPrefix, isElasticsearch)));
 
     final var processCache =
         new ExporterEntityCacheImpl<>(
@@ -187,12 +195,20 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new RoleCreateUpdateHandler(
                 indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
             new RoleDeletedHandler(indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+            new RoleMemberAddedHandler(
+                indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
+            new RoleMemberRemovedHandler(
+                indexDescriptorsMap.get(RoleIndex.class).getFullQualifiedName()),
             new UserCreatedUpdatedHandler(
                 indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new UserDeletedHandler(indexDescriptorsMap.get(UserIndex.class).getFullQualifiedName()),
             new AuthorizationHandler(
                 indexDescriptorsMap.get(AuthorizationIndex.class).getFullQualifiedName()),
             new TenantCreateUpdateHandler(
+                indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
+            new TenantEntityAddedHandler(
+                indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
+            new TenantEntityRemovedHandler(
                 indexDescriptorsMap.get(TenantIndex.class).getFullQualifiedName()),
             new GroupCreatedUpdatedHandler(
                 indexDescriptorsMap.get(GroupIndex.class).getFullQualifiedName()),

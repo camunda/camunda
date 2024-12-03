@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Random;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
@@ -67,6 +68,7 @@ class UserTaskQueryTest {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/25287")
   public void shouldRetrieveTaskByTaskVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
@@ -81,6 +83,27 @@ class UserTaskQueryTest {
   }
 
   @Test
+  public void shouldHaveCorrectUserTaskName() {
+    // when
+    final var result =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("form_process")).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getName()).isEqualTo("Form");
+  }
+
+  @Test
+  public void shouldUseUserTaskElementIdIfNameNotSet() {
+    // when
+    final var result =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("test-2")).send().join();
+    // then
+    assertThat(result.items()).hasSize(1);
+    assertThat(result.items().getFirst().getName()).isEqualTo("test-2");
+  }
+
+  @Test
+  @Disabled("https://github.com/camunda/camunda/issues/25287")
   public void shouldRetrieveVariablesFromUserTask() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
@@ -96,11 +119,12 @@ class UserTaskQueryTest {
     final var userTaskKey = resultUserTaskQuery.items().getFirst().getUserTaskKey();
 
     final var resultVariableQuery =
-        camundaClient.newUserTaskVariableRequest(userTaskKey).send().join();
+        camundaClient.newUserTaskVariableQuery(userTaskKey).send().join();
     assertThat(resultVariableQuery.items().size()).isEqualTo(2);
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/25287")
   public void shouldRetrieveTaskByProcessVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01").value("\"pVar\"");
@@ -166,6 +190,7 @@ class UserTaskQueryTest {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/25287")
   public void shouldRetrieveTaskByVariableNameSearch() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01");
@@ -194,6 +219,7 @@ class UserTaskQueryTest {
   }
 
   @Test
+  @Disabled("https://github.com/camunda/camunda/issues/25287")
   public void shouldRetrieveTaskByOrVariableCondition() {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest().name("task02").value("1");

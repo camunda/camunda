@@ -49,8 +49,7 @@ class SearchClientBasedQueryExecutorTest {
 
   @Mock private DocumentBasedSearchClient searchClient;
   @Mock private AuthorizationQueryStrategy authorizationQueryStrategy;
-  private final ServiceTransformers serviceTransformers =
-      ServiceTransformers.newInstance(false, "");
+  private final ServiceTransformers serviceTransformers = ServiceTransformers.newInstance("");
 
   private SearchClientBasedQueryExecutor queryExecutor;
 

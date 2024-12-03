@@ -40,6 +40,7 @@ services:
     ports:
       - 26500:26500
       - 8000:8000
+      - 8085:8080
     restart: always
     volumes:
       - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml
@@ -57,6 +58,7 @@ services:
     ports:
       - 26503:26500
       - 8001:8000
+      - 8086:8080
     restart: always
     volumes:
       - ./config/zeebe.cfg.yaml:/usr/local/zeebe/config/application.yaml

@@ -643,7 +643,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
                 .cancelProcessInstance()
                 .and()
                 .waitUntil()
-                .processInstanceIsCanceled()
+                .taskIsCanceled(flowNodeBpmnId)
                 .then()
                 .getAllTasks();
 

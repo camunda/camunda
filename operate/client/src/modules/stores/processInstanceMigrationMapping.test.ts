@@ -79,6 +79,10 @@ describe('processInstanceMigrationMappingStore', () => {
         type: 'bpmn:ServiceTask',
       },
       {
+        id: 'MessageStartEvent',
+        type: 'bpmn:StartEvent',
+      },
+      {
         id: 'TimerEventSubProcess',
         type: 'bpmn:SubProcess',
       },
@@ -400,6 +404,18 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'CompensationTask',
             name: 'Compensation task',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'MessageStartEvent',
+          name: 'Message start event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'MessageStartEvent',
+            name: 'Message start event',
           },
         ],
       },

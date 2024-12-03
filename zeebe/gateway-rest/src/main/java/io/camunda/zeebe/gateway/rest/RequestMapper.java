@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.USER_TOKEN_CLAIM_PREFIX;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -82,6 +81,7 @@ import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SignalBroadcastRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserChangeset;
 import io.camunda.zeebe.gateway.protocol.rest.UserRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
@@ -480,7 +480,9 @@ public class RequestMapper {
       if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
         jwtAuthenticationToken
             .getTokenAttributes()
-            .forEach((key, value) -> token.withClaim(USER_TOKEN_CLAIM_PREFIX + key, value));
+            .forEach(
+                (key, value) ->
+                    token.withClaim(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value));
       }
     }
 
@@ -674,10 +676,10 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, TenantDTO> toTenantUpdateDto(
-      final Long tenantKey, final TenantCreateRequest tenantCreateRequest) {
+      final Long tenantKey, final TenantUpdateRequest tenantUpdateRequest) {
     return getResult(
-        TenantRequestValidator.validateTenantUpdateRequest(tenantCreateRequest),
-        () -> new TenantDTO(tenantKey, null, tenantCreateRequest.getName()));
+        TenantRequestValidator.validateTenantUpdateRequest(tenantUpdateRequest),
+        () -> new TenantDTO(tenantKey, null, tenantUpdateRequest.getName()));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>

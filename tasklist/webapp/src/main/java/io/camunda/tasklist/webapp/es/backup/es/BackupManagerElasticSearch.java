@@ -20,13 +20,11 @@ import static org.elasticsearch.snapshots.SnapshotState.SUCCESS;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.exceptions.TasklistElasticsearchConnectionException;
-import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.es.backup.BackupManager;
 import io.camunda.tasklist.webapp.es.backup.Metadata;
-import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
-import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
+import io.camunda.webapps.backup.BackupException;
+import io.camunda.webapps.backup.BackupException.*;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
@@ -176,14 +174,14 @@ public class BackupManagerElasticSearch extends BackupManager {
           String.format(
               "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
               getRepositoryName());
-      throw new TasklistElasticsearchConnectionException(reason, ex);
+      throw new BackupRepositoryConnectionException(reason, ex);
     } catch (final Exception e) {
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format(
                 "No repository with name [%s] could be found.",
                 tasklistProperties.getBackup().getRepositoryName());
-        throw new TasklistRuntimeException(reason);
+        throw new BackupException(reason);
       }
       if (isSnapshotMissingException(e)) {
         // no snapshots exist
@@ -191,7 +189,7 @@ public class BackupManagerElasticSearch extends BackupManager {
       }
       final String reason =
           String.format("Exception occurred when searching for backups: %s", e.getMessage());
-      throw new TasklistRuntimeException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 
@@ -287,18 +285,18 @@ public class BackupManagerElasticSearch extends BackupManager {
           String.format(
               "Encountered an error connecting to Elasticsearch while retrieving repository with name [%s].",
               repositoryName);
-      throw new TasklistElasticsearchConnectionException(reason, ex);
+      throw new BackupRepositoryConnectionException(reason, ex);
     } catch (final Exception e) {
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
-        throw new TasklistRuntimeException(reason);
+        throw new BackupException(reason);
       }
       final String reason =
           String.format(
               "Exception occurred when validating existence of repository with name [%s].",
               repositoryName);
-      throw new TasklistRuntimeException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 
@@ -320,7 +318,7 @@ public class BackupManagerElasticSearch extends BackupManager {
           String.format(
               "Encountered an error connecting to Elasticsearch while searching for duplicate backup. Repository name: [%s].",
               getRepositoryName());
-      throw new TasklistElasticsearchConnectionException(reason, ex);
+      throw new BackupRepositoryConnectionException(reason, ex);
     } catch (final Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
@@ -330,7 +328,7 @@ public class BackupManagerElasticSearch extends BackupManager {
           String.format(
               "Exception occurred when validating whether backup with ID [%s] already exists.",
               backupId);
-      throw new TasklistRuntimeException(reason, e);
+      throw new BackupException(reason, e);
     }
     if (!response.getSnapshots().isEmpty()) {
       final String reason =
@@ -433,22 +431,23 @@ public class BackupManagerElasticSearch extends BackupManager {
           String.format(
               "Encountered an error connecting to Elasticsearch while searching for snapshots. Repository name: [%s].",
               getRepositoryName());
-      throw new TasklistElasticsearchConnectionException(reason, ex);
+      throw new BackupRepositoryConnectionException(reason, ex);
     } catch (final Exception e) {
       if (isSnapshotMissingException(e)) {
         // no snapshot with given backupID exists
-        throw new NotFoundApiException(String.format("No backup with id [%s] found.", backupId), e);
+        throw new ResourceNotFoundException(
+            String.format("No backup with id [%s] found.", backupId), e);
       }
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format(
                 "No repository with name [%s] could be found.",
                 tasklistProperties.getBackup().getRepositoryName());
-        throw new TasklistRuntimeException(reason);
+        throw new BackupException(reason);
       }
       final String reason =
           String.format("Exception occurred when searching for backup with ID [%s].", backupId);
-      throw new TasklistRuntimeException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 

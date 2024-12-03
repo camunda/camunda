@@ -27,11 +27,12 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
   const [showSelectRoleError, setShowSelectRoleError] = useState(false);
 
   const {
-    data: roles,
+    data: roleData,
     loading: loadingRoles,
     reload: reloadRoles,
     success: getRolesSuccess,
   } = useApi(searchRoles);
+  const allRoles = roleData?.items ?? [];
 
   const [callAssignRole, { loading: loadingAssignRole }] =
     useApiCall(assignUserRole);
@@ -40,10 +41,10 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
 
   const unassignedRoles = (
     userRoles
-      ? roles?.items.filter(
+      ? allRoles.filter(
           ({ key }) => !userRoles.some((role) => role.key === key),
         )
-      : roles?.items
+      : allRoles
   )?.sort((a, b) => ascendingSort(a.name, b.name));
 
   const handleSubmit = async () => {
@@ -58,7 +59,7 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
 
     const results = await Promise.all(
       selectedRoles.map((roleKey) =>
-        callAssignRole({ id: user.id!, roleKey: roleKey }),
+        callAssignRole({ userKey: user.key!, roleKey }),
       ),
     );
 
@@ -94,9 +95,7 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
       {showSelectRoleError && (
         <TranslatedErrorInlineNotification title="Please select at least one role." />
       )}
-      {loadingRoles && (!roles || roles.items.length === 0) && (
-        <CheckboxSkeleton />
-      )}
+      {loadingRoles && allRoles.length === 0 && <CheckboxSkeleton />}
       {unassignedRoles && (
         <fieldset>
           <legend>{t("Select one or multiple roles")}</legend>
@@ -120,7 +119,7 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
           actionButton={{ label: "Retry", onClick: reloadRoles }}
         />
       )}
-      {!loading && getRolesSuccess && roles && roles.items.length === 0 && (
+      {!loading && getRolesSuccess && allRoles.length === 0 && (
         <TranslatedInlineNotification
           title="Please configure a role first, then come back to assign it."
           actionButton={{ label: "Go to roles", onClick: goToRolesPage }}
@@ -128,9 +127,9 @@ const AddModal: FC<UseEntityModalCustomProps<User, { userRoles: Role[] }>> = ({
       )}
       {!loading &&
         getRolesSuccess &&
-        roles &&
-        roles.items.length > 0 &&
-        roles.items.length === userRoles?.length && (
+        roleData &&
+        allRoles.length > 0 &&
+        allRoles.length === userRoles?.length && (
           <TranslatedInlineNotification
             title="All configured roles are already assigned to the user. You can configure a new role and then assign it to the user."
             actionButton={{ label: "Go to roles", onClick: goToRolesPage }}

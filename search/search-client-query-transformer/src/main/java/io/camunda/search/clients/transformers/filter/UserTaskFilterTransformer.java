@@ -43,12 +43,9 @@ import java.util.stream.Collectors;
 public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilter> {
 
   private final ServiceTransformers transformers;
-  private final boolean isCamundaExporterEnabled;
 
-  public UserTaskFilterTransformer(
-      final ServiceTransformers transformers, final boolean isCamundaExporterEnabled) {
+  public UserTaskFilterTransformer(final ServiceTransformers transformers) {
     this.transformers = transformers;
-    this.isCamundaExporterEnabled = isCamundaExporterEnabled;
   }
 
   @Override
@@ -105,10 +102,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   @Override
   public List<String> toIndices(final UserTaskFilter filter) {
-    if (isCamundaExporterEnabled) {
-      return List.of("tasklist-task-8.5.0_");
-    }
-    return List.of("tasklist-list-view-8.6.0_");
+    return List.of("tasklist-task-8.5.0_");
   }
 
   private SearchQuery getProcessInstanceKeysQuery(final List<Long> processInstanceKeys) {

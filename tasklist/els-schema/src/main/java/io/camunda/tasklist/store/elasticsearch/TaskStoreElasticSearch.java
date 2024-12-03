@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.store.elasticsearch;
 
-import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
@@ -28,7 +27,6 @@ import io.camunda.tasklist.queries.TaskByVariables;
 import io.camunda.tasklist.queries.TaskOrderBy;
 import io.camunda.tasklist.queries.TaskQuery;
 import io.camunda.tasklist.queries.TaskSortFields;
-import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
@@ -126,7 +124,7 @@ public class TaskStoreElasticSearch implements TaskStore {
         ElasticsearchUtil.createSearchRequest(taskTemplate.getAlias())
             .source(
                 SearchSourceBuilder.searchSource()
-                    .query(termQuery(PROCESS_INSTANCE_ID, processInstanceId))
+                    .query(termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId))
                     .fetchField(TaskTemplate.ID));
     try {
       return ElasticsearchUtil.scrollIdsToList(searchRequest, esClient);
@@ -278,6 +276,14 @@ public class TaskStoreElasticSearch implements TaskStore {
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Override
+  public void updateTaskLinkedForm(
+      final TaskEntity task, final String formBpmnId, final long formVersion) {
+    updateTask(
+        task.getId(),
+        asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
   }
 
   private SearchHit[] getTasksRawResponse(final List<String> ids) throws IOException {
@@ -500,7 +506,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     QueryBuilder processInstanceIdQ = null;
     if (query.getProcessInstanceId() != null) {
-      processInstanceIdQ = termQuery(PROCESS_INSTANCE_ID, query.getProcessInstanceId());
+      processInstanceIdQ =
+          termQuery(TaskTemplate.PROCESS_INSTANCE_ID, query.getProcessInstanceId());
     }
 
     QueryBuilder processDefinitionIdQ = null;
@@ -713,8 +720,8 @@ public class TaskStoreElasticSearch implements TaskStore {
 
     for (int i = 0; i < varNames.size(); i++) {
       final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
-      boolQuery.must(QueryBuilders.termQuery(VariableIndex.NAME, varNames.get(i)));
-      boolQuery.must(QueryBuilders.termQuery(VariableIndex.VALUE, varValues.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(SnapshotTaskVariableTemplate.NAME, varNames.get(i)));
+      boolQuery.must(QueryBuilders.termQuery(SnapshotTaskVariableTemplate.VALUE, varValues.get(i)));
 
       final SearchSourceBuilder searchSourceBuilder =
           new SearchSourceBuilder()

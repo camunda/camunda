@@ -38,6 +38,7 @@ public class TaskTemplate extends TasklistTemplateDescriptor
 
   public static final String FORM_ID = "formId";
   public static final String FORM_KEY = "formKey";
+  public static final String FORM_VERSION = "formVersion";
   public static final String EXTERNAL_FORM_REFERENCE = "externalFormReference";
 
   public static final String TENANT_ID = "tenantId";

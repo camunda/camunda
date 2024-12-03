@@ -52,6 +52,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -197,6 +198,57 @@ public class TaskListenerTest {
         UserTaskIntent.ASSIGNED,
         userTask ->
             Assertions.assertThat(userTask).hasAssignee("test_user").hasAction("claim_action"));
+  }
+
+  @Test
+  public void shouldTriggerAssignmentListenersAfterUserTaskCreationWithDefinedAssigneeProperty() {
+    // given
+    final var assignee = "peregrin";
+    final var action = StringUtils.EMPTY;
+
+    // when: process instance is created with a UT having an `assignee` and `assignment` listeners
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithZeebeUserTask(
+                task ->
+                    task.zeebeAssignee(assignee)
+                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE))
+                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_2"))
+                        .zeebeTaskListener(l -> l.assignment().type(LISTENER_TYPE + "_3"))));
+
+    // await user task creation
+    RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        .withProcessInstanceKey(processInstanceKey)
+        .await();
+
+    // when
+    completeJobs(processInstanceKey, LISTENER_TYPE, LISTENER_TYPE + "_2", LISTENER_TYPE + "_3");
+
+    // then: verify the task listener completion sequence for the assignment event
+    assertTaskListenerJobsCompletionSequence(
+        processInstanceKey,
+        JobListenerEventType.ASSIGNMENT,
+        LISTENER_TYPE,
+        LISTENER_TYPE + "_2",
+        LISTENER_TYPE + "_3");
+
+    // verify that UT records follows the expected intents sequence from `CREATING` to `ASSIGNED`
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
+        .as(
+            "Verify the sequence of intents and `assignee`, `action` properties emitted for the user task")
+        .extracting(
+            Record::getIntent, r -> r.getValue().getAssignee(), r -> r.getValue().getAction())
+        .containsExactly(
+            tuple(UserTaskIntent.CREATING, StringUtils.EMPTY, action),
+            tuple(UserTaskIntent.CREATED, StringUtils.EMPTY, action),
+            tuple(UserTaskIntent.ASSIGNING, assignee, action),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action),
+            tuple(UserTaskIntent.COMPLETE_TASK_LISTENER, assignee, action),
+            tuple(UserTaskIntent.ASSIGNED, assignee, action));
   }
 
   @Test

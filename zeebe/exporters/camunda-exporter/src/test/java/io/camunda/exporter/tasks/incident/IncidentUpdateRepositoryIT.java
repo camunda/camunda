@@ -21,6 +21,7 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
@@ -34,6 +35,8 @@ import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueT
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
+import io.camunda.webapps.schema.entities.operate.listview.FlowNodeInstanceForListViewEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ListViewJoinRelation;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterActionType;
 import io.camunda.webapps.schema.entities.operate.post.PostImporterQueueEntity;
@@ -65,6 +68,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -72,6 +77,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Testcontainers
 @AutoCloseResources
 abstract sealed class IncidentUpdateRepositoryIT {
+  private static final Logger LOGGER = LoggerFactory.getLogger(IncidentUpdateRepositoryIT.class);
+
   private static final int PARTITION_ID = 1;
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   protected final PostImporterQueueTemplate postImporterQueueTemplate;
@@ -121,6 +128,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
         TestSearchContainers.createDefeaultElasticsearchContainer();
 
     @AutoCloseResource private final RestClientTransport transport = createTransport();
+    private final ElasticsearchAsyncClient client = new ElasticsearchAsyncClient(transport);
 
     public ElasticsearchIT() {
       super("http://" + CONTAINER.getHttpHostAddress(), true);
@@ -135,8 +143,9 @@ abstract sealed class IncidentUpdateRepositoryIT {
           listViewTemplate.getAlias(),
           flowNodeInstanceTemplate.getAlias(),
           operationTemplate.getAlias(),
-          new ElasticsearchAsyncClient(transport),
-          Runnable::run);
+          client,
+          Runnable::run,
+          LOGGER);
     }
 
     @Override
@@ -179,7 +188,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
     }
 
     @Test
-    void shouldReturnIncidentByIds() throws IOException, PersistenceException {
+    void shouldReturnIncidentByIds() throws PersistenceException {
       // given
       final var repository = createRepository();
       final var expected = createIncident(1L);
@@ -663,6 +672,139 @@ abstract sealed class IncidentUpdateRepositoryIT {
 
       // then
       assertThat(wasDeleted).succeedsWithin(REQUEST_TIMEOUT).isEqualTo(true);
+    }
+  }
+
+  @Nested
+  final class GetFlowNodesInListViewIT {
+    @Test
+    void shouldGetFlowNodes() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
+          "0");
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("2"),
+          "0");
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
+
+      // then
+      assertThat(flowNodes)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
+          .containsExactly(
+              new Document("1", listViewTemplate.getFullQualifiedName()),
+              new Document("2", listViewTemplate.getFullQualifiedName()));
+    }
+
+    @Test
+    void shouldNotGetNonFlowNodes() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
+          "0");
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION).setId("2"),
+          "0");
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
+
+      // then
+      assertThat(flowNodes)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
+          .containsExactly(new Document("1", listViewTemplate.getFullQualifiedName()));
+    }
+
+    @Test
+    void shouldNotGetFlowNodesWithOtherKeys() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("1"),
+          "0");
+      batchRequest.addWithRouting(
+          listViewTemplate.getFullQualifiedName(),
+          createFlowNodeInstance(ListViewTemplate.ACTIVITIES_JOIN_RELATION).setId("2"),
+          "0");
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1"));
+
+      // then
+      assertThat(flowNodes)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
+          .containsExactly(new Document("1", listViewTemplate.getFullQualifiedName()));
+    }
+
+    private FlowNodeInstanceForListViewEntity createFlowNodeInstance(final String joinRelation) {
+      final var entity = new FlowNodeInstanceForListViewEntity();
+      entity.setJoinRelation(new ListViewJoinRelation(joinRelation).setParent(0L));
+      return entity;
+    }
+  }
+
+  @Nested
+  final class GetFlowNodeInstancesIT {
+    @Test
+    void shouldGetFlowNodes() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          flowNodeInstanceTemplate.getFullQualifiedName(), "1", new FlowNodeInstanceEntity());
+      batchRequest.addWithId(
+          flowNodeInstanceTemplate.getFullQualifiedName(), "2", new FlowNodeInstanceEntity());
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
+
+      // then
+      assertThat(flowNodes)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
+          .containsExactly(
+              new Document("1", listViewTemplate.getFullQualifiedName()),
+              new Document("2", listViewTemplate.getFullQualifiedName()));
+    }
+
+    @Test
+    void shouldNotGetFlowNodesWithOtherKeys() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          flowNodeInstanceTemplate.getFullQualifiedName(), "1", new FlowNodeInstanceEntity());
+      batchRequest.addWithId(
+          flowNodeInstanceTemplate.getFullQualifiedName(), "2", new FlowNodeInstanceEntity());
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var flowNodes = repository.getFlowNodesInListView(List.of("1"));
+
+      // then
+      assertThat(flowNodes)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
+          .containsExactly(new Document("1", listViewTemplate.getFullQualifiedName()));
     }
   }
 }

@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.ContextInjectingInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.DecoratedInterceptor;
 import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
@@ -50,6 +51,7 @@ import io.grpc.StatusException;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyServerBuilder;
 import io.grpc.protobuf.StatusProto;
+import io.netty.channel.ChannelOption;
 import io.netty.handler.ssl.SslContextBuilder;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -258,7 +260,9 @@ public final class Gateway implements CloseableSilently {
     return NettyServerBuilder.forAddress(new InetSocketAddress(cfg.getHost(), cfg.getPort()))
         .maxInboundMessageSize(maxMessageSize)
         .permitKeepAliveTime(minKeepAliveInterval.toMillis(), TimeUnit.MILLISECONDS)
-        .permitKeepAliveWithoutCalls(false);
+        .permitKeepAliveWithoutCalls(false)
+        .withOption(ChannelOption.SO_RCVBUF, (int) cfg.getSocketReceiveBuffer().toBytes())
+        .withOption(ChannelOption.SO_SNDBUF, (int) cfg.getSocketSendBuffer().toBytes());
   }
 
   private void setSecurityConfig(
@@ -391,6 +395,7 @@ public final class Gateway implements CloseableSilently {
       } else {
         interceptors.add(new IdentityInterceptor(identityCfg, gatewayCfg.getMultiTenancy()));
       }
+      interceptors.add(new AuthenticationInterceptor());
     }
 
     return ServerInterceptors.intercept(service, interceptors);
