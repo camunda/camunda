@@ -21,7 +21,7 @@ public interface FormState {
    * @return the latest version of the form, or {@link Optional#empty()} if no form is deployed with
    *     the given id
    */
-  Optional<PersistedForm> findLatestFormById(DirectBuffer formId, final String tenantId);
+  Optional<PersistedForm> findLatestFormById(String formId, final String tenantId);
 
   /**
    * Query forms by the given form key and return the form.

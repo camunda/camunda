@@ -177,7 +177,7 @@ public final class BpmnUserTaskBehavior {
         .flatMap(
             formId -> {
               final Optional<PersistedForm> latestFormById =
-                  formState.findLatestFormById(wrapString(formId), tenantId);
+                  formState.findLatestFormById(formId, tenantId);
               return latestFormById
                   .<Either<Failure, Long>>map(
                       persistedForm -> Either.right(persistedForm.getFormKey()))
