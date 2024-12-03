@@ -11,6 +11,7 @@ import static java.util.Arrays.asList;
 
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
+import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
 import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
 import io.camunda.it.utils.ZeebeClientTestFactory.User;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -54,6 +55,7 @@ public class BrokerWithCamundaExporterITInvocationProvider
   private final Map<String, TestStandaloneBroker> testBrokers = new HashMap<>();
   private final Set<Profile> additionalProfiles = new HashSet<>();
   private Consumer<BrokerBasedProperties> additionalBrokerConfig = cfg -> {};
+  private Consumer<ServiceSecurityProperties> additionalSecurityConfig = cfg -> {};
   private final Map<String, Object> additionalProperties = new HashMap<>();
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final Map<String, ZeebeClientTestFactory> zeebeClientTestFactories = new HashMap<>();
@@ -83,10 +85,14 @@ public class BrokerWithCamundaExporterITInvocationProvider
     return this;
   }
 
+  public BrokerWithCamundaExporterITInvocationProvider withAdditionalSecurityConfig(
+      final Consumer<ServiceSecurityProperties> modifier) {
+    additionalSecurityConfig = additionalSecurityConfig.andThen(modifier);
+    return this;
+  }
+
   public BrokerWithCamundaExporterITInvocationProvider withAuthorizationsEnabled() {
-    return withAdditionalBrokerConfig(
-            cfg ->
-                cfg.getExperimental().getEngine().getAuthorizations().setEnableAuthorization(true))
+    return withAdditionalSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
         .withAdditionalProperty("camunda.security.authorizations.enabled", true);
   }
 
@@ -116,6 +122,7 @@ public class BrokerWithCamundaExporterITInvocationProvider
                               "http://" + elasticsearchContainer.getHttpHostAddress())
                           .withBrokerConfig(cfg -> cfg.getGateway().setEnable(true))
                           .withBrokerConfig(additionalBrokerConfig)
+                          .withSecurityConfig(additionalSecurityConfig)
                           .withRecordingExporter(true)
                           .withProperty("camunda.rest.query.enabled", true)
                           .withProperty(

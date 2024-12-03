@@ -184,12 +184,7 @@ final class IdentitySetupInitializerIT {
       final boolean authorizationsEnabled, final int partitionCount, final Path tempDir) {
     broker =
         new TestStandaloneBroker()
-            .withBrokerConfig(
-                cfg ->
-                    cfg.getExperimental()
-                        .getEngine()
-                        .getAuthorizations()
-                        .setEnableAuthorization(authorizationsEnabled))
+            .withSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(authorizationsEnabled))
             .withBrokerConfig(cfg -> cfg.getCluster().setPartitionsCount(partitionCount))
             .withRecordingExporter(true);
 
