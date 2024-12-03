@@ -156,8 +156,10 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery filter) {
-    return null;
+  public SearchQueryResult<IncidentEntity> searchIncidents(final IncidentQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for incidents: {}", query);
+
+    return rdbmsService.getIncidentReader().search(query);
   }
 
   @Override
