@@ -250,15 +250,14 @@ public class CamundaExporter implements Exporter {
   }
 
   private void checkImportersCompletedAndReschedule() {
+    if (!importersCompleted) {
+      scheduleImportersCompletedCheck();
+    }
     try {
       importersCompleted =
           searchEngineClient.importersCompleted(partitionId, configuration.getIndex().getPrefix());
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred checking importers completed, will retry later.", e);
-    }
-
-    if (!importersCompleted) {
-      scheduleImportersCompletedCheck();
     }
   }
 

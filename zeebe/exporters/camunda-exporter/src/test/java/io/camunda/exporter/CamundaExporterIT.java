@@ -512,7 +512,6 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
-      config.getIndex().setShouldWaitForImporters(true);
       final var context = spy(getContextFromConfig(config));
       doReturn(partitionId).when(context).getPartitionId();
       camundaExporter.configure(context);
@@ -555,7 +554,6 @@ final class CamundaExporterIT {
         final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
         throws IOException {
       // given
-      config.getIndex().setShouldWaitForImporters(true);
       final var context = spy(getContextFromConfig(config));
       doReturn(partitionId).when(context).getPartitionId();
       camundaExporter.configure(context);
