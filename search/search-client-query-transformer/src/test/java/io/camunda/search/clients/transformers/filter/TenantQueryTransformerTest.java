@@ -9,9 +9,9 @@ package io.camunda.search.clients.transformers.filter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.search.clients.query.SearchBoolQuery;
-import io.camunda.search.clients.query.SearchTermQuery;
+import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.FilterBuilders;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 public class TenantQueryTransformerTest extends AbstractTransformerTest {
@@ -25,14 +25,18 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
     final var searchRequest = transformQuery(filter);
 
     // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            (termQuery) -> {
-              assertThat(termQuery.field()).isEqualTo("key");
-              assertThat(termQuery.value().longValue()).isEqualTo(12345L);
-            });
+    assertThat(searchRequest)
+        .isEqualTo(
+            SearchQuery.of(
+                q ->
+                    q.bool(
+                        b ->
+                            b.must(
+                                List.of(
+                                    SearchQuery.of(
+                                        q1 -> q.term(t -> t.field("join").value("tenant"))),
+                                    SearchQuery.of(
+                                        q1 -> q.term(t -> t.field("key").value(12345L))))))));
   }
 
   @Test
@@ -44,14 +48,19 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
     final var searchRequest = transformQuery(filter);
 
     // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            (termQuery) -> {
-              assertThat(termQuery.field()).isEqualTo("tenantId");
-              assertThat(termQuery.value().stringValue()).isEqualTo("tenant1");
-            });
+    assertThat(searchRequest)
+        .isEqualTo(
+            SearchQuery.of(
+                q ->
+                    q.bool(
+                        b ->
+                            b.must(
+                                List.of(
+                                    SearchQuery.of(
+                                        q1 -> q.term(t -> t.field("join").value("tenant"))),
+                                    SearchQuery.of(
+                                        q1 ->
+                                            q.term(t -> t.field("tenantId").value("tenant1"))))))));
   }
 
   @Test
@@ -63,14 +72,19 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
     final var searchRequest = transformQuery(filter);
 
     // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchTermQuery.class,
-            (termQuery) -> {
-              assertThat(termQuery.field()).isEqualTo("name");
-              assertThat(termQuery.value().stringValue()).isEqualTo("TestTenant");
-            });
+    assertThat(searchRequest)
+        .isEqualTo(
+            SearchQuery.of(
+                q ->
+                    q.bool(
+                        b ->
+                            b.must(
+                                List.of(
+                                    SearchQuery.of(
+                                        q1 -> q.term(t -> t.field("join").value("tenant"))),
+                                    SearchQuery.of(
+                                        q1 ->
+                                            q.term(t -> t.field("name").value("TestTenant"))))))));
   }
 
   @Test
@@ -83,39 +97,20 @@ public class TenantQueryTransformerTest extends AbstractTransformerTest {
     final var searchRequest = transformQuery(filter);
 
     // then
-    final var queryVariant = searchRequest.queryOption();
-    assertThat(queryVariant)
-        .isInstanceOfSatisfying(
-            SearchBoolQuery.class,
-            (boolQuery) -> {
-              assertThat(boolQuery.must()).hasSize(3);
-
-              // Verify "key" filter
-              assertThat(boolQuery.must().get(0).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (termQuery) -> {
-                        assertThat(termQuery.field()).isEqualTo("key");
-                        assertThat(termQuery.value().longValue()).isEqualTo(12345L);
-                      });
-
-              // Verify "tenantId" filter
-              assertThat(boolQuery.must().get(1).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (termQuery) -> {
-                        assertThat(termQuery.field()).isEqualTo("tenantId");
-                        assertThat(termQuery.value().stringValue()).isEqualTo("tenant1");
-                      });
-
-              // Verify "name" filter
-              assertThat(boolQuery.must().get(2).queryOption())
-                  .isInstanceOfSatisfying(
-                      SearchTermQuery.class,
-                      (termQuery) -> {
-                        assertThat(termQuery.field()).isEqualTo("name");
-                        assertThat(termQuery.value().stringValue()).isEqualTo("TestTenant");
-                      });
-            });
+    assertThat(searchRequest)
+        .isEqualTo(
+            SearchQuery.of(
+                builder ->
+                    builder.bool(
+                        b ->
+                            b.must(
+                                List.of(
+                                    SearchQuery.of(
+                                        q -> q.term(t -> t.field("join").value("tenant"))),
+                                    SearchQuery.of(q -> q.term(t -> t.field("key").value(12345L))),
+                                    SearchQuery.of(
+                                        q -> q.term(t -> t.field("tenantId").value("tenant1"))),
+                                    SearchQuery.of(
+                                        q -> q.term(t -> t.field("name").value("TestTenant"))))))));
   }
 }

@@ -15,6 +15,7 @@ public class GroupIndex extends UserManagementIndexDescriptor {
 
   public static final String INDEX_NAME = "groups";
   public static final String INDEX_VERSION = "8.7.0";
+  public static final String JOIN = "join";
 
   public static final EntityJoinRelationFactory JOIN_RELATION_FACTORY =
       new EntityJoinRelationFactory(
