@@ -11,6 +11,7 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnEventSubscriptionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnIncidentBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
@@ -36,6 +37,7 @@ public class AdHocSubProcessProcessor
   private final BpmnJobBehavior jobBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
   private final ExpressionProcessor expressionProcessor;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public AdHocSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -46,6 +48,7 @@ public class AdHocSubProcessProcessor
     jobBehavior = bpmnBehaviors.jobBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
     expressionProcessor = bpmnBehaviors.expressionBehavior();
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
     this.stateTransitionBehavior = stateTransitionBehavior;
   }
 
@@ -90,10 +93,12 @@ public class AdHocSubProcessProcessor
   @Override
   public Either<Failure, ?> finalizeCompletion(
       final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
     return stateTransitionBehavior
         .transitionToCompleted(element, context)
         .thenDo(
             completed -> {
+              compensationSubscriptionBehaviour.completeCompensationHandler(completed);
               stateTransitionBehavior.takeOutgoingSequenceFlows(element, completed);
             });
   }
@@ -107,6 +112,7 @@ public class AdHocSubProcessProcessor
     }
     eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
     incidentBehavior.resolveIncidents(terminating);
+    compensationSubscriptionBehaviour.deleteSubscriptionsOfSubprocess(terminating);
 
     final boolean noActiveChildInstances =
         stateTransitionBehavior.terminateChildInstances(terminating);
