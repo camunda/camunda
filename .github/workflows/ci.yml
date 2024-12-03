@@ -60,12 +60,17 @@ jobs:
     env:
       # renovate: datasource=github-releases depName=rhysd/actionlint
       ACTIONLINT_VERSION: '1.7.4'
+      # renovate: datasource=github-tags depName=open-policy-agent/conftest
+      CONFTEST_VERSION: '0.56.0'
     steps:
       - uses: actions/checkout@v4
       - run: echo "::add-matcher::.github/actionlint-matcher.json"
       - run: |
           bash <(curl https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash) $ACTIONLINT_VERSION
           ./actionlint -shellcheck '' -ignore 'property "vault_.+" is not defined in object type' -ignore 'object type "{}" cannot be filtered by object filtering `.*` since it has no object element'
+      - run: |
+          curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
+          ./conftest test -o github --policy .github/conftest-*.rego .github/workflows/*.yml
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -689,6 +694,7 @@ jobs:
     # This name is hard-coded in the branch rules; remember to update that if this name changes
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     needs:
       - actionlint
       - build-operate-backend
@@ -720,6 +726,7 @@ jobs:
     name: Deploy snapshot artifacts
     needs: [ check-results ]
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-maven-snapshot
@@ -790,6 +797,7 @@ jobs:
     name: Deploy snapshot Camunda Docker image
     needs: [ docker-checks, check-results ]
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy-camunda-docker-snapshot
