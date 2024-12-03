@@ -7,12 +7,14 @@
  */
 package io.camunda.tasklist.modules;
 
+import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.modules.ModulesTestApplication;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -27,7 +29,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"tasklist", "test"})
+@Import(CommonsModuleConfiguration.class)
+@ActiveProfiles({"tasklist", "test", "standalone"})
 public abstract class ModuleIntegrationTest {
 
   @Autowired protected ApplicationContext applicationContext;

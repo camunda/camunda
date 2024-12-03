@@ -95,7 +95,7 @@ import org.springframework.web.client.RestTemplate;
       TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({SSO_AUTH_PROFILE, "tasklist", "test"})
+@ActiveProfiles({SSO_AUTH_PROFILE, "tasklist", "test", "standalone"})
 public class AuthenticationIT implements AuthenticationTestable {
 
   public static final SalesPlan TASKLIST_TEST_SALESPLAN = new SalesPlan("test");
