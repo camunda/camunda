@@ -62,6 +62,7 @@ public class ProcessInstanceExportHandler
         value.getTenantId(),
         value.getParentProcessInstanceKey(),
         value.getParentElementInstanceKey(),
+        0,
         null,
         value.getVersion());
   }

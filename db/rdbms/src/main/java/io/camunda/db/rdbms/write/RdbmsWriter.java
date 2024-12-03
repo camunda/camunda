@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
 import io.camunda.db.rdbms.write.service.GroupWriter;
+import io.camunda.db.rdbms.write.service.IncidentWriter;
 import io.camunda.db.rdbms.write.service.MappingWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
@@ -33,6 +34,7 @@ public class RdbmsWriter {
   private final ExporterPositionService exporterPositionService;
   private final FlowNodeInstanceWriter flowNodeInstanceWriter;
   private final GroupWriter groupWriter;
+  private final IncidentWriter incidentWriter;
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessInstanceWriter processInstanceWriter;
   private final TenantWriter tenantWriter;
@@ -52,6 +54,7 @@ public class RdbmsWriter {
     decisionRequirementsWriter = new DecisionRequirementsWriter(executionQueue);
     flowNodeInstanceWriter = new FlowNodeInstanceWriter(executionQueue);
     groupWriter = new GroupWriter(executionQueue);
+    incidentWriter = new IncidentWriter(executionQueue);
     processDefinitionWriter = new ProcessDefinitionWriter(executionQueue);
     processInstanceWriter = new ProcessInstanceWriter(executionQueue);
     tenantWriter = new TenantWriter(executionQueue);
@@ -81,6 +84,10 @@ public class RdbmsWriter {
 
   public GroupWriter getGroupWriter() {
     return groupWriter;
+  }
+
+  public IncidentWriter getIncidentWriter() {
+    return incidentWriter;
   }
 
   public ProcessDefinitionWriter getProcessDefinitionWriter() {

@@ -134,4 +134,14 @@
         END_DATE = #{endDate}
     WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
   </update>
+
+  <update
+    id="updateIncident"
+    statementType="PREPARED"
+    parameterType="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper$UpdateIncidentDto"
+    flushCache="true">
+    UPDATE FLOW_NODE_INSTANCE
+    SET INCIDENT_KEY = #{incidentKey}
+    WHERE FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey}
+  </update>
 </mapper>

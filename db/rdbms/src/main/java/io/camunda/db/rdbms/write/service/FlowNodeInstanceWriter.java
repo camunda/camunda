@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.EndFlowNodeDto;
+import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.UpdateIncidentDto;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel;
 import io.camunda.db.rdbms.write.domain.FlowNodeInstanceDbModel.FlowNodeInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.queue.ContextType;
@@ -45,6 +46,28 @@ public class FlowNodeInstanceWriter {
               ContextType.FLOW_NODE,
               key,
               "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateStateAndEndDate",
+              dto));
+    }
+  }
+
+  public void createIncident(final long flowNodeInstanceKey, final long incidentKey) {
+    updateIncident(flowNodeInstanceKey, incidentKey);
+  }
+
+  public void resolveIncident(final long flowNodeInstanceKey) {
+    updateIncident(flowNodeInstanceKey, null);
+  }
+
+  private void updateIncident(final long flowNodeInstanceKey, final Long incidentKey) {
+    final boolean wasMerged = mergeToQueue(flowNodeInstanceKey, b -> b.incidentKey(incidentKey));
+
+    if (!wasMerged) {
+      final var dto = new UpdateIncidentDto(flowNodeInstanceKey, incidentKey);
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.FLOW_NODE,
+              flowNodeInstanceKey,
+              "io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.updateIncident",
               dto));
     }
   }

@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -26,11 +27,13 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -314,6 +317,28 @@ public class RecordFixtures {
                 .withGroupKey(groupKey)
                 .withEntityKey(entityKey != null ? entityKey : 0)
                 .withEntityType(entityKey != null ? EntityType.USER : null)
+                .build())
+        .build();
+  }
+
+  protected static ImmutableRecord<RecordValue> getIncidentRecord(
+      final IncidentIntent intent,
+      final long incidentKey,
+      final long processInstanceKey,
+      final long flowNodeInstanceKey) {
+    final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.INCIDENT);
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withKey(incidentKey)
+        .withIntent(intent)
+        .withPosition(1L)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableIncidentRecordValue.builder()
+                .from((IncidentRecordValue) recordValueRecord.getValue())
+                .withElementInstanceKey(flowNodeInstanceKey)
+                .withProcessInstanceKey(processInstanceKey)
+                .withElementInstancePath(List.of(List.of(processInstanceKey, flowNodeInstanceKey)))
                 .build())
         .build();
   }

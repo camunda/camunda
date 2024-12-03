@@ -13,6 +13,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeActivatingR
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFlowNodeCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFormCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getGroupRecord;
+import static io.camunda.it.rdbms.exporter.RecordFixtures.getIncidentRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getMappingRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessDefinitionCreatedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getProcessInstanceCompletedRecord;
@@ -26,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporter;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
+import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
@@ -35,6 +37,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -515,6 +518,60 @@ class RdbmsExporterIT {
     final var deletedGroup =
         rdbmsService.getGroupReader().findOne(groupRecord.getKey()).orElseThrow();
     assertThat(deletedGroup.assignedMemberKeys()).isEmpty();
+  }
+
+  @Test
+  public void shouldExportIncident() {
+    // given
+    final var processInstanceRecord = getProcessInstanceStartedRecord(1L);
+    final var processInstanceKey =
+        ((ProcessInstanceRecordValue) processInstanceRecord.getValue()).getProcessInstanceKey();
+    exporter.export(processInstanceRecord);
+    final var flowNodeRecord = getFlowNodeActivatingRecord(1L);
+    final var flowNodeInstanceKey = flowNodeRecord.getKey();
+    exporter.export(flowNodeRecord);
+
+    // when
+    final var incidentKey = 42L;
+    final var incidentRecord =
+        getIncidentRecord(
+            IncidentIntent.CREATED, incidentKey, processInstanceKey, flowNodeInstanceKey);
+    exporter.export(incidentRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var flowNode = rdbmsService.getFlowNodeInstanceReader().findOne(flowNodeInstanceKey);
+    assertThat(flowNode).isNotEmpty();
+    assertThat(flowNode.get().incidentKey()).isEqualTo(incidentKey);
+    assertThat(flowNode.get().hasIncident()).isTrue();
+    final var processInstance = rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
+    assertThat(processInstance).isNotEmpty();
+    assertThat(processInstance.get().hasIncident()).isTrue();
+    final var incident = rdbmsService.getIncidentReader().findOne(incidentKey);
+    assertThat(incident).isNotEmpty();
+    assertThat(incident.get().incidentKey()).isEqualTo(incidentKey);
+    assertThat(incident.get().state()).isEqualTo(IncidentState.ACTIVE);
+
+    // given
+    final var incidentResolvedRecord =
+        getIncidentRecord(
+            IncidentIntent.RESOLVED, incidentKey, processInstanceKey, flowNodeInstanceKey);
+
+    // when
+    exporter.export(incidentResolvedRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var flowNode2 = rdbmsService.getFlowNodeInstanceReader().findOne(flowNodeInstanceKey);
+    assertThat(flowNode2).isNotEmpty();
+    assertThat(flowNode2.get().incidentKey()).isNull();
+    assertThat(flowNode2.get().hasIncident()).isFalse();
+    final var processInstance2 =
+        rdbmsService.getProcessInstanceReader().findOne(processInstanceKey);
+    assertThat(processInstance2).isNotEmpty();
+    assertThat(processInstance2.get().hasIncident()).isFalse();
+    final var incident2 = rdbmsService.getIncidentReader().findOne(incidentKey).orElseThrow();
+    assertThat(incident2.state()).isEqualTo(IncidentState.RESOLVED);
   }
 
   @Test
