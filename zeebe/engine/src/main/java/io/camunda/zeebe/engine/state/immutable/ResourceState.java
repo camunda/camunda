@@ -21,7 +21,7 @@ public interface ResourceState {
    *     deployed with the given id
    */
   Optional<PersistedResource> findLatestResourceById(
-      DirectBuffer resourceId, final String tenantId);
+      String resourceId, final String tenantId);
 
   /**
    * Query Resource by the given resource key and return the resource.
