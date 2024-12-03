@@ -22,6 +22,7 @@ import styles from './styles.module.scss';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {notificationsStore} from 'modules/stores/notifications';
+import {IS_ATTACHMENTS_TAB_ENABLED} from 'modules/featureFlags';
 
 type OutletContext = {
   task: Task;
@@ -71,6 +72,16 @@ const Details: React.FC = () => {
       to: {
         pathname: pages.taskDetails(id),
       },
+    },
+    {
+      key: 'attachments',
+      title: t('taskDetailsAttachmentsTabLabel'),
+      label: t('taskDetailsShowBpmnAttachmentsLabel'),
+      selected: useMatch(pages.taskDetailsAttachments(id)) !== null,
+      to: {
+        pathname: pages.taskDetailsAttachments(id),
+      },
+      visible: IS_ATTACHMENTS_TAB_ENABLED,
     },
     {
       key: 'process',

@@ -329,6 +329,15 @@ const api = {
         body,
       });
     },
+    getTaskAttachments: (taskId: Task['id']) => {
+      return new Request(getFullURL(`/v2/tasks/${taskId}/attachments`), {
+        ...BASE_REQUEST_OPTIONS,
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    },
   },
 } as const;
 

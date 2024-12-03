@@ -6,8 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {RequestHandler} from 'msw';
+import {IS_ATTACHMENTS_TAB_ENABLED} from 'modules/featureFlags';
+import {http, HttpResponse, RequestHandler} from 'msw';
 
 const handlers: RequestHandler[] = [];
+
+if (IS_ATTACHMENTS_TAB_ENABLED) {
+  handlers.push(
+    http.get('/v2/tasks/:taskId/attachments', () => {
+      return HttpResponse.json([
+        {
+          id: 'attachment-1',
+          fileName: 'file-1.txt',
+          contentType: 'text/plain',
+        },
+        {
+          id: 'attachment-2',
+          fileName: 'file-2.txt',
+          contentType: 'text/plain',
+        },
+      ]);
+    }),
+  );
+}
 
 export {handlers};

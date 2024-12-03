@@ -6,6 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ATTACHMENTS_TAB_ENABLED = true;
+.containedList {
+  width: 100%;
+  margin-top: calc(-1 * var(--cds-spacing-03));
+}
 
-export {IS_ATTACHMENTS_TAB_ENABLED};
+.errorContainer {
+  width: 100%;
+  padding: 0 var(--cds-spacing-05) var(--cds-spacing-05) var(--cds-spacing-05);
+}

@@ -6,6 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ATTACHMENTS_TAB_ENABLED = true;
+const attachments = [
+  {
+    id: 'attachment-1',
+    fileName: 'file-1.txt',
+    contentType: 'text/plain',
+  },
+  {
+    id: 'attachment-2',
+    fileName: 'file-2.txt',
+    contentType: 'text/plain',
+  },
+];
 
-export {IS_ATTACHMENTS_TAB_ENABLED};
+export {attachments};

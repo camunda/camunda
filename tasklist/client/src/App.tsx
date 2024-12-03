@@ -72,6 +72,10 @@ const router = createBrowserRouter(
               path="process"
               lazy={() => import('./Tasks/Task/ProcessView')}
             />
+            <Route
+              path="attachments"
+              lazy={() => import('./Tasks/Task/AttachmentsView')}
+            />
           </Route>
         </Route>
       </Route>
