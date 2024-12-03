@@ -167,8 +167,7 @@ public class TaskListenerTest {
   public void shouldRejectUserTaskAssignmentWhenTaskListenerRejectsTheOperation() {
     // given
     final long processInstanceKey =
-        createProcessInstance(
-            createUserTaskWithTaskListenersAndAssignee(LISTENER_TYPE, "default_assignee"));
+        createProcessInstance(createProcessWithAssignmentTaskListeners(LISTENER_TYPE));
 
     ENGINE
         .userTask()
@@ -197,7 +196,7 @@ public class TaskListenerTest {
             RecordingExporter.userTaskRecords().withProcessInstanceKey(processInstanceKey).limit(1))
         .extracting(Record::getValue)
         .extracting(UserTaskRecordValue::getAssignee)
-        .containsExactly("default_assignee");
+        .containsExactly("");
   }
 
   @Test
@@ -238,9 +237,11 @@ public class TaskListenerTest {
 
     // then: ensure that all three `COMPLETE_TASK_LISTENER` events were triggered
     // correct assignee value is present at all stages
-    assertThat(RecordingExporter.userTaskRecords())
+    assertThat(
+            RecordingExporter.userTaskRecords()
+                .limit(r -> r.getIntent() == UserTaskIntent.ASSIGNED))
         .extracting(Record::getIntent, r -> r.getValue().getAssignee())
-        .describedAs("Verify that all task listeners were completed with `denied=false`")
+        .describedAs("Verify that all task listeners were completed with the correct assignee")
         .containsSequence(
             tuple(UserTaskIntent.ASSIGN, "new_assignee"),
             tuple(UserTaskIntent.ASSIGNING, "new_assignee"),
@@ -950,17 +951,6 @@ public class TaskListenerTest {
   private BpmnModelInstance createProcessWithAssignmentTaskListeners(
       final String... listenerTypes) {
     return createUserTaskWithTaskListeners(ZeebeTaskListenerEventType.assignment, listenerTypes);
-  }
-
-  private BpmnModelInstance createUserTaskWithTaskListenersAndAssignee(
-      final String listenerType, final String assignee) {
-    return createProcessWithZeebeUserTask(
-        taskBuilder -> {
-          taskBuilder.zeebeTaskListener(
-              l -> l.eventType(ZeebeTaskListenerEventType.assignment).type(listenerType));
-          taskBuilder.zeebeAssignee(assignee);
-          return taskBuilder;
-        });
   }
 
   private BpmnModelInstance createProcessWithCompleteTaskListeners(final String... listenerTypes) {
