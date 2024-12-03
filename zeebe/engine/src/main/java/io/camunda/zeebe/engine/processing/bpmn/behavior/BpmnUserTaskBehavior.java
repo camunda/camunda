@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_LOWER_BOUND;
 import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_UPPER_BOUND;
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
@@ -220,8 +219,7 @@ public final class BpmnUserTaskBehavior {
         .flatMap(
             deploymentKey ->
                 formState
-                    .findFormByIdAndDeploymentKey(
-                        wrapString(formId), deploymentKey, context.getTenantId())
+                    .findFormByIdAndDeploymentKey(formId, deploymentKey, context.getTenantId())
                     .<Either<Failure, PersistedForm>>map(Either::right)
                     .orElseGet(
                         () ->
@@ -242,7 +240,7 @@ public final class BpmnUserTaskBehavior {
   private Either<Failure, PersistedForm> findLatestFormById(
       final String formId, final String tenantId, final long scopeKey) {
     return formState
-        .findLatestFormById(wrapString(formId), tenantId)
+        .findLatestFormById(formId, tenantId)
         .<Either<Failure, PersistedForm>>map(Either::right)
         .orElseGet(
             () ->
@@ -261,7 +259,7 @@ public final class BpmnUserTaskBehavior {
   private Either<Failure, PersistedForm> findFormByIdAndVersionTag(
       final String formId, final String versionTag, final String tenantId, final long scopeKey) {
     return formState
-        .findFormByIdAndVersionTag(wrapString(formId), versionTag, tenantId)
+        .findFormByIdAndVersionTag(formId, versionTag, tenantId)
         .<Either<Failure, PersistedForm>>map(Either::right)
         .orElseGet(
             () ->
