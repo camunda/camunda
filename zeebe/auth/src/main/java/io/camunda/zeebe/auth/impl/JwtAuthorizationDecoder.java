@@ -92,7 +92,8 @@ public class JwtAuthorizationDecoder
 
     claimMap.putAll(
         decodedJWT.getClaims().entrySet().stream()
-            .filter(entry -> entry.getKey().startsWith(USER_TOKEN_CLAIM_PREFIX))
+            .filter(entry -> entry.getKey().startsWith(Authorization.USER_TOKEN_CLAIM_PREFIX))
+            .filter(entry -> !entry.getValue().isNull())
             .collect(
                 Collectors.toMap(
                     Map.Entry::getKey, claimEntry -> claimEntry.getValue().as(Object.class))));

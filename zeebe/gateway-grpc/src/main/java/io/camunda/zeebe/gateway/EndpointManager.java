@@ -22,6 +22,7 @@ import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
+import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -76,6 +77,7 @@ import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -495,14 +497,25 @@ public final class EndpointManager {
         multiTenancy.isEnabled()
             ? Context.current().call(InterceptorUtil.getAuthorizedTenantsKey()::get)
             : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
-    final String authorizationToken =
+
+    final var authorizationToken =
         Authorization.jwtEncoder()
             .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
             .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
             .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-            .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants)
-            .encode();
-    brokerRequest.setAuthorization(authorizationToken);
+            .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
+
+    // retrieve the user claims from the context and add them to the token
+    final Map<String, Object> userClaims =
+        Context.current().call(AuthenticationInterceptor.USER_CLAIMS::get);
+    if (userClaims != null) {
+      userClaims.forEach(
+          (key, value) -> {
+            authorizationToken.withClaim(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value);
+          });
+    }
+
+    brokerRequest.setAuthorization(authorizationToken.encode());
 
     return brokerRequest;
   }
