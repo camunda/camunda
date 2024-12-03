@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.BpmnDeploymentBindingValidator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -23,8 +24,6 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -42,7 +41,7 @@ public final class DeploymentTransformer {
 
   private final Map<String, DeploymentResourceTransformer> resourceTransformers;
 
-  private final MessageDigest digestGenerator;
+  private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   // internal changes during processing
   private RejectionType rejectionType;
   private String rejectionReason;
@@ -56,22 +55,11 @@ public final class DeploymentTransformer {
       final EngineConfiguration config,
       final InstantSource clock) {
 
-    try {
-      // We get an alert by LGTM, since MD5 is a weak cryptographic hash function,
-      // but it is not easy to exchange this weak algorithm without getting compatibility issues
-      // with previous versions. Furthermore it is very unlikely that we get problems on checking
-      // the deployments hashes.
-      digestGenerator =
-          MessageDigest.getInstance("MD5"); // lgtm [java/weak-cryptographic-algorithm]
-    } catch (final NoSuchAlgorithmException e) {
-      throw new IllegalStateException(e);
-    }
-
     final var bpmnResourceTransformer =
         new BpmnResourceTransformer(
             keyGenerator,
             stateWriter,
-            this::getChecksum,
+            checksumGenerator,
             processingState.getProcessState(),
             expressionProcessor,
             featureFlags.enableStraightThroughProcessingLoopDetector(),
@@ -79,11 +67,11 @@ public final class DeploymentTransformer {
             clock);
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
-            keyGenerator, stateWriter, this::getChecksum, processingState.getDecisionState());
+            keyGenerator, stateWriter, checksumGenerator, processingState.getDecisionState());
 
     final var formResourceTransformer =
         new FormResourceTransformer(
-            keyGenerator, stateWriter, this::getChecksum, processingState.getFormState());
+            keyGenerator, stateWriter, checksumGenerator, processingState.getFormState());
 
     resourceTransformers =
         Map.ofEntries(
@@ -94,7 +82,7 @@ public final class DeploymentTransformer {
   }
 
   public DirectBuffer getChecksum(final byte[] resource) {
-    return wrapArray(digestGenerator.digest(resource));
+    return wrapArray(checksumGenerator.checksum(resource));
   }
 
   public Either<Failure, Void> transform(final DeploymentRecord deploymentEvent) {
