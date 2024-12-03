@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.tenant;
 import io.camunda.service.TenantServices;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
@@ -52,8 +53,8 @@ public class TenantController {
       consumes = MediaType.APPLICATION_JSON_VALUE)
   public CompletableFuture<ResponseEntity<Object>> updateTenant(
       @PathVariable final long tenantKey,
-      @RequestBody final TenantCreateRequest createTenantRequest) {
-    return RequestMapper.toTenantUpdateDto(tenantKey, createTenantRequest)
+      @RequestBody final TenantUpdateRequest tenantUpdateRequest) {
+    return RequestMapper.toTenantUpdateDto(tenantKey, tenantUpdateRequest)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateTenant);
   }
 

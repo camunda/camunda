@@ -38,6 +38,7 @@ public class ExecutionListenersValidator implements ModelElementValidator<ZeebeE
               BpmnModelConstants.BPMN_ELEMENT_PROCESS,
               BpmnModelConstants.BPMN_ELEMENT_SUB_PROCESS,
               BpmnModelConstants.BPMN_ELEMENT_CALL_ACTIVITY,
+              BpmnModelConstants.BPMN_ELEMENT_AD_HOC_SUB_PROCESS,
               // tasks
               BpmnModelConstants.BPMN_ELEMENT_TASK,
               BpmnModelConstants.BPMN_ELEMENT_SEND_TASK,

@@ -20,6 +20,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.VersionInfo;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.Permission;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
@@ -1638,6 +1639,9 @@ final class JsonSerializableToJsonTest {
               final String elementId = "activity";
               final int flowScopeKey = 123;
               final BpmnElementType bpmnElementType = BpmnElementType.SERVICE_TASK;
+              final var elementInstancePath = List.of(List.of(101L, 102L), List.of(103L, 104L));
+              final var processDefinitionPath = List.of(101L, 102L);
+              final var callingElementPath = List.of(12345, 67890);
 
               return new ProcessInstanceRecord()
                   .setElementId(elementId)
@@ -1649,7 +1653,10 @@ final class JsonSerializableToJsonTest {
                   .setFlowScopeKey(flowScopeKey)
                   .setParentProcessInstanceKey(11)
                   .setParentElementInstanceKey(22)
-                  .setBpmnEventType(BpmnEventType.UNSPECIFIED);
+                  .setBpmnEventType(BpmnEventType.UNSPECIFIED)
+                  .setElementInstancePath(elementInstancePath)
+                  .setProcessDefinitionPath(processDefinitionPath)
+                  .setCallingElementPath(callingElementPath);
             },
         """
         {
@@ -1663,7 +1670,10 @@ final class JsonSerializableToJsonTest {
           "parentProcessInstanceKey": 11,
           "parentElementInstanceKey": 22,
           "bpmnEventType": "UNSPECIFIED",
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "elementInstancePath":[[101, 102], [103, 104]],
+          "processDefinitionPath": [101, 102],
+          "callingElementPath": [12345, 67890]
         }
         """
       },
@@ -1686,7 +1696,10 @@ final class JsonSerializableToJsonTest {
           "parentProcessInstanceKey": -1,
           "parentElementInstanceKey": -1,
           "bpmnEventType": "UNSPECIFIED",
-          "tenantId": "<default>"
+          "tenantId": "<default>",
+          "elementInstancePath":[],
+          "processDefinitionPath": [],
+          "callingElementPath": []
         }
         """
       },
@@ -2970,6 +2983,72 @@ final class JsonSerializableToJsonTest {
         "mappingKey": -1,
         "claimName": "",
         "claimValue": ""
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// IdentitySetupRecord ///////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "IdentitySetup record",
+        (Supplier<IdentitySetupRecord>)
+            () ->
+                new IdentitySetupRecord()
+                    .setDefaultRole(
+                        new RoleRecord()
+                            .setRoleKey(1)
+                            .setName("roleName")
+                            .setEntityKey(2)
+                            .setEntityType(EntityType.USER))
+                    .setDefaultUser(
+                        new UserRecord()
+                            .setUserKey(3L)
+                            .setUsername("username")
+                            .setName("name")
+                            .setEmail("email")
+                            .setPassword("password")
+                            .setUserType(UserType.REGULAR)),
+        """
+      {
+        "defaultRole": {
+          "roleKey": 1,
+          "name": "roleName",
+          "entityKey": 2,
+          "entityType": "USER"
+        },
+        "defaultUser": {
+          "userKey": 3,
+          "username": "username",
+          "name": "name",
+          "email": "email",
+          "password": "password",
+          "userType": "REGULAR"
+        }
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ////////////////////////////// Empty IdentitySetupRecord ////////////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty IdentitySetupRecord",
+        (Supplier<IdentitySetupRecord>) IdentitySetupRecord::new,
+        """
+      {
+          "defaultRole": {
+              "roleKey": -1,
+              "name": "",
+              "entityKey": -1,
+              "entityType": "UNSPECIFIED"
+          },
+          "defaultUser": {
+              "userKey": -1,
+              "name": "",
+              "username": "",
+              "password": "",
+              "email": "",
+              "userType": "REGULAR"
+          }
       }
       """
       },

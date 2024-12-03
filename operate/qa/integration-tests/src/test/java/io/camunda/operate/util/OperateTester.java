@@ -203,7 +203,9 @@ public class OperateTester {
   @Qualifier("userTasksAreCreated")
   private Predicate<Object[]> userTasksAreCreated;
 
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired
+  @Qualifier("operateFlowNodeInstanceTemplate")
+  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired private OperationReader operationReader;
 

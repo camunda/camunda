@@ -50,15 +50,6 @@ public class ExternalVariableUpdateImportIndexHandler
 
   public ExternalVariableUpdateImportIndexHandler() {}
 
-  public TimestampBasedImportIndexDto getIndexStateDto() {
-    final TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
-    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
-    indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
-    indexToStore.setDataSource(getDataSource());
-    indexToStore.setEsTypeIndexRefersTo(getDatabaseDocID());
-    return indexToStore;
-  }
-
   @PostConstruct
   protected void init() {
     final Optional<TimestampBasedImportIndexDto> dto =
@@ -76,6 +67,16 @@ public class ExternalVariableUpdateImportIndexHandler
     final TimestampBasedImportPage page = new TimestampBasedImportPage();
     page.setTimestampOfLastEntity(timestampOfLastEntity);
     return page;
+  }
+
+  @Override
+  public TimestampBasedImportIndexDto getIndexStateDto() {
+    final TimestampBasedImportIndexDto indexToStore = new TimestampBasedImportIndexDto();
+    indexToStore.setLastImportExecutionTimestamp(lastImportExecutionTimestamp);
+    indexToStore.setTimestampOfLastEntity(persistedTimestampOfLastEntity);
+    indexToStore.setDataSource(getDataSource());
+    indexToStore.setDbTypeIndexRefersTo(getDatabaseDocID());
+    return indexToStore;
   }
 
   @Override
@@ -132,11 +133,11 @@ public class ExternalVariableUpdateImportIndexHandler
   }
 
   private void updateLastPersistedEntityTimestamp(final OffsetDateTime timestamp) {
-    this.persistedTimestampOfLastEntity = timestamp;
+    persistedTimestampOfLastEntity = timestamp;
   }
 
   private void updateLastImportExecutionTimestamp(final OffsetDateTime timestamp) {
-    this.lastImportExecutionTimestamp = timestamp;
+    lastImportExecutionTimestamp = timestamp;
   }
 
   private void updatePendingLastEntityTimestamp(final OffsetDateTime timestamp) {

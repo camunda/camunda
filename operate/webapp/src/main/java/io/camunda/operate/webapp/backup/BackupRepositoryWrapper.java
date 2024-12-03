@@ -19,6 +19,7 @@ import io.camunda.webapps.backup.exceptions.InvalidRequestException;
 import io.camunda.webapps.backup.exceptions.ResourceNotFoundException;
 import io.camunda.webapps.backup.repository.BackupRepositoryConnectionException;
 import io.camunda.webapps.backup.repository.GenericBackupException;
+import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -42,6 +43,11 @@ public class BackupRepositoryWrapper implements BackupRepository {
 
   BackupRepositoryWrapper(final BackupRepository repository) {
     this.repository = repository;
+  }
+
+  @Override
+  public SnapshotNameProvider snapshotNameProvider() {
+    return repository.snapshotNameProvider();
   }
 
   @Override

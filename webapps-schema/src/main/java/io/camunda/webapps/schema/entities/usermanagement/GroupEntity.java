@@ -8,13 +8,14 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
-import java.util.Set;
 
 public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
 
   private Long groupKey;
   private String name;
-  private Set<Long> assignedMemberKeys;
+  private Long memberKey;
+
+  private EntityJoinRelation join;
 
   public Long getGroupKey() {
     return groupKey;
@@ -34,12 +35,25 @@ public class GroupEntity extends AbstractExporterEntity<GroupEntity> {
     return this;
   }
 
-  public Set<Long> getAssignedMemberKeys() {
-    return assignedMemberKeys;
+  public Long getMemberKey() {
+    return memberKey;
   }
 
-  public GroupEntity setAssignedMemberKeys(final Set<Long> entityKey) {
-    assignedMemberKeys = entityKey;
+  public GroupEntity setMemberKey(final Long memberKey) {
+    this.memberKey = memberKey;
     return this;
+  }
+
+  public EntityJoinRelation getJoin() {
+    return join;
+  }
+
+  public GroupEntity setJoin(final EntityJoinRelation join) {
+    this.join = join;
+    return this;
+  }
+
+  public static String getChildKey(final long groupKey, final long memberKey) {
+    return String.format("%d-%d", groupKey, memberKey);
   }
 }

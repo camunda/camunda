@@ -152,4 +152,12 @@ public interface UserTaskFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   UserTaskFilter variables(final List<UserTaskVariableFilterRequest> variableValueFilters);
+
+  /**
+   * Filters user tasks by the specified element instance key.
+   *
+   * @param elementInstanceKey the element instance key of the user task
+   * @return the updated filter
+   */
+  UserTaskFilter elementInstanceKey(final Long elementInstanceKey);
 }

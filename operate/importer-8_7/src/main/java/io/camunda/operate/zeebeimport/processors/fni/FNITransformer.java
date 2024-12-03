@@ -82,6 +82,7 @@ public class FNITransformer {
     entity.setProcessDefinitionKey(recordValue.getProcessDefinitionKey());
     entity.setBpmnProcessId(recordValue.getBpmnProcessId());
     entity.setTenantId(tenantOrDefault(recordValue.getTenantId()));
+    entity.setScopeKey(recordValue.getFlowScopeKey());
 
     if (FINISH_STATES.contains(intentStr)) {
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformation;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.transformer.AdHocSubProcessTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.BoundaryEventTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.BusinessRuleTaskTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.CallActivityTransformer;
@@ -93,6 +94,7 @@ public final class BpmnTransformer {
     step2Visitor.registerHandler(new UserTaskTransformer(expressionLanguage));
 
     step3Visitor = new TransformationVisitor();
+    step3Visitor.registerHandler(new AdHocSubProcessTransformer());
     step3Visitor.registerHandler(new ContextProcessTransformer());
     step3Visitor.registerHandler(new EventBasedGatewayTransformer());
     step3Visitor.registerHandler(new ExclusiveGatewayTransformer());

@@ -1,35 +1,36 @@
 import {
   ApiDefinition,
   apiDelete,
-  apiGet,
   apiPost,
+  apiPut,
   pathBuilder,
 } from "src/utility/api/request";
 import { USERS_ENDPOINT } from "src/utility/api/users/index";
 import { Role } from "src/utility/api/roles";
+import { SearchResponse } from "src/utility/api";
 
-export type GetUserRolesParams = { id: string };
+export type GetUserRolesParams = { userKey: number };
 
 const path = pathBuilder(USERS_ENDPOINT);
 
-export const getUserRoles: ApiDefinition<Role[], GetUserRolesParams> = ({
-  id,
-}) => apiGet(path(id, "roles"));
+export const getUserRoles: ApiDefinition<
+  SearchResponse<Role>,
+  GetUserRolesParams
+> = ({ userKey }) => apiPost(path(userKey, "roles", "search"));
 
-export type AssignUserRoleParams = GetUserRolesParams & {
-  roleId: Role["id"];
-};
+export interface RoleMemberParams {
+  userKey: number;
+  roleKey: number;
+}
 
-export const assignUserRole: ApiDefinition<undefined, AssignUserRoleParams> = ({
-  id,
-  roleId,
-}) => apiPost(path(id, "roles"), { roleId: roleId });
+function getUserRolePath(params: RoleMemberParams) {
+  return path(params.userKey, "roles", params.roleKey);
+}
 
-export type RemoveUserRoleParams = GetUserRolesParams & {
-  roleId: Role["id"];
-};
+export const assignUserRole: ApiDefinition<undefined, RoleMemberParams> = (
+  params,
+) => apiPut(getUserRolePath(params));
 
-export const removeUserRole: ApiDefinition<undefined, RemoveUserRoleParams> = ({
-  id,
-  roleId,
-}) => apiDelete(path(id, "roles", roleId));
+export const removeUserRole: ApiDefinition<undefined, RoleMemberParams> = (
+  params,
+) => apiDelete(getUserRolePath(params));

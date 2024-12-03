@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl;
 
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistribu
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.escalation.EscalationRecord;
@@ -100,6 +102,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.SIGNAL, SignalRecord.class);
     registry.put(ValueType.PROCESS_INSTANCE_BATCH, ProcessInstanceBatchRecord.class);
     registry.put(ValueType.FORM, FormRecord.class);
+    registry.put(ValueType.RESOURCE, ResourceRecord.class);
     registry.put(ValueType.USER_TASK, UserTaskRecord.class);
     registry.put(ValueType.COMPENSATION_SUBSCRIPTION, CompensationSubscriptionRecord.class);
     registry.put(ValueType.MESSAGE_CORRELATION, MessageCorrelationRecord.class);
@@ -112,6 +115,7 @@ public final class TypedEventRegistry {
     registry.put(ValueType.MAPPING, MappingRecord.class);
     registry.put(ValueType.GROUP, GroupRecord.class);
     registry.put(ValueType.REDISTRIBUTION, RedistributionRecord.class);
+    registry.put(ValueType.IDENTITY_SETUP, IdentitySetupRecord.class);
 
     EVENT_REGISTRY = Collections.unmodifiableMap(registry);
 

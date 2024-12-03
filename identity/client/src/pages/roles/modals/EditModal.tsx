@@ -26,10 +26,9 @@ const EditModal: FC<UseEntityModalProps<Role>> = ({
   const [description, setDescription] = useState(role.description);
   const { permissions, setPermissions, onSelect, onUnselect, availableItems } =
     useAllPermissionsTranslated(role?.permissions);
-
   const handleSubmit = async () => {
     const { success } = await apiCall({
-      id: role.id,
+      key: role.key,
       name,
       description,
       permissions,

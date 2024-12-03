@@ -22,6 +22,7 @@ import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTempla
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.CANDIDATE_GROUPS;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.CANDIDATE_USERS;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.FLOW_NODE_BPMN_ID;
+import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.FLOW_NODE_INSTANCE_ID;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.PRIORITY;
 import static io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate.PROCESS_DEFINITION_ID;
@@ -66,6 +67,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     ofNullable(getPrioritiesQuery(filter.priorityOperations())).ifPresent(queries::addAll);
     ofNullable(getStateQuery(filter.states())).ifPresent(queries::add);
     ofNullable(getTenantQuery(filter.tenantIds())).ifPresent(queries::add);
+    ofNullable(getElementInstanceKeyQuery(filter.elementInstanceKeys())).ifPresent(queries::add);
 
     // Task Variable Query: Check if taskVariable with specified varName and varValue exists
     final var taskVariableQuery = getTaskVariablesQuery(filter.variableFilters());
@@ -147,6 +149,10 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
   private SearchQuery getBpmnProcessIdQuery(final List<String> bpmnProcessId) {
     return stringTerms(BPMN_PROCESS_ID, bpmnProcessId);
+  }
+
+  private SearchQuery getElementInstanceKeyQuery(final List<Long> elementInstanceKeys) {
+    return longTerms(FLOW_NODE_INSTANCE_ID, elementInstanceKeys);
   }
 
   private SearchQuery getElementIdQuery(final List<String> taskDefinitionId) {

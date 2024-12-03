@@ -26,6 +26,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTe
 import io.camunda.webapps.schema.entities.operate.FlowNodeType;
 import java.util.List;
 import java.util.Map;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -44,7 +45,8 @@ public class OpensearchFlowNodeStatisticsDao implements FlowNodeStatisticsDao {
       final OpensearchRequestDSLWrapper requestDSLWrapper,
       final OpensearchAggregationDSLWrapper aggregationDSLWrapper,
       final RichOpenSearchClient richOpenSearchClient,
-      final FlowNodeInstanceTemplate flowNodeInstanceTemplate) {
+      final @Qualifier("operateFlowNodeInstanceTemplate") FlowNodeInstanceTemplate
+              flowNodeInstanceTemplate) {
     this.flowNodeInstanceTemplate = flowNodeInstanceTemplate;
     this.richOpenSearchClient = richOpenSearchClient;
     this.queryDSLWrapper = queryDSLWrapper;

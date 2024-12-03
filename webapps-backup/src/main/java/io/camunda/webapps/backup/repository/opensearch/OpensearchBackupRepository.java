@@ -77,6 +77,11 @@ public class OpensearchBackupRepository implements BackupRepository {
   }
 
   @Override
+  public SnapshotNameProvider snapshotNameProvider() {
+    return snapshotNameProvider;
+  }
+
+  @Override
   public void deleteSnapshot(final String repositoryName, final String snapshotName) {
     final var request = deleteSnapshotRequestBuilder(repositoryName, snapshotName).build();
     safe(

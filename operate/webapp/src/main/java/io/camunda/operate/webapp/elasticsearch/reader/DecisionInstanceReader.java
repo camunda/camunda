@@ -54,7 +54,7 @@ import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDt
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.operate.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
@@ -89,9 +89,7 @@ public class DecisionInstanceReader extends AbstractReader
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionInstanceReader.class);
 
-  @Autowired(required = false)
-  protected PermissionsService permissionsService;
-
+  @Autowired private PermissionsService permissionsService;
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private DateTimeFormatter dateTimeFormatter;
   @Autowired private OperateProperties operateProperties;
@@ -338,7 +336,7 @@ public class DecisionInstanceReader extends AbstractReader
   }
 
   private QueryBuilder createReadPermissionQuery() {
-    if (permissionsService == null) {
+    if (!permissionsService.permissionsEnabled()) {
       return null;
     }
     final var allowed = permissionsService.getDecisionsWithPermission(IdentityPermission.READ);

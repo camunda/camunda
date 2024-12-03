@@ -16,7 +16,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
-import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.NoBeansTest;
@@ -24,6 +23,7 @@ import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.tasklist.zeebe.ImportValueType;
 import io.camunda.tasklist.zeebeimport.es.ImportBatchElasticSearch;
 import io.camunda.tasklist.zeebeimport.es.ImportJobElasticSearch;
+import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.util.ArrayList;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.BeforeEach;

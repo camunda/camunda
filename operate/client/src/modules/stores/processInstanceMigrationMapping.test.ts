@@ -79,6 +79,10 @@ describe('processInstanceMigrationMappingStore', () => {
         type: 'bpmn:ServiceTask',
       },
       {
+        id: 'MessageStartEvent',
+        type: 'bpmn:StartEvent',
+      },
+      {
         id: 'TimerEventSubProcess',
         type: 'bpmn:SubProcess',
       },
@@ -137,6 +141,22 @@ describe('processInstanceMigrationMappingStore', () => {
       {
         id: 'MultiInstanceSubProcess',
         type: 'bpmn:SubProcess',
+      },
+      {
+        id: 'EscalationEventSubProcess',
+        type: 'bpmn:SubProcess',
+      },
+      {
+        id: 'EscalationStartEvent',
+        type: 'bpmn:StartEvent',
+      },
+      {
+        id: 'CompensationBoundaryEvent',
+        type: 'bpmn:BoundaryEvent',
+      },
+      {
+        id: 'CompensationTask',
+        type: 'bpmn:ServiceTask',
       },
     ]);
 
@@ -207,6 +227,10 @@ describe('processInstanceMigrationMappingStore', () => {
             id: 'TaskYY',
             name: 'Task YY',
           },
+          {
+            id: 'CompensationTask',
+            name: 'Compensation task',
+          },
         ],
       },
       {
@@ -238,6 +262,10 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'TaskYY',
             name: 'Task YY',
+          },
+          {
+            id: 'CompensationTask',
+            name: 'Compensation task',
           },
         ],
       },
@@ -373,6 +401,22 @@ describe('processInstanceMigrationMappingStore', () => {
             id: 'TaskYY',
             name: 'Task YY',
           },
+          {
+            id: 'CompensationTask',
+            name: 'Compensation task',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'MessageStartEvent',
+          name: 'Message start event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'MessageStartEvent',
+            name: 'Message start event',
+          },
         ],
       },
       {
@@ -404,6 +448,10 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'TaskYY',
             name: 'Task YY',
+          },
+          {
+            id: 'CompensationTask',
+            name: 'Compensation task',
           },
         ],
       },
@@ -584,6 +632,66 @@ describe('processInstanceMigrationMappingStore', () => {
           {
             id: 'ParallelTask',
             name: 'Parallel task',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'EscalationEventSubProcess',
+          name: 'Escalation event sub process',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'EscalationEventSubProcess',
+            name: 'Escalation event sub process',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'EscalationStartEvent',
+          name: 'Escalation start event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'EscalationStartEvent',
+            name: 'Escalation start event',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'CompensationBoundaryEvent',
+          name: 'Compensation boundary event',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'CompensationBoundaryEvent',
+            name: 'Compensation boundary event',
+          },
+        ],
+      },
+      {
+        sourceFlowNode: {
+          id: 'CompensationTask',
+          name: 'Compensation task',
+        },
+        selectableTargetFlowNodes: [
+          {
+            id: 'checkPayment',
+            name: 'Check payment',
+          },
+          {
+            id: 'TaskX',
+            name: 'Task X',
+          },
+          {
+            id: 'TaskYY',
+            name: 'Task YY',
+          },
+          {
+            id: 'CompensationTask',
+            name: 'Compensation task',
           },
         ],
       },

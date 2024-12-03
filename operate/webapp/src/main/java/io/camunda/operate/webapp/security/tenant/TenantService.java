@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.security.tenant;
 
 import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
 
+import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import java.util.ArrayList;
@@ -26,6 +27,10 @@ public class TenantService {
   private static final Logger LOGGER = LoggerFactory.getLogger(TenantService.class);
 
   @Autowired private OperateProperties operateProperties;
+
+  public List<String> tenantIds() {
+    return TenantAttributeHolder.tenantIds();
+  }
 
   public AuthenticatedTenants getAuthenticatedTenants() {
     if (!securityContextPresent()) {

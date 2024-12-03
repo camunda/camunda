@@ -9,22 +9,24 @@ package io.camunda.tasklist.zeebeimport.v870.processors.os;
 
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.VariableEntity;
 import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
 import io.camunda.tasklist.entities.listview.VariableListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.schema.indices.VariableIndex;
 import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.camunda.tasklist.zeebeimport.v870.record.Intent;
 import io.camunda.tasklist.zeebeimport.v870.record.value.VariableRecordValueImpl;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
+import io.camunda.webapps.schema.entities.operate.VariableEntity;
+import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import java.util.*;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -35,7 +37,9 @@ public class VariableZeebeRecordProcessorOpenSearch {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(VariableZeebeRecordProcessorOpenSearch.class);
 
-  @Autowired private VariableIndex variableIndex;
+  @Autowired
+  @Qualifier("tasklistVariableTemplate")
+  private VariableTemplate variableIndex;
 
   @Autowired private TasklistProperties tasklistProperties;
 
@@ -61,9 +65,9 @@ public class VariableZeebeRecordProcessorOpenSearch {
   private BulkOperation getVariableQuery(final VariableEntity entity) throws PersistenceException {
     LOGGER.debug("Variable instance for list view: id {}", entity.getId());
     final Map<String, Object> updateFields = new HashMap<>();
-    updateFields.put(VariableIndex.VALUE, entity.getValue());
-    updateFields.put(VariableIndex.FULL_VALUE, entity.getFullValue());
-    updateFields.put(VariableIndex.IS_PREVIEW, entity.getIsPreview());
+    updateFields.put(VariableTemplate.VALUE, entity.getValue());
+    updateFields.put(VariableTemplate.FULL_VALUE, entity.getFullValue());
+    updateFields.put(VariableTemplate.IS_PREVIEW, entity.getIsPreview());
 
     return new BulkOperation.Builder()
         .update(
@@ -110,36 +114,40 @@ public class VariableZeebeRecordProcessorOpenSearch {
   }
 
   private boolean isProcessScope(final VariableEntity entity) {
-    return Objects.equals(entity.getProcessInstanceId(), entity.getScopeFlowNodeId());
+    return Objects.equals(entity.getProcessInstanceKey(), entity.getScopeKey());
   }
 
   private boolean isTaskOrSubProcessVariable(final VariableEntity entity) {
-    return !Objects.equals(entity.getProcessInstanceId(), entity.getScopeFlowNodeId());
+    return !Objects.equals(entity.getProcessInstanceKey(), entity.getScopeKey());
   }
 
   private VariableEntity getVariableEntity(
       final Record record, final VariableRecordValueImpl recordValue) {
-    final VariableEntity entity = new VariableEntity();
-    entity.setId(
-        VariableEntity.getIdBy(String.valueOf(recordValue.getScopeKey()), recordValue.getName()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
-    entity.setProcessInstanceId(String.valueOf(recordValue.getProcessInstanceKey()));
-    entity.setName(recordValue.getName());
-    entity.setTenantId(recordValue.getTenantId());
-    if (recordValue.getValue().length()
-        > tasklistProperties.getImporter().getVariableSizeThreshold()) {
-      // store preview
-      entity.setValue(
-          recordValue
-              .getValue()
-              .substring(0, tasklistProperties.getImporter().getVariableSizeThreshold()));
+    final VariableEntity entity =
+        new VariableEntity()
+            .setId(String.format("%d-%s", recordValue.getScopeKey(), recordValue.getName()))
+            .setId(
+                VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
+            .setKey(record.getKey())
+            .setPartitionId(record.getPartitionId())
+            .setScopeKey(recordValue.getScopeKey())
+            .setProcessInstanceKey(recordValue.getProcessInstanceKey())
+            .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
+            .setBpmnProcessId(recordValue.getBpmnProcessId())
+            .setName(recordValue.getName())
+            .setTenantId(recordValue.getTenantId())
+            .setPosition(record.getPosition());
+
+    final var variableSizeThreshold = tasklistProperties.getImporter().getVariableSizeThreshold();
+    if (recordValue.getValue().length() > variableSizeThreshold) {
+      entity.setValue(recordValue.getValue().substring(0, variableSizeThreshold));
+      entity.setFullValue(recordValue.getValue());
       entity.setIsPreview(true);
     } else {
       entity.setValue(recordValue.getValue());
+      entity.setFullValue(null);
+      entity.setIsPreview(false);
     }
-    entity.setFullValue(recordValue.getValue());
     return entity;
   }
 

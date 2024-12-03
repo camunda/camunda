@@ -208,7 +208,7 @@ public final class ClusterConfigurationRequestServer implements AutoCloseable {
     // throwable is always CompletionException
     return switch (throwable.getCause()) {
       case final ClusterConfigurationRequestFailedException.OperationNotAllowed
-                  operationNotAllowed ->
+              operationNotAllowed ->
           Either.left(
               new ErrorResponse(ErrorCode.OPERATION_NOT_ALLOWED, operationNotAllowed.getMessage()));
       case final ClusterConfigurationRequestFailedException.InvalidRequest invalidRequest ->

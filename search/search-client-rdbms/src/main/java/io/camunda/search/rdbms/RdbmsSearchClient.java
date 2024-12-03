@@ -15,7 +15,9 @@ import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
+import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
+import io.camunda.search.clients.MappingSearchClient;
 import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.search.clients.ProcessInstanceSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
@@ -29,7 +31,9 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
+import io.camunda.search.entities.MappingEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -43,7 +47,9 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
+import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
+import io.camunda.search.query.MappingQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
@@ -71,7 +77,9 @@ public class RdbmsSearchClient
         UserSearchClient,
         VariableSearchClient,
         RoleSearchClient,
-        TenantSearchClient {
+        TenantSearchClient,
+        MappingSearchClient,
+        GroupSearchClient {
 
   private static final Logger LOG = LoggerFactory.getLogger(RdbmsSearchClient.class);
 
@@ -106,6 +114,13 @@ public class RdbmsSearchClient
   }
 
   @Override
+  public SearchQueryResult<MappingEntity> searchMappings(final MappingQuery filter) {
+    LOG.debug("[RDBMS Search Client] Search for mappings: {}", filter);
+
+    return rdbmsService.getMappingReader().search(filter);
+  }
+
+  @Override
   public SearchQueryResult<DecisionDefinitionEntity> searchDecisionDefinitions(
       final DecisionDefinitionQuery query) {
     LOG.debug("[RDBMS Search Client] Search for decisionDefinition: {}", query);
@@ -123,8 +138,10 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<DecisionRequirementsEntity> searchDecisionRequirements(
-      final DecisionRequirementsQuery filter) {
-    return null;
+      final DecisionRequirementsQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for decisionRequirements: {}", query);
+
+    return rdbmsService.getDecisionRequirementsReader().search(query);
   }
 
   @Override
@@ -135,7 +152,7 @@ public class RdbmsSearchClient
 
   @Override
   public SearchQueryResult<FormEntity> searchForms(final FormQuery filter) {
-    return null;
+    return rdbmsService.getFormReader().search(filter);
   }
 
   @Override
@@ -146,6 +163,13 @@ public class RdbmsSearchClient
   @Override
   public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
     return null;
+  }
+
+  @Override
+  public SearchQueryResult<GroupEntity> searchGroups(final GroupQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for groups: {}", query);
+
+    return rdbmsService.getGroupReader().search(query);
   }
 
   @Override
@@ -168,13 +192,17 @@ public class RdbmsSearchClient
   }
 
   @Override
-  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery filter) {
-    return null;
+  public SearchQueryResult<RoleEntity> searchRoles(final RoleQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for roles: {}", query);
+
+    return rdbmsService.getRoleReader().search(query);
   }
 
   @Override
-  public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery filter) {
-    return null;
+  public SearchQueryResult<TenantEntity> searchTenants(final TenantQuery query) {
+    LOG.debug("[RDBMS Search Client] Search for tenants: {}", query);
+
+    return rdbmsService.getTenantReader().search(query);
   }
 
   @Override

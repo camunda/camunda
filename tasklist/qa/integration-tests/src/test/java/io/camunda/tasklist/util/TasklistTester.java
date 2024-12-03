@@ -16,14 +16,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.security.oauth.IdentityJwt2AuthenticationTokenConverter;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.command.MigrationPlanBuilderImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -78,14 +78,6 @@ public class TasklistTester {
   @Autowired
   @Qualifier(PROCESS_IS_DELETED_CHECK)
   private TestCheck processIsDeletedCheck;
-
-  @Autowired
-  @Qualifier(PROCESS_INSTANCE_IS_CANCELED_CHECK)
-  private TestCheck processInstanceIsCanceledCheck;
-
-  @Autowired
-  @Qualifier(PROCESS_INSTANCE_IS_COMPLETED_CHECK)
-  private TestCheck processInstanceIsCompletedCheck;
 
   @Autowired
   @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
@@ -539,18 +531,6 @@ public class TasklistTester {
         taskIsCanceledCheck, processInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.FAILED);
-    return this;
-  }
-
-  public TasklistTester processInstanceIsCanceled() {
-    databaseTestExtension.processAllRecordsAndWait(
-        processInstanceIsCanceledCheck, processInstanceId);
-    return this;
-  }
-
-  public TasklistTester processInstanceIsCompleted() {
-    databaseTestExtension.processAllRecordsAndWait(
-        processInstanceIsCompletedCheck, processInstanceId);
     return this;
   }
 

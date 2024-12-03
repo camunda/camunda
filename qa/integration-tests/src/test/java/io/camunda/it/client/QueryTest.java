@@ -47,9 +47,10 @@ import org.awaitility.Awaitility;
  * assertSorted(resultAsc, resultDesc, Incident::getCreationTime);
  * }</pre>
  */
-class QueryTest {
+public class QueryTest {
 
-  static DeploymentEvent deployResource(final ZeebeClient zeebeClient, final String resourceName) {
+  public static DeploymentEvent deployResource(
+      final ZeebeClient zeebeClient, final String resourceName) {
     return zeebeClient
         .newDeployResourceCommand()
         .addResourceFromClasspath(resourceName)
@@ -57,12 +58,12 @@ class QueryTest {
         .join();
   }
 
-  static ProcessInstanceEvent startProcessInstance(
+  public static ProcessInstanceEvent startProcessInstance(
       final ZeebeClient zeebeClient, final String bpmnProcessId) {
     return startProcessInstance(zeebeClient, bpmnProcessId, null);
   }
 
-  static ProcessInstanceEvent startProcessInstance(
+  public static ProcessInstanceEvent startProcessInstance(
       final ZeebeClient zeebeClient, final String bpmnProcessId, final String payload) {
     final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3
         createProcessInstanceCommandStep3 =
@@ -73,7 +74,7 @@ class QueryTest {
     return createProcessInstanceCommandStep3.send().join();
   }
 
-  static void waitForProcessInstancesToStart(
+  public static void waitForProcessInstancesToStart(
       final ZeebeClient zeebeClient, final int expectedProcessInstances) {
     Awaitility.await("should start process instances and import in Operate")
         .atMost(Duration.ofSeconds(60))
@@ -85,7 +86,7 @@ class QueryTest {
             });
   }
 
-  static void waitForFlowNodeInstances(
+  public static void waitForFlowNodeInstances(
       final ZeebeClient zeebeClient, final int expectedFlowNodeInstances) {
     Awaitility.await("should wait until flow node instances are available")
         .atMost(Duration.ofSeconds(60))
@@ -97,7 +98,7 @@ class QueryTest {
             });
   }
 
-  static void waitForProcessesToBeDeployed(
+  public static void waitForProcessesToBeDeployed(
       final ZeebeClient zeebeClient, final int expectedProcessDefinitions) {
     Awaitility.await("should deploy processes and import in Operate")
         .atMost(Duration.ofSeconds(15))
@@ -109,7 +110,7 @@ class QueryTest {
             });
   }
 
-  static void waitUntilProcessInstanceHasIncidents(
+  public static void waitUntilProcessInstanceHasIncidents(
       final ZeebeClient zeebeClient, final int expectedIncidents) {
     Awaitility.await("should wait until incidents are exists")
         .atMost(Duration.ofSeconds(15))
@@ -126,7 +127,7 @@ class QueryTest {
             });
   }
 
-  static void waitUntilFlowNodeInstanceHasIncidents(
+  public static void waitUntilFlowNodeInstanceHasIncidents(
       final ZeebeClient zeebeClient, final int expectedIncidents) {
     Awaitility.await("should wait until flow node instance has incidents")
         .atMost(Duration.ofSeconds(15))
@@ -143,7 +144,7 @@ class QueryTest {
             });
   }
 
-  static <T, U extends Comparable<U>> void assertSorted(
+  public static <T, U extends Comparable<U>> void assertSorted(
       final SearchQueryResponse<T> resultAsc,
       final SearchQueryResponse<T> resultDesc,
       final Function<T, U> propertyExtractor) {
@@ -151,17 +152,17 @@ class QueryTest {
     assertThatIsDescSorted(resultDesc.items(), propertyExtractor);
   }
 
-  static <T, U extends Comparable<U>> void assertThatIsAscSorted(
+  public static <T, U extends Comparable<U>> void assertThatIsAscSorted(
       final List<T> items, final Function<T, U> propertyExtractor) {
     assertThatIsSortedBy(items, propertyExtractor, Comparator.naturalOrder());
   }
 
-  static <T, U extends Comparable<U>> void assertThatIsDescSorted(
+  public static <T, U extends Comparable<U>> void assertThatIsDescSorted(
       final List<T> items, final Function<T, U> propertyExtractor) {
     assertThatIsSortedBy(items, propertyExtractor, Comparator.reverseOrder());
   }
 
-  static <T, U extends Comparable<U>> void assertThatIsSortedBy(
+  public static <T, U extends Comparable<U>> void assertThatIsSortedBy(
       final List<T> items, final Function<T, U> propertyExtractor, final Comparator<U> comparator) {
     final var sorted =
         items.stream().map(propertyExtractor).filter(Objects::nonNull).sorted(comparator).toList();

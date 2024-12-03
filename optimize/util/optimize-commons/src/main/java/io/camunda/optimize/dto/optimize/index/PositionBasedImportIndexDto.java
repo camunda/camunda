@@ -13,7 +13,6 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
 
   protected long positionOfLastEntity = 0;
   protected long sequenceOfLastEntity = 0;
-  protected String esTypeIndexRefersTo;
   // flag to indicate whether at least one record with a sequence field has been imported
   protected boolean hasSeenSequenceField = false;
 
@@ -35,38 +34,12 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
     this.sequenceOfLastEntity = sequenceOfLastEntity;
   }
 
-  public String getEsTypeIndexRefersTo() {
-    return esTypeIndexRefersTo;
-  }
-
-  public void setEsTypeIndexRefersTo(final String esTypeIndexRefersTo) {
-    this.esTypeIndexRefersTo = esTypeIndexRefersTo;
-  }
-
   public boolean isHasSeenSequenceField() {
     return hasSeenSequenceField;
   }
 
   public void setHasSeenSequenceField(final boolean hasSeenSequenceField) {
     this.hasSeenSequenceField = hasSeenSequenceField;
-  }
-
-  @Override
-  public String toString() {
-    return "PositionBasedImportIndexDto(positionOfLastEntity="
-        + getPositionOfLastEntity()
-        + ", sequenceOfLastEntity="
-        + getSequenceOfLastEntity()
-        + ", esTypeIndexRefersTo="
-        + getEsTypeIndexRefersTo()
-        + ", hasSeenSequenceField="
-        + isHasSeenSequenceField()
-        + ")";
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -79,12 +52,32 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  }
+
+  @Override
+  public String toString() {
+    return "PositionBasedImportIndexDto(positionOfLastEntity="
+        + getPositionOfLastEntity()
+        + ", sequenceOfLastEntity="
+        + getSequenceOfLastEntity()
+        + ", dbTypeIndexRefersTo="
+        + getDbTypeIndexRefersTo()
+        + ", hasSeenSequenceField="
+        + isHasSeenSequenceField()
+        + ")";
+  }
+
   @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String positionOfLastEntity = "positionOfLastEntity";
     public static final String sequenceOfLastEntity = "sequenceOfLastEntity";
-    public static final String esTypeIndexRefersTo = "esTypeIndexRefersTo";
+    // With the support of Opensearch it was decided to get rid of ES prefixes in variable names.
+    // However, to avoid reindexing it was decided to keep original field names in indices
+    public static final String dbTypeIndexRefersTo = "esTypeIndexRefersTo";
     public static final String hasSeenSequenceField = "hasSeenSequenceField";
   }
 }

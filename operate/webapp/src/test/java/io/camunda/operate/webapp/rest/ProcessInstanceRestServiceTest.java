@@ -28,7 +28,7 @@ import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.validation.ModifyProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.rest.validation.ProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
@@ -73,6 +73,7 @@ public class ProcessInstanceRestServiceTest {
             flowNodeStatisticsReader,
             sequenceFlowStore);
 
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForProcess(any(), any())).thenReturn(true);
   }
 

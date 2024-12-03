@@ -51,6 +51,15 @@
             },
             "tenantId": {
               "type": "keyword"
+            },
+            "elementInstancePath": {
+              "enabled": false
+            },
+            "processDefinitionPath": {
+              "enabled": false
+            },
+            "callingElementPath": {
+              "enabled": false
             }
           }
         }

@@ -11,7 +11,6 @@ import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.webapp.security.SecurityContextWrapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,14 +31,5 @@ public class IdentityConfigurer {
             .withBaseUrl(operateProperties.getIdentity().getBaseUrl())
             .withType(IdentityConfiguration.Type.AUTH0.name())
             .build());
-  }
-
-  @Bean
-  @Profile(
-      OperateProfileService.SSO_AUTH_PROFILE + " || " + OperateProfileService.IDENTITY_AUTH_PROFILE)
-  public PermissionsService getPermissionsService(
-      final OperateProperties operateProperties,
-      final SecurityContextWrapper securityContextWrapperComponent) {
-    return new PermissionsService(operateProperties, securityContextWrapperComponent);
   }
 }

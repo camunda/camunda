@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.webapp.es.backup.es;
 
+import static io.camunda.tasklist.util.ElasticsearchUtil.STRICT_EXPAND_OPEN_CLOSED_IGNORE_THROTTLED;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -51,7 +52,6 @@ import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRes
 import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsRequest;
 import org.elasticsearch.action.admin.cluster.snapshots.get.GetSnapshotsResponse;
-import org.elasticsearch.action.support.IndicesOptions;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -251,7 +251,7 @@ public class BackupManagerElasticSearch extends BackupManager {
               // ignoreUnavailable = false - indices defined by their exact name MUST be present
               // allowNoIndices = true - indices defined by wildcards, e.g. archived, MIGHT BE
               // absent
-              .indicesOptions(IndicesOptions.fromOptions(false, true, true, true))
+              .indicesOptions(STRICT_EXPAND_OPEN_CLOSED_IGNORE_THROTTLED)
               .includeGlobalState(true)
               .userMetadata(objectMapper.convertValue(metadata, new TypeReference<>() {}))
               .featureStates(new String[] {"none"})

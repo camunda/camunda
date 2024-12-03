@@ -9,6 +9,7 @@ package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
 import io.camunda.webapps.schema.entities.usermanagement.RoleEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -53,7 +54,10 @@ public class RoleCreateUpdateHandler implements ExportHandler<RoleEntity, RoleRe
   @Override
   public void updateEntity(final Record<RoleRecordValue> record, final RoleEntity entity) {
     final RoleRecordValue value = record.getValue();
-    entity.setKey(value.getRoleKey()).setName(value.getName());
+    entity
+        .setKey(value.getRoleKey())
+        .setName(value.getName())
+        .setJoin(RoleIndex.JOIN_RELATION_FACTORY.createParent());
   }
 
   @Override

@@ -20,8 +20,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import io.camunda.tasklist.entities.TaskImplementation;
-import io.camunda.tasklist.entities.TaskState;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -39,6 +37,8 @@ import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.identity.IdentityAuthorizationService;
 import io.camunda.tasklist.webapp.service.TaskService;
 import io.camunda.tasklist.webapp.service.VariableService;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;

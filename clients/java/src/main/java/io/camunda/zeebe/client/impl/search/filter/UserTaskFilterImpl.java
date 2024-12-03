@@ -139,6 +139,13 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
     return this;
   }
 
+  // elementInstanceKey
+  @Override
+  public UserTaskFilter elementInstanceKey(final Long elementInstanceKey) {
+    filter.setElementInstanceKey(elementInstanceKey);
+    return this;
+  }
+
   @Override
   protected UserTaskFilterRequest getSearchRequestProperty() {
     return filter;

@@ -7,17 +7,17 @@
  */
 package io.camunda.optimize;
 
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
-import static io.camunda.optimize.jetty.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.REST_API_PATH;
+import static io.camunda.optimize.tomcat.OptimizeResourceConstants.STATIC_RESOURCE_PATH;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.optimize.jetty.IngestionQoSFilter;
-import io.camunda.optimize.jetty.JavaScriptMainLicenseEnricherFilter;
-import io.camunda.optimize.jetty.MaxRequestSizeFilter;
-import io.camunda.optimize.jetty.NoCachingFilter;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.tomcat.IngestionQoSFilter;
+import io.camunda.optimize.tomcat.JavaScriptMainLicenseEnricherFilter;
+import io.camunda.optimize.tomcat.MaxRequestSizeFilter;
+import io.camunda.optimize.tomcat.NoCachingFilter;
 import jakarta.servlet.DispatcherType;
 import java.util.concurrent.Callable;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class FilterBeansConfig {
+
   @Bean
   public JavaScriptMainLicenseEnricherFilter javaScriptMainLicenseEnricherFilter() {
     return new JavaScriptMainLicenseEnricherFilter();

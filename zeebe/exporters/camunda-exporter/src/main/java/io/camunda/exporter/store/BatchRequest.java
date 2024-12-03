@@ -55,6 +55,8 @@ public interface BatchRequest {
 
   BatchRequest delete(String index, String id);
 
+  BatchRequest deleteWithRouting(String index, String id, String routing);
+
   /**
    * Applies all updates in this batch.
    *

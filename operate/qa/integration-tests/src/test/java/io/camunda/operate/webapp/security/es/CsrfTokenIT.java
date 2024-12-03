@@ -42,6 +42,7 @@ import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
 import io.camunda.operate.webapp.security.oauth2.Jwt2AuthenticationTokenConverter;
 import io.camunda.operate.webapp.security.oauth2.OAuth2WebConfigurer;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import java.util.List;
 import java.util.Optional;
@@ -113,6 +114,7 @@ public class CsrfTokenIT {
   @MockBean private ProcessInstanceReader processInstanceReader;
   @MockBean private BatchOperationWriter batchOperationWriter;
   @MockBean private ProcessDefinitionDao processDefinitionDao;
+  @MockBean private PermissionsService permissionsService;
 
   @Before
   public void setUp() {

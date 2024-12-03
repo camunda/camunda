@@ -18,9 +18,9 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.schema.indices.ProcessIndex;
-import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import java.io.IOException;
 import org.apache.lucene.search.TotalHits;
@@ -45,7 +45,7 @@ class FormStoreElasticSearchTest {
 
   private static final String FORM_INDEX_NAME = "tasklist-form-x.0.0";
   @Mock private FormIndex formIndex = new FormIndex("test", true);
-  @Mock private TaskTemplate taskTemplate = new TaskTemplate();
+  @Mock private TaskTemplate taskTemplate = new TaskTemplate("test", true);
   @Mock private ProcessIndex processIndex = new ProcessIndex();
   @Mock private TenantAwareElasticsearchClient tenantAwareClient;
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;

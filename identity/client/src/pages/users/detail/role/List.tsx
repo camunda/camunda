@@ -25,20 +25,22 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
   const { t, Translate } = useTranslate();
 
   const {
-    data: roles,
+    data: roleData,
     loading: loadingRoles,
     success,
     reload,
-  } = useApi(getUserRoles, { id: user.id! });
+  } = useApi(getUserRoles, { userKey: user.key });
 
   const loading = loadingUser || loadingRoles;
+  const userRoles = roleData?.items ?? [];
+  const areRolesEmpty = userRoles.length === 0;
 
   const [assignRole, addModal] = useEntityModal(AddModal, reload, {
-    userRoles: roles || [],
+    userRoles,
   });
-  const [removeRole, deleteModal] = useEntityModal(DeleteModal, reload);
-
-  const areRolesEmpty = !roles || roles.length === 0;
+  const [removeRole, deleteModal] = useEntityModal(DeleteModal, reload, {
+    userKey: user.key,
+  });
 
   const documentationReference = (
     <Translate>
@@ -52,7 +54,7 @@ const List: FC<RolesListProps> = ({ user, loadingUser }) => {
     <>
       <EntityList
         title={t("Roles assigned to user")}
-        data={roles}
+        data={userRoles}
         headers={[
           { header: t("Name"), key: "name" },
           { header: t("Description"), key: "description" },

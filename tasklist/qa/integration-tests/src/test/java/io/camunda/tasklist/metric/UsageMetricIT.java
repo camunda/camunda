@@ -10,13 +10,13 @@ package io.camunda.tasklist.metric;
 import static io.camunda.tasklist.property.ElasticsearchProperties.DATE_FORMAT_DEFAULT;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.graphql.TaskIT;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.management.dto.UsageMetricDTO;
 import io.camunda.tasklist.webapp.security.Permission;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;

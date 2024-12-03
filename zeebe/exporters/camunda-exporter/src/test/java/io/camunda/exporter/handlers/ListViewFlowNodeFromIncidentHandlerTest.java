@@ -156,6 +156,8 @@ public class ListViewFlowNodeFromIncidentHandlerTest {
         .isEqualTo(incidentRecord.getValue().getTenantId());
     assertThat(flowNodeInstanceForListViewEntity.getJoinRelation().getParent())
         .isEqualTo(incidentRecord.getValue().getProcessInstanceKey());
+    assertThat(flowNodeInstanceForListViewEntity.getPositionIncident())
+        .isEqualTo(incidentRecord.getPosition());
   }
 
   @Test

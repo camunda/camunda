@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.deployment.DbDecisionState;
 import io.camunda.zeebe.engine.state.deployment.DbDeploymentState;
 import io.camunda.zeebe.engine.state.deployment.DbFormState;
 import io.camunda.zeebe.engine.state.deployment.DbProcessState;
+import io.camunda.zeebe.engine.state.deployment.DbResourceState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.group.DbGroupState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
@@ -62,6 +63,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableMigrationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
@@ -84,16 +86,13 @@ import java.util.Objects;
 import java.util.function.BiConsumer;
 
 public class ProcessingDbState implements MutableProcessingState {
-
   private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final KeyGenerator keyGenerator;
-
   private final MutableProcessState processState;
   private final MutableTimerInstanceState timerInstanceState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
-
   private final MutableDeploymentState deploymentState;
   private final MutableJobState jobState;
   private final MutableMessageState messageState;
@@ -106,6 +105,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableMigrationState mutableMigrationState;
   private final MutableDecisionState decisionState;
   private final MutableFormState formState;
+  private final MutableResourceState resourceState;
   private final MutableSignalSubscriptionState signalSubscriptionState;
   private final MutableDistributionState distributionState;
   private final MutableUserTaskState userTaskState;
@@ -119,7 +119,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableRoleState roleState;
   private final MutableGroupState groupState;
   private final MutableMappingState mappingState;
-
+  private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -157,6 +157,7 @@ public class ProcessingDbState implements MutableProcessingState {
     bannedInstanceState = new DbBannedInstanceState(zeebeDb, transactionContext, partitionId);
     decisionState = new DbDecisionState(zeebeDb, transactionContext, config);
     formState = new DbFormState(zeebeDb, transactionContext, config);
+    resourceState = new DbResourceState(zeebeDb, transactionContext, config);
     signalSubscriptionState = new DbSignalSubscriptionState(zeebeDb, transactionContext);
     distributionState = new DbDistributionState(zeebeDb, transactionContext);
     mutableMigrationState = new DbMigrationState(zeebeDb, transactionContext);
@@ -172,6 +173,7 @@ public class ProcessingDbState implements MutableProcessingState {
     groupState = new DbGroupState(zeebeDb, transactionContext);
     tenantState = new DbTenantState(zeebeDb, transactionContext);
     mappingState = new DbMappingState(zeebeDb, transactionContext);
+    this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
   }
 
   @Override
@@ -263,6 +265,11 @@ public class ProcessingDbState implements MutableProcessingState {
   }
 
   @Override
+  public MutableResourceState getResourceState() {
+    return resourceState;
+  }
+
+  @Override
   public MutableSignalSubscriptionState getSignalSubscriptionState() {
     return signalSubscriptionState;
   }
@@ -345,6 +352,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
     return processMessageSubscriptionState;
+  }
+
+  @Override
+  public TransientPendingSubscriptionState getTransientPendingSubscriptionState() {
+    return transientProcessMessageSubscriptionState;
   }
 
   @Override

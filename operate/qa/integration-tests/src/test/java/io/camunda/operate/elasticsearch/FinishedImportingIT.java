@@ -7,6 +7,10 @@
  */
 package io.camunda.operate.elasticsearch;
 
+import static io.camunda.operate.Metrics.GAUGE_NAME_IMPORT_POSITION_COMPLETED;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
+import io.camunda.operate.Metrics;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.SchemaManager;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
@@ -23,6 +27,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
@@ -33,6 +39,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,11 +54,12 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Autowired private RecordsReaderHolder recordsReaderHolder;
   @Autowired private ImportPositionIndex importPositionIndex;
   @Autowired private RestHighLevelClient esClient;
+  @Autowired private MeterRegistry registry;
   private final ProtocolFactory factory = new ProtocolFactory();
 
   @Before
   public void beforeEach() {
-    operateProperties.getImporter().setImportPositionUpdateInterval(1000);
+    operateProperties.getImporter().setImportPositionUpdateInterval(5000);
     CONFIG.index.prefix = operateProperties.getZeebeElasticsearch().getPrefix();
     CONFIG.index.setNumberOfShards(1);
     CONFIG.index.setNumberOfReplicas(0);
@@ -70,6 +78,8 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     EXPORTER.open(new ExporterTestController());
 
     recordsReaderHolder.resetCountEmptyBatches();
+    recordsReaderHolder.resetPartitionsCompletedImporting();
+    registry.clear();
   }
 
   @Test
@@ -170,6 +180,86 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
     Awaitility.await()
         .atMost(Duration.ofSeconds(30))
         .until(() -> isRecordReaderIsCompleted("2-process-instance"));
+  }
+
+  @Test
+  public void shouldNotMarkedAsCompletedViaMetricsWhenImportingIsNotDone() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    EXPORTER.export(record);
+    EXPORTER.export(partitionTwoRecord);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    // when
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // then
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var metrics = beanFactory.getBean(Metrics.class);
+              final Gauge partitionOneImportStatus = getGauge(metrics, "1");
+              final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
+              assertThat(partitionOneImportStatus.value()).isEqualTo(0.0);
+              assertThat(partitionTwoImportStatus.value()).isEqualTo(0.0);
+            });
+  }
+
+  @Test
+  public void shouldMarkImporterCompletedViaMetricsAsWell() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 1);
+    final var partitionTwoRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.6.0", 2);
+    EXPORTER.export(record);
+    EXPORTER.export(partitionTwoRecord);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    zeebeImporter.performOneRoundOfImport();
+
+    // when
+    final var record2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    final var partitionTwoRecord2 = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 2);
+    EXPORTER.export(record2);
+    EXPORTER.export(partitionTwoRecord2);
+    esClient.indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+
+    for (int i = 0; i <= RecordsReaderHolder.MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderIsCompleted("2-process-instance"));
+
+    // then
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var metrics = beanFactory.getBean(Metrics.class);
+              final Gauge partitionOneImportStatus = getGauge(metrics, "1");
+              final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
+              assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
+              assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
+            });
+  }
+
+  @NotNull
+  private static Gauge getGauge(final Metrics metrics, final String partition) {
+    return metrics.getGauge(
+        GAUGE_NAME_IMPORT_POSITION_COMPLETED,
+        Metrics.TAG_KEY_PARTITION,
+        partition,
+        Metrics.TAG_KEY_IMPORT_POS_ALIAS,
+        "process-instance");
   }
 
   @Test

@@ -9,9 +9,9 @@ package io.camunda.tasklist.views;
 
 import static io.camunda.tasklist.util.CollectionUtil.toArrayOfStrings;
 
-import io.camunda.tasklist.entities.TaskEntity;
-import io.camunda.tasklist.entities.TaskImplementation;
-import io.camunda.tasklist.entities.TaskState;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.tasklist.TaskState;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Objects;

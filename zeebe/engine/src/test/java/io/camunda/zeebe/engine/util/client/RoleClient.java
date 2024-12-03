@@ -31,8 +31,8 @@ public class RoleClient {
     return new RoleUpdateClient(writer, roleKey);
   }
 
-  public RoleAddEntityClient addEntity(final long key) {
-    return new RoleAddEntityClient(writer, key);
+  public RoleAddEntityClient addEntity(final long roleKey) {
+    return new RoleAddEntityClient(writer, roleKey);
   }
 
   public RoleRemoveEntityClient removeEntity(final long key) {

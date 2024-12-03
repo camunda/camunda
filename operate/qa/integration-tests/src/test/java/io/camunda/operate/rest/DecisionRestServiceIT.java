@@ -24,7 +24,7 @@ import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.identity.IdentityPermission;
-import io.camunda.operate.webapp.security.identity.PermissionsService;
+import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.operate.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
@@ -62,6 +62,7 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
     // when
     when(decisionReader.getDecision(decisionDefinitionKey))
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.READ))
         .thenReturn(false);
     final MvcResult mvcResult =
@@ -79,6 +80,7 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
     // when
     when(decisionReader.getDecision(decisionDefinitionKey))
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.DELETE))
         .thenReturn(true);
     when(batchOperationWriter.scheduleDeleteDecisionDefinition(any()))
@@ -128,6 +130,7 @@ public class DecisionRestServiceIT extends OperateAbstractIT {
     // when
     when(decisionReader.getDecision(decisionDefinitionKey))
         .thenReturn(new DecisionDefinitionEntity().setDecisionId(decisionId));
+    when(permissionsService.permissionsEnabled()).thenReturn(true);
     when(permissionsService.hasPermissionForDecision(decisionId, IdentityPermission.DELETE))
         .thenReturn(false);
     when(batchOperationWriter.scheduleDeleteDecisionDefinition(any()))
