@@ -12,6 +12,8 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.GroupFilter;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.GroupIndex;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 import java.util.List;
 
 public class GroupFilterTransformer implements FilterTransformer<GroupFilter> {
@@ -20,6 +22,7 @@ public class GroupFilterTransformer implements FilterTransformer<GroupFilter> {
   public SearchQuery toSearchQuery(final GroupFilter filter) {
 
     return and(
+        term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()),
         filter.groupKey() == null ? null : term("key", filter.groupKey()),
         filter.name() == null ? null : term("name", filter.name()));
   }
