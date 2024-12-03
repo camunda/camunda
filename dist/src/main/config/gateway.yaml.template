@@ -291,7 +291,7 @@
       # For now, only Identity is supported as tenant authorization provider.
       # It is used when ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE is set to 'identity'.
       #
-      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MULTITENANCY_ENABLED.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_MULTITENANCY_ENABLED.
       enabled: false
 
     # interceptors:
