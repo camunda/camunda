@@ -61,10 +61,12 @@ public class MetricRegistry {
 
     Timer.builder(MIGRATION_ROUND_DURATION)
         .description("time taken for migrating a batch")
+        .publishPercentileHistogram()
         .register(meterRegistry);
 
     Timer.builder(MIGRATION_SINGLE_PROCESS_DURATION)
         .description("time taken to process a single process definition")
+        .publishPercentileHistogram()
         .register(meterRegistry);
   }
 }
