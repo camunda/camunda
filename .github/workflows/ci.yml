@@ -69,8 +69,8 @@ jobs:
         with:
           version: ${{ env.ACTIONLINT_VERSION }}
           ignore: |
-            'property "vault_.+" is not defined in object type'
-            'object type "{}" cannot be filtered by object filtering `.*` since it has no object element'
+            property "vault_.+" is not defined in object type
+            object type "{}" cannot be filtered by object filtering `.*` since it has no object element
           custom-config-file: .github/actionlint.yaml
           sanitize-runner-labels: "false"
       - run: |
