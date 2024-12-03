@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.transform;
 
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -119,7 +117,7 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
     formRecord.setTenantId(tenantId);
 
     formState
-        .findLatestFormById(wrapString(formRecord.getFormId()), tenantId)
+        .findLatestFormById(formRecord.getFormId(), tenantId)
         .ifPresentOrElse(
             latestForm -> {
               final boolean isDuplicate =

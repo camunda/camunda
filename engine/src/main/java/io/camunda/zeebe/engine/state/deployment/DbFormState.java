@@ -22,7 +22,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public class DbFormState implements MutableFormState {
 
@@ -81,8 +80,7 @@ public class DbFormState implements MutableFormState {
     dbPersistedForm.wrap(record);
     formsByKey.upsert(tenantAwareFormKey, dbPersistedForm);
     formsByTenantIdAndIdCache.put(
-        new TenantIdAndFormId(record.getTenantId(), record.getFormIdBuffer()),
-        dbPersistedForm.copy());
+        new TenantIdAndFormId(record.getTenantId(), record.getFormId()), dbPersistedForm.copy());
   }
 
   @Override
@@ -106,7 +104,7 @@ public class DbFormState implements MutableFormState {
     dbFormKey.wrapLong(record.getFormKey());
     formsByKey.deleteExisting(tenantAwareFormKey);
     formsByTenantIdAndIdCache.invalidate(
-        new TenantIdAndFormId(record.getTenantId(), record.getFormIdBuffer()));
+        new TenantIdAndFormId(record.getTenantId(), record.getFormId()));
   }
 
   @Override
@@ -124,8 +122,7 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
-  public Optional<PersistedForm> findLatestFormById(
-      final DirectBuffer formId, final String tenantId) {
+  public Optional<PersistedForm> findLatestFormById(final String formId, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
     final Optional<PersistedForm> cachedForm = getFormFromCache(tenantId, formId);
     if (cachedForm.isPresent()) {
@@ -158,8 +155,8 @@ public class DbFormState implements MutableFormState {
     versionManager.clear();
   }
 
-  private PersistedForm getPersistedFormById(final DirectBuffer formId, final String tenantId) {
-    dbFormId.wrapBuffer(formId);
+  private PersistedForm getPersistedFormById(final String formId, final String tenantId) {
+    dbFormId.wrapString(formId);
     final long latestVersion = versionManager.getLatestResourceVersion(formId, tenantId);
     formVersion.wrapLong(latestVersion);
     final PersistedForm persistedForm =
@@ -170,11 +167,10 @@ public class DbFormState implements MutableFormState {
     return persistedForm.copy();
   }
 
-  private Optional<PersistedForm> getFormFromCache(
-      final String tenantId, final DirectBuffer formId) {
+  private Optional<PersistedForm> getFormFromCache(final String tenantId, final String formId) {
     return Optional.ofNullable(
         formsByTenantIdAndIdCache.getIfPresent(new TenantIdAndFormId(tenantId, formId)));
   }
 
-  private record TenantIdAndFormId(String tenantId, DirectBuffer formId) {}
+  private record TenantIdAndFormId(String tenantId, String formId) {}
 }

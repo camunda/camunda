@@ -71,8 +71,7 @@ public class FormCreatedApplierTest {
     formCreatedApplier.applyState(formRecord2.getFormKey(), formRecord2);
 
     // when
-    final var maybePersistedForm =
-        formState.findLatestFormById(formRecord1.getFormIdBuffer(), TENANT_1);
+    final var maybePersistedForm = formState.findLatestFormById(formRecord1.getFormId(), TENANT_1);
 
     // then
     assertThat(maybePersistedForm).isNotEmpty();
@@ -105,8 +104,8 @@ public class FormCreatedApplierTest {
     assertPersistedForm(form1, formKey, formId, version, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, TENANT_2);
 
-    form1 = formState.findLatestFormById(wrapString(formId), TENANT_1).orElseThrow();
-    form2 = formState.findLatestFormById(wrapString(formId), TENANT_2).orElseThrow();
+    form1 = formState.findLatestFormById(formId, TENANT_1).orElseThrow();
+    form2 = formState.findLatestFormById(formId, TENANT_2).orElseThrow();
     assertPersistedForm(form1, formKey, formId, version, TENANT_1);
     assertPersistedForm(form2, formKey, formId, version, TENANT_2);
   }
