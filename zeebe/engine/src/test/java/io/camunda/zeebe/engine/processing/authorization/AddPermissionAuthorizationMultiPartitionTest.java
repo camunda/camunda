@@ -62,7 +62,7 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
                 .filter(
                     record ->
                         record.getValueType() == ValueType.AUTHORIZATION
@@ -98,7 +98,7 @@ public class AddPermissionAuthorizationMultiPartitionTest {
       assertThat(
               RecordingExporter.records()
                   .withPartitionId(partitionId)
-                  .limit(r -> r.getIntent().equals(AuthorizationIntent.PERMISSION_ADDED))
+                  .limitByCount(r -> r.getIntent().equals(AuthorizationIntent.PERMISSION_ADDED), 2)
                   .collect(Collectors.toList()))
           .extracting(Record::getIntent)
           .endsWith(AuthorizationIntent.ADD_PERMISSION, AuthorizationIntent.PERMISSION_ADDED);
@@ -128,7 +128,7 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords()
-                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
+                .limitByCount(r -> r.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
                 .withIntent(CommandDistributionIntent.ENQUEUED))
         .extracting(r -> r.getValue().getQueueId())
         .containsOnly(DistributionQueue.IDENTITY.getQueueId());
@@ -166,11 +166,10 @@ public class AddPermissionAuthorizationMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(3))
+                .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
             tuple(ValueType.USER, UserIntent.CREATE),
-            tuple(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION),
             tuple(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION));
   }
 

@@ -27,6 +27,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class TenantCreateProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
+  private static final String TENANT_ALREADY_EXISTS_ERROR_MESSAGE =
+      "Expected to create tenant with ID '%s', but a tenant with this ID already exists";
   private final TenantState tenantState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -61,8 +63,7 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
       rejectCommand(
           command,
           RejectionType.ALREADY_EXISTS,
-          "Expected to create tenant with ID '%s', but a tenant with this ID already exists"
-              .formatted(record.getTenantId()));
+          TENANT_ALREADY_EXISTS_ERROR_MESSAGE.formatted(record.getTenantId()));
     } else {
       createTenant(command, record);
       distributeCommand(command, record);
@@ -71,7 +72,17 @@ public class TenantCreateProcessor implements DistributedTypedRecordProcessor<Te
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.CREATED, command.getValue());
+    final var record = command.getValue();
+    tenantState
+        .getTenantByKey(record.getTenantKey())
+        .ifPresentOrElse(
+            tenant -> {
+              final var errorMessage =
+                  TENANT_ALREADY_EXISTS_ERROR_MESSAGE.formatted(tenant.getTenantId());
+              rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+            },
+            () -> stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.CREATED, record));
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

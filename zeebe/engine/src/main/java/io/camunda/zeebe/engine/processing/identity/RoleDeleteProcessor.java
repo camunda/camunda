@@ -28,6 +28,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<RoleRecord> {
 
+  private static final String ROLE_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to delete role with key '%s', but a role with this key doesn't exist.";
   private final RoleState roleState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -57,9 +59,7 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
     final var roleKey = record.getRoleKey();
     final var persistedRecord = roleState.getRole(roleKey);
     if (persistedRecord.isEmpty()) {
-      final var errorMessage =
-          "Expected to delete role with key '%s', but a role with this key doesn't exist."
-              .formatted(roleKey);
+      final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(roleKey);
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
       responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
       return;
@@ -92,8 +92,20 @@ public class RoleDeleteProcessor implements DistributedTypedRecordProcessor<Role
 
   @Override
   public void processDistributedCommand(final TypedRecord<RoleRecord> command) {
-    removeMembers(command.getValue());
-    stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.DELETED, command.getValue());
+    final var record = command.getValue();
+    roleState
+        .getRole(record.getRoleKey())
+        .ifPresentOrElse(
+            role -> {
+              removeMembers(command.getValue());
+              stateWriter.appendFollowUpEvent(
+                  command.getKey(), RoleIntent.DELETED, command.getValue());
+            },
+            () -> {
+              final var errorMessage = ROLE_NOT_FOUND_ERROR_MESSAGE.formatted(record.getRoleKey());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+            });
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

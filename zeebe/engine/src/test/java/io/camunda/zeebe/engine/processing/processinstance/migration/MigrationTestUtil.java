@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 
 public class MigrationTestUtil {
 
-  protected static long extractProcessDefinitionKeyByProcessId(
+  public static long extractProcessDefinitionKeyByProcessId(
       final Record<DeploymentRecordValue> deployment, final String processId) {
     return deployment.getValue().getProcessesMetadata().stream()
         .filter(p -> p.getBpmnProcessId().equals(processId))

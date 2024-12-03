@@ -15,7 +15,6 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
@@ -122,12 +121,10 @@ public class CreateRoleMultiPartitionTest {
     // then
     assertThat(
             RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
-                .limit(3))
+                .limit(2))
         .extracting(r -> r.getValue().getValueType(), r -> r.getValue().getIntent())
         .containsExactly(
-            tuple(ValueType.USER, UserIntent.CREATE),
-            tuple(ValueType.AUTHORIZATION, AuthorizationIntent.ADD_PERMISSION),
-            tuple(ValueType.ROLE, RoleIntent.CREATE));
+            tuple(ValueType.USER, UserIntent.CREATE), tuple(ValueType.ROLE, RoleIntent.CREATE));
   }
 
   private void interceptUserCreateForPartition(final int partitionId) {

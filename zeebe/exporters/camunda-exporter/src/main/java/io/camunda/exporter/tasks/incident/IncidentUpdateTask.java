@@ -427,7 +427,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
             .map(CompletableFuture::join)
             .flatMap(List::stream)
             .collect(Collectors.toList());
-    final List<ActiveIncident> activeIncidentTreePaths =
+    final Collection<ActiveIncident> activeIncidentTreePaths =
         repository.getActiveIncidentsByTreePaths(treePathTerms).toCompletableFuture().join();
     for (final var activeIncidentTreePath : activeIncidentTreePaths) {
       final var treePath = new TreePath(activeIncidentTreePath.treePath());

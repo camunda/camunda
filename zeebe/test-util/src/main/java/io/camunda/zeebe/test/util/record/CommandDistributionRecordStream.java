@@ -8,6 +8,7 @@
 package io.camunda.zeebe.test.util.record;
 
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import java.util.stream.Stream;
@@ -32,5 +33,9 @@ public class CommandDistributionRecordStream
 
   public CommandDistributionRecordStream withDistributionIntent(final Intent intent) {
     return valueFilter(v -> v.getIntent() == intent);
+  }
+
+  public CommandDistributionRecordStream withDistributionValueType(final ValueType valueType) {
+    return valueFilter(v -> v.getValueType() == valueType);
   }
 }

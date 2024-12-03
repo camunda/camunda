@@ -142,6 +142,13 @@ public class ResourceDeletionDeleteProcessor
       rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
+
+      if (command.isCommandDistributed()) {
+        // If the command is distributed, and it cannot be found upon processing, we can acknowledge
+        // the distribution.
+        commandDistributionBehavior.acknowledgeCommand(command);
+      }
+
       return ProcessingError.EXPECTED_ERROR;
     } else if (error instanceof final ActiveProcessInstancesException exception) {
       rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, exception.getMessage());

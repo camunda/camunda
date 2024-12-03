@@ -49,8 +49,7 @@ public class CreateUserMultiPartitionTest {
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
-                .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
+                .limit(record -> record.getIntent().equals(CommandDistributionIntent.FINISHED))
                 .filter(
                     record ->
                         record.getValueType() == ValueType.USER

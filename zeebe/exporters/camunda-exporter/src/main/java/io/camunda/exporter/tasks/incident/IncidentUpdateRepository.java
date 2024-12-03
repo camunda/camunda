@@ -113,7 +113,8 @@ public interface IncidentUpdateRepository {
    * @param treePathTerms the complete list of tree path terms to filter on
    * @return a list of active incidents with at least one tree path term overlapping the given list
    */
-  CompletionStage<List<ActiveIncident>> getActiveIncidentsByTreePaths(List<String> treePathTerms);
+  CompletionStage<Collection<ActiveIncident>> getActiveIncidentsByTreePaths(
+      final Collection<String> treePathTerms);
 
   /**
    * Represents an incident document: the source identity and its ID and index.
@@ -218,8 +219,8 @@ public interface IncidentUpdateRepository {
     }
 
     @Override
-    public CompletionStage<List<ActiveIncident>> getActiveIncidentsByTreePaths(
-        final List<String> treePathTerms) {
+    public CompletionStage<Collection<ActiveIncident>> getActiveIncidentsByTreePaths(
+        final Collection<String> treePathTerms) {
       return CompletableFuture.completedFuture(List.of());
     }
   }

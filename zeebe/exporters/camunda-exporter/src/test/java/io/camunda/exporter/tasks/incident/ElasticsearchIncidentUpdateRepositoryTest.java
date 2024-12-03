@@ -15,6 +15,8 @@ import co.elastic.clients.elasticsearch.core.ClearScrollResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import io.camunda.webapps.schema.entities.operate.IncidentEntity;
+import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -23,6 +25,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,10 +49,10 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
   @ParameterizedTest
   @MethodSource("scrollTestCases")
-  void shouldClearScrollOnGetFlowNodesInListView(final TestCase testCase) {
+  void shouldClearScroll(final ScrollTestCase testCase) {
     // given
     final var repository = createRepository();
-    Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.eq(Object.class)))
+    Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.any(Class.class)))
         .thenReturn(CompletableFuture.completedFuture(buildMinimalSearchResponse()));
     Mockito.when(client.clearScroll(Mockito.any(ClearScrollRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(buildMinimalClearScrollResponse()));
@@ -66,10 +69,10 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
   @ParameterizedTest
   @MethodSource("scrollTestCases")
-  void shouldNotClearScrollOnGetFlowNodesInListViewOnSearchFailure(final TestCase testCase) {
+  void shouldNotClearScrollOnSearchFailure(final ScrollTestCase testCase) {
     // given
     final var repository = createRepository();
-    Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.eq(Object.class)))
+    Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.any(Class.class)))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("failure")));
 
     // when
@@ -82,12 +85,13 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
 
   @ParameterizedTest
   @MethodSource("scrollTestCases")
-  void shouldClearScrollOnGetFlowNodesInListViewEvenOnFailure(final TestCase testCase) {
+  <T> void shouldClearScrollOnScrollFailure(final ScrollTestCase<T> testCase) {
     // given
     final var repository = createRepository();
-    final SearchResponse<Object> searchResponse =
-        buildMinimalSearchResponse(b -> b.hits(h -> h.hits(Hit.of(d -> d.id("1").index("index")))));
-    Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.eq(Object.class)))
+    final var hit = new Hit.Builder<T>().id("1").index("index").source(testCase.document()).build();
+    final SearchResponse<T> searchResponse =
+        buildMinimalSearchResponse(b -> b.hits(h -> h.hits(hit)));
+    Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.any(Class.class)))
         .thenReturn(CompletableFuture.completedFuture(searchResponse));
     Mockito.when(client.scroll(Mockito.any(Function.class), Mockito.any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("failure")));
@@ -104,6 +108,29 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     inOrder.verifyNoMoreInteractions();
   }
 
+  @Test
+  void shouldClearScrollOnTransformerFailure() {
+    // given - the transformer here will fail because there is no incident source to get the tree
+    // path from, but we should still clear the scroll anyway
+    final var repository = createRepository();
+    final var hit = new Hit.Builder<>().id("1").index("index").source(null).build();
+    final SearchResponse<?> searchResponse =
+        buildMinimalSearchResponse(b -> b.hits(h -> h.hits(hit)));
+    Mockito.when(client.search(Mockito.any(SearchRequest.class), Mockito.any(Class.class)))
+        .thenReturn(CompletableFuture.completedFuture(searchResponse));
+    Mockito.when(client.clearScroll(Mockito.any(ClearScrollRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(buildMinimalClearScrollResponse()));
+
+    // when
+    final var result = repository.getActiveIncidentsByTreePaths(List.of("1"));
+
+    // then
+    final var inOrder = Mockito.inOrder(client);
+    assertThat(result).failsWithin(Duration.ofSeconds(5));
+    inOrder.verify(client, Mockito.times(1)).clearScroll(Mockito.any(ClearScrollRequest.class));
+    inOrder.verifyNoMoreInteractions();
+  }
+
   private ClearScrollResponse buildMinimalClearScrollResponse() {
     return new ClearScrollResponse.Builder().succeeded(true).numFreed(1).build();
   }
@@ -112,11 +139,11 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
     return buildMinimalSearchResponse(ignored -> {});
   }
 
-  private SearchResponse<Object> buildMinimalSearchResponse(
-      final Consumer<SearchResponse.Builder<?>> modifier) {
+  private <T> SearchResponse<T> buildMinimalSearchResponse(
+      final Consumer<SearchResponse.Builder<T>> modifier) {
     // need to specify all the required fields
     final var response =
-        new SearchResponse.Builder<>()
+        new SearchResponse.Builder<T>()
             .scrollId("foo")
             .hits(h -> h.hits(List.of()))
             .took(1)
@@ -140,15 +167,29 @@ public final class ElasticsearchIncidentUpdateRepositoryTest {
         LOGGER);
   }
 
-  private static Stream<Named<TestCase>> scrollTestCases() {
+  private static Stream<Named<ScrollTestCase>> scrollTestCases() {
     return Stream.of(
-        Named.of("getFlowNodeInstances", r -> r.getFlowNodeInstances(List.of("1", "2"))),
-        Named.of("getFlowNodesInListView", r -> r.getFlowNodesInListView(List.of("1", "2"))));
+        Named.of(
+            "getFlowNodeInstances",
+            new ScrollTestCase<>(null, r -> r.getFlowNodeInstances(List.of("1", "2")))),
+        Named.of(
+            "getFlowNodesInListView",
+            new ScrollTestCase<>(null, r -> r.getFlowNodesInListView(List.of("1", "2")))),
+        Named.of(
+            "getActiveIncidentsByTreePaths",
+            new ScrollTestCase<>(
+                new IncidentEntity(), r -> r.getActiveIncidentsByTreePaths(List.of("1", "2")))),
+        Named.of(
+            "getProcessInstances",
+            new ScrollTestCase<>(
+                new ProcessInstanceForListViewEntity(),
+                r -> r.getProcessInstances(List.of("1", "2")))));
   }
 
-  @FunctionalInterface
-  private interface TestCase {
-    CompletionStage<?> executeScrollingMethod(
-        final ElasticsearchIncidentUpdateRepository repository);
+  record ScrollTestCase<T>(
+      T document, Function<IncidentUpdateRepository, CompletionStage<?>> scrollMethod) {
+    CompletionStage<?> executeScrollingMethod(final IncidentUpdateRepository repository) {
+      return scrollMethod.apply(repository);
+    }
   }
 }

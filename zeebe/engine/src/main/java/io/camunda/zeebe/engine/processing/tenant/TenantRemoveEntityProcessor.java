@@ -31,6 +31,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class TenantRemoveEntityProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
+  private static final String ENTITY_NOT_ASSIGNED_ERROR_MESSAGE =
+      "Expected to remove entity with key '%s' from tenant with key '%s', but the entity is not assigned to this tenant.";
   private final TenantState tenantState;
   private final UserState userState;
   private final MappingState mappingState;
@@ -95,8 +97,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
-          "Expected to remove entity with key '%s' from tenant with key '%s', but the entity is not assigned to this tenant."
-              .formatted(record.getEntityKey(), tenantKey));
+          ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(record.getEntityKey(), tenantKey));
       return;
     }
 
@@ -107,8 +108,20 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), TenantIntent.ENTITY_REMOVED, command.getValue());
+    final var record = command.getValue();
+    tenantState
+        .getEntityType(record.getTenantKey(), record.getEntityKey())
+        .ifPresentOrElse(
+            entityType ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), TenantIntent.ENTITY_REMOVED, record),
+            () -> {
+              final var message =
+                  ENTITY_NOT_ASSIGNED_ERROR_MESSAGE.formatted(
+                      record.getEntityKey(), record.getTenantKey());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, message);
+            });
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

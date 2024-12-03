@@ -85,7 +85,7 @@ final class IncidentUpdateTaskTest {
     private CompletableFuture<PendingIncidentUpdateBatch> batch;
     private CompletableFuture<Map<String, IncidentDocument>> incidents;
     private CompletableFuture<Collection<ProcessInstanceDocument>> processInstances;
-    private CompletableFuture<List<ActiveIncident>> activeIncidentsByTreePaths;
+    private CompletableFuture<Collection<ActiveIncident>> activeIncidentsByTreePaths;
     private CompletableFuture<Integer> bulkUpdate;
     private CompletableFuture<Collection<Document>> flowNodesInListView;
     private CompletableFuture<Collection<Document>> flowNodeInstances;
@@ -153,8 +153,8 @@ final class IncidentUpdateTaskTest {
     }
 
     @Override
-    public CompletionStage<List<ActiveIncident>> getActiveIncidentsByTreePaths(
-        final List<String> treePathTerms) {
+    public CompletionStage<Collection<ActiveIncident>> getActiveIncidentsByTreePaths(
+        final Collection<String> treePathTerms) {
       return activeIncidentsByTreePaths != null
           ? activeIncidentsByTreePaths
           : super.getActiveIncidentsByTreePaths(treePathTerms);

@@ -52,4 +52,6 @@ public interface MutableMigrationState extends MigrationState {
   void correctColumnFamilyPrefix();
 
   void migrateOrderedCommandDistribution();
+
+  void migrateIdempotentCommandDistribution();
 }

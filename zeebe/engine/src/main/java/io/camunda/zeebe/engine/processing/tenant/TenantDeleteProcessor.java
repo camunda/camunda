@@ -27,6 +27,8 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<TenantRecord> {
 
+  private static final String TENANT_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to delete tenant with key '%s', but no tenant with this key exists.";
   private final TenantState tenantState;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final KeyGenerator keyGenerator;
@@ -58,10 +60,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
 
     if (persistedTenantRecord.isEmpty()) {
       rejectCommand(
-          command,
-          RejectionType.NOT_FOUND,
-          "Expected to delete tenant with key '%s', but no tenant with this key exists."
-              .formatted(tenantKey));
+          command, RejectionType.NOT_FOUND, TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(tenantKey));
       return;
     }
 
@@ -86,8 +85,21 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
 
   @Override
   public void processDistributedCommand(final TypedRecord<TenantRecord> command) {
-    removeAssignedEntities(command.getValue());
-    stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.DELETED, command.getValue());
+    final var record = command.getValue();
+    tenantState
+        .getTenantByKey(record.getTenantKey())
+        .ifPresentOrElse(
+            tenant -> {
+              removeAssignedEntities(command.getValue());
+              stateWriter.appendFollowUpEvent(
+                  command.getKey(), TenantIntent.DELETED, command.getValue());
+            },
+            () ->
+                rejectCommand(
+                    command,
+                    RejectionType.NOT_FOUND,
+                    TENANT_NOT_FOUND_ERROR_MESSAGE.formatted(record.getTenantKey())));
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 

@@ -30,6 +30,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
+  private static final String ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE =
+      "Expected to add entity with key '%s' to group with key '%s', but the entity is already assigned to this group.";
 
   private final GroupState groupState;
   private final UserState userState;
@@ -111,7 +113,20 @@ public class GroupAddEntityProcessor implements DistributedTypedRecordProcessor<
 
   @Override
   public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
-    stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.ENTITY_ADDED, command.getValue());
+    final var record = command.getValue();
+    groupState
+        .getEntityType(record.getGroupKey(), record.getEntityKey())
+        .ifPresentOrElse(
+            entityType -> {
+              final var errorMessage =
+                  ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
+                      record.getEntityKey(), record.getGroupKey());
+              rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+            },
+            () ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), GroupIntent.ENTITY_ADDED, record));
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
