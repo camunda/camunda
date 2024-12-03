@@ -143,8 +143,6 @@ public class ResourceDeletionDeleteProcessor
       responseWriter.writeRejectionOnCommand(
           command, RejectionType.NOT_FOUND, exception.getMessage());
 
-      // TODO verify this fix. There is a risk attached to it as deployment creation and resource
-      //  deletion were not distributed in guaranteed order before.
       if (command.isCommandDistributed()) {
         // If the command is distributed, and it cannot be found upon processing, we can acknowledge
         // the distribution.
