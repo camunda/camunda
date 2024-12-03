@@ -237,11 +237,6 @@ public class TaskService {
         deleteDraftTaskVariablesSafely(taskId);
         updateCompletedMetric(completedTaskEntity);
         LOGGER.info("Task with ID {} completed successfully.", taskId);
-        if (task.getImplementation().equals(TaskImplementation.JOB_WORKER)) {
-          // Remove variables for Job workers
-          // Remove this line after version 8.8
-          variableService.removeVariableByFlowNodeInstanceId(task.getFlowNodeInstanceId());
-        }
       } catch (final Exception e) {
         LOGGER.error(
             "Task with key {} was COMPLETED but error happened after completion: {}.",
