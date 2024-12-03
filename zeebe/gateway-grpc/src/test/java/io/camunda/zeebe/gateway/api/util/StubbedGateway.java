@@ -7,12 +7,8 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.mock;
-
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import io.camunda.identity.sdk.Identity;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.EndpointManager;
 import io.camunda.zeebe.gateway.Gateway;
@@ -25,7 +21,6 @@ import io.camunda.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.stream.StreamJobsHandler;
 import io.camunda.zeebe.gateway.interceptors.impl.AuthenticationInterceptor;
-import io.camunda.zeebe.gateway.interceptors.impl.IdentityInterceptor;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -96,9 +91,7 @@ public final class StubbedGateway {
     final InProcessServerBuilder serverBuilder =
         InProcessServerBuilder.forName(SERVER_NAME)
             .addService(
-                ServerInterceptors.intercept(
-                    gatewayGrpcService,
-                    new AuthenticationInterceptor()));
+                ServerInterceptors.intercept(gatewayGrpcService, new AuthenticationInterceptor()));
     server = serverBuilder.build();
     server.start();
   }

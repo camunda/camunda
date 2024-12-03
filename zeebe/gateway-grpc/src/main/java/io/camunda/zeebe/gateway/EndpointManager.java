@@ -490,12 +490,11 @@ public final class EndpointManager {
 
     final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
 
-    final String authorizationToken =
+    final var authorizationToken =
         Authorization.jwtEncoder()
             .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
             .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-            .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
+            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT);
 
     // retrieve the user claims from the context and add them to the token
     final Map<String, Object> userClaims =

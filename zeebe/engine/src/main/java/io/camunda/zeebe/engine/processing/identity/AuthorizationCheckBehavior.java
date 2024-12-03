@@ -16,7 +16,6 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
-import io.camunda.zeebe.protocol.record.value.UserType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.ArrayList;
 import java.util.HashSet;
