@@ -329,7 +329,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       // #1 get top variable value terms of outliers
       final List<String> variableNames = getVariableNames(outlierParams);
       final Map<String, String> sanitisedNameToVarName =
-          getVariableNames(outlierParams).stream()
+          variableNames.stream()
               .filter(AggregationNameUtil::containsIllegalChar)
               .collect(Collectors.toMap(AggregationNameUtil::sanitiseAggName, Function.identity()));
       final ReverseNestedAggregate outlierNestedProcessInstancesAgg =
