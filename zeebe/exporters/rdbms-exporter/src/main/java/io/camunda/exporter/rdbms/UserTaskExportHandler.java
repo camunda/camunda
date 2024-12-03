@@ -17,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.OffsetDateTime;
 import java.util.Set;
+import org.apache.commons.lang3.StringUtils;
 
 /** Based on UserTaskRecordToTaskEntityMapper */
 public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordValue> {
@@ -74,9 +75,9 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
         .processDefinitionId(record.getBpmnProcessId())
         .creationDate(DateUtil.toOffsetDateTime(record.getCreationTimestamp()))
         .completionDate(completionTime)
-        .assignee(record.getAssignee())
+        .assignee(StringUtils.isNotEmpty(record.getAssignee()) ? record.getAssignee() : null)
         .state(state)
-        .formKey(record.getFormKey())
+        .formKey(record.getFormKey() > 0 ? record.getFormKey() : null)
         .processDefinitionKey(record.getProcessDefinitionKey())
         .processInstanceKey(record.getProcessInstanceKey())
         .elementInstanceKey(record.getElementInstanceKey())
@@ -85,7 +86,10 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
         .followUpDate(DateUtil.toOffsetDateTime(record.getFollowUpDate()))
         .candidateGroups(record.getCandidateGroupsList())
         .candidateUsers(record.getCandidateUsersList())
-        .externalFormReference(record.getExternalFormReference())
+        .externalFormReference(
+            StringUtils.isNotEmpty(record.getExternalFormReference())
+                ? record.getExternalFormReference()
+                : null)
         .processDefinitionVersion(record.getProcessDefinitionVersion())
         .customHeaders(record.getCustomHeaders())
         .priority(record.getPriority())

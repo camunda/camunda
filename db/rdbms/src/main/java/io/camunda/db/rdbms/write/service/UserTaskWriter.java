@@ -27,18 +27,22 @@ public class UserTaskWriter {
             userTaskDbModel.userTaskKey(),
             "io.camunda.db.rdbms.sql.UserTaskMapper.insert",
             userTaskDbModel));
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.USER_TASK,
-            userTaskDbModel.userTaskKey(),
-            "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateUsers",
-            userTaskDbModel));
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.USER_TASK,
-            userTaskDbModel.userTaskKey(),
-            "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
-            userTaskDbModel));
+    if (userTaskDbModel.candidateUsers() != null && !userTaskDbModel.candidateUsers().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.USER_TASK,
+              userTaskDbModel.userTaskKey(),
+              "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateUsers",
+              userTaskDbModel));
+    }
+    if (userTaskDbModel.candidateGroups() != null && !userTaskDbModel.candidateGroups().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.USER_TASK,
+              userTaskDbModel.userTaskKey(),
+              "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
+              userTaskDbModel));
+    }
   }
 
   public void update(final UserTaskDbModel userTaskDbModel) {
@@ -54,23 +58,27 @@ public class UserTaskWriter {
             userTaskDbModel.userTaskKey(),
             "io.camunda.db.rdbms.sql.UserTaskMapper.deleteCandidateUsers",
             userTaskDbModel.userTaskKey()));
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.USER_TASK,
-            userTaskDbModel.userTaskKey(),
-            "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateUsers",
-            userTaskDbModel));
+    if (userTaskDbModel.candidateUsers() != null && !userTaskDbModel.candidateUsers().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.USER_TASK,
+              userTaskDbModel.userTaskKey(),
+              "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateUsers",
+              userTaskDbModel));
+    }
     executionQueue.executeInQueue(
         new QueueItem(
             ContextType.USER_TASK,
             userTaskDbModel.userTaskKey(),
             "io.camunda.db.rdbms.sql.UserTaskMapper.deleteCandidateGroups",
             userTaskDbModel.userTaskKey()));
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.USER_TASK,
-            userTaskDbModel.userTaskKey(),
-            "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
-            userTaskDbModel));
+    if (userTaskDbModel.candidateGroups() != null && !userTaskDbModel.candidateGroups().isEmpty()) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.USER_TASK,
+              userTaskDbModel.userTaskKey(),
+              "io.camunda.db.rdbms.sql.UserTaskMapper.insertCandidateGroups",
+              userTaskDbModel));
+    }
   }
 }
