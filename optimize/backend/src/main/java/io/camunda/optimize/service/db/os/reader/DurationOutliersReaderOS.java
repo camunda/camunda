@@ -703,7 +703,7 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
     allVariableAggregations
         .aggregations()
         .forEach(
-            (variableName, aggregation) -> {
+            (aggName, aggregation) -> {
               final FilterAggregate variableFilterAggregation = aggregation.filter();
               final StringTermsAggregate variableValueTerms =
                   variableFilterAggregation.aggregations().get(AGG_VARIABLE_VALUE_TERMS).sterms();
@@ -722,8 +722,7 @@ public class DurationOutliersReaderOS implements DurationOutliersReader {
                 // We resolve this back to its original name in the case that it was sanitised
                 // during query time
                 outlierVariableTermOccurrences.put(
-                    Optional.ofNullable(sanitisedVarsToVarNames.get(variableName))
-                        .orElse(variableName),
+                    Optional.ofNullable(sanitisedVarsToVarNames.get(aggName)).orElse(aggName),
                     termOccurrences);
               }
             });
