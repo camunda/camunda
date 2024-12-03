@@ -133,8 +133,6 @@ public class ExporterConfiguration {
 
     private boolean shouldWaitForImporters = true;
 
-    private Integer maxCachedRecordsBeforeErrorWhileWaitingForImporters = 1_000;
-
     public String getPrefix() {
       return prefix;
     }
@@ -173,16 +171,6 @@ public class ExporterConfiguration {
 
     public void setShouldWaitForImporters(final boolean shouldWaitForImporters) {
       this.shouldWaitForImporters = shouldWaitForImporters;
-    }
-
-    public Integer getMaxCachedRecordsBeforeErrorWhileWaitingForImporters() {
-      return maxCachedRecordsBeforeErrorWhileWaitingForImporters;
-    }
-
-    public void setMaxCachedRecordsBeforeErrorWhileWaitingForImporters(
-        final Integer maxCachedRecordsBeforeErrorWhileWaitingForImporters) {
-      this.maxCachedRecordsBeforeErrorWhileWaitingForImporters =
-          maxCachedRecordsBeforeErrorWhileWaitingForImporters;
     }
 
     @Override

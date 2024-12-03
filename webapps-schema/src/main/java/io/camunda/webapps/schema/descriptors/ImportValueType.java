@@ -7,7 +7,7 @@
  */
 package io.camunda.webapps.schema.descriptors;
 
-public enum ImportValueTypes {
+public enum ImportValueType {
   PROCESS_INSTANCE("process-instance"),
   DECISION("decision"),
   DECISION_REQUIREMENTS("decision-requirements"),
@@ -23,7 +23,7 @@ public enum ImportValueTypes {
 
   private final String aliasTemplate;
 
-  ImportValueTypes(final String aliasTemplate) {
+  ImportValueType(final String aliasTemplate) {
     this.aliasTemplate = aliasTemplate;
   }
 

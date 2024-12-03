@@ -21,7 +21,7 @@ import io.camunda.exporter.schema.IndexMapping;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SearchEngineClient;
-import io.camunda.webapps.schema.descriptors.ImportValueTypes;
+import io.camunda.webapps.schema.descriptors.ImportValueType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -211,7 +211,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
               .hits()
               .size();
 
-      return totalCompletedRecordReaders == ImportValueTypes.values().length;
+      return totalCompletedRecordReaders == ImportValueType.values().length;
     } catch (final IOException e) {
       final var errMsg =
           String.format(
@@ -242,7 +242,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
             .toQuery();
     return new SearchRequest.Builder()
         .index(importPositionIndexName(indexPrefix))
-        .size(ImportValueTypes.values().length)
+        .size(ImportValueType.values().length)
         .query(query)
         .build();
   }
