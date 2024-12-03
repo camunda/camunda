@@ -329,12 +329,12 @@ public final class ResponseMapper {
 
   public static ResponseEntity<Object> toUserCreateResponse(final UserRecord userRecord) {
     final var response = new UserCreateResponse().userKey(userRecord.getUserKey());
-    return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+    return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
   public static ResponseEntity<Object> toRoleCreateResponse(final RoleRecord roleRecord) {
     final var response = new RoleCreateResponse().roleKey(roleRecord.getRoleKey());
-    return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+    return new ResponseEntity<>(response, HttpStatus.CREATED);
   }
 
   public static ResponseEntity<Object> toGroupCreateResponse(final GroupRecord groupRecord) {

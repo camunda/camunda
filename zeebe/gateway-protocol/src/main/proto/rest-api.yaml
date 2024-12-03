@@ -2367,7 +2367,7 @@ paths:
             schema:
               $ref: "#/components/schemas/RoleCreateRequest"
       responses:
-        "202":
+        "201":
           description: |
             The role was created successfully.
           content:
@@ -2880,7 +2880,7 @@ paths:
               $ref: "#/components/schemas/UserRequest"
         required: true
       responses:
-        "202":
+        "201":
           description: |
             The user was created successfully.
           content:
