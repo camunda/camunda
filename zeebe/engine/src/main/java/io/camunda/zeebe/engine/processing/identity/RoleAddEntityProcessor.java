@@ -121,7 +121,7 @@ public class RoleAddEntityProcessor implements DistributedTypedRecordProcessor<R
               final var errorMessage =
                   ENTITY_ALREADY_ASSIGNED_ERROR_MESSAGE.formatted(
                       record.getEntityKey(), record.getRoleKey());
-              rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, errorMessage);
+              rejectionWriter.appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
             },
             () ->
                 stateWriter.appendFollowUpEvent(command.getKey(), RoleIntent.ENTITY_ADDED, record));
