@@ -24,7 +24,6 @@ import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.Optional;
-import org.agrona.DirectBuffer;
 
 public class DbResourceState implements MutableResourceState {
 
@@ -256,9 +255,9 @@ public class DbResourceState implements MutableResourceState {
 
   @Override
   public Optional<PersistedResource> findResourceByIdAndDeploymentKey(
-      final DirectBuffer resourceId, final long deploymentKey, final String tenantId) {
+      final String resourceId, final long deploymentKey, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
-    dbResourceId.wrapBuffer(resourceId);
+    dbResourceId.wrapString(resourceId);
     dbDeploymentKey.wrapLong(deploymentKey);
     return Optional.ofNullable(
             resourceKeyByResourceIdAndDeploymentKeyColumnFamily.get(
@@ -268,9 +267,9 @@ public class DbResourceState implements MutableResourceState {
 
   @Override
   public Optional<PersistedResource> findResourceByIdAndVersionTag(
-      final DirectBuffer resourceId, final String versionTag, final String tenantId) {
+      final String resourceId, final String versionTag, final String tenantId) {
     tenantIdKey.wrapString(tenantId);
-    dbResourceId.wrapBuffer(resourceId);
+    dbResourceId.wrapString(resourceId);
     dbVersionTag.wrapString(versionTag);
     return Optional.ofNullable(
             resourceKeyByResourceIdAndVersionTagColumnFamily.get(
