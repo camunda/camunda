@@ -61,6 +61,8 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
     } else if (isUnknownEnumError(ex)) {
       final var httpMessageNotReadableException = (HttpMessageNotReadableException) ex;
       detail = Objects.requireNonNull(httpMessageNotReadableException.getRootCause()).getMessage();
+    } else if (isInvalidSortValue(ex)) {
+      detail = REQUEST_BODY_PARSE_EXCEPTION_MESSAGE.formatted("order");
     } else {
       detail = defaultDetail;
     }
@@ -78,6 +80,18 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
       @NonNull final WebRequest request) {
     Loggers.REST_LOGGER.debug(ex.getMessage(), ex);
     return super.handleExceptionInternal(ex, body, headers, statusCode, request);
+  }
+
+  private boolean isInvalidSortValue(final Exception ex) {
+    if (ex instanceof final HttpMessageNotReadableException exception) {
+      final var exceptionMessage = exception.getMessage();
+      if (exceptionMessage != null
+          && exceptionMessage.contains("SearchQuerySortRequest$OrderEnum")) {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private boolean isRequestBodyMissing(final Exception ex) {

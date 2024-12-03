@@ -17,6 +17,7 @@ package io.camunda.zeebe.client.impl.search.query;
 
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest.OrderEnum;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +33,7 @@ public abstract class SearchQuerySortBase<T>
     return self();
   }
 
-  protected T order(final String order) {
+  protected T order(final OrderEnum order) {
     if (current != null) {
       current.order(order);
       sorting.add(current);
@@ -42,11 +43,11 @@ public abstract class SearchQuerySortBase<T>
   }
 
   public T asc() {
-    return order("asc");
+    return order(OrderEnum.ASC);
   }
 
   public T desc() {
-    return order("desc");
+    return order(OrderEnum.DESC);
   }
 
   protected abstract T self();
