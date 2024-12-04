@@ -35,6 +35,8 @@ public class MessagingConfig implements Config {
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
   private File keyStore;
   private String keyStorePassword;
+  private Duration heartbeatTimeout = Duration.ofSeconds(15);
+  private Duration heartbeatInterval = Duration.ofSeconds(5);
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -248,6 +250,24 @@ public class MessagingConfig implements Config {
 
   public String getKeyStorePassword() {
     return keyStorePassword;
+  }
+
+  public Duration getHeartbeatTimeout() {
+    return heartbeatTimeout;
+  }
+
+  public MessagingConfig setHeartbeatTimeout(final Duration heartbeatTimeout) {
+    this.heartbeatTimeout = heartbeatTimeout;
+    return this;
+  }
+
+  public Duration getHeartbeatInterval() {
+    return heartbeatInterval;
+  }
+
+  public MessagingConfig setHeartbeatInterval(final Duration heartbeatInterval) {
+    this.heartbeatInterval = heartbeatInterval;
+    return this;
   }
 
   public enum CompressionAlgorithm {
