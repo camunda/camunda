@@ -29,8 +29,6 @@ public class ZeebeImporter {
 
   @Autowired private OperateProperties operateProperties;
 
-  @Autowired private ZeebePostImporter zeebePostImporter;
-
   @Autowired private RecordsReaderHolder recordsReaderHolder;
 
   @Autowired
@@ -43,7 +41,6 @@ public class ZeebeImporter {
   public void startImportingData() {
     if (operateProperties.getImporter().isStartLoadingDataOnStartup()) {
       scheduleReaders();
-      zeebePostImporter.start();
     }
   }
 

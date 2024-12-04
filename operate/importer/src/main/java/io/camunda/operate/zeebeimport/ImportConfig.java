@@ -29,16 +29,6 @@ public class ImportConfig {
     return executor;
   }
 
-  @Bean("postImportThreadPoolScheduler")
-  public ThreadPoolTaskScheduler getPostImportTaskScheduler(
-      final OperateProperties operateProperties) {
-    final ThreadPoolTaskScheduler scheduler = new ThreadPoolTaskScheduler();
-    scheduler.setPoolSize(operateProperties.getImporter().getPostImportThreadsCount());
-    scheduler.setThreadNamePrefix("postimport_");
-    scheduler.initialize();
-    return scheduler;
-  }
-
   @Bean("recordsReaderThreadPoolExecutor")
   public ThreadPoolTaskScheduler getRecordsReaderTaskExecutor() {
     final ThreadPoolTaskScheduler executor = new ThreadPoolTaskScheduler();
