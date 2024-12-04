@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
@@ -25,6 +26,10 @@ public final class GroupRequestValidator {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
           }
         });
+  }
+
+  public static Optional<ProblemDetail> validateUpdateRequest(final GroupUpdateRequest request) {
+    return validateGroupName(request.getChangeset().getName());
   }
 
   public static Optional<ProblemDetail> validateCreateRequest(final GroupCreateRequest request) {
