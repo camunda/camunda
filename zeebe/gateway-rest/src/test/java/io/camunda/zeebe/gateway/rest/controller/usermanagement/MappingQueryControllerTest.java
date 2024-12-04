@@ -70,7 +70,8 @@ public class MappingQueryControllerTest extends RestControllerTest {
     // given
     final var mappingKey = 100L;
     final var path = "%s/%s".formatted(MAPPING_BASE_URL, mappingKey);
-    when(mappingServices.getMapping(mappingKey)).thenThrow(new NotFoundException("mapping not found"));
+    when(mappingServices.getMapping(mappingKey))
+        .thenThrow(new NotFoundException("mapping not found"));
 
     // when
     webClient
