@@ -47,6 +47,7 @@ import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.FormItem;
 import io.camunda.zeebe.gateway.protocol.rest.GroupItem;
+import io.camunda.zeebe.gateway.protocol.rest.GroupSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
@@ -109,6 +110,17 @@ public final class SearchQueryResponseMapper {
         .page(page)
         .items(
             ofNullable(result.items()).map(SearchQueryResponseMapper::toRoles).orElseGet(List::of));
+  }
+
+  public static GroupSearchQueryResponse toGroupSearchQueryResponse(
+      final SearchQueryResult<GroupEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GroupSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toGroups)
+                .orElseGet(List::of));
   }
 
   public static TenantSearchQueryResponse toTenantSearchQueryResponse(
@@ -265,6 +277,10 @@ public final class SearchQueryResponseMapper {
 
   public static RoleItem toRole(final RoleEntity roleEntity) {
     return new RoleItem().key(roleEntity.roleKey()).name(roleEntity.name());
+  }
+
+  private static List<GroupItem> toGroups(final List<GroupEntity> groups) {
+    return groups.stream().map(SearchQueryResponseMapper::toGroup).toList();
   }
 
   public static GroupItem toGroup(final GroupEntity groupEntity) {
