@@ -11,6 +11,7 @@ import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERS
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.componentTemplateRequestBuilder;
 import static org.junit.Assert.assertTrue;
 
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
@@ -116,7 +117,12 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
     final String zeebeVersion =
         ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
     zeebeContainer =
-        testContainerUtil.startZeebe(zeebeVersion, prefix, 2, isMultitTenancyEnabled());
+        testContainerUtil.startZeebe(
+            zeebeVersion,
+            prefix,
+            2,
+            isMultitTenancyEnabled(),
+            ConnectionTypes.OPENSEARCH.getType());
 
     client =
         ZeebeClient.newClientBuilder()
