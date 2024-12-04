@@ -89,9 +89,9 @@ public class SSOController {
       throws IOException {
     final Object originalRequestUrl = req.getSession().getAttribute(REQUESTED_URL);
     if (originalRequestUrl != null) {
-      res.sendRedirect(originalRequestUrl.toString());
+      res.sendRedirect(req.getContextPath() + originalRequestUrl);
     } else {
-      res.sendRedirect(ROOT);
+      res.sendRedirect(req.getContextPath() + ROOT);
     }
   }
 
