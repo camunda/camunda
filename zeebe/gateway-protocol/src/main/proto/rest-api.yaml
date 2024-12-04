@@ -3434,7 +3434,7 @@ components:
           format: int64
         processInstanceVariables:
           type: array
-          description: Process variables associated with the user task.
+          description: Process Instance variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
     UserTaskVariableFilterRequest:
