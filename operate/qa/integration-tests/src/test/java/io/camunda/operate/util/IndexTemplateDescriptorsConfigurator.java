@@ -249,7 +249,7 @@ public class IndexTemplateDescriptorsConfigurator {
   @Bean
   public TaskTemplate getTaskTemplate(
       final DatabaseInfo databaseInfo, final IndexPrefixHolder indexPrefixHolder) {
-    return new TaskTemplate("tasklist", databaseInfo.isElasticsearchDb()) {
+    return new TaskTemplate("", databaseInfo.isElasticsearchDb()) {
       @Override
       public String getIndexPrefix() {
         return indexPrefixHolder.getIndexPrefix();
