@@ -14,9 +14,14 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.exception.NotFoundException;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.sort.GroupSort;
 import io.camunda.security.auth.Authentication;
 import io.camunda.service.GroupServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -94,5 +99,112 @@ public class GroupQueryControllerTest extends RestControllerTest {
 
     // then
     verify(groupServices, times(1)).getGroup(groupKey);
+  }
+
+  @Test
+  void shouldSearchGroupsWithEmptyQuery() {
+    // given
+    final var groupKey1 = 111L;
+    final var groupKey2 = 222L;
+    final var groupKey3 = 333L;
+    final var groupName1 = "Group 1";
+    final var groupName2 = "Group 2";
+    final var groupName3 = "Group 3";
+    when(groupServices.search(any(GroupQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(3)
+                .sortValues(new Object[] {})
+                .items(
+                    List.of(
+                        new GroupEntity(groupKey1, groupName1, Set.of()),
+                        new GroupEntity(groupKey2, groupName2, Set.of()),
+                        new GroupEntity(groupKey3, groupName3, Set.of())))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(GROUP_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue("{}")
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(
+            """
+          {
+             "items": [
+               {
+                 "key": %d,
+                 "name": "%s"
+               },
+               {
+                 "key": %d,
+                 "name": "%s"
+               },
+               {
+                 "key": %d,
+                 "name": "%s"
+               }
+             ],
+             "page": {
+               "totalItems": 3,
+               "firstSortValues": [],
+               "lastSortValues": []
+             }
+           }"""
+                .formatted(groupKey1, groupName1, groupKey2, groupName2, groupKey3, groupName3));
+
+    verify(groupServices).search(new GroupQuery.Builder().build());
+  }
+
+  @Test
+  void shouldSortAndPaginateSearchResult() {
+    // given
+    final var groupKey1 = 111L;
+    final var groupKey2 = 222L;
+    final var groupKey3 = 333L;
+    final var groupName1 = "Group 1";
+    final var groupName2 = "Group 2";
+    final var groupName3 = "Group 3";
+    when(groupServices.search(any(GroupQuery.class)))
+        .thenReturn(
+            new SearchQueryResult.Builder<GroupEntity>()
+                .total(3)
+                .items(
+                    List.of(
+                        new GroupEntity(groupKey1, groupName1, Set.of()),
+                        new GroupEntity(groupKey2, groupName2, Set.of()),
+                        new GroupEntity(groupKey3, groupName3, Set.of())))
+                .build());
+
+    // when / then
+    webClient
+        .post()
+        .uri("%s/search".formatted(GROUP_BASE_URL))
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(
+            """
+            {
+              "sort":  [{"field": "name", "order":  "asc"}],
+              "page":  {"from":  20, "limit":  10}
+            }
+             """)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    verify(groupServices)
+        .search(
+            new GroupQuery.Builder()
+                .sort(GroupSort.of(builder -> builder.name().asc()))
+                .page(SearchQueryPage.of(builder -> builder.from(20).size(10)))
+                .build());
   }
 }
