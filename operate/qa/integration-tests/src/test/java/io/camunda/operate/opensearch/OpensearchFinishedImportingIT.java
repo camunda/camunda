@@ -31,6 +31,7 @@ import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Test;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -218,6 +219,27 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
         .during(Duration.ofSeconds(10))
         .atMost(Duration.ofSeconds(12))
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
+  }
+
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    zeebeImporter.performOneRoundOfImport();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(60))
+        .until(
+            () -> {
+              final var searchRequestBuilder =
+                  new SearchRequest.Builder()
+                      .size(100)
+                      .index(importPositionIndex.getFullQualifiedName());
+              final var documents =
+                  osClient.doc().search(searchRequestBuilder, ImportPositionEntity.class);
+
+              // all initial import position documents created for each record reader
+              return documents.hits().hits().size()
+                  == recordsReaderHolder.getAllRecordsReaders().size();
+            });
   }
 
   private boolean isRecordReaderIsCompleted(final String partitionIdFieldValue) throws IOException {

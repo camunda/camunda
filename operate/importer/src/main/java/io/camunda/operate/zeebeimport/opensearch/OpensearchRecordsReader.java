@@ -144,6 +144,16 @@ public class OpensearchRecordsReader implements RecordsReader {
     countEmptyRuns = 0;
     errorStrategy =
         new BackoffIdleStrategy(operateProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
+
+    try {
+      final var latestPosition =
+          importPositionHolder.getLatestScheduledPosition(
+              importValueType.getAliasTemplate(), partitionId);
+
+      importPositionHolder.recordLatestLoadedPosition(latestPosition);
+    } catch (final IOException e) {
+      LOGGER.error("Failed to write initial import position index ", e);
+    }
   }
 
   @Override

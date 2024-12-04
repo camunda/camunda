@@ -304,6 +304,26 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
         .until(() -> isRecordReaderIsCompleted("1-process-instance"));
   }
 
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    zeebeImporter.performOneRoundOfImport();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(60))
+        .until(
+            () -> {
+              final var searchRequest =
+                  new SearchRequest(importPositionIndex.getFullQualifiedName());
+              searchRequest.source().size(100);
+
+              final var documents = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+              // all initial import position documents created for each record reader
+              return documents.getHits().getHits().length
+                  == recordsReaderHolder.getAllRecordsReaders().size();
+            });
+  }
+
   private boolean isRecordReaderIsCompleted(final String partitionIdFieldValue) throws IOException {
     final var hits =
         Arrays.stream(
