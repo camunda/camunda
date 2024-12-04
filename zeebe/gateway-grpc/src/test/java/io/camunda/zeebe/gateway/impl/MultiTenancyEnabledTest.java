@@ -82,7 +82,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
   }
 
   @Test
-  public void deployResourceRequestShouldContainAuthorizedTenants() {
+  public void deployResourceRequestShouldContainTenants() {
     // when
     final DeployResourceResponse response =
         client.deployResource(DeployResourceRequest.newBuilder().setTenantId("tenant-b").build());
