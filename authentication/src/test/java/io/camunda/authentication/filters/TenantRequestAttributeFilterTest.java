@@ -26,12 +26,14 @@ import java.io.IOException;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -114,12 +116,12 @@ public class TenantRequestAttributeFilterTest {
     final Filter filter = new TenantRequestAttributeFilter(new MultiTenancyCfg().setEnabled(true));
     request.setUserPrincipal(new UsernamePasswordAuthenticationToken("unknown", "secret"));
 
-    // when
-    filter.doFilter(request, response, filterChain);
+    // when / then
+    Assertions.assertThrows(
+        InternalAuthenticationServiceException.class,
+        () -> filter.doFilter(request, response, filterChain));
 
-    // then
     assertThat(recordedTenantIds).isEmpty();
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
   }
 
   @Test
@@ -129,11 +131,11 @@ public class TenantRequestAttributeFilterTest {
     final Filter filter = new TenantRequestAttributeFilter(new MultiTenancyCfg().setEnabled(true));
     request.setUserPrincipal(mock(Principal.class));
 
-    // when
-    filter.doFilter(request, response, filterChain);
+    // when / then
+    Assertions.assertThrows(
+        InternalAuthenticationServiceException.class,
+        () -> filter.doFilter(request, response, filterChain));
 
-    // then
     assertThat(recordedTenantIds).isEmpty();
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.UNAUTHORIZED.value());
   }
 }
