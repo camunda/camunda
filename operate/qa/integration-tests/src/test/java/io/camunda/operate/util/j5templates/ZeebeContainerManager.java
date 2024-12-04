@@ -9,6 +9,7 @@ package io.camunda.operate.util.j5templates;
 
 import static io.camunda.operate.qa.util.ContainerVersionsUtil.ZEEBE_CURRENTVERSION_PROPERTY_NAME;
 
+import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.qa.util.ContainerVersionsUtil;
 import io.camunda.operate.qa.util.TestContainerUtil;
@@ -47,7 +48,11 @@ public abstract class ZeebeContainerManager {
         ContainerVersionsUtil.readProperty(ZEEBE_CURRENTVERSION_PROPERTY_NAME);
     zeebeContainer =
         testContainerUtil.startZeebe(
-            zeebeVersion, prefix, 2, operateProperties.getMultiTenancy().isEnabled());
+            zeebeVersion,
+            prefix,
+            2,
+            operateProperties.getMultiTenancy().isEnabled(),
+            ConnectionTypes.ELASTICSEARCH.getType());
 
     client =
         ZeebeClient.newClientBuilder()
