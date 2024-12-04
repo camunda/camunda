@@ -16,6 +16,7 @@ import io.camunda.zeebe.gateway.rest.RequestMapper.UpdateGroupRequest;
 import io.camunda.zeebe.gateway.rest.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -64,6 +65,18 @@ public class GroupController {
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
                 .deleteGroup(groupKey));
+  }
+
+  @PostMapping(
+      path = "/{groupKey}/users/{userKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> assignUserToGroup(
+      @PathVariable final long groupKey, @PathVariable final long userKey) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+        () ->
+            groupServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .assignMember(groupKey, userKey, EntityType.USER));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createGroup(
