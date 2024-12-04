@@ -73,7 +73,6 @@ public class UserServiceTest {
   @Test
   public void shouldTriggerDeleteRequest() {
     // when
-    when(authentication.token()).thenReturn("token");
     final var userRecord = new UserRecord();
     userRecord.setUserKey(1234L);
     when(brokerClient.sendRequest(any()))
