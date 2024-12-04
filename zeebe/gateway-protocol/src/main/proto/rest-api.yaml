@@ -3998,18 +3998,21 @@ components:
           description: The tenant ID.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
+        variables:
+          description: The process instance variables.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceVariableFilterRequest"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
       properties:
         name:
+          description: Name of the variable.
           type: string
-          description: The variable name.
-        values:
-          type: array
-          description: The variable values.
-          items:
-            type: string
+        value:
+          description: The value of the variable.
+          type: string
     ProcessInstanceSearchQueryResponse:
       description: Process instance search response.
       allOf:

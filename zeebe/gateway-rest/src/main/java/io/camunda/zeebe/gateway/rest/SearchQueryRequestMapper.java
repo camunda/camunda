@@ -440,6 +440,9 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
+      ofNullable(filter.getVariables())
+          .filter(variables -> !variables.isEmpty())
+          .ifPresent(vars -> builder.variables(toVariableValueFiltersForProcessInstance(vars)));
     }
 
     return builder.build();
@@ -814,6 +817,23 @@ public final class SearchQueryRequestMapper {
 
   private static List<VariableValueFilter> toVariableValueFilters(
       final List<UserTaskVariableFilterRequest> filters) {
+
+    if (filters != null && !filters.isEmpty()) {
+      return filters.stream()
+          .map(
+              filter ->
+                  new VariableValueFilter.Builder()
+                      .name(filter.getName())
+                      .eq(filter.getValue())
+                      .build())
+          .toList();
+    }
+
+    return null;
+  }
+
+  private static List<VariableValueFilter> toVariableValueFiltersForProcessInstance(
+      final List<ProcessInstanceVariableFilterRequest> filters) {
 
     if (filters != null && !filters.isEmpty()) {
       return filters.stream()
