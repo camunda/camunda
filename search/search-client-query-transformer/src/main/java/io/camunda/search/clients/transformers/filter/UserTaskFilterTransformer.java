@@ -69,7 +69,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     // Process Instance Variable Query: Check if processVariable  with specified varName and
     // varValue exists
     ofNullable(getProcessVariablesQuery(filter.processInstanceVariableFilter()))
-        .ifPresent(f -> queries.add(hasParentQuery("process", f)));
+        .ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), f)));
 
     queries.add(exists("flowNodeInstanceId")); // Default to task
 

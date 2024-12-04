@@ -124,8 +124,7 @@ class UserTaskQueryTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/25287")
-  public void shouldRetrieveTaskByProcessVariable() {
+  public void shouldRetrieveTaskByProcessInstanceVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01").value("\"pVar\"");
 
@@ -190,7 +189,6 @@ class UserTaskQueryTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/25287")
   public void shouldRetrieveTaskByVariableNameSearch() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01");
@@ -205,7 +203,7 @@ class UserTaskQueryTest {
   }
 
   @Test
-  public void shouldNoteRetrieveTaskByInvalidVariableValue() {
+  public void shouldNotRetrieveTaskByInvalidVariableValue() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01").value("\"pVariable\"");
 
