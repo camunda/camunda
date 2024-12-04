@@ -7,24 +7,12 @@ Anyone is welcome to contribute to Camunda! The best way to get started is to ch
 For community-maintained Camunda projects, please visit the [Camunda Community Hub](https://github.com/camunda-community-hub). For connectors and process blueprints, please visit [Camunda Marketplace](https://marketplace.camunda.com/en-US/home) instead.
 
 - [Prerequisites](#prerequisites)
-  - [Contributor License Agreement](#contributor-license-agreement)
-  - [Code of Conduct](#code-of-conduct)
 - [GitHub issue guidelines](#github-issue-guidelines)
-  - [Starting on an issue](#starting-on-an-issue)
 - [Build and run Camunda from source](#build-and-run-camunda-from-source)
-  - [Build](#build)
-  - [Run](#run)
-  - [Test execution](#test-execution)
-    - [Test troubleshooting](#test-troubleshooting)
-  - [Build profiling](#build-profiling)
 - [Creating a pull request](#creating-a-pull-request)
 - [Reviewing a pull request](#reviewing-a-pull-request)
-  - [Review emoji code](#review-emoji-code)
-  - [Stale pull requests](#stale-pull-requests)
 - [Backporting changes](#backporting-changes)
 - [Commit message guidelines](#commit-message-guidelines)
-  - [Commit message header](#commit-message-header)
-  - [Commit message body](#commit-message-body)
 
 ## Prerequisites
 
@@ -41,89 +29,33 @@ This project adheres to the [Camunda Code of Conduct](https://camunda.com/events
 
 ## GitHub issue guidelines
 
-If you want to report a bug or request a new feature, feel free to open a new issue on [GitHub][issues].
-
-If you report a bug, please help speed up problem diagnosis by providing as much information as possible. Ideally, that would include a small [sample project][sample] that reproduces the problem.
-
-> [!NOTE]
-> If you have a general usage question, please ask on the [forum](forum).
-
-Every issue should have a meaningful name and a description that either describes:
-- A new feature with details about the use case the feature would solve or
-improve
-- A problem, how we can reproduce it, and what the expected behavior would be
-- A change and the intention of how this would improve the system
-
-### Starting on an issue
-
-The `main` branch contains the current in-development state of the project. To work on an issue, follow these steps:
-
-1. Check that a [GitHub issue][issues] exists for the task you want to work on.
-   If one does not, create one. Refer to the [issue guidelines](#github-issue-guidelines).
-2. Check that no one is already working on the issue, and make sure the team would accept a pull request for this topic. Some topics are complex and may touch multiple of [Camunda's Components](https://docs.camunda.io/docs/components/), requiring internal coordination.
-3. Checkout the `main` branch and pull the latest changes.
-
-   ```
-   git checkout main
-   git pull
-   ```
-4. Create a new branch with the naming scheme `issueId-description`.
-
-   ```
-   git checkout -b 123-adding-bpel-support
-   ```
-5. Follow the [Google Java Format](https://github.com/google/google-java-format#intellij-android-studio-and-other-jetbrains-ides)
-   and [Zeebe Code Style](https://github.com/camunda/camunda/wiki/Code-Style) while coding.
-6. Implement the required changes on your branch and regularly push your
-   changes to the origin so that the CI can run. Code formatting, style, and
-   license header are fixed automatically by running Maven. Checkstyle
-   violations have to be fixed manually.
-
-   ```
-   git commit -am 'feat: add BPEL execution support'
-   git push -u origin 123-adding-bpel-support
-   ```
-7. If you think you finished the issue, please prepare the branch for review. Please consider our [pull requests and code reviews](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews) guide, before requesting a review. In general, the commits should be squashed into meaningful commits with a helpful message. This means cleanup/fix etc. commits should be squashed into the related commit. If you made refactorings it would be best if they are split up into another commit. Think about how a reviewer can best understand your changes. Please follow the [commit message guidelines](#commit-message-guidelines).
-8. After finishing up the squashing, force push your changes to your branch.
-
-   ```
-   git push --force-with-lease
-   ```
+You can find more details about the issue guidelines in the [GitHub issue guidelines](docs/github-issue-guidelines.md).
 
 ## Build and run Camunda from source
 
 We are currently working on [architecture streamlining](https://camunda.com/blog/2024/04/simplified-deployment-options-accelerated-getting-started-experience/) to simplify the deployment and build process. While this is in progress, the build instructions are subject to change. The most recent build instructions will always be in this document.
 
 This is a small overview of the contents of this repository:
-- `authentication` - configures authentication for Camunda 8
-- `bom` - bill of materials (BOM) for importing Zeebe dependencies
-- `build-tools` - Zeebe build tools
+
 - `clients` - client libraries
-- `dist` - provides the Camunda 8 distributions
-- `identity` - component within self-managed Camunda 8 responsible for authentication and authorization
-- `licenses` - the Camunda 8 licenses
-- `monitor` - Monitoring for self-managed Camunda 8
-- `operate` - Monitoring tool for monitoring and troubleshooting processes running in Zeebe
-- `parent` - Parent POM for all Zeebe projects
-- `qa` - quality assurance for Camunda 8
 - `search` - the search clients for Camunda 8 data
-- `service` - internal services for Camunda 8
-- `spring-boot-starter-sdk` - official SDK for Spring Boot
-- `tasklist` - graphical and API application to manage user tasks in Zeebe
-- `testing` - testing libraries for processes and process applications
-- `webapps-common` - shared code between the Camunda 8 web apps
-- `zeebe` - the process automation engine powering Camunda 8
+- [dist](dist/README.md) - provides the Camunda 8 distributions
+- [identity](identity/README.md) - component within self-managed Camunda 8 responsible for authentication and authorization
+- [operate](operate/README.md) - Monitoring tool for monitoring and troubleshooting processes running in Camunda 8
+- [tasklist](tasklist/README.md) - graphical and API application to manage user tasks in Camunda 8
+- [optimize](optimize/README.md) - tool to analyze and optimize processes running in Camunda 8
+- [zeebe](zeebe/README.md) - the process automation engine powering Camunda 8
+- `qa` - quality assurance for Camunda 8
+- [testing](testing/README.md) - testing libraries for processes and process applications
 
 ### Build
 
 > [!NOTE]
 > All Camunda core modules are built and tested with JDK 21. Most modules use language level 21, exceptions are: camunda-client-java, camunda-process-test-java, zeebe-bpmn-model, zeebe-build-tools, zeebe-client-java, zeebe-gateway-protocol zeebe-gateway-protocol-impl, zeebe-protocol, and zeebe-protocol-jackson which use language level 8.
 
-To **quickly** build all components for development, run the command: `mvn clean install -Dquickly` in the root folder.
+To **quickly** build all components for development, run the command: `./mvnw clean install -Dquickly` in the root folder.
 
-To build the full distribution for local usage (skipping tests), run the command `mvn clean install -DskipChecks -DskipTests`.
-
-To fully build and test the Camunda distribution, run the command: `mvn clean install` in the root folder.
+To build the full distribution for local usage (skipping tests), run the command `./mvnw clean install -DskipChecks -DskipTests`.
 
 If you built a distribution, it can be found in the folder `dist/target`, i.e.
 
@@ -160,10 +92,10 @@ If you need to change any of the default configuration values for Camunda, the c
 
 ### Test execution
 
-Tests can be executed via Maven (`mvn verify`) or in your preferred IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), which we also [provide settings for](https://github.com/camunda/camunda/tree/main/.idea).
+Tests can be executed via Maven (`./mvnw verify`) or in your preferred IDE. The Zeebe Team uses mostly [Intellij IDEA](https://www.jetbrains.com/idea/), which we also [provide settings for](https://github.com/camunda/camunda/tree/main/.idea).
 
 > [!TIP]
-> To execute the tests quickly, run `mvn verify -Dquickly -DskipTests=false`.
+> To execute the tests quickly, run `./mvnw verify -Dquickly -DskipTests=false`.
 > The tests will be skipped when using `-Dquickly` without `-DskipTests=false`.
 
 #### Test troubleshooting
@@ -176,49 +108,11 @@ The development team continues to push for a performant build.
 To investigate where the time is spent, you can run your Maven command with the `-Dprofile` option.
 This will generate a profiler report in the `target` folder.
 
-## Creating a pull request
+## Pull Request guidelines
 
-Before opening your first pull request, please have a look at this [guide](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews#pull-requests).
+Please have a look at the [create pull request guide](docs/pull-request-guidelines.md#creating-a-pull-request) for more information.
 
-1. To start the review process create a new pull request on GitHub from your branch to the `main` branch. Give it a meaningful name and describe your changes in the body of the pull request. Lastly add a link to the issue this pull request closes, i.e. by writing in the description `closes #123`. Without referencing the issue, our [changelog generation] will not recognize your PR as a new feature or fix and instead only include it in the list of merged PRs.
-2. Assign the pull request to one developer to review, if you are not sure who should review the issue skip this step. Someone will assign a reviewer for you.
-3. The reviewer will look at the pull request in the following days and give you either feedback or accept the changes. Your reviewer might use [emoji code](#review-emoji-code) during the reviewing process.
-   1. If there are changes requested, address them in a new commit. Notify the reviewer in a comment if the pull request is ready for review again. If the changes are accepted squash them again in the related commit and force push. Then initiate a merge by adding your PR to the merge queue via the `Merge when ready` button.
-   2. If no changes are requested, the reviewer will initiate a merge themselves.
-4. When a merge is initiated, a bot will merge your branch with the latest
-   `main` and run the CI on it.
-   1. If everything goes well, the branch is merged and deleted and the issue and pull request are closed.
-   2. If there are merge conflicts, the author of the pull request has to manually rebase `main` into the issue branch and retrigger a merge attempt.
-   3. If there are CI errors, the author of the pull request has to check if they are caused by its changes and address them. If they are flaky tests, please have a look at this [guide](docs/ci.md#determine-flakiness) on how to handle them. Once the CI errors are resolved, a merge can be retried by simply enqueueing the PR again.
-
-## Reviewing a pull request
-
-Before doing your first review, please have a look at this [guide](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews#code-reviews).
-
-As a reviewer, you are encouraged to use the following [emoji code](#review-emoji-code) in your comments.
-
-The review should result in:
-- **Approving** the changes if there are only optional suggestions/minor issues 🔧, throughts 💭, or likes 👍.
-</br > In cases where ❌ suggestions are straightforward to apply from the reviewers perspective, e.g. "a one-liner"-change for which they don't consider another review needed, the reviewer can pre-approve a PR. This unblocks the author to merge right away when they addressed the required changes. In doubt the author can still decide to require another review, or proactively clarify disagreement with the suggestion. The main point here is that pre-approval puts the author back in charge to make a responsible decision on requiring another review or not and if not get the change merged without further delay.
-- **Requesting changes** if there are major issues ❌
-- **Commenting** if there are open questions ❓
-
-### Review emoji code
-
-The following emojis can be used in a review to express the intention of a comment. For example, to distinguish a required change from an optional suggestion.
-
-- 👍 or `:+1:`: This is great! It always feels good when somebody likes your work. Show them!
-- ❓ or `:question:`: I have a question. Please clarify.
-- ❌ or `:x:`: This has to change. It’s possibly an error or strongly violates existing conventions.
-- 🔧 or `:wrench:`: This is a well-meant suggestion or minor issue. Take it or leave it. Nothing major that blocks merging.
-- 💭 or `:thought_balloon:`: I’m just thinking out loud here. Something doesn’t necessarily have to change, but I want to make sure to share my thoughts.
-
-_Inspired by [Microsoft's emoji code](https://devblogs.microsoft.com/appcenter/how-the-visual-studio-mobile-center-team-does-code-review/#introducing-the-emoji-code)._
-
-### Stale pull requests
-
-If there has not been any activity in your PR after a month, it is automatically marked as stale. If it remains inactive, we may decide to close the PR.
-When this happens and you're still interested in contributing, please feel free to reopen it.
+For how to review a pull request, please refer to the [review pull request guide](docs/pull-request-guidelines.md#reviewing-a-pull-request).
 
 ## Backporting changes
 
@@ -247,54 +141,10 @@ Some changes need to be copied to older versions. We use the [backport](https://
 
 ## Commit message guidelines
 
-Commit messages use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format.
-
-```
-<header>
-<BLANK LINE> (optional - mandatory with body)
-<body> (optional)
-<BLANK LINE> (optional - mandatory with footer)
-<footer> (optional)
-```
-
-Camunda uses a GitHub Actions workflow to check your commit messages when a pull request is submitted. Please make sure to address any hints from the bot.
-
-### Commit message header
-
-Examples:
-
-* `docs: add start event to bpmn symbol support matrix`
-* `perf: reduce latency in backpressure`
-* `feat: allow more than 9000 jobs in a single call`
-
-The commit header should match the following pattern:
-
-```
-%{type}: %{description}
-```
-
-The commit header should be kept short, preferably under 72 chars but we allow a max of 120 chars.
-
-- `type` should be one of:
-  - `build`: Changes that affect the build system (e.g. Maven, Docker, etc)
-  - `ci`: Changes to our CI configuration files and scripts (e.g. GitHub Actions, etc)
-  - `deps`: A change to the external dependencies (was already used by Dependabot)
-  - `docs`:  A change to the documentation
-  - `feat`: A new feature (both internal or user-facing)
-  - `fix`: A bug fix (both internal or user-facing)
-  - `perf`: A code change that improves performance
-  - `refactor`: A code change that does not change the behavior
-  - `style`: A change to align the code with our style guide
-  - `test`: Adding missing tests or correcting existing tests
-- `description`: short description of the change in present tense
-
-### Commit message body
-
-Should describe the motivation for the change. This is optional but encouraged. Good commit messages explain what changed AND why you changed it. See [I've written a clear changelist description](https://github.com/camunda/camunda/wiki/Pull-Requests-and-Code-Reviews#ive-written-a-clear-changelist-description).
+More information on this topic can be found at [Commit message guidelines](docs/commit-message-guidelines.md).
 
 [issues]: https://github.com/camunda/camunda/issues
 [forum]: https://forum.camunda.io/
 [sample]: https://github.com/zeebe-io/zeebe-test-template-java
 [clients/java]: https://github.com/camunda/camunda/labels/scope%2Fclients-java
 [changelog generation]: https://github.com/zeebe-io/zeebe-changelog
-
