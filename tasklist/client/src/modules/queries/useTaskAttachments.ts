@@ -25,8 +25,7 @@ function useTaskAttachments(taskId: string) {
       );
 
       if (response !== null) {
-        const attachments = await response.json();
-        return attachments;
+        return response.json();
       }
 
       throw error;
