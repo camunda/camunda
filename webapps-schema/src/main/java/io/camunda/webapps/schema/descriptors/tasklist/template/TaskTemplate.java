@@ -62,6 +62,8 @@ public class TaskTemplate extends TasklistTemplateDescriptor
 
   public static final String JOIN_FIELD_NAME = "join";
 
+  public static final String LOCAL_VARIABLE_SUFFIX = "-local";
+
   public TaskTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }

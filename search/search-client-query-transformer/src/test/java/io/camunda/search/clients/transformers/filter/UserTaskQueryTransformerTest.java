@@ -20,6 +20,7 @@ import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.UserTaskFilter.Builder;
 import io.camunda.search.filter.VariableValueFilter;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -329,7 +330,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
 
               final SearchHasChildQuery childQuery =
                   (SearchHasChildQuery) shouldQuery.queryOption();
-              assertThat(childQuery.type()).isEqualTo("taskVariable");
+              assertThat(childQuery.type())
+                  .isEqualTo(TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
 
               // Check the inner bool query inside the child query
               final SearchQuery innerQuery = childQuery.query();
