@@ -15,7 +15,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
@@ -38,7 +37,6 @@ import io.camunda.exporter.schema.IndexMapping;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SearchEngineClient;
-import io.camunda.webapps.schema.descriptors.ImportValueType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -185,23 +183,18 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
 
   @Override
   public boolean importersCompleted(final int partitionId, final String indexPrefix) {
-    final var completedImportPositionDocumentsRequest =
-        completedImportPositionDocuments(partitionId, indexPrefix);
+    final var allImportPositionDocuments = allImportPositionDocuments(partitionId, indexPrefix);
 
     try {
+      final var allRecordReaderStatuses =
+          client.search(allImportPositionDocuments, ImportPositionEntity.class).hits().hits();
+
       // brand new install no need to wait for importers to complete
-      if (isImportPositionIndexEmpty(indexPrefix)) {
+      if (allRecordReaderStatuses.isEmpty()) {
         return true;
       }
 
-      final var totalCompletedRecordReaders =
-          client
-              .search(completedImportPositionDocumentsRequest, ImportPositionEntity.class)
-              .hits()
-              .hits()
-              .size();
-
-      return totalCompletedRecordReaders == ImportValueType.values().length;
+      return allRecordReaderStatuses.stream().allMatch(status -> status.source().getCompleted());
 
     } catch (final IOException e) {
       final var errMsg =
@@ -213,39 +206,13 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private SearchRequest completedImportPositionDocuments(
+  private SearchRequest allImportPositionDocuments(
       final int partitionId, final String indexPrefix) {
-    final var query =
-        QueryBuilders.bool()
-            .must(
-                QueryBuilders.match()
-                    .field(ImportPositionIndex.COMPLETED)
-                    .query(true)
-                    .build()
-                    ._toQuery())
-            .must(
-                QueryBuilders.match()
-                    .field(ImportPositionIndex.PARTITION_ID)
-                    .query(partitionId)
-                    .build()
-                    ._toQuery())
-            .build()
-            ._toQuery();
     return new SearchRequest.Builder()
         .index(importPositionIndexName(indexPrefix))
-        .size(ImportValueType.values().length)
-        .query(query)
+        .size(100)
+        .query(q -> q.match(m -> m.field(ImportPositionIndex.PARTITION_ID).query(partitionId)))
         .build();
-  }
-
-  private boolean isImportPositionIndexEmpty(final String indexPrefix) throws IOException {
-    return client
-        .search(
-            new SearchRequest.Builder().index(importPositionIndexName(indexPrefix)).size(1).build(),
-            ImportPositionEntity.class)
-        .hits()
-        .hits()
-        .isEmpty();
   }
 
   private String importPositionIndexName(final String indexPrefix) {

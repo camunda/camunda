@@ -21,7 +21,6 @@ import io.camunda.exporter.schema.IndexMapping;
 import io.camunda.exporter.schema.IndexMappingProperty;
 import io.camunda.exporter.schema.MappingSource;
 import io.camunda.exporter.schema.SearchEngineClient;
-import io.camunda.webapps.schema.descriptors.ImportValueType;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
@@ -42,7 +41,6 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
-import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
@@ -196,22 +194,19 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
   @Override
   public boolean importersCompleted(final int partitionId, final String indexPrefix) {
-    final var completedImportPositionDocumentsRequest =
-        completedImportPositionDocuments(partitionId, indexPrefix);
+    final var allImportPositionDocuments = allImportPositionDocuments(partitionId, indexPrefix);
     try {
       // brand new install no need to wait for importers to complete
-      if (isImportPositionIndexEmpty(indexPrefix)) {
+
+      final var allRecordReaderStatuses =
+          client.search(allImportPositionDocuments, ImportPositionEntity.class).hits().hits();
+
+      // brand new install no need to wait for importers to complete
+      if (allRecordReaderStatuses.isEmpty()) {
         return true;
       }
 
-      final var totalCompletedRecordReaders =
-          client
-              .search(completedImportPositionDocumentsRequest, ImportPositionEntity.class)
-              .hits()
-              .hits()
-              .size();
-
-      return totalCompletedRecordReaders == ImportValueType.values().length;
+      return allRecordReaderStatuses.stream().allMatch(status -> status.source().getCompleted());
     } catch (final IOException e) {
       final var errMsg =
           String.format(
@@ -222,39 +217,18 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
-  private SearchRequest completedImportPositionDocuments(
+  private SearchRequest allImportPositionDocuments(
       final int partitionId, final String indexPrefix) {
-    final var query =
-        QueryBuilders.bool()
-            .must(
-                QueryBuilders.match()
-                    .field(ImportPositionIndex.COMPLETED)
-                    .query(q -> q.booleanValue(true))
-                    .build()
-                    .toQuery())
-            .must(
-                QueryBuilders.match()
-                    .field(ImportPositionIndex.PARTITION_ID)
-                    .query(q -> q.longValue(partitionId))
-                    .build()
-                    .toQuery())
-            .build()
-            .toQuery();
     return new SearchRequest.Builder()
         .index(importPositionIndexName(indexPrefix))
-        .size(ImportValueType.values().length)
-        .query(query)
+        .size(100)
+        .query(
+            q ->
+                q.term(
+                    t ->
+                        t.field(ImportPositionIndex.PARTITION_ID)
+                            .value(v -> v.longValue(partitionId))))
         .build();
-  }
-
-  private boolean isImportPositionIndexEmpty(final String indexPrefix) throws IOException {
-    return client
-        .search(
-            new SearchRequest.Builder().index(importPositionIndexName(indexPrefix)).size(1).build(),
-            ImportPositionEntity.class)
-        .hits()
-        .hits()
-        .isEmpty();
   }
 
   private String importPositionIndexName(final String indexPrefix) {
