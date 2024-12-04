@@ -79,6 +79,18 @@ public class GroupController {
                 .assignMember(groupKey, userKey, EntityType.USER));
   }
 
+  @DeleteMapping(
+      path = "/{groupKey}/users/{userKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> unassignUserFromGroup(
+      @PathVariable final long groupKey, @PathVariable final long userKey) {
+    return RequestMapper.executeServiceMethodWithAcceptedResult(
+        () ->
+            groupServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .removeMember(groupKey, userKey, EntityType.USER));
+  }
+
   private CompletableFuture<ResponseEntity<Object>> createGroup(
       final CreateGroupRequest createGroupRequest) {
     return RequestMapper.executeServiceMethod(
