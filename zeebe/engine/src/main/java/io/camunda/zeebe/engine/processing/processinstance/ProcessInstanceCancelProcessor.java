@@ -95,7 +95,7 @@ public final class ProcessInstanceCancelProcessor
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_PROCESS_INSTANCE,
-                command.getValue().getTenantId())
+                elementInstance.getValue().getTenantId())
             .addResourceId(elementInstance.getValue().getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(request)) {
       final var errorMessage =

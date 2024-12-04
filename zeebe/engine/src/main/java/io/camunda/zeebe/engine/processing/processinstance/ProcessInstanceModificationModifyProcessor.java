@@ -195,7 +195,7 @@ public final class ProcessInstanceModificationModifyProcessor
                 command,
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_PROCESS_INSTANCE,
-                value.getTenantId())
+                processInstance.getValue().getTenantId())
             .addResourceId(processInstance.getValue().getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(authRequest)) {
       final String reason =

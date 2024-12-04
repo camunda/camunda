@@ -68,7 +68,7 @@ public final class VariableDocumentUpdateProcessor
                 record,
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_PROCESS_INSTANCE,
-                value.getTenantId())
+                scope.getValue().getTenantId())
             .addResourceId(scope.getValue().getBpmnProcessId());
     if (!authCheckBehavior.isAuthorized(authRequest)) {
       final var reason =
