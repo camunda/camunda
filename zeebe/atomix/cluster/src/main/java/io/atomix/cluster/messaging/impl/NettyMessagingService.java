@@ -670,18 +670,6 @@ public final class NettyMessagingService implements ManagedMessagingService {
         .whenComplete(
             (channel, channelError) -> {
               if (channelError == null) {
-                responseFuture.whenComplete(
-                    (response, error) -> {
-                      if (error instanceof TimeoutException) {
-                        // response future has been completed exceptionally by our
-                        // timeout check, we will not receive any response on this channel
-                        // if we talk with the wrong IP or node
-                        // See https://github.com/zeebe-io/zeebe-chaos/issues/294
-                        // In order to no longer reuse a maybe broken/outdated channel we close it
-                        // On next request a new channel will be created
-                        channel.close();
-                      }
-                    });
                 final ClientConnection connection = getOrCreateClientConnection(channel);
                 callback
                     .apply(connection)
