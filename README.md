@@ -4,14 +4,14 @@
 
 Camunda 8 delivers scalable, on-demand process automation as a service. Camunda 8 is combined with powerful execution engines for BPMN processes and DMN decisions, and paired with tools for collaborative modeling, operations, and analytics.
 
-This repository contains the core execution cluster components of Camunda 8:
+This repository contains the orchestration cluster core of Camunda 8:
 
 * [Zeebe](https://docs.camunda.io/docs/components/zeebe/zeebe-overview/) - The cloud-native process engine of Camunda 8.
 * [Tasklist](https://docs.camunda.io/docs/components/tasklist/introduction-to-tasklist/) - Complete tasks that require human input.
 * [Operate](https://docs.camunda.io/docs/components/operate/operate-introduction/) - Manage, monitor, and troubleshoot your processes.
 * [Optimize](https://docs.camunda.io/optimize/components/what-is-optimize/) - Improve your processes by identifying constraints in your system.
 
-In addition to the core execution cluster components, the Camunda 8 stack also includes:
+In addition to the orchestration cluster core, the Camunda 8 stack also includes:
 * [Console](https://docs.camunda.io/docs/components/console/introduction-to-console/) - Configure and deploy clusters with Console.
 * [Web Modeler](https://docs.camunda.io/docs/components/modeler/about-modeler/) - Web Application to model BPMN, DMN, & Forms and deploy or start new instances.
 * [Desktop Modeler](https://docs.camunda.io/docs/next/components/modeler/desktop-modeler/) - Use Desktop Modeler as a desktop application for modeling BPMN, DMN, and Forms with your local process application project.
