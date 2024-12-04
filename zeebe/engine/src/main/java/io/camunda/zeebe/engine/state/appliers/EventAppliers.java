@@ -422,6 +422,7 @@ public final class EventAppliers implements EventApplier {
     register(UserTaskIntent.ASSIGNING, 2, new UserTaskAssigningV2Applier(state));
     register(UserTaskIntent.ASSIGNED, 1, new UserTaskAssignedV1Applier(state));
     register(UserTaskIntent.ASSIGNED, 2, new UserTaskAssignedV2Applier(state));
+    register(UserTaskIntent.CLAIMING, new UserTaskClaimingApplier(state));
     register(UserTaskIntent.UPDATING, new UserTaskUpdatingApplier(state));
     register(UserTaskIntent.UPDATED, new UserTaskUpdatedApplier(state));
     register(UserTaskIntent.MIGRATED, new UserTaskMigratedApplier(state));

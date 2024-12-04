@@ -313,10 +313,10 @@ public class TaskListenerTest {
         processInstanceKey, JobListenerEventType.ASSIGNMENT, LISTENER_TYPE, LISTENER_TYPE + "_2");
 
     // ensure that `COMPLETE_TASK_LISTENER` commands were triggered between
-    // `ASSIGNING` and `ASSIGNED` events
+    // `CLAIMING` and `ASSIGNED` events
     assertUserTaskIntentsSequence(
         UserTaskIntent.CLAIM,
-        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.CLAIMING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.ASSIGNED);
