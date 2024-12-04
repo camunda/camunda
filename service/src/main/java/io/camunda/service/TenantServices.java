@@ -102,7 +102,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
     return search(
             TenantQuery.of(
                 queryBuilder ->
-                    queryBuilder.filter(filterBuilder -> filterBuilder.userKey(memberKey))))
+                    queryBuilder.filter(filterBuilder -> filterBuilder.memberKey(memberKey))))
         .items();
   }
 
