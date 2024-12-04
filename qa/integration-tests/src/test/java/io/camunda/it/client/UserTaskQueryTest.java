@@ -53,6 +53,8 @@ class UserTaskQueryTest {
     deployProcess("process-2", "simple-2.bpmn", "test-2", "group", "user");
     deployProcess("process-3", "simple-3.bpmn", "test-3", "", "", "30");
     delpoyProcessFromResourcePath("/process/bpm_variable_test.bpmn", "bpm_variable_test.bpmn");
+    delpoyProcessFromResourcePath(
+        "/process/bpmn_subprocess_case.bpmn", "bpmn_subprocess_case.bpmn");
 
     deployForm("form/form.form");
     delpoyProcessFromResourcePath("/process/process_with_form.bpmn", "process_with_form.bpmn");
@@ -63,6 +65,7 @@ class UserTaskQueryTest {
     startProcessInstance("process-3");
     startProcessInstance("bpmProcessVariable");
     startProcessInstance("processWithForm");
+    startProcessInstance("processWithSubProcess");
 
     waitForTasksBeingExported();
   }
@@ -266,7 +269,7 @@ class UserTaskQueryTest {
   public void shouldRetrieveTaskByState() {
     final var resultCreated =
         camundaClient.newUserTaskQuery().filter(f -> f.state("CREATED")).send().join();
-    assertThat(resultCreated.items().size()).isEqualTo(6);
+    assertThat(resultCreated.items().size()).isEqualTo(7);
     resultCreated.items().forEach(item -> assertThat(item.getState()).isEqualTo("CREATED"));
 
     final var resultCompleted =
@@ -352,7 +355,7 @@ class UserTaskQueryTest {
             .send()
             .join();
 
-    assertThat(resultAfter.items().size()).isEqualTo(6);
+    assertThat(resultAfter.items().size()).isEqualTo(7);
     final var keyAfter = resultAfter.items().getFirst().getUserTaskKey();
     // apply searchBefore
     final var resultBefore =
@@ -370,7 +373,7 @@ class UserTaskQueryTest {
     final var result =
         camundaClient.newUserTaskQuery().sort(s -> s.creationDate().asc()).send().join();
 
-    assertThat(result.items().size()).isEqualTo(7);
+    assertThat(result.items().size()).isEqualTo(8);
 
     // Assert that the creation date of item 0 is before item 1, and item 1 is before item 2
     assertThat(result.items().get(0).getCreationDate())
@@ -390,7 +393,7 @@ class UserTaskQueryTest {
     final var result =
         camundaClient.newUserTaskQuery().sort(s -> s.creationDate().desc()).send().join();
 
-    assertThat(result.items().size()).isEqualTo(7);
+    assertThat(result.items().size()).isEqualTo(8);
 
     assertThat(result.items().get(0).getCreationDate())
         .isGreaterThanOrEqualTo(result.items().get(1).getCreationDate());
@@ -404,7 +407,7 @@ class UserTaskQueryTest {
   public void shouldRetrieveTaskByTenantId() {
     final var resultDefaultTenant =
         camundaClient.newUserTaskQuery().filter(f -> f.tenantId("<default>")).send().join();
-    assertThat(resultDefaultTenant.items().size()).isEqualTo(7);
+    assertThat(resultDefaultTenant.items().size()).isEqualTo(8);
     resultDefaultTenant
         .items()
         .forEach(item -> assertThat(item.getTenantId()).isEqualTo("<default>"));
@@ -502,6 +505,23 @@ class UserTaskQueryTest {
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getElementInstanceKey())
         .isEqualTo(userTaskElementInstanceKey);
+  }
+
+  @Test
+  void shouldReturnUserTaskVariablesWithSubProcessVariables() {
+    // when
+    final var userTaskList =
+        camundaClient.newUserTaskQuery().filter(f -> f.elementId("TaskSub")).send().join();
+
+    final var userTaskKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
+
+    final var result =
+        camundaClient.newUserTaskVariableQuery(userTaskKey).sort(s -> s.name().asc()).send().join();
+    // then
+    assertThat(result.items().size()).isEqualTo(3);
+    assertThat(result.items().get(0).getName()).isEqualTo("localVariable");
+    assertThat(result.items().get(1).getName()).isEqualTo("processVariable");
+    assertThat(result.items().get(2).getName()).isEqualTo("subProcessVariable");
   }
 
   @Test
@@ -609,7 +629,7 @@ class UserTaskQueryTest {
         .untilAsserted(
             () -> {
               final var result = camundaClient.newUserTaskQuery().send().join();
-              assertThat(result.items().size()).isEqualTo(7);
+              assertThat(result.items().size()).isEqualTo(8);
               userTaskKeyTaskAssigned = result.items().getFirst().getUserTaskKey();
             });
 
