@@ -73,18 +73,20 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
               .formatted(tenantKey));
       return;
     }
+    final var tenantId = persistedTenant.get().getTenantId();
+    record.setTenantId(tenantId);
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(record.getTenantId());
+            .addResourceId(tenantId);
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      rejectCommandWithUnauthorizedError(command, authorizationRequest, record.getTenantId());
+      rejectCommandWithUnauthorizedError(command, authorizationRequest, tenantId);
       return;
     }
 
     final var entityKey = record.getEntityKey();
     if (!isEntityPresentAndNotAssigned(
-        entityKey, record.getEntityType(), command, tenantKey, record.getTenantId())) {
+        entityKey, record.getEntityType(), command, tenantKey, tenantId)) {
       return;
     }
 

@@ -279,11 +279,6 @@ public class TenantClient {
       return this;
     }
 
-    public TenantAddEntityClient withTenantId(final String tenantId) {
-      tenantRecord.setTenantId(tenantId);
-      return this;
-    }
-
     public Record<TenantRecordValue> add() {
       final long position = writer.writeCommand(TenantIntent.ADD_ENTITY, tenantRecord);
       return expectation.apply(position);

@@ -291,7 +291,6 @@ public class AuthorizationCheckBehaviorTest {
     engine
         .tenant()
         .addEntity(tenantKey)
-        .withTenantId(tenantId)
         .withEntityKey(userKey)
         .withEntityType(EntityType.USER)
         .add();
