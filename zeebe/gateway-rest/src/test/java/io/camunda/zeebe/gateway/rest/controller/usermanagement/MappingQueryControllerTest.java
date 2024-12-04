@@ -30,7 +30,7 @@ import org.springframework.http.MediaType;
 
 @WebMvcTest(value = MappingQueryController.class, properties = "camunda.rest.query.enabled=true")
 public class MappingQueryControllerTest extends RestControllerTest {
-  private static final String MAPPING_BASE_URL = "/v2/mappings";
+  private static final String MAPPING_BASE_URL = "/v2/mapping-rules";
 
   @MockBean private MappingServices mappingServices;
 
@@ -57,8 +57,9 @@ public class MappingQueryControllerTest extends RestControllerTest {
         .json(
             """
             {
-              "name": "Role Name",
-              "key": 100
+              "mappingKey": 100,
+              "claimName": "Claim Name",
+              "claimValue": "Claim Value"
             }""");
 
     // then
@@ -130,16 +131,19 @@ public class MappingQueryControllerTest extends RestControllerTest {
           {
              "items": [
                {
-                 "key": 100,
-                 "name": "Role 1"
+                 "mappingKey": 100,
+                 "claimName": "Claim Name1",
+                 "claimValue": "Claim Value1"
                },
                {
-                 "key": 200,
-                 "name": "Role 2"
+                 "mappingKey": 200,
+                 "claimName": "Claim Name2",
+                 "claimValue": "Claim Value2"
                },
                {
-                 "key": 300,
-                 "name": "Role 12"
+                 "mappingKey": 300,
+                 "claimName": "Claim Name3",
+                 "claimValue": "Claim Value3"
                }
              ],
              "page": {
