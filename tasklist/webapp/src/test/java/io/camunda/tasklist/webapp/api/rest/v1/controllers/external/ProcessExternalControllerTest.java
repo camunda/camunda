@@ -320,7 +320,7 @@ public class ProcessExternalControllerTest {
     }
 
     if (providedProcessInstanceDTO != null) {
-      when(processService.startProcessInstance(bpmnProcessId, variables, null))
+      when(processService.startProcessInstance(bpmnProcessId, variables, null, false))
           .thenReturn(providedProcessInstanceDTO);
     }
 
@@ -383,7 +383,7 @@ public class ProcessExternalControllerTest {
     }
 
     if (providedProcessInstanceDTO != null) {
-      when(processService.startProcessInstance(bpmnProcessId, variables, null))
+      when(processService.startProcessInstance(bpmnProcessId, variables, null, false))
           .thenReturn(providedProcessInstanceDTO);
     }
 

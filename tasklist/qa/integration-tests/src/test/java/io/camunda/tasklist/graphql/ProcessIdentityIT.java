@@ -15,6 +15,7 @@ import com.graphql.spring.boot.test.GraphQLResponse;
 import io.camunda.tasklist.util.IdentityTester;
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -32,6 +33,7 @@ public class ProcessIdentityIT extends IdentityTester {
   }
 
   @Test
+  @Disabled("Identity RBAC are not supported anymore, will be replaced soon")
   public void shouldReturnProcessAfterAssigningAuthorizations() throws IOException {
     tester.deployProcess("simple_process.bpmn").waitUntil().processIsDeployed();
 

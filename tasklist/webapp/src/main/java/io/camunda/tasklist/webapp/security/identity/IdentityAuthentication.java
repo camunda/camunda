@@ -13,6 +13,7 @@ import io.camunda.identity.sdk.authentication.Tokens;
 import io.camunda.identity.sdk.authentication.UserDetails;
 import io.camunda.identity.sdk.authentication.exception.TokenDecodeException;
 import io.camunda.identity.sdk.impl.rest.exception.RestException;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.SpringContextHolder;
 import io.camunda.tasklist.webapp.security.OldUsernameAware;
@@ -178,8 +179,8 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
     }
 
     try {
-      final TasklistProperties props = getTasklistProperties();
-      if (props.getIdentity().isResourcePermissionsEnabled()) {
+      final var props = getSecurityConfiguration();
+      if (props.getAuthorizations().isEnabled()) {
         authorization =
             new IdentityAuthorization(
                 getIdentity().authorizations().forToken(this.tokens.getAccessToken()));
@@ -214,6 +215,11 @@ public class IdentityAuthentication extends AbstractAuthenticationToken
   @NotNull
   private static TasklistProperties getTasklistProperties() {
     return SpringContextHolder.getBean(TasklistProperties.class);
+  }
+
+  @NotNull
+  private static SecurityConfiguration getSecurityConfiguration() {
+    return SpringContextHolder.getBean(SecurityConfiguration.class);
   }
 
   private String retrieveName(final UserDetails userDetails) {

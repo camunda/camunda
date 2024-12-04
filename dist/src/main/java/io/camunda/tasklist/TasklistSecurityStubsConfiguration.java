@@ -43,6 +43,7 @@ public class TasklistSecurityStubsConfiguration {
 
   /** UserReader that gets user details using Operate's UserService */
   @Bean
+  @Profile("!auth-basic")
   public UserReader stubUserReader(final UserService userService) {
     return new UserReader() {
 
@@ -117,21 +118,6 @@ public class TasklistSecurityStubsConfiguration {
       @Override
       public List<String> getUserGroups() {
         return List.of(IdentityProperties.FULL_GROUP_ACCESS);
-      }
-
-      @Override
-      public boolean isAllowedToStartProcess(final String processDefinitionKey) {
-        return true;
-      }
-
-      @Override
-      public List<String> getProcessReadFromAuthorization() {
-        return List.of(IdentityProperties.ALL_RESOURCES);
-      }
-
-      @Override
-      public List<String> getProcessDefinitionsFromAuthorization() {
-        return List.of(IdentityProperties.ALL_RESOURCES);
       }
     };
   }

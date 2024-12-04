@@ -31,6 +31,7 @@ import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import io.camunda.tasklist.webapp.graphql.entity.VariableInputDTO;
 import io.camunda.tasklist.webapp.mapper.TaskMapper;
+import io.camunda.tasklist.webapp.permission.TasklistPermissionsService;
 import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
@@ -74,11 +75,13 @@ class TaskControllerTest {
 
   @Mock private UserReader userReader;
   @Mock private IdentityAuthorizationService identityAuthorizationService;
+  @Mock private TasklistPermissionsService permissionsService;
 
   @BeforeEach
   public void setUp() {
     mockMvc = MockMvcBuilders.standaloneSetup(instance).build();
     when(userReader.getCurrentUser()).thenReturn(new UserDTO());
+    when(permissionsService.hasPermissionToUpdateUserTask(any())).thenReturn(true);
   }
 
   @Nested
