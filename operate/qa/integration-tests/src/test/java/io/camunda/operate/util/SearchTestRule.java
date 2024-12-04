@@ -91,28 +91,11 @@ public class SearchTestRule extends TestWatcher {
     searchTestRuleProvider.processAllRecordsAndWait(predicate, supplier, arguments);
   }
 
-  public void processAllRecordsAndWait(
-      final boolean runPostImport,
-      final Predicate<Object[]> predicate,
-      final Supplier<Object> supplier,
-      final Object... arguments) {
-    searchTestRuleProvider.processAllRecordsAndWait(runPostImport, predicate, supplier, arguments);
-  }
-
   public void processRecordsWithTypeAndWait(
       final ImportValueType importValueType,
       final Predicate<Object[]> predicate,
       final Object... arguments) {
     searchTestRuleProvider.processRecordsWithTypeAndWait(importValueType, predicate, arguments);
-  }
-
-  public void processRecordsWithTypeAndWait(
-      final ImportValueType importValueType,
-      final boolean runPostImport,
-      final Predicate<Object[]> predicate,
-      final Object... arguments) {
-    searchTestRuleProvider.processRecordsWithTypeAndWait(
-        importValueType, runPostImport, predicate, arguments);
   }
 
   public void persistNew(final ExporterEntity... entitiesToPersist) {
