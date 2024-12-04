@@ -85,7 +85,6 @@ public final class EndpointManager {
   private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
-  private final MultiTenancyCfg multiTenancy;
 
   public EndpointManager(
       final BrokerClient brokerClient,
@@ -97,7 +96,6 @@ public final class EndpointManager {
     this.streamJobsHandler = streamJobsHandler;
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
-    this.multiTenancy = multiTenancy;
     RequestMapper.setMultiTenancyEnabled(multiTenancy.isEnabled());
   }
 
