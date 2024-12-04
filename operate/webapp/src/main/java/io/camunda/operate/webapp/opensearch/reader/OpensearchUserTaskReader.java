@@ -58,7 +58,7 @@ public class OpensearchUserTaskReader extends OpensearchAbstractReader implement
   }
 
   @Override
-  public List<TaskVariableEntity> getUserTaskCompletedVariables(final long flowNodeInstanceKey) {
+  public List<TaskVariableEntity> getUserTaskVariables(final long flowNodeInstanceKey) {
     final Query hasParentQuery =
         new HasParentQuery.Builder()
             .parentType(TaskJoinRelationshipType.TASK.getType())

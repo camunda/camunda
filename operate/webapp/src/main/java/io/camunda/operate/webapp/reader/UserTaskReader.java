@@ -18,5 +18,5 @@ public interface UserTaskReader {
 
   Optional<TaskEntity> getUserTaskByFlowNodeInstanceKey(long flowNodeInstanceKey);
 
-  List<TaskVariableEntity> getUserTaskCompletedVariables(long flowNodeInstanceKey);
+  List<TaskVariableEntity> getUserTaskVariables(long flowNodeInstanceKey);
 }

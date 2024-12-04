@@ -112,7 +112,7 @@ class FlowNodeInstanceMetadataBuilderTest {
                         .setCorrelationKey("23-05")));
     when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
         .thenReturn(userTask);
-    when(userTaskReader.getUserTaskCompletedVariables(flowNodeInstance.getKey()))
+    when(userTaskReader.getUserTaskVariables(flowNodeInstance.getKey()))
         .thenReturn(
             List.of(
                 new TaskVariableEntity().setName("name").setValue("Homer Simpson"),

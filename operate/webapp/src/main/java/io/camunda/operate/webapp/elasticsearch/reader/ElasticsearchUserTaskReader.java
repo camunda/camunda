@@ -83,7 +83,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
   }
 
   @Override
-  public List<TaskVariableEntity> getUserTaskCompletedVariables(final long flowNodeInstanceKey) {
+  public List<TaskVariableEntity> getUserTaskVariables(final long flowNodeInstanceKey) {
     LOGGER.debug("Get UserTask Completed Variables by flowNodeInstanceKey {}", flowNodeInstanceKey);
 
     final HasParentQueryBuilder hasParentQuery =
