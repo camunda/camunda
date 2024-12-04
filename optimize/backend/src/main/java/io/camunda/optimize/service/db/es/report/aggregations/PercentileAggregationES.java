@@ -15,30 +15,17 @@ import co.elastic.clients.elasticsearch._types.aggregations.TDigestPercentilesAg
 import co.elastic.clients.util.Pair;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import io.camunda.optimize.service.db.es.report.interpreter.util.AggregationResultMappingUtilES;
 import java.util.Map;
+import java.util.Optional;
 
 public class PercentileAggregationES extends AggregationStrategyES<Builder> {
 
   private static final String PERCENTILE_AGGREGATION = "percentileAggregation";
 
-  private Double percentileValue;
+  private final Double percentileValue;
 
   public PercentileAggregationES(final Double percentileValue) {
     this.percentileValue = percentileValue;
-  }
-
-  public PercentileAggregationES() {}
-
-  @Override
-  public Double getValueForAggregation(
-      final String customIdentifier, final Map<String, Aggregate> aggs) {
-    final TDigestPercentilesAggregate percentiles =
-        aggs.get(
-                createAggregationName(
-                    customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
-            .tdigestPercentiles();
-    return AggregationResultMappingUtilES.mapToDoubleOrNull(percentiles, percentileValue);
   }
 
   @Override
@@ -59,7 +46,32 @@ public class PercentileAggregationES extends AggregationStrategyES<Builder> {
   }
 
   @Override
+  public Double getValueForAggregation(
+      final String customIdentifier, final Map<String, Aggregate> aggs) {
+    final TDigestPercentilesAggregate percentiles =
+        aggs.get(
+                createAggregationName(
+                    customIdentifier, String.valueOf(percentileValue), PERCENTILE_AGGREGATION))
+            .tdigestPercentiles();
+    return mapToDoubleOrNull(percentiles, percentileValue);
+  }
+
+  @Override
   public AggregationDto getAggregationType() {
     return new AggregationDto(AggregationType.PERCENTILE, percentileValue);
+  }
+
+  private Double mapToDoubleOrNull(
+      final TDigestPercentilesAggregate aggregation, final double percentileValue) {
+    final Double percentile =
+        Optional.ofNullable(aggregation.values())
+            .filter(h -> h.keyed().get(Double.toString(percentileValue)) != null)
+            .map(h -> Double.parseDouble(h.keyed().get(Double.toString(percentileValue))))
+            .orElse(null);
+    if (percentile == null || Double.isNaN(percentile) || Double.isInfinite(percentile)) {
+      return null;
+    } else {
+      return percentile;
+    }
   }
 }

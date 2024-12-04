@@ -24,7 +24,7 @@ public class UpdateMappingIndexStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     schemaUpgradeClient.updateIndexDynamicSettingsAndMappings(index);
   }
 

@@ -92,6 +92,25 @@ class DecisionInstanceQueryTest {
   }
 
   @TestTemplate
+  void shouldSearchByFromWithLimit(final ZeebeClient zeebeClient) {
+    // when
+    final var resultAll = zeebeClient.newDecisionInstanceQuery().send().join();
+
+    final var resultWithLimit =
+        zeebeClient.newDecisionInstanceQuery().page(p -> p.limit(2)).send().join();
+    assertThat(resultWithLimit.items().size()).isEqualTo(2);
+
+    final var thirdKey = resultAll.items().get(2).getDecisionInstanceKey();
+
+    final var resultSearchFrom =
+        zeebeClient.newDecisionInstanceQuery().page(p -> p.limit(2).from(2)).send().join();
+
+    // then
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getDecisionInstanceKey())
+        .isEqualTo(thirdKey);
+  }
+
+  @TestTemplate
   public void shouldRetrieveDecisionInstanceByDecisionDefinitionKey(final ZeebeClient zeebeClient) {
     // when
     final long decisionDefinitionKey =
