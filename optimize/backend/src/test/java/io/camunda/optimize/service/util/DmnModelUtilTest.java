@@ -54,72 +54,78 @@ public class DmnModelUtilTest {
       """;
 
   @Test
-  void parseDmnModelShouldReturnModelInstanceWhenValidXml() {
-    // Given: A valid DMN XML string
+  void shouldParseValidXml() {
+    // given
 
-    // When: parseDmnModel is called
-    var result = DmnModelUtil.parseDmnModel(DMN_V1);
+    // when
+    final var result = DmnModelUtil.parseDmnModel(DMN_V1);
 
-    // Then: A valid DmnModelInstance should be returned
+    // then
     assertThat(result).isNotNull();
   }
 
   @Test
-  void parseDmnModelShouldThrowOptimizeRuntimeExceptionWhenInvalidXml() {
-    // Given: An invalid DMN XML string
-    String dmnXml = "<invalid></invalid>";
+  void shouldThrowExceptionWhenParsingInvalidXml() {
+    // given
+    final String dmnXml = "<invalid></invalid>";
 
-    // When & Then: parseDmnModel should throw OptimizeRuntimeException
+    // when
+
+    // then
     assertThatThrownBy(() -> DmnModelUtil.parseDmnModel(dmnXml))
         .isInstanceOf(DmnModelException.class)
         .hasMessage("Unable to parse model");
   }
 
   @Test
-  void extractDecisionDefinitionNameShouldReturnNameWhenDecisionExists() {
-    // Given: A valid DMN XML string and a decision key
-    String decisionKey = "jedi_or_sith";
+  void shouldExtractDecisionNameWhenExists() {
+    // given
+    final String decisionKey = "jedi_or_sith";
 
-    // When: extractDecisionDefinitionName is called
-    Optional<String> result = DmnModelUtil.extractDecisionDefinitionName(decisionKey, DMN_V1);
+    // when
+    final Optional<String> result = DmnModelUtil.extractDecisionDefinitionName(decisionKey, DMN_V1);
 
-    // Then: The name of the decision should be returned
+    // then
     assertThat(result).isPresent().get().isEqualTo("Jedi or Sith");
   }
 
   @Test
-  void extractDecisionDefinitionNameShouldReturnEmptyWhenDecisionNotFound() {
-    // Given: A valid DMN XML string and a non-existent decision key
-    String decisionKey = "nonExistentDecision";
-    String dmnXml =
+  void shouldReturnEmptyWhenDecisionKeyNotFound() {
+    // given
+    final String decisionKey = "nonExistentDecision";
+    final String dmnXml =
         "<dmn:definitions xmlns:dmn=\"https://www.omg.org/spec/DMN/20191111/MODEL/\">"
             + "  <dmn:decision id=\"decision1\" name=\"Test Decision\"/>"
             + "</dmn:definitions>";
 
-    // When: extractDecisionDefinitionName is called
-    Optional<String> result = DmnModelUtil.extractDecisionDefinitionName(decisionKey, dmnXml);
+    // when
+    final Optional<String> result = DmnModelUtil.extractDecisionDefinitionName(decisionKey, dmnXml);
 
-    // Then: The result should be empty
+    // then
     assertThat(result).isEmpty();
   }
 
   @Test
-  void extractInputVariablesShouldThrowExceptionWhenDecisionKeyIsNull() {
-    // Given: A null decision key
-    DmnModelInstance model = Mockito.mock(DmnModelInstance.class);
+  void shouldThrowExceptionWhenInputDecisionKeyIsNull() {
+    // given
+    final DmnModelInstance model = Mockito.mock(DmnModelInstance.class);
 
-    // When & Then: extractInputVariables should throw IllegalArgumentException
+    // when
+
+    // then
     assertThatThrownBy(() -> DmnModelUtil.extractInputVariables(model, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("decisionKey must not be null");
   }
 
   @Test
-  void extractOutputVariablesShouldThrowExceptionWhenDecisionKeyIsNull() {
-    // Given: A null decision key
-    DmnModelInstance model = Mockito.mock(DmnModelInstance.class);
+  void shouldThrowExceptionWhenOutputDecisionKeyIsNull() {
+    // given
+    final DmnModelInstance model = Mockito.mock(DmnModelInstance.class);
 
-    // When & Then: extractOutputVariables should throw IllegalArgumentException
+    // when
+
+    // then
     assertThatThrownBy(() -> DmnModelUtil.extractOutputVariables(model, null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage("decisionKey must not be null");
