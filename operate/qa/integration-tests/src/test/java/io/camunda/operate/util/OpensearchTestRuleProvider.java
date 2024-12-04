@@ -170,11 +170,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       final Predicate<Object[]> predicate,
       final Object... arguments) {
     processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(),
-        maxWaitingRounds,
-        predicate,
-        null,
-        arguments);
+        recordsReaderHolder.getAllRecordsReaders(), maxWaitingRounds, predicate, null, arguments);
   }
 
   @Override
@@ -189,11 +185,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       final Supplier<Object> supplier,
       final Object... arguments) {
     processRecordsAndWaitFor(
-        recordsReaderHolder.getAllRecordsReaders(),
-        50,
-        predicate,
-        supplier,
-        arguments);
+        recordsReaderHolder.getAllRecordsReaders(), 50, predicate, supplier, arguments);
   }
 
   @Override
@@ -201,8 +193,7 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
       final ImportValueType importValueType,
       final Predicate<Object[]> predicate,
       final Object... arguments) {
-    processRecordsAndWaitFor(
-        getRecordsReaders(importValueType), 50, predicate, null, arguments);
+    processRecordsAndWaitFor(getRecordsReaders(importValueType), 50, predicate, null, arguments);
   }
 
   @Override
