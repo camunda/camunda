@@ -43,6 +43,7 @@ import io.camunda.zeebe.engine.processing.user.UserUpdateProcessor;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -533,6 +534,11 @@ public class CommandDistributionIdempotencyTest {
                                 .setEmail("email")
                                 .setPassword("password")
                                 .setName("name"))
+                        .withTenant(
+                            new TenantRecord()
+                                .setTenantKey(3L)
+                                .setTenantId("tenant-id")
+                                .setName("tenant-name"))
                         .initialize(),
                 1),
             IdentitySetupInitializeProcessor.class
