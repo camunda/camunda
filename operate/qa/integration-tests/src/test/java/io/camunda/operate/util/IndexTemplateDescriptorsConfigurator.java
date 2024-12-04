@@ -25,7 +25,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.MessageTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.SequenceFlowTemplate;
-import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import org.springframework.context.annotation.Bean;
@@ -222,21 +221,6 @@ public class IndexTemplateDescriptorsConfigurator {
       final DatabaseInfo databaseInfo,
       final IndexPrefixHolder indexPrefixHolder) {
     return new SequenceFlowTemplate(
-        operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
-        databaseInfo.isElasticsearchDb()) {
-      @Override
-      public String getIndexPrefix() {
-        return indexPrefixHolder.getIndexPrefix();
-      }
-    };
-  }
-
-  @Bean
-  public UserTaskTemplate getUserTaskTemplate(
-      final OperateProperties operateProperties,
-      final DatabaseInfo databaseInfo,
-      final IndexPrefixHolder indexPrefixHolder) {
-    return new UserTaskTemplate(
         operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
         databaseInfo.isElasticsearchDb()) {
       @Override
