@@ -181,4 +181,27 @@ public class GroupControllerTest extends RestControllerTest {
 
     verify(groupServices, times(1)).updateGroup(groupKey, groupName);
   }
+
+  @Test
+  void deleteGroupShouldReturnNoContent() {
+    // given
+    final long groupKey = 111L;
+
+    final var groupRecord = new GroupRecord().setGroupKey(groupKey);
+
+    when(groupServices.deleteGroup(groupKey))
+        .thenReturn(CompletableFuture.completedFuture(groupRecord));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s".formatted(GROUP_BASE_URL, groupKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isNoContent();
+
+    // then
+    verify(groupServices, times(1)).deleteGroup(groupKey);
+  }
 }
