@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Component;
@@ -47,8 +47,7 @@ public class TenantRequestAttributeFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
     final Set<String> tenantIds = getTenantIds(request.getUserPrincipal());
     if (tenantIds == null) {
-      response.sendError(HttpStatus.UNAUTHORIZED.value());
-      return;
+      throw new InternalAuthenticationServiceException("cannot find tenants for request");
     }
     LOG.debug("Authenticated tenants: {}", tenantIds);
     TenantAttributeHolder.setTenantIds(tenantIds);
