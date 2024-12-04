@@ -95,10 +95,13 @@ public class UserTaskVariableHandler
     }
 
     final TaskJoinRelationship joinRelationship = new TaskJoinRelationship();
+    final boolean isLocalVariable = isLocalVariable(entity);
+
     joinRelationship.setParent(
-        isLocalVariable(entity) ? entity.getScopeKey() : entity.getProcessInstanceId());
+        isLocalVariable ? entity.getScopeKey() : entity.getProcessInstanceId());
+
     joinRelationship.setName(
-        isLocalVariable(entity)
+        isLocalVariable
             ? TaskJoinRelationshipType.LOCAL_VARIABLE.getType()
             : TaskJoinRelationshipType.PROCESS_VARIABLE.getType());
     entity.setJoin(joinRelationship);
