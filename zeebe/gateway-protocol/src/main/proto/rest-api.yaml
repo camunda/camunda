@@ -2604,6 +2604,33 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    delete:
+      tags:
+        - Group
+      operationId: deleteGroup
+      summary: Delete group
+      description: Deletes the group with the given key.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The key of the group to delete.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "204":
+          description: The group was deleted successfully.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: The group with the groupKey was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /mapping-rules:
     post:
