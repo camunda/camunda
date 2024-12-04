@@ -39,6 +39,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
@@ -300,6 +301,28 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
               final Gauge partitionTwoImportStatus = getGauge(metrics, "2");
               assertThat(partitionOneImportStatus.value()).isEqualTo(1.0);
               assertThat(partitionTwoImportStatus.value()).isEqualTo(1.0);
+            });
+  }
+
+  @Test
+  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    zeebeImporter.performOneRoundOfImport();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(60))
+        .until(
+            () -> {
+              final var searchRequest =
+                  new SearchRequest.Builder()
+                      .size(100)
+                      .index(importPositionIndex.getFullQualifiedName())
+                      .build();
+              final var documents =
+                  openSearchClient.search(searchRequest, ImportPositionEntity.class);
+
+              // all initial import position documents created for each record reader
+              return documents.hits().hits().size()
+                  == recordsReaderHolder.getAllRecordsReaders().size();
             });
   }
 

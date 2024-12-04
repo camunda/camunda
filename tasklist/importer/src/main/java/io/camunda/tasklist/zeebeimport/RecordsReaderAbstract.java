@@ -19,6 +19,7 @@ import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositi
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import io.camunda.zeebe.protocol.Protocol;
 import jakarta.annotation.PostConstruct;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -82,6 +83,16 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
   private void postConstruct() {
     errorStrategy =
         new BackoffIdleStrategy(tasklistProperties.getImporter().getReaderBackoff(), 1.2f, 10_000);
+
+    try {
+      final var latestPosition =
+          importPositionHolder.getLatestScheduledPosition(
+              importValueType.getAliasTemplate(), partitionId);
+
+      importPositionHolder.recordLatestLoadedPosition(latestPosition);
+    } catch (final IOException e) {
+      LOGGER.error("Failed to write initial import position index ", e);
+    }
   }
 
   @Override
