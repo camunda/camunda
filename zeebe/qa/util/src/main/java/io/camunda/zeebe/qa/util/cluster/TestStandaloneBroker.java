@@ -13,7 +13,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.search.SearchClientDatabaseConfiguration.SearchClientProperties;
-import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
@@ -37,7 +37,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
   private static final String RECORDING_EXPORTER_ID = "recordingExporter";
   private final BrokerBasedProperties config;
-  private final ServiceSecurityProperties securityConfig;
+  private final CamundaSecurityProperties securityConfig;
 
   public TestStandaloneBroker() {
     super(BrokerModuleConfiguration.class, CommonsModuleConfiguration.class);
@@ -60,8 +60,8 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
     //noinspection resource
     withBean("config", config, BrokerBasedProperties.class).withAdditionalProfile(Profile.BROKER);
 
-    securityConfig = new ServiceSecurityProperties();
-    withBean("securityConfig", securityConfig, ServiceSecurityProperties.class);
+    securityConfig = new CamundaSecurityProperties();
+    withBean("securityConfig", securityConfig, CamundaSecurityProperties.class);
   }
 
   @Override
@@ -163,7 +163,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
    * started, but likely has no effect until it's restarted.
    */
   public TestStandaloneBroker withSecurityConfig(
-      final Consumer<ServiceSecurityProperties> modifier) {
+      final Consumer<CamundaSecurityProperties> modifier) {
     modifier.accept(securityConfig);
     return this;
   }
