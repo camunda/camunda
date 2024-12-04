@@ -39,10 +39,10 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUserTaskReader.class);
 
-  private final TaskTemplate userTaskTemplate;
+  private final TaskTemplate taskTemplate;
 
-  public ElasticsearchUserTaskReader(final TaskTemplate userTaskTemplate) {
-    this.userTaskTemplate = userTaskTemplate;
+  public ElasticsearchUserTaskReader(final TaskTemplate taskTemplate) {
+    this.taskTemplate = taskTemplate;
   }
 
   @Override
@@ -51,7 +51,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
     try {
       final QueryBuilder query = matchAllQuery();
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
+          ElasticsearchUtil.createSearchRequest(taskTemplate, ALL)
               .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
       return scroll(searchRequest, TaskEntity.class);
     } catch (final IOException e) {
@@ -67,7 +67,7 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
     try {
       final QueryBuilder query = termQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID, flowNodeInstanceKey);
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
+          ElasticsearchUtil.createSearchRequest(taskTemplate, ALL)
               .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
       final var hits = tenantAwareClient.search(searchRequest).getHits();
       if (hits.getTotalHits().value == 1) {
@@ -99,18 +99,14 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
         QueryBuilders.boolQuery().must(hasParentQuery).must(existsQuery);
     try {
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
+          ElasticsearchUtil.createSearchRequest(taskTemplate, ALL)
               .source(new SearchSourceBuilder().query(constantScoreQuery(combinedQuery)));
-      final var hits = tenantAwareClient.search(searchRequest).getHits();
-      if (hits.getTotalHits().value > 0) {
-        return ElasticsearchUtil.mapSearchHits(
-            hits.getHits(), objectMapper, TaskVariableEntity.class);
-      }
+      return ElasticsearchUtil.scroll(
+          searchRequest, TaskVariableEntity.class, objectMapper, esClient);
     } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
-    return List.of();
   }
 }

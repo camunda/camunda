@@ -31,24 +31,25 @@ import org.springframework.stereotype.Component;
 @Component
 public class OpensearchUserTaskReader extends OpensearchAbstractReader implements UserTaskReader {
 
-  private final TaskTemplate userTaskTemplate;
+  private final TaskTemplate taskTemplate;
 
-  public OpensearchUserTaskReader(final TaskTemplate userTaskTemplate) {
-    this.userTaskTemplate = userTaskTemplate;
+  public OpensearchUserTaskReader(final TaskTemplate taskTemplate) {
+    this.taskTemplate = taskTemplate;
   }
 
   @Override
   public List<TaskEntity> getUserTasks() {
     final var request =
-        searchRequestBuilder(userTaskTemplate.getAlias()).query(withTenantCheck(matchAll()));
+        searchRequestBuilder(taskTemplate.getAlias()).query(withTenantCheck(matchAll()));
     return richOpenSearchClient.doc().searchValues(request, TaskEntity.class);
   }
 
   @Override
   public Optional<TaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
     final var request =
-        searchRequestBuilder(userTaskTemplate.getAlias())
+        searchRequestBuilder(taskTemplate.getAlias())
             .query(withTenantCheck(term(TaskTemplate.FLOW_NODE_INSTANCE_ID, flowNodeInstanceKey)));
+
     final var hits = richOpenSearchClient.doc().search(request, TaskEntity.class).hits();
     if (hits.total().value() == 1) {
       return Optional.of(hits.hits().get(0).source());
@@ -72,7 +73,7 @@ public class OpensearchUserTaskReader extends OpensearchAbstractReader implement
         QueryBuilders.bool().must(hasParentQuery, existsQuery).build().toQuery();
 
     final var request =
-        searchRequestBuilder(userTaskTemplate.getAlias()).query(withTenantCheck(combinedQuery));
-    return richOpenSearchClient.doc().searchValues(request, TaskVariableEntity.class);
+        searchRequestBuilder(taskTemplate.getAlias()).query(withTenantCheck(combinedQuery));
+    return richOpenSearchClient.doc().scrollValues(request, TaskVariableEntity.class);
   }
 }
