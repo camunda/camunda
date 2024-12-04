@@ -46,7 +46,7 @@ public class PermissionsBehavior {
         new AuthorizationRequest(
             command, AuthorizationResourceType.AUTHORIZATION, PermissionType.UPDATE);
 
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       final var errorMessage =
           UNAUTHORIZED_ERROR_MESSAGE.formatted(
               authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());

@@ -12,11 +12,13 @@ import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -31,6 +33,8 @@ public final class AuthorizationCheckBehavior {
       "Unauthorized to perform operation '%s' on resource '%s'";
   public static final String UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE =
       UNAUTHORIZED_ERROR_MESSAGE + " with %s";
+  public static final String NOT_FOUND_ERROR_MESSAGE =
+      "Expected to %s for tenant '%s', but no tenant found";
   public static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
   private final UserState userState;
@@ -54,36 +58,42 @@ public final class AuthorizationCheckBehavior {
    *
    * @param request the authorization request to check authorization for. This contains the command,
    *     the resource type, the permission type, a set of resource identifiers and the tenant id
-   * @return true if the entity is authorized, false otherwise
+   * @return a {@link Either} containing a {@link RejectionType} if the user is not authorized or
+   *     {@link Void} if the user is authorized
    */
-  public boolean isAuthorized(final AuthorizationRequest request) {
+  public Either<RejectionType, Void> isAuthorized(final AuthorizationRequest request) {
     if (!securityConfig.getAuthorizations().isEnabled()) {
-      return true;
+      return Either.right(null);
     }
 
     if (!request.getCommand().hasRequestMetadata()) {
       // The command is written by Zeebe internally. Internal Zeebe commands are always authorized
-      return true;
+      return Either.right(null);
     }
 
     final Stream<String> authorizedResourceIdentifiers;
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
+      final var userOptional = userState.getUser(userKey.get());
+      // verify if the user is authorized for the tenant
+      if (!isUserAuthorizedForTenant(request, userOptional)) {
+        return Either.left(RejectionType.NOT_FOUND);
+      }
+
       authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
-              userKey.get(), request.getResourceType(), request.getPermissionType());
-
-      // verify if the user is authorized for the tenant
-      if (!isUserAuthorizedForTenant(request, userKey.get())) {
-        return false;
-      }
+              userOptional, request.getResourceType(), request.getPermissionType());
     } else {
       authorizedResourceIdentifiers = Stream.empty();
     }
 
     // Check if authorizations contain a resource identifier that matches the required resource
     // identifiers
-    return hasRequiredPermission(request.getResourceIds(), authorizedResourceIdentifiers);
+    if (hasRequiredPermission(request.getResourceIds(), authorizedResourceIdentifiers)) {
+      return Either.right(null);
+    } else {
+      return Either.left(RejectionType.UNAUTHORIZED);
+    }
   }
 
   private static Optional<Long> getUserKey(final AuthorizationRequest request) {
@@ -91,13 +101,12 @@ public final class AuthorizationCheckBehavior {
   }
 
   private boolean isUserAuthorizedForTenant(
-      final AuthorizationRequest request, final long userKey) {
+      final AuthorizationRequest request, final Optional<PersistedUser> userOptional) {
     final var tenantId = request.tenantId;
     if (tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
       return true;
     }
 
-    final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
       return false;
     }
@@ -113,9 +122,11 @@ public final class AuthorizationCheckBehavior {
 
     return getUserKey(request)
         .map(
-            userKey ->
-                getUserAuthorizedResourceIdentifiers(
-                    userKey, request.getResourceType(), request.getPermissionType()))
+            userKey -> {
+              final var userOptional = userState.getUser(userKey);
+              return getUserAuthorizedResourceIdentifiers(
+                  userOptional, request.getResourceType(), request.getPermissionType());
+            })
         .orElseGet(Stream::empty)
         .collect(Collectors.toSet());
   }
@@ -144,8 +155,11 @@ public final class AuthorizationCheckBehavior {
       final PermissionType permissionType) {
     return switch (ownerType) {
       case USER ->
-          getUserAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType)
+          {
+        final var userOptional = userState.getUser(ownerKey);
+        yield getUserAuthorizedResourceIdentifiers(userOptional, resourceType, permissionType)
               .collect(Collectors.toSet());
+      }
       case ROLE, GROUP ->
           // Roles and groups can only have direct authorizations
           getDirectAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType);
@@ -155,10 +169,9 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Stream<String> getUserAuthorizedResourceIdentifiers(
-      final long userKey,
+      final Optional<PersistedUser> userOptional,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
       return Stream.empty();
     }
@@ -167,7 +180,7 @@ public final class AuthorizationCheckBehavior {
 
     // Get resource identifiers for this user
     final var userAuthorizedResourceIdentifiers =
-        authorizationState.getResourceIdentifiers(userKey, resourceType, permissionType);
+        authorizationState.getResourceIdentifiers(user.getUserKey(), resourceType, permissionType);
     // Get resource identifiers for the user's roles
     final var roleAuthorizedResourceIdentifiers =
         getAuthorizedResourceIdentifiersForOwners(
@@ -247,12 +260,7 @@ public final class AuthorizationCheckBehavior {
         final TypedRecord<?> command,
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType) {
-      this.command = command;
-      this.resourceType = resourceType;
-      this.permissionType = permissionType;
-      resourceIds = new HashSet<>();
-      resourceIds.add(WILDCARD_PERMISSION);
-      tenantId = TenantOwned.DEFAULT_TENANT_IDENTIFIER;
+      this(command, resourceType, permissionType, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     }
 
     public TypedRecord<?> getCommand() {
@@ -288,6 +296,13 @@ public final class AuthorizationCheckBehavior {
       super(
           UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
               authRequest.getPermissionType(), authRequest.getResourceType(), resourceMessage));
+    }
+  }
+
+  public static class NotFoundException extends RuntimeException {
+
+    public NotFoundException(final AuthorizationRequest authRequest, final String resourceMessage) {
+      super(NOT_FOUND_ERROR_MESSAGE.formatted(resourceMessage, authRequest.getTenantId()));
     }
   }
 }

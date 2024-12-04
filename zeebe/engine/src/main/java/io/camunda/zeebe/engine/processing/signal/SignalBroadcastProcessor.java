@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.NotFoundException;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.UnauthorizedException;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -136,9 +137,16 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
                 command.getValue().getTenantId())
             .addResourceId(subscriptionRecord.getBpmnProcessId());
 
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
-      throw new UnauthorizedException(
-          authRequest, "BPMN process id '%s'".formatted(subscriptionRecord.getBpmnProcessId()));
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      if (RejectionType.UNAUTHORIZED.equals(rejectionType)) {
+        throw new UnauthorizedException(
+            authRequest, "BPMN process id '%s'".formatted(subscriptionRecord.getBpmnProcessId()));
+      }
+      throw new NotFoundException(
+          authRequest,
+          "broadcast signal with name '%s'".formatted(command.getValue().getSignalName()));
     }
   }
 

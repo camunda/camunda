@@ -87,7 +87,8 @@ public final class MessageStreamProcessorTest {
           final var processingState = processingContext.getProcessingState();
           final var scheduledTaskState = processingContext.getScheduledTaskStateFactory();
           final var mockAuthCheckBehavior = mock(AuthorizationCheckBehavior.class);
-          when(mockAuthCheckBehavior.isAuthorized(any())).thenReturn(true);
+          when(mockAuthCheckBehavior.isAuthorized(any()).isLeft()).thenReturn(false);
+          when(mockAuthCheckBehavior.isAuthorized(any()).isRight()).thenReturn(true);
           MessageEventProcessors.addMessageProcessors(
               mock(BpmnBehaviors.class),
               typedRecordProcessors,

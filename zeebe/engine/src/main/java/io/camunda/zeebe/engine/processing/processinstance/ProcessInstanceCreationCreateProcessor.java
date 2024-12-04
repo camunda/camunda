@@ -148,16 +148,21 @@ public final class ProcessInstanceCreationCreateProcessor
                 command.getValue().getTenantId())
             .addResourceId(processId);
 
-    if (authCheckBehavior.isAuthorized(request)) {
+    final var isAuthorized = authCheckBehavior.isAuthorized(request);
+    if (isAuthorized.isRight()) {
       return Either.right(deployedProcess);
     }
 
-    final var errorMessage =
-        UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-            request.getPermissionType(),
-            request.getResourceType(),
-            "BPMN process id '%s'".formatted(processId));
-    return Either.left(new Rejection(RejectionType.UNAUTHORIZED, errorMessage));
+    final var rejectionType = isAuthorized.getLeft();
+    final String errorMessage =
+        RejectionType.UNAUTHORIZED.equals(rejectionType)
+            ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                request.getPermissionType(),
+                request.getResourceType(),
+                "BPMN process id '%s'".formatted(processId))
+            : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                "create process instance", command.getValue().getTenantId());
+    return Either.left(new Rejection(rejectionType, errorMessage));
   }
 
   private void createProcessInstance(

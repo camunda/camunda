@@ -126,14 +126,19 @@ public class ProcessInstanceMigrationMigrateProcessor
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 processInstance.getValue().getTenantId())
             .addResourceId(processInstance.getValue().getBpmnProcessId());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authorizationRequest.getPermissionType(),
-              authorizationRequest.getResourceType(),
-              "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()));
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.UNAUTHORIZED.equals(rejectionType)
+              ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                  authorizationRequest.getPermissionType(),
+                  authorizationRequest.getResourceType(),
+                  "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()))
+              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "migrate process instance", processInstance.getValue().getTenantId());
+      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       return;
     }
 

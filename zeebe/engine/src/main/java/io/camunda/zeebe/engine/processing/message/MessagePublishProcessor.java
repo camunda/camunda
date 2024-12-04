@@ -95,12 +95,17 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
             AuthorizationResourceType.MESSAGE,
             PermissionType.CREATE,
             command.getValue().getTenantId());
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
-      final var error =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authRequest.getPermissionType(), authRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, error);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, error);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.UNAUTHORIZED.equals(rejectionType)
+              ? UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                  authRequest.getPermissionType(), authRequest.getResourceType())
+              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "publish message", command.getValue().getTenantId());
+      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       return;
     }
 

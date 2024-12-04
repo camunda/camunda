@@ -86,7 +86,7 @@ public class UserTaskCommandPreconditionChecker {
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_USER_TASK)
             .addResourceId(persistedRecord.getBpmnProcessId());
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
+    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
       return Either.left(
           Tuple.of(
               RejectionType.UNAUTHORIZED,

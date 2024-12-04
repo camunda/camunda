@@ -97,14 +97,19 @@ public final class ProcessInstanceCancelProcessor
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 elementInstance.getValue().getTenantId())
             .addResourceId(elementInstance.getValue().getBpmnProcessId());
-    if (!authCheckBehavior.isAuthorized(request)) {
-      final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              request.getPermissionType(),
-              request.getResourceType(),
-              "BPMN process id '%s'".formatted(elementInstance.getValue().getBpmnProcessId()));
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+    final var isAuthorized = authCheckBehavior.isAuthorized(request);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.UNAUTHORIZED.equals(rejectionType)
+              ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                  request.getPermissionType(),
+                  request.getResourceType(),
+                  "BPMN process id '%s'".formatted(elementInstance.getValue().getBpmnProcessId()))
+              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "cancel process instance", elementInstance.getValue().getTenantId());
+      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       return false;
     }
 

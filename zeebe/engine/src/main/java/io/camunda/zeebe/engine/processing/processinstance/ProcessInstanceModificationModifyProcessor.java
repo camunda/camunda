@@ -197,14 +197,19 @@ public final class ProcessInstanceModificationModifyProcessor
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 processInstance.getValue().getTenantId())
             .addResourceId(processInstance.getValue().getBpmnProcessId());
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
-      final String reason =
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authRequest.getPermissionType(),
-              authRequest.getResourceType(),
-              "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()));
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, reason);
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, reason);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.UNAUTHORIZED.equals(rejectionType)
+              ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                  authRequest.getPermissionType(),
+                  authRequest.getResourceType(),
+                  "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()))
+              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "create deployment", processInstance.getValue().getTenantId());
+      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
       return;
     }
 

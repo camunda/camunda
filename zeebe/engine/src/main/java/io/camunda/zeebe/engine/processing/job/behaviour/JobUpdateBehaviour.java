@@ -64,7 +64,7 @@ public class JobUpdateBehaviour {
                 PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(job.getBpmnProcessId());
 
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
+    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
       return Either.left(
           new Rejection(
               RejectionType.UNAUTHORIZED,

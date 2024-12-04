@@ -70,14 +70,19 @@ public final class VariableDocumentUpdateProcessor
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 scope.getValue().getTenantId())
             .addResourceId(scope.getValue().getBpmnProcessId());
-    if (!authCheckBehavior.isAuthorized(authRequest)) {
-      final var reason =
-          UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-              authRequest.getPermissionType(),
-              authRequest.getResourceType(),
-              "BPMN process id '%s'".formatted(scope.getValue().getBpmnProcessId()));
-      writers.rejection().appendRejection(record, RejectionType.UNAUTHORIZED, reason);
-      writers.response().writeRejectionOnCommand(record, RejectionType.UNAUTHORIZED, reason);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.UNAUTHORIZED.equals(rejectionType)
+              ? UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                  authRequest.getPermissionType(),
+                  authRequest.getResourceType(),
+                  "BPMN process id '%s'".formatted(scope.getValue().getBpmnProcessId()))
+              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "update variables", scope.getValue().getTenantId());
+      writers.rejection().appendRejection(record, rejectionType, errorMessage);
+      writers.response().writeRejectionOnCommand(record, rejectionType, errorMessage);
       return;
     }
 

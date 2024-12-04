@@ -208,7 +208,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
                 PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(job.getBpmnProcessId());
 
-    if (authCheckBehavior.isAuthorized(request)) {
+    if (authCheckBehavior.isAuthorized(request).isRight()) {
       return Either.right(job);
     }
 

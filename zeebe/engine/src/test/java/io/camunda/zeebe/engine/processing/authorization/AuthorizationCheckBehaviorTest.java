@@ -64,7 +64,7 @@ public class AuthorizationCheckBehaviorTest {
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
-    assertThat(authorized).isTrue();
+    assertThat(authorized.isRight()).isTrue();
   }
 
   @Test
@@ -82,7 +82,7 @@ public class AuthorizationCheckBehaviorTest {
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
-    assertThat(authorized).isFalse();
+    assertThat(authorized.isRight()).isFalse();
   }
 
   @Test
@@ -139,7 +139,7 @@ public class AuthorizationCheckBehaviorTest {
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
-    assertThat(authorized).isTrue();
+    assertThat(authorized.isRight()).isTrue();
   }
 
   @Test
@@ -222,7 +222,7 @@ public class AuthorizationCheckBehaviorTest {
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
-    assertThat(authorized).isTrue();
+    assertThat(authorized.isRight()).isTrue();
   }
 
   @Test
@@ -244,7 +244,7 @@ public class AuthorizationCheckBehaviorTest {
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
-    assertThat(authorized).isFalse();
+    assertThat(authorized.isRight()).isFalse();
   }
 
   @Test

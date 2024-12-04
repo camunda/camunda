@@ -187,7 +187,7 @@ public final class MessageCorrelationCorrelateProcessor
               final var processIdString = bufferAsString(subscription.getBpmnProcessId());
               request.get().addResourceId(processIdString);
               processId.set(processIdString);
-              return authCheckBehavior.isAuthorized(request.get());
+              return authCheckBehavior.isAuthorized(request.get()).isRight();
             },
             true);
 

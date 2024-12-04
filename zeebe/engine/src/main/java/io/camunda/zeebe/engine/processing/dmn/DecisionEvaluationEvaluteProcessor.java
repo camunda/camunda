@@ -74,14 +74,19 @@ public class DecisionEvaluationEvaluteProcessor
                   record.getTenantId())
               .addResourceId(decisionId);
 
-      if (!authCheckBehavior.isAuthorized(authRequest)) {
-        final var reason =
-            AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
-                authRequest.getPermissionType(),
-                authRequest.getResourceType(),
-                "decision id '%s'".formatted(decisionId));
-        responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, reason);
-        rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, reason);
+      final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+      if (isAuthorized.isLeft()) {
+        final var rejectionType = isAuthorized.getLeft();
+        final String errorMessage =
+            RejectionType.UNAUTHORIZED.equals(rejectionType)
+                ? AuthorizationCheckBehavior.UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE.formatted(
+                    authRequest.getPermissionType(),
+                    authRequest.getResourceType(),
+                    "decision id '%s'".formatted(decisionId))
+                : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                    "evaluate decision", record.getTenantId());
+        responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
+        rejectionWriter.appendRejection(command, rejectionType, errorMessage);
         return;
       }
     }

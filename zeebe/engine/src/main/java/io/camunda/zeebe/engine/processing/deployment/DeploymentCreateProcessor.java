@@ -130,12 +130,17 @@ public final class DeploymentCreateProcessor
             AuthorizationResourceType.DEPLOYMENT,
             PermissionType.CREATE,
             command.getValue().getTenantId());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.UNAUTHORIZED.equals(rejectionType)
+              ? UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                  authorizationRequest.getPermissionType(), authorizationRequest.getResourceType())
+              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
+                  "create deployment", command.getValue().getTenantId());
+      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       return;
     }
 
