@@ -49,6 +49,7 @@ import io.camunda.zeebe.gateway.protocol.rest.FormItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionDTO;
@@ -119,6 +120,17 @@ public final class SearchQueryResponseMapper {
         .items(
             ofNullable(result.items())
                 .map(SearchQueryResponseMapper::toTenants)
+                .orElseGet(List::of));
+  }
+
+  public static MappingSearchQueryResponse toMappingSearchQueryResponse(
+      final SearchQueryResult<MappingEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new MappingSearchQueryResponse()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toMappings)
                 .orElseGet(List::of));
   }
 
@@ -280,6 +292,10 @@ public final class SearchQueryResponseMapper {
             tenantEntity.assignedMemberKeys() == null
                 ? null
                 : tenantEntity.assignedMemberKeys().stream().sorted().toList());
+  }
+
+  private static List<MappingItem> toMappings(final List<MappingEntity> mappings) {
+    return mappings.stream().map(SearchQueryResponseMapper::toMapping).toList();
   }
 
   public static MappingItem toMapping(final MappingEntity mappingEntity) {

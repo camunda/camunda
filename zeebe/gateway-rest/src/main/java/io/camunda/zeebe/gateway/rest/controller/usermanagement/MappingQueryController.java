@@ -13,7 +13,7 @@ import io.camunda.search.query.MappingQuery;
 import io.camunda.service.MappingServices;
 import io.camunda.zeebe.gateway.protocol.rest.MappingItem;
 import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryRequest;
-import io.camunda.zeebe.gateway.protocol.rest.TenantSearchQueryResponse;
+import io.camunda.zeebe.gateway.protocol.rest.MappingSearchQueryResponse;
 import io.camunda.zeebe.gateway.rest.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.SearchQueryResponseMapper;
@@ -47,16 +47,16 @@ public class MappingQueryController {
       path = "/search",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
       consumes = MediaType.APPLICATION_JSON_VALUE)
-  public ResponseEntity<TenantSearchQueryResponse> searchMappings(
+  public ResponseEntity<MappingSearchQueryResponse> searchMappings(
       @RequestBody(required = false) final MappingSearchQueryRequest query) {
     return SearchQueryRequestMapper.toMappingQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private ResponseEntity<TenantSearchQueryResponse> search(final MappingQuery query) {
+  private ResponseEntity<MappingSearchQueryResponse> search(final MappingQuery query) {
     try {
       final var result = mappingServices.search(query);
-      return ResponseEntity.ok(SearchQueryResponseMapper.toTenantSearchQueryResponse(result));
+      return ResponseEntity.ok(SearchQueryResponseMapper.toMappingSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

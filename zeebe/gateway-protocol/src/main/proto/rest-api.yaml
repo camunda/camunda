@@ -3239,6 +3239,18 @@ components:
           type: string
           description: The claim value, idk.
 
+    MappingSearchQueryResponse:
+      description: Mapping rule search response.
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      type: object
+      properties:
+        items:
+          description: The matching mapping rules.
+          type: array
+          items:
+            $ref: "#/components/schemas/MappingItem"
+
     UserTaskSearchQueryRequest:
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
