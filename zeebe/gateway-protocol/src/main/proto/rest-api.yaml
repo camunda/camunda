@@ -4948,7 +4948,7 @@ components:
     GroupCreateResponse:
       type: "object"
       properties:
-        roleKey:
+        groupKey:
           description: The key of the created group.
           type: "integer"
           format: "int64"
