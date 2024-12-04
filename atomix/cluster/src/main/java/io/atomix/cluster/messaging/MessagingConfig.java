@@ -33,6 +33,10 @@ public class MessagingConfig implements Config {
   private File certificateChain;
   private File privateKey;
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
+  private File keyStore;
+  private String keyStorePassword;
+  private Duration heartbeatTimeout = Duration.ofSeconds(15);
+  private Duration heartbeatInterval = Duration.ofSeconds(5);
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -222,6 +226,24 @@ public class MessagingConfig implements Config {
     }
 
     this.privateKey = privateKey;
+    return this;
+  }
+
+  public Duration getHeartbeatTimeout() {
+    return heartbeatTimeout;
+  }
+
+  public MessagingConfig setHeartbeatTimeout(final Duration heartbeatTimeout) {
+    this.heartbeatTimeout = heartbeatTimeout;
+    return this;
+  }
+
+  public Duration getHeartbeatInterval() {
+    return heartbeatInterval;
+  }
+
+  public MessagingConfig setHeartbeatInterval(final Duration heartbeatInterval) {
+    this.heartbeatInterval = heartbeatInterval;
     return this;
   }
 

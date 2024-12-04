@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.configuration;
 
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.CommandApiCfg;
 import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg.InternalApiCfg;
+import java.time.Duration;
 import java.util.Optional;
 import org.springframework.util.unit.DataSize;
 
@@ -23,6 +24,8 @@ public final class NetworkCfg implements ConfigurationEntry {
   private int portOffset = 0;
   private DataSize maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private String advertisedHost;
+  private Duration heartbeatTimeout = Duration.ofSeconds(15);
+  private Duration heartbeatInterval = Duration.ofSeconds(5);
 
   private final CommandApiCfg commandApi = new CommandApiCfg();
   private InternalApiCfg internalApi = new InternalApiCfg();
@@ -75,6 +78,22 @@ public final class NetworkCfg implements ConfigurationEntry {
     this.maxMessageSize = maxMessageSize;
   }
 
+  public Duration getHeartbeatTimeout() {
+    return heartbeatTimeout;
+  }
+
+  public void setHeartbeatTimeout(final Duration heartbeatTimeout) {
+    this.heartbeatTimeout = heartbeatTimeout;
+  }
+
+  public Duration getHeartbeatInterval() {
+    return heartbeatInterval;
+  }
+
+  public void setHeartbeatInterval(final Duration heartbeatInterval) {
+    this.heartbeatInterval = heartbeatInterval;
+  }
+
   public CommandApiCfg getCommandApi() {
     return commandApi;
   }
@@ -106,6 +125,10 @@ public final class NetworkCfg implements ConfigurationEntry {
         + '\''
         + ", maxMessageSize="
         + maxMessageSize
+        + ", heartbeatTimeout="
+        + heartbeatTimeout
+        + ", heartbeatInterval="
+        + heartbeatInterval
         + ", commandApi="
         + commandApi
         + ", internalApi="
