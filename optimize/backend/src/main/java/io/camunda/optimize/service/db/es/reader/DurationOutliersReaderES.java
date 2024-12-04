@@ -104,6 +104,7 @@ import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.reader.DurationOutliersReader;
 import io.camunda.optimize.service.db.reader.ProcessDefinitionReader;
 import io.camunda.optimize.service.db.reader.ProcessVariableReader;
+import io.camunda.optimize.service.db.util.AggregationNameUtil;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.exceptions.OptimizeValidationException;
 import io.camunda.optimize.service.util.DefinitionQueryUtilES;
@@ -121,6 +122,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -148,10 +150,10 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
     final FlowNodeOutlierParametersDto outlierParams =
         outlierAnalysisParams.getProcessDefinitionParametersDto();
-    long interval =
+    final long interval =
         getInterval(query, outlierParams.getFlowNodeId(), outlierParams.getProcessDefinitionKey());
 
-    Aggregation histogram =
+    final Aggregation histogram =
         Aggregation.of(
             a ->
                 a.histogram(
@@ -159,11 +161,11 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                         h.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)
                             .interval((double) interval)));
 
-    Aggregation nestedAgg =
+    final Aggregation nestedAgg =
         buildNestedFlowNodeFilterAggregation(
             outlierParams.getFlowNodeId(), AGG_HISTOGRAM, histogram);
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             s ->
                 s.optimizeIndex(
@@ -174,13 +176,13 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                     .aggregations(FLOW_NODE_INSTANCES, nestedAgg)
                     .size(0));
 
-    SearchResponse<DurationChartEntryDto> search;
+    final SearchResponse<DurationChartEntryDto> search;
     try {
       search = esClient.search(searchRequest, DurationChartEntryDto.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.warn("Couldn't retrieve duration chart");
       throw new OptimizeRuntimeException(e.getMessage(), e);
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to evaluate count by duration chart because instance index with alias {} does not exist. "
@@ -229,11 +231,11 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
           outlierAnalysisParams) {
     final BoolQuery.Builder processInstanceQuery = buildBaseQuery(outlierAnalysisParams);
 
-    ExtendedStatsAggregation extendedStatsAggregation =
+    final ExtendedStatsAggregation extendedStatsAggregation =
         ExtendedStatsAggregation.of(
             e -> e.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION));
 
-    BoolQuery.Builder builder = new BoolQuery.Builder();
+    final BoolQuery.Builder builder = new BoolQuery.Builder();
     final ProcessDefinitionParametersDto processDefinitionParametersDto =
         outlierAnalysisParams.getProcessDefinitionParametersDto();
     if (Boolean.TRUE.equals(processDefinitionParametersDto.getDisconsiderAutomatedTasks())) {
@@ -267,7 +269,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                                                           .toList()))))));
     }
 
-    Aggregation aggregationFlowNodeTypeAndId =
+    final Aggregation aggregationFlowNodeTypeAndId =
         Aggregation.of(
             a ->
                 a.filter(f -> f.bool(builder.build()))
@@ -287,14 +289,14 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                                         Aggregation.of(
                                             aaa -> aaa.extendedStats(extendedStatsAggregation))))));
 
-    Aggregation nested =
+    final Aggregation nested =
         Aggregation.of(
             a ->
                 a.nested(n -> n.path(FLOW_NODE_INSTANCES))
                     .aggregations(FLOW_NODE_TYPE_FILTER, aggregationFlowNodeTypeAndId));
 
-    BoolQuery boolQuery = processInstanceQuery.build();
-    SearchRequest searchRequest =
+    final BoolQuery boolQuery = processInstanceQuery.build();
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             o ->
                 o.optimizeIndex(
@@ -309,11 +311,11 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
     final SearchResponse<?> searchResponse;
     try {
       searchResponse = esClient.search(searchRequest, Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       final String reason = "Could not fetch data to generate Outlier Analysis Heatmap";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to get Flow Node outlier map because instance index with alias {} does not exist. "
@@ -355,11 +357,17 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
     try {
       // #1 get top variable value terms of outliers
+      final List<String> variableNames = getVariableNames(outlierParams);
+      final Map<String, String> sanitisedNameToVarName =
+          variableNames.stream()
+              .filter(AggregationNameUtil::containsIllegalChar)
+              .collect(Collectors.toMap(AggregationNameUtil::sanitiseAggName, Function.identity()));
       final ReverseNestedAggregate outlierNestedProcessInstancesAgg =
-          getTopVariableTermsOfOutliers(outlierAnalysisParams);
+          getTopVariableTermsOfOutliers(outlierAnalysisParams, variableNames);
       final Map<String, Map<String, Long>> outlierVariableTermOccurrences =
           createVariableTermOccurrencesMap(
-              outlierNestedProcessInstancesAgg.aggregations().get(AGG_VARIABLES).nested());
+              outlierNestedProcessInstancesAgg.aggregations().get(AGG_VARIABLES).nested(),
+              sanitisedNameToVarName);
       final long outlierProcessInstanceCount = outlierNestedProcessInstancesAgg.docCount();
       final Map<String, Set<String>> outlierVariableTerms =
           outlierVariableTermOccurrences.entrySet().stream()
@@ -378,7 +386,8 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
           getVariableTermOccurrencesOfNonOutliers(outlierAnalysisParams, outlierVariableTerms);
       final Map<String, Map<String, Long>> nonOutlierVariableTermOccurrence =
           createVariableTermOccurrencesMap(
-              nonOutlierNestedProcessInstancesAgg.aggregations().get(AGG_VARIABLES).nested());
+              nonOutlierNestedProcessInstancesAgg.aggregations().get(AGG_VARIABLES).nested(),
+              sanitisedNameToVarName);
       final long nonOutlierProcessInstanceCount = nonOutlierNestedProcessInstancesAgg.docCount();
 
       // #3 compare both data sets and only keep terms whose frequency is considered significant
@@ -398,10 +407,10 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
           nonOutlierProcessInstanceCount,
           totalProcessInstanceCount);
 
-    } catch (IOException e) {
+    } catch (final IOException e) {
       log.warn("Couldn't determine significant outlier variable terms.");
       throw new OptimizeRuntimeException(e.getMessage(), e);
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to determine significant outlier variable terms because instance index with name {} does not "
@@ -431,7 +440,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                         .query(q -> q.bool(flowNodeFilterQuery.build()))
                         .scoreMode(ChildScoreMode.None)));
     // variable name & term
-    BoolQuery.Builder variableTermFilterQuery = new BoolQuery.Builder();
+    final BoolQuery.Builder variableTermFilterQuery = new BoolQuery.Builder();
     variableTermFilterQuery.must(
         m ->
             m.term(
@@ -454,7 +463,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
     final Integer recordLimit = configurationService.getCsvConfiguration().getExportCsvLimit();
 
-    SearchRequest scrollSearchRequest =
+    final SearchRequest scrollSearchRequest =
         OptimizeSearchRequestBuilderES.of(
             b ->
                 b.optimizeIndex(
@@ -486,9 +495,9 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
           esClient,
           configurationService.getElasticSearchConfiguration().getScrollTimeoutInSeconds(),
           recordLimit);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException("Could not obtain outlier instance ids.", e);
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to obtain outlier instance IDs because instance index with name {} does not exist. "
@@ -504,7 +513,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   private <T extends FlowNodeOutlierParametersDto> BoolQuery.Builder createFlowNodeOutlierQuery(
       final OutlierAnalysisServiceParameters<T> outlierParameters) {
     final T outlierParams = outlierParameters.getProcessDefinitionParametersDto();
-    BoolQuery.Builder flowNodeFilterQuery = new BoolQuery.Builder();
+    final BoolQuery.Builder flowNodeFilterQuery = new BoolQuery.Builder();
     flowNodeFilterQuery
         .must(
             m ->
@@ -553,11 +562,16 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   }
 
   private ReverseNestedAggregate getTopVariableTermsOfOutliers(
-      final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams)
+      final OutlierAnalysisServiceParameters<FlowNodeOutlierParametersDto> outlierAnalysisParams,
+      final List<String> variableNames)
       throws IOException {
-    final FlowNodeOutlierParametersDto outlierParams =
-        outlierAnalysisParams.getProcessDefinitionParametersDto();
+    final SearchRequest outlierTopVariableTermsRequest =
+        createTopVariableTermsOfOutliersQuery(outlierAnalysisParams, variableNames);
+    return extractNestedProcessInstanceAgg(
+        esClient.search(outlierTopVariableTermsRequest, Object.class));
+  }
 
+  private List<String> getVariableNames(final FlowNodeOutlierParametersDto outlierParams) {
     final List<String> variableNames =
         processVariableReader
             .getVariableNames(
@@ -570,11 +584,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
             .stream()
             .map(ProcessVariableNameResponseDto::getName)
             .collect(Collectors.toList());
-
-    final SearchRequest outlierTopVariableTermsRequest =
-        createTopVariableTermsOfOutliersQuery(outlierAnalysisParams, variableNames);
-    return extractNestedProcessInstanceAgg(
-        esClient.search(outlierTopVariableTermsRequest, Object.class));
+    return variableNames;
   }
 
   private List<VariableTermDto> mapToVariableTermList(
@@ -619,16 +629,16 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       final List<String> variableNames) {
     final BoolQuery.Builder flowNodeFilterQuery = createFlowNodeOutlierQuery(outlierParams);
 
-    Aggregation nestedVariableAggregation =
+    final Aggregation nestedVariableAggregation =
         Aggregation.of(
             a -> {
-              Aggregation.Builder.ContainerBuilder nested = a.nested(n -> n.path(VARIABLES));
+              final Aggregation.Builder.ContainerBuilder nested = a.nested(n -> n.path(VARIABLES));
               variableNames.stream()
                   .distinct()
                   .forEach(
                       variableName ->
                           nested.aggregations(
-                              variableName,
+                              AggregationNameUtil.sanitiseAggName(variableName),
                               Aggregation.of(
                                   aa ->
                                       aa.filter(
@@ -696,10 +706,10 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                       r.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION)
                           .gte(JsonData.of(outlierParams.getLowerOutlierBound()))));
     }
-    Aggregation nestedVariableAggregation =
+    final Aggregation nestedVariableAggregation =
         Aggregation.of(
             a -> {
-              Aggregation.Builder.ContainerBuilder nested = a.nested(n -> n.path(VARIABLES));
+              final Aggregation.Builder.ContainerBuilder nested = a.nested(n -> n.path(VARIABLES));
               variablesAndTerms.forEach(
                   (variableName, value) ->
                       nested.aggregations(
@@ -820,12 +830,13 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   }
 
   private Map<String, Map<String, Long>> createVariableTermOccurrencesMap(
-      final NestedAggregate allVariableAggregations) {
+      final NestedAggregate allVariableAggregations,
+      final Map<String, String> sanitisedVarsToVarNames) {
     final Map<String, Map<String, Long>> outlierVariableTermOccurrences = new HashMap<>();
     allVariableAggregations
         .aggregations()
         .forEach(
-            (variableName, aggregation) -> {
+            (aggName, aggregation) -> {
               final FilterAggregate variableFilterAggregation = aggregation.filter();
               final StringTermsAggregate variableValueTerms =
                   variableFilterAggregation.aggregations().get(AGG_VARIABLE_VALUE_TERMS).sterms();
@@ -842,7 +853,11 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                                 AbstractMap.SimpleEntry::getKey,
                                 AbstractMap.SimpleEntry::getValue));
 
-                outlierVariableTermOccurrences.put(variableName, termOccurrences);
+                // We resolve this back to its original name in the case that it was sanitised
+                // during query time
+                outlierVariableTermOccurrences.put(
+                    Optional.ofNullable(sanitisedVarsToVarNames.get(aggName)).orElse(aggName),
+                    termOccurrences);
               }
             });
     return outlierVariableTermOccurrences;
@@ -853,10 +868,10 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       final BoolQuery processInstanceQuery,
       final ProcessDefinitionParametersDto processDefinitionParams) {
     final Map<String, ExtendedStatsAggregate> statsByFlowNodeId = new HashMap<>();
-    Aggregation nestedFlowNodeAggregation =
+    final Aggregation nestedFlowNodeAggregation =
         Aggregation.of(
             a -> {
-              Aggregation.Builder.ContainerBuilder nested =
+              final Aggregation.Builder.ContainerBuilder nested =
                   a.nested(n -> n.path(FLOW_NODE_INSTANCES));
               deviationForEachFlowNode.forEach(
                   bucket -> {
@@ -868,7 +883,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                     if (statsAgg.stdDeviation() != 0.0D) {
                       double stdDeviationBoundLower = statsAgg.stdDeviationBounds().lower();
                       double stdDeviationBoundHigher = statsAgg.stdDeviationBounds().upper();
-                      double average = statsAgg.avg();
+                      final double average = statsAgg.avg();
                       stdDeviationBoundLower =
                           Math.min(
                               stdDeviationBoundLower,
@@ -878,8 +893,8 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                               stdDeviationBoundHigher,
                               average + processDefinitionParams.getMinimumDeviationFromAvg());
 
-                      double finalStdDeviationBoundLower = stdDeviationBoundLower;
-                      Aggregation lowerOutlierEventFilter =
+                      final double finalStdDeviationBoundLower = stdDeviationBoundLower;
+                      final Aggregation lowerOutlierEventFilter =
                           Aggregation.of(
                               aa ->
                                   aa.filter(
@@ -894,8 +909,8 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                                                           JsonData.of(
                                                               finalStdDeviationBoundLower)))));
 
-                      double finalStdDeviationBoundHigher = stdDeviationBoundHigher;
-                      Aggregation higherOutlierEventFilter =
+                      final double finalStdDeviationBoundHigher = stdDeviationBoundHigher;
+                      final Aggregation higherOutlierEventFilter =
                           Aggregation.of(
                               aa ->
                                   aa.filter(
@@ -910,7 +925,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                                                           JsonData.of(
                                                               finalStdDeviationBoundHigher)))));
 
-                      TermQuery terms =
+                      final TermQuery terms =
                           TermQuery.of(
                               t ->
                                   t.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID)
@@ -929,7 +944,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
               return nested;
             });
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             s ->
                 s.optimizeIndex(
@@ -946,9 +961,9 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
       final Map<String, Aggregate> allFlowNodeFilterAggs =
           allFlowNodesPercentileRanks.get(FLOW_NODE_INSTANCES).nested().aggregations();
       return mapToFlowNodeFindingsMap(statsByFlowNodeId, allFlowNodeFilterAggs);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e.getMessage(), e);
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to retrieve flownode outlier map because instance index with alias {} does not exist. "
@@ -984,14 +999,14 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                     final Aggregate higherOutlierFilterAgg =
                         flowNodeFilterAgg.filter().aggregations().get(HIGHER_DURATION_AGG);
 
-                    double avg = stats.avg();
-                    double stdDeviationBoundLower = stats.stdDeviationBounds().lower();
-                    double stdDeviationBoundHigher = stats.stdDeviationBounds().upper();
+                    final double avg = stats.avg();
+                    final double stdDeviationBoundLower = stats.stdDeviationBounds().lower();
+                    final double stdDeviationBoundHigher = stats.stdDeviationBounds().upper();
 
                     if (stdDeviationBoundLower > stats.min()
                         && lowerOutlierFilterAgg.filter().docCount() > 0L) {
                       final long count = lowerOutlierFilterAgg.filter().docCount();
-                      double percent = (double) count / flowNodeFilterAgg.filter().docCount();
+                      final double percent = (double) count / flowNodeFilterAgg.filter().docCount();
                       finding.setLowerOutlier(
                           (long) stdDeviationBoundLower,
                           percent,
@@ -1003,7 +1018,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                     if (stdDeviationBoundHigher < stats.max()
                         && higherOutlierFilterAgg.filter().docCount() > 0) {
                       final long count = higherOutlierFilterAgg.filter().docCount();
-                      double percent = (double) count / flowNodeFilterAgg.filter().docCount();
+                      final double percent = (double) count / flowNodeFilterAgg.filter().docCount();
                       finding.setHigherOutlier(
                           (long) stdDeviationBoundHigher,
                           percent,
@@ -1054,14 +1069,14 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
   private long getInterval(
       final BoolQuery query, final String flowNodeId, final String processDefinitionKey) {
-    StatsAggregation statsAgg =
+    final StatsAggregation statsAgg =
         StatsAggregation.of(s -> s.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_TOTAL_DURATION));
 
-    Aggregation termsAgg =
+    final Aggregation termsAgg =
         buildNestedFlowNodeFilterAggregation(
             flowNodeId, AGG_STATS, Aggregation.of(a -> a.stats(statsAgg)));
 
-    SearchRequest searchRequest =
+    final SearchRequest searchRequest =
         OptimizeSearchRequestBuilderES.of(
             s ->
                 s.optimizeIndex(esClient, getProcessInstanceIndexAliasName(processDefinitionKey))
@@ -1070,12 +1085,12 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                     .aggregations(FLOW_NODE_INSTANCES, termsAgg)
                     .size(0));
 
-    SearchResponse<?> search;
+    final SearchResponse<?> search;
     try {
       search = esClient.search(searchRequest, Object.class);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new OptimizeRuntimeException(e.getMessage(), e);
-    } catch (ElasticsearchException e) {
+    } catch (final ElasticsearchException e) {
       if (isInstanceIndexNotFoundException(PROCESS, e)) {
         log.info(
             "Was not able to determine interval because instance index {} does not exist. Returning 0.",
@@ -1096,8 +1111,8 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
             .aggregations()
             .get(AGG_STATS)
             .stats();
-    double min = stats.min();
-    double max = stats.max();
+    final double min = stats.min();
+    final double max = stats.max();
 
     if ((max == min) || stats.count() == 0) {
       // in case there is no distribution fallback to an interval of 1 as 0 is not a valid interval
@@ -1109,12 +1124,12 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   }
 
   private Aggregation buildNestedFlowNodeFilterAggregation(
-      final String flowNodeId, String agrKey, final Aggregation subAggregation) {
-    TermQuery.Builder terms = new TermQuery.Builder();
+      final String flowNodeId, final String agrKey, final Aggregation subAggregation) {
+    final TermQuery.Builder terms = new TermQuery.Builder();
     terms.field(FLOW_NODE_INSTANCES + "." + FLOW_NODE_ID);
     terms.value(flowNodeId);
 
-    Aggregation filteredFlowNodes =
+    final Aggregation filteredFlowNodes =
         Aggregation.of(
             a -> a.filter(f -> f.term(terms.build())).aggregations(agrKey, subAggregation));
 
@@ -1141,7 +1156,7 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
   private <T extends ProcessDefinitionParametersDto> BoolQuery.Builder buildBaseQuery(
       final OutlierAnalysisServiceParameters<T> outlierParams) {
     final T processDefinitionParams = outlierParams.getProcessDefinitionParametersDto();
-    BoolQuery.Builder definitionQuery =
+    final BoolQuery.Builder definitionQuery =
         DefinitionQueryUtilES.createDefinitionQuery(
             processDefinitionParams.getProcessDefinitionKey(),
             processDefinitionParams.getProcessDefinitionVersions(),
