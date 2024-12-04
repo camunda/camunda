@@ -8,21 +8,26 @@
 
 import {ActionableNotification} from '@carbon/react';
 import {requestPermission} from 'modules/os-notifications/requestPermission';
+import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
+import styles from './TurnOnNotificationPermission.module.scss';
 
 const TurnOnNotificationPermission: React.FC = () => {
   const {t} = useTranslation();
-  const [enabled, setEnabled] = useState(true);
-  if (
-    !(
-      enabled &&
-      'Notification' in window &&
-      Notification.permission === 'default'
-    )
-  ) {
+  const areNativeNotificationsEnabled = getStateLocally(
+    'areNativeNotificationsEnabled',
+  );
+  const [isEnabled, setIsEnabled] = useState(
+    'Notification' in window &&
+      Notification.permission === 'default' &&
+      !(areNativeNotificationsEnabled === false),
+  );
+
+  if (!isEnabled) {
     return null;
   }
+
   return (
     <div>
       <ActionableNotification
@@ -34,13 +39,15 @@ const TurnOnNotificationPermission: React.FC = () => {
         onActionButtonClick={async () => {
           const result = await requestPermission();
           if (result !== 'default') {
-            setEnabled(false);
+            setIsEnabled(false);
           }
         }}
-        onClose={() => setEnabled(false)}
-        style={{maxInlineSize: 'initial'}}
+        onClose={() => {
+          setIsEnabled(false);
+          storeStateLocally('areNativeNotificationsEnabled', false);
+        }}
+        className={styles.actionableNotification}
         lowContrast
-        hasFocus={false}
       />
     </div>
   );
