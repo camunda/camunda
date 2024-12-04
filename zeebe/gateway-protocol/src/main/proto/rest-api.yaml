@@ -2747,6 +2747,50 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /groups/{groupKey}/users/{userKey}:
+    post:
+      tags:
+        - Group
+      operationId: addUserToGroup
+      summary: Assign a user to a group
+      description: |
+        Assigns a user to a group.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The group key.
+          schema:
+            type: integer
+            format: int64
+        - name: userKey
+          in: path
+          required: true
+          description: The user key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was assigned successfully to the group.
+        "400":
+          description: |
+            The user could not be assigned.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group or user with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /groups/search:
     post:
       tags:
