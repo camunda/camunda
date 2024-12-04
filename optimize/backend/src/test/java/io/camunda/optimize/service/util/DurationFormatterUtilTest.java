@@ -16,10 +16,11 @@ public class DurationFormatterUtilTest {
   @Test
   void shouldReturnReadableStringForDurationInMilliseconds() {
     // given
-    long durationInMs = 4000000000L; // 46 days, 6 hours, 40 minutes
+    final long durationInMs = 4000000000L; // 46 days, 6 hours, 40 minutes
 
     // when
-    String result = DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
+    final String result =
+        DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
 
     // then
     assertThat(result).isEqualTo("1mo 2wks 2d 7h 6min 40s");
@@ -49,10 +50,11 @@ public class DurationFormatterUtilTest {
   @Test
   void shouldFormatWithMillisecondsRemaining() {
     // given
-    long durationInMs = 1234567; // 20 minutes, 34 seconds, 567 milliseconds
+    final long durationInMs = 1234567; // 20 minutes, 34 seconds, 567 milliseconds
 
     // when
-    String result = DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
+    final String result =
+        DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
 
     // then
     assertThat(result).isEqualTo("20min 34s 567ms");
@@ -61,7 +63,7 @@ public class DurationFormatterUtilTest {
   @Test
   void shouldHandleLargeDurationsIncludingYearsAndMonths() {
     // given
-    long durationInMs =
+    final long durationInMs =
         365L * 24 * 60 * 60 * 1000
             + // 1 year
             30L * 24 * 60 * 60 * 1000
@@ -71,7 +73,8 @@ public class DurationFormatterUtilTest {
             24 * 60 * 60 * 1000; // 1 day
 
     // when
-    String result = DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
+    final String result =
+        DurationFormatterUtil.formatMilliSecondsToReadableDurationString(durationInMs);
 
     // then
     assertThat(result).isEqualTo("1yrs 1mo 1wks 1d");
@@ -80,7 +83,7 @@ public class DurationFormatterUtilTest {
   @Test
   void shouldFormatDurationStringCorrectly() {
     // given
-    String unitString = "min";
+    final String unitString = "min";
     long duration = 15;
 
     // when
