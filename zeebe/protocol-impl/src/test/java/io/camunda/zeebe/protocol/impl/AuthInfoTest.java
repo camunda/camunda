@@ -11,6 +11,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
+import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +22,8 @@ final class AuthInfoTest {
     // given
     final String testData = "test-data";
     final AuthInfo authInfo = new AuthInfo();
-    authInfo.setFormatProp(AuthDataFormat.JWT).setAuthData(testData);
+    final Map<String, Object> authInfoMap = Map.of("key", "value");
+    authInfo.setFormatProp(AuthDataFormat.JWT).setAuthData(testData).setAuthInfo(authInfoMap);
 
     // when
     encodeDecode(authInfo);
@@ -29,6 +31,7 @@ final class AuthInfoTest {
     // then
     assertThat(authInfo.getFormat()).isEqualTo(AuthDataFormat.JWT);
     assertThat(authInfo.getAuthData()).isEqualTo(testData);
+    assertThat(authInfo.getAuthInfo()).isEqualTo(authInfoMap);
   }
 
   @Test
@@ -42,6 +45,7 @@ final class AuthInfoTest {
     // then
     assertThat(authInfo.getFormat()).isEqualTo(AuthDataFormat.UNKNOWN);
     assertThat(authInfo.getAuthData()).isEqualTo("");
+    assertThat(authInfo.getAuthInfo()).isEqualTo(Map.of());
   }
 
   private void encodeDecode(final AuthInfo authInfo) {

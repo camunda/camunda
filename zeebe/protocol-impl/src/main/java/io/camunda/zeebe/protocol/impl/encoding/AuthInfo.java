@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
@@ -25,10 +27,11 @@ public class AuthInfo extends UnpackedObject {
       new EnumProperty<>("format", AuthDataFormat.class, AuthDataFormat.UNKNOWN);
 
   private final StringProperty authDataProp = new StringProperty("authData", "");
+  private final DocumentProperty authInfoProp = new DocumentProperty("authInfo");
 
   public AuthInfo() {
-    super(2);
-    declareProperty(formatProp).declareProperty(authDataProp);
+    super(3);
+    declareProperty(formatProp).declareProperty(authDataProp).declareProperty(authInfoProp);
   }
 
   public AuthDataFormat getFormat() {
@@ -53,9 +56,29 @@ public class AuthInfo extends UnpackedObject {
     return this;
   }
 
+  public Map<String, Object> getAuthInfo() {
+    return MsgPackConverter.convertToMap(authInfoProp.getValue());
+  }
+
+  public AuthInfo setAuthInfo(final DirectBuffer authInfo) {
+    authInfoProp.setValue(authInfo);
+    return this;
+  }
+
+  public AuthInfo setAuthInfo(final Map<String, Object> authInfo) {
+    authInfoProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authInfo)));
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getAuthInfoBuffer() {
+    return authInfoProp.getValue();
+  }
+
   public void wrap(final AuthInfo authInfo) {
     formatProp.setValue(authInfo.getFormat());
     authDataProp.setValue(authInfo.getAuthData());
+    authInfoProp.setValue(authInfo.getAuthInfoBuffer());
   }
 
   @Override
