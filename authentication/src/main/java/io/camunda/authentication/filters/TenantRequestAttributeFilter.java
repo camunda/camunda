@@ -26,10 +26,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.InternalAuthenticationServiceException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-@Component
 public class TenantRequestAttributeFilter extends OncePerRequestFilter {
   private static final Logger LOG = LoggerFactory.getLogger(TenantRequestAttributeFilter.class);
 
