@@ -1038,4 +1038,19 @@ public class ProcessInstanceAndFlowNodeInstanceQueryTest {
     assertThat(result.items().size()).isEqualTo(2);
     assertThat(resultBefore.items().getFirst().getFlowNodeInstanceKey()).isEqualTo(key);
   }
+
+  @Test
+  void shouldSearchByFromWithLimit() {
+    // when
+    final var resultAll = zeebeClient.newFlownodeInstanceQuery().send().join();
+    final var thirdKey = resultAll.items().get(2).getFlowNodeInstanceKey();
+
+    final var resultSearchFrom =
+        zeebeClient.newFlownodeInstanceQuery().page(p -> p.limit(2).from(2)).send().join();
+
+    // then
+    assertThat(resultSearchFrom.items().size()).isEqualTo(2);
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getFlowNodeInstanceKey())
+        .isEqualTo(thirdKey);
+  }
 }

@@ -504,6 +504,21 @@ class UserTaskQueryTest {
         .isEqualTo(userTaskElementInstanceKey);
   }
 
+  @Test
+  void shouldSearchByFromWithLimit() {
+    // when
+    final var resultAll = camundaClient.newUserTaskQuery().send().join();
+    final var thirdKey = resultAll.items().get(2).getUserTaskKey();
+
+    final var resultSearchFrom =
+        camundaClient.newUserTaskQuery().page(p -> p.limit(2).from(2)).send().join();
+
+    // then
+    assertThat(resultSearchFrom.items().size()).isEqualTo(2);
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getUserTaskKey())
+        .isEqualTo(thirdKey);
+  }
+
   private static void deployProcess(
       final String processId,
       final String resourceName,
