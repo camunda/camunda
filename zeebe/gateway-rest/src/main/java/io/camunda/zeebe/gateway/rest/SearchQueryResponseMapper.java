@@ -20,6 +20,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
+import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.gateway.protocol.rest.EvaluatedDecisionOutputItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceItem;
 import io.camunda.zeebe.gateway.protocol.rest.FlowNodeInstanceSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.FormItem;
+import io.camunda.zeebe.gateway.protocol.rest.GroupItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentItem;
 import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
@@ -263,6 +265,10 @@ public final class SearchQueryResponseMapper {
 
   public static RoleItem toRole(final RoleEntity roleEntity) {
     return new RoleItem().key(roleEntity.roleKey()).name(roleEntity.name());
+  }
+
+  public static GroupItem toGroup(final GroupEntity groupEntity) {
+    return new GroupItem().key(groupEntity.key()).name(groupEntity.name());
   }
 
   private static List<TenantItem> toTenants(final List<TenantEntity> tenants) {

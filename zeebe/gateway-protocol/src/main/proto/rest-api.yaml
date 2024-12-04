@@ -2562,8 +2562,41 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-
   /groups/{groupKey}:
+    get:
+      tags:
+        - Group
+      operationId: getGroup
+      summary: Get group
+      description: |
+        Get a group by its key.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The group key.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: The group is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupItem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
     patch:
       tags:
         - Group
@@ -4935,6 +4968,23 @@ components:
         name:
           type: string
           description: The updated display name of the group.
+    GroupItem:
+      description: Group search response item.
+      type: object
+      properties:
+        key:
+          type: integer
+          description: The group key.
+          format: int64
+        name:
+          type: string
+          description: The group name.
+        assignedMemberKeys:
+          type: array
+          description: The set of keys of members assigned to the group.
+          items:
+            type: integer
+            format: int64
 
     MappingRuleCreateRequest:
       type: object
