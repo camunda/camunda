@@ -152,7 +152,7 @@ public class ElasticsearchRecordsReader implements RecordsReader {
 
       importPositionHolder.recordLatestLoadedPosition(latestPosition);
     } catch (final IOException e) {
-      LOGGER.error("Failed to write initial import position index ", e);
+      LOGGER.error("Failed to write initial import position index document", e);
     }
   }
 
