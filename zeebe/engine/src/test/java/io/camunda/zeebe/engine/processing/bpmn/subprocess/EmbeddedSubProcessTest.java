@@ -23,10 +23,12 @@ import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.List;
 import java.util.function.Consumer;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -112,6 +114,53 @@ public final class EmbeddedSubProcessTest {
     Assertions.assertThat(subProcessActivating.getValue())
         .hasFlowScopeKey(processInstanceKey)
         .hasElementId("sub-process");
+  }
+
+  @Test
+  public void shouldContainTreePathOnActivatingSubProcess() {
+    // given
+    ENGINE.deployment().withXmlResource(NO_TASK_SUB_PROCESS).deploy();
+
+    // when
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .withTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.SEQUENCE_FLOW, ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ACTIVATE_ELEMENT),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATING),
+            tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED));
+
+    final var subProcessActivating =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .getFirst();
+
+    final Record<ProcessInstanceRecordValue> startEvent =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.START_EVENT)
+            .withFlowScopeKey(subProcessActivating.getKey())
+            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+            .getFirst();
+
+    final ProcessInstanceRecordValue value = startEvent.getValue();
+    assertThat(value.getCallingElementPath()).isEmpty();
+    assertThat(value.getElementInstancePath()).hasSize(1);
+    final List<Long> elementInstances = value.getElementInstancePath().get(0);
+    assertThat(elementInstances)
+        .containsExactly(processInstanceKey, subProcessActivating.getKey(), startEvent.getKey());
+    assertThat(value.getProcessDefinitionPath()).containsExactly(value.getProcessDefinitionKey());
   }
 
   @Test

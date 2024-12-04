@@ -235,9 +235,24 @@
       )
     </if>
 
-    <!-- TODO "variables" -->
+    <!-- Variables Basic Filter -->
+    <if test="filter.processInstanceVariableFilter != null and !filter.processInstanceVariableFilter.isEmpty()">
+      AND EXISTS (Select * from VARIABLE v where v.PROCESS_INSTANCE_KEY = ut.PROCESS_INSTANCE_KEY
+      AND ( 1 = 1
+      <foreach collection="filter.processInstanceVariableFilter" item="operation">
+        OR ( v.VAR_NAME = #{operation.name}
+        /**
+        FIXME waiting for the new API implementation of the variableFilter which uses the new
+        operator class.
+        (eq as property is not allowed since the expression language from mybatis also supports a
+        "eq" function)
+        test="operation.eq != null"
+        **/
+        )
+      </foreach>
+      ))
+    </if>
 
-    <!-- TODO "type" ... never used? -->
   </sql>
 
   <update
@@ -254,7 +269,8 @@
     </if>
     FOLLOW_UP_DATE = #{followUpDate},
     CUSTOM_HEADERS = #{serializedCustomHeaders},
-    PRIORITY = #{priority}
+    PRIORITY = #{priority},
+    ASSIGNEE = #{assignee}
     WHERE USER_TASK_KEY = #{userTaskKey}
   </update>
 

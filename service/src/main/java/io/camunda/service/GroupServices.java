@@ -25,6 +25,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupMemberRemov
 import io.camunda.zeebe.gateway.impl.broker.request.group.BrokerGroupUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -64,6 +65,13 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
     return findGroup(groupKey)
         .orElseThrow(
             () -> new NotFoundException("Group with groupKey %d not found".formatted(groupKey)));
+  }
+
+  public List<GroupEntity> getGroupsByUserKey(final long userKey) {
+    return search(SearchQueryBuilders.groupSearchQuery().filter(f -> f.memberKey(userKey)).build())
+        .items()
+        .stream()
+        .toList();
   }
 
   public Optional<GroupEntity> findGroup(final Long groupKey) {

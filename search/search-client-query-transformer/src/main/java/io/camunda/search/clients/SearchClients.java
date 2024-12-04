@@ -67,13 +67,10 @@ public class SearchClients
   private final ServiceTransformers transformers;
   private final SecurityContext securityContext;
 
-  public SearchClients(
-      final DocumentBasedSearchClient searchClient,
-      final boolean isCamundaExporterEnabled,
-      final String prefix) {
+  public SearchClients(final DocumentBasedSearchClient searchClient, final String prefix) {
     this(
         searchClient,
-        ServiceTransformers.newInstance(isCamundaExporterEnabled, prefix),
+        ServiceTransformers.newInstance(prefix),
         SecurityContext.withoutAuthentication());
   }
 

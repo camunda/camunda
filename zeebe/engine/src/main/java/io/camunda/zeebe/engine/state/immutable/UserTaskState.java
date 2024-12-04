@@ -35,7 +35,9 @@ public interface UserTaskState {
 
     ASSIGNING((byte) 5),
 
-    UPDATING((byte) 6);
+    UPDATING((byte) 6),
+
+    CLAIMING((byte) 7);
 
     final byte value;
 

@@ -34,6 +34,7 @@ tags:
   - name: Document
   - name: Element instance
   - name: Flow node instance
+  - name: Group
   - name: Incident
   - name: Job
   - name: License
@@ -518,6 +519,171 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /tenants/{tenantKey}/users/{userKey}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignUserToTenant
+      summary: Assign a user to a tenant
+      description: Assign a single user to a specified tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: userKey
+          in: path
+          required: true
+          description: The unique identifier of the user.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was successfully assigned to the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or user was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: removeUserFromTenant
+      summary: Remove a user from a tenant
+      description: Removes a single user from a specified tenant without deleting the user.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: userKey
+          in: path
+          required: true
+          description: The unique identifier of the user.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The user was successfully removed from the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or user was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /tenants/{tenantKey}/mapping-rules/{mappingKey}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignMappingRuleToTenant
+      summary: Assign a mapping rule to a tenant
+      description: Assign a single mapping rule to a specified tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: mappingKey
+          in: path
+          required: true
+          description: The unique identifier of the mapping rule.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The mapping rule was successfully assigned to the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or mapping rule was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: removeMappingRuleFromTenant
+      summary: Remove a mapping rule from a tenant
+      description: Removes a single mapping rule from a specified tenant without deleting the rule.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: mappingKey
+          in: path
+          required: true
+          description: The unique identifier of the mapping rule.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The mapping rule was successfully removed from the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or mapping rule was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /tenants/search:
     post:
@@ -2201,7 +2367,7 @@ paths:
             schema:
               $ref: "#/components/schemas/RoleCreateRequest"
       responses:
-        "202":
+        "201":
           description: |
             The role was created successfully.
           content:
@@ -2363,6 +2529,39 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
+
+  /groups:
+    post:
+      tags:
+        - Group
+      operationId: createGroup
+      summary: Create group
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupCreateRequest"
+      responses:
+        "201":
+          description: The group was created successfully.
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/GroupCreateResponse"
+        "400":
+          description: |
+            The group could not be created.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /mapping-rules:
     post:
@@ -2717,7 +2916,7 @@ paths:
               $ref: "#/components/schemas/UserRequest"
         required: true
       responses:
-        "202":
+        "201":
           description: |
             The user was created successfully.
           content:
@@ -3330,9 +3529,9 @@ components:
           type: integer
           description: The key of the element instance.
           format: int64
-        variables:
+        processInstanceVariables:
           type: array
-          description: Variables associated with the user task.
+          description: Process Instance variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
     UserTaskVariableFilterRequest:
@@ -3862,18 +4061,21 @@ components:
           description: The tenant ID.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
+        variables:
+          description: The process instance variables.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessInstanceVariableFilterRequest"
     ProcessInstanceVariableFilterRequest:
       description: Process instance variable filter.
       type: object
       properties:
         name:
+          description: Name of the variable.
           type: string
-          description: The variable name.
-        values:
-          type: array
-          description: The variable values.
-          items:
-            type: string
+        value:
+          description: The value of the variable.
+          type: string
     ProcessInstanceSearchQueryResponse:
       description: Process instance search response.
       allOf:
@@ -4719,6 +4921,21 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RoleItem"
+
+    GroupCreateRequest:
+      type: "object"
+      properties:
+        name:
+          type: "string"
+          description: The display name of the new group.
+    GroupCreateResponse:
+      type: "object"
+      properties:
+        roleKey:
+          description: The key of the created group.
+          type: "integer"
+          format: "int64"
+
     MappingRuleCreateRequest:
       type: object
       properties:

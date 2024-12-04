@@ -122,7 +122,6 @@ public class UserTaskExporterIT {
     @TestTemplate
     void shouldExportUserTaskVariable(final TestStandaloneBroker testBroker) {
       final var client = testBroker.newClientBuilder().build();
-
       // when
       ExporterTestUtil.createAndDeployUserTaskProcess(
           client, "test-process-id", "zeebe-task", AbstractUserTaskBuilder::zeebeUserTask);
@@ -149,7 +148,7 @@ public class UserTaskExporterIT {
               .newUserTaskQuery()
               .filter(
                   f ->
-                      f.variables(
+                      f.processInstanceVariables(
                           List.of(new UserTaskVariableFilterRequest().name("stringVariable"))))
               .send()
               .join()
@@ -162,7 +161,8 @@ public class UserTaskExporterIT {
               .newUserTaskQuery()
               .filter(
                   f ->
-                      f.variables(List.of(new UserTaskVariableFilterRequest().name("intVariable"))))
+                      f.processInstanceVariables(
+                          List.of(new UserTaskVariableFilterRequest().name("intVariable"))))
               .send()
               .join()
               .items();
@@ -174,7 +174,7 @@ public class UserTaskExporterIT {
               .newUserTaskQuery()
               .filter(
                   f ->
-                      f.variables(
+                      f.processInstanceVariables(
                           List.of(new UserTaskVariableFilterRequest().name("boolVariable"))))
               .send()
               .join()
@@ -187,7 +187,8 @@ public class UserTaskExporterIT {
               .newUserTaskQuery()
               .filter(
                   f ->
-                      f.variables(List.of(new UserTaskVariableFilterRequest().name("bigVariable"))))
+                      f.processInstanceVariables(
+                          List.of(new UserTaskVariableFilterRequest().name("bigVariable"))))
               .send()
               .join()
               .items();
@@ -199,7 +200,7 @@ public class UserTaskExporterIT {
               .newUserTaskQuery()
               .filter(
                   f ->
-                      f.variables(
+                      f.processInstanceVariables(
                           List.of(
                               new UserTaskVariableFilterRequest()
                                   .name("stringVariable")

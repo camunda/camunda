@@ -22,6 +22,8 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Objects;
+import org.apache.commons.lang3.StringUtils;
 
 public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
 
@@ -61,23 +63,17 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNING, userTaskRecord);
   }
 
-  /// {@inheritDoc}
-  ///
-  /// @apiNote This method finalizes the [UserTaskIntent#ASSIGN] command by default but also handles
-  /// finalization for the [UserTaskIntent#CLAIM] command when `assignment` listeners are defined
-  /// for the user task.
-  ///
-  /// This occurs because both `CLAIM` and `ASSIGN` commands transition the user task to the
-  /// `ASSIGNING` lifecycle state, making it indistinguishable which command initially led to this
-  /// state. Therefore, the current processor is selected to finalize the command after all task
-  /// listeners are processed when the user task is in the [LifecycleState#ASSIGNING] state.
   @Override
   public void onFinalizeCommand(
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord userTaskRecord) {
     final long userTaskKey = command.getKey();
+    final String action =
+        Objects.requireNonNullElse(
+            StringUtils.firstNonEmpty(command.getValue().getAction(), userTaskRecord.getAction()),
+            StringUtils.EMPTY);
 
     userTaskRecord.setAssignee(command.getValue().getAssignee());
-    userTaskRecord.setAction(command.getValue().getActionOrDefault(DEFAULT_ACTION));
+    userTaskRecord.setAction(action);
 
     if (command.hasRequestMetadata()) {
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);

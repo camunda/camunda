@@ -18,17 +18,18 @@ import static org.elasticsearch.snapshots.SnapshotState.SUCCESS;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.webapps.backup.BackupException;
+import io.camunda.webapps.backup.BackupException.BackupRepositoryConnectionException;
+import io.camunda.webapps.backup.BackupException.InvalidRequestException;
+import io.camunda.webapps.backup.BackupException.MissingRepositoryException;
+import io.camunda.webapps.backup.BackupException.ResourceNotFoundException;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.BackupService;
 import io.camunda.webapps.backup.BackupStateDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.Metadata;
-import io.camunda.webapps.backup.exceptions.InvalidRequestException;
-import io.camunda.webapps.backup.exceptions.ResourceNotFoundException;
-import io.camunda.webapps.backup.repository.BackupRepositoryConnectionException;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.backup.repository.GenericBackupException;
 import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -111,13 +112,13 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
-        throw new GenericBackupException(reason);
+        throw new MissingRepositoryException(reason);
       }
       final String reason =
           String.format(
               "Exception occurred when validating existence of repository with name [%s].",
               repositoryName);
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 
@@ -218,7 +219,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
-        throw new BackupRepositoryConnectionException(reason);
+        throw new MissingRepositoryException(reason);
       }
       if (isSnapshotMissingException(e)) {
         // no snapshots exist
@@ -314,11 +315,11 @@ public class ElasticsearchBackupRepository implements BackupRepository {
       if (isRepositoryMissingException(e)) {
         final String reason =
             String.format("No repository with name [%s] could be found.", repositoryName);
-        throw new GenericBackupException(reason);
+        throw new BackupException(reason);
       }
       final String reason =
           String.format("Exception occurred when searching for backup with ID [%s].", backupId);
-      throw new GenericBackupException(reason, e);
+      throw new BackupException(reason, e);
     }
   }
 

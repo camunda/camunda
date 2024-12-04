@@ -60,8 +60,15 @@ public final class AuthorizationAddPermissionProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
-    stateWriter.appendFollowUpEvent(
-        command.getKey(), AuthorizationIntent.PERMISSION_ADDED, command.getValue());
+    permissionsBehavior
+        .permissionAlreadyExists(command.getValue())
+        .ifRightOrLeft(
+            ignored ->
+                stateWriter.appendFollowUpEvent(
+                    command.getKey(), AuthorizationIntent.PERMISSION_ADDED, command.getValue()),
+            rejection ->
+                rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
+
     distributionBehavior.acknowledgeCommand(command);
   }
 

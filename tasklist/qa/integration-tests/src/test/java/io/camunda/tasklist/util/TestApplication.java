@@ -24,7 +24,7 @@ import org.springframework.context.annotation.Profile;
 
 @SpringBootApplication
 @ComponentScan(
-    basePackages = "io.camunda.tasklist",
+    basePackages = {"io.camunda.tasklist", "io.camunda.application.commons"},
     excludeFilters = {
       @ComponentScan.Filter(
           type = FilterType.REGEX,

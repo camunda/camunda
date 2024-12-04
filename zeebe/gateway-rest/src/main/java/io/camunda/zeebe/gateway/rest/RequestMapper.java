@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.rest;
 
-import static io.camunda.zeebe.auth.api.JwtAuthorizationBuilder.USER_TOKEN_CLAIM_PREFIX;
 import static io.camunda.zeebe.gateway.rest.validator.AuthorizationRequestValidator.validateAuthorizationAssignRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClockPinRequest;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
@@ -66,6 +65,7 @@ import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
@@ -89,6 +89,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
+import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -280,6 +281,13 @@ public class RequestMapper {
     return getResult(
         RoleRequestValidator.validateCreateRequest(roleCreateRequest),
         () -> new CreateRoleRequest(roleCreateRequest.getName()));
+  }
+
+  public static Either<ProblemDetail, CreateGroupRequest> toGroupCreateRequest(
+      final GroupCreateRequest groupCreateRequest) {
+    return getResult(
+        GroupRequestValidator.validateCreateRequest(groupCreateRequest),
+        () -> new CreateGroupRequest(groupCreateRequest.getName()));
   }
 
   public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
@@ -481,7 +489,9 @@ public class RequestMapper {
       if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
         jwtAuthenticationToken
             .getTokenAttributes()
-            .forEach((key, value) -> token.withClaim(USER_TOKEN_CLAIM_PREFIX + key, value));
+            .forEach(
+                (key, value) ->
+                    token.withClaim(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value));
       }
     }
 
@@ -792,4 +802,6 @@ public class RequestMapper {
   public record UpdateRoleRequest(long roleKey, String name) {}
 
   public record CreateTenantRequest(String tenantId, String name) {}
+
+  public record CreateGroupRequest(String name) {}
 }

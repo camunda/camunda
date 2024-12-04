@@ -22,8 +22,6 @@ import io.camunda.tasklist.schema.IndexMapping;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.indices.AbstractIndexDescriptor;
 import io.camunda.tasklist.schema.indices.IndexDescriptor;
-import io.camunda.tasklist.schema.templates.AbstractTemplateDescriptor;
-import io.camunda.tasklist.schema.templates.TemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistIndexDescriptor;
 import jakarta.json.Json;
@@ -92,10 +90,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   @Autowired(required = false)
   private List<TasklistIndexDescriptor> commonIndexDescriptors;
 
-  @Autowired private List<TemplateDescriptor> tasklistTemplateDescriptors;
-
-  @Autowired(required = false)
-  private List<IndexTemplateDescriptor> commonTemplateDescriptors;
+  @Autowired private List<IndexTemplateDescriptor> templateDescriptors;
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -203,10 +198,8 @@ public class OpenSearchSchemaManager implements SchemaManager {
   public void updateSchema(final Map<IndexDescriptor, Set<IndexMappingProperty>> newFields) {
     for (final Map.Entry<IndexDescriptor, Set<IndexMappingProperty>> indexNewFields :
         newFields.entrySet()) {
-      if (indexNewFields.getKey() instanceof TemplateDescriptor) {
-        LOGGER.info(
-            "Update template: " + ((TemplateDescriptor) indexNewFields.getKey()).getTemplateName());
-        final TemplateDescriptor templateDescriptor = (TemplateDescriptor) indexNewFields.getKey();
+      if (indexNewFields.getKey() instanceof final IndexTemplateDescriptor templateDescriptor) {
+        LOGGER.info("Update template: " + templateDescriptor.getTemplateName());
         final String json = readTemplateJson(templateDescriptor.getSchemaClasspathFilename());
         final PutIndexTemplateRequest indexTemplateRequest =
             prepareIndexTemplateRequest(templateDescriptor, json);
@@ -259,7 +252,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private PutIndexTemplateRequest prepareIndexTemplateRequest(
-      final TemplateDescriptor templateDescriptor, final String json) {
+      final IndexTemplateDescriptor templateDescriptor, final String json) {
     final var templateSettings = templateSettings(templateDescriptor);
     final var templateBuilder =
         new IndexTemplateMapping.Builder()
@@ -388,65 +381,10 @@ public class OpenSearchSchemaManager implements SchemaManager {
   }
 
   private void createTemplates() {
-    tasklistTemplateDescriptors.forEach(this::createTemplate);
-    // Note: While migrating the entities and index descriptors
-    // to the harmonized webapps-schema module, this intermediate
-    // HACK is required to ensure that the necessary templates are
-    // created so that the integration tests can run.
-    // Once all entities and index descriptors have been moved,
-    // this code snippet will be deleted and adjusted as necessary!
-    Optional.ofNullable(commonTemplateDescriptors)
-        .ifPresent(
-            l ->
-                l.stream()
-                    .map(
-                        t ->
-                            new AbstractTemplateDescriptor() {
-
-                              @Override
-                              public String getSchemaClasspathFilename() {
-                                return t.getMappingsClasspathFilename();
-                              }
-
-                              @Override
-                              protected String getIndexPrefix() {
-                                return tasklistProperties.getOpenSearch().getIndexPrefix();
-                              }
-
-                              @Override
-                              public String getIndexName() {
-                                return t.getIndexName();
-                              }
-
-                              @Override
-                              public String getAlias() {
-                                return t.getAlias();
-                              }
-
-                              @Override
-                              public String getTemplateName() {
-                                return t.getTemplateName();
-                              }
-
-                              @Override
-                              public String getIndexPattern() {
-                                return t.getIndexPattern();
-                              }
-
-                              @Override
-                              public String getVersion() {
-                                return t.getVersion();
-                              }
-
-                              @Override
-                              public String getFullQualifiedName() {
-                                return t.getFullQualifiedName();
-                              }
-                            })
-                    .forEach(this::createTemplate));
+    templateDescriptors.forEach(this::createTemplate);
   }
 
-  private void createTemplate(final TemplateDescriptor templateDescriptor) {
+  private void createTemplate(final IndexTemplateDescriptor templateDescriptor) {
     final IndexTemplateMapping template = getTemplateFrom(templateDescriptor);
 
     putIndexTemplate(
@@ -480,7 +418,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
     }
   }
 
-  private IndexTemplateMapping getTemplateFrom(final TemplateDescriptor templateDescriptor) {
+  private IndexTemplateMapping getTemplateFrom(final IndexTemplateDescriptor templateDescriptor) {
     final String templateFilename = templateDescriptor.getSchemaClasspathFilename();
 
     final InputStream templateConfig =
@@ -493,20 +431,6 @@ public class OpenSearchSchemaManager implements SchemaManager {
         .mappings(IndexTemplateMapping._DESERIALIZER.deserialize(parser, mapper).mappings())
         .aliases(templateDescriptor.getAlias(), new Alias.Builder().build())
         .build();
-  }
-
-  private InputStream readJSONFile(final String filename) {
-    final Map<String, Object> result;
-    try (final InputStream inputStream =
-        OpenSearchSchemaManager.class.getResourceAsStream(filename)) {
-      if (inputStream != null) {
-        return inputStream;
-      } else {
-        throw new TasklistRuntimeException("Failed to find " + filename + " in classpath ");
-      }
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException("Failed to load file " + filename + " from classpath ", e);
-    }
   }
 
   private void createIndex(final CreateIndexRequest createIndexRequest, final String indexName) {
@@ -567,7 +491,7 @@ public class OpenSearchSchemaManager implements SchemaManager {
                     .forEach(this::createIndex));
   }
 
-  private IndexSettings templateSettings(final TemplateDescriptor indexDescriptor) {
+  private IndexSettings templateSettings(final IndexTemplateDescriptor indexDescriptor) {
     final var shards =
         tasklistProperties
             .getOpenSearch()

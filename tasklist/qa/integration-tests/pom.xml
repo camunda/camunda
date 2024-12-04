@@ -15,12 +15,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>webapps-backup</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>webapps-schema</artifactId>
       <scope>test</scope>
     </dependency>
@@ -553,6 +547,8 @@
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
             <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
+            <camunda.database.type>${camunda.tasklist.database}</camunda.database.type>
+            <camunda.database.url>${camunda.database.url:http://localhost:9200}</camunda.database.url>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -566,6 +562,8 @@
           <systemPropertyVariables>
             <spring.profiles.active>test</spring.profiles.active>
             <camunda.tasklist.database>${camunda.tasklist.database}</camunda.tasklist.database>
+            <camunda.database.type>${camunda.tasklist.database}</camunda.database.type>
+            <camunda.database.url>${camunda.database.url:http://localhost:9200}</camunda.database.url>
           </systemPropertyVariables>
         </configuration>
       </plugin>

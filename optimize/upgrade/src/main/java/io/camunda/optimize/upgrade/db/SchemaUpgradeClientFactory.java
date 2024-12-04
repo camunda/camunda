@@ -31,7 +31,7 @@ public final class SchemaUpgradeClientFactory {
 
   private SchemaUpgradeClientFactory() {}
 
-  public static SchemaUpgradeClient<?, ?> createSchemaUpgradeClient(
+  public static SchemaUpgradeClient<?, ?, ?> createSchemaUpgradeClient(
       final UpgradeExecutionDependencies upgradeDependencies) {
     if (upgradeDependencies.databaseType().equals(DatabaseType.ELASTICSEARCH)) {
       final OptimizeElasticsearchClient esClient =

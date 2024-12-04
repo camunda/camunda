@@ -208,9 +208,9 @@ public class MigrateUserTaskTest {
                     Map.entry("followup2", "PT10H")))
             .create();
 
-    // await user task creation
+    // await user task assignment
     final var userTask =
-        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
             .withProcessInstanceKey(processInstanceKey)
             .getFirst()
             .getValue();

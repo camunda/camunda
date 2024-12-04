@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 import io.camunda.exporter.cache.ExporterEntityCache;
 import io.camunda.exporter.cache.process.CachedProcessEntity;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.exporter.utils.ProcessCacheUtil;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
@@ -125,11 +126,25 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         piEntity.setState(ProcessInstanceState.COMPLETED);
       }
     } else if (intent.equals(ELEMENT_ACTIVATING)) {
-      piEntity.setStartDate(timestamp).setState(ProcessInstanceState.ACTIVE);
-      // default tree path that may be updated later by Incident record handler:
-      // PI_<processInstanceKey>
-      piEntity.setTreePath(
-          new TreePath().startTreePath(recordValue.getProcessInstanceKey()).toString());
+
+      final ProcessInstanceRecordValue value = record.getValue();
+      final List<List<Long>> elementInstancePath = value.getElementInstancePath();
+      final List<Integer> callingElementPath = value.getCallingElementPath();
+      final List<Long> processDefinitionPath = value.getProcessDefinitionPath();
+      final Long processInstanceKey = value.getProcessInstanceKey();
+
+      final TreePath treePath =
+          createTreePath(
+              processCache,
+              record.getKey(),
+              processInstanceKey,
+              elementInstancePath,
+              processDefinitionPath,
+              callingElementPath);
+      piEntity
+          .setTreePath(treePath.toString())
+          .setStartDate(timestamp)
+          .setState(ProcessInstanceState.ACTIVE);
     } else {
       piEntity.setState(ProcessInstanceState.ACTIVE);
     }
@@ -148,6 +163,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     final Map<String, Object> updateFields = new HashMap<>();
     if (entity.getStartDate() != null) {
       updateFields.put(ListViewTemplate.START_DATE, entity.getStartDate());
+    }
+    if (entity.getTreePath() != null) {
+      updateFields.put(TREE_PATH, entity.getTreePath());
     }
     if (entity.getEndDate() != null) {
       updateFields.put(ListViewTemplate.END_DATE, entity.getEndDate());
@@ -263,5 +281,52 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
 
   private String getVersionTag(final long processDefinitionJey) {
     return processCache.get(processDefinitionJey).map(CachedProcessEntity::versionTag).orElse(null);
+  }
+
+  public static TreePath createTreePath(
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final long key,
+      final Long processInstanceKey,
+      final List<List<Long>> elementInstancePath,
+      final List<Long> processDefinitionPath,
+      final List<Integer> callingElementPath) {
+    if (elementInstancePath == null || elementInstancePath.isEmpty()) {
+      LOGGER.warn(
+          "No elementInstancePath is provided for process instance key: {}. TreePath will be set to default value (PI key).",
+          processInstanceKey);
+      return new TreePath().startTreePath(processInstanceKey);
+    }
+    // Example of how the tree path is built when current instance is on the third level of calling
+    //
+    // hierarchy:
+    // <pre>
+    // PI_<parentProcessInstanceKey>/FN_<parentCallActivityId>/FNI_<parentCallActivityInstanceKey>/PI_<secondLevelProcessInstanceKey>/FN_<secondLevelCallActivityId>/FNI_<secondLevelCallActivityInstanceKey>/PI_<currentProcessInstanceKey>
+    // </pre>
+    final TreePath treePath = new TreePath();
+    for (int i = 0; i < elementInstancePath.size(); i++) {
+      final List<Long> keysWithinOnePI = elementInstancePath.get(i);
+      treePath.appendProcessInstance(keysWithinOnePI.getFirst());
+      if (keysWithinOnePI.getFirst().equals(processInstanceKey)) {
+        // we reached the leaf of the tree path, when we reached current processInstanceKey
+        break;
+      }
+      final var callActivityId =
+          ProcessCacheUtil.getCallActivityId(
+              processCache, processDefinitionPath.get(i), callingElementPath.get(i));
+      if (callActivityId.isPresent()) {
+        treePath.appendFlowNode(callActivityId.get());
+      } else {
+        final var index = callingElementPath.get(i);
+        LOGGER.warn(
+            "Expected to find process in cache. TreePath won't contain proper callActivityId, will use the lexicographic index instead {}. [processInstanceKey: {}, processDefinitionKey: {}, incidentKey: {}]",
+            processInstanceKey,
+            processDefinitionPath.get(i),
+            key,
+            index);
+        treePath.appendFlowNode(String.valueOf(index));
+      }
+      treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.getLast()));
+    }
+    return treePath;
   }
 }

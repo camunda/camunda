@@ -26,7 +26,6 @@ import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.property.ImportProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.DraftVariableStore;
-import io.camunda.tasklist.store.ListViewStore;
 import io.camunda.tasklist.store.TaskStore;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.webapp.CommonUtils;
@@ -64,7 +63,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class VariableServiceTest {
   @Mock private TaskStore taskStore;
   @Mock private VariableStore variableStore;
-  @Mock private ListViewStore listViewStore;
   @Mock private DraftVariableStore draftVariableStore;
   @Mock private TasklistProperties tasklistProperties;
   @Mock private TaskValidator taskValidator;

@@ -545,4 +545,23 @@ class DecisionQueryTest {
         .isEqualTo(
             "Decision requirements with key %d not found".formatted(decisionRequirementsKey));
   }
+
+  @Test
+  void shouldSearchByFromWithLimit() {
+    // when
+    final var resultAll = zeebeClient.newDecisionRequirementsQuery().send().join();
+
+    final var resultWithLimit =
+        zeebeClient.newDecisionRequirementsQuery().page(p -> p.limit(2)).send().join();
+    assertThat(resultWithLimit.items().size()).isEqualTo(2);
+
+    final var thirdKey = resultAll.items().get(2).getDecisionRequirementsKey();
+
+    final var resultSearchFrom =
+        zeebeClient.newDecisionRequirementsQuery().page(p -> p.limit(2).from(2)).send().join();
+
+    // then
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getDecisionRequirementsKey())
+        .isEqualTo(thirdKey);
+  }
 }

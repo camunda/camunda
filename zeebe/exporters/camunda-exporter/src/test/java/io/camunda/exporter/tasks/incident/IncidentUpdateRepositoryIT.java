@@ -21,11 +21,13 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.IndexSettings;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.schema.SearchEngineClient;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ActiveIncident;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.Document;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.DocumentUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentBulkUpdate;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.IncidentDocument;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.PendingIncidentUpdateBatch;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.ProcessInstanceDocument;
 import io.camunda.webapps.operate.TreePath;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
@@ -68,6 +70,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.testcontainers.OpensearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -86,14 +91,15 @@ abstract sealed class IncidentUpdateRepositoryIT {
   protected final ListViewTemplate listViewTemplate;
   protected final FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   protected final OperationTemplate operationTemplate;
-  private final String indexPrefix = UUID.randomUUID().toString();
   @AutoCloseResource private final ClientAdapter clientAdapter;
   private final SearchEngineClient engineClient;
 
   protected IncidentUpdateRepositoryIT(final String databaseUrl, final boolean isElastic) {
     final var config = new ExporterConfiguration();
+    final var indexPrefix = UUID.randomUUID().toString();
     config.getConnect().setIndexPrefix(indexPrefix);
     config.getConnect().setUrl(databaseUrl);
+    config.getConnect().setType(isElastic ? "elasticsearch" : "opensearch");
 
     clientAdapter = ClientAdapter.of(config);
     engineClient = clientAdapter.getSearchEngineClient();
@@ -114,6 +120,22 @@ abstract sealed class IncidentUpdateRepositoryIT {
             flowNodeInstanceTemplate,
             operationTemplate)
         .forEach(template -> engineClient.createIndexTemplate(template, new IndexSettings(), true));
+  }
+
+  private IncidentEntity newIncident(final long key) {
+    final var incident = new IncidentEntity();
+    final var id = String.valueOf(key);
+
+    incident.setState(IncidentState.PENDING);
+    incident.setId(id);
+    incident.setKey(key);
+    incident.setProcessInstanceKey(key);
+    incident.setFlowNodeInstanceKey(key);
+    incident.setFlowNodeId(id);
+    incident.setPartitionId(PARTITION_ID);
+    incident.setErrorMessage("failure");
+
+    return incident;
   }
 
   protected abstract IncidentUpdateRepository createRepository();
@@ -170,6 +192,65 @@ abstract sealed class IncidentUpdateRepositoryIT {
     }
   }
 
+  static final class OpenSearchIT extends IncidentUpdateRepositoryIT {
+    @Container
+    private static final OpensearchContainer<?> CONTAINER =
+        TestSearchContainers.createDefaultOpensearchContainer();
+
+    @AutoCloseResource
+    private final org.opensearch.client.transport.rest_client.RestClientTransport transport =
+        createTransport();
+
+    private final OpenSearchAsyncClient client = new OpenSearchAsyncClient(transport);
+
+    public OpenSearchIT() {
+      super(CONTAINER.getHttpHostAddress(), false);
+    }
+
+    @Override
+    protected IncidentUpdateRepository createRepository() {
+      return new OpenSearchIncidentUpdateRepository(
+          PARTITION_ID,
+          postImporterQueueTemplate.getAlias(),
+          incidentTemplate.getAlias(),
+          listViewTemplate.getAlias(),
+          flowNodeInstanceTemplate.getAlias(),
+          operationTemplate.getAlias(),
+          client,
+          Runnable::run,
+          LOGGER);
+    }
+
+    @Override
+    protected <T> Collection<T> search(
+        final String index,
+        final String field,
+        final List<String> terms,
+        final Class<T> documentType)
+        throws IOException {
+      final var client = new OpenSearchClient(transport);
+      final var values =
+          terms.stream().map(org.opensearch.client.opensearch._types.FieldValue::of).toList();
+      final var query =
+          org.opensearch.client.opensearch._types.query_dsl.QueryBuilders.terms()
+              .field(field)
+              .terms(v -> v.value(values))
+              .build()
+              .toQuery();
+      return client.search(s -> s.index(index).query(query), documentType).hits().hits().stream()
+          .map(org.opensearch.client.opensearch.core.search.Hit::source)
+          .toList();
+    }
+
+    private org.opensearch.client.transport.rest_client.RestClientTransport createTransport() {
+      final var restClient =
+          org.opensearch.client.RestClient.builder(HttpHost.create(CONTAINER.getHttpHostAddress()))
+              .build();
+      return new org.opensearch.client.transport.rest_client.RestClientTransport(
+          restClient, new org.opensearch.client.json.jackson.JacksonJsonpMapper());
+    }
+  }
+
   @Nested
   final class GetIncidentDocumentsTest {
     @Test
@@ -217,22 +298,6 @@ abstract sealed class IncidentUpdateRepositoryIT {
       final var batchRequest = clientAdapter.createBatchRequest();
       batchRequest.add(incidentTemplate.getFullQualifiedName(), incident);
       batchRequest.executeWithRefresh();
-    }
-
-    private IncidentEntity newIncident(final long key) {
-      final var incident = new IncidentEntity();
-      final var id = String.valueOf(key);
-
-      incident.setState(IncidentState.PENDING);
-      incident.setId(id);
-      incident.setKey(key);
-      incident.setProcessInstanceKey(key);
-      incident.setFlowNodeInstanceKey(key);
-      incident.setFlowNodeId(id);
-      incident.setPartitionId(PARTITION_ID);
-      incident.setErrorMessage("failure");
-
-      return incident;
     }
   }
 
@@ -573,7 +638,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
       assertThat(terms)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.list(String.class))
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               "PI_1",
               "PI_1/FN_call",
               "PI_1/FN_call/FNI_2",
@@ -699,7 +764,7 @@ abstract sealed class IncidentUpdateRepositoryIT {
       assertThat(flowNodes)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
-          .containsExactly(
+          .containsExactlyInAnyOrder(
               new Document("1", listViewTemplate.getFullQualifiedName()),
               new Document("2", listViewTemplate.getFullQualifiedName()));
     }
@@ -775,15 +840,15 @@ abstract sealed class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var flowNodes = repository.getFlowNodesInListView(List.of("1", "2"));
+      final var flowNodes = repository.getFlowNodeInstances(List.of("1", "2"));
 
       // then
       assertThat(flowNodes)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
-          .containsExactly(
-              new Document("1", listViewTemplate.getFullQualifiedName()),
-              new Document("2", listViewTemplate.getFullQualifiedName()));
+          .containsExactlyInAnyOrder(
+              new Document("1", flowNodeInstanceTemplate.getFullQualifiedName()),
+              new Document("2", flowNodeInstanceTemplate.getFullQualifiedName()));
     }
 
     @Test
@@ -798,13 +863,188 @@ abstract sealed class IncidentUpdateRepositoryIT {
       batchRequest.executeWithRefresh();
 
       // when
-      final var flowNodes = repository.getFlowNodesInListView(List.of("1"));
+      final var flowNodes = repository.getFlowNodeInstances(List.of("1"));
 
       // then
       assertThat(flowNodes)
           .succeedsWithin(REQUEST_TIMEOUT)
           .asInstanceOf(InstanceOfAssertFactories.collection(Document.class))
-          .containsExactly(new Document("1", listViewTemplate.getFullQualifiedName()));
+          .containsExactly(new Document("1", flowNodeInstanceTemplate.getFullQualifiedName()));
+    }
+  }
+
+  @Nested
+  final class GetActiveIncidentsTest {
+    @Test
+    void shouldGetActiveIncidentsWithSharedPath() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "7",
+          newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "8",
+          newIncident(8).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2/PI_3/FNI_4"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "9",
+          newIncident(9).setState(IncidentState.ACTIVE).setTreePath("PI_5/FNI_6"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var incidents = repository.getActiveIncidentsByTreePaths(List.of("PI_1"));
+
+      // then
+      assertThat(incidents)
+          .succeedsWithin(Duration.ofSeconds(10))
+          .asInstanceOf(InstanceOfAssertFactories.collection(ActiveIncident.class))
+          .containsExactlyInAnyOrder(
+              new ActiveIncident("8", "PI_1/FNI_2/PI_3/FNI_4"),
+              new ActiveIncident("7", "PI_1/FNI_2"));
+    }
+
+    @Test
+    void shouldNotReturnInactiveIncidents() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "7",
+          newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "8",
+          newIncident(8).setState(IncidentState.PENDING).setTreePath("PI_1/FNI_3"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "9",
+          newIncident(9).setState(IncidentState.RESOLVED).setTreePath("PI_1/FNI_4"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var incidents = repository.getActiveIncidentsByTreePaths(List.of("PI_1"));
+
+      // then
+      assertThat(incidents)
+          .succeedsWithin(Duration.ofSeconds(10))
+          .asInstanceOf(InstanceOfAssertFactories.collection(ActiveIncident.class))
+          .containsExactlyInAnyOrder(new ActiveIncident("7", "PI_1/FNI_2"));
+    }
+
+    @Test
+    void shouldGetActiveIncidents() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "7",
+          newIncident(7).setState(IncidentState.ACTIVE).setTreePath("PI_1/FNI_2/PI_7"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "8",
+          newIncident(8).setState(IncidentState.ACTIVE).setTreePath("PI_3/FNI_4"));
+      batchRequest.addWithId(
+          incidentTemplate.getFullQualifiedName(),
+          "9",
+          newIncident(9).setState(IncidentState.ACTIVE).setTreePath("PI_5/FNI_6"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var incidents =
+          repository.getActiveIncidentsByTreePaths(List.of("PI_1/FNI_2", "PI_3/FNI_4"));
+
+      // then
+      assertThat(incidents)
+          .succeedsWithin(Duration.ofSeconds(10))
+          .asInstanceOf(InstanceOfAssertFactories.collection(ActiveIncident.class))
+          .containsExactlyInAnyOrder(
+              new ActiveIncident("8", "PI_3/FNI_4"), new ActiveIncident("7", "PI_1/FNI_2"));
+    }
+  }
+
+  @Nested
+  final class GetProcessInstancesIT {
+    @Test
+    void shouldGetProcessInstances() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "1",
+          new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "2",
+          new ProcessInstanceForListViewEntity().setKey(2).setTreePath("PI_2"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var processInstances = repository.getProcessInstances(List.of("1", "2"));
+
+      // then
+      assertThat(processInstances)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(ProcessInstanceDocument.class))
+          .containsExactlyInAnyOrder(
+              new ProcessInstanceDocument("1", listViewTemplate.getFullQualifiedName(), 1, "PI_1"),
+              new ProcessInstanceDocument("2", listViewTemplate.getFullQualifiedName(), 2, "PI_2"));
+    }
+
+    @Test
+    void shouldNotGetProcessInstancesWithOtherKeys() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "1",
+          new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "2",
+          new ProcessInstanceForListViewEntity().setKey(2).setTreePath("PI_2"));
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var processInstances = repository.getProcessInstances(List.of("1"));
+
+      // then
+      assertThat(processInstances)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(ProcessInstanceDocument.class))
+          .containsExactly(
+              new ProcessInstanceDocument("1", listViewTemplate.getFullQualifiedName(), 1, "PI_1"));
+    }
+
+    @Test
+    void shouldNotGetWrongJoinRelation() throws PersistenceException {
+      // given
+      final var repository = createRepository();
+      final var batchRequest = clientAdapter.createBatchRequest();
+      final var flowNode = new FlowNodeInstanceForListViewEntity().setKey(2).setId("2");
+      flowNode.getJoinRelation().setParent(1L);
+      batchRequest.addWithId(
+          listViewTemplate.getFullQualifiedName(),
+          "1",
+          new ProcessInstanceForListViewEntity().setKey(1).setTreePath("PI_1"));
+      batchRequest.addWithRouting(listViewTemplate.getFullQualifiedName(), flowNode, "1");
+      batchRequest.executeWithRefresh();
+
+      // when
+      final var processInstances = repository.getProcessInstances(List.of("1", "2"));
+
+      // then
+      assertThat(processInstances)
+          .succeedsWithin(REQUEST_TIMEOUT)
+          .asInstanceOf(InstanceOfAssertFactories.collection(ProcessInstanceDocument.class))
+          .containsExactly(
+              new ProcessInstanceDocument("1", listViewTemplate.getFullQualifiedName(), 1, "PI_1"));
     }
   }
 }

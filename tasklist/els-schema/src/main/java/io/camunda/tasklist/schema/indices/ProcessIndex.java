@@ -7,11 +7,10 @@
  */
 package io.camunda.tasklist.schema.indices;
 
-import io.camunda.tasklist.schema.backup.Prio2Backup;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ProcessIndex extends AbstractIndexDescriptor implements Prio2Backup {
+public class ProcessIndex extends AbstractIndexDescriptor {
 
   public static final String INDEX_NAME = "process";
   public static final String INDEX_VERSION = "8.4.0";

@@ -74,7 +74,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -q -f -I http://localhost:8090/api/readyz | grep -q '200 OK'",
+          "curl -q -f -I http://localhost:8090/api/readyz | grep -q 'HTTP/1.1 200'",
         ]
       interval: 30s
       timeout: 5s

@@ -9,16 +9,10 @@ package io.camunda.tasklist.zeebeimport.v860.processors.os;
 
 import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.entities.listview.ListViewJoinRelation;
-import io.camunda.tasklist.entities.listview.ProcessInstanceListViewEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.templates.TasklistListViewTemplate;
 import io.camunda.tasklist.util.ConversionUtils;
-import io.camunda.tasklist.util.OpenSearchUtil;
-import io.camunda.tasklist.zeebeimport.util.EnvironmentUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -51,7 +45,6 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
 
   private static final List<BpmnElementType> VARIABLE_SCOPE_TYPES =
       Arrays.asList(
-          BpmnElementType.PROCESS,
           BpmnElementType.SUB_PROCESS,
           BpmnElementType.EVENT_SUB_PROCESS,
           BpmnElementType.SERVICE_TASK,
@@ -62,17 +55,9 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     FLOW_NODE_STATES.add(ELEMENT_ACTIVATING.name());
   }
 
-  @Autowired private EnvironmentUtil environment;
-
-  @Autowired
-  @Qualifier("tasklistObjectMapper")
-  private ObjectMapper objectMapper;
-
   @Autowired
   @Qualifier("tasklistFlowNodeInstanceTemplate")
   private FlowNodeInstanceTemplate flowNodeInstanceIndex;
-
-  @Autowired private TasklistListViewTemplate tasklistListViewTemplate;
 
   public void processProcessInstanceRecord(
       final Record record, final List<BulkOperation> operations) throws PersistenceException {
@@ -81,14 +66,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
         (ProcessInstanceRecordValueImpl) record.getValue();
     if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
-      if (isNotProcessType(recordValue) && environment.isTestProfileEnabled()) {
-        operations.add(getFlowNodeInstanceQuery(flowNodeInstance));
-      }
-      final BulkOperation persistFlowNodeDataToListView =
-          persistFlowNodeDataToListView(flowNodeInstance);
-      if (persistFlowNodeDataToListView != null) {
-        operations.add(persistFlowNodeDataToListView(flowNodeInstance));
-      }
+      operations.add(getFlowNodeInstanceQuery(flowNodeInstance));
     }
   }
 
@@ -134,44 +112,5 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
       return false;
     }
     return VARIABLE_SCOPE_TYPES.contains(bpmnElementType);
-  }
-
-  private boolean isNotProcessType(final ProcessInstanceRecordValueImpl recordValue) {
-    final BpmnElementType bpmnElementType = recordValue.getBpmnElementType();
-    if (bpmnElementType == null) {
-      return false;
-    }
-    return !BpmnElementType.PROCESS.equals(bpmnElementType);
-  }
-
-  private BulkOperation persistFlowNodeDataToListView(
-      final FlowNodeInstanceEntity flowNodeInstance) {
-    final ProcessInstanceListViewEntity processInstanceListViewEntity =
-        new ProcessInstanceListViewEntity();
-
-    if (flowNodeInstance.getType().equals(FlowNodeType.PROCESS)) {
-      processInstanceListViewEntity.setJoin(new ListViewJoinRelation());
-      processInstanceListViewEntity.setId(flowNodeInstance.getId());
-      processInstanceListViewEntity.setPartitionId(flowNodeInstance.getPartitionId());
-      processInstanceListViewEntity.setTenantId(flowNodeInstance.getTenantId());
-      processInstanceListViewEntity.getJoin().setName("process");
-      return getUpdateRequest(processInstanceListViewEntity);
-    } else {
-      return null;
-    }
-  }
-
-  private BulkOperation getUpdateRequest(
-      final ProcessInstanceListViewEntity processInstanceListViewEntity) {
-
-    return new BulkOperation.Builder()
-        .update(
-            up ->
-                up.index(tasklistListViewTemplate.getFullQualifiedName())
-                    .id(processInstanceListViewEntity.getId())
-                    .document(CommonUtils.getJsonObjectFromEntity(processInstanceListViewEntity))
-                    .docAsUpsert(true)
-                    .retryOnConflict(OpenSearchUtil.UPDATE_RETRY_COUNT))
-        .build();
   }
 }
