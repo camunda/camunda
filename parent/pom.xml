@@ -188,14 +188,6 @@
     <version.jna>5.15.0</version.jna>
     <version.jopt-simple>5.0.4</version.jopt-simple>
 
-    <!-- GraphQL dependencies -->
-    <version.graphql-kickstart>15.2.0</version.graphql-kickstart>
-    <version.graphql-kickstart-spring-boot>15.1.0</version.graphql-kickstart-spring-boot>
-    <version.graphql-java>21.5</version.graphql-java>
-    <version.graphql-java.scalars>21.0</version.graphql-java.scalars>
-    <version.graphql-java.dataloader>3.3.0</version.graphql-java.dataloader>
-    <version.graphql-java-annotations>21.5</version.graphql-java-annotations>
-
     <version.javassist>3.30.2-GA</version.javassist>
 
     <version.mybatis-spring>3.0.4</version.mybatis-spring>
@@ -2158,88 +2150,11 @@
         <artifactId>jopt-simple</artifactId>
         <version>${version.jopt-simple}</version>
       </dependency>
-
-      <!-- between graphql-spring-boot and thymeleaf -->
+      
       <dependency>
         <groupId>org.javassist</groupId>
         <artifactId>javassist</artifactId>
         <version>${version.javassist}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-starter</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-        <exclusions>
-          <exclusion>
-            <groupId>com.graphql-java-kickstart</groupId>
-            <artifactId>graphql-java-tools</artifactId>
-          </exclusion>
-          <exclusion>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-webflux</artifactId>
-          </exclusion>
-        </exclusions>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-kickstart</artifactId>
-        <version>${version.graphql-kickstart}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-java-servlet</artifactId>
-        <version>${version.graphql-kickstart}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-starter-test</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-test</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java-kickstart</groupId>
-        <artifactId>graphql-spring-boot-test-autoconfigure</artifactId>
-        <version>${version.graphql-kickstart-spring-boot}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>graphql-java</artifactId>
-        <version>${version.graphql-java}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.github.graphql-java</groupId>
-        <artifactId>graphql-java-annotations</artifactId>
-        <version>${version.graphql-java-annotations}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>graphql-java-extended-scalars</artifactId>
-        <version>${version.graphql-java.scalars}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>com.graphql-java</groupId>
-        <artifactId>java-dataloader</artifactId>
-        <version>${version.graphql-java.dataloader}</version>
       </dependency>
 
       <dependency>
