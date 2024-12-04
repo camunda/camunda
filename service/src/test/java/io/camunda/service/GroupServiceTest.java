@@ -120,7 +120,7 @@ public class GroupServiceTest {
   }
 
   @Test
-  public void shoulReturnListOfGroupForGetByUserKey() {
+  public void shouldReturnListOfGroupsForGetByUserKey() {
     // given
     final var group1 = mock(GroupEntity.class);
     final var group2 = mock(GroupEntity.class);
