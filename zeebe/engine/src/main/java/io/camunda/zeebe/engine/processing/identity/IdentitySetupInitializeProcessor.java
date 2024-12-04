@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
+import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.engine.state.user.PersistedUser;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -26,6 +27,7 @@ import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -39,6 +41,7 @@ public final class IdentitySetupInitializeProcessor
     implements DistributedTypedRecordProcessor<IdentitySetupRecord> {
   private final RoleState roleState;
   private final UserState userState;
+  private final TenantState tenantState;
   private final StateWriter stateWriter;
   private final KeyGenerator keyGenerator;
   private final CommandDistributionBehavior commandDistributionBehavior;
@@ -50,6 +53,7 @@ public final class IdentitySetupInitializeProcessor
       final CommandDistributionBehavior commandDistributionBehavior) {
     roleState = processingState.getRoleState();
     userState = processingState.getUserState();
+    tenantState = processingState.getTenantState();
     stateWriter = writers.state();
     this.keyGenerator = keyGenerator;
     this.commandDistributionBehavior = commandDistributionBehavior;
@@ -75,9 +79,11 @@ public final class IdentitySetupInitializeProcessor
       final long commandKey, final TypedRecord<IdentitySetupRecord> command) {
     final var roleRecord = command.getValue().getDefaultRole();
     final var userRecord = command.getValue().getDefaultUser();
+    final var tenantRecord = command.getValue().getDefaultTenant();
 
     final var existingRoleKey = roleState.getRoleKeyByName(roleRecord.getName());
     final var existingUser = userState.getUser(userRecord.getUsername());
+    final var existingTenantKey = tenantState.getTenantKeyById(tenantRecord.getTenantId());
 
     if (existingRoleKey.isEmpty()) {
       stateWriter.appendFollowUpEvent(commandKey, RoleIntent.CREATED, roleRecord);
@@ -85,6 +91,9 @@ public final class IdentitySetupInitializeProcessor
     }
     if (existingUser.isEmpty()) {
       stateWriter.appendFollowUpEvent(commandKey, UserIntent.CREATED, userRecord);
+    }
+    if (existingTenantKey.isEmpty()) {
+      stateWriter.appendFollowUpEvent(commandKey, TenantIntent.CREATED, tenantRecord);
     }
 
     assignUserToRole(
