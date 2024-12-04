@@ -11,13 +11,14 @@ import static java.util.Collections.unmodifiableList;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public record Authentication(
     Long authenticatedUserKey,
     List<Long> authenticatedGroupKeys,
     List<String> authenticatedTenantIds,
-    String token) {
+    Map<String, Object> claims) {
 
   public static Authentication of(final Function<Builder, Builder> builderFunction) {
     return builderFunction.apply(new Builder()).build();
@@ -28,7 +29,7 @@ public record Authentication(
     private Long userKey;
     private final List<Long> groupKeys = new ArrayList<>();
     private final List<String> tenants = new ArrayList<>();
-    private String token;
+    private Map<String, Object> claims;
 
     public Builder user(final Long value) {
       userKey = value;
@@ -57,14 +58,14 @@ public record Authentication(
       return this;
     }
 
-    public Builder token(final String value) {
-      token = value;
+    public Builder claims(final Map<String, Object> value) {
+      claims = value;
       return this;
     }
 
     public Authentication build() {
       return new Authentication(
-          userKey, unmodifiableList(groupKeys), unmodifiableList(tenants), token);
+          userKey, unmodifiableList(groupKeys), unmodifiableList(tenants), claims);
     }
   }
 }

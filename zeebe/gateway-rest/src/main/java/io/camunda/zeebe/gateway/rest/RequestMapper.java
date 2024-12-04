@@ -54,7 +54,6 @@ import io.camunda.service.ResourceServices.DeployResourcesRequest;
 import io.camunda.service.ResourceServices.ResourceDeletionRequest;
 import io.camunda.service.TenantServices.TenantDTO;
 import io.camunda.service.UserServices.UserDTO;
-import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationPatchRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
@@ -469,12 +468,8 @@ public class RequestMapper {
     Long authenticatedUserKey = null;
     final List<String> authorizedTenants = TenantAttributeHolder.tenantIds();
 
-    final var token =
-        Authorization.jwtEncoder()
-            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-            .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
+    final Map<String, Object> claims = new HashMap<>();
+    claims.put(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
 
     final var requestAuthentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -483,20 +478,19 @@ public class RequestMapper {
       if (requestAuthentication.getPrincipal()
           instanceof final CamundaUser authenticatedPrincipal) {
         authenticatedUserKey = authenticatedPrincipal.getUserKey();
-        token.withClaim(Authorization.AUTHORIZED_USER_KEY, authenticatedUserKey);
+        claims.put(Authorization.AUTHORIZED_USER_KEY, authenticatedUserKey);
       }
 
       if (requestAuthentication instanceof final JwtAuthenticationToken jwtAuthenticationToken) {
         jwtAuthenticationToken
             .getTokenAttributes()
             .forEach(
-                (key, value) ->
-                    token.withClaim(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value));
+                (key, value) -> claims.put(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value));
       }
     }
 
     return new Builder()
-        .token(token.build())
+        .claims(claims)
         .user(authenticatedUserKey)
         .tenants(authorizedTenants)
         .build();

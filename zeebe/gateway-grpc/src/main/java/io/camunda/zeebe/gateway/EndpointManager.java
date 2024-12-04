@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.utils.net.Address;
-import io.camunda.zeebe.auth.api.JwtAuthorizationBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -76,6 +75,7 @@ import io.grpc.Context;
 import io.grpc.stub.ServerCallStreamObserver;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -493,30 +493,24 @@ public final class EndpointManager {
 
     final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
 
+    final Map<String, Object> claims = new HashMap<>();
+
     final List<String> authorizedTenants =
         multiTenancy.isEnabled()
             ? Context.current().call(InterceptorUtil.getAuthorizedTenantsKey()::get)
             : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
-    final var authorizationToken =
-        Authorization.jwtEncoder()
-            .withIssuer(JwtAuthorizationBuilder.DEFAULT_ISSUER)
-            .withAudience(JwtAuthorizationBuilder.DEFAULT_AUDIENCE)
-            .withSubject(JwtAuthorizationBuilder.DEFAULT_SUBJECT)
-            .withClaim(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
+    claims.put(Authorization.AUTHORIZED_TENANTS, authorizedTenants);
 
-    // retrieve the user claims from the context and add them to the token
+    // retrieve the user claims from the context and add them to the map
     final Map<String, Object> userClaims =
         Context.current().call(AuthenticationInterceptor.USER_CLAIMS::get);
     if (userClaims != null) {
       userClaims.forEach(
-          (key, value) -> {
-            authorizationToken.withClaim(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value);
-          });
+          (key, value) -> claims.put(Authorization.USER_TOKEN_CLAIM_PREFIX + key, value));
     }
 
-    brokerRequest.setAuthorization(authorizationToken.encode());
-
+    brokerRequest.setAuthorization(claims);
     return brokerRequest;
   }
 

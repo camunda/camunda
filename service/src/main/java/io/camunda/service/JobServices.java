@@ -54,7 +54,7 @@ public final class JobServices<T> extends ApiServices<JobServices<T>> {
             .setTimeout(request.timeout())
             .setWorker(request.worker())
             .setVariables(request.fetchVariable());
-    brokerRequest.setAuthorization(authentication.token());
+    brokerRequest.setAuthorization(authentication.claims());
     activateJobsHandler.activateJobs(
         brokerRequest, responseObserver, cancelationHandlerConsumer, request.requestTimeout());
   }
