@@ -336,7 +336,8 @@ public class ElasticsearchEngineClientIT {
       elsClient.indices().refresh();
 
       // then
-      final var importersCompleted = elsEngineClient.importersCompleted(partitionId, indexPrefix);
+      final var importersCompleted =
+          elsEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
       assertThat(importersCompleted).isEqualTo(true);
     }
 
@@ -361,13 +362,15 @@ public class ElasticsearchEngineClientIT {
 
       elsClient.indices().refresh();
 
-      final var importersCompleted = elsEngineClient.importersCompleted(partitionId, indexPrefix);
+      final var importersCompleted =
+          elsEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
       assertThat(importersCompleted).isEqualTo(false);
     }
 
     @Test
     void shouldReturnImportersCompletedForFreshInstall() {
-      final var importersCompleted = elsEngineClient.importersCompleted(partitionId, indexPrefix);
+      final var importersCompleted =
+          elsEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
       assertThat(importersCompleted).isEqualTo(true);
     }
 

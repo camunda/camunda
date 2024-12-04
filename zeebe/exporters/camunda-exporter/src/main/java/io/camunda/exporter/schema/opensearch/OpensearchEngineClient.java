@@ -193,8 +193,10 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   @Override
-  public boolean importersCompleted(final int partitionId, final String indexPrefix) {
-    final var allImportPositionDocuments = allImportPositionDocuments(partitionId, indexPrefix);
+  public boolean importersCompleted(
+      final int partitionId, final List<IndexDescriptor> importPositionIndices) {
+    final var allImportPositionDocuments =
+        allImportPositionDocuments(partitionId, importPositionIndices);
     try {
       // brand new install no need to wait for importers to complete
 
@@ -218,9 +220,11 @@ public class OpensearchEngineClient implements SearchEngineClient {
   }
 
   private SearchRequest allImportPositionDocuments(
-      final int partitionId, final String indexPrefix) {
+      final int partitionId, final List<IndexDescriptor> importPositionIndices) {
+    final var importPositionIndicesNames =
+        importPositionIndices.stream().map(IndexDescriptor::getFullQualifiedName).toList();
     return new SearchRequest.Builder()
-        .index(importPositionIndexName(indexPrefix))
+        .index(importPositionIndicesNames)
         .size(100)
         .query(
             q ->

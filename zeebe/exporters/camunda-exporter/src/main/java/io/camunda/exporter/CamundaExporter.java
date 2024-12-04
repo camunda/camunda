@@ -37,6 +37,8 @@ import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.store.ExporterBatchWriter;
 import io.camunda.exporter.tasks.BackgroundTaskManager;
 import io.camunda.exporter.tasks.BackgroundTaskManagerFactory;
+import io.camunda.webapps.schema.descriptors.operate.index.ImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -256,8 +258,14 @@ public class CamundaExporter implements Exporter {
       scheduleImportersCompletedCheck();
     }
     try {
+      final var importPositionIndices =
+          provider.getIndexDescriptors().stream()
+              .filter(
+                  d -> d instanceof ImportPositionIndex || d instanceof TasklistImportPositionIndex)
+              .toList();
+
       importersCompleted =
-          searchEngineClient.importersCompleted(partitionId, configuration.getIndex().getPrefix());
+          searchEngineClient.importersCompleted(partitionId, importPositionIndices);
     } catch (final Exception e) {
       LOG.warn("Unexpected exception occurred checking importers completed, will retry later.", e);
     }

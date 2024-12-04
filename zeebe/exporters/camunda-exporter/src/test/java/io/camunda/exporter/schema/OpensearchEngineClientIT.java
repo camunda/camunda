@@ -339,7 +339,7 @@ public class OpensearchEngineClientIT {
 
       // then
       final var importersCompleted =
-          opensearchEngineClient.importersCompleted(partitionId, indexPrefix);
+          opensearchEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
       assertThat(importersCompleted).isEqualTo(true);
     }
 
@@ -365,14 +365,14 @@ public class OpensearchEngineClientIT {
       openSearchClient.indices().refresh();
 
       final var importersCompleted =
-          opensearchEngineClient.importersCompleted(partitionId, indexPrefix);
+          opensearchEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
       assertThat(importersCompleted).isEqualTo(false);
     }
 
     @Test
     void shouldReturnImportersCompletedForFreshInstall() {
       final var importersCompleted =
-          opensearchEngineClient.importersCompleted(partitionId, indexPrefix);
+          opensearchEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
       assertThat(importersCompleted).isEqualTo(true);
     }
 
