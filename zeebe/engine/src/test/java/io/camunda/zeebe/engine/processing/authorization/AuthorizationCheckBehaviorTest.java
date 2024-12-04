@@ -247,6 +247,25 @@ public class AuthorizationCheckBehaviorTest {
     assertThat(authorized).isFalse();
   }
 
+  @Test
+  public void shouldGetAuthorizedTenantIds() {
+    // given
+    final var userKey = createUser();
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(userKey, resourceType, permissionType, resourceId);
+    final var tenantId1 = createAndAssignTenant(userKey);
+    final var tenantId2 = createAndAssignTenant(userKey);
+    final var command = mockCommand(userKey);
+
+    // when
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+
+    // then
+    assertThat(authorizedTenantIds).containsExactlyInAnyOrder(tenantId1, tenantId2);
+  }
+
   private long createUser() {
     return engine
         .user()
