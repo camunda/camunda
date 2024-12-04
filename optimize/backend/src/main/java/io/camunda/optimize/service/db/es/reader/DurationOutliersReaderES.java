@@ -831,12 +831,12 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
 
   private Map<String, Map<String, Long>> createVariableTermOccurrencesMap(
       final NestedAggregate allVariableAggregations,
-      final Map<String, String> sanitisedNameToVarName) {
+      final Map<String, String> sanitisedVarsToVarNames) {
     final Map<String, Map<String, Long>> outlierVariableTermOccurrences = new HashMap<>();
     allVariableAggregations
         .aggregations()
         .forEach(
-            (variableName, aggregation) -> {
+            (aggName, aggregation) -> {
               final FilterAggregate variableFilterAggregation = aggregation.filter();
               final StringTermsAggregate variableValueTerms =
                   variableFilterAggregation.aggregations().get(AGG_VARIABLE_VALUE_TERMS).sterms();
@@ -853,7 +853,11 @@ public class DurationOutliersReaderES implements DurationOutliersReader {
                                 AbstractMap.SimpleEntry::getKey,
                                 AbstractMap.SimpleEntry::getValue));
 
-                outlierVariableTermOccurrences.put(variableName, termOccurrences);
+                // We resolve this back to its original name in the case that it was sanitised
+                // during query time
+                outlierVariableTermOccurrences.put(
+                    Optional.ofNullable(sanitisedVarsToVarNames.get(aggName)).orElse(aggName),
+                    termOccurrences);
               }
             });
     return outlierVariableTermOccurrences;
