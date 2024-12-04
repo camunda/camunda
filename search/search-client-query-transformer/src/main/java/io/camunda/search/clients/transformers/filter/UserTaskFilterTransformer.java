@@ -36,6 +36,7 @@ import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.UserTaskFilter;
 import io.camunda.search.filter.VariableValueFilter;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -89,8 +90,10 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
       // 3. Ensure there is no overriding taskVariable.
       final var processVariableCondition =
           and(
-              hasParentQuery("process", processVariableQuery),
-              not(hasChildQuery("taskVariable", taskVarNameQuery)));
+              hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), processVariableQuery),
+              not(
+                  hasChildQuery(
+                      TaskJoinRelationshipType.LOCAL_VARIABLE.getType(), taskVarNameQuery)));
 
       // Combine taskVariable, processVariable, and subprocessVariable queries with OR logic
       queries.add(or(taskVariableQuery, processVariableCondition));
@@ -159,7 +162,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
       final var queries =
           variableFilters.stream()
               .map(transformer::apply)
-              .map((q) -> hasChildQuery("processVariable", q))
+              .map((q) -> hasChildQuery(TaskJoinRelationshipType.PROCESS_VARIABLE.getType(), q))
               .collect(Collectors.toList());
       return or(queries);
     }
@@ -173,7 +176,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
       final var queries =
           variableFilters.stream()
               .map(transformer::apply)
-              .map((q) -> hasChildQuery("taskVariable", q))
+              .map((q) -> hasChildQuery(TaskJoinRelationshipType.LOCAL_VARIABLE.getType(), q))
               .collect(Collectors.toList());
       return or(queries);
     }
