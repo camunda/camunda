@@ -41,12 +41,12 @@ public class GroupController {
   }
 
   private CompletableFuture<ResponseEntity<Object>> createGroup(
-      final CreateGroupRequest createRoleRequest) {
+      final CreateGroupRequest createGroupRequest) {
     return RequestMapper.executeServiceMethod(
         () ->
             groupServices
                 .withAuthentication(RequestMapper.getAuthentication())
-                .createGroup(createRoleRequest.name()),
+                .createGroup(createGroupRequest.name()),
         ResponseMapper::toGroupCreateResponse);
   }
 }

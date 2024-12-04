@@ -14,7 +14,7 @@ import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
 import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
-public class GroupRequestValidator {
+public final class GroupRequestValidator {
 
   private GroupRequestValidator() {}
 
