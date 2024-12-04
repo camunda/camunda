@@ -54,7 +54,7 @@ public class UpgradeProcedureTest {
   private static final String FROM_VERSION = PreviousVersion.PREVIOUS_VERSION;
   private static MockedStatic<IndexLookupUtil> indexLookupUtil;
   @Spy private final CreateIndexStep createIndexStep = new CreateIndexStep(USER_TEST_INDEX);
-  @Mock private SchemaUpgradeClient<?, ?> schemaUpgradeClient;
+  @Mock private SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient;
   @Mock private UpgradeValidationService validationService;
   @Mock private UpgradeStepLogService upgradeStepLogService;
 

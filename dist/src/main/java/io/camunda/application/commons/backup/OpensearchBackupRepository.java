@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.operate.webapp.opensearch.backup;
+package io.camunda.application.commons.backup;
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
@@ -13,10 +13,15 @@ import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
+/*
+ * Note that the condition used refers to operate OpensearchCondition
+ */
 @Conditional(OpensearchCondition.class)
-@Component
+@Configuration
+@Profile("operate")
 public class OpensearchBackupRepository
     extends io.camunda.webapps.backup.repository.opensearch.OpensearchBackupRepository {
 

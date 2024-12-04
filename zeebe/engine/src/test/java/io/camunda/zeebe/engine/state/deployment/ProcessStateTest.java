@@ -9,10 +9,17 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProcessState;
+import io.camunda.zeebe.engine.state.immutable.ProcessState.PersistedProcessVisitor;
+import io.camunda.zeebe.engine.state.immutable.ProcessState.ProcessIdentifier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
@@ -24,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.function.LongConsumer;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -1039,6 +1047,51 @@ public final class ProcessStateTest {
 
     assertThat(processState.getLatestProcessVersion(processId, TENANT_ID)).isEqualTo(2);
     assertThat(processState.getNextProcessVersion(processId, TENANT_ID)).isEqualTo(3);
+  }
+
+  @Test
+  public void shouldIterateThroughAllProcesses() {
+    // given
+    final var process1 = creatingProcessRecord(processingState, "process1", 1);
+    final var process2 = creatingProcessRecord(processingState, "process2", 1);
+    final var process3 = creatingProcessRecord(processingState, "process3", 1);
+    processState.putProcess(process1.getKey(), process1);
+    processState.putProcess(process2.getKey(), process2);
+    processState.putProcess(process3.getKey(), process3);
+    final var visitor = mock(LongConsumer.class);
+
+    // when
+    processState.forEachProcess(
+        null,
+        (process) -> {
+          visitor.accept(process.getKey());
+          return true;
+        });
+
+    // then
+    verify(visitor).accept(process1.getKey());
+    verify(visitor).accept(process2.getKey());
+    verify(visitor).accept(process3.getKey());
+  }
+
+  @Test
+  public void shouldSkipBeforeIteratingThroughProcesses() {
+    // given
+    final var process1 = creatingProcessRecord(processingState, "process1", 1);
+    final var process2 = creatingProcessRecord(processingState, "process2", 1);
+    final var process3 = creatingProcessRecord(processingState, "process3", 1);
+    processState.putProcess(process1.getKey(), process1);
+    processState.putProcess(process2.getKey(), process2);
+    processState.putProcess(process3.getKey(), process3);
+    final var visitor = mock(PersistedProcessVisitor.class);
+    when(visitor.visit(any())).thenReturn(true);
+
+    // when
+    processState.forEachProcess(
+        new ProcessIdentifier(process1.getTenantId(), process1.getProcessDefinitionKey()), visitor);
+
+    // then
+    verify(visitor, times(2)).visit(any());
   }
 
   public static DeploymentRecord creatingDeploymentRecord(

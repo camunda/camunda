@@ -19,11 +19,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.util.PayloadUtil;
 import io.camunda.operate.util.ZeebeTestUtil;
-import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
@@ -37,14 +34,10 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebe.PartitionHolder;
-import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionInstanceState;
-import io.camunda.webapps.schema.entities.operate.dmn.DecisionType;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -66,69 +59,11 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private IncidentReader incidentReader;
 
-  @Autowired private TestSearchRepository testSearchRepository;
-
-  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
-
-  @Autowired private ObjectMapper objectMapper;
-
-  @Autowired private PayloadUtil payloadUtil;
-
-  @Test
-  public void testProcessNameAndVersionAreLoaded() {
-    // having
-    final String processId = "demoProcess";
-    final Long processDefinitionKey =
-        ZeebeTestUtil.deployProcess(zeebeClient, null, "demoProcess_v_1.bpmn");
-    final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-
-    // when
-    // 1st load process instance index, then deployment
-    processImportTypeAndWait(
-        ImportValueType.PROCESS_INSTANCE, processInstanceIsCreatedCheck, processInstanceKey);
-    processImportTypeAndWait(ImportValueType.PROCESS, processIsDeployedCheck, processDefinitionKey);
-
-    // then
-    final ProcessInstanceForListViewEntity processInstanceEntity =
-        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
-    assertThat(processInstanceEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-    assertThat(processInstanceEntity.getProcessName()).isNotNull();
-    assertThat(processInstanceEntity.getProcessVersion()).isEqualTo(1);
-  }
-
   protected void processImportTypeAndWait(
       final ImportValueType importValueType,
       final Predicate<Object[]> waitTill,
       final Object... arguments) {
     searchTestRule.processRecordsWithTypeAndWait(importValueType, waitTill, arguments);
-  }
-
-  @Test
-  public void testCreateProcessInstanceWithEmptyProcessName() {
-    // given a process with empty name
-    final String processId = "emptyNameProcess";
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .serviceTask("taskA")
-            .zeebeJobType("taskA")
-            .endEvent()
-            .done();
-
-    final Long processDefinitionKey = deployProcess(model, "emptyNameProcess.bpmn");
-
-    final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCreatedCheck, processInstanceKey);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskA");
-
-    // then it should returns the processId instead of an empty name
-    final ProcessInstanceForListViewEntity processInstanceEntity =
-        processInstanceReader.getProcessInstanceByKey(processInstanceKey);
-    assertThat(processInstanceEntity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
-    assertThat(processInstanceEntity.getBpmnProcessId()).isEqualTo(processId);
-    assertThat(processInstanceEntity.getProcessName()).isEqualTo(processId);
   }
 
   @Test
@@ -575,262 +510,6 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
         zeebeClient.newTopologyRequest().send().join().getPartitionsCount();
     assertThat(operatePartitions).hasSize(zeebePartitionsCount);
     assertThat(operatePartitions).allMatch(id -> id <= zeebePartitionsCount && id >= 1);
-  }
-
-  @Test
-  public void testDecisionInstanceEvaluatedWithBigInputAndOutput() throws Exception {
-    // given
-    final String bpmnProcessId = "process";
-    final String demoDecisionId2 = "decision";
-
-    final String elementId = "task";
-    final BpmnModelInstance instance =
-        Bpmn.createExecutableProcess(bpmnProcessId)
-            .startEvent()
-            .businessRuleTask(
-                elementId,
-                task -> task.zeebeCalledDecisionId(demoDecisionId2).zeebeResultVariable("result"))
-            .done();
-
-    final String bigJSONVariablePayload = payloadUtil.readStringFromClasspath("/large-payload.txt");
-    final String payload = "{\"value\": \"" + bigJSONVariablePayload + "\"}";
-    tester
-        .deployProcess(instance, "test.bpmn")
-        .deployDecision("largeInputOutput.dmn")
-        .waitUntil()
-        .processIsDeployed()
-        .and()
-        .decisionsAreDeployed(1)
-        // when
-        .startProcessInstance(bpmnProcessId, payload)
-        .waitUntil()
-        .decisionInstancesAreCreated(1);
-
-    // then
-    final List<DecisionInstanceEntity> decisionEntities =
-        testSearchRepository.searchAll(
-            decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
-
-    assertThat(decisionEntities).hasSize(1);
-    assertThat(decisionEntities.get(0).getEvaluatedInputs()).hasSize(1);
-    assertThat(decisionEntities.get(0).getEvaluatedInputs().get(0).getValue())
-        .contains(bigJSONVariablePayload);
-    assertThat(decisionEntities.get(0).getEvaluatedOutputs()).hasSize(1);
-    assertThat(decisionEntities.get(0).getEvaluatedOutputs().get(0).getValue())
-        .contains(bigJSONVariablePayload);
-  }
-
-  @Test
-  public void testDecisionInstanceFailed() throws Exception {
-    // given
-    final String bpmnProcessId = "process";
-    final String demoDecisionId1 = "invoiceClassification";
-    final String demoDecisionId2 = "invoiceAssignApprover";
-    final String decision1Name = "Invoice Classification";
-    final String decision2Name = "Assign Approver Group";
-
-    final String elementId = "task";
-    final BpmnModelInstance instance =
-        Bpmn.createExecutableProcess(bpmnProcessId)
-            .startEvent()
-            .businessRuleTask(
-                elementId,
-                task ->
-                    task.zeebeCalledDecisionId(demoDecisionId2)
-                        .zeebeResultVariable("approverGroups"))
-            .done();
-
-    tester
-        .deployProcess(instance, "test.bpmn")
-        .deployDecision("invoiceBusinessDecisions_v_1.dmn")
-        .waitUntil()
-        .processIsDeployed()
-        .and()
-        .decisionsAreDeployed(2)
-        // when
-        .startProcessInstance(bpmnProcessId)
-        .waitUntil()
-        .decisionInstancesAreCreated(1);
-
-    // then
-    final List<DecisionInstanceEntity> decisionEntities =
-        testSearchRepository.searchAll(
-            decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
-
-    assertThat(decisionEntities).hasSize(1);
-    final DecisionInstanceEntity entity = decisionEntities.get(0);
-    assertThat(entity.getId()).isNotNull();
-    assertThat(entity.getKey()).isNotNull();
-    assertThat(entity.getExecutionIndex()).isNotNull();
-    assertThat(entity.getId())
-        .isEqualTo(String.format("%s-%s", entity.getKey(), entity.getExecutionIndex()));
-    assertThat(entity.getDecisionId()).isEqualTo(demoDecisionId1);
-    assertThat(entity.getDecisionName()).isEqualTo(decision1Name);
-    assertThat(entity.getDecisionVersion()).isEqualTo(1);
-    assertThat(entity.getState()).isEqualTo(DecisionInstanceState.FAILED);
-    assertThat(entity.getDecisionDefinitionId()).isNotNull();
-    assertThat(entity.getDecisionRequirementsId()).isNotNull();
-    assertThat(entity.getDecisionRequirementsKey()).isNotNull();
-    assertThat(entity.getElementId()).isEqualTo(elementId);
-    assertThat(entity.getElementInstanceKey()).isNotNull();
-    assertThat(entity.getEvaluationFailure()).isNotNull();
-    assertThat(entity.getEvaluationFailure())
-        .containsIgnoringCase("no variable found for name 'amount'");
-    assertThat(entity.getEvaluationDate()).isNotNull();
-    assertThat(entity.getPosition()).isNotNull();
-    assertThat(entity.getProcessDefinitionKey()).isNotNull();
-    assertThat(entity.getProcessInstanceKey()).isNotNull();
-    assertThat(entity.getBpmnProcessId()).isNotNull();
-    assertThat(entity.getResult()).isEqualTo("null");
-    assertThat(entity.getEvaluatedOutputs()).isEmpty();
-    assertThat(entity.getEvaluatedInputs()).isEmpty();
-    assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
-    assertThat(entity.getDecisionType()).isEqualTo(DecisionType.DECISION_TABLE);
-    assertThat(entity.getRootDecisionName()).isEqualTo(decision2Name);
-    assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
-    assertThat(entity.getRootDecisionDefinitionId()).isNotEqualTo(entity.getDecisionDefinitionId());
-  }
-
-  @Test
-  public void testDecisionInstanceEvaluated() throws Exception {
-    // given
-    final String bpmnProcessId = "process";
-    final String demoDecisionId1 = "invoiceClassification";
-    final String demoDecisionId2 = "invoiceAssignApprover";
-    final String decision1Name = "Invoice Classification";
-    final String decision2Name = "Assign Approver Group";
-
-    final String elementId = "task";
-    final BpmnModelInstance instance =
-        Bpmn.createExecutableProcess(bpmnProcessId)
-            .startEvent()
-            .businessRuleTask(
-                elementId,
-                task ->
-                    task.zeebeCalledDecisionId(demoDecisionId2)
-                        .zeebeResultVariable("approverGroups"))
-            .done();
-
-    tester
-        .deployProcess(instance, "test.bpmn")
-        .deployDecision("invoiceBusinessDecisions_v_1.dmn")
-        .waitUntil()
-        .processIsDeployed()
-        .and()
-        .decisionsAreDeployed(2)
-        // when
-        .startProcessInstance(bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}")
-        .waitUntil()
-        .decisionInstancesAreCreated(2);
-
-    // then
-    final List<DecisionInstanceEntity> decisionEntities =
-        testSearchRepository.searchAll(
-            decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
-
-    assertThat(decisionEntities).hasSize(2);
-    decisionEntities.forEach(
-        entity -> {
-          assertThat(entity.getId()).isNotNull();
-          assertThat(entity.getKey()).isNotNull();
-          assertThat(entity.getExecutionIndex()).isNotNull();
-          assertThat(entity.getId())
-              .isEqualTo(String.format("%s-%s", entity.getKey(), entity.getExecutionIndex()));
-          if (entity.getExecutionIndex().equals(1)) {
-            assertThat(entity.getDecisionId()).isEqualTo(demoDecisionId1);
-            assertThat(entity.getDecisionName()).isEqualTo(decision1Name);
-          } else {
-            assertThat(entity.getDecisionId()).isEqualTo(demoDecisionId2);
-            assertThat(entity.getDecisionName()).isEqualTo(decision2Name);
-          }
-          assertThat(entity.getDecisionVersion()).isEqualTo(1);
-          assertThat(entity.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
-          assertThat(entity.getDecisionDefinitionId()).isNotNull();
-          assertThat(entity.getDecisionRequirementsId()).isNotNull();
-          assertThat(entity.getDecisionRequirementsKey()).isNotNull();
-          assertThat(entity.getElementId()).isEqualTo(elementId);
-          assertThat(entity.getElementInstanceKey()).isNotNull();
-          assertThat(entity.getEvaluationFailure()).isNull();
-          assertThat(entity.getEvaluationDate()).isNotNull();
-          assertThat(entity.getPosition()).isNotNull();
-          assertThat(entity.getProcessDefinitionKey()).isNotNull();
-          assertThat(entity.getProcessInstanceKey()).isNotNull();
-          assertThat(entity.getBpmnProcessId()).isNotNull();
-          assertThat(entity.getResult()).isNotEmpty();
-          assertThat(entity.getEvaluatedOutputs()).isNotEmpty();
-          assertThat(entity.getEvaluatedInputs()).isNotEmpty();
-          assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
-          assertThat(entity.getDecisionType()).isEqualTo(DecisionType.DECISION_TABLE);
-          // root decision is one and the same for both instances
-          assertThat(entity.getRootDecisionName()).isEqualTo(decision2Name);
-          assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
-        });
-    assertThat(decisionEntities.get(0).getResult())
-        .isNotEqualTo(decisionEntities.get(1).getResult());
-  }
-
-  @Test
-  public void testDecisionInstanceLiteralExpressionImported() throws Exception {
-    // given
-    final String bpmnProcessId = "process";
-    final String demoDecisionId = "literalExpression";
-    final String decisionName = "Convert amount to string";
-
-    final String elementId = "task";
-    final BpmnModelInstance instance =
-        Bpmn.createExecutableProcess(bpmnProcessId)
-            .startEvent()
-            .businessRuleTask(
-                elementId,
-                task -> task.zeebeCalledDecisionId(demoDecisionId).zeebeResultVariable("amountStr"))
-            .done();
-
-    tester
-        .deployProcess(instance, "test.bpmn")
-        .deployDecision("literalExpression.dmn")
-        .waitUntil()
-        .processIsDeployed()
-        .and()
-        .decisionsAreDeployed(1)
-        // when
-        .startProcessInstance(bpmnProcessId, "{\"amount\": 100, \"invoiceCategory\": \"Misc\"}")
-        .waitUntil()
-        .decisionInstancesAreCreated(1);
-
-    // then
-    final List<DecisionInstanceEntity> decisionEntities =
-        testSearchRepository.searchAll(
-            decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
-
-    assertThat(decisionEntities).hasSize(1);
-    final DecisionInstanceEntity entity = decisionEntities.get(0);
-    assertThat(entity.getId()).isNotNull();
-    assertThat(entity.getKey()).isNotNull();
-    assertThat(entity.getExecutionIndex()).isNotNull();
-    assertThat(entity.getId())
-        .isEqualTo(String.format("%s-%s", entity.getKey(), entity.getExecutionIndex()));
-    assertThat(entity.getDecisionId()).isEqualTo(demoDecisionId);
-    assertThat(entity.getDecisionName()).isEqualTo(decisionName);
-    assertThat(entity.getDecisionVersion()).isEqualTo(1);
-    assertThat(entity.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
-    assertThat(entity.getDecisionDefinitionId()).isNotNull();
-    assertThat(entity.getDecisionRequirementsId()).isNotNull();
-    assertThat(entity.getDecisionRequirementsKey()).isNotNull();
-    assertThat(entity.getElementId()).isEqualTo(elementId);
-    assertThat(entity.getElementInstanceKey()).isNotNull();
-    assertThat(entity.getEvaluationFailure()).isNull();
-    assertThat(entity.getEvaluationDate()).isNotNull();
-    assertThat(entity.getPosition()).isNotNull();
-    assertThat(entity.getProcessDefinitionKey()).isNotNull();
-    assertThat(entity.getProcessInstanceKey()).isNotNull();
-    assertThat(entity.getBpmnProcessId()).isNotNull();
-    assertThat(entity.getResult()).isNotEmpty();
-    assertThat(entity.getEvaluatedOutputs()).isEmpty();
-    assertThat(entity.getEvaluatedInputs()).isEmpty();
-    assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
-    assertThat(entity.getDecisionType()).isEqualTo(DecisionType.LITERAL_EXPRESSION);
-    assertThat(entity.getRootDecisionName()).isEqualTo(decisionName);
-    assertThat(entity.getRootDecisionDefinitionId()).isNotNull();
   }
 
   private void assertStartActivityCompleted(final FlowNodeInstanceEntity activity) {

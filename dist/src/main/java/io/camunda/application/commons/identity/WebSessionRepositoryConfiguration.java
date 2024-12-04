@@ -19,6 +19,7 @@ import io.camunda.search.clients.PersistentWebSessionClient;
 import io.camunda.search.clients.PersistentWebSessionSearchImpl;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.PersistentWebSessionIndexDescriptor;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -31,6 +32,7 @@ import org.springframework.session.config.annotation.web.http.EnableSpringHttpSe
 @Configuration
 @EnableSpringHttpSession
 @ConditionalOnPersistentWebSessionEnabled
+@ConditionalOnRestGatewayEnabled
 public class WebSessionRepositoryConfiguration {
 
   private final GenericConversionService conversionService;

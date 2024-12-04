@@ -28,13 +28,8 @@ public class DeleteDataStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     schemaUpgradeClient.deleteDataByIndexName(index, queryWrapper);
-  }
-
-  @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 
   @Override
@@ -45,5 +40,10 @@ public class DeleteDataStep extends UpgradeStep {
   @Override
   public int hashCode() {
     return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
   }
 }

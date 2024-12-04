@@ -12,15 +12,19 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.FORM;
+import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.JOB;
+import static io.camunda.zeebe.protocol.record.ValueType.MAPPING;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
 import static io.camunda.zeebe.protocol.record.ValueType.TENANT;
 import static io.camunda.zeebe.protocol.record.ValueType.USER;
 import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
 import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
 
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.exporter.config.ConfigValidator;
@@ -233,6 +237,8 @@ public class CamundaExporter implements Exporter {
     private static final Set<ValueType> VALUE_TYPES_2_EXPORT =
         Set.of(
             USER,
+            GROUP,
+            MAPPING,
             AUTHORIZATION,
             TENANT,
             DECISION,
@@ -240,6 +246,8 @@ public class CamundaExporter implements Exporter {
             PROCESS_INSTANCE,
             ROLE,
             VARIABLE,
+            VARIABLE_DOCUMENT,
+            PROCESS_MESSAGE_SUBSCRIPTION,
             JOB,
             INCIDENT,
             DECISION_EVALUATION,

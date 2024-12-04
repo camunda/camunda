@@ -18,6 +18,7 @@ func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
 	settings := C8RunSettings{
 		config:           "",
 		detached:         false,
+		port:             8080,
 		keystore:         "/tmp/camundatest/certs/secret.jks",
 		keystorePassword: "changeme",
 	}
@@ -45,6 +46,7 @@ func TestCamundaCmdHasNoJavaOpts(t *testing.T) {
 	settings := C8RunSettings{
 		config:           "",
 		detached:         false,
+		port:             8080,
 		keystore:         "",
 		keystorePassword: "",
 	}
@@ -68,6 +70,7 @@ func TestCamundaCmdKeystoreRequiresPassword(t *testing.T) {
 	settings := C8RunSettings{
 		config:           "",
 		detached:         false,
+		port:             8080,
 		keystore:         "/tmp/camundatest/certs/secret.jks",
 		keystorePassword: "",
 	}
@@ -75,4 +78,25 @@ func TestCamundaCmdKeystoreRequiresPassword(t *testing.T) {
 
 	assert.NotNil(t, err)
 	assert.Error(t, err, "You must provide a password with --keystorePassword to unlock your keystore.")
+}
+
+func TestCamundaCmdDifferentPort(t *testing.T) {
+
+	settings := C8RunSettings{
+		port: 8087,
+	}
+	javaOpts := adjustJavaOpts("", settings)
+	c8runPlatform := getC8RunPlatform()
+
+	cmd := c8runPlatform.CamundaCmd("8.7.0", "/tmp/camundatest/", "", javaOpts)
+
+	javaOptsEnvVar := ""
+	for _, envVar := range cmd.Env {
+		if strings.Contains(envVar, "JAVA_OPTS") {
+			javaOptsEnvVar = envVar
+			break
+		}
+	}
+	assert.Contains(t, javaOptsEnvVar, "-Dserver.port=8087")
+
 }

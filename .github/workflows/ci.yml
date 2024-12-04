@@ -135,7 +135,7 @@ jobs:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [detect-changes]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-frontend

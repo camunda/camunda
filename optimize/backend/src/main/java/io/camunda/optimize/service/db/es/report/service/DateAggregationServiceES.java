@@ -13,7 +13,6 @@ import static io.camunda.optimize.service.db.DatabaseConstants.OPTIMIZE_DATE_FOR
 import static io.camunda.optimize.service.db.es.filter.util.DateHistogramFilterUtilES.createModelElementDateHistogramLimitingFilterFor;
 import static io.camunda.optimize.service.db.es.filter.util.DateHistogramFilterUtilES.extendBoundsAndCreateDecisionDateHistogramLimitingFilterFor;
 import static io.camunda.optimize.service.db.es.filter.util.DateHistogramFilterUtilES.extendBoundsAndCreateProcessDateHistogramLimitingFilterFor;
-import static io.camunda.optimize.service.db.es.report.interpreter.util.AggregateByDateUnitMapperES.mapToCalendarInterval;
 import static io.camunda.optimize.service.db.es.report.interpreter.util.FilterLimitedAggregationUtilES.FILTER_LIMITED_AGGREGATION;
 import static io.camunda.optimize.service.db.es.report.interpreter.util.FilterLimitedAggregationUtilES.wrapWithFilterLimitedParentAggregation;
 import static io.camunda.optimize.service.db.report.interpreter.util.AggregateByDateUnitMapper.mapToChronoUnit;
@@ -21,6 +20,7 @@ import static io.camunda.optimize.service.db.report.interpreter.util.AggregateBy
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.CalendarInterval;
 import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregation;
 import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramAggregation.Builder;
 import co.elastic.clients.elasticsearch._types.aggregations.DateHistogramBucket;
@@ -60,6 +60,7 @@ import org.springframework.stereotype.Component;
 public class DateAggregationServiceES extends DateAggregationService {
 
   private static final String DATE_AGGREGATION = "dateAggregation";
+  private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
 
   private final DateTimeFormatter dateTimeFormatter;
 
@@ -416,5 +417,24 @@ public class DateAggregationServiceES extends DateAggregationService {
     return wrapWithFilterLimitedParentAggregation(
         Query.of(q -> q.bool(limitFilterQueryBuilder.build())),
         Map.of(dateHistogramAggregation.key(), builder));
+  }
+
+  private static CalendarInterval mapToCalendarInterval(final AggregateByDateUnit unit) {
+    switch (unit) {
+      case YEAR:
+        return CalendarInterval.Year;
+      case MONTH:
+        return CalendarInterval.Month;
+      case WEEK:
+        return CalendarInterval.Week;
+      case DAY:
+        return CalendarInterval.Day;
+      case HOUR:
+        return CalendarInterval.Hour;
+      case MINUTE:
+        return CalendarInterval.Minute;
+      default:
+        throw new IllegalArgumentException(UNSUPPORTED_UNIT_STRING + unit);
+    }
   }
 }

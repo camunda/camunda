@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
 
 public class UpgradeStepLogService {
 
-  public void initializeOrUpdate(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void initializeOrUpdate(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     if (schemaUpgradeClient instanceof final SchemaUpgradeClientES esClient) {
       esClient.createOrUpdateIndex(new UpdateLogEntryIndexES());
     } else if (schemaUpgradeClient instanceof final SchemaUpgradeClientOS osClient) {
@@ -29,14 +29,14 @@ public class UpgradeStepLogService {
   }
 
   public void recordAppliedStep(
-      final SchemaUpgradeClient<?, ?> schemaUpgradeClient,
+      final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient,
       final UpgradeStepLogEntryDto logEntryDto) {
     logEntryDto.setAppliedDate(LocalDateUtil.getCurrentDateTime().toInstant());
     schemaUpgradeClient.upsert(UpdateLogEntryIndex.INDEX_NAME, logEntryDto.getId(), logEntryDto);
   }
 
   public Map<String, UpgradeStepLogEntryDto> getAllAppliedStepsForUpdateToById(
-      final SchemaUpgradeClient<?, ?> schemaUpgradeClient, final String targetOptimizeVersion) {
+      final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient, final String targetOptimizeVersion) {
     return schemaUpgradeClient.getAppliedUpdateStepsForTargetVersion(targetOptimizeVersion).stream()
         .collect(Collectors.toMap(UpgradeStepLogEntryDto::getId, Function.identity()));
   }

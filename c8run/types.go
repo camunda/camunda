@@ -6,7 +6,7 @@ import (
 )
 
 type C8Run interface {
-	OpenBrowser(protocol string) error
+	OpenBrowser(protocol string, port int) error
 	ProcessTree(commandPid int) []*os.Process
 	VersionCmd(javaBinaryPath string) *exec.Cmd
 	ElasticsearchCmd(elasticsearchVersion string, parentDir string) *exec.Cmd
@@ -17,6 +17,12 @@ type C8Run interface {
 type C8RunSettings struct {
 	config           string
 	detached         bool
+	port             int
 	keystore         string
 	keystorePassword string
+	logLevel         string
+}
+
+type TemplateData struct {
+	ServerPort int
 }

@@ -22,7 +22,6 @@ import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -54,11 +53,7 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
   public void shouldGenerateIds() {
     // given
     final IncidentRecordValue incidentRecordValue =
-        factory
-            .generateObject(ImmutableIncidentRecordValue.Builder.class)
-            .withElementInstancePath(
-                List.of(List.of(111L, 999L), List.of(222L, 888L), List.of(333L, 444L, 555L, 666L)))
-            .build();
+        factory.generateObject(ImmutableIncidentRecordValue.Builder.class).build();
     final Record<IncidentRecordValue> incidentRecord =
         factory.generateRecord(ValueType.INCIDENT, i -> i.withValue(incidentRecordValue));
 
@@ -66,7 +61,8 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
     final var idList = underTest.generateIds(incidentRecord);
 
     // then
-    assertThat(idList).containsExactly("444", "555", "666");
+    assertThat(idList)
+        .containsExactly(String.valueOf(incidentRecord.getValue().getElementInstanceKey()));
   }
 
   @Test
@@ -91,15 +87,11 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
             .setProcessDefinitionKey(789L)
             .setBpmnProcessId("someProcess")
             .setTenantId("tenantId")
-            .setIncidentKey(987L)
-            .setTreePath("111/222/333")
-            .setLevel(2);
+            .setIncidentKey(987L);
 
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
-    expectedUpdateFields.put(FlowNodeInstanceTemplate.TREE_PATH, inputEntity.getTreePath());
-    expectedUpdateFields.put(FlowNodeInstanceTemplate.LEVEL, inputEntity.getLevel());
     expectedUpdateFields.put(FlowNodeInstanceTemplate.INCIDENT_KEY, inputEntity.getIncidentKey());
 
     // when
@@ -123,11 +115,6 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
                   factory
                       .generateObject(ImmutableIncidentRecordValue.Builder.class)
                       .withElementInstanceKey(666)
-                      .withElementInstancePath(
-                          List.of(
-                              List.of(111L, 999L),
-                              List.of(222L, 888L),
-                              List.of(333L, 444L, 555L, 666L)))
                       .build();
               final Record<IncidentRecordValue> incidentRecord =
                   factory.generateRecord(
@@ -140,7 +127,6 @@ public class FlowNodeInstanceFromIncidentHandlerTest {
 
               // then
               assertThat(flowNodeInstanceEntity.getId()).isEqualTo("666");
-              assertThat(flowNodeInstanceEntity.getTreePath()).isEqualTo("333/444/555/666");
               assertThat(flowNodeInstanceEntity.getIncidentKey())
                   .isEqualTo(incidentRecord.getKey());
             });

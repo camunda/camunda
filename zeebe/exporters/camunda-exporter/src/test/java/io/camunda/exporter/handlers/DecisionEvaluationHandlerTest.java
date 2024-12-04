@@ -33,6 +33,8 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 public class DecisionEvaluationHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -112,14 +114,17 @@ public class DecisionEvaluationHandlerTest {
     verify(mockRequest, times(1)).add(indexName, inputEntity);
   }
 
-  @Test
-  void shouldUpdateEntityFromRecord() {
+  @ParameterizedTest
+  @EnumSource(
+      value = DecisionType.class,
+      names = {"DECISION_TABLE", "LITERAL_EXPRESSION"})
+  void shouldUpdateEntityFromRecord(final DecisionType decisionType) {
     // given
     final long recordKey = 123L;
     final ImmutableEvaluatedDecisionValue evaluatedDecision =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
-            .withDecisionType(DecisionType.DECISION_TABLE.name())
+            .withDecisionType(decisionType.name())
             .withMatchedRules(
                 List.of(
                     ImmutableMatchedRuleValue.builder()
@@ -180,8 +185,8 @@ public class DecisionEvaluationHandlerTest {
     assertThat(decisionInstanceEntity.getDecisionId()).isEqualTo(evaluatedDecision.getDecisionId());
     assertThat(decisionInstanceEntity.getDecisionDefinitionId())
         .isEqualTo(String.valueOf(evaluatedDecision.getDecisionKey()));
-    assertThat(decisionInstanceEntity.getDecisionType().name())
-        .isEqualTo(evaluatedDecision.getDecisionType());
+    assertThat(decisionInstanceEntity.getDecisionType())
+        .isEqualTo(DecisionType.fromZeebeDecisionType(decisionType.name()));
     assertThat(decisionInstanceEntity.getDecisionName())
         .isEqualTo(evaluatedDecision.getDecisionName());
     assertThat(decisionInstanceEntity.getDecisionVersion())
@@ -306,5 +311,87 @@ public class DecisionEvaluationHandlerTest {
     assertThat(decisionInstanceEntity.getId()).isEqualTo(recordKey + "-2");
     assertThat(decisionInstanceEntity.getKey()).isEqualTo(recordKey);
     assertThat(decisionInstanceEntity.getState()).isEqualTo(DecisionInstanceState.FAILED);
+  }
+
+  @Test
+  void shouldUpdateEntityWithBigInputAndOutput() {
+    // given
+    final String largePayload = generateLargePayload();
+    final long recordKey = 123L;
+    final ImmutableEvaluatedDecisionValue evaluatedDecision =
+        ImmutableEvaluatedDecisionValue.builder()
+            .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionType(DecisionType.DECISION_TABLE.name())
+            .withMatchedRules(
+                List.of(
+                    ImmutableMatchedRuleValue.builder()
+                        .from(factory.generateObject(MatchedRuleValue.class))
+                        .withEvaluatedOutputs(
+                            List.of(
+                                factory
+                                    .generateObject(ImmutableEvaluatedOutputValue.class)
+                                    .withOutputValue(largePayload)))
+                        .build()))
+            .withEvaluatedInputs(
+                List.of(
+                    factory
+                        .generateObject(ImmutableEvaluatedInputValue.class)
+                        .withInputValue(largePayload)))
+            .build();
+
+    final DecisionEvaluationRecordValue decisionRecordValue =
+        ImmutableDecisionEvaluationRecordValue.builder()
+            .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+            .withEvaluatedDecisions(List.of(evaluatedDecision))
+            .build();
+
+    final Record<DecisionEvaluationRecordValue> decisionRecord =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r ->
+                r.withIntent(DecisionEvaluationIntent.EVALUATED)
+                    .withValue(decisionRecordValue)
+                    .withKey(recordKey));
+
+    // when
+    final DecisionInstanceEntity decisionInstanceEntity =
+        new DecisionInstanceEntity().setId(recordKey + "-1");
+    underTest.updateEntity(decisionRecord, decisionInstanceEntity);
+
+    // then
+
+    assertThat(decisionInstanceEntity.getEvaluatedOutputs().getFirst().getId())
+        .isEqualTo(
+            evaluatedDecision
+                .getMatchedRules()
+                .getFirst()
+                .getEvaluatedOutputs()
+                .getFirst()
+                .getOutputId());
+
+    assertThat(decisionInstanceEntity.getEvaluatedOutputs().getFirst().getName())
+        .isEqualTo(
+            evaluatedDecision
+                .getMatchedRules()
+                .getFirst()
+                .getEvaluatedOutputs()
+                .getFirst()
+                .getOutputName());
+
+    assertThat(decisionInstanceEntity.getEvaluatedOutputs().getFirst().getValue())
+        .isEqualTo(largePayload);
+
+    assertThat(decisionInstanceEntity.getEvaluatedInputs()).isNotEmpty();
+    assertThat(decisionInstanceEntity.getEvaluatedInputs().getFirst().getId())
+        .isEqualTo(evaluatedDecision.getEvaluatedInputs().getFirst().getInputId());
+    assertThat(decisionInstanceEntity.getEvaluatedInputs().getFirst().getName())
+        .isEqualTo(evaluatedDecision.getEvaluatedInputs().getFirst().getInputName());
+    assertThat(decisionInstanceEntity.getEvaluatedInputs().getFirst().getValue())
+        .isEqualTo(largePayload);
+  }
+
+  private static String generateLargePayload() {
+    final String fillChar = "a";
+    return fillChar.repeat(42 * 1024);
   }
 }

@@ -22,13 +22,10 @@ public class ReachEndOfLogTest {
 
   @Test
   public void shouldReturnTrueIfNothingProcessed() {
-    // given
-
-    // when
-    final var reachedEnd = engineRule.hasReachedEnd();
-
-    // then
-    assertThat(reachedEnd).isTrue();
+    // then -- eventually reaches the end. Needs to wait to account for internal processing.
+    Awaitility.await("Processor should reach the end")
+        .timeout(Duration.ofSeconds(5))
+        .until(engineRule::hasReachedEnd);
   }
 
   @Test

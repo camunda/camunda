@@ -499,15 +499,14 @@ public class OptimizeElasticsearchClient extends DatabaseClient {
     }
   }
 
-  @Override
-  public <T> long count(final String[] indexNames, final T query) throws IOException {
+  public long count(final String[] indexNames, final BoolQuery.Builder query) throws IOException {
     return Objects.requireNonNull(
             count(
                 CountRequest.of(
                     b -> {
                       final CountRequest.Builder builder =
                           b.index(List.of(convertToPrefixedAliasNames(indexNames)));
-                      builder.query(q -> q.bool(((BoolQuery.Builder) query).build()));
+                      builder.query(q -> q.bool(query.build()));
                       return b;
                     })))
         .count();

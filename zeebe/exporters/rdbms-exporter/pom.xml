@@ -63,6 +63,11 @@
       <artifactId>slf4j-api</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
+
     <!-- testing -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>
