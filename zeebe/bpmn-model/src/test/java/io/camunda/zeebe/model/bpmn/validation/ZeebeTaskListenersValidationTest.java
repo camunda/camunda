@@ -91,8 +91,7 @@ public class ZeebeTaskListenersValidationTest {
             ZeebeTaskListener.class,
             String.format(
                 "Task listener event type '%s' is not supported. "
-                    + "Currently, only assignment, complete event types are supported. "
-                    + "Support for it is planned for version 8.8.",
+                    + "Currently, only assignment, complete event types are supported.",
                 unsupportedEventType)));
   }
 }
