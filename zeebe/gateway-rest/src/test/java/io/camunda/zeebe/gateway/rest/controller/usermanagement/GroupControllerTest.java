@@ -285,4 +285,84 @@ public class GroupControllerTest extends RestControllerTest {
     // then
     verify(groupServices, times(1)).assignMember(groupKey, userKey, EntityType.USER);
   }
+
+  @Test
+  void shouldUnassignUserToGroupAndReturnAccepted() {
+    // given
+    final long groupKey = 111L;
+    final long userKey = 222L;
+
+    when(groupServices.removeMember(groupKey, userKey, EntityType.USER))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .delete()
+        .uri("%s/%s/users/%s".formatted(GROUP_BASE_URL, groupKey, userKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(groupServices, times(1)).removeMember(groupKey, userKey, EntityType.USER);
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingMissingUserFromGroup() {
+    // given
+    final var groupKey = 111L;
+    final var userKey = 222L;
+    final var path = "%s/%d/users/%d".formatted(GROUP_BASE_URL, groupKey, userKey);
+    when(groupServices.removeMember(groupKey, userKey, EntityType.USER))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        GroupIntent.ENTITY_ADDED,
+                        groupKey,
+                        RejectionType.NOT_FOUND,
+                        "User not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(groupServices, times(1)).removeMember(groupKey, userKey, EntityType.USER);
+  }
+
+  @Test
+  void shouldReturnErrorForRemovingUserFromMissingGroup() {
+    // given
+    final var groupKey = 111L;
+    final var userKey = 222L;
+    final var path = "%s/%d/users/%d".formatted(GROUP_BASE_URL, groupKey, userKey);
+    when(groupServices.removeMember(groupKey, userKey, EntityType.USER))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        GroupIntent.ENTITY_ADDED,
+                        groupKey,
+                        RejectionType.NOT_FOUND,
+                        "Group not found"))));
+
+    // when
+    webClient
+        .delete()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(groupServices, times(1)).removeMember(groupKey, userKey, EntityType.USER);
+  }
 }
