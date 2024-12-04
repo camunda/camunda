@@ -146,12 +146,13 @@ public interface UserTaskFilter extends SearchRequestFilter {
   UserTaskFilter bpmnProcessId(final String bpmnProcessId);
 
   /**
-   * Filters user tasks by the specified Process Definition Id.
+   * Filters user tasks by specified Process Instance Variables.
    *
    * @param variableValueFilters from the task
    * @return the updated filter
    */
-  UserTaskFilter variables(final List<UserTaskVariableFilterRequest> variableValueFilters);
+  UserTaskFilter processInstanceVariables(
+      final List<UserTaskVariableFilterRequest> variableValueFilters);
 
   /**
    * Filters user tasks by the specified element instance key.

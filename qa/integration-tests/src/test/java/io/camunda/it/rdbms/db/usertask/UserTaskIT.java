@@ -193,7 +193,7 @@ public class UserTaskIT {
             .search(
                 new UserTaskDbQuery(
                     new UserTaskFilter.Builder()
-                        .variable(
+                        .processInstanceVariables(
                             List.of(
                                 new VariableValueFilter.Builder()
                                     .name(randomizedVariable.name())

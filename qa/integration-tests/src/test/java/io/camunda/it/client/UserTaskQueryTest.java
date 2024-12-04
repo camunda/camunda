@@ -68,7 +68,7 @@ class UserTaskQueryTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/25287")
+  @Disabled("To be re-enabled in the scope of https://github.com/camunda/camunda/issues/25292")
   public void shouldRetrieveTaskByTaskVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
@@ -76,7 +76,7 @@ class UserTaskQueryTest {
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter)))
+            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -103,7 +103,7 @@ class UserTaskQueryTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/25287")
+  @Disabled("To be re-enabled in the scope of https://github.com/camunda/camunda/issues/25292")
   public void shouldRetrieveVariablesFromUserTask() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("task02").value("1");
@@ -111,7 +111,7 @@ class UserTaskQueryTest {
     final var resultUserTaskQuery =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter)))
+            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
             .send()
             .join();
 
@@ -124,18 +124,17 @@ class UserTaskQueryTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/25287")
-  public void shouldRetrieveTaskByProcessVariable() {
+  public void shouldRetrieveTaskByProcessInstanceVariable() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01").value("\"pVar\"");
 
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter)))
+            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
             .send()
             .join();
-    assertThat(result.items().size()).isEqualTo(1);
+    assertThat(result.items().size()).isEqualTo(2);
   }
 
   @Test
@@ -190,7 +189,6 @@ class UserTaskQueryTest {
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/25287")
   public void shouldRetrieveTaskByVariableNameSearch() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01");
@@ -198,28 +196,28 @@ class UserTaskQueryTest {
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter)))
+            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
   }
 
   @Test
-  public void shouldNoteRetrieveTaskByInvalidVariableValue() {
+  public void shouldNotRetrieveTaskByInvalidVariableValue() {
     final UserTaskVariableFilterRequest variableValueFilter =
         new UserTaskVariableFilterRequest().name("process01").value("\"pVariable\"");
 
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter)))
+            .filter(f -> f.processInstanceVariables(List.of(variableValueFilter)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(0);
   }
 
   @Test
-  @Disabled("https://github.com/camunda/camunda/issues/25287")
+  @Disabled("To be re-enabled in the scope of https://github.com/camunda/camunda/issues/25292")
   public void shouldRetrieveTaskByOrVariableCondition() {
     final UserTaskVariableFilterRequest variableValueFilter1 =
         new UserTaskVariableFilterRequest().name("task02").value("1");
@@ -230,7 +228,9 @@ class UserTaskQueryTest {
     final var result =
         camundaClient
             .newUserTaskQuery()
-            .filter(f -> f.variables(List.of(variableValueFilter1, variableValueFilter2)))
+            .filter(
+                f ->
+                    f.processInstanceVariables(List.of(variableValueFilter1, variableValueFilter2)))
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);

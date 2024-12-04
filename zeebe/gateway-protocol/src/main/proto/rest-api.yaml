@@ -3466,9 +3466,9 @@ components:
           type: integer
           description: The key of the element instance.
           format: int64
-        variables:
+        processInstanceVariables:
           type: array
-          description: Variables associated with the user task.
+          description: Process Instance variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
     UserTaskVariableFilterRequest:

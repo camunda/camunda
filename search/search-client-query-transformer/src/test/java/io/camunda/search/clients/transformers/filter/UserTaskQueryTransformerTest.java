@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.clients.query.SearchBoolQuery;
 import io.camunda.search.clients.query.SearchExistsQuery;
 import io.camunda.search.clients.query.SearchHasChildQuery;
+import io.camunda.search.clients.query.SearchHasParentQuery;
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.query.SearchQueryOption;
 import io.camunda.search.clients.query.SearchTermQuery;
@@ -294,7 +295,7 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
   }
 
   @Test
-  public void shouldQueryByVariableValueFilter() {
+  public void shouldQueryByProcessInstanceVariableValueFilter() {
     // given
     final VariableValueFilter.Builder variableValueFilterBuilder =
         new VariableValueFilter.Builder();
@@ -302,7 +303,8 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
 
     final VariableValueFilter variableFilterValue = variableValueFilterBuilder.build();
 
-    final var filter = FilterBuilders.userTask((f) -> f.variable(List.of(variableFilterValue)));
+    final var filter =
+        FilterBuilders.userTask((f) -> f.processInstanceVariables(List.of(variableFilterValue)));
     final var searchQuery = SearchQueryBuilders.userTaskSearchQuery((b) -> b.filter(filter));
 
     // when
@@ -318,26 +320,23 @@ public class UserTaskQueryTransformerTest extends AbstractTransformerTest {
               assertThat(outerBoolQuery.must()).isNotEmpty();
 
               final SearchQuery outerMustQuery = outerBoolQuery.must().get(0);
-              assertThat(outerMustQuery.queryOption()).isInstanceOf(SearchBoolQuery.class);
+              assertThat(outerMustQuery.queryOption()).isInstanceOf(SearchHasParentQuery.class);
 
               // Drill down into the nested SearchBoolQuery
-              final SearchBoolQuery nestedBoolQuery =
-                  (SearchBoolQuery) outerMustQuery.queryOption();
-              assertThat(nestedBoolQuery.should()).isNotEmpty();
+              final SearchHasParentQuery nestedHasParentQuery =
+                  (SearchHasParentQuery) outerMustQuery.queryOption();
+              assertThat(nestedHasParentQuery.parentType())
+                  .isEqualTo(TaskJoinRelationshipType.PROCESS.getType());
 
-              final SearchQuery shouldQuery = nestedBoolQuery.should().get(0);
-              assertThat(shouldQuery.queryOption()).isInstanceOf(SearchHasChildQuery.class);
-
+              // Drill down into the nested SearchHasChildQuery of the hasParentQuery
               final SearchHasChildQuery childQuery =
-                  (SearchHasChildQuery) shouldQuery.queryOption();
+                  (SearchHasChildQuery) nestedHasParentQuery.query().queryOption();
               assertThat(childQuery.type())
-                  .isEqualTo(TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
+                  .isEqualTo(TaskJoinRelationshipType.PROCESS_VARIABLE.getType());
 
-              // Check the inner bool query inside the child query
-              final SearchQuery innerQuery = childQuery.query();
-              assertThat(innerQuery.queryOption()).isInstanceOf(SearchBoolQuery.class);
-
-              final SearchBoolQuery innerBoolQuery = (SearchBoolQuery) innerQuery.queryOption();
+              // Drill down into the nested SearchBoolQuery of the hasChildQuery
+              final SearchBoolQuery innerBoolQuery =
+                  (SearchBoolQuery) childQuery.query().queryOption();
               assertThat(innerBoolQuery.must()).hasSize(2);
 
               assertThat(innerBoolQuery.must().get(0).queryOption())

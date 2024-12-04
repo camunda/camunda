@@ -552,9 +552,10 @@ public final class SearchQueryRequestMapper {
               Optional.ofNullable(f.getTenantId()).ifPresent(builder::tenantIds);
               Optional.ofNullable(f.getElementInstanceKey())
                   .ifPresent(builder::elementInstanceKeys);
-              Optional.ofNullable(f.getVariables())
+              Optional.ofNullable(f.getProcessInstanceVariables())
                   .filter(variables -> !variables.isEmpty())
-                  .ifPresent(vars -> builder.variable(toVariableValueFilters(vars)));
+                  .ifPresent(
+                      vars -> builder.processInstanceVariables(toVariableValueFilters(vars)));
             });
 
     return builder.build();

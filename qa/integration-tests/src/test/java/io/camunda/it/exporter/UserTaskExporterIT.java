@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -120,12 +119,9 @@ public class UserTaskExporterIT {
   @Nested
   class UserTaskVariableIT {
 
-    // TODO Re-enable
-    @Disabled("Should be re enabled when Search clients are aligned with schema changes")
     @TestTemplate
     void shouldExportUserTaskVariable(final TestStandaloneBroker testBroker) {
       final var client = testBroker.newClientBuilder().build();
-
       // when
       ExporterTestUtil.createAndDeployUserTaskProcess(
           client, "test-process-id", "zeebe-task", AbstractUserTaskBuilder::zeebeUserTask);
@@ -152,7 +148,7 @@ public class UserTaskExporterIT {
               .newUserTaskQuery()
               .filter(
                   f ->
-                      f.variables(
+                      f.processInstanceVariables(
                           List.of(new UserTaskVariableFilterRequest().name("stringVariable"))))
               .send()
               .join()
@@ -165,7 +161,8 @@ public class UserTaskExporterIT {
               .newUserTaskQuery()
               .filter(
                   f ->
-                      f.variables(List.of(new UserTaskVariableFilterRequest().name("intVariable"))))
+                      f.processInstanceVariables(
+                          List.of(new UserTaskVariableFilterRequest().name("intVariable"))))
               .send()
               .join()
               .items();
@@ -177,7 +174,7 @@ public class UserTaskExporterIT {
               .newUserTaskQuery()
               .filter(
                   f ->
-                      f.variables(
+                      f.processInstanceVariables(
                           List.of(new UserTaskVariableFilterRequest().name("boolVariable"))))
               .send()
               .join()
@@ -190,7 +187,8 @@ public class UserTaskExporterIT {
               .newUserTaskQuery()
               .filter(
                   f ->
-                      f.variables(List.of(new UserTaskVariableFilterRequest().name("bigVariable"))))
+                      f.processInstanceVariables(
+                          List.of(new UserTaskVariableFilterRequest().name("bigVariable"))))
               .send()
               .join()
               .items();
@@ -202,7 +200,7 @@ public class UserTaskExporterIT {
               .newUserTaskQuery()
               .filter(
                   f ->
-                      f.variables(
+                      f.processInstanceVariables(
                           List.of(
                               new UserTaskVariableFilterRequest()
                                   .name("stringVariable")
