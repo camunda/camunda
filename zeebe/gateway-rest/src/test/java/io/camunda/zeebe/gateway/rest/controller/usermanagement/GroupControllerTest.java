@@ -24,6 +24,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -203,5 +204,85 @@ public class GroupControllerTest extends RestControllerTest {
 
     // then
     verify(groupServices, times(1)).deleteGroup(groupKey);
+  }
+
+  @Test
+  void shouldAssignUserToGroupAndReturnAccepted() {
+    // given
+    final long groupKey = 111L;
+    final long userKey = 222L;
+
+    when(groupServices.assignMember(groupKey, userKey, EntityType.USER))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    webClient
+        .post()
+        .uri("%s/%s/users/%s".formatted(GROUP_BASE_URL, groupKey, userKey))
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isAccepted();
+
+    // then
+    verify(groupServices, times(1)).assignMember(groupKey, userKey, EntityType.USER);
+  }
+
+  @Test
+  void shouldReturnErrorForAddingMissingUserToGroup() {
+    // given
+    final var groupKey = 111L;
+    final var userKey = 222L;
+    final var path = "%s/%d/users/%d".formatted(GROUP_BASE_URL, groupKey, userKey);
+    when(groupServices.assignMember(groupKey, userKey, EntityType.USER))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        GroupIntent.ENTITY_ADDED,
+                        groupKey,
+                        RejectionType.NOT_FOUND,
+                        "User not found"))));
+
+    // when
+    webClient
+        .post()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(groupServices, times(1)).assignMember(groupKey, userKey, EntityType.USER);
+  }
+
+  @Test
+  void shouldReturnErrorForAddingUserToMissingGroup() {
+    // given
+    final var groupKey = 111L;
+    final var userKey = 222L;
+    final var path = "%s/%d/users/%d".formatted(GROUP_BASE_URL, groupKey, userKey);
+    when(groupServices.assignMember(groupKey, userKey, EntityType.USER))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new CamundaBrokerException(
+                    new BrokerRejection(
+                        GroupIntent.ENTITY_ADDED,
+                        groupKey,
+                        RejectionType.NOT_FOUND,
+                        "Group not found"))));
+
+    // when
+    webClient
+        .post()
+        .uri(path)
+        .accept(MediaType.APPLICATION_PROBLEM_JSON)
+        .exchange()
+        .expectStatus()
+        .isNotFound();
+
+    // then
+    verify(groupServices, times(1)).assignMember(groupKey, userKey, EntityType.USER);
   }
 }
