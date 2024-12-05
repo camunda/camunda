@@ -9,6 +9,7 @@ package io.camunda.migration.identity.config;
 
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
+import java.net.URI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,7 @@ public class ZeebeConnector {
     final ZeebeClientBuilder builder =
         ZeebeClient.newClientBuilder()
             .gatewayAddress(gatewayAddress)
+            .restAddress(URI.create("http://0.0.0.0:8081"))
             .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
     if (zeebeProperties.isSecure()) {
       builder.caCertificatePath(zeebeProperties.getCertificatePath());

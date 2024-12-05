@@ -9,12 +9,13 @@ package io.camunda.migration.identity;
 
 import static java.util.Arrays.asList;
 
+import com.google.common.util.concurrent.Uninterruptibles;
 import io.camunda.migration.api.Migrator;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
-import org.springframework.boot.SpringApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -28,12 +29,15 @@ public class MigrationRunner implements Migrator {
 
   private final AuthorizationMigrationHandler authorizationMigrationHandler;
   private final TenantMigrationHandler tenantMigrationHandler;
+  private final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler;
 
   public MigrationRunner(
       final AuthorizationMigrationHandler authorizationMigrationHandler,
-      final TenantMigrationHandler tenantMigrationHandler) {
+      final TenantMigrationHandler tenantMigrationHandler,
+      final TenantMappingRuleMigrationHandler tenantMappingRuleMigrationHandler) {
     this.authorizationMigrationHandler = authorizationMigrationHandler;
     this.tenantMigrationHandler = tenantMigrationHandler;
+    this.tenantMappingRuleMigrationHandler = tenantMappingRuleMigrationHandler;
   }
 
   @Override
@@ -54,15 +58,12 @@ public class MigrationRunner implements Migrator {
     while (true) {
       try {
         tenantMigrationHandler.migrate();
+        tenantMappingRuleMigrationHandler.migrate();
         authorizationMigrationHandler.migrate();
         break;
       } catch (final Exception e) {
         LOGGER.warn("Migration failed, let's retry!", e);
-        try {
-          Thread.sleep(1000);
-        } catch (final InterruptedException ex) {
-          throw new RuntimeException(ex);
-        }
+        Uninterruptibles.sleepUninterruptibly(1000, TimeUnit.MILLISECONDS);
       }
     }
   }
@@ -70,9 +71,5 @@ public class MigrationRunner implements Migrator {
   @Override
   public void acceptArguments(final ApplicationArguments args) {
     this.args = args;
-  }
-
-  public static void main(final String[] args) {
-    SpringApplication.run(MigrationRunner.class, args);
   }
 }

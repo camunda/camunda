@@ -17,6 +17,8 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class TenantMigrationHandler implements MigrationHandler {
+
+  public static final int SIZE = 2;
   private final ManagementIdentityClient managementIdentityClient;
   private final ManagementIdentityTransformer managementIdentityTransformer;
   private final ZeebeClient client;
@@ -34,7 +36,7 @@ public class TenantMigrationHandler implements MigrationHandler {
   public void migrate() {
     Tenant lastTenant = null;
     do {
-      final List<Tenant> tenants = managementIdentityClient.fetchTenants(lastTenant, 100);
+      final List<Tenant> tenants = managementIdentityClient.fetchTenants(lastTenant, SIZE);
       managementIdentityClient.updateMigrationStatus(
           tenants.stream().map(this::createTenant).toList());
       lastTenant = tenants.isEmpty() ? null : tenants.get(tenants.size() - 1);
