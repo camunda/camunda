@@ -22,6 +22,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -179,6 +180,30 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       default:
         break;
     }
+  }
+
+  /**
+   * Corrects those attributes of the user task record provided in the list of corrected attributes
+   * with the values from the given corrections. Corrected attributes are tracked as changed
+   * attributes.
+   *
+   * @param correctedAttributes the attributes to correct
+   * @param corrections the corrections to apply
+   */
+  public void correctAttributes(
+      final List<String> correctedAttributes, final JobResultCorrections corrections) {
+    correctedAttributes.forEach(
+        attribute -> {
+          switch (attribute) {
+            case "assignee" -> setAssignee(corrections.getAssignee());
+            case "candidateGroups" -> setCandidateGroupsList(corrections.getCandidateGroups());
+            case "candidateUsers" -> setCandidateUsersList(corrections.getCandidateUsers());
+            case "dueDate" -> setDueDate(corrections.getDueDate());
+            case "followUpDate" -> setFollowUpDate(corrections.getFollowUpDate());
+            case "priority" -> setPriority(corrections.getPriority());
+          }
+          addChangedAttribute(attribute);
+        });
   }
 
   @Override
@@ -352,8 +377,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setChangedAttributes(final List<String> changedAttributes) {
     changedAttributesProp.reset();
-    changedAttributes.forEach(
-        attribute -> changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute)));
+    changedAttributes.forEach(this::addChangedAttribute);
     return this;
   }
 
@@ -470,6 +494,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       final ArrayProperty<StringValue> changedAttributes) {
     changedAttributesProp.reset();
     changedAttributes.forEach(attribute -> changedAttributesProp.add().wrap(attribute));
+    return this;
+  }
+
+  public UserTaskRecord addChangedAttribute(final String attribute) {
+    changedAttributesProp.add().wrap(BufferUtil.wrapString(attribute));
     return this;
   }
 
