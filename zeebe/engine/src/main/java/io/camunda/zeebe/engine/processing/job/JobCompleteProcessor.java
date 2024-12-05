@@ -29,12 +29,18 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   public static final String TL_JOB_COMPLETION_WITH_VARS_NOT_SUPPORTED_MESSAGE =
       "Task Listener job completion with variables payload provided is not yet supported (job key '%d', type '%s', processInstanceKey '%d'). "
           + "Support will be enabled with the resolution of issue #23702";
+  private static final Set<String> CORRECTABLE_PROPERTIES =
+      Set.of(
+          "assignee", "candidateGroups", "candidateUsers", "dueDate", "followUpDate", "priority");
 
   private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
@@ -55,7 +61,9 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             state.getJobState(),
             this::acceptCommand,
             authCheckBehavior,
-            List.of(this::checkVariablesNotProvidedForTaskListenerJob));
+            List.of(
+                this::checkVariablesNotProvidedForTaskListenerJob,
+                this::checkTaskListenerJobForUnknownPropertyCorrections));
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
   }
@@ -148,6 +156,33 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   private boolean hasVariables(final TypedRecord<JobRecord> command) {
     return !DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getVariablesBuffer());
+  }
+
+  private Either<Rejection, JobRecord> checkTaskListenerJobForUnknownPropertyCorrections(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+      return Either.right(job);
+    }
+
+    final var optionalUnknownProperty =
+        command.getValue().getResult().getCorrectedAttributes().stream()
+            .filter(Predicate.not(CORRECTABLE_PROPERTIES::contains))
+            .findAny();
+
+    if (optionalUnknownProperty.isEmpty()) {
+      return Either.right(job);
+    }
+
+    final var correctableProperties =
+        CORRECTABLE_PROPERTIES.stream().sorted().collect(Collectors.joining(", ", "[", "]"));
+    return Either.left(
+        new Rejection(
+            RejectionType.INVALID_ARGUMENT,
+            """
+            Expected to complete task listener job with a corrections result, \
+            but property '%s' cannot be corrected. \
+            Only the following properties can be corrected: %s."""
+                .formatted(optionalUnknownProperty.get(), correctableProperties)));
   }
 
   private void acceptCommand(
