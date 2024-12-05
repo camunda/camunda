@@ -43,11 +43,11 @@ import io.camunda.webapps.schema.entities.operate.FlowNodeState;
 import io.camunda.webapps.schema.entities.operate.IncidentEntity;
 import io.camunda.webapps.schema.entities.operate.IncidentState;
 import io.camunda.webapps.schema.entities.operate.ProcessEntity;
-import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operate.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationState;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -1149,7 +1149,7 @@ public class OpensearchChecks {
       assertThat(objects[0]).isInstanceOf(Integer.class);
       final Integer count = (Integer) objects[0];
       try {
-        final List<UserTaskEntity> userTasks = userTaskReader.getUserTasks();
+        final List<TaskEntity> userTasks = userTaskReader.getUserTasks();
         return userTasks.size() == count;
       } catch (final NotFoundException ex) {
         return false;
