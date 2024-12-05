@@ -79,11 +79,8 @@ public class PermissionsBehavior {
     for (final PermissionValue permission : record.getPermissions()) {
       final var addedResourceIds = permission.getResourceIds();
       final var currentResourceIds =
-          authCheckBehavior.getAllAuthorizedResourceIdentifiers(
-              record.getOwnerKey(),
-              record.getOwnerType(),
-              record.getResourceType(),
-              permission.getPermissionType());
+          authCheckBehavior.getDirectAuthorizedResourceIdentifiers(
+              record.getOwnerKey(), record.getResourceType(), permission.getPermissionType());
 
       final var duplicates = new HashSet<>(currentResourceIds);
       duplicates.retainAll(addedResourceIds);
