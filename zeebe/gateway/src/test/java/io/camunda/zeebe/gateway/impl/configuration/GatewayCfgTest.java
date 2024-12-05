@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.junit.Test;
+import org.springframework.util.unit.DataSize;
 
 public final class GatewayCfgTest {
 
@@ -153,13 +154,17 @@ public final class GatewayCfgTest {
     setEnv("zeebe.gateway.filters.0.id", "overwrittenFilter");
     setEnv("zeebe.gateway.filters.0.className", "OverwrittenFilter");
     setEnv("zeebe.gateway.filters.0.jarPath", "./overwrittenFilter.jar");
+    setEnv("zeebe.gateway.network.soSndbuf", "3MB");
+    setEnv("zeebe.gateway.network.soRcvbuf", "3MB");
 
     final GatewayCfg expected = new GatewayCfg();
     expected
         .getNetwork()
         .setHost("zeebe")
         .setPort(5432)
-        .setMinKeepAliveInterval(Duration.ofSeconds(30));
+        .setMinKeepAliveInterval(Duration.ofSeconds(30))
+        .setSoRcvbuf(DataSize.ofMegabytes(3))
+        .setSoSndbuf(DataSize.ofMegabytes(3));
     expected
         .getCluster()
         .setInitialContactPoints(List.of("broker:432", "anotherBroker:789"))

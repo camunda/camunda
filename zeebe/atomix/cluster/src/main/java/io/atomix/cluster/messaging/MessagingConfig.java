@@ -35,6 +35,8 @@ public class MessagingConfig implements Config {
   private CompressionAlgorithm compressionAlgorithm = CompressionAlgorithm.NONE;
   private File keyStore;
   private String keyStorePassword;
+  private int soSndbuf = 1024 * 1024;
+  private int soRcvbuf = 1024 * 1024;
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -248,6 +250,42 @@ public class MessagingConfig implements Config {
 
   public String getKeyStorePassword() {
     return keyStorePassword;
+  }
+
+  /**
+   * @return the configured size in bytes for SO_SNDBUF
+   */
+  public int getSoSndbuf() {
+    return soSndbuf;
+  }
+
+  /**
+   * Sets the size of SO_SNDBUF.
+   *
+   * @param soSndbuf the data size in bytes to use for SO_SNDBUF
+   * @return this config for chaining
+   */
+  public MessagingConfig setSoSndbuf(final int soSndbuf) {
+    this.soSndbuf = soSndbuf;
+    return this;
+  }
+
+  /**
+   * @return the configured size in bytes for SO_RCVBUF
+   */
+  public int getSoRcvbuf() {
+    return soRcvbuf;
+  }
+
+  /**
+   * Sets the size of SO_RCVBUF.
+   *
+   * @param soRcvbuf the data size in bytes to use for SO_RCVBUF
+   * @return this config for chaining
+   */
+  public MessagingConfig setSoRcvbuf(final int soRcvbuf) {
+    this.soRcvbuf = soRcvbuf;
+    return this;
   }
 
   public enum CompressionAlgorithm {

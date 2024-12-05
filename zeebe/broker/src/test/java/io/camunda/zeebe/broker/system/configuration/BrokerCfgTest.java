@@ -52,6 +52,8 @@ public final class BrokerCfgTest {
   private static final String ZEEBE_BROKER_NETWORK_ADVERTISED_HOST =
       "zeebe.broker.network.advertisedHost";
   private static final String ZEEBE_BROKER_NETWORK_PORT_OFFSET = "zeebe.broker.network.portOffset";
+  private static final String ZEEBE_BROKER_NETWORK_SOSNDBUF = "zeebe.broker.network.soSndbuf";
+  private static final String ZEEBE_BROKER_NETWORK_SORCVBUF = "zeebe.broker.network.soRcvbuf";
   private static final String ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED =
       "zeebe.broker.executionMetricsExporterEnabled";
 
@@ -526,6 +528,47 @@ public final class BrokerCfgTest {
     assertThat(membershipCfg.getSuspectProbes()).isEqualTo(5);
     assertThat(membershipCfg.getFailureTimeout()).isEqualTo(Duration.ofSeconds(20));
     assertThat(membershipCfg.getSyncInterval()).isEqualTo(Duration.ofSeconds(25));
+  }
+
+  @Test
+  public void shouldUseSoSndbufFromEnvironment() {
+    environment.put(ZEEBE_BROKER_NETWORK_SOSNDBUF, "2MB");
+    assertSocketBufferParameter(ZEEBE_BROKER_NETWORK_SOSNDBUF, "2MB");
+  }
+
+  private void assertSocketBufferParameter(
+      final String socketBufferParameter, final String number) {
+    assertThat(environment.get(socketBufferParameter)).isEqualTo(number);
+  }
+
+  @Test
+  public void shouldOverrideSpecifiedSoSndbufFromEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_NETWORK_SOSNDBUF, "2048KB");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // then
+    assertThat(cfg.getNetwork().getSoSndbuf().toBytes()).isEqualTo(2097152);
+  }
+
+  @Test
+  public void shouldUseSoRcvbufFromEnvironment() {
+    environment.put(ZEEBE_BROKER_NETWORK_SORCVBUF, "3MB");
+    assertSocketBufferParameter(ZEEBE_BROKER_NETWORK_SORCVBUF, "3MB");
+  }
+
+  @Test
+  public void shouldOverrideSpecifiedSoRcvbufFromEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_NETWORK_SORCVBUF, "2MB");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+
+    // then
+    assertThat(cfg.getNetwork().getSoRcvbuf().toKilobytes()).isEqualTo(2048);
   }
 
   private void assertDefaultPorts(final int command, final int internal) {

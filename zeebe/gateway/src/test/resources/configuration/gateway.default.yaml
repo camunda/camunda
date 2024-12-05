@@ -47,6 +47,11 @@
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_NETWORK_MINKEEPALIVEINTERVAL.
 # minKeepAliveInterval: 30s
 
+# ZEEBE_GATEWAY_NETWORK_SORCVBUF
+# soRcvbuf: 1MB
+# ZEEBE_GATEWAY_NETWORK_SOSNDBUF
+# soSndbuf: 1MB
+
 # cluster:
 # Sets initial contact points of brokers
 # The contact points of the internal network configuration must be specified.
