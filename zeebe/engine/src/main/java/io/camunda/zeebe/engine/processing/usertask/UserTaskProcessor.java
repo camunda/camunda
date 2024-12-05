@@ -99,6 +99,36 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var userTaskElementInstance = getUserTaskElementInstance(intermediateUserTaskRecord);
     final var context = buildContext(userTaskElementInstance);
 
+    if (!command.getValue().getChangedAttributes().isEmpty()) {
+      // todo: replace with call to UserTask.wrapChangedAttributes
+      command
+          .getValue()
+          .getChangedAttributes()
+          .forEach(
+              attribute -> {
+                switch (attribute) {
+                  case "assignee" ->
+                      intermediateUserTaskRecord.setAssignee(command.getValue().getAssignee());
+                  case "candidateGroups" ->
+                      intermediateUserTaskRecord.setCandidateGroupsList(
+                          command.getValue().getCandidateGroupsList());
+                  case "candidateUsers" ->
+                      intermediateUserTaskRecord.setCandidateUsersList(
+                          command.getValue().getCandidateUsersList());
+                  case "dueDate" ->
+                      intermediateUserTaskRecord.setDueDate(command.getValue().getDueDate());
+                  case "followUpDate" ->
+                      intermediateUserTaskRecord.setFollowUpDate(
+                          command.getValue().getFollowUpDate());
+                  case "priority" ->
+                      intermediateUserTaskRecord.setPriority(command.getValue().getPriority());
+                }
+              });
+      intermediateUserTaskRecord.setChangedAttributes(command.getValue().getChangedAttributes());
+      stateWriter.appendFollowUpEvent(
+          command.getKey(), UserTaskIntent.CORRECTED, intermediateUserTaskRecord);
+    }
+
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
         .ifPresentOrElse(
             listener ->
