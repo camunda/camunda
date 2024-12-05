@@ -124,7 +124,7 @@ public class BrokerRequestWithAuthorizationInfoTest extends GatewayTest {
                         Authorization.USER_TOKEN_CLAIM_PREFIX + entry.getKey(), entry.getValue()))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     final BrokerExecuteCommand<?> brokerRequest = brokerClient.getSingleBrokerRequest();
-    final Map<String, Object> decodedMap = brokerRequest.getAuthorization().getAuthInfo();
+    final Map<String, Object> decodedMap = brokerRequest.getAuthorization().getAuthData();
 
     assertThat(decodedMap).containsAllEntriesOf(mapToCheck);
   }

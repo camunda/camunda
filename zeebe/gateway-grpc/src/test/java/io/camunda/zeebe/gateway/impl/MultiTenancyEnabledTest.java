@@ -69,7 +69,7 @@ public class MultiTenancyEnabledTest extends GatewayTest {
 
   private void assertThatAuthorizedTenantIdsSet(final List<String> authorizedTenants) {
     final var brokerRequest = brokerClient.getSingleBrokerRequest();
-    assertThat(((BrokerExecuteCommand<?>) brokerRequest).getAuthorization().getAuthInfo())
+    assertThat(((BrokerExecuteCommand<?>) brokerRequest).getAuthorization().getAuthData())
         .describedAs(
             "The broker request should contain '%s' as authorized tenant", authorizedTenants)
         .hasEntrySatisfying(

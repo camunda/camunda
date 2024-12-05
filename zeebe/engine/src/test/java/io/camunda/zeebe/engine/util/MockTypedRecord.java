@@ -116,7 +116,7 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
 
   @Override
   public Map<String, Object> getAuthorizations() {
-    return metadata.getAuthorization().getAuthInfo();
+    return metadata.getAuthorization().getAuthData();
   }
 
   @Override

@@ -22,7 +22,7 @@ public class AuthorizationUtil {
    */
   public static AuthInfo getAuthInfo(final String... authorizedTenantIds) {
     final var auth = new AuthInfo();
-    auth.setAuthInfo(Map.of(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds)));
+    auth.setAuthData(Map.of(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds)));
     return auth;
   }
 }

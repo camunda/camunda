@@ -13,7 +13,6 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -157,9 +156,9 @@ final class JsonSerializableToJsonTest {
 
               final AuthInfo authInfo =
                   new AuthInfo()
-                      .setFormatProp(AuthDataFormat.JWT)
                       .setAuthData(
-                          "eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJpc3MiOiJ6ZWViZS1nYXRld2F5IiwiYXVkIjoiemVlYmUtYnJva2VyIiwic3ViIjoiemVlYmUtY2xpZW50IiwiYXV0aG9yaXplZF90ZW5hbnRzIjpbInRlbmFudC0xIiwidGVuYW50LTIiLCJ0ZW5hbnQtMyJdfQ.");
+                          Map.of("foo", "bar")
+                      );
 
               recordMetadata
                   .intent(intent)
@@ -217,12 +216,8 @@ final class JsonSerializableToJsonTest {
           "rejectionType": "INVALID_ARGUMENT",
           "rejectionReason": "fails",
           "brokerVersion": "1.2.3",
-          "authorizations": {
-            "authorized_tenants":[
-              "tenant-1",
-              "tenant-2",
-              "tenant-3"
-            ]
+          "authorizations" : {
+            "foo" : "bar"
           },
           "recordVersion": 10,
           "operationReference": 1234,
@@ -286,11 +281,7 @@ final class JsonSerializableToJsonTest {
           "rejectionType": "NULL_VAL",
           "rejectionReason": "",
           "brokerVersion": "0.0.0",
-          "authorizations": {
-            "authorized_tenants":[
-              "<default>"
-            ]
-          },
+          "authorizations": {},
           "recordVersion": 1,
           "operationReference": -1,
           "value": {
