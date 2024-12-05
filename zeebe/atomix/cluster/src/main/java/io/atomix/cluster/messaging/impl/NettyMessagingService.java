@@ -118,15 +118,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
   private final ChannelPool channelPool;
   private final Set<CompletableFuture<?>> openFutures = Sets.newConcurrentHashSet();
   private final MessagingConfig config;
-
   private EventLoopGroup serverGroup;
   private EventLoopGroup clientGroup;
   private Class<? extends ServerChannel> serverChannelClass;
   private Class<? extends SocketChannel> clientChannelClass;
   private Class<? extends DatagramChannel> clientDataGramChannelClass;
-
   private Channel serverChannel;
-
   // a single thread executor which silently rejects tasks being submitted when it's shutdown
   private ScheduledExecutorService timeoutExecutor;
   private volatile LocalClientConnection localConnection;
@@ -155,21 +152,8 @@ public final class NettyMessagingService implements ManagedMessagingService {
   }
 
   @VisibleForTesting
-  // duplicated for tests - to inject channel pool
-  NettyMessagingService(
-      final String cluster,
-      final Address advertisedAddress,
-      final MessagingConfig config,
-      final ProtocolVersion protocolVersion,
-      final Function<Function<Address, CompletableFuture<Channel>>, ChannelPool>
-          channelPoolFactor) {
-    preamble = cluster.hashCode();
-    this.advertisedAddress = advertisedAddress;
-    this.protocolVersion = protocolVersion;
-    this.config = config;
-    channelPool = channelPoolFactor.apply(this::openChannel);
-
-    initAddresses(config);
+  public ChannelPool getChannelPool() {
+    return channelPool;
   }
 
   private void initAddresses(final MessagingConfig config) {
@@ -874,7 +858,10 @@ public final class NettyMessagingService implements ManagedMessagingService {
         return;
       }
       switch (idleStateEvent.state()) {
-        case READER_IDLE -> ctx.close();
+        case READER_IDLE -> {
+          log.warn("Connection {} timed out, closing channel", ctx.channel());
+          ctx.close();
+        }
         case WRITER_IDLE -> ctx.writeAndFlush(createHeartBeat());
         default -> {}
       }
