@@ -1057,6 +1057,67 @@ public class TaskListenerTest {
         .hasUserTaskKey(userTask.getUserTaskKey());
   }
 
+  @Test
+  public void shouldProvideCorrectedUserTaskDataToSubsequentTaskListener() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(LISTENER_TYPE, LISTENER_TYPE + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setAssignee("new_assignee")
+                        .setCandidateUsers(List.of("new_candidate_user"))
+                        .setCandidateGroups(List.of("new_candidate_group"))
+                        .setDueDate("new_due_date")
+                        .setFollowUpDate("new_follow_up_date")
+                        .setPriority(100))
+                .setCorrectedAttributes(
+                    List.of(
+                        "assignee",
+                        "candidateUsers",
+                        "candidateGroups",
+                        "dueDate",
+                        "followUpDate",
+                        "priority")))
+        .complete();
+
+    // then
+    final var activatedListenerJob = activateJob(processInstanceKey, LISTENER_TYPE + "_2");
+    assertThat(activatedListenerJob.getCustomHeaders())
+        .describedAs("Expect that corrected data is accessible in the subsequent listener")
+        .contains(
+            entry(Protocol.USER_TASK_ASSIGNEE_HEADER_NAME, "new_assignee"),
+            entry(Protocol.USER_TASK_CANDIDATE_USERS_HEADER_NAME, "[\"new_candidate_user\"]"),
+            entry(Protocol.USER_TASK_CANDIDATE_GROUPS_HEADER_NAME, "[\"new_candidate_group\"]"),
+            entry(Protocol.USER_TASK_DUE_DATE_HEADER_NAME, "new_due_date"),
+            entry(Protocol.USER_TASK_FOLLOW_UP_DATE_HEADER_NAME, "new_follow_up_date")
+            /*
+             // priority is not yet accessible as a custom header
+             , entry(Protocol.USER_TASK_PRIORITY_HEADER_NAME, "100")
+            */
+            );
+
+    completeJobs(processInstanceKey, LISTENER_TYPE + "_2");
+
+    assertUserTaskIntentsSequence(
+        UserTaskIntent.COMPLETE,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.CORRECTED,
+        UserTaskIntent.COMPLETE_TASK_LISTENER,
+        UserTaskIntent.COMPLETED);
+  }
+
   private static void completeRecreatedJobWithType(
       final EngineRule engine, final long processInstanceKey, final String jobType) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
