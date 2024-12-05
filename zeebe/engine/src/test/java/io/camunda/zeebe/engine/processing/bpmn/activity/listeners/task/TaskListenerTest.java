@@ -1118,6 +1118,72 @@ public class TaskListenerTest {
         UserTaskIntent.COMPLETED);
   }
 
+  @Test
+  public void shouldPersistCorrectedUserTaskDataWhenAllTaskListenersCompleted() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(LISTENER_TYPE, LISTENER_TYPE + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setAssignee("new_assignee")
+                        .setCandidateUsers(List.of("new_candidate_user"))
+                        .setCandidateGroups(List.of("new_candidate_group"))
+                        .setDueDate("new_due_date")
+                        .setFollowUpDate("new_follow_up_date")
+                        .setPriority(100))
+                .setCorrectedAttributes(
+                    List.of(
+                        "assignee",
+                        "candidateUsers",
+                        "candidateGroups",
+                        "dueDate",
+                        "followUpDate",
+                        "priority")))
+        .complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE + "_2")
+        .withResult(
+            new JobResult()
+                .setCorrections(new JobResultCorrections().setAssignee("twice_corrected_assignee"))
+                .setCorrectedAttributes(List.of("assignee")))
+        .complete();
+
+    // then
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.COMPLETED,
+        userTaskRecord ->
+            Assertions.assertThat(userTaskRecord)
+                .describedAs("Expect that user task completed with corrected data")
+                .hasChangedAttributes(
+                    "assignee",
+                    "candidateUsers",
+                    "candidateGroups",
+                    "dueDate",
+                    "followUpDate",
+                    "priority")
+                .hasCandidateUsersList("new_candidate_user")
+                .hasCandidateGroupsList("new_candidate_group")
+                .hasDueDate("new_due_date")
+                .hasFollowUpDate("new_follow_up_date")
+                .hasPriority(100)
+                .describedAs("Expect that the most recent correction takes precedence")
+                .hasAssignee("twice_corrected_assignee"));
+  }
+
   private static void completeRecreatedJobWithType(
       final EngineRule engine, final long processInstanceKey, final String jobType) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
