@@ -49,6 +49,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -78,7 +79,7 @@ public class TaskListenerTest {
 
   @Before
   public void setup() {
-    listenerType = "my_listener";
+    listenerType = "my_listener_" + UUID.randomUUID();
   }
 
   @Test
