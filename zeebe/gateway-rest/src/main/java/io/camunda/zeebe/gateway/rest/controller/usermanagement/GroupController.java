@@ -19,6 +19,7 @@ import io.camunda.zeebe.gateway.rest.controller.CamundaRestController;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -52,6 +53,17 @@ public class GroupController {
       @PathVariable final long groupKey, @RequestBody final GroupUpdateRequest groupUpdateRequest) {
     return RequestMapper.toGroupUpdateRequest(groupUpdateRequest, groupKey)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGroup);
+  }
+
+  @DeleteMapping(
+      path = "/{groupKey}",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public CompletableFuture<ResponseEntity<Object>> deleteGroup(@PathVariable final long groupKey) {
+    return RequestMapper.executeServiceMethodWithNoContentResult(
+        () ->
+            groupServices
+                .withAuthentication(RequestMapper.getAuthentication())
+                .deleteGroup(groupKey));
   }
 
   private CompletableFuture<ResponseEntity<Object>> createGroup(
