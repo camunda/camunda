@@ -79,7 +79,7 @@ public class PermissionsBehavior {
     for (final PermissionValue permission : record.getPermissions()) {
       final var addedResourceIds = permission.getResourceIds();
       final var currentResourceIds =
-          authCheckBehavior.getAuthorizedResourceIdentifiers(
+          authCheckBehavior.getAllAuthorizedResourceIdentifiers(
               record.getOwnerKey(),
               record.getOwnerType(),
               record.getResourceType(),
@@ -108,7 +108,7 @@ public class PermissionsBehavior {
       final AuthorizationRecord record) {
     for (final PermissionValue permission : record.getPermissions()) {
       final var currentResourceIdentifiers =
-          authCheckBehavior.getAuthorizedResourceIdentifiers(
+          authCheckBehavior.getAllAuthorizedResourceIdentifiers(
               record.getOwnerKey(),
               record.getOwnerType(),
               record.getResourceType(),

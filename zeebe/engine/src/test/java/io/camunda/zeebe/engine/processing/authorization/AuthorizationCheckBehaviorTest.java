@@ -99,7 +99,7 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
     final var resourceIdentifiers =
-        authorizationCheckBehavior.getAuthorizedResourceIdentifiers(request);
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
@@ -116,7 +116,7 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
     final var resourceIdentifiers =
-        authorizationCheckBehavior.getAuthorizedResourceIdentifiers(request);
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(resourceIdentifiers).isEmpty();
@@ -157,7 +157,7 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
     final var resourceIdentifiers =
-        authorizationCheckBehavior.getAuthorizedResourceIdentifiers(request);
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
@@ -198,7 +198,7 @@ public class AuthorizationCheckBehaviorTest {
     // when
     final var request = new AuthorizationRequest(command, resourceType, permissionType);
     final var resourceIdentifiers =
-        authorizationCheckBehavior.getAuthorizedResourceIdentifiers(request);
+        authorizationCheckBehavior.getAllAuthorizedResourceIdentifiers(request);
 
     // then
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
