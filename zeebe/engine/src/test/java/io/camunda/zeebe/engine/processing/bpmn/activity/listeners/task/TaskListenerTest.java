@@ -1184,6 +1184,62 @@ public class TaskListenerTest {
                 .hasAssignee("twice_corrected_assignee"));
   }
 
+  @Test
+  public void shouldRevertCorrectedUserTaskDataWhenTaskListenerDenies() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(LISTENER_TYPE, LISTENER_TYPE + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setAssignee("new_assignee")
+                        .setCandidateUsers(List.of("new_candidate_user"))
+                        .setCandidateGroups(List.of("new_candidate_group"))
+                        .setDueDate("new_due_date")
+                        .setFollowUpDate("new_follow_up_date")
+                        .setPriority(100))
+                .setCorrectedAttributes(
+                    List.of(
+                        "assignee",
+                        "candidateUsers",
+                        "candidateGroups",
+                        "dueDate",
+                        "followUpDate",
+                        "priority")))
+        .complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE + "_2")
+        .withResult(new JobResult().setDenied(true))
+        .complete();
+
+    // then
+    assertUserTaskRecordWithIntent(
+        processInstanceKey,
+        UserTaskIntent.COMPLETION_DENIED,
+        userTaskRecord ->
+            Assertions.assertThat(userTaskRecord)
+                .describedAs("Expect that user task data is reverted to before the completion")
+                .hasNoChangedAttributes()
+                .hasNoCandidateUsersList()
+                .hasNoCandidateGroupsList()
+                .hasDueDate("")
+                .hasFollowUpDate("")
+                .hasPriority(50)
+                .hasAssignee(""));
+  }
+
   private static void completeRecreatedJobWithType(
       final EngineRule engine, final long processInstanceKey, final String jobType) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
