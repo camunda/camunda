@@ -149,7 +149,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
 
   @Override
   public Map<String, Object> getAuthorizations() {
-    return authorization.toDecodedMap();
+    return authorization.getAuthInfo();
   }
 
   @Override
