@@ -27,6 +27,12 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
     declareProperty(nameProp);
   }
 
+  public PersistedTenant copy() {
+    final var copy = new PersistedTenant();
+    copy.copyFrom(this);
+    return copy;
+  }
+
   /**
    * Gets the tenant key.
    *
@@ -94,7 +100,7 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
    *
    * @param tenantRecord the TenantRecord from which to copy the data
    */
-  public void wrap(final TenantRecord tenantRecord) {
+  public void from(final TenantRecord tenantRecord) {
     tenantKeyProp.setValue(tenantRecord.getTenantKey());
     tenantIdProp.setValue(tenantRecord.getTenantId());
     nameProp.setValue(tenantRecord.getName());
