@@ -61,6 +61,16 @@ deny[msg] {
     msg := "This GitHub Actions workflows triggers on.push to any branch! Use on.pull_request for non-main/stable* branches."
 }
 
+deny[msg] {
+    # This rule enforces the best practices listed and explained in
+    # https://github.com/camunda/camunda/wiki/CI-&-Automation#caching-strategy
+
+    count(get_jobs_with_setupnodecaching(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs using setup-node with caching instead of setup-yarn-cache! Affected job IDs: %s",
+        [concat(", ", get_jobs_with_setupnodecaching(input.jobs))])
+}
+
 ###########################   RULE HELPERS   ##################################
 
 get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
@@ -106,5 +116,18 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
             step.uses == "./.github/actions/observe-build-status"
         }
         count(cihealth_steps) < 1
+    }
+}
+
+get_jobs_with_setupnodecaching(jobInput) = jobs_with_setupnodecaching {
+    jobs_with_setupnodecaching := { job_id |
+        job := jobInput[job_id]
+
+        setupnodecaching_steps := { step |
+            step := job.steps[_]
+            startswith(step.uses, "actions/setup-node")
+            step["with"].cache == "yarn"
+        }
+        count(setupnodecaching_steps) > 0
     }
 }
