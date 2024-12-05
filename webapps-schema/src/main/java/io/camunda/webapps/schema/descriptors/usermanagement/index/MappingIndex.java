@@ -7,9 +7,10 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 
-public class MappingIndex extends UserManagementIndexDescriptor {
+public class MappingIndex extends UserManagementIndexDescriptor implements Prio5Backup {
   public static final String INDEX_NAME = "mappings";
   public static final String INDEX_VERSION = "8.7.0";
 

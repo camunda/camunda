@@ -7,9 +7,10 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 
-public class AuthorizationIndex extends UserManagementIndexDescriptor {
+public class AuthorizationIndex extends UserManagementIndexDescriptor implements Prio5Backup {
   public static final String INDEX_NAME = "authorizations";
   public static final String INDEX_VERSION = "8.7.0";
 

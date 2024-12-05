@@ -7,11 +7,12 @@
  */
 package io.camunda.webapps.schema.descriptors.usermanagement.index;
 
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.usermanagement.UserManagementIndexDescriptor;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation;
 import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.EntityJoinRelationFactory;
 
-public class TenantIndex extends UserManagementIndexDescriptor {
+public class TenantIndex extends UserManagementIndexDescriptor implements Prio5Backup {
 
   public static final String INDEX_NAME = "tenants";
   public static final String INDEX_VERSION = "8.7.0";
