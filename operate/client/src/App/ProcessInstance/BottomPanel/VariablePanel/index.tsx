@@ -36,8 +36,6 @@ const VariablePanel = observer(function VariablePanel() {
   const {listeners, listenerTypeFilter} = state;
 
   const shouldUseFlowNodeId = !flowNodeInstanceId && flowNodeId;
-  const shouldUseFlowNodeInstanceId =
-    flowNodeInstanceId && !flowNodeSelectionStore.isRootNodeSelected;
 
   useEffect(() => {
     reset();
@@ -61,7 +59,7 @@ const VariablePanel = observer(function VariablePanel() {
           ...(listenerTypeFilter && {listenerTypeFilter}),
         },
       });
-    } else if (shouldUseFlowNodeInstanceId) {
+    } else if (flowNodeInstanceId) {
       fetchListeners({
         fetchType: 'initial',
         processInstanceId: processInstanceId,
@@ -77,7 +75,6 @@ const VariablePanel = observer(function VariablePanel() {
     flowNodeId,
     flowNodeInstanceId,
     shouldUseFlowNodeId,
-    shouldUseFlowNodeInstanceId,
     listenerTypeFilter,
   ]);
 
