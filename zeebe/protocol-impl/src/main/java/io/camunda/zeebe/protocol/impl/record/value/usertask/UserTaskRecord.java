@@ -37,6 +37,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
+  public static final String ASSIGNEE = "assignee";
   public static final String CANDIDATE_GROUPS = "candidateGroupsList";
   public static final String CANDIDATE_USERS = "candidateUsersList";
   public static final String DUE_DATE = "dueDate";
@@ -44,6 +45,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   public static final String PRIORITY = "priority";
 
   private static final String EMPTY_STRING = "";
+  private static final StringValue ASSIGNEE_VALUE = new StringValue(ASSIGNEE);
   private static final StringValue CANDIDATE_GROUPS_VALUE = new StringValue(CANDIDATE_GROUPS);
   private static final StringValue CANDIDATE_USERS_VALUE = new StringValue(CANDIDATE_USERS);
   private static final StringValue DUE_DATE_VALUE = new StringValue(DUE_DATE);
@@ -51,7 +53,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
   private static final StringValue PRIORITY_VALUE = new StringValue(PRIORITY);
 
   private final LongProperty userTaskKeyProp = new LongProperty("userTaskKey", -1);
-  private final StringProperty assigneeProp = new StringProperty("assignee", EMPTY_STRING);
+  private final StringProperty assigneeProp = new StringProperty(ASSIGNEE, EMPTY_STRING);
   private final ArrayProperty<StringValue> candidateGroupsListProp =
       new ArrayProperty<>(CANDIDATE_GROUPS, StringValue::new);
   private final ArrayProperty<StringValue> candidateUsersListProp =
@@ -162,6 +164,9 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   private void updateAttribute(final StringValue attribute, final UserTaskRecord record) {
     switch (bufferAsString(attribute.getValue())) {
+      case ASSIGNEE:
+        setAssignee(record.getAssigneeBuffer());
+        break;
       case CANDIDATE_GROUPS:
         setCandidateGroupsList(record.getCandidateGroupsList());
         break;
@@ -194,6 +199,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
       final List<String> correctedAttributes, final JobResultCorrections corrections) {
     correctedAttributes.forEach(
         attribute -> {
+          // todo: replace attributes with constants
           switch (attribute) {
             case "assignee" -> setAssignee(corrections.getAssignee());
             case "candidateGroups" -> setCandidateGroupsList(corrections.getCandidateGroups());
@@ -432,6 +438,11 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
 
   public UserTaskRecord setUserTaskKey(final long userTaskKey) {
     userTaskKeyProp.setValue(userTaskKey);
+    return this;
+  }
+
+  public UserTaskRecord setAssigneeChanged() {
+    changedAttributesProp.add().wrap(ASSIGNEE_VALUE);
     return this;
   }
 
