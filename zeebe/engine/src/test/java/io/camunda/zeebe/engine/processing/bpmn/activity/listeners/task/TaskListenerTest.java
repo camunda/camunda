@@ -23,6 +23,7 @@ import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.Record;
@@ -942,6 +943,118 @@ public class TaskListenerTest {
         UserTaskIntent.COMPLETING,
         UserTaskIntent.COMPLETE_TASK_LISTENER,
         UserTaskIntent.COMPLETED);
+  }
+
+  @Test
+  public void shouldAppendUserTaskCorrectedWhenTaskListenerCompletesWithCorrections() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(LISTENER_TYPE, LISTENER_TYPE + "_2"));
+
+    final var userTaskRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+    final var userTask = userTaskRecord.getValue();
+    ENGINE.userTask().withKey(userTaskRecord.getKey()).complete();
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE)
+        .withResult(
+            new JobResult()
+                .setCorrections(
+                    new JobResultCorrections()
+                        .setAssignee("new_assignee")
+                        .setCandidateUsers(List.of("new_candidate_user"))
+                        .setCandidateGroups(List.of("new_candidate_group"))
+                        .setDueDate("new_due_date")
+                        .setFollowUpDate("new_follow_up_date")
+                        .setPriority(100))
+                .setCorrectedAttributes(
+                    List.of(
+                        "assignee",
+                        "candidateUsers",
+                        "candidateGroups",
+                        "dueDate",
+                        "followUpDate",
+                        "priority")))
+        .complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CORRECTED)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasChangedAttributes(
+            "assignee", "candidateUsers", "candidateGroups", "dueDate", "followUpDate", "priority")
+        .hasAssignee("new_assignee")
+        .hasCandidateUsersList(List.of("new_candidate_user"))
+        .hasCandidateGroupsList(List.of("new_candidate_group"))
+        .hasDueDate("new_due_date")
+        .hasFollowUpDate("new_follow_up_date")
+        .hasPriority(100)
+        .describedAs("Expect that the action references the listened to action")
+        .hasAction("complete")
+        .describedAs("Expect that the other data is also filled but remains unchanged")
+        .hasBpmnProcessId(userTask.getBpmnProcessId())
+        .hasCreationTimestamp(userTask.getCreationTimestamp())
+        .hasElementId(userTask.getElementId())
+        .hasElementInstanceKey(userTask.getElementInstanceKey())
+        .hasExternalFormReference(userTask.getExternalFormReference())
+        .hasFormKey(userTask.getFormKey())
+        .hasProcessDefinitionKey(userTask.getProcessDefinitionKey())
+        .hasProcessInstanceKey(userTask.getProcessInstanceKey())
+        .hasVariables(userTask.getVariables())
+        .hasTenantId(userTask.getTenantId())
+        .hasUserTaskKey(userTask.getUserTaskKey());
+
+    // when
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(LISTENER_TYPE + "_2")
+        .withResult(
+            new JobResult()
+                .setCorrections(new JobResultCorrections().setPriority(3))
+                .setCorrectedAttributes(List.of("priority")))
+        .complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.CORRECTED)
+                .withProcessInstanceKey(processInstanceKey)
+                .skip(1)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect only the corrected attributes are mentioned")
+        .hasChangedAttributes("priority")
+        .describedAs("Expect that the corrected attribute is updated")
+        .hasPriority(3)
+        .describedAs("Expect that the other corrected data remains unchanged")
+        .hasAssignee("new_assignee")
+        .hasCandidateUsersList(List.of("new_candidate_user"))
+        .hasCandidateGroupsList(List.of("new_candidate_group"))
+        .hasDueDate("new_due_date")
+        .hasFollowUpDate("new_follow_up_date")
+        .describedAs("Expect that the action references the listened to action")
+        .hasAction("complete")
+        .describedAs("Expect that the other data is also filled but remains unchanged")
+        .hasBpmnProcessId(userTask.getBpmnProcessId())
+        .hasCreationTimestamp(userTask.getCreationTimestamp())
+        .hasElementId(userTask.getElementId())
+        .hasElementInstanceKey(userTask.getElementInstanceKey())
+        .hasExternalFormReference(userTask.getExternalFormReference())
+        .hasFormKey(userTask.getFormKey())
+        .hasProcessDefinitionKey(userTask.getProcessDefinitionKey())
+        .hasProcessInstanceKey(userTask.getProcessInstanceKey())
+        .hasVariables(userTask.getVariables())
+        .hasTenantId(userTask.getTenantId())
+        .hasUserTaskKey(userTask.getUserTaskKey());
   }
 
   private static void completeRecreatedJobWithType(
