@@ -20,13 +20,19 @@ import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
-import io.camunda.exporter.tasks.incident.IncidentUpdateRepository.NoopIncidentUpdateRepository;
+import io.camunda.exporter.tasks.incident.ElasticsearchIncidentUpdateRepository;
+import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
+import io.camunda.exporter.tasks.incident.OpenSearchIncidentUpdateRepository;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
 import java.util.ArrayList;
@@ -45,7 +51,8 @@ public final class BackgroundTaskManagerFactory {
   private final ExporterMetadata metadata;
 
   private ScheduledThreadPoolExecutor executor;
-  private ArchiverRepository repository;
+  private ArchiverRepository archiverRepository;
+  private IncidentUpdateRepository incidentRepository;
 
   public BackgroundTaskManagerFactory(
       final int partitionId,
@@ -66,10 +73,12 @@ public final class BackgroundTaskManagerFactory {
 
   public BackgroundTaskManager build() {
     executor = buildExecutor();
-    repository = buildRepository();
+    archiverRepository = buildArchiverRepository();
+    incidentRepository = buildIncidentRepository();
     final List<Runnable> tasks = buildTasks();
 
-    return new BackgroundTaskManager(partitionId, repository, logger, executor, tasks);
+    return new BackgroundTaskManager(
+        partitionId, archiverRepository, incidentRepository, logger, executor, tasks);
   }
 
   private List<Runnable> buildTasks() {
@@ -84,7 +93,7 @@ public final class BackgroundTaskManagerFactory {
       if (partitionId == START_PARTITION_ID) {
         threadCount = 3;
         tasks.add(buildBatchOperationArchiverJob());
-        tasks.add(new ApplyRolloverPeriodJob(repository, metrics, logger));
+        tasks.add(new ApplyRolloverPeriodJob(archiverRepository, metrics, logger));
       }
     }
 
@@ -93,12 +102,11 @@ public final class BackgroundTaskManagerFactory {
   }
 
   private ReschedulingTask buildIncidentMarkerTask() {
-    final var repository = new NoopIncidentUpdateRepository();
     final var postExport = config.getPostExport();
     return new ReschedulingTask(
         new IncidentUpdateTask(
             metadata,
-            repository,
+            incidentRepository,
             postExport.isIgnoreMissingData(),
             postExport.getBatchSize(),
             logger),
@@ -123,7 +131,7 @@ public final class BackgroundTaskManagerFactory {
 
     return buildReschedulingArchiverTask(
         new ProcessInstancesArchiverJob(
-            repository,
+            archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
             dependantTemplates,
             metrics,
@@ -134,7 +142,7 @@ public final class BackgroundTaskManagerFactory {
   private ReschedulingTask buildBatchOperationArchiverJob() {
     return buildReschedulingArchiverTask(
         new BatchOperationArchiverJob(
-            repository,
+            archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class),
             metrics,
             logger,
@@ -166,7 +174,7 @@ public final class BackgroundTaskManagerFactory {
     return executor;
   }
 
-  private ArchiverRepository buildRepository() {
+  private ArchiverRepository buildArchiverRepository() {
     final var listViewTemplate =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     final var batchOperationTemplate =
@@ -196,6 +204,48 @@ public final class BackgroundTaskManagerFactory {
             connector.createAsyncClient(),
             executor,
             metrics,
+            logger);
+      }
+    };
+  }
+
+  private IncidentUpdateRepository buildIncidentRepository() {
+    final var listViewTemplate =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    final var flowNodeTemplate =
+        resourceProvider.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
+    final var incidentTemplate =
+        resourceProvider.getIndexTemplateDescriptor(IncidentTemplate.class);
+    final var postImporterTemplate =
+        resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+    final var operationTemplate =
+        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
+
+    return switch (ConnectionTypes.from(config.getConnect().getType())) {
+      case ELASTICSEARCH -> {
+        final var connector = new ElasticsearchConnector(config.getConnect());
+        yield new ElasticsearchIncidentUpdateRepository(
+            partitionId,
+            postImporterTemplate.getAlias(),
+            incidentTemplate.getAlias(),
+            listViewTemplate.getAlias(),
+            flowNodeTemplate.getAlias(),
+            operationTemplate.getAlias(),
+            connector.createAsyncClient(),
+            executor,
+            logger);
+      }
+      case OPENSEARCH -> {
+        final var connector = new OpensearchConnector(config.getConnect());
+        yield new OpenSearchIncidentUpdateRepository(
+            partitionId,
+            postImporterTemplate.getAlias(),
+            incidentTemplate.getAlias(),
+            listViewTemplate.getAlias(),
+            flowNodeTemplate.getAlias(),
+            operationTemplate.getAlias(),
+            connector.createAsyncClient(),
+            executor,
             logger);
       }
     };
