@@ -88,13 +88,12 @@ public final class AuthorizationCheckBehavior {
       return Set.of(WILDCARD_PERMISSION);
     }
 
-    final var userKey = getUserKey(request);
-    if (userKey.isEmpty()) {
-      return new HashSet<>();
-    }
-
-    return getUserAuthorizedResourceIdentifiers(
-            userKey.get(), request.getResourceType(), request.getPermissionType())
+    return getUserKey(request)
+        .map(
+            userKey ->
+                getUserAuthorizedResourceIdentifiers(
+                    userKey, request.getResourceType(), request.getPermissionType()))
+        .orElseGet(Stream::empty)
         .collect(Collectors.toSet());
   }
 
