@@ -173,7 +173,13 @@ public class IdentitySetupInitializeTest {
 
     // when
     final var initializeRecord =
-        engine.identitySetup().initialize().withTenant(tenant).initialize();
+        engine
+            .identitySetup()
+            .initialize()
+            .withUser(new UserRecord().setUserKey(2))
+            .withRole(new RoleRecord().setRoleKey(3))
+            .withTenant(tenant)
+            .initialize();
 
     // then
     assertTenantIsNotCreated(initializeRecord.getSourceRecordPosition());
