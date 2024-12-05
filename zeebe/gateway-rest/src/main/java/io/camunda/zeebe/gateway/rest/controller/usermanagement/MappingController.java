@@ -53,7 +53,8 @@ public class MappingController {
   @DeleteMapping(
       path = "/{mappingKey}",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public CompletableFuture<ResponseEntity<Object>> deleteRole(@PathVariable final long mappingKey) {
+  public CompletableFuture<ResponseEntity<Object>> deleteMapping(
+      @PathVariable final long mappingKey) {
     return RequestMapper.executeServiceMethodWithNoContentResult(
         () ->
             mappingServices
