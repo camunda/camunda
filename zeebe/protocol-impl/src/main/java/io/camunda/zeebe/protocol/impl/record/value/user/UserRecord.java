@@ -37,13 +37,8 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
         .declareProperty(userTypeProp);
   }
 
-  public void wrap(final UserRecord record) {
-    userKeyProp.setValue(record.getUserKey());
-    usernameProp.setValue(record.getUsernameBuffer());
-    nameProp.setValue(record.getNameBuffer());
-    emailProp.setValue(record.getEmailBuffer());
-    passwordProp.setValue(record.getPasswordBuffer());
-    userTypeProp.setValue(record.getUserType());
+  public void copy(final UserRecord record) {
+    copyFrom(record);
   }
 
   @Override

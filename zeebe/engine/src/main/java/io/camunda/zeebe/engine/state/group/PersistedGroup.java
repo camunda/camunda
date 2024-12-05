@@ -42,8 +42,7 @@ public class PersistedGroup extends UnpackedObject implements DbValue {
     return this;
   }
 
-  public void wrap(final GroupRecord group) {
-    groupKeyProp.setValue(group.getGroupKey());
-    nameProp.setValue(group.getName());
+  public void copy(final GroupRecord group) {
+    copyFrom(group);
   }
 }

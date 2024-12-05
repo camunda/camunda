@@ -41,10 +41,7 @@ public class PersistedUser extends UnpackedObject implements DbValue {
 
   public PersistedUser copy() {
     final var copy = new PersistedUser();
-    copy.setUser(getUser());
-    copy.setRoleKeysList(getRoleKeysList());
-    copy.setTenantIdsList(getTenantIdsList());
-    copy.setGroupKeysList(getGroupKeysList());
+    copy.copyFrom(this);
     return copy;
   }
 
@@ -53,7 +50,7 @@ public class PersistedUser extends UnpackedObject implements DbValue {
   }
 
   public void setUser(final UserRecord record) {
-    userProp.getValue().wrap(record);
+    userProp.getValue().copy(record);
   }
 
   public long getUserKey() {

@@ -71,10 +71,7 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
     return this;
   }
 
-  public void wrap(final GroupRecord groupRecord) {
-    groupKeyProp.setValue(groupRecord.getGroupKey());
-    nameProp.setValue(groupRecord.getName());
-    entityKeyProp.setValue(groupRecord.getEntityKey());
-    entityTypeProp.setValue(groupRecord.getEntityType());
+  public void copy(final GroupRecord groupRecord) {
+    copyFrom(groupRecord);
   }
 }

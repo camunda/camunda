@@ -31,11 +31,8 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
         .declareProperty(entityTypeProp);
   }
 
-  public void wrap(final RoleRecord record) {
-    roleKeyProp.setValue(record.getRoleKey());
-    nameProp.setValue(record.getName());
-    entityKeyProp.setValue(record.getEntityKey());
-    entityTypeProp.setValue(record.getEntityType());
+  public void copy(final RoleRecord record) {
+    copyFrom(record);
   }
 
   @Override
