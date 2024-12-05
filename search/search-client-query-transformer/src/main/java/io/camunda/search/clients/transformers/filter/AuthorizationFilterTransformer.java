@@ -40,6 +40,6 @@ public final class AuthorizationFilterTransformer
 
   @Override
   public List<String> toIndices(final AuthorizationFilter filter) {
-    return List.of("identity-authorizations-8.7.0_alias");
+    return List.of("camunda-authorization-8.7.0_alias");
   }
 }

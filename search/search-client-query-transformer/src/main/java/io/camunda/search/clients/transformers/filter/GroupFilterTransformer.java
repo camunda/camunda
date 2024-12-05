@@ -35,6 +35,6 @@ public class GroupFilterTransformer implements FilterTransformer<GroupFilter> {
 
   @Override
   public List<String> toIndices(final GroupFilter filter) {
-    return List.of("identity-group-8.7.0_alias");
+    return List.of("camunda-group-8.7.0_alias");
   }
 }
