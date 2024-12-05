@@ -2618,7 +2618,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UserSearchQueryRequest"
+              $ref: "#/components/schemas/MappingSearchQueryRequest"
         required: true
       responses:
         "200":
@@ -3433,10 +3433,10 @@ components:
           format: int64
         claimName:
           type: string
-          description: The claim name, idk.
+          description: The claim name to match against a token.
         claimValue:
           type: string
-          description: The claim value, idk.
+          description: The value of the claim to match.
 
     MappingSearchQueryResponse:
       description: Mapping rule search response.
