@@ -258,6 +258,26 @@ public class DbFormState implements MutableFormState {
   }
 
   @Override
+  public void forEachForm(final FormIdentifier previousForm, final PersistedFormVisitor visitor) {
+    if (previousForm == null) {
+      formsByKey.whileTrue((key, value) -> visitor.visit(value));
+      return;
+    }
+
+    tenantIdKey.wrapString(previousForm.tenantId());
+    dbFormKey.wrapLong(previousForm.key());
+    formsByKey.whileTrue(
+        tenantAwareFormKey,
+        (key, value) -> {
+          if (key.tenantKey().toString().equals(previousForm.tenantId())
+              && key.wrappedKey().getValue() == previousForm.key()) {
+            return true;
+          }
+          return visitor.visit(value);
+        });
+  }
+
+  @Override
   public int getNextFormVersion(final String formId, final String tenantId) {
     return (int) versionManager.getHighestResourceVersion(formId, tenantId) + 1;
   }
