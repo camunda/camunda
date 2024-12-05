@@ -59,7 +59,7 @@ public class IdentityOAuth2WebConfigurer {
                       jwtCustomizer ->
                           jwtCustomizer
                               .jwtAuthenticationConverter(jwtConverter)
-                              .decoder(jwtDecoder())));
+                              .decoder(jwtDecoder(env, identityConfiguration))));
       LOGGER.info("Enabled OAuth2 JWT access to Operate API");
     }
   }
@@ -68,8 +68,9 @@ public class IdentityOAuth2WebConfigurer {
    * JwtDecoder that supports both the "jwt" (standard JWT) and "at+jwt" (Access Token JWT) JOSE
    * types for token validation.
    */
-  private JwtDecoder jwtDecoder() {
-    return NimbusJwtDecoder.withJwkSetUri(getJwkSetUriProperty())
+  public static JwtDecoder jwtDecoder(
+      Environment environment, IdentityConfiguration identityConfiguration) {
+    return NimbusJwtDecoder.withJwkSetUri(getJwkSetUriProperty(environment, identityConfiguration))
         .jwtProcessorCustomizer(
             processor ->
                 processor.setJWSTypeVerifier(
@@ -77,14 +78,15 @@ public class IdentityOAuth2WebConfigurer {
         .build();
   }
 
-  private String getJwkSetUriProperty() {
+  private static String getJwkSetUriProperty(
+      Environment environment, IdentityConfiguration identityConfiguration) {
     final String backendUri;
 
     // If the SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI is present, then it has already
     // been correctly
     // calculated and should be used as-is.
-    if (env.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI)) {
-      backendUri = env.getProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI);
+    if (environment.containsProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI)) {
+      backendUri = environment.getProperty(SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI);
       LOGGER.info(
           "Using value in SPRING_SECURITY_OAUTH_2_RESOURCESERVER_JWT_JWK_SET_URI for issuer authentication");
     } else {
