@@ -40,7 +40,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
     this.archiverRepository =
         Objects.requireNonNull(archiverRepository, "must specify an archiver repository");
     this.incidentRepository =
-        Objects.requireNonNull(incidentRepository, "must specify an archiver repository");
+        Objects.requireNonNull(incidentRepository, "must specify an incident repository");
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
     this.executor = Objects.requireNonNull(executor, "must specify an executor");
     this.tasks = Objects.requireNonNull(tasks, "must specify tasks");
