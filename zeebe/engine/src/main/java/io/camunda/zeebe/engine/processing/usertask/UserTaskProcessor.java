@@ -100,31 +100,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
     final var context = buildContext(userTaskElementInstance);
 
     if (!command.getValue().getChangedAttributes().isEmpty()) {
-      // todo: replace with call to UserTask.wrapChangedAttributes
-      command
-          .getValue()
-          .getChangedAttributes()
-          .forEach(
-              attribute -> {
-                switch (attribute) {
-                  case "assignee" ->
-                      intermediateUserTaskRecord.setAssignee(command.getValue().getAssignee());
-                  case "candidateGroupsList" ->
-                      intermediateUserTaskRecord.setCandidateGroupsList(
-                          command.getValue().getCandidateGroupsList());
-                  case "candidateUsersList" ->
-                      intermediateUserTaskRecord.setCandidateUsersList(
-                          command.getValue().getCandidateUsersList());
-                  case "dueDate" ->
-                      intermediateUserTaskRecord.setDueDate(command.getValue().getDueDate());
-                  case "followUpDate" ->
-                      intermediateUserTaskRecord.setFollowUpDate(
-                          command.getValue().getFollowUpDate());
-                  case "priority" ->
-                      intermediateUserTaskRecord.setPriority(command.getValue().getPriority());
-                }
-              });
-      intermediateUserTaskRecord.setChangedAttributes(command.getValue().getChangedAttributes());
+      intermediateUserTaskRecord.wrapChangedAttributes(command.getValue(), true);
       stateWriter.appendFollowUpEvent(
           command.getKey(), UserTaskIntent.CORRECTED, intermediateUserTaskRecord);
     }
