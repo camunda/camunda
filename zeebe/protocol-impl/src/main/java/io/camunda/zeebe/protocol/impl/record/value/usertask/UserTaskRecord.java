@@ -206,6 +206,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
             case DUE_DATE -> setDueDate(corrections.getDueDate());
             case FOLLOW_UP_DATE -> setFollowUpDate(corrections.getFollowUpDate());
             case PRIORITY -> setPriority(corrections.getPriority());
+            default ->
+                throw new IllegalArgumentException("Unknown corrected attribute: " + attribute);
           }
           addChangedAttribute(attribute);
         });
