@@ -118,22 +118,22 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final UserTaskRecord userTaskRecord) {
     final var currentUserTask = userTaskState.getUserTask(command.getKey());
     if (!currentUserTask.getAssigneeBuffer().equals(userTaskRecord.getAssigneeBuffer())) {
-      userTaskRecord.addChangedAttribute("assignee");
+      userTaskRecord.addChangedAttribute(UserTaskRecord.ASSIGNEE);
     }
     if (!currentUserTask.getCandidateGroupsList().equals(userTaskRecord.getCandidateGroupsList())) {
-      userTaskRecord.addChangedAttribute("candidateGroupsList");
+      userTaskRecord.addChangedAttribute(UserTaskRecord.CANDIDATE_GROUPS);
     }
     if (!currentUserTask.getCandidateUsersList().equals(userTaskRecord.getCandidateUsersList())) {
-      userTaskRecord.addChangedAttribute("candidateUsersList");
+      userTaskRecord.addChangedAttribute(UserTaskRecord.CANDIDATE_USERS);
     }
     if (!currentUserTask.getDueDateBuffer().equals(userTaskRecord.getDueDateBuffer())) {
-      userTaskRecord.addChangedAttribute("dueDate");
+      userTaskRecord.addChangedAttribute(UserTaskRecord.DUE_DATE);
     }
     if (!currentUserTask.getFollowUpDateBuffer().equals(userTaskRecord.getFollowUpDateBuffer())) {
-      userTaskRecord.addChangedAttribute("followUpDate");
+      userTaskRecord.addChangedAttribute(UserTaskRecord.FOLLOW_UP_DATE);
     }
     if (currentUserTask.getPriority() != userTaskRecord.getPriority()) {
-      userTaskRecord.addChangedAttribute("priority");
+      userTaskRecord.addChangedAttribute(UserTaskRecord.PRIORITY);
     }
 
     final var commandProcessor = determineProcessorFromUserTaskLifecycleState(lifecycleState);
