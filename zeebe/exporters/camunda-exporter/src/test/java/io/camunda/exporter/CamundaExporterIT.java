@@ -300,6 +300,7 @@ final class CamundaExporterIT {
             "custom-prefix-operate-decision-requirements-8.3.0_",
             "custom-prefix-operate-event-8.3.0_",
             "custom-prefix-operate-flownode-instance-8.3.1_",
+            "custom-prefix-operate-import-position-8.3.0_",
             "custom-prefix-operate-incident-8.3.1_",
             "custom-prefix-operate-list-view-8.3.0_",
             "custom-prefix-operate-metric-8.3.0_",
@@ -312,8 +313,7 @@ final class CamundaExporterIT {
             "custom-prefix-tasklist-form-8.4.0_",
             "custom-prefix-tasklist-metric-8.3.0_",
             "custom-prefix-tasklist-task-8.5.0_",
-            "custom-prefix-tasklist-task-variable-8.3.0_",
-            "custom-prefix-operate-import-position-8.3.0_");
+            "custom-prefix-tasklist-task-variable-8.3.0_");
   }
 
   @TestTemplate
