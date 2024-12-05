@@ -101,6 +101,8 @@ public class PersistedTenant extends UnpackedObject implements DbValue {
    * @param tenantRecord the TenantRecord from which to copy the data
    */
   public void copy(final TenantRecord tenantRecord) {
-    copyFrom(tenantRecord);
+    tenantKeyProp.setValue(tenantRecord.getTenantKey());
+    tenantIdProp.setValue(tenantRecord.getTenantId());
+    nameProp.setValue(tenantRecord.getName());
   }
 }
