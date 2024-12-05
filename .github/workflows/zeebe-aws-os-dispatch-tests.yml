@@ -25,13 +25,6 @@ jobs:
             maven-build-threads: 2
             maven-test-fork-count: 7
             runs-on: aws-core-8-default
-    env:
-      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
-    services:
-      registry:
-        image: registry:2
-        ports:
-          - 5000:5000
     steps:
       - uses: actions/checkout@v4
       - name: Import secrets from Vault
