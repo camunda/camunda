@@ -106,7 +106,13 @@ interface ListenerEntity {
   listenerKey: string;
   state: 'ACTIVE' | 'COMPLETED' | 'FAILED';
   jobType: string;
-  event: 'UNSPECIFIED' | 'START' | 'END';
+  event:
+    | 'START'
+    | 'END'
+    | 'COMPLETE'
+    | 'ASSIGNMENT'
+    | 'UNKNOWN'
+    | 'UNSPECIFIED';
   time: string;
   sortValues: ReadonlyArray<string>;
 }
