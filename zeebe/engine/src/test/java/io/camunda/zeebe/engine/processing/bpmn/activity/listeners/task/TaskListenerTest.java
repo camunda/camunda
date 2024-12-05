@@ -980,8 +980,8 @@ public class TaskListenerTest {
                 .setCorrectedAttributes(
                     List.of(
                         "assignee",
-                        "candidateUsers",
-                        "candidateGroups",
+                        "candidateUsersList",
+                        "candidateGroupsList",
                         "dueDate",
                         "followUpDate",
                         "priority")))
@@ -994,7 +994,12 @@ public class TaskListenerTest {
                 .getFirst()
                 .getValue())
         .hasChangedAttributes(
-            "assignee", "candidateUsers", "candidateGroups", "dueDate", "followUpDate", "priority")
+            "assignee",
+            "candidateUsersList",
+            "candidateGroupsList",
+            "dueDate",
+            "followUpDate",
+            "priority")
         .hasAssignee("new_assignee")
         .hasCandidateUsersList(List.of("new_candidate_user"))
         .hasCandidateGroupsList(List.of("new_candidate_group"))
@@ -1087,8 +1092,8 @@ public class TaskListenerTest {
                 .setCorrectedAttributes(
                     List.of(
                         "assignee",
-                        "candidateUsers",
-                        "candidateGroups",
+                        "candidateUsersList",
+                        "candidateGroupsList",
                         "dueDate",
                         "followUpDate",
                         "priority")))
@@ -1148,8 +1153,8 @@ public class TaskListenerTest {
                 .setCorrectedAttributes(
                     List.of(
                         "assignee",
-                        "candidateUsers",
-                        "candidateGroups",
+                        "candidateUsersList",
+                        "candidateGroupsList",
                         "dueDate",
                         "followUpDate",
                         "priority")))
@@ -1173,8 +1178,8 @@ public class TaskListenerTest {
                 .describedAs("Expect that user task completed with corrected data")
                 .hasChangedAttributes(
                     "assignee",
-                    "candidateUsers",
-                    "candidateGroups",
+                    "candidateUsersList",
+                    "candidateGroupsList",
                     "dueDate",
                     "followUpDate",
                     "priority")
@@ -1214,8 +1219,8 @@ public class TaskListenerTest {
                 .setCorrectedAttributes(
                     List.of(
                         "assignee",
-                        "candidateUsers",
-                        "candidateGroups",
+                        "candidateUsersList",
+                        "candidateGroupsList",
                         "dueDate",
                         "followUpDate",
                         "priority")))
@@ -1306,7 +1311,7 @@ public class TaskListenerTest {
             Expected to complete task listener job with a corrections result, \
             but property 'unknown_property' cannot be corrected. \
             Only the following properties can be corrected: \
-            [assignee, candidateGroups, candidateUsers, dueDate, followUpDate, priority].""");
+            [assignee, candidateGroupsList, candidateUsersList, dueDate, followUpDate, priority].""");
   }
 
   private static void completeRecreatedJobWithType(

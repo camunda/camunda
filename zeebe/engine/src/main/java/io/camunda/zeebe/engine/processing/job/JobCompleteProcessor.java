@@ -40,7 +40,12 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           + "Support will be enabled with the resolution of issue #23702";
   private static final Set<String> CORRECTABLE_PROPERTIES =
       Set.of(
-          "assignee", "candidateGroups", "candidateUsers", "dueDate", "followUpDate", "priority");
+          "assignee",
+          "candidateGroupsList",
+          "candidateUsersList",
+          "dueDate",
+          "followUpDate",
+          "priority");
 
   private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
