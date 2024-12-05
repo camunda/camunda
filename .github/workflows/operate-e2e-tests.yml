@@ -106,7 +106,7 @@ jobs:
         env:
           CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED: false
           ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME: io.camunda.exporter.CamundaExporter
-          ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_URL: http://elasticsearch:9200
+          ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_URL: http://localhost:9200
           ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_BULK_SIZE: 1
           ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
       - name: Run tests
