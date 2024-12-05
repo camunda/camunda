@@ -11,9 +11,9 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUT
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
-import static io.camunda.tasklist.webapp.security.TasklistURIs.REQUESTED_URL;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.ROOT;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.SSO_CALLBACK;
+import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

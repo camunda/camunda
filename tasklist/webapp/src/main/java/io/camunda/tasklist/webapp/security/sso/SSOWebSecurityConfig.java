@@ -9,6 +9,8 @@ package io.camunda.tasklist.webapp.security.sso;
 
 import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUTH_PROFILE;
 import static io.camunda.tasklist.webapp.security.TasklistURIs.*;
+import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
+import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 import static org.apache.commons.lang3.StringUtils.containsAny;
 
 import com.auth0.AuthenticationController;
@@ -86,11 +88,7 @@ public class SSOWebSecurityConfig extends BaseWebConfigurer {
       final HttpServletRequest req, final HttpServletResponse res, final AuthenticationException ex)
       throws IOException {
 
-    String requestedUrl = req.getRequestURI();
-
-    if (req.getQueryString() != null && !req.getQueryString().isEmpty()) {
-      requestedUrl = requestedUrl + "?" + req.getQueryString();
-    }
+    final String requestedUrl = getRequestedUrl(req);
 
     if (containsAny(requestedUrl.toLowerCase(), GRAPHQL_URL, REST_V1_API)) {
       req.getSession().invalidate();
