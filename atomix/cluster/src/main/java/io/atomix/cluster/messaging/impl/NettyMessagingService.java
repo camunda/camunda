@@ -135,7 +135,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
     preamble = cluster.hashCode();
     this.advertisedAddress = advertisedAddress;
     this.protocolVersion = protocolVersion;
-    this.config = config;
+    this.config = verifyHeartbeatConfig(config);
     channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
 
     initAddresses(config);
@@ -144,6 +144,25 @@ public final class NettyMessagingService implements ManagedMessagingService {
   @VisibleForTesting
   public ChannelPool getChannelPool() {
     return channelPool;
+  }
+
+  private static MessagingConfig verifyHeartbeatConfig(final MessagingConfig config) {
+    if (config.getHeartbeatInterval().isZero() && config.getHeartbeatTimeout().isZero()) {
+      // Setting both to zero essentially disables the heartbeat mechanism which is valid.
+      return config;
+    }
+
+    if (config.getHeartbeatInterval().isNegative() || config.getHeartbeatTimeout().isNegative()) {
+      throw new IllegalArgumentException(
+          "Heartbeat interval and timeout must not be negative. Use 0s to disable heartbeats.");
+    }
+
+    if (config.getHeartbeatInterval().compareTo(config.getHeartbeatTimeout()) >= 0) {
+      throw new IllegalArgumentException(
+          "Heartbeat interval %s must be less than heartbeat timeout %s"
+              .formatted(config.getHeartbeatInterval(), config.getHeartbeatTimeout()));
+    }
+    return config;
   }
 
   private void initAddresses(final MessagingConfig config) {
