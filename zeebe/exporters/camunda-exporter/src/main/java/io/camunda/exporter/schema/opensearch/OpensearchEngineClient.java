@@ -198,8 +198,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
     final var allImportPositionDocuments =
         allImportPositionDocuments(partitionId, importPositionIndices);
     try {
-      // brand new install no need to wait for importers to complete
-
       final var allRecordReaderStatuses =
           client.search(allImportPositionDocuments, ImportPositionEntity.class).hits().hits();
 
@@ -233,10 +231,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
                         t.field(ImportPositionIndex.PARTITION_ID)
                             .value(v -> v.longValue(partitionId))))
         .build();
-  }
-
-  private String importPositionIndexName(final String indexPrefix) {
-    return new ImportPositionIndex(indexPrefix, false).getFullQualifiedName();
   }
 
   public Request createIndexStateManagementPolicy(

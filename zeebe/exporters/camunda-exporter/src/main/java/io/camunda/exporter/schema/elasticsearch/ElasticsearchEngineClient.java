@@ -219,10 +219,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
         .build();
   }
 
-  private String importPositionIndexName(final String indexPrefix) {
-    return new ImportPositionIndex(indexPrefix, true).getFullQualifiedName();
-  }
-
   private PutIndicesSettingsRequest putIndexSettingsRequest(
       final List<IndexDescriptor> indexDescriptors, final Map<String, String> toAppendSettings) {
     final co.elastic.clients.elasticsearch.indices.IndexSettings settings =
