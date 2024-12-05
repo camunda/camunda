@@ -1240,6 +1240,41 @@ public class TaskListenerTest {
                 .hasAssignee(""));
   }
 
+  @Test
+  public void shouldRejectDenyingTaskListenerWithCorrections() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(LISTENER_TYPE, LISTENER_TYPE + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when
+    final var rejection =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(LISTENER_TYPE)
+            .withResult(
+                new JobResult()
+                    .setDenied(true)
+                    .setCorrections(new JobResultCorrections().setAssignee("new_assignee"))
+                    .setCorrectedAttributes(List.of("assignee")))
+            .expectRejection()
+            .complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Expect that the job completion is rejected")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to complete task listener job with corrections, but the job result is denied. \
+            The corrections would be reverted by the denial. Either complete the job with \
+            corrections without setting denied, or complete the job with a denied result but no \
+            corrections.""");
+  }
+
   private static void completeRecreatedJobWithType(
       final EngineRule engine, final long processInstanceKey, final String jobType) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
