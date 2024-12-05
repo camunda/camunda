@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -16,6 +16,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.rest.util.XmlUtil.ProcessFlowNode;
@@ -25,10 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -197,11 +199,12 @@ class XmlUtilTest {
     verifyFlowNodesBpmn2(2L);
     verifyFlowNodesBpmn3(3L);
     verifyNoMoreInteractions(mockConsumer);
-    verify(processDefinitionServices)
-        .search(
-            assertArg(
-                q ->
-                    Assertions.assertThat(q.filter().processDefinitionKeys())
-                        .containsOnly(PROC_DEF_KEY, 2L, 3L)));
+
+    final var searchRequestCaptor = ArgumentCaptor.forClass(ProcessDefinitionQuery.class);
+    verify(processDefinitionServices).search(searchRequestCaptor.capture());
+    final var actualQuery = searchRequestCaptor.getValue();
+    assertThat(actualQuery.filter().processDefinitionKeys()).hasSize(3);
+    assertThat(actualQuery.filter().processDefinitionKeys()).containsOnly(PROC_DEF_KEY, 2L, 3L);
+    assertThat(actualQuery.page()).isEqualTo(new SearchQueryPage.Builder().size(3).build());
   }
 }

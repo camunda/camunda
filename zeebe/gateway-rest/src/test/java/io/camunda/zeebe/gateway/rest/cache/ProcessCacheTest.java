@@ -10,22 +10,78 @@ package io.camunda.zeebe.gateway.rest.cache;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.entry;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import com.github.benmanes.caffeine.cache.LoadingCache;
+import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
+import io.camunda.zeebe.gateway.rest.util.XmlUtil;
 import io.camunda.zeebe.gateway.rest.util.XmlUtil.ProcessFlowNode;
 import io.camunda.zeebe.util.collection.Tuple;
+import java.util.Arrays;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
+import org.springframework.test.util.ReflectionTestUtils;
 
-class ProcessCacheTest extends ProcessCacheTestBase {
+class ProcessCacheTest {
+
+  private ProcessCache processCache;
+  private GatewayRestConfiguration configuration;
+  private XmlUtil xmlUtil;
+
+  @BeforeEach
+  public void setUp() {
+    configuration = new GatewayRestConfiguration();
+    xmlUtil = mock(XmlUtil.class);
+    processCache = new ProcessCache(configuration, xmlUtil);
+    mockLoad(Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")));
+  }
+
+  @AfterEach
+  public void tearDown() {
+    getCache().cleanUp();
+    getCache().invalidateAll();
+    getCache().cleanUp();
+  }
+
+  private LoadingCache<Long, ProcessCacheItem> getCache() {
+    return (LoadingCache<Long, ProcessCacheItem>)
+        ReflectionTestUtils.getField(processCache, "cache");
+  }
+
+  private ConcurrentMap<Long, ProcessCacheItem> getCacheMap() {
+    return getCache().asMap();
+  }
+
+  @SafeVarargs
+  private void mockLoad(final Tuple<Long, ProcessFlowNode>... nodes) {
+    doAnswer(mockLoadAnswer(nodes)).when(xmlUtil).extractFlowNodeNames(anyLong(), any());
+  }
+
+  @SafeVarargs
+  private <T> Answer<T> mockLoadAnswer(final Tuple<Long, ProcessFlowNode>... nodes) {
+    return invocation -> {
+      final var consumer = invocation.<BiConsumer<Long, ProcessFlowNode>>getArgument(1);
+      Arrays.stream(nodes).forEach(t -> consumer.accept(t.getLeft(), t.getRight()));
+      return null;
+    };
+  }
 
   @Test
   void shouldNotLoadIfAvailable() {
     // given
     mockLoad(Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")));
     processCache.getCacheItem(1L);
-    processCache.getCache().cleanUp();
+    getCache().cleanUp();
 
     // when
     processCache.getCacheItem(1L);
@@ -46,40 +102,48 @@ class ProcessCacheTest extends ProcessCacheTestBase {
 
     // then
     verify(xmlUtil).extractFlowNodeNames(eq(1L), any());
-    assertThat(actual.flowNodes()).hasSize(2);
-    assertThat(actual.flowNodes()).containsOnly(entry("id1", "Name 1"), entry("id2", "Name 2"));
-    assertThat(processCache.getCache().asMap()).hasSize(1);
-    assertThat(processCache.getCache().asMap()).containsOnlyKeys(1L);
-    assertThat(processCache.getCache().get(1L).flowNodes())
+    assertThat(actual.flowNodeIdNameMap()).hasSize(2);
+    assertThat(actual.flowNodeIdNameMap())
+        .containsOnly(entry("id1", "Name 1"), entry("id2", "Name 2"));
+    final var cacheMap = getCacheMap();
+    assertThat(cacheMap).hasSize(1);
+    assertThat(cacheMap).containsOnlyKeys(1L);
+    assertThat(cacheMap.get(1L).flowNodeIdNameMap())
         .containsOnly(entry("id1", "Name 1"), entry("id2", "Name 2"));
   }
 
   @Test
   void shouldLoadFlowNodesForProcessDefinitions() {
     // given
-    mockLoadAll(
-        Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")),
-        Tuple.of(2L, new ProcessFlowNode("id21", "Name 21")),
-        Tuple.of(2L, new ProcessFlowNode("id22", "Name 22")),
-        Tuple.of(3L, new ProcessFlowNode("id3", "Name 3")));
+    doAnswer(
+            mockLoadAnswer(
+                Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")),
+                Tuple.of(2L, new ProcessFlowNode("id21", "Name 21")),
+                Tuple.of(2L, new ProcessFlowNode("id22", "Name 22")),
+                Tuple.of(3L, new ProcessFlowNode("id3", "Name 3"))))
+        .when(xmlUtil)
+        .extractFlowNodeNames(anySet(), any());
 
     // when
     final var actual = processCache.getCacheItems(Set.of(1L, 2L, 3L));
 
     // then
     verify(xmlUtil).extractFlowNodeNames(eq(Set.of(1L, 2L, 3L)), any());
-    assertThat(actual.processCacheItems()).hasSize(3);
-    assertThat(actual.processCacheItems().keySet()).containsOnly(1L, 2L, 3L);
-    assertThat(actual.processCacheItems().get(1L).flowNodes()).containsOnly(entry("id1", "Name 1"));
-    assertThat(actual.processCacheItems().get(2L).flowNodes())
+    assertThat(actual.processDefinitionKeyItemMap()).hasSize(3);
+    assertThat(actual.processDefinitionKeyItemMap().keySet()).containsOnly(1L, 2L, 3L);
+    assertThat(actual.processDefinitionKeyItemMap().get(1L).flowNodeIdNameMap())
+        .containsOnly(entry("id1", "Name 1"));
+    assertThat(actual.processDefinitionKeyItemMap().get(2L).flowNodeIdNameMap())
         .containsOnly(entry("id21", "Name 21"), entry("id22", "Name 22"));
-    assertThat(actual.processCacheItems().get(3L).flowNodes()).containsOnly(entry("id3", "Name 3"));
-    assertThat(processCache.getCache().asMap()).hasSize(3);
-    assertThat(processCache.getCache().asMap()).containsOnlyKeys(1L, 2L, 3L);
-    assertThat(processCache.getCache().get(1L).flowNodes()).containsOnly(entry("id1", "Name 1"));
-    assertThat(processCache.getCache().get(2L).flowNodes())
+    assertThat(actual.processDefinitionKeyItemMap().get(3L).flowNodeIdNameMap())
+        .containsOnly(entry("id3", "Name 3"));
+    final var cacheMap = getCacheMap();
+    assertThat(cacheMap).hasSize(3);
+    assertThat(cacheMap).containsOnlyKeys(1L, 2L, 3L);
+    assertThat(cacheMap.get(1L).flowNodeIdNameMap()).containsOnly(entry("id1", "Name 1"));
+    assertThat(cacheMap.get(2L).flowNodeIdNameMap())
         .containsOnly(entry("id21", "Name 21"), entry("id22", "Name 22"));
-    assertThat(processCache.getCache().get(3L).flowNodes()).containsOnly(entry("id3", "Name 3"));
+    assertThat(cacheMap.get(3L).flowNodeIdNameMap()).containsOnly(entry("id3", "Name 3"));
   }
 
   @Test
@@ -110,5 +174,43 @@ class ProcessCacheTest extends ProcessCacheTestBase {
     // then
     assertThat(actual).isNotNull();
     assertThat(actual).isEqualTo("non-existing");
+  }
+
+  @Test
+  void shouldRemoveExpiredItem() throws InterruptedException {
+    // given
+    configuration.getProcessCache().setExpirationMillis(10L);
+    processCache = new ProcessCache(configuration, xmlUtil);
+    processCache.getCacheItem(1L);
+    getCache().cleanUp();
+    assertThat(getCacheMap()).hasSize(1);
+
+    // when - waiting ttl millis
+    Thread.sleep(10);
+    getCache().cleanUp();
+
+    // then - cache should be empty
+    assertThat(getCacheMap()).isEmpty();
+  }
+
+  @Test
+  void shouldRefreshReadItemAndRemoveLeastRecentlyUsed() {
+    // given
+    configuration.getProcessCache().setMaxSize(2);
+    processCache = new ProcessCache(configuration, xmlUtil);
+    processCache.getCacheItem(1L);
+    processCache.getCacheItem(2L);
+    getCache().cleanUp();
+    assertThat(getCacheMap()).hasSize(2);
+
+    // when - read 1 and adding 3
+    processCache.getCacheItem(1L);
+    processCache.getCacheItem(3L);
+    getCache().cleanUp();
+
+    // then - 2 should be removed
+    final var cacheMap = getCacheMap();
+    assertThat(cacheMap).hasSize(2);
+    assertThat(cacheMap.keySet()).containsExactlyInAnyOrder(1L, 3L);
   }
 }

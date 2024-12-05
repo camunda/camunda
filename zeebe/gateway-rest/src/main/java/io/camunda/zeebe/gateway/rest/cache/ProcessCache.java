@@ -14,15 +14,24 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration;
 import io.camunda.zeebe.gateway.rest.util.XmlUtil;
-import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/**
+ * Process cache uses a Caffeine {@link LoadingCache} to store process definition key and {@link
+ * ProcessCacheItem} entries.
+ *
+ * <p>Use the {@link ProcessCache#getCacheItem(long)} method to load one item or the {@link
+ * ProcessCache#getCacheItems(Set)} method to load multiple cache items at once.
+ *
+ * <p>The process cache default configuration can be changed via the {@link
+ * GatewayRestConfiguration.ProcessCacheConfiguration} properties.
+ */
 public class ProcessCache {
 
   private final LoadingCache<Long, ProcessCacheItem> cache;
@@ -67,32 +76,30 @@ public class ProcessCache {
     return getCacheItem(flowNode.processDefinitionKey()).getFlowNodeName(flowNode.flowNodeId());
   }
 
-  @VisibleForTesting
-  LoadingCache<Long, ProcessCacheItem> getCache() {
-    return cache;
-  }
-
   private final class ProcessCacheLoader implements CacheLoader<Long, ProcessCacheItem> {
 
     @Override
-    public ProcessCacheItem load(final Long key) {
-      final var flowNodes = new ConcurrentHashMap<String, String>();
-      xmlUtil.extractFlowNodeNames(key, (pdId, node) -> flowNodes.put(node.id(), node.name()));
-      return new ProcessCacheItem(flowNodes);
+    public ProcessCacheItem load(final Long processDefinitionKey) {
+      final var flowNodes = new HashMap<String, String>();
+      xmlUtil.extractFlowNodeNames(
+          processDefinitionKey, (pdKey, node) -> flowNodes.put(node.id(), node.name()));
+      return new ProcessCacheItem(Collections.unmodifiableMap(flowNodes));
     }
 
     @Override
-    public Map<Long, ProcessCacheItem> loadAll(final Set<? extends Long> keys) {
-      final var processMap = new HashMap<Long, ProcessCacheItem>();
+    public Map<Long, ProcessCacheItem> loadAll(final Set<? extends Long> processDefinitionKeys) {
+      final var processMap = new HashMap<Long, Map<String, String>>();
       xmlUtil.extractFlowNodeNames(
-          (Set<Long>) keys,
-          (pdId, node) -> {
-            final var flowNodeMap =
-                processMap.computeIfAbsent(
-                    pdId, key -> new ProcessCacheItem(new ConcurrentHashMap<>()));
-            flowNodeMap.putFlowNode(node.id(), node.name());
+          (Set<Long>) processDefinitionKeys,
+          (pdKey, flowNode) -> {
+            final var flowNodeMap = processMap.computeIfAbsent(pdKey, key -> new HashMap<>());
+            flowNodeMap.put(flowNode.id(), flowNode.name());
           });
-      return processMap;
+      return processMap.entrySet().stream()
+          .collect(
+              Collectors.toMap(
+                  Map.Entry::getKey,
+                  entry -> new ProcessCacheItem(Collections.unmodifiableMap(entry.getValue()))));
     }
   }
 }
