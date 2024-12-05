@@ -11,7 +11,7 @@ import static java.util.Arrays.asList;
 
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration.BrokerBasedProperties;
-import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.it.utils.ZeebeClientTestFactory.Authenticated;
 import io.camunda.it.utils.ZeebeClientTestFactory.User;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -55,7 +55,7 @@ public class BrokerWithCamundaExporterITInvocationProvider
   private final Map<String, TestStandaloneBroker> testBrokers = new HashMap<>();
   private final Set<Profile> additionalProfiles = new HashSet<>();
   private Consumer<BrokerBasedProperties> additionalBrokerConfig = cfg -> {};
-  private Consumer<ServiceSecurityProperties> additionalSecurityConfig = cfg -> {};
+  private Consumer<CamundaSecurityProperties> additionalSecurityConfig = cfg -> {};
   private final Map<String, Object> additionalProperties = new HashMap<>();
   private final List<AutoCloseable> closeables = new ArrayList<>();
   private final Map<String, ZeebeClientTestFactory> zeebeClientTestFactories = new HashMap<>();
@@ -86,7 +86,7 @@ public class BrokerWithCamundaExporterITInvocationProvider
   }
 
   public BrokerWithCamundaExporterITInvocationProvider withAdditionalSecurityConfig(
-      final Consumer<ServiceSecurityProperties> modifier) {
+      final Consumer<CamundaSecurityProperties> modifier) {
     additionalSecurityConfig = additionalSecurityConfig.andThen(modifier);
     return this;
   }
