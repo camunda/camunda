@@ -204,12 +204,12 @@ public class CamundaExporter implements Exporter {
     final var maxCachedRecords = configuration.getBulk().getSize();
 
     if (writer.getBatchSize() > maxCachedRecords) {
-      final var errMsg =
+      final var warnMsg =
           String.format(
-              "Reached the max bulk size amount of cached records [%d] while waiting for importers to finish, retrying export for [%s]",
-              maxCachedRecords, record.toString());
-      LOG.error(errMsg);
-      throw new IllegalStateException(errMsg);
+              "Reached the max bulk size amount of cached records [%d] while waiting for importers to finish, retrying export for record at position [%s]",
+              maxCachedRecords, record.getPosition());
+      LOG.warn(warnMsg);
+      throw new IllegalStateException(warnMsg);
     }
   }
 
