@@ -12,6 +12,9 @@ import static org.springframework.security.config.Customizer.withDefaults;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
+import io.camunda.authentication.service.PermissionService;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.UserServices;
 import org.slf4j.Logger;
@@ -28,6 +31,7 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.switchuser.SwitchUserFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -48,6 +52,16 @@ public class WebSecurityConfig {
         "/startup"
       };
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
+
+  private final AuthorizationChecker authorizationChecker;
+  private final SecurityConfiguration securityConfiguration;
+
+  public WebSecurityConfig(
+      final AuthorizationChecker authorizationChecker,
+      final SecurityConfiguration securityConfiguration) {
+    this.authorizationChecker = authorizationChecker;
+    this.securityConfiguration = securityConfiguration;
+  }
 
   @Bean
   @ConditionalOnMissingBean(MethodSecurityExpressionHandler.class)
@@ -102,8 +116,14 @@ public class WebSecurityConfig {
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
     LOG.info("Configuring basic auth login");
+
+    final var filter =
+        new CamundaApplicationFilter(
+            new PermissionService(securityConfiguration, authorizationChecker));
+
     return baseHttpSecurity(httpSecurity, authFailureHandler)
         .httpBasic(withDefaults())
+        .addFilterAfter(filter, SwitchUserFilter.class)
         .logout((logout) -> logout.logoutSuccessUrl("/"));
   }
 
