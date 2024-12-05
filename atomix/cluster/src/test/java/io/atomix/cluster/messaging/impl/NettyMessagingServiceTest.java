@@ -634,49 +634,14 @@ final class NettyMessagingServiceTest {
     }
 
     @Test
-    void shouldCloseChannelAfterTimeout() {
+    void shouldNotCreateNewChannelOnNewRequestAfterTimeout() {
       // given
       final var subject = nextSubject();
       final var timeoutOnCreate = Duration.ofSeconds(10);
 
       final var channelPool = netty1.getChannelPool();
 
-      // grab the original channel, so we can assert it was closed
-      // it's also useful to send a successful request once, so we can ensure the channel exists
-      // and set a lower timeout on the request we want specifically to time out
-      netty2.registerHandler(subject, (address, bytes) -> new byte[0], Runnable::run);
-      netty1
-          .sendAndReceive(
-              netty2.address(), subject, "get channel".getBytes(), true, timeoutOnCreate)
-          .join();
-      final var originalChannel = channelPool.getChannel(netty2.address(), subject).join();
-
-      // when - set up handler which will always cause timeouts
-      netty2.unregisterHandler(subject);
-      netty2.registerHandler(subject, (address, bytes) -> new CompletableFuture<>());
-      final CompletableFuture<byte[]> response =
-          netty1.sendAndReceive(
-              netty2.address(), subject, "fail".getBytes(), true, Duration.ofSeconds(1));
-
-      // then
-      assertThat(response)
-          .failsWithin(Duration.ofSeconds(15))
-          .withThrowableThat()
-          .havingRootCause()
-          .isInstanceOf(TimeoutException.class)
-          .withMessageContaining("timed out in");
-      assertThat(originalChannel.closeFuture()).succeedsWithin(Duration.ofSeconds(15));
-    }
-
-    @Test
-    void shouldCreateNewChannelOnNewRequestAfterTimeout() {
-      // given
-      final var subject = nextSubject();
-      final var timeoutOnCreate = Duration.ofSeconds(10);
-
-      final var channelPool = netty1.getChannelPool();
-
-      // grab the original channel, so we can assert it was closed
+      // grab the original channel, so we can assert it was not closed
       // it's also useful to send a successful request once, so we can ensure the channel exists
       // and set a lower timeout on the request we want specifically to time out
       netty2.registerHandler(subject, (address, bytes) -> new byte[0], Runnable::run);
@@ -697,8 +662,6 @@ final class NettyMessagingServiceTest {
           .withThrowableThat()
           .havingRootCause()
           .isInstanceOf(TimeoutException.class);
-      // wait until the channel is closed before grabbing the next one
-      assertThat(originalChannel.closeFuture()).succeedsWithin(Duration.ofSeconds(15));
 
       // when - remote connection finally succeeds
       // give a generous time out on the second request, as creating a new channel can be slow at
@@ -708,8 +671,8 @@ final class NettyMessagingServiceTest {
       netty1.sendAndReceive(netty2.address(), subject, "success".getBytes(), true, timeoutOnCreate);
 
       // then
-      final var newChannel = channelPool.getChannel(netty2.address(), subject).join();
-      assertThat(newChannel).isNotEqualTo(originalChannel);
+      final var currentChannel = channelPool.getChannel(netty2.address(), subject).join();
+      assertThat(currentChannel).isEqualTo(originalChannel);
     }
 
     @EnabledOnOs(OS.LINUX)
@@ -731,6 +694,21 @@ final class NettyMessagingServiceTest {
       // fix this was way, way, way more, so it should be fine to allow a little bit more than the
       // expected max number of connections
       assertThat(udpSocketCount()).isLessThanOrEqualTo(maxConnections * 2L);
+    }
+
+    @Test
+    void shouldGetChannelClosedWhenNotSendingHeartbeats() {
+      // given
+      final var subject = nextSubject();
+      final var channelPool = netty1.getChannelPool();
+      final var channel = channelPool.getChannel(netty2.address(), subject).join();
+
+      // when - removing the `IdleStateHandler` from the pipeline such that `HeartBeatHandler` is
+      // not triggered
+      channel.pipeline().remove("idle");
+
+      // then - the other side notices a lack of heartbeats and closes the channel
+      assertThat(channel.closeFuture()).succeedsWithin(Duration.ofSeconds(5));
     }
   }
 }
