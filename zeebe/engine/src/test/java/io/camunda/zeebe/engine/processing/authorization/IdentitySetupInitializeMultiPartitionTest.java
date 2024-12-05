@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -48,8 +49,16 @@ public class IdentitySetupInitializeMultiPartitionTest {
             .setName("name")
             .setPassword("password")
             .setEmail("email");
+    final var tenant =
+        new TenantRecord().setTenantKey(3).setTenantId("tenant-id").setName("tenant-name");
 
-    engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+    engine
+        .identitySetup()
+        .initialize()
+        .withRole(role)
+        .withUser(user)
+        .withTenant(tenant)
+        .initialize();
 
     // then
     assertThat(
@@ -103,8 +112,16 @@ public class IdentitySetupInitializeMultiPartitionTest {
             .setName("name")
             .setPassword("password")
             .setEmail("email");
+    final var tenant =
+        new TenantRecord().setTenantKey(3).setTenantId("tenant-id").setName("tenant-name");
 
-    engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+    engine
+        .identitySetup()
+        .initialize()
+        .withRole(role)
+        .withUser(user)
+        .withTenant(tenant)
+        .initialize();
 
     // then
     assertThat(
@@ -133,8 +150,16 @@ public class IdentitySetupInitializeMultiPartitionTest {
             .setName("name")
             .setPassword("password")
             .setEmail("email");
+    final var tenant =
+        new TenantRecord().setTenantKey(3).setTenantId("tenant-id").setName("tenant-name");
 
-    engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+    engine
+        .identitySetup()
+        .initialize()
+        .withRole(role)
+        .withUser(user)
+        .withTenant(tenant)
+        .initialize();
 
     // Increase time to trigger a redistribution
     engine.increaseTime(Duration.ofMinutes(1));
