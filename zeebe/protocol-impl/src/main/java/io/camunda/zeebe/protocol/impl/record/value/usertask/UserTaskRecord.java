@@ -202,8 +202,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
           // todo: replace attributes with constants
           switch (attribute) {
             case "assignee" -> setAssignee(corrections.getAssignee());
-            case "candidateGroups" -> setCandidateGroupsList(corrections.getCandidateGroups());
-            case "candidateUsers" -> setCandidateUsersList(corrections.getCandidateUsers());
+            case "candidateGroupsList" -> setCandidateGroupsList(corrections.getCandidateGroups());
+            case "candidateUsersList" -> setCandidateUsersList(corrections.getCandidateUsers());
             case "dueDate" -> setDueDate(corrections.getDueDate());
             case "followUpDate" -> setFollowUpDate(corrections.getFollowUpDate());
             case "priority" -> setPriority(corrections.getPriority());
