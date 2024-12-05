@@ -4,6 +4,7 @@ import Users from "src/pages/users";
 import Groups from "src/pages/groups";
 import Roles from "src/pages/roles";
 import Tenants from "src/pages/tenants";
+import { baseUrl } from "src/configuration";
 
 export const useGlobalRoutes = () => {
   const { t } = useTranslate();
@@ -37,6 +38,6 @@ export const useGlobalRoutes = () => {
 
   return routes.map((route) => ({
     ...route,
-    isCurrentPage: pathname.startsWith(route.key),
+    isCurrentPage: pathname.startsWith(baseUrl + route.key),
   }));
 };

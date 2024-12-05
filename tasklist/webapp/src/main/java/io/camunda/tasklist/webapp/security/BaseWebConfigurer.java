@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -46,11 +45,9 @@ public abstract class BaseWebConfigurer {
 
   @Autowired protected TasklistProperties tasklistProperties;
 
-  @Autowired TasklistProfileService errorMessageService;
   final CookieCsrfTokenRepository cookieCsrfTokenRepository = new CookieCsrfTokenRepository();
   @Autowired private TasklistProfileService profileService;
 
-  @Bean
   public SecurityFilterChain filterChain(
       final HttpSecurity http, final HandlerMappingIntrospector introspector) throws Exception {
     final var authenticationManagerBuilder =

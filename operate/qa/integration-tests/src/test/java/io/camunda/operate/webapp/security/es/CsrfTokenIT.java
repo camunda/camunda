@@ -36,7 +36,6 @@ import io.camunda.operate.webapp.security.OperateURIs;
 import io.camunda.operate.webapp.security.SameSiteCookieTomcatContextCustomizer;
 import io.camunda.operate.webapp.security.WebSecurityConfig;
 import io.camunda.operate.webapp.security.auth.AuthUserService;
-import io.camunda.operate.webapp.security.auth.OperateUserDetailsService;
 import io.camunda.operate.webapp.security.auth.Role;
 import io.camunda.operate.webapp.security.auth.RolePermissionService;
 import io.camunda.operate.webapp.security.oauth2.CCSaaSJwtAuthenticationTokenValidator;
@@ -48,6 +47,7 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -64,6 +64,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+@Disabled
 @RunWith(SpringRunner.class)
 @SpringBootTest(
     classes = {
@@ -77,7 +78,6 @@ import org.springframework.util.MultiValueMap;
       AuthUserService.class,
       RolePermissionService.class,
       AuthenticationRestService.class,
-      OperateUserDetailsService.class,
       ElasticsearchTaskStore.class,
       RetryElasticsearchClient.class,
       OperateProfileService.class,

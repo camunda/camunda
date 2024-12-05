@@ -31,8 +31,8 @@ public final class TasklistURIs {
   public static final String PROCESSES_URL_V1 = "/v1/internal/processes";
   public static final String EXTERNAL_PROCESS_URL_V1 = "/v1/external/process";
 
-  public static final String LOGIN_RESOURCE = "/api/login";
-  public static final String LOGOUT_RESOURCE = "/api/logout";
+  public static final String LOGIN_RESOURCE = "/login";
+  public static final String LOGOUT_RESOURCE = "/logout";
   public static final String SSO_CALLBACK = "/sso-callback";
   public static final String NO_PERMISSION = "/noPermission";
   public static final String IDENTITY_CALLBACK_URI = "/identity-callback";

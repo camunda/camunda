@@ -7,14 +7,15 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.entity.CamundaUserDTO;
 import io.camunda.authentication.service.CamundaUserService;
-import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-@Profile("auth-basic")
 @CamundaRestController
 @RequestMapping("/v2/authentication")
 public class AuthenticationController {
@@ -27,7 +28,24 @@ public class AuthenticationController {
   @GetMapping(
       path = "/me",
       produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
-  public CamundaUserDTO getCurrentUser() {
-    return camundaUserService.getCurrentUser();
+  public ResponseEntity<CamundaUserDTO> getCurrentUser() {
+    final var currentUser = camundaUserService.getCurrentUser();
+    return currentUser != null
+        ? new ResponseEntity<>(currentUser, HttpStatus.OK)
+        : new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
   }
+
+  @GetMapping(
+      path = "/config",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE})
+  public AuthenticationStatus getStatus() {
+    return new AuthenticationStatus(
+        camundaUserService.getProfile().getId(),
+        WebSecurityConfig.LOGIN_URL,
+        WebSecurityConfig.LOGOUT_URL,
+        WebSecurityConfig.CSRF_TOKEN_HEADER);
+  }
+
+  public record AuthenticationStatus(
+      String authProfile, String logoutUrl, String loginUrl, String csrfTokenHeader) {}
 }

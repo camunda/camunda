@@ -28,6 +28,7 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.junit4.SpringRunner;
 
@@ -44,6 +45,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 @TestExecutionListeners(
     listeners = DependencyInjectionTestExecutionListener.class,
     mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
+@ActiveProfiles({"test", "auth-basic-with-unprotected-api"})
 @WithMockUser(DEFAULT_USER)
 public class UsageMetricIT {
 

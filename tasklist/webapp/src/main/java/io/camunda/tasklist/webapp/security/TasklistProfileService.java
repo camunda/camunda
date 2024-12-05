@@ -14,6 +14,7 @@ public interface TasklistProfileService {
   String SSO_AUTH_PROFILE = "sso-auth";
   String IDENTITY_AUTH_PROFILE = "identity-auth";
   String AUTH_BASIC = "auth-basic";
+  String AUTH_BASIC_WITH_UNPROTECTED_API = "auth-basic-with-unprotected-api";
   String AUTH_PROFILE = "auth";
   String DEFAULT_AUTH = AUTH_PROFILE;
   String LDAP_AUTH_PROFILE = "ldap-auth";

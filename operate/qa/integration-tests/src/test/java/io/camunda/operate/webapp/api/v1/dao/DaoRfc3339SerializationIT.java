@@ -45,6 +45,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ActiveProfiles;
 
 @SpringBootTest(
     classes = {TestApplication.class},
@@ -55,6 +56,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
       OperateProperties.PREFIX + ".multiTenancy.enabled = false",
       OperateProperties.PREFIX + ".rfc3339ApiDateFormat = true"
     })
+@ActiveProfiles({"test", "auth-basic-with-unprotected-api"})
 public class DaoRfc3339SerializationIT extends OperateSearchAbstractIT {
   private static final Long FAKE_PROCESS_DEFINITION_KEY = 2251799813685253L;
   private static final Long FAKE_PROCESS_INSTANCE_KEY = 2251799813685255L;

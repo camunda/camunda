@@ -82,7 +82,7 @@ anymore, it will be done in a follow-up PR
       "management.endpoints.web.exposure.include = backupHistory",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
-@ActiveProfiles({"test", "operate", "standalone"})
+@ActiveProfiles({"test", "operate", "standalone", "auth-basic-with-unprotected-api"})
 public class BackupControllerIT {
   private ElasticsearchSnapshotClient snapshotClient;
 
