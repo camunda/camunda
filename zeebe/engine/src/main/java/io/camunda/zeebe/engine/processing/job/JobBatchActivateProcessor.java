@@ -49,6 +49,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobMetrics jobMetrics;
   private final ElementInstanceState elementInstanceState;
   private final ProcessState processState;
+  private final AuthorizationCheckBehavior authorizationCheckBehavior;
 
   public JobBatchActivateProcessor(
       final Writers writers,
@@ -60,6 +61,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    authorizationCheckBehavior = authCheckBehavior;
     jobBatchCollector =
         new JobBatchCollector(state, stateWriter::canWriteEventOfLength, authCheckBehavior);
 
@@ -71,15 +73,21 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
   @Override
   public void processRecord(final TypedRecord<JobBatchRecord> record) {
-    final JobBatchRecord value = record.getValue();
-    if (isValid(value)) {
+    if (isValid(record)) {
       activateJobs(record);
     } else {
       rejectCommand(record);
     }
   }
 
-  private boolean isValid(final JobBatchRecord record) {
+  private boolean isValid(final TypedRecord<JobBatchRecord> command) {
+    final var record = command.getValue();
+    // if all the provided tenantIds are not authorized, the command is rejected
+    final var tenantIds = record.getTenantIds();
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+    if (tenantIds.stream().noneMatch(authorizedTenantIds::contains)) {
+      return false;
+    }
     return record.getMaxJobsToActivate() > 0
         && record.getTimeout() > 0
         && record.getTypeBuffer().capacity() > 0;
@@ -122,8 +130,8 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason = String.format(format, "type", "present", "blank");
     } else {
-      throw new IllegalStateException(
-          "Expected to reject an invalid activate job batch command, but it appears to be valid");
+      rejectionType = RejectionType.NOT_FOUND;
+      rejectionReason = "No jobs found to activate";
     }
 
     rejectionWriter.appendRejection(record, rejectionType, rejectionReason);
