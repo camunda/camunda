@@ -201,8 +201,8 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         attribute -> {
           switch (attribute) {
             case ASSIGNEE -> setAssignee(corrections.getAssignee());
-            case CANDIDATE_GROUPS -> setCandidateGroupsList(corrections.getCandidateGroups());
-            case CANDIDATE_USERS -> setCandidateUsersList(corrections.getCandidateUsers());
+            case CANDIDATE_GROUPS -> setCandidateGroupsList(corrections.getCandidateGroupsList());
+            case CANDIDATE_USERS -> setCandidateUsersList(corrections.getCandidateUsersList());
             case DUE_DATE -> setDueDate(corrections.getDueDate());
             case FOLLOW_UP_DATE -> setFollowUpDate(corrections.getFollowUpDate());
             case PRIORITY -> setPriority(corrections.getPriority());

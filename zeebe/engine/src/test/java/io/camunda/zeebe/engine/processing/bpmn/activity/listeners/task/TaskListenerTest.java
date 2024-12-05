@@ -972,8 +972,8 @@ public class TaskListenerTest {
                 .setCorrections(
                     new JobResultCorrections()
                         .setAssignee("new_assignee")
-                        .setCandidateUsers(List.of("new_candidate_user"))
-                        .setCandidateGroups(List.of("new_candidate_group"))
+                        .setCandidateUsersList(List.of("new_candidate_user"))
+                        .setCandidateGroupsList(List.of("new_candidate_group"))
                         .setDueDate("new_due_date")
                         .setFollowUpDate("new_follow_up_date")
                         .setPriority(100))
@@ -1084,8 +1084,8 @@ public class TaskListenerTest {
                 .setCorrections(
                     new JobResultCorrections()
                         .setAssignee("new_assignee")
-                        .setCandidateUsers(List.of("new_candidate_user"))
-                        .setCandidateGroups(List.of("new_candidate_group"))
+                        .setCandidateUsersList(List.of("new_candidate_user"))
+                        .setCandidateGroupsList(List.of("new_candidate_group"))
                         .setDueDate("new_due_date")
                         .setFollowUpDate("new_follow_up_date")
                         .setPriority(100))
@@ -1145,8 +1145,8 @@ public class TaskListenerTest {
                 .setCorrections(
                     new JobResultCorrections()
                         .setAssignee("new_assignee")
-                        .setCandidateUsers(List.of("new_candidate_user"))
-                        .setCandidateGroups(List.of("new_candidate_group"))
+                        .setCandidateUsersList(List.of("new_candidate_user"))
+                        .setCandidateGroupsList(List.of("new_candidate_group"))
                         .setDueDate("new_due_date")
                         .setFollowUpDate("new_follow_up_date")
                         .setPriority(100))
@@ -1211,8 +1211,8 @@ public class TaskListenerTest {
                 .setCorrections(
                     new JobResultCorrections()
                         .setAssignee("new_assignee")
-                        .setCandidateUsers(List.of("new_candidate_user"))
-                        .setCandidateGroups(List.of("new_candidate_group"))
+                        .setCandidateUsersList(List.of("new_candidate_user"))
+                        .setCandidateGroupsList(List.of("new_candidate_group"))
                         .setDueDate("new_due_date")
                         .setFollowUpDate("new_follow_up_date")
                         .setPriority(100))
