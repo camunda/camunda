@@ -34,7 +34,6 @@ import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
@@ -60,7 +59,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
   private final int partitionId;
   private final ArchiverConfiguration config;
   private final RetentionConfiguration retention;
-  private final ConnectConfiguration connectConfiguration;
+  private final String indexPrefix;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
   private final ElasticsearchAsyncClient client;
@@ -74,7 +73,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
       final int partitionId,
       final ArchiverConfiguration config,
       final RetentionConfiguration retention,
-      final ConnectConfiguration connectConfiguration,
+      final String indexPrefix,
       final String processInstanceIndex,
       final String batchOperationIndex,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
@@ -84,7 +83,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
     this.partitionId = partitionId;
     this.config = config;
     this.retention = retention;
-    this.connectConfiguration = connectConfiguration;
+    this.indexPrefix = indexPrefix;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
     this.client = client;
@@ -135,7 +134,7 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-    final String indexWildcard = "^" + connectConfiguration.getIndexPrefix() + INDEX_WILDCARD;
+    final String indexWildcard = "^" + indexPrefix + INDEX_WILDCARD;
 
     return setIndexLifeCycle(fetchMatchingIndexes(indexWildcard).toArray(String[]::new));
   }
