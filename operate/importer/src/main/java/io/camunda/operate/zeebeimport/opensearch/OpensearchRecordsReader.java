@@ -152,7 +152,11 @@ public class OpensearchRecordsReader implements RecordsReader {
 
       importPositionHolder.recordLatestLoadedPosition(latestPosition);
     } catch (final IOException e) {
-      LOGGER.error("Failed to write initial import position index document", e);
+      LOGGER.error(
+          "Failed to write initial import position index document for value type [{}] and partition [{}]",
+          importValueType,
+          partitionId,
+          e);
     }
   }
 
