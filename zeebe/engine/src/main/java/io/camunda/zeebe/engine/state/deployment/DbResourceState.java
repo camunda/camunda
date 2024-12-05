@@ -129,7 +129,8 @@ public class DbResourceState implements MutableResourceState {
             .build(
                 new CacheLoader<>() {
                   @Override
-                  public PersistedResource load(final TenantIdAndResourceId key) {
+                  public PersistedResource load(final TenantIdAndResourceId key)
+                      throws ResourceNotFoundException {
                     return getPersistedResourceById(key.resourceId, key.tenantId);
                   }
                 });
@@ -141,6 +142,9 @@ public class DbResourceState implements MutableResourceState {
     dbResourceKey.wrapLong(record.getResourceKey());
     dbPersistedResource.wrap(record);
     resourcesByKey.upsert(tenantAwareResourceKey, dbPersistedResource);
+    resourcesByTenantIdAndIdCache.put(
+        new DbResourceState.TenantIdAndResourceId(record.getTenantId(), record.getResourceId()),
+        dbPersistedResource.copy());
   }
 
   @Override
@@ -276,8 +280,8 @@ public class DbResourceState implements MutableResourceState {
     versionManager.clear();
   }
 
-  private PersistedResource getPersistedResourceById(
-      final String resourceId, final String tenantId) {
+  private PersistedResource getPersistedResourceById(final String resourceId, final String tenantId)
+      throws ResourceNotFoundException {
     dbResourceId.wrapString(resourceId);
     tenantIdKey.wrapString(tenantId);
     final long latestVersion = versionManager.getLatestResourceVersion(resourceId, tenantId);
@@ -285,7 +289,10 @@ public class DbResourceState implements MutableResourceState {
     final Optional<PersistedResource> persistedResource =
         Optional.ofNullable(resourceByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey))
             .flatMap(key -> findResourceByKey(key.inner().wrappedKey().getValue(), tenantId));
-    return persistedResource.map(PersistedResource::copy).orElse(null);
+
+    return persistedResource
+        .map(PersistedResource::copy)
+        .orElseThrow(ResourceNotFoundException::new);
   }
 
   private Optional<PersistedResource> getResourceFromCache(
