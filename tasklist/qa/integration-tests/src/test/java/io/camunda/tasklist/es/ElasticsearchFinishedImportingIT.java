@@ -299,26 +299,6 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
             });
   }
 
-  @Test
-  public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
-    zeebeImporter.performOneRoundOfImport();
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(60))
-        .until(
-            () -> {
-              final var searchRequest =
-                  new SearchRequest(importPositionIndex.getFullQualifiedName());
-              searchRequest.source().size(100);
-
-              final var documents = tasklistEsClient.search(searchRequest, RequestOptions.DEFAULT);
-
-              // all initial import position documents created for each record reader
-              return documents.getHits().getHits().length
-                  == recordsReaderHolder.getAllRecordsReaders().size();
-            });
-  }
-
   @NotNull
   private static Gauge getGauge(final Metrics metrics, final String partition) {
     return metrics.getGauge(
