@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.partitioning.startup;
 
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
@@ -106,6 +107,7 @@ public final class ZeebePartitionFactory {
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
   private final MeterRegistry meterRegistry;
+  private final SecurityConfiguration securityConfig;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -121,7 +123,8 @@ public final class ZeebePartitionFactory {
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
       final FeatureFlags featureFlags,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final SecurityConfiguration securityConfig) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -136,6 +139,7 @@ public final class ZeebePartitionFactory {
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
     this.meterRegistry = meterRegistry;
+    this.securityConfig = securityConfig;
   }
 
   public ZeebePartition constructPartition(
@@ -172,7 +176,8 @@ public final class ZeebePartitionFactory {
             gatewayBrokerTransport,
             topologyManager,
             meterRegistry,
-            brokerHealthCheckService);
+            brokerHealthCheckService,
+            securityConfig);
     context.setDynamicPartitionConfig(initialPartitionConfig);
 
     final PartitionTransition newTransitionBehavior = new PartitionTransitionImpl(TRANSITION_STEPS);

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
@@ -33,6 +34,8 @@ public interface TypedRecordProcessorContext {
   Supplier<ScheduledTaskState> getScheduledTaskStateFactory();
 
   EngineConfiguration getConfig();
+
+  SecurityConfiguration getSecurityConfig();
 
   ControllableStreamClock getClock();
 

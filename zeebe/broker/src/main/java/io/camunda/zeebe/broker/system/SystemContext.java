@@ -11,6 +11,7 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
 import io.camunda.zeebe.backup.gcs.GcsBackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupStore;
@@ -62,6 +63,7 @@ public final class SystemContext {
   private final AtomixCluster cluster;
   private final BrokerClient brokerClient;
   private final MeterRegistry meterRegistry;
+  private final SecurityConfiguration securityConfiguration;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -70,7 +72,8 @@ public final class SystemContext {
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
       final BrokerClient brokerClient,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final SecurityConfiguration securityConfiguration) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -78,6 +81,7 @@ public final class SystemContext {
     this.cluster = cluster;
     this.brokerClient = brokerClient;
     this.meterRegistry = meterRegistry;
+    this.securityConfiguration = securityConfiguration;
     initSystemContext();
   }
 
@@ -86,7 +90,8 @@ public final class SystemContext {
       final BrokerCfg brokerCfg,
       final ActorScheduler scheduler,
       final AtomixCluster cluster,
-      final BrokerClient brokerClient) {
+      final BrokerClient brokerClient,
+      final SecurityConfiguration securityConfiguration) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -94,7 +99,8 @@ public final class SystemContext {
         scheduler,
         cluster,
         brokerClient,
-        new SimpleMeterRegistry());
+        new SimpleMeterRegistry(),
+        securityConfiguration);
   }
 
   private void initSystemContext() {
@@ -332,5 +338,9 @@ public final class SystemContext {
 
   public MeterRegistry getMeterRegistry() {
     return meterRegistry;
+  }
+
+  public SecurityConfiguration getSecurityConfiguration() {
+    return securityConfiguration;
   }
 }
