@@ -19,6 +19,7 @@ import static io.camunda.zeebe.journal.file.SegmentedJournal.ASQN_IGNORE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
+import io.camunda.zeebe.journal.CheckedJournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidAsqn;
 import io.camunda.zeebe.journal.JournalException.OutOfDiskSpace;
 import io.camunda.zeebe.journal.JournalReader;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.journal.util.PosixPathAssert;
 import io.camunda.zeebe.util.CheckedRunnable;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.buffer.DirectBufferWriter;
+import io.camunda.zeebe.util.exception.Rethrow;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -68,7 +70,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldDeleteIndexMappingsOnReset() {
+  void shouldDeleteIndexMappingsOnReset() throws CheckedJournalException {
     // given
     journal = openJournal(10);
     // append until there are two index mappings
@@ -86,7 +88,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldUpdateIndexMappingsOnCompact() {
+  void shouldUpdateIndexMappingsOnCompact() throws CheckedJournalException {
     // given
     final int entriesPerSegment = 10;
     journal = openJournal(entriesPerSegment);
@@ -105,7 +107,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldUpdateIndexMappingsOnTruncate() {
+  void shouldUpdateIndexMappingsOnTruncate() throws CheckedJournalException {
     // given
     final int entriesPerSegment = 10;
     journal = openJournal(entriesPerSegment);
@@ -124,7 +126,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldCreateNewSegmentIfEntryExceedsBuffer() {
+  void shouldCreateNewSegmentIfEntryExceedsBuffer() throws CheckedJournalException {
     // given
     final int asqn = 1;
     // one entry fits but not two
@@ -149,7 +151,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldNotTruncateIfIndexIsHigherThanLast() {
+  void shouldNotTruncateIfIndexIsHigherThanLast() throws CheckedJournalException {
     // given
     final int asqn = 1;
     journal = openJournal(1);
@@ -172,7 +174,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldNotCompactIfIndexIsLowerThanFirst() {
+  void shouldNotCompactIfIndexIsLowerThanFirst() throws CheckedJournalException {
     // given
     final int asqn = 1;
     journal = openJournal(1);
@@ -191,7 +193,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldTruncateNextEntry() {
+  void shouldTruncateNextEntry() throws CheckedJournalException {
     // given
     journal = openJournal(2);
     final JournalReader reader = journal.openReader();
@@ -209,7 +211,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldTruncateReadEntry() {
+  void shouldTruncateReadEntry() throws CheckedJournalException {
     // given
     journal = openJournal(2);
     final JournalReader reader = journal.openReader();
@@ -227,7 +229,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldTruncateNextSegment() {
+  void shouldTruncateNextSegment() throws CheckedJournalException {
     // given
     journal = openJournal(1);
     final JournalReader reader = journal.openReader();
@@ -244,7 +246,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldReadSegmentStartAfterMidSegmentTruncate() {
+  void shouldReadSegmentStartAfterMidSegmentTruncate() throws CheckedJournalException {
     final int entryPerSegment = 2;
     journal = openJournal(2);
     final JournalReader reader = journal.openReader();
@@ -263,7 +265,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldReadTruncatedSegmentCorrectlyAfterRestart() {
+  void shouldReadTruncatedSegmentCorrectlyAfterRestart() throws CheckedJournalException {
     final int entryPerSegment = 5;
     journal = openJournal(entryPerSegment);
     for (int i = 0; i < entryPerSegment * 2; i++) {
@@ -286,7 +288,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldCompactUpToStartOfSegment() {
+  void shouldCompactUpToStartOfSegment() throws CheckedJournalException {
     final int entryPerSegment = 2;
     journal = openJournal(entryPerSegment);
     final JournalReader reader = journal.openReader();
@@ -306,7 +308,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldNotCompactTheLastSegmentWhenNonExistingHigherIndex() {
+  void shouldNotCompactTheLastSegmentWhenNonExistingHigherIndex() throws CheckedJournalException {
     final int entryPerSegment = 2;
     journal = openJournal(entryPerSegment);
     final JournalReader reader = journal.openReader();
@@ -326,7 +328,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldReturnCorrectFirstIndexAfterCompaction() {
+  void shouldReturnCorrectFirstIndexAfterCompaction() throws CheckedJournalException {
     final int entryPerSegment = 2;
     journal = openJournal(2);
 
@@ -342,7 +344,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldWriteAndReadAfterTruncate() {
+  void shouldWriteAndReadAfterTruncate() throws CheckedJournalException {
     journal = openJournal(2);
     final JournalReader reader = journal.openReader();
 
@@ -363,7 +365,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldAppendEntriesOfDifferentSizesOverSegmentSize() {
+  void shouldAppendEntriesOfDifferentSizesOverSegmentSize() throws CheckedJournalException {
     // given
     journal = openJournal("1234567890", 1);
     final JournalReader reader = journal.openReader();
@@ -384,7 +386,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldUpdateIndexMappingsAfterRestart() {
+  void shouldUpdateIndexMappingsAfterRestart() throws CheckedJournalException {
     // given
     final int entriesPerSegment = 10;
     journal = openJournal(entriesPerSegment);
@@ -411,7 +413,8 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldNotUpdateIndexMappingsAfterRestartIfLastPositionIsInDescriptor() {
+  void shouldNotUpdateIndexMappingsAfterRestartIfLastPositionIsInDescriptor()
+      throws CheckedJournalException {
     // given
     final int entriesPerSegment = 2;
     journal = openJournal(entriesPerSegment);
@@ -514,7 +517,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldNotDeleteSegmentFileImmediately() {
+  void shouldNotDeleteSegmentFileImmediately() throws CheckedJournalException {
     // given
     journal = openJournal(2);
     journal.append(journalFactory.entry());
@@ -534,7 +537,8 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldNotFailOnResetAndOpeningReaderConcurrently() throws InterruptedException {
+  void shouldNotFailOnResetAndOpeningReaderConcurrently()
+      throws InterruptedException, CheckedJournalException {
     // given
     final var latch = new CountDownLatch(2);
     journal = openJournal(2);
@@ -544,7 +548,11 @@ class SegmentedJournalTest {
     // when
     new Thread(
             () -> {
-              journal.reset(100);
+              try {
+                journal.reset(100);
+              } catch (final CheckedJournalException e) {
+                Rethrow.rethrowUnchecked(e);
+              }
               latch.countDown();
             })
         .start();
@@ -561,7 +569,8 @@ class SegmentedJournalTest {
 
   // Regression test for https://github.com/camunda/camunda/issues/7962
   @Test
-  void shouldNotFailOnDeleteAndOpeningReaderConcurrently() throws InterruptedException {
+  void shouldNotFailOnDeleteAndOpeningReaderConcurrently()
+      throws InterruptedException, CheckedJournalException {
     // given
     final var latch = new CountDownLatch(2);
     journal = openJournal(2);
@@ -589,7 +598,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldDeleteSegmentFileWhenReaderIsClosed() {
+  void shouldDeleteSegmentFileWhenReaderIsClosed() throws CheckedJournalException {
     // given
     journal = openJournal(2);
     journal.append(journalFactory.entry());
@@ -608,7 +617,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldDeleteSegmentFileImmediatelyWhenThereAreNoReaders() {
+  void shouldDeleteSegmentFileImmediatelyWhenThereAreNoReaders() throws CheckedJournalException {
     // given
     journal = openJournal(2);
     journal.append(journalFactory.entry());
@@ -625,7 +634,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldBeAbleToResetAgainWhileThePreviousFileIsNotDeleted() {
+  void shouldBeAbleToResetAgainWhileThePreviousFileIsNotDeleted() throws CheckedJournalException {
     // given
     journal = openJournal(2);
     journal.append(journalFactory.entry());
@@ -668,7 +677,11 @@ class SegmentedJournalTest {
     // when
     new Thread(
             () -> {
-              journal.reset(100);
+              try {
+                journal.reset(100);
+              } catch (final CheckedJournalException e) {
+                Rethrow.rethrowUnchecked(e);
+              }
               latch.countDown();
             })
         .start();
@@ -722,7 +735,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldValidateAsqnBeforeCreatingNewSegment() {
+  void shouldValidateAsqnBeforeCreatingNewSegment() throws CheckedJournalException {
     // given
     // one entry fits but not two
     journal = openJournal(1);
@@ -735,7 +748,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldValidateAsqnWhenWritingToNewSegment() {
+  void shouldValidateAsqnWhenWritingToNewSegment() throws CheckedJournalException {
     // given
     // one entry fits but not two
     journal = openJournal(1);
@@ -754,7 +767,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldValidateAsqnWhenWritingAfterRestartOnSameSegment() {
+  void shouldValidateAsqnWhenWritingAfterRestartOnSameSegment() throws CheckedJournalException {
     // given
     // one entry fits but not two
     final int entriesPerSegment = 5;
@@ -775,7 +788,8 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldValidateAsqnWhenWritingAfterRestartOnNewSegmentWithOnlyAsqnIgnoreRecord() {
+  void shouldValidateAsqnWhenWritingAfterRestartOnNewSegmentWithOnlyAsqnIgnoreRecord()
+      throws CheckedJournalException {
     // given
     // one entry fits but not two
     final int entriesPerSegment = 1;
@@ -797,7 +811,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldResetAsqnOnTruncateToLastAsqnOfPreviousSegment() {
+  void shouldResetAsqnOnTruncateToLastAsqnOfPreviousSegment() throws CheckedJournalException {
     // given
     journal = openJournal(2);
     final long initalAsqn = journal.getFirstSegment().lastAsqn();
@@ -812,7 +826,8 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldResetAsqnOnTruncateToLastAsqnOfPreviousSegmentWhenNewSegContainsAsqnIgnoreOnly() {
+  void shouldResetAsqnOnTruncateToLastAsqnOfPreviousSegmentWhenNewSegContainsAsqnIgnoreOnly()
+      throws CheckedJournalException {
     // given
     journal = openJournal(2);
     journal.append(1, journalFactory.entry());
@@ -829,7 +844,8 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldSuceedToAppendWithPreviousAsqnAfterTruncateToIndexOfPreviousSegment() {
+  void shouldSuceedToAppendWithPreviousAsqnAfterTruncateToIndexOfPreviousSegment()
+      throws CheckedJournalException {
     // given
     journal = openJournal(2);
     journal.append(1, journalFactory.entry());
@@ -842,7 +858,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldResetAsqnOnTruncateToIndexWithinCurrentSegment() {
+  void shouldResetAsqnOnTruncateToIndexWithinCurrentSegment() throws CheckedJournalException {
     // given
     journal = openJournal(2);
     final JournalRecord firstJournalRecord = journal.append(1, journalFactory.entry());
@@ -856,7 +872,8 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldSucceedToAppendWithPreviousAsqnAfterTruncateToIndexWithinCurrentSegment() {
+  void shouldSucceedToAppendWithPreviousAsqnAfterTruncateToIndexWithinCurrentSegment()
+      throws CheckedJournalException {
     // given
     journal = openJournal(2);
     final JournalRecord firstJournalRecord = journal.append(1, journalFactory.entry());
@@ -872,7 +889,7 @@ class SegmentedJournalTest {
   // this test ensure that flushing is thread-safe w.r.t. write-exclusive methods such as
   // deleteUntil, deleteAfter, and reset
   @Test
-  void shouldPreventWriteExclusiveOperationsWhileFlushing() {
+  void shouldPreventWriteExclusiveOperationsWhileFlushing() throws CheckedJournalException {
     // given
     final var barrier = new Phaser(2);
     journal = openJournal(2);
@@ -900,7 +917,7 @@ class SegmentedJournalTest {
   }
 
   @Test
-  void shouldFailWithOODForAsyncSegmentCreation() {
+  void shouldFailWithOODForAsyncSegmentCreation() throws CheckedJournalException {
     // given
     journalFactory = new TestJournalFactory("test", 1, createFailingSegmentAllocator(3));
     journal = journalFactory.journal(journalFactory.segmentsManager(directory));

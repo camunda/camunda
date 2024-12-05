@@ -85,7 +85,7 @@ class RaftLogTest {
   }
 
   @Test
-  void shouldAppendInitialEntry() {
+  void shouldAppendInitialEntry() throws CheckedJournalException {
     // given
     final RaftLogEntry entry = new RaftLogEntry(1, initialEntry);
     // when
@@ -100,7 +100,7 @@ class RaftLogTest {
   }
 
   @Test
-  void shouldAppendConfigurationEntry() {
+  void shouldAppendConfigurationEntry() throws CheckedJournalException {
     // given
     final RaftLogEntry entry = new RaftLogEntry(1, configurationEntry);
     // when
@@ -118,7 +118,7 @@ class RaftLogTest {
   }
 
   @Test
-  void shouldAppendApplicationEntry() {
+  void shouldAppendApplicationEntry() throws CheckedJournalException {
     // given
     final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
     // when
@@ -137,7 +137,7 @@ class RaftLogTest {
   }
 
   @Test
-  void shouldUpdateLastAppendedEntry() {
+  void shouldUpdateLastAppendedEntry() throws CheckedJournalException {
     // given
     final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
     // when
@@ -148,7 +148,8 @@ class RaftLogTest {
   }
 
   @Test
-  void shouldAppendReplicatableJournalRecord(@TempDir final File directory) {
+  void shouldAppendReplicatableJournalRecord(@TempDir final File directory)
+      throws CheckedJournalException {
     // given
     final RaftLogEntry entry = new RaftLogEntry(1, firstApplicationEntry);
     final var persistedRaftRecord = raftlog.append(entry).getReplicatableJournalRecord();
@@ -191,7 +192,7 @@ class RaftLogTest {
   }
 
   @Test
-  void shouldNotDeleteCommittedEntries() {
+  void shouldNotDeleteCommittedEntries() throws CheckedJournalException {
     // given
     raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
     final ApplicationEntry secondApplicationEntry =
@@ -211,7 +212,7 @@ class RaftLogTest {
   }
 
   @Test
-  void shouldReset() {
+  void shouldReset() throws CheckedJournalException {
     // given
     raftlog.append(new RaftLogEntry(1, firstApplicationEntry));
     final IndexedRaftLogEntry secondEntry =

@@ -10,7 +10,6 @@ package io.camunda.zeebe.journal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.journal.file.LogCorrupter;
 import io.camunda.zeebe.journal.file.SegmentedJournal;
 import io.camunda.zeebe.journal.file.SegmentedJournalBuilder;
@@ -66,7 +65,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldNotBeEmpty() {
+  void shouldNotBeEmpty() throws CheckedJournalException {
     // given
     journal.append(1, recordDataWriter);
 
@@ -75,7 +74,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldReadRecord() {
+  void shouldReadRecord() throws CheckedJournalException {
     // given
     final var recordAppended = journal.append(1, recordDataWriter);
 
@@ -88,7 +87,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldAppendMultipleData() {
+  void shouldAppendMultipleData() throws CheckedJournalException {
     // when
     final var firstRecord = journal.append(10, recordDataWriter);
     final var secondRecord = journal.append(20, otherRecordDataWriter);
@@ -102,7 +101,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldReadMultipleRecord() {
+  void shouldReadMultipleRecord() throws CheckedJournalException {
     // given
     final var firstRecord = journal.append(1, recordDataWriter);
     final var secondRecord = journal.append(20, otherRecordDataWriter);
@@ -118,7 +117,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldAppendAndReadMultipleRecordsInOrder() {
+  void shouldAppendAndReadMultipleRecordsInOrder() throws CheckedJournalException {
     // when
     for (int i = 0; i < 10; i++) {
       final var recordAppended = journal.append(i + 10, recordDataWriter);
@@ -139,7 +138,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldAppendAndReadMultipleRecords() {
+  void shouldAppendAndReadMultipleRecords() throws CheckedJournalException {
     final var reader = journal.openReader();
     for (int i = 0; i < 10; i++) {
       // given
@@ -162,7 +161,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldReset() {
+  void shouldReset() throws CheckedJournalException {
     // given
     long asqn = 1;
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -181,7 +180,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldNotReadAfterJournalResetWithoutReaderReset() {
+  void shouldNotReadAfterJournalResetWithoutReaderReset() throws CheckedJournalException {
     // given
     final var reader = journal.openReader();
     long asqn = 1;
@@ -200,7 +199,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldWriteToTruncatedIndex() {
+  void shouldWriteToTruncatedIndex() throws CheckedJournalException {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -225,7 +224,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldTruncate() {
+  void shouldTruncate() throws CheckedJournalException {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -245,7 +244,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldCompact() {
+  void shouldCompact() throws CheckedJournalException {
     // given
     final var reader = journal.openReader();
     final var firstIndex = journal.getFirstIndex();
@@ -267,7 +266,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldNotReadTruncatedEntries() {
+  void shouldNotReadTruncatedEntries() throws CheckedJournalException {
     // given
     final int totalWrites = 10;
     final int truncateIndex = 5;
@@ -308,7 +307,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldNotReadTruncatedEntriesWhenReaderPastTruncateIndex() {
+  void shouldNotReadTruncatedEntriesWhenReaderPastTruncateIndex() throws CheckedJournalException {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -328,7 +327,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldNotReadTruncatedEntriesWhenReaderAtTruncateIndex() {
+  void shouldNotReadTruncatedEntriesWhenReaderAtTruncateIndex() throws CheckedJournalException {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -348,7 +347,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldNotReadTruncatedEntriesWhenReaderBeforeTruncateIndex() {
+  void shouldNotReadTruncatedEntriesWhenReaderBeforeTruncateIndex() throws CheckedJournalException {
     // given
     final var reader = journal.openReader();
     assertThat(journal.getLastIndex()).isEqualTo(0);
@@ -368,7 +367,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldReturnFirstIndex() {
+  void shouldReturnFirstIndex() throws CheckedJournalException {
     // when
     final long firstIndex = journal.append(recordDataWriter).index();
     journal.append(recordDataWriter);
@@ -378,7 +377,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldReturnLastIndex() {
+  void shouldReturnLastIndex() throws CheckedJournalException {
     // when
     journal.append(recordDataWriter);
     final long lastIndex = journal.append(recordDataWriter).index();
@@ -451,7 +450,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldNotReadDeletedEntries() {
+  void shouldNotReadDeletedEntries() throws CheckedJournalException {
     // given
     final var firstRecord = journal.append(recordDataWriter);
     journal.append(recordDataWriter);
@@ -541,7 +540,7 @@ final class JournalTest {
   }
 
   @Test
-  void shouldUpdateMetastoreAfterFlush() throws FlushException {
+  void shouldUpdateMetastoreAfterFlush() throws CheckedJournalException {
     journal = openJournal();
     journal.append(1, recordDataWriter);
     final var lastWrittenIndex = journal.append(2, recordDataWriter).index();
