@@ -7,8 +7,6 @@
  */
 package io.camunda.authentication.config;
 
-import static org.springframework.security.config.Customizer.withDefaults;
-
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.handler.CustomMethodSecurityExpressionHandler;
@@ -38,6 +36,8 @@ public class WebSecurityConfig {
       new String[] {
         "/login",
         "/logout",
+        // these are required for login
+        "/identity/assets/**",
         // endpoint for failure forwarding
         "/error",
         // all actuator endpoints
@@ -103,7 +103,11 @@ public class WebSecurityConfig {
       throws Exception {
     LOG.info("Configuring basic auth login");
     return baseHttpSecurity(httpSecurity, authFailureHandler)
-        .httpBasic(withDefaults())
+        // .httpBasic(withDefaults())
+        .formLogin(
+            formLoginConfigurer -> {
+              formLoginConfigurer.loginPage("/login"); // .loginProcessingUrl("/login");
+            })
         .logout((logout) -> logout.logoutSuccessUrl("/"));
   }
 

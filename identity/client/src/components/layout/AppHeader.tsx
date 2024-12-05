@@ -3,6 +3,7 @@ import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
 import { useNavigate } from "react-router";
 import { useApi } from "src/utility/api";
 import { checkLicense, License } from "src/utility/api/headers";
+import {baseUrl} from "src/configuration";
 
 const AppHeader = () => {
   const routes = useGlobalRoutes();
@@ -26,7 +27,7 @@ const AppHeader = () => {
         elements: routes.map((route) => ({
           ...route,
           routeProps: {
-            onClick: () => navigate(route.key),
+            onClick: () => navigate(`${baseUrl}/${route.key}`),
           },
         })),
         licenseTag: getLicenseTag(license),

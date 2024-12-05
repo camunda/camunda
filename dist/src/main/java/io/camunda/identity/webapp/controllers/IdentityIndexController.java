@@ -24,7 +24,7 @@ public class IdentityIndexController {
 
   @Autowired private WebappsRequestForwardManager webappsRequestForwardManager;
 
-  @GetMapping("/identity")
+  @GetMapping(value = {"/identity", "/login", "/logout"})
   public String identity(final Model model) throws IOException {
     model.addAttribute("contextPath", context.getContextPath() + "/identity/");
     return "identity/index";
