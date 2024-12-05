@@ -714,6 +714,10 @@ public class RequestMapper {
     final JobResult jobResult = new JobResult();
     jobResult.setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
 
+    if (request.getResult().getCorrections() == null) {
+      return jobResult;
+    }
+
     final JobResultCorrections corrections = new JobResultCorrections();
     corrections.setAssignee(
         getStringOrEmpty(request, r -> r.getResult().getCorrections().getAssignee()));
