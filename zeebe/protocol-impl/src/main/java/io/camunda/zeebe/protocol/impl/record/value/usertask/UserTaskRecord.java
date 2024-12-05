@@ -512,6 +512,28 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     return this;
   }
 
+  public void setDiffAsChangedAttributes(final UserTaskRecord other) {
+    changedAttributesProp.reset();
+    if (!getAssigneeBuffer().equals(other.getAssigneeBuffer())) {
+      addChangedAttribute(ASSIGNEE);
+    }
+    if (!getCandidateGroupsList().equals(other.getCandidateGroupsList())) {
+      addChangedAttribute(CANDIDATE_GROUPS);
+    }
+    if (!getCandidateUsersList().equals(other.getCandidateUsersList())) {
+      addChangedAttribute(CANDIDATE_USERS);
+    }
+    if (!getDueDateBuffer().equals(other.getDueDateBuffer())) {
+      addChangedAttribute(DUE_DATE);
+    }
+    if (!getFollowUpDateBuffer().equals(other.getFollowUpDateBuffer())) {
+      addChangedAttribute(FOLLOW_UP_DATE);
+    }
+    if (getPriority() != other.getPriority()) {
+      addChangedAttribute(PRIORITY);
+    }
+  }
+
   @JsonIgnore
   public DirectBuffer getAssigneeBuffer() {
     return assigneeProp.getValue();

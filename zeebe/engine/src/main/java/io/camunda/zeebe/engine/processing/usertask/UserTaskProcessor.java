@@ -117,24 +117,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final LifecycleState lifecycleState,
       final UserTaskRecord userTaskRecord) {
     final var currentUserTask = userTaskState.getUserTask(command.getKey());
-    if (!currentUserTask.getAssigneeBuffer().equals(userTaskRecord.getAssigneeBuffer())) {
-      userTaskRecord.addChangedAttribute(UserTaskRecord.ASSIGNEE);
-    }
-    if (!currentUserTask.getCandidateGroupsList().equals(userTaskRecord.getCandidateGroupsList())) {
-      userTaskRecord.addChangedAttribute(UserTaskRecord.CANDIDATE_GROUPS);
-    }
-    if (!currentUserTask.getCandidateUsersList().equals(userTaskRecord.getCandidateUsersList())) {
-      userTaskRecord.addChangedAttribute(UserTaskRecord.CANDIDATE_USERS);
-    }
-    if (!currentUserTask.getDueDateBuffer().equals(userTaskRecord.getDueDateBuffer())) {
-      userTaskRecord.addChangedAttribute(UserTaskRecord.DUE_DATE);
-    }
-    if (!currentUserTask.getFollowUpDateBuffer().equals(userTaskRecord.getFollowUpDateBuffer())) {
-      userTaskRecord.addChangedAttribute(UserTaskRecord.FOLLOW_UP_DATE);
-    }
-    if (currentUserTask.getPriority() != userTaskRecord.getPriority()) {
-      userTaskRecord.addChangedAttribute(UserTaskRecord.PRIORITY);
-    }
+    userTaskRecord.setDiffAsChangedAttributes(currentUserTask);
 
     final var commandProcessor = determineProcessorFromUserTaskLifecycleState(lifecycleState);
     commandProcessor.onFinalizeCommand(command, userTaskRecord);
