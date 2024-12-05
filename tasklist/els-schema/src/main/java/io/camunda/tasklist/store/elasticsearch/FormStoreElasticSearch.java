@@ -15,10 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.NotFoundException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
@@ -53,7 +53,9 @@ public class FormStoreElasticSearch implements FormStore {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("tasklistProcessIndex")
+  private ProcessIndex processIndex;
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
@@ -225,7 +227,7 @@ public class FormStoreElasticSearch implements FormStore {
       searchSourceBuilder.query(boolQuery);
 
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(processIndex, ElasticsearchUtil.QueryType.ALL);
+          ElasticsearchUtil.createSearchRequest(processIndex.getFullQualifiedName());
       searchRequest.source(searchSourceBuilder);
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);

@@ -65,7 +65,7 @@ public class IndexTemplateDescriptorsConfigurator {
     return new ImportPositionIndex("", databaseInfo.isElasticsearchDb());
   }
 
-  @Bean
+  @Bean("operateProcessIndex")
   public ProcessIndex getProcessIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new ProcessIndex("", databaseInfo.isElasticsearchDb());
@@ -194,5 +194,11 @@ public class IndexTemplateDescriptorsConfigurator {
   public TasklistImportPositionIndex getTasklistImportPositionIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new TasklistImportPositionIndex("", databaseInfo.isElasticsearchDb());
+  }
+
+  @Bean("tasklistProcessIndex")
+  public ProcessIndex getTasklistProcessIndex(
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
+    return new ProcessIndex("", databaseInfo.isElasticsearchDb());
   }
 }

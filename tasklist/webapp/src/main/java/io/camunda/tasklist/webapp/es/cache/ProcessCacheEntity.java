@@ -7,8 +7,8 @@
  */
 package io.camunda.tasklist.webapp.es.cache;
 
-import io.camunda.tasklist.entities.ProcessEntity;
-import io.camunda.tasklist.entities.ProcessFlowNodeEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
+import io.camunda.webapps.schema.entities.operate.ProcessFlowNodeEntity;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -43,6 +43,7 @@ public class ProcessCacheEntity {
         .setName(processEntity.getName())
         .setFlowNodeNames(
             processEntity.getFlowNodes().stream()
+                .filter(n -> Objects.nonNull(n.getName()))
                 .collect(
                     Collectors.toMap(
                         ProcessFlowNodeEntity::getId, ProcessFlowNodeEntity::getName)));

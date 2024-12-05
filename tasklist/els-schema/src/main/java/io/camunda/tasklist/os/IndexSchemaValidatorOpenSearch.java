@@ -7,18 +7,18 @@
  */
 package io.camunda.tasklist.os;
 
-import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatAllVersionsIndexNameRegexPattern;
-import static io.camunda.tasklist.schema.indices.AbstractIndexDescriptor.formatTasklistIndexPattern;
 import static io.camunda.tasklist.util.CollectionUtil.map;
+import static io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor.formatIndexPrefix;
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
 import io.camunda.tasklist.schema.IndexSchemaValidator;
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
 import io.camunda.tasklist.schema.manager.SchemaManager;
 import io.camunda.tasklist.util.IndexSchemaValidatorUtil;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -45,17 +45,20 @@ public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
 
   @Autowired SchemaManager schemaManager;
 
-  private Set<String> getAllIndexNamesForIndex(final String index) {
-    final String indexPattern = formatTasklistIndexPattern(getIndexPrefix());
+  private Set<String> getAllIndexNamesForIndex(final IndexDescriptor index) {
+    final String indexPattern = getTasklistIndexPattern();
     LOGGER.debug("Getting all indices for {}", indexPattern);
     final Set<String> indexNames = retryOpenSearchClient.getIndexNames(indexPattern);
     // since we have indices with similar names, we need to additionally filter index names
     // e.g. task and task-variable
-    final String patternWithVersion =
-        formatAllVersionsIndexNameRegexPattern(getIndexPrefix(), index);
+    final String patternWithVersion = index.getAllVersionsIndexNameRegexPattern();
     return indexNames.stream()
         .filter(n -> n.matches(patternWithVersion))
         .collect(Collectors.toSet());
+  }
+
+  private String getTasklistIndexPattern() {
+    return formatIndexPrefix(getIndexPrefix()) + TASK_LIST + "*";
   }
 
   @Override
@@ -131,18 +134,18 @@ public class IndexSchemaValidatorOpenSearch extends IndexSchemaValidatorUtil
 
   @Override
   public Set<String> olderVersionsForIndex(final IndexDescriptor indexDescriptor) {
-    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor);
     return olderVersionsForIndex(indexDescriptor, versions);
   }
 
   @Override
   public Set<String> newerVersionsForIndex(final IndexDescriptor indexDescriptor) {
-    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    final Set<String> versions = getAllIndexNamesForIndex(indexDescriptor);
     return newerVersionsForIndex(indexDescriptor, versions);
   }
 
   private Set<String> versionsForIndex(final IndexDescriptor indexDescriptor) {
-    final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor.getIndexName());
+    final Set<String> allIndexNames = getAllIndexNamesForIndex(indexDescriptor);
     return allIndexNames.stream()
         .map(this::getVersionFromIndexName)
         .filter(Optional::isPresent)
