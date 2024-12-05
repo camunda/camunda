@@ -961,9 +961,10 @@ public final class NettyMessagingService implements ManagedMessagingService {
           .addLast(
               "idle",
               new IdleStateHandler(
-                  (int) config.getHeartbeatTimeout().getSeconds(),
-                  (int) config.getHeartbeatInterval().getSeconds(),
-                  0));
+                  config.getHeartbeatTimeout().toMillis(),
+                  config.getHeartbeatInterval().toMillis(),
+                  0,
+                  TimeUnit.MILLISECONDS));
       channel.pipeline().addLast("handshake", new ClientHandshakeHandlerAdapter(future));
 
       switch (config.getCompressionAlgorithm()) {
@@ -1003,10 +1004,12 @@ public final class NettyMessagingService implements ManagedMessagingService {
       channel
           .pipeline()
           .addLast(
+              "idle",
               new IdleStateHandler(
-                  (int) config.getHeartbeatTimeout().getSeconds(),
-                  (int) config.getHeartbeatInterval().getSeconds(),
-                  0));
+                  config.getHeartbeatTimeout().toMillis(),
+                  config.getHeartbeatInterval().toMillis(),
+                  0,
+                  TimeUnit.MILLISECONDS));
       channel.pipeline().addLast("handshake", new ServerHandshakeHandlerAdapter());
 
       switch (config.getCompressionAlgorithm()) {
