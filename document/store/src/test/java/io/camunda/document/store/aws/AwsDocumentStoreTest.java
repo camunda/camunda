@@ -26,6 +26,7 @@ import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -41,6 +42,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 class AwsDocumentStoreTest {
 
   public static final String BUCKET_NAME = "test-bucket";
+  public static final Long BUCKET_TTL = 30L;
 
   @Mock private S3Client s3Client;
   @Mock private S3Presigner preSigner;
@@ -49,7 +51,8 @@ class AwsDocumentStoreTest {
   @BeforeEach
   void setUp() {
     documentStore =
-        new AwsDocumentStore(BUCKET_NAME, s3Client, Executors.newSingleThreadExecutor(), preSigner);
+        new AwsDocumentStore(
+            BUCKET_NAME, BUCKET_TTL, s3Client, Executors.newSingleThreadExecutor(), preSigner);
   }
 
   @Test
@@ -96,6 +99,34 @@ class AwsDocumentStoreTest {
     // then
     assertTrue(result.isLeft());
     assertInstanceOf(DocumentAlreadyExists.class, result.getLeft());
+  }
+
+  @Test
+  void createDocumentShouldApplyTagIfDocumentExpiryGreaterThanTTL() {
+    // given
+    final var documentId = "existing-document-id";
+    final var inputStream = new ByteArrayInputStream(new byte[0]);
+    final ArgumentCaptor<PutObjectRequest> putObjectRequestCaptor = ArgumentCaptor.captor();
+    final var expiryTime = OffsetDateTime.now().plus(Duration.ofDays(60));
+    final var metadata =
+        new DocumentMetadataModel(
+            "application/text",
+            "given-test-document.jpeg",
+            expiryTime,
+            10000L,
+            Collections.emptyMap());
+
+    final var request = new DocumentCreationRequest(documentId, inputStream, metadata);
+
+    when(s3Client.headObject(any(HeadObjectRequest.class)))
+        .thenThrow(S3Exception.builder().statusCode(HttpStatusCode.NOT_FOUND).build());
+
+    // when
+    documentStore.createDocument(request).join();
+
+    // then
+    verify(s3Client).putObject(putObjectRequestCaptor.capture(), any(RequestBody.class));
+    assertEquals("NoAutoDelete=true", putObjectRequestCaptor.getValue().tagging());
   }
 
   @Test
