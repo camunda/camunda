@@ -135,8 +135,8 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
       return CompletableFuture.completedFuture(null);
     }
     final String indexWildcard = "^" + indexPrefix + INDEX_WILDCARD;
-
-    return setIndexLifeCycle(fetchMatchingIndexes(indexWildcard).toArray(String[]::new));
+    return fetchMatchingIndexes(indexWildcard)
+        .thenCompose(this::setIndexLifeCycleToMatchingIndices);
   }
 
   @Override
@@ -188,17 +188,16 @@ public final class ElasticsearchArchiverRepository implements ArchiverRepository
         .thenApplyAsync(ignored -> null, executor);
   }
 
-  private List<String> fetchMatchingIndexes(final String indexWildcard) {
+  private CompletableFuture<List<String>> fetchMatchingIndexes(final String indexWildcard) {
     final Pattern indexNamePattern = Pattern.compile(indexWildcard);
     return client
         .indices()
         .get(new Builder().index(ALL_INDICES).build())
-        .join()
-        .result()
-        .keySet()
-        .stream()
-        .filter(indexName -> indexNamePattern.matcher(indexName).matches())
-        .toList();
+        .thenApply(
+            response ->
+                response.result().keySet().stream()
+                    .filter(indexName -> indexNamePattern.matcher(indexName).matches())
+                    .toList());
   }
 
   public CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(

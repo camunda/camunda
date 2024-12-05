@@ -16,7 +16,6 @@ import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -135,15 +134,13 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
       return CompletableFuture.completedFuture(null);
     }
     final String indexWildCard = "^" + indexPrefix + INDEX_WILDCARD;
-    final List<String> indices;
 
     try {
-      indices = fetchIndexMatchingIndexes(indexWildCard);
+      return fetchIndexMatchingIndexes(indexWildCard)
+          .thenCompose(indices -> setIndexLifeCycle(indices.toArray(String[]::new)));
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(new ExporterException("Failed to fetch indexes:", e));
     }
-
-    return setIndexLifeCycle(indices.toArray(String[]::new));
   }
 
   @Override
@@ -193,19 +190,17 @@ public final class OpenSearchArchiverRepository implements ArchiverRepository {
         .thenApplyAsync(ignored -> null, executor);
   }
 
-  private List<String> fetchIndexMatchingIndexes(final String indexWildCard) throws IOException {
-    final List<String> indices = new ArrayList<>();
-    client
+  private CompletableFuture<List<String>> fetchIndexMatchingIndexes(final String indexWildCard)
+      throws IOException {
+    return client
         .cat()
         .indices()
-        .thenAccept(
+        .thenApply(
             response ->
                 response.valueBody().stream()
                     .map(IndicesRecord::index)
                     .filter(index -> index.matches(indexWildCard))
-                    .forEach(indices::add))
-        .join();
-    return indices;
+                    .toList());
   }
 
   private CompletableFuture<Void> applyPolicyToIndex(final String index) {
