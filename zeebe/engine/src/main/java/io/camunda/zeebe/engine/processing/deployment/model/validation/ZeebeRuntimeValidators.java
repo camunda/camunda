@@ -15,6 +15,7 @@ import io.camunda.zeebe.model.bpmn.instance.Message;
 import io.camunda.zeebe.model.bpmn.instance.MultiInstanceLoopCharacteristics;
 import io.camunda.zeebe.model.bpmn.instance.Signal;
 import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAssignmentDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledDecision;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
@@ -191,6 +192,12 @@ public final class ZeebeRuntimeValidators {
                                     staticExpression, expressionProcessor),
                             "be a valid Number between 0 and 100"))
             .build(expressionLanguage),
-        new ZeebePriorityDefinitionValidator());
+        new ZeebePriorityDefinitionValidator(),
+        // ----------------------------------------
+        ZeebeExpressionValidator.verifyThat(ZeebeAdHoc.class)
+            .hasValidExpression(
+                ZeebeAdHoc::getActiveElementsCollection,
+                expression -> expression.isOptional().isNonStatic())
+            .build(expressionLanguage));
   }
 }

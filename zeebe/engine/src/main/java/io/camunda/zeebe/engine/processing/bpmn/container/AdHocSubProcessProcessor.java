@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.container;
 
+import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -16,9 +17,14 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnVariableMappingBehavior;
+import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class AdHocSubProcessProcessor
     implements BpmnElementContainerProcessor<ExecutableAdHocSubProcess> {
@@ -29,6 +35,7 @@ public class AdHocSubProcessProcessor
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnJobBehavior jobBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final ExpressionProcessor expressionProcessor;
 
   public AdHocSubProcessProcessor(
       final BpmnBehaviors bpmnBehaviors,
@@ -38,6 +45,7 @@ public class AdHocSubProcessProcessor
     eventSubscriptionBehavior = bpmnBehaviors.eventSubscriptionBehavior();
     jobBehavior = bpmnBehaviors.jobBehavior();
     incidentBehavior = bpmnBehaviors.incidentBehavior();
+    expressionProcessor = bpmnBehaviors.expressionBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
   }
 
@@ -56,10 +64,19 @@ public class AdHocSubProcessProcessor
   public Either<Failure, ?> finalizeActivation(
       final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
 
-    return eventSubscriptionBehavior
-        .subscribeToEvents(element, context)
+    return readActivateElementsCollection(element, context)
+        .flatMap(
+            elementsToActivate ->
+                eventSubscriptionBehavior
+                    .subscribeToEvents(element, context)
+                    .map(ok -> elementsToActivate))
         .thenDo(
-            ok -> stateTransitionBehavior.transitionToActivated(context, element.getEventType()));
+            elementsToActivate -> {
+              final var activated =
+                  stateTransitionBehavior.transitionToActivated(context, element.getEventType());
+
+              activateElements(element, activated, elementsToActivate);
+            });
   }
 
   @Override
@@ -72,16 +89,25 @@ public class AdHocSubProcessProcessor
     eventSubscriptionBehavior.unsubscribeFromEvents(terminating);
     incidentBehavior.resolveIncidents(terminating);
 
-    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(terminating);
+    final boolean noActiveChildInstances =
+        stateTransitionBehavior.terminateChildInstances(terminating);
+    if (noActiveChildInstances) {
+      terminate(element, terminating);
+    }
+  }
+
+  private void terminate(
+      final ExecutableAdHocSubProcess element, final BpmnElementContext context) {
+
+    final var flowScopeInstance = stateBehavior.getFlowScopeInstance(context);
 
     eventSubscriptionBehavior
-        .findEventTrigger(terminating)
+        .findEventTrigger(context)
         .filter(eventTrigger -> flowScopeInstance.isActive() && !flowScopeInstance.isInterrupted())
         .ifPresentOrElse(
             eventTrigger -> {
               final var terminated =
-                  stateTransitionBehavior.transitionToTerminated(
-                      terminating, element.getEventType());
+                  stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
 
               eventSubscriptionBehavior.activateTriggeredEvent(
                   terminated.getElementInstanceKey(),
@@ -91,11 +117,65 @@ public class AdHocSubProcessProcessor
             },
             () -> {
               final var terminated =
-                  stateTransitionBehavior.transitionToTerminated(
-                      terminating, element.getEventType());
+                  stateTransitionBehavior.transitionToTerminated(context, element.getEventType());
 
               stateTransitionBehavior.onElementTerminated(element, terminated);
             });
+  }
+
+  private Either<Failure, List<String>> readActivateElementsCollection(
+      final ExecutableAdHocSubProcess adHocSubProcess, final BpmnElementContext context) {
+    final Expression activeElementsCollection = adHocSubProcess.getActiveElementsCollection();
+    if (activeElementsCollection == null) {
+      // The expression is not defined. No elements to activate.
+      return Either.right(Collections.emptyList());
+
+    } else {
+      return expressionProcessor
+          .evaluateArrayOfStringsExpression(
+              activeElementsCollection, context.getElementInstanceKey())
+          .mapLeft(
+              failure ->
+                  new Failure(
+                      "Failed to activate ad-hoc elements. " + failure.getMessage(),
+                      ErrorType.EXTRACT_VALUE_ERROR))
+          .flatMap(elements -> validateActiveElements(adHocSubProcess, elements));
+    }
+  }
+
+  private static Either<Failure, List<String>> validateActiveElements(
+      final ExecutableAdHocSubProcess adHocSubProcess,
+      final List<String> activateElementsCollection) {
+
+    final List<String> elementsNotFound =
+        activateElementsCollection.stream()
+            .filter(elementId -> !adHocSubProcess.getAdHocActivitiesById().containsKey(elementId))
+            .toList();
+
+    if (elementsNotFound.isEmpty()) {
+      return Either.right(activateElementsCollection);
+
+    } else {
+      final String elementIds =
+          elementsNotFound.stream().map("'%s'"::formatted).collect(Collectors.joining(", "));
+      return Either.left(
+          new Failure(
+              "Failed to activate ad-hoc elements. No BPMN elements found with ids: %s."
+                  .formatted(elementIds),
+              ErrorType.EXTRACT_VALUE_ERROR));
+    }
+  }
+
+  private void activateElements(
+      final ExecutableAdHocSubProcess element,
+      final BpmnElementContext context,
+      final List<String> elementsToActivate) {
+
+    elementsToActivate.stream()
+        .map(element.getAdHocActivitiesById()::get)
+        .forEach(
+            elementToActivate ->
+                stateTransitionBehavior.activateChildInstance(context, elementToActivate));
   }
 
   @Override
@@ -108,6 +188,11 @@ public class AdHocSubProcessProcessor
   @Override
   public void onChildTerminated(
       final ExecutableAdHocSubProcess element,
-      final BpmnElementContext flowScopeContext,
-      final BpmnElementContext childContext) {}
+      final BpmnElementContext adHocSubProcessContext,
+      final BpmnElementContext childContext) {
+
+    if (stateBehavior.canBeTerminated(childContext)) {
+      terminate(element, adHocSubProcessContext);
+    }
+  }
 }
