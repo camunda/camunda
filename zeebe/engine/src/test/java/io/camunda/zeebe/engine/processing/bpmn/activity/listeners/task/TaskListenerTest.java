@@ -1275,6 +1275,37 @@ public class TaskListenerTest {
             corrections.""");
   }
 
+  @Test
+  public void shouldRejectTaskListenerCompletionWithUnknownCorrections() {
+    // given
+    final long processInstanceKey =
+        createProcessInstance(
+            createProcessWithCompleteTaskListeners(LISTENER_TYPE, LISTENER_TYPE + "_2"));
+
+    ENGINE.userTask().ofInstance(processInstanceKey).complete();
+
+    // when
+    final var rejection =
+        ENGINE
+            .job()
+            .ofInstance(processInstanceKey)
+            .withType(LISTENER_TYPE)
+            .withResult(new JobResult().setCorrectedAttributes(List.of("unknown_property")))
+            .expectRejection()
+            .complete();
+
+    // then
+    Assertions.assertThat(rejection)
+        .describedAs("Expect that the job completion is rejected")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+            Expected to complete task listener job with a corrections result, \
+            but property 'unknown_property' cannot be corrected. \
+            Only the following properties can be corrected: \
+            [assignee, candidateGroups, candidateUsers, dueDate, followUpDate, priority].""");
+  }
+
   private static void completeRecreatedJobWithType(
       final EngineRule engine, final long processInstanceKey, final String jobType) {
     final long jobKey = findRecreatedJobKey(processInstanceKey, jobType);
