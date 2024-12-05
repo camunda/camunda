@@ -27,6 +27,7 @@ public class ResourceMetadataRecord extends UnifiedRecordValue implements Resour
   private final IntegerProperty versionProp = new IntegerProperty("version");
   private final LongProperty resourceKeyProp = new LongProperty("resourceKey");
   private final BinaryProperty checksumProp = new BinaryProperty("checksum");
+  private final StringProperty resourceNameProp = new StringProperty("resourceName");
   private final BooleanProperty isDuplicateProp = new BooleanProperty("isDuplicate", false);
   private final StringProperty tenantIdProp =
       new StringProperty("tenantId", TenantOwned.DEFAULT_TENANT_IDENTIFIER);
@@ -34,11 +35,12 @@ public class ResourceMetadataRecord extends UnifiedRecordValue implements Resour
   private final StringProperty versionTagProp = new StringProperty("versionTag", "");
 
   public ResourceMetadataRecord() {
-    super(8);
+    super(9);
     declareProperty(resourceIdProp)
         .declareProperty(versionProp)
         .declareProperty(resourceKeyProp)
         .declareProperty(checksumProp)
+        .declareProperty(resourceNameProp)
         .declareProperty(isDuplicateProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deploymentKeyProp)
@@ -83,6 +85,21 @@ public class ResourceMetadataRecord extends UnifiedRecordValue implements Resour
   public ResourceMetadataRecord setChecksum(final DirectBuffer checksum) {
     checksumProp.setValue(checksum);
     return this;
+  }
+
+  @Override
+  public String getResourceName() {
+    return bufferAsString(resourceNameProp.getValue());
+  }
+
+  public ResourceMetadataRecord setResourceName(final String resourceName) {
+    resourceNameProp.setValue(resourceName);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getResourceNameBuffer() {
+    return resourceNameProp.getValue();
   }
 
   @Override
