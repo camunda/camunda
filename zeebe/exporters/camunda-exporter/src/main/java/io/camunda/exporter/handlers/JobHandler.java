@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_MESSAGE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DEADLINE;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.PROCESS_DEFINITION_KEY;
@@ -138,6 +139,9 @@ public class JobHandler implements ExportHandler<JobEntity, JobRecordValue> {
     updateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
     updateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
     updateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
+    if (FAILED_JOB_EVENTS.stream().anyMatch(i -> jobEntity.getState().equals(i.name()))) {
+      updateFields.put(JOB_FAILED_WITH_RETRIES_LEFT, jobEntity.isJobFailedWithRetriesLeft());
+    }
     batchRequest.upsert(indexName, jobEntity.getId(), jobEntity, updateFields);
   }
 

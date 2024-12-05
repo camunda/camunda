@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.ERROR_MESSAGE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.FLOW_NODE_ID;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_DEADLINE;
+import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_FAILED_WITH_RETRIES_LEFT;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_STATE;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.JOB_WORKER;
 import static io.camunda.webapps.schema.descriptors.operate.template.JobTemplate.PROCESS_DEFINITION_KEY;
@@ -276,13 +277,65 @@ final class JobHandlerTest {
     // given
     final String jobId = "111";
     final String expectedIndexName = JobTemplate.INDEX_NAME;
-    final String elementId = "elementId";
     final int retries = 3;
     final String jobWorker = "jobWorker";
     final String errorMessage = "someErrorMessage";
     final String errorCode = "errorCode";
     final OffsetDateTime deadline = OffsetDateTime.now().plus(1, ChronoUnit.DAYS);
     final String state = "CREATED";
+    final String bpmnProcessId = "bpmnProcessId";
+    final long processDefinitionKey = 555L;
+    final OffsetDateTime endTime = OffsetDateTime.now();
+
+    final Map<String, String> customHeaders = Map.of("key", "val");
+    final JobEntity jobEntity =
+        new JobEntity()
+            .setId(jobId)
+            .setWorker(jobWorker)
+            .setState(state)
+            .setRetries(retries)
+            .setErrorMessage(errorMessage)
+            .setErrorCode(errorCode)
+            .setEndTime(endTime)
+            .setCustomHeaders(customHeaders)
+            .setDeadline(deadline)
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setBpmnProcessId(bpmnProcessId);
+
+    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
+    expectedUpdateFields.put(JOB_WORKER, jobEntity.getWorker());
+    expectedUpdateFields.put(JOB_STATE, jobEntity.getState());
+    expectedUpdateFields.put(RETRIES, jobEntity.getRetries());
+    expectedUpdateFields.put(ERROR_MESSAGE, jobEntity.getErrorMessage());
+    expectedUpdateFields.put(ERROR_CODE, jobEntity.getErrorCode());
+    expectedUpdateFields.put(TIME, jobEntity.getEndTime());
+    expectedUpdateFields.put(CUSTOM_HEADERS, jobEntity.getCustomHeaders());
+    expectedUpdateFields.put(JOB_DEADLINE, jobEntity.getDeadline());
+    expectedUpdateFields.put(PROCESS_DEFINITION_KEY, jobEntity.getProcessDefinitionKey());
+    expectedUpdateFields.put(BPMN_PROCESS_ID, jobEntity.getBpmnProcessId());
+
+    final BatchRequest mockRequest = Mockito.mock(BatchRequest.class);
+
+    // when
+    underTest.flush(jobEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1))
+        .upsert(expectedIndexName, jobEntity.getId(), jobEntity, expectedUpdateFields);
+  }
+
+  @Test
+  void shouldUpsertWithJobFailedWithRetriesAndFlowNodeId() {
+    // given
+    final String jobId = "111";
+    final String expectedIndexName = JobTemplate.INDEX_NAME;
+    final String elementId = "elementId";
+    final int retries = 2;
+    final String jobWorker = "jobWorker";
+    final String errorMessage = "someErrorMessage";
+    final String errorCode = "errorCode";
+    final OffsetDateTime deadline = OffsetDateTime.now().plus(1, ChronoUnit.DAYS);
+    final String state = "FAILED";
     final String bpmnProcessId = "bpmnProcessId";
     final long processDefinitionKey = 555L;
     final OffsetDateTime endTime = OffsetDateTime.now();
@@ -301,10 +354,12 @@ final class JobHandlerTest {
             .setCustomHeaders(customHeaders)
             .setDeadline(deadline)
             .setProcessDefinitionKey(processDefinitionKey)
-            .setBpmnProcessId(bpmnProcessId);
+            .setBpmnProcessId(bpmnProcessId)
+            .setJobFailedWithRetriesLeft(true);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
     expectedUpdateFields.put(FLOW_NODE_ID, jobEntity.getFlowNodeId());
+    expectedUpdateFields.put(JOB_FAILED_WITH_RETRIES_LEFT, jobEntity.isJobFailedWithRetriesLeft());
     expectedUpdateFields.put(JOB_WORKER, jobEntity.getWorker());
     expectedUpdateFields.put(JOB_STATE, jobEntity.getState());
     expectedUpdateFields.put(RETRIES, jobEntity.getRetries());
