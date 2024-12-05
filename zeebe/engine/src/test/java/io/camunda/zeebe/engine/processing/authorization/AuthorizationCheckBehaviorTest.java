@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.Map;
@@ -251,10 +252,6 @@ public class AuthorizationCheckBehaviorTest {
   public void shouldGetAuthorizedTenantIds() {
     // given
     final var userKey = createUser();
-    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
-    final var permissionType = PermissionType.DELETE;
-    final var resourceId = UUID.randomUUID().toString();
-    addPermission(userKey, resourceType, permissionType, resourceId);
     final var tenantId1 = createAndAssignTenant(userKey);
     final var tenantId2 = createAndAssignTenant(userKey);
     final var command = mockCommand(userKey);
@@ -264,6 +261,30 @@ public class AuthorizationCheckBehaviorTest {
 
     // then
     assertThat(authorizedTenantIds).containsExactlyInAnyOrder(tenantId1, tenantId2);
+  }
+
+  @Test
+  public void shouldGetDefaultAuthorizedTenantIdsIfUserKeyIsNotPresent() {
+    // given
+    final var command = mock(TypedRecord.class);
+
+    // when
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+
+    // then
+    assertThat(authorizedTenantIds).containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldGetDefaultAuthorizedTenantIdsIfUserIsNotPresent() {
+    // given
+    final var command = mockCommand(1L);
+
+    // when
+    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
+
+    // then
+    assertThat(authorizedTenantIds).containsOnly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
 
   private long createUser() {
