@@ -17,11 +17,9 @@ import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -137,23 +135,6 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
     return new TasklistImportPositionIndex(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties)) {
-      @Override
-      public String getIndexPrefix() {
-        return indexPrefixHolder.getIndexPrefix();
-      }
-    };
-  }
-
-  @Bean
-  @ConditionalOnProperty(
-      name = "camunda.tasklist.importerEnabled",
-      havingValue = "true",
-      matchIfMissing = true)
-  public TasklistProcessIndex deprecatedTasklistProcessIndex(
-      final TasklistProperties tasklistProperties,
-      final TasklistIndexPrefixHolder indexPrefixHolder) {
-    return new TasklistProcessIndex(
         getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties)) {
       @Override
       public String getIndexPrefix() {

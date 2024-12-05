@@ -15,10 +15,10 @@ import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.deployment.DeployedProcessImpl;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
-import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistProcessIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
-import io.camunda.webapps.schema.entities.tasklist.TasklistProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
@@ -52,7 +52,9 @@ public class ProcessZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private TasklistProcessIndex processIndex;
+  @Autowired
+  @Qualifier("tasklistProcessIndex")
+  private ProcessIndex processIndex;
 
   @Autowired private FormIndex formIndex;
 
@@ -112,9 +114,9 @@ public class ProcessZeebeRecordProcessorElasticSearch {
     }
   }
 
-  private TasklistProcessEntity createEntity(
+  private ProcessEntity createEntity(
       final Process process, final BiConsumer<String, String> userTaskFormCollector) {
-    final TasklistProcessEntity processEntity = new TasklistProcessEntity();
+    final ProcessEntity processEntity = new ProcessEntity();
 
     processEntity.setId(String.valueOf(process.getProcessDefinitionKey()));
     processEntity.setKey(process.getProcessDefinitionKey());
@@ -133,7 +135,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
         userTaskFormCollector,
         processEntity::setFormKey,
         formId -> processEntity.setFormId(formId),
-        processEntity::setStartedByForm);
+        processEntity::setIsPublic);
 
     Optional.ofNullable(processEntity.getFormKey())
         .ifPresent(key -> processEntity.setIsFormEmbedded(true));
