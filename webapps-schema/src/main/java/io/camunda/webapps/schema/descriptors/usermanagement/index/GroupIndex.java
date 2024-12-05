@@ -14,7 +14,7 @@ import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.Iden
 
 public class GroupIndex extends UserManagementIndexDescriptor implements Prio5Backup {
 
-  public static final String INDEX_NAME = "groups";
+  public static final String INDEX_NAME = "group";
   public static final String INDEX_VERSION = "8.7.0";
   public static final String KEY = "key";
   public static final String MEMBER_KEY = "memberKey";
