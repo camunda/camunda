@@ -9,6 +9,7 @@ package io.camunda.zeebe.gateway.api.job;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.gateway.api.util.GatewayTest;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -22,7 +23,7 @@ import org.junit.Test;
 public final class NonLongPollingActivateJobsTest extends GatewayTest {
 
   public NonLongPollingActivateJobsTest() {
-    super(getConfig());
+    super(getConfig(), new SecurityConfiguration());
   }
 
   private static GatewayCfg getConfig() {

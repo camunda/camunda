@@ -10,8 +10,11 @@ package io.camunda.security.configuration;
 public class SecurityConfiguration {
 
   static final boolean DEFAULT_AUTHORIZATIONS_ENABLED = false;
+  static final boolean DEFAULT_MULTITENANCY_ENABLED = false;
 
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
+
+  private MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
 
   public AuthorizationsConfiguration getAuthorizations() {
     return authorizations;
@@ -19,5 +22,13 @@ public class SecurityConfiguration {
 
   public void setAuthorizations(final AuthorizationsConfiguration authorizations) {
     this.authorizations = authorizations;
+  }
+
+  public MultiTenancyConfiguration getMultiTenancy() {
+    return multiTenancy;
+  }
+
+  public void setMultiTenancy(final MultiTenancyConfiguration multiTenancy) {
+    this.multiTenancy = multiTenancy;
   }
 }
