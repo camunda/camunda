@@ -91,15 +91,19 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private void processCompleteTaskListener(final TypedRecord<UserTaskRecord> command) {
     final var lifecycleState = userTaskState.getLifecycleState(command.getKey());
     final var listenerEventType = mapLifecycleStateToEventType(lifecycleState);
-    final var persistedRecord = userTaskState.getUserTask(command.getKey());
-    final var userTaskElement = getUserTaskElement(persistedRecord);
-    final var userTaskElementInstance = getUserTaskElementInstance(persistedRecord);
+    // we need to copy the intermediate user task record as we have read it from the state, and we
+    // will read from the state again later, which in turn would modify this record
+    final var intermediateUserTaskRecord =
+        userTaskState.getIntermediateState(command.getKey()).getRecord().copy();
+    final var userTaskElement = getUserTaskElement(intermediateUserTaskRecord);
+    final var userTaskElementInstance = getUserTaskElementInstance(intermediateUserTaskRecord);
     final var context = buildContext(userTaskElementInstance);
 
     findNextTaskListener(listenerEventType, userTaskElement, userTaskElementInstance)
         .ifPresentOrElse(
-            listener -> jobBehavior.createNewTaskListenerJob(context, persistedRecord, listener),
-            () -> finalizeCommand(command, lifecycleState, persistedRecord));
+            listener ->
+                jobBehavior.createNewTaskListenerJob(context, intermediateUserTaskRecord, listener),
+            () -> finalizeCommand(command, lifecycleState, intermediateUserTaskRecord));
   }
 
   private void finalizeCommand(
