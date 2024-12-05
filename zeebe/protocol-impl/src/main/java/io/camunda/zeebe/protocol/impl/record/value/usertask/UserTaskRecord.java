@@ -107,6 +107,7 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
         .declareProperty(priorityProp);
   }
 
+  /** Like {@link #wrap(UserTaskRecord)} but does not set the variables. */
   public void wrapWithoutVariables(final UserTaskRecord record) {
     userTaskKeyProp.setValue(record.getUserTaskKey());
     assigneeProp.setValue(record.getAssigneeBuffer());
@@ -131,9 +132,22 @@ public final class UserTaskRecord extends UnifiedRecordValue implements UserTask
     priorityProp.setValue(record.getPriority());
   }
 
+  /**
+   * Wraps the given record's properties, typically used to quickly set the same properties.
+   *
+   * @implNote This method uses variable assignment. So changing a non-primitive in one record also
+   *     affects the other. If you need to separate the records, use {@link #copy()} instead.
+   */
   public void wrap(final UserTaskRecord record) {
     wrapWithoutVariables(record);
     variableProp.setValue(record.getVariablesBuffer());
+  }
+
+  /** Returns a full copy of the record. */
+  public UserTaskRecord copy() {
+    final UserTaskRecord copy = new UserTaskRecord();
+    copy.copyFrom(this);
+    return copy;
   }
 
   public void wrapChangedAttributes(
