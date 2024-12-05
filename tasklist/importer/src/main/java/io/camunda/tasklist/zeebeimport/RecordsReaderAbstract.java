@@ -86,7 +86,7 @@ public abstract class RecordsReaderAbstract implements RecordsReader, Runnable {
 
     try {
       final var latestPosition =
-          importPositionHolder.getLatestScheduledPosition(
+          importPositionHolder.getLatestLoadedPosition(
               importValueType.getAliasTemplate(), partitionId);
 
       importPositionHolder.recordLatestLoadedPosition(latestPosition);
