@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -40,12 +41,12 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           + "Support will be enabled with the resolution of issue #23702";
   private static final Set<String> CORRECTABLE_PROPERTIES =
       Set.of(
-          "assignee",
-          "candidateGroupsList",
-          "candidateUsersList",
-          "dueDate",
-          "followUpDate",
-          "priority");
+          UserTaskRecord.ASSIGNEE,
+          UserTaskRecord.CANDIDATE_GROUPS,
+          UserTaskRecord.CANDIDATE_USERS,
+          UserTaskRecord.DUE_DATE,
+          UserTaskRecord.FOLLOW_UP_DATE,
+          UserTaskRecord.PRIORITY);
 
   private final UserTaskState userTaskState;
   private final ElementInstanceState elementInstanceState;
