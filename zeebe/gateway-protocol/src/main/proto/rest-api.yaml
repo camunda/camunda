@@ -4749,10 +4749,10 @@ components:
       properties:
         claimName:
           type: string
-          description: The claim name, idk.
+          description: The claim name to match against a token.
         claimValue:
           type: string
-          description: The claim value, idk.
+          description: The value of the claim to match.
     CamundaUser:
       type: "object"
       properties:
