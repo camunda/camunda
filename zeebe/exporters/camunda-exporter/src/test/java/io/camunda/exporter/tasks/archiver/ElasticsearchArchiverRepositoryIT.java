@@ -22,7 +22,6 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.ArchiverConfiguration;
 import io.camunda.exporter.config.ExporterConfiguration.RetentionConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.operate.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources;
@@ -62,7 +61,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final ArchiverConfiguration config = new ArchiverConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
-  private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
+  private String indexPrefix = "testPrefix";
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
@@ -122,7 +121,7 @@ final class ElasticsearchArchiverRepositoryIT {
   @Test
   void shouldSetIndexLifeCycleOnAllValidIndexes() throws IOException {
     // given
-    connectConfiguration.setIndexPrefix("test");
+    indexPrefix = "test";
     final var indexName1 = "test-operate-record-8.2.1_records";
     final var indexName2 = "test-tasklist-record-8.3.0_records";
     // indexName3 does not have a valid name for the policy to be applied.
@@ -341,7 +340,7 @@ final class ElasticsearchArchiverRepositoryIT {
         1,
         config,
         retention,
-        connectConfiguration,
+        indexPrefix,
         processInstanceIndex,
         batchOperationIndex,
         client,
