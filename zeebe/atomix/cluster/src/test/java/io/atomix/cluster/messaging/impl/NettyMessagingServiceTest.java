@@ -64,7 +64,10 @@ final class NettyMessagingServiceTest {
   private static final int UID_COLUMN = 7;
 
   private MessagingConfig defaultConfig() {
-    return new MessagingConfig().setShutdownQuietPeriod(Duration.ofMillis(50));
+    return new MessagingConfig()
+        .setShutdownQuietPeriod(Duration.ofMillis(50))
+        .setHeartbeatInterval(Duration.ofMillis(50))
+        .setHeartbeatTimeout(Duration.ofMillis(500));
   }
 
   private String nextSubject() {
