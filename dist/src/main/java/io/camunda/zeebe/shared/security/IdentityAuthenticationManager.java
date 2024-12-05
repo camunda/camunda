@@ -10,7 +10,7 @@ package io.camunda.zeebe.shared.security;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.AccessToken;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Collections;
 import java.util.List;
@@ -25,11 +25,11 @@ import org.springframework.stereotype.Component;
 public final class IdentityAuthenticationManager implements AuthenticationManager {
 
   private final Identity identity;
-  private final MultiTenancyCfg multiTenancy;
+  private final MultiTenancyConfiguration multiTenancy;
 
   @Autowired
   public IdentityAuthenticationManager(
-      final Identity identity, final MultiTenancyCfg multiTenancy) {
+      final Identity identity, final MultiTenancyConfiguration multiTenancy) {
     this.identity = identity;
     this.multiTenancy = multiTenancy;
   }
