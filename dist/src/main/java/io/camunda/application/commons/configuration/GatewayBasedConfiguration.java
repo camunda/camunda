@@ -23,7 +23,6 @@ import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.impl.configuration.MembershipCfg;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.impl.filters.FilterRepository;
 import jakarta.servlet.Filter;
@@ -85,11 +84,6 @@ public final class GatewayBasedConfiguration {
   @Bean
   public BrokerClientTimeoutConfiguration brokerClientConfig() {
     return new BrokerClientTimeoutConfiguration(properties.getCluster().getRequestTimeout());
-  }
-
-  @Bean
-  public MultiTenancyCfg multiTenancyCfg() {
-    return properties.getMultiTenancy();
   }
 
   @Bean

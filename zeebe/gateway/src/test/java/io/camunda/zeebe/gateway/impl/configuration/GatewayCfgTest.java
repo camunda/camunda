@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.impl.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.utils.net.Address;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import io.camunda.zeebe.util.Environment;
@@ -30,6 +31,7 @@ public final class GatewayCfgTest {
   private static final String EMPTY_CFG_FILENAME = "/configuration/gateway.empty.yaml";
   private static final String CUSTOM_CFG_FILENAME = "/configuration/gateway.custom.yaml";
   private static final GatewayCfg CUSTOM_CFG = new GatewayCfg();
+  private static final SecurityConfiguration SECURITY_CONFIGURATION = new SecurityConfiguration();
   private static final String CUSTOM_MEMBERSHIP_CFG_FILENAME =
       "/configuration/gateway.membership.custom.yaml";
 
@@ -56,7 +58,6 @@ public final class GatewayCfgTest {
         .setPrivateKeyPath(new File("privateKeyPath"));
     CUSTOM_CFG.getThreads().setManagementThreads(100);
     CUSTOM_CFG.getLongPolling().setEnabled(false);
-    CUSTOM_CFG.getMultiTenancy().setEnabled(true);
     CUSTOM_CFG.getInterceptors().add(new InterceptorCfg());
     CUSTOM_CFG.getInterceptors().get(0).setId("example");
     CUSTOM_CFG.getInterceptors().get(0).setClassName("io.camunda.zeebe.example.Interceptor");
@@ -211,7 +212,6 @@ public final class GatewayCfgTest {
             new File(
                 getClass().getClassLoader().getResource("security/test-chain.cert.pem").getPath()));
     expected.getLongPolling().setEnabled(true);
-    expected.getMultiTenancy().setEnabled(false);
 
     expected.getInterceptors().add(new InterceptorCfg());
     expected.getInterceptors().get(0).setId("overwritten");

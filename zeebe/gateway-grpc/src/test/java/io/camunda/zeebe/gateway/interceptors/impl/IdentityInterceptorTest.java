@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.identity.sdk.Identity;
 import io.camunda.identity.sdk.authentication.exception.TokenVerificationException;
 import io.camunda.identity.sdk.tenants.dto.Tenant;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.zeebe.gateway.interceptors.InterceptorUtil;
 import io.grpc.Context;
 import io.grpc.Metadata;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
 
 public class IdentityInterceptorTest {
 
-  private final MultiTenancyCfg multiTenancy = new MultiTenancyCfg();
+  private final MultiTenancyConfiguration multiTenancy = new MultiTenancyConfiguration();
 
   @Test
   public void missingTokenIsRejected() {
@@ -126,9 +126,10 @@ public class IdentityInterceptorTest {
         .thenReturn(List.of(new Tenant("tenant-a", "A"), new Tenant("tenant-b", "B")))
         .thenReturn(List.of(new Tenant("tenant-c", "C")));
     final var capturingServerCall = new CloseStatusCapturingServerCall();
+    multiTenancy.setEnabled(true);
 
     // when
-    final var interceptor = new IdentityInterceptor(identity, multiTenancy.setEnabled(true));
+    final var interceptor = new IdentityInterceptor(identity, multiTenancy);
     interceptor.interceptCall(
         capturingServerCall,
         createAuthHeader(),
@@ -167,9 +168,10 @@ public class IdentityInterceptorTest {
     // given
     final Identity identity = mock(Identity.class, RETURNS_DEEP_STUBS);
     final var capturingServerCall = new CloseStatusCapturingServerCall();
+    multiTenancy.setEnabled(false);
 
     // when
-    final var interceptor = new IdentityInterceptor(identity, multiTenancy.setEnabled(false));
+    final var interceptor = new IdentityInterceptor(identity, multiTenancy);
     interceptor.interceptCall(
         capturingServerCall,
         createAuthHeader(),

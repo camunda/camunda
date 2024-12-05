@@ -11,6 +11,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejection;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRejectionResponse;
 import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
@@ -45,7 +46,7 @@ import org.junit.runners.Parameterized.Parameters;
 public final class ActivateJobsTest extends GatewayTest {
 
   public ActivateJobsTest(final boolean isLongPollingEnabled) {
-    super(getConfig(isLongPollingEnabled));
+    super(getConfig(isLongPollingEnabled), new SecurityConfiguration());
   }
 
   @Parameters(name = "{index}: longPolling.enabled[{0}]")

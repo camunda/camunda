@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.gateway.api.util.StubbedGateway.StubbedJobStreamer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -21,19 +22,26 @@ public final class StubbedGatewayRule extends ExternalResource {
   protected GatewayStub asyncClient;
   private final ActorSchedulerRule actorSchedulerRule;
   private final GatewayCfg config;
+  private final SecurityConfiguration securityConfiguration;
   private final StubbedBrokerClient brokerClient;
   private final StubbedJobStreamer jobStreamer;
 
-  public StubbedGatewayRule(final ActorSchedulerRule actorSchedulerRule, final GatewayCfg config) {
+  public StubbedGatewayRule(
+      final ActorSchedulerRule actorSchedulerRule,
+      final GatewayCfg config,
+      final SecurityConfiguration securityConfiguration) {
     this.actorSchedulerRule = actorSchedulerRule;
     brokerClient = new StubbedBrokerClient();
     jobStreamer = new StubbedJobStreamer();
     this.config = config;
+    this.securityConfiguration = securityConfiguration;
   }
 
   @Override
   protected void before() throws Throwable {
-    gateway = new StubbedGateway(actorSchedulerRule.get(), brokerClient, jobStreamer, config);
+    gateway =
+        new StubbedGateway(
+            actorSchedulerRule.get(), brokerClient, jobStreamer, config, securityConfiguration);
     gateway.start();
     client = gateway.buildClient();
     asyncClient = gateway.buildAsyncClient();

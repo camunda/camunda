@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.api.util;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.gateway.api.util.StubbedGateway.StubbedJobStreamer;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
@@ -32,27 +33,35 @@ public abstract class GatewayTest {
   protected StubbedBrokerClient brokerClient;
   protected StubbedJobStreamer jobStreamer;
 
-  public GatewayTest(final GatewayCfg config) {
+  public GatewayTest(final GatewayCfg config, final SecurityConfiguration securityConfiguration) {
     actorClock = new ControlledActorClock();
     actorSchedulerRule = new ActorSchedulerRule(actorClock);
-    gatewayRule = new StubbedGatewayRule(actorSchedulerRule, config);
+    gatewayRule = new StubbedGatewayRule(actorSchedulerRule, config, securityConfiguration);
     ruleChain = RuleChain.outerRule(actorSchedulerRule).around(gatewayRule);
   }
 
   public GatewayTest() {
-    this(new GatewayCfg());
+    this(new GatewayCfg(), new SecurityConfiguration());
   }
 
-  private GatewayTest(final Supplier<GatewayCfg> configSupplier) {
-    this(configSupplier.get());
+  private GatewayTest(
+      final Supplier<GatewayCfg> configSupplier,
+      final Supplier<SecurityConfiguration> securitySupplier) {
+    this(configSupplier.get(), securitySupplier.get());
   }
 
-  public GatewayTest(final Consumer<GatewayCfg> modifier) {
+  public GatewayTest(
+      final Consumer<GatewayCfg> modifier, final Consumer<SecurityConfiguration> securityModifier) {
     this(
         () -> {
           final GatewayCfg config = new GatewayCfg();
           modifier.accept(config);
           return config;
+        },
+        () -> {
+          final SecurityConfiguration securityConfiguration = new SecurityConfiguration();
+          securityModifier.accept(securityConfiguration);
+          return securityConfiguration;
         });
   }
 

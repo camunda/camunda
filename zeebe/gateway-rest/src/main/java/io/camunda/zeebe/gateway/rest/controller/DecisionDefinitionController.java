@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
-import io.camunda.zeebe.gateway.impl.configuration.MultiTenancyCfg;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
 import io.camunda.zeebe.gateway.rest.RequestMapper.DecisionEvaluationRequest;
@@ -26,10 +26,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class DecisionDefinitionController {
 
   private final DecisionDefinitionServices decisionServices;
-  private final MultiTenancyCfg multiTenancyCfg;
+  private final MultiTenancyConfiguration multiTenancyCfg;
 
   public DecisionDefinitionController(
-      final DecisionDefinitionServices decisionServices, final MultiTenancyCfg multiTenancyCfg) {
+      final DecisionDefinitionServices decisionServices,
+      final MultiTenancyConfiguration multiTenancyCfg) {
     this.decisionServices = decisionServices;
     this.multiTenancyCfg = multiTenancyCfg;
   }
