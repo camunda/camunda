@@ -43,4 +43,6 @@ public interface TaskStore {
   TaskEntity persistTaskUnclaim(TaskEntity task);
 
   List<TaskEntity> getTasksById(List<String> ids);
+
+  void updateTaskLinkedForm(final TaskEntity task, final String formBpmnId, final long formVersion);
 }
