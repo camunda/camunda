@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Redirect</title>
+  <script>
+    function getQueryParameter(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+
+    const url = getQueryParameter('url');
+    if (url) {
+      try {
+        const validURL = new URL(url);
+        window.location = validURL.href;
+      } catch (e) {
+        console.error("Invalid URL provided:", url);
+        document.body.innerHTML = '<h1>Invalid or unsafe URL</h1>';
+      }
+    } else {
+      document.body.innerHTML = '<h1>No URL provided</h1>';
+    }
+  </script>
+</head>
+<body>
+</body>
+</html>
