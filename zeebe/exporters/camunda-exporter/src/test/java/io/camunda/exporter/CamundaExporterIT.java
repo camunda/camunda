@@ -287,12 +287,12 @@ final class CamundaExporterIT {
         // we verify the names hard coded on purpose
         // to make sure no index will be accidentally dropped, names are changed or added
         .containsExactlyInAnyOrder(
-            "custom-prefix-camunda-authorizations-8.7.0_",
-            "custom-prefix-camunda-groups-8.7.0_",
-            "custom-prefix-camunda-mappings-8.7.0_",
+            "custom-prefix-camunda-authorization-8.7.0_",
+            "custom-prefix-camunda-group-8.7.0_",
+            "custom-prefix-camunda-mapping-8.7.0_",
             "custom-prefix-camunda-role-8.7.0_",
-            "custom-prefix-camunda-tenants-8.7.0_",
-            "custom-prefix-camunda-users-8.7.0_",
+            "custom-prefix-camunda-tenant-8.7.0_",
+            "custom-prefix-camunda-user-8.7.0_",
             "custom-prefix-camunda-web-session-8.7.0_",
             "custom-prefix-operate-batch-operation-1.0.0_",
             "custom-prefix-operate-decision-8.3.0_",
