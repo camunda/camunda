@@ -16,16 +16,6 @@
         http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
         http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
 
-  <changeSet id="create_exporter_position_table" author="pwunderlich">
-    <createTable tableName="EXPORTER_POSITION">
-      <column name="PARTITION_ID" type="NUMBER">
-        <constraints primaryKey="true"/>
-      </column>
-      <column name="EXPORTER" type="VARCHAR(200)" />
-      <column name="LAST_EXPORTED_POSITION" type="BIGINT" />
-      <column name="CREATED" type="DATETIME" />
-      <column name="LAST_UPDATED" type="DATETIME" />
-    </createTable>
-  </changeSet>
+  <include file="/db/changelog/rdbms-exporter/changesets/8.8.0.xml" />
 
 </databaseChangeLog>

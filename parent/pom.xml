@@ -149,6 +149,7 @@
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.15.0</version.jna-platform>
     <version.liquibase>4.30.0</version.liquibase>
+    <version.sqlformatter>2.0.5</version.sqlformatter>
     <version.caffeine>3.1.8</version.caffeine>
 
     <version.commons-io>2.18.0</version.commons-io>
@@ -841,6 +842,12 @@
         <version>${project.version}</version>
       </dependency>
 
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>camunda-db-rdbms-schema</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
       <!-- camunda search client -->
 
       <dependency>
@@ -1151,6 +1158,12 @@
         <groupId>org.liquibase</groupId>
         <artifactId>liquibase-core</artifactId>
         <version>${version.liquibase}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>com.github.vertical-blank</groupId>
+        <artifactId>sql-formatter</artifactId>
+        <version>${version.sqlformatter}</version>
       </dependency>
 
       <dependency>
