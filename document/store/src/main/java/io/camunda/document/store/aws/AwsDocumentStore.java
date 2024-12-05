@@ -42,27 +42,40 @@ import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
+import software.amazon.awssdk.services.s3.model.Tag;
+import software.amazon.awssdk.services.s3.model.Tagging;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
 public class AwsDocumentStore implements DocumentStore {
 
+  private static final Tag NO_AUTO_DELETE_TAG =
+      Tag.builder().key("NoAutoDelete").value("true").build();
+
   private final String bucketName;
   private final S3Client client;
   private final ExecutorService executor;
   private final S3Presigner preSigner;
+  private final Long defaultTTL;
 
-  public AwsDocumentStore(final String bucketName) {
-    this(bucketName, S3Client.create(), Executors.newSingleThreadExecutor(), S3Presigner.create());
+  public AwsDocumentStore(final String bucketName, final Long defaultTTL) {
+    this(
+        bucketName,
+        defaultTTL,
+        S3Client.create(),
+        Executors.newSingleThreadExecutor(),
+        S3Presigner.create());
   }
 
   public AwsDocumentStore(
       final String bucketName,
+      final Long defaultTTL,
       final S3Client client,
       final ExecutorService executor,
       final S3Presigner preSigner) {
     this.bucketName = bucketName;
+    this.defaultTTL = defaultTTL;
     this.client = client;
     this.executor = executor;
     this.preSigner = preSigner;
@@ -204,6 +217,7 @@ public class AwsDocumentStore implements DocumentStore {
             .key(documentId)
             .bucket(bucketName)
             .metadata(toS3MetaData(request.metadata()))
+            .tagging(generateExpiryTag(request.metadata().expiresAt()))
             .build();
 
     client.putObject(
@@ -247,5 +261,19 @@ public class AwsDocumentStore implements DocumentStore {
       return new DocumentNotFound(documentId);
     }
     return new UnknownDocumentError(e);
+  }
+
+  private Tagging generateExpiryTag(final OffsetDateTime expiryDate) {
+    final boolean isExpiryDateBeyondBucketTTL =
+        expiryDate != null
+            && defaultTTL != null
+            && expiryDate.isAfter(OffsetDateTime.now().plus(Duration.ofDays(defaultTTL)));
+
+    return Tagging.builder()
+        .tagSet(
+            isExpiryDateBeyondBucketTTL
+                ? Collections.singletonList(NO_AUTO_DELETE_TAG)
+                : Collections.emptyList())
+        .build();
   }
 }

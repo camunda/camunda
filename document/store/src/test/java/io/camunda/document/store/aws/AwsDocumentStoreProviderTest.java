@@ -25,17 +25,19 @@ public class AwsDocumentStoreProviderTest {
     try (final var mockedFactory = mockStatic(AwsDocumentStoreFactory.class)) {
       // given
       final String bucketName = "bucketName";
+      final Long bucketTtl = 30L;
       final AwsDocumentStore mockDocumentStore = mock(AwsDocumentStore.class);
 
       // this mock is used to bypass the auto config of S3Client.create()
       mockedFactory
-          .when(() -> AwsDocumentStoreFactory.create(bucketName))
+          .when(() -> AwsDocumentStoreFactory.create(bucketName, bucketTtl))
           .thenReturn(mockDocumentStore);
 
       final DocumentStoreConfigurationRecord configuration =
           new DocumentStoreConfigurationRecord(
               "aws", AwsDocumentStoreProvider.class, new HashMap<>());
       configuration.properties().put("BUCKET", bucketName);
+      configuration.properties().put("BUCKET_TTL", String.valueOf(bucketTtl));
       final AwsDocumentStoreProvider provider = new AwsDocumentStoreProvider();
 
       // when
@@ -61,5 +63,26 @@ public class AwsDocumentStoreProviderTest {
     assertThat(ex.getMessage())
         .isEqualTo(
             "Failed to configure document store with id 'my-aws': missing required property 'BUCKET'");
+  }
+
+  @Test
+  public void shouldThrowIfBucketTTLIsNotANumber() {
+    // given
+    final String bucketName = "bucketName";
+
+    final DocumentStoreConfigurationRecord configuration =
+        new DocumentStoreConfigurationRecord(
+            "aws", AwsDocumentStoreProvider.class, new HashMap<>());
+    configuration.properties().put("BUCKET", bucketName);
+    configuration.properties().put("BUCKET_TTL", "invalid_ttl");
+    final AwsDocumentStoreProvider provider = new AwsDocumentStoreProvider();
+
+    // when / then
+    final var ex =
+        assertThrows(
+            IllegalArgumentException.class, () -> provider.createDocumentStore(configuration));
+    assertThat(ex.getMessage())
+        .isEqualTo(
+            "Failed to configure document store with id 'aws': 'BUCKET_TTL must be a number'");
   }
 }
