@@ -7,25 +7,24 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
-
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.webapps.schema.entities.operate.listview.VariableForListViewEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class VariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
+public class MigratedVariableHandler implements ExportHandler<VariableEntity, VariableRecordValue> {
 
-  private final int variableSizeThreshold;
   private final String indexName;
 
-  public VariableHandler(final String indexName, final int variableSizeThreshold) {
+  public MigratedVariableHandler(final String indexName) {
     this.indexName = indexName;
-    this.variableSizeThreshold = variableSizeThreshold;
   }
 
   @Override
@@ -41,7 +40,7 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
   @Override
   public boolean handlesRecord(final Record<VariableRecordValue> record) {
     return getHandledValueType().equals(record.getValueType())
-        && !record.getIntent().name().equals(VariableIntent.MIGRATED.name());
+        && record.getIntent().name().equals(VariableIntent.MIGRATED.name());
   }
 
   @Override
@@ -62,30 +61,20 @@ public class VariableHandler implements ExportHandler<VariableEntity, VariableRe
 
     entity
         .setId(VariableForListViewEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()))
-        .setKey(record.getKey())
-        .setPartitionId(record.getPartitionId())
-        .setScopeKey(recordValue.getScopeKey())
-        .setProcessInstanceKey(recordValue.getProcessInstanceKey())
         .setProcessDefinitionKey(recordValue.getProcessDefinitionKey())
-        .setBpmnProcessId(recordValue.getBpmnProcessId())
-        .setName(recordValue.getName())
-        .setTenantId(tenantOrDefault(recordValue.getTenantId()))
-        .setPosition(record.getPosition());
-
-    if (recordValue.getValue().length() > variableSizeThreshold) {
-      entity.setValue(recordValue.getValue().substring(0, variableSizeThreshold));
-      entity.setFullValue(recordValue.getValue());
-      entity.setIsPreview(true);
-    } else {
-      entity.setValue(recordValue.getValue());
-      entity.setFullValue(null);
-      entity.setIsPreview(false);
-    }
+        .setPosition(record.getPosition())
+        .setBpmnProcessId(recordValue.getBpmnProcessId());
   }
 
   @Override
   public void flush(final VariableEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
+    final Map<String, Object> updateFields = new HashMap<>();
+
+    updateFields.put(VariableTemplate.PROCESS_DEFINITION_KEY, entity.getProcessDefinitionKey());
+    updateFields.put(VariableTemplate.BPMN_PROCESS_ID, entity.getBpmnProcessId());
+    updateFields.put(VariableTemplate.POSITION, entity.getPosition());
+
+    batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
   }
 
   @Override

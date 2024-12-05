@@ -13,6 +13,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.operate.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.operate.VariableEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -21,13 +22,14 @@ import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
-public class VariableHandlerTest {
+public class MigratedVariableHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "variable";
-  private final int variableSizeThreshold = 10;
-  private final VariableHandler underTest = new VariableHandler(indexName, variableSizeThreshold);
+  private final MigratedVariableHandler underTest = new MigratedVariableHandler(indexName);
 
   @Test
   void testGetHandledValueType() {
@@ -42,6 +44,16 @@ public class VariableHandlerTest {
   @Test
   void shouldHandleRecord() {
     // given
+    final Record<VariableRecordValue> decisionRecord =
+        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(VariableIntent.MIGRATED));
+
+    // when - then
+    assertThat(underTest.handlesRecord(decisionRecord)).isTrue();
+  }
+
+  @Test
+  void shouldNotHandleRecord() {
+    // given
     for (final VariableIntent intent :
         Arrays.stream(VariableIntent.values())
             .filter(i -> i != VariableIntent.MIGRATED)
@@ -50,18 +62,8 @@ public class VariableHandlerTest {
           factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(intent));
 
       // when - then
-      assertThat(underTest.handlesRecord(decisionRecord)).isTrue();
+      assertThat(underTest.handlesRecord(decisionRecord)).isFalse();
     }
-  }
-
-  @Test
-  void shouldNotHandleRecord() {
-    // given
-    final Record<VariableRecordValue> decisionRecord =
-        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(VariableIntent.MIGRATED));
-
-    // when - then
-    assertThat(underTest.handlesRecord(decisionRecord)).isFalse();
   }
 
   @Test
@@ -103,32 +105,20 @@ public class VariableHandlerTest {
             .setId("id")
             .setValue("value")
             .setBpmnProcessId("procId")
-            .setProcessDefinitionKey(123L);
+            .setProcessDefinitionKey(123L)
+            .setPosition(456L);
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     // when
     underTest.flush(inputEntity, mockRequest);
+    final Map<String, Object> updateFields = new HashMap<>();
+    updateFields.put(VariableTemplate.BPMN_PROCESS_ID, inputEntity.getBpmnProcessId());
+    updateFields.put(
+        VariableTemplate.PROCESS_DEFINITION_KEY, inputEntity.getProcessDefinitionKey());
+    updateFields.put(VariableTemplate.POSITION, inputEntity.getPosition());
 
     // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
-  }
-
-  @Test
-  void shouldAddMigratedEntityOnFlush() {
-    // given
-    final VariableEntity inputEntity =
-        new VariableEntity()
-            .setId("id")
-            .setValue("null")
-            .setBpmnProcessId("procId")
-            .setProcessDefinitionKey(123L);
-    final BatchRequest mockRequest = mock(BatchRequest.class);
-
-    // when
-    underTest.flush(inputEntity, mockRequest);
-
-    // then
-    verify(mockRequest, times(1)).add(indexName, inputEntity);
+    verify(mockRequest, times(1)).upsert(indexName, inputEntity.getId(), inputEntity, updateFields);
   }
 
   @Test
@@ -137,68 +127,8 @@ public class VariableHandlerTest {
     final VariableRecordValue variableRecordValue =
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
-            .withValue("v".repeat(variableSizeThreshold))
+            .withValue("doNotCareAboutThis")
             .withTenantId("tenantId")
-            .build();
-
-    final Record<VariableRecordValue> variableRecord =
-        factory.generateRecord(
-            ValueType.VARIABLE,
-            r -> r.withIntent(VariableIntent.CREATED).withValue(variableRecordValue));
-
-    // when
-    final VariableEntity variableEntity = new VariableEntity();
-    underTest.updateEntity(variableRecord, variableEntity);
-
-    // then
-    assertThat(variableEntity.getId())
-        .isEqualTo(variableRecordValue.getScopeKey() + "-" + variableRecordValue.getName());
-    assertThat(variableEntity.getKey()).isEqualTo(variableRecord.getKey());
-    assertThat(variableEntity.getName()).isEqualTo(variableRecordValue.getName());
-    assertThat(variableEntity.getScopeKey()).isEqualTo(variableRecordValue.getScopeKey());
-    assertThat(variableEntity.getTenantId()).isEqualTo(variableRecordValue.getTenantId());
-    assertThat(variableEntity.getProcessDefinitionKey())
-        .isEqualTo(variableRecordValue.getProcessDefinitionKey());
-    assertThat(variableEntity.getProcessInstanceKey())
-        .isEqualTo(variableRecordValue.getProcessInstanceKey());
-    assertThat(variableEntity.getBpmnProcessId()).isEqualTo(variableRecordValue.getBpmnProcessId());
-    assertThat(variableEntity.getPosition()).isEqualTo(variableRecord.getPosition());
-    assertThat(variableEntity.getValue()).isEqualTo(variableRecordValue.getValue());
-    assertThat(variableEntity.getIsPreview()).isFalse();
-    assertThat(variableEntity.getFullValue()).isNull();
-  }
-
-  @Test
-  void shouldUpdateEntityFromRecordWithFullValue() {
-    // given
-    final VariableRecordValue variableRecordValue =
-        ImmutableVariableRecordValue.builder()
-            .from(factory.generateObject(VariableRecordValue.class))
-            .withValue("v".repeat(variableSizeThreshold + 1))
-            .build();
-
-    final Record<VariableRecordValue> variableRecord =
-        factory.generateRecord(
-            ValueType.VARIABLE,
-            r -> r.withIntent(VariableIntent.CREATED).withValue(variableRecordValue));
-
-    // when
-    final VariableEntity variableEntity = new VariableEntity();
-    underTest.updateEntity(variableRecord, variableEntity);
-
-    // then
-    assertThat(variableEntity.getValue()).isEqualTo("v".repeat(variableSizeThreshold));
-    assertThat(variableEntity.getFullValue()).isEqualTo("v".repeat(variableSizeThreshold + 1));
-    assertThat(variableEntity.getIsPreview()).isTrue();
-  }
-
-  /*  @Test
-  void shouldNotIncludeVariableValuesForMigrateIntent() {
-    // given
-    final VariableRecordValue variableRecordValue =
-        ImmutableVariableRecordValue.builder()
-            .from(factory.generateObject(VariableRecordValue.class))
-            .withValue("value")
             .build();
 
     final Record<VariableRecordValue> variableRecord =
@@ -211,11 +141,19 @@ public class VariableHandlerTest {
     underTest.updateEntity(variableRecord, variableEntity);
 
     // then
-    assertThat(variableEntity.getValue()).isEqualTo(null);
-    assertThat(variableEntity.getFullValue()).isEqualTo(null);
-    assertThat(variableEntity.getIsPreview()).isFalse();
+    assertThat(variableEntity.getId())
+        .isEqualTo(variableRecordValue.getScopeKey() + "-" + variableRecordValue.getName());
+    assertThat(variableEntity.getBpmnProcessId()).isEqualTo(variableRecordValue.getBpmnProcessId());
     assertThat(variableEntity.getProcessDefinitionKey())
         .isEqualTo(variableRecordValue.getProcessDefinitionKey());
-    assertThat(variableEntity.getBpmnProcessId()).isEqualTo(variableRecordValue.getBpmnProcessId());
-  }*/
+    assertThat(variableEntity.getPosition()).isEqualTo(variableRecord.getPosition());
+
+    assertThat(variableEntity.getKey()).isEqualTo(0);
+    assertThat(variableEntity.getName()).isNull();
+    assertThat(variableEntity.getScopeKey()).isNull();
+    assertThat(variableEntity.getProcessInstanceKey()).isNull();
+    assertThat(variableEntity.getValue()).isNull();
+    assertThat(variableEntity.getIsPreview()).isFalse();
+    assertThat(variableEntity.getFullValue()).isNull();
+  }
 }
