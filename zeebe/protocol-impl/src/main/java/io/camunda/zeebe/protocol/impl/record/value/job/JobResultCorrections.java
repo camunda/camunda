@@ -52,8 +52,8 @@ public final class JobResultCorrections extends UnpackedObject
     setAssignee(other.getAssignee());
     setDueDate(other.getDueDate());
     setFollowUpDate(other.getFollowUpDate());
-    setCandidateUsers(other.getCandidateUsers());
-    setCandidateGroups(other.getCandidateGroups());
+    setCandidateUsersList(other.getCandidateUsersList());
+    setCandidateGroupsList(other.getCandidateGroupsList());
     setPriority(other.getPriority());
   }
 
@@ -96,14 +96,14 @@ public final class JobResultCorrections extends UnpackedObject
   }
 
   @Override
-  public List<String> getCandidateGroups() {
+  public List<String> getCandidateGroupsList() {
     return StreamSupport.stream(candidateGroupsListProp.spliterator(), false)
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
         .toList();
   }
 
-  public JobResultCorrections setCandidateGroups(final List<String> candidateGroups) {
+  public JobResultCorrections setCandidateGroupsList(final List<String> candidateGroups) {
     candidateGroupsListProp.reset();
     candidateGroups.forEach(
         candidateGroup ->
@@ -112,14 +112,14 @@ public final class JobResultCorrections extends UnpackedObject
   }
 
   @Override
-  public List<String> getCandidateUsers() {
+  public List<String> getCandidateUsersList() {
     return StreamSupport.stream(candidateUsersListProp.spliterator(), false)
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
         .toList();
   }
 
-  public JobResultCorrections setCandidateUsers(final List<String> candidateUsers) {
+  public JobResultCorrections setCandidateUsersList(final List<String> candidateUsers) {
     candidateUsersListProp.reset();
     candidateUsers.forEach(
         candidateUser -> candidateUsersListProp.add().wrap(BufferUtil.wrapString(candidateUser)));
