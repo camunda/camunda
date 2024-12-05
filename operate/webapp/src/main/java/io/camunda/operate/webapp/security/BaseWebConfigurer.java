@@ -8,6 +8,8 @@
 package io.camunda.operate.webapp.security;
 
 import static io.camunda.operate.webapp.security.OperateURIs.*;
+import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
+import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
@@ -208,8 +210,7 @@ public abstract class BaseWebConfigurer {
       final HttpServletResponse response,
       final AuthenticationException ex)
       throws IOException {
-    final String requestedUrl =
-        request.getRequestURI().substring(request.getContextPath().length());
+    final String requestedUrl = getRequestedUrl(request);
     if (requestedUrl.contains("/api/")
         || requestedUrl.contains("/v1/")
         || requestedUrl.contains("/v2/")) {
@@ -220,11 +221,10 @@ public abstract class BaseWebConfigurer {
   }
 
   private void storeRequestedUrlAndRedirectToLogin(
-      final HttpServletRequest request, final HttpServletResponse response, String requestedUrl)
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final String requestedUrl)
       throws IOException {
-    if (request.getQueryString() != null && !request.getQueryString().isEmpty()) {
-      requestedUrl = requestedUrl + "?" + request.getQueryString();
-    }
     logger.warn("Try to access protected resource {}. Save it for later redirect", requestedUrl);
     request.getSession(true).setAttribute(REQUESTED_URL, requestedUrl);
     response.sendRedirect(request.getContextPath() + LOGIN_RESOURCE);
