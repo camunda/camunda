@@ -79,7 +79,11 @@ public class NettyMessagingServiceTest {
   @Before
   public void setUp() throws Exception {
     address1 = Address.from(SocketUtil.getNextAddress().getPort());
-    final var config = new MessagingConfig().setShutdownQuietPeriod(Duration.ofMillis(50));
+    final var config =
+        new MessagingConfig()
+            .setShutdownQuietPeriod(Duration.ofMillis(50))
+            .setHeartbeatInterval(Duration.ofMillis(50))
+            .setHeartbeatTimeout(Duration.ofMillis(500));
 
     netty1 =
         (NettyMessagingService) new NettyMessagingService("test", address1, config).start().join();
