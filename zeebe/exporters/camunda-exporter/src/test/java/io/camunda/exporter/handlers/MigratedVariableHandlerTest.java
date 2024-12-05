@@ -21,10 +21,12 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class MigratedVariableHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -51,19 +53,18 @@ public class MigratedVariableHandlerTest {
     assertThat(underTest.handlesRecord(decisionRecord)).isTrue();
   }
 
-  @Test
-  void shouldNotHandleRecord() {
+  @ParameterizedTest
+  @EnumSource(
+      value = VariableIntent.class,
+      names = {"MIGRATED"},
+      mode = Mode.EXCLUDE)
+  void shouldNotHandleRecord(final VariableIntent intent) {
     // given
-    for (final VariableIntent intent :
-        Arrays.stream(VariableIntent.values())
-            .filter(i -> i != VariableIntent.MIGRATED)
-            .toArray(VariableIntent[]::new)) {
-      final Record<VariableRecordValue> decisionRecord =
-          factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(intent));
+    final Record<VariableRecordValue> decisionRecord =
+        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(intent));
 
-      // when - then
-      assertThat(underTest.handlesRecord(decisionRecord)).isFalse();
-    }
+    // when - then
+    assertThat(underTest.handlesRecord(decisionRecord)).isFalse();
   }
 
   @Test

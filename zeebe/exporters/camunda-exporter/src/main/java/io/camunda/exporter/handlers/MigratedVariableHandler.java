@@ -39,8 +39,7 @@ public class MigratedVariableHandler implements ExportHandler<VariableEntity, Va
 
   @Override
   public boolean handlesRecord(final Record<VariableRecordValue> record) {
-    return getHandledValueType().equals(record.getValueType())
-        && record.getIntent().name().equals(VariableIntent.MIGRATED.name());
+    return record.getIntent().equals(VariableIntent.MIGRATED);
   }
 
   @Override

@@ -20,8 +20,10 @@ import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
-import java.util.Arrays;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 
 public class VariableHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -39,19 +41,18 @@ public class VariableHandlerTest {
     assertThat(underTest.getEntityType()).isEqualTo(VariableEntity.class);
   }
 
-  @Test
-  void shouldHandleRecord() {
+  @ParameterizedTest
+  @EnumSource(
+      value = VariableIntent.class,
+      names = {"MIGRATED"},
+      mode = Mode.EXCLUDE)
+  void shouldHandleRecord(final VariableIntent intent) {
     // given
-    for (final VariableIntent intent :
-        Arrays.stream(VariableIntent.values())
-            .filter(i -> i != VariableIntent.MIGRATED)
-            .toArray(VariableIntent[]::new)) {
-      final Record<VariableRecordValue> decisionRecord =
-          factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(intent));
+    final Record<VariableRecordValue> decisionRecord =
+        factory.generateRecord(ValueType.VARIABLE, r -> r.withIntent(intent));
 
-      // when - then
-      assertThat(underTest.handlesRecord(decisionRecord)).isTrue();
-    }
+    // when - then
+    assertThat(underTest.handlesRecord(decisionRecord)).isTrue();
   }
 
   @Test
@@ -191,31 +192,4 @@ public class VariableHandlerTest {
     assertThat(variableEntity.getFullValue()).isEqualTo("v".repeat(variableSizeThreshold + 1));
     assertThat(variableEntity.getIsPreview()).isTrue();
   }
-
-  /*  @Test
-  void shouldNotIncludeVariableValuesForMigrateIntent() {
-    // given
-    final VariableRecordValue variableRecordValue =
-        ImmutableVariableRecordValue.builder()
-            .from(factory.generateObject(VariableRecordValue.class))
-            .withValue("value")
-            .build();
-
-    final Record<VariableRecordValue> variableRecord =
-        factory.generateRecord(
-            ValueType.VARIABLE,
-            r -> r.withIntent(VariableIntent.MIGRATED).withValue(variableRecordValue));
-
-    // when
-    final VariableEntity variableEntity = new VariableEntity();
-    underTest.updateEntity(variableRecord, variableEntity);
-
-    // then
-    assertThat(variableEntity.getValue()).isEqualTo(null);
-    assertThat(variableEntity.getFullValue()).isEqualTo(null);
-    assertThat(variableEntity.getIsPreview()).isFalse();
-    assertThat(variableEntity.getProcessDefinitionKey())
-        .isEqualTo(variableRecordValue.getProcessDefinitionKey());
-    assertThat(variableEntity.getBpmnProcessId()).isEqualTo(variableRecordValue.getBpmnProcessId());
-  }*/
 }
