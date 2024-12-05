@@ -18,6 +18,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.util.ElasticsearchUtil.QueryType;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
@@ -128,10 +129,7 @@ public class FormStoreElasticSearch implements FormStore {
       final String formId = String.format("%s_%s", processDefinitionId, id);
       final var formSearchHit =
           getRawResponseWithTenantCheck(
-              formId,
-              formIndex.getFullQualifiedName(),
-              formIndex.getIndexName(),
-              tenantAwareClient);
+              formId, formIndex, QueryType.ONLY_RUNTIME, tenantAwareClient);
       return fromSearchHit(formSearchHit.getSourceAsString(), objectMapper, FormEntity.class);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
@@ -202,8 +200,7 @@ public class FormStoreElasticSearch implements FormStore {
       final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
       searchSourceBuilder.query(boolQuery);
 
-      final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(taskTemplate.getAlias());
+      final SearchRequest searchRequest = ElasticsearchUtil.createSearchRequest(taskTemplate);
       searchRequest.source(searchSourceBuilder);
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);
@@ -227,7 +224,7 @@ public class FormStoreElasticSearch implements FormStore {
       searchSourceBuilder.query(boolQuery);
 
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(processIndex.getFullQualifiedName());
+          ElasticsearchUtil.createSearchRequest(processIndex, QueryType.ONLY_RUNTIME);
       searchRequest.source(searchSourceBuilder);
 
       final SearchResponse searchResponse = tenantAwareClient.search(searchRequest);

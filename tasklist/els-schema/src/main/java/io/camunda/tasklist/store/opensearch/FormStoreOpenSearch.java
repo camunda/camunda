@@ -15,6 +15,7 @@ import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.FormStore;
 import io.camunda.tasklist.tenant.TenantAwareOpenSearchClient;
 import io.camunda.tasklist.util.OpenSearchUtil;
+import io.camunda.tasklist.util.OpenSearchUtil.QueryType;
 import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
@@ -77,7 +78,7 @@ public class FormStoreOpenSearch implements FormStore {
   @Override
   public List<String> getFormIdsByProcessDefinitionId(final String processDefinitionId) {
     final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(formIndex.getFullQualifiedName())
+        OpenSearchUtil.createSearchRequest(formIndex, QueryType.ONLY_RUNTIME)
             .query(
                 q ->
                     q.term(
@@ -111,7 +112,7 @@ public class FormStoreOpenSearch implements FormStore {
   private Boolean isFormAssociatedToTask(final String formId, final String processDefinitionId) {
     try {
       final SearchRequest.Builder searchRequest =
-          OpenSearchUtil.createSearchRequest(taskTemplate.getAlias())
+          OpenSearchUtil.createSearchRequest(taskTemplate)
               .size(1) // only need to know if at least one exists
               .query(
                   b ->
@@ -162,7 +163,7 @@ public class FormStoreOpenSearch implements FormStore {
   private Boolean isFormAssociatedToProcess(final String formId, final String processDefinitionId) {
     try {
       final SearchRequest.Builder searchRequest =
-          OpenSearchUtil.createSearchRequest(processIndex.getFullQualifiedName())
+          OpenSearchUtil.createSearchRequest(processIndex, QueryType.ONLY_RUNTIME)
               .size(1) // only need to know if at least one exists
               .query(
                   b ->
@@ -198,7 +199,7 @@ public class FormStoreOpenSearch implements FormStore {
     try {
       final Query boolQuery;
       final SearchRequest.Builder searchRequest =
-          OpenSearchUtil.createSearchRequest(formIndex.getAlias())
+          OpenSearchUtil.createSearchRequest(formIndex, QueryType.ALL)
               .index(formIndex.getFullQualifiedName())
               .size(1);
 
@@ -272,11 +273,7 @@ public class FormStoreOpenSearch implements FormStore {
     try {
       final String formId = String.format("%s_%s", processDefinitionId, id);
       return getRawResponseWithTenantCheck(
-          formId,
-          formIndex.getFullQualifiedName(),
-          formIndex.getIndexName(),
-          tenantAwareClient,
-          FormEntity.class);
+          formId, formIndex, QueryType.ONLY_RUNTIME, tenantAwareClient, FormEntity.class);
     } catch (final IOException | OpenSearchException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     } catch (final NotFoundException e) {
