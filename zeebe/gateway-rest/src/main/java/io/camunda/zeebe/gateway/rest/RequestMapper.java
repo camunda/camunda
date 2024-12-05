@@ -95,6 +95,7 @@ import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
@@ -709,8 +710,28 @@ public class RequestMapper {
     if (request == null || request.getResult() == null) {
       return new JobResult();
     }
-    return new JobResult()
-        .setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
+
+    final JobResult jobResult = new JobResult();
+    jobResult.setDenied(getBooleanOrDefault(request, r -> r.getResult().getDenied(), false));
+
+    final JobResultCorrections corrections = new JobResultCorrections();
+    corrections.setAssignee(
+        getStringOrEmpty(request, r -> r.getResult().getCorrections().getAssignee()));
+    corrections.setDueDate(
+        getStringOrEmpty(request, r -> r.getResult().getCorrections().getDueDate()));
+    corrections.setFollowUpDate(
+        getStringOrEmpty(request, r -> r.getResult().getCorrections().getFollowUpDate()));
+    corrections.setCandidateGroups(
+        getStringListOrEmpty(request, r -> r.getResult().getCorrections().getCandidateGroups()));
+    corrections.setCandidateUsers(
+        getStringListOrEmpty(request, r -> r.getResult().getCorrections().getCandidateUsers()));
+    /*
+     * Zeebe User Task priority is defined as a number between 0 and 100. The default assigned
+     * priority is 50.
+     */
+    corrections.setPriority(
+        getIntOrDefault(request, r -> r.getResult().getCorrections().getPriority(), 50));
+    return jobResult.setCorrections(corrections);
   }
 
   private static <R> boolean getBooleanOrDefault(
