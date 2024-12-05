@@ -21,6 +21,7 @@ type C8RunSettings struct {
 	keystore         string
 	keystorePassword string
 	logLevel         string
+	docker           bool
 }
 
 type TemplateData struct {
