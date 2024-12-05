@@ -48,21 +48,25 @@ public class XmlUtil {
   }
 
   public void extractFlowNodeNames(
-      final Long processDefinitionKey, final BiConsumer<Long, ProcessFlowNode> flowNodeConsumer) {
+      final Long processDefinitionKey,
+      final BiConsumer<Long, ProcessFlowNode> processDefinitionKeyFlowNodeConsumer) {
     final var processDefinition = processDefinitionServices.getByKey(processDefinitionKey);
-    extractFlowNodeNames(processDefinition, flowNodeConsumer);
+    extractFlowNodeNames(processDefinition, processDefinitionKeyFlowNodeConsumer);
   }
 
   public void extractFlowNodeNames(
       final Set<Long> processDefinitionKeys,
-      final BiConsumer<Long, ProcessFlowNode> flowNodeConsumer) {
+      final BiConsumer<Long, ProcessFlowNode> processDefinitionKeyFlowNodeConsumer) {
     final var keysList = new ArrayList<>(processDefinitionKeys);
     final var result =
         processDefinitionServices.search(
-            ProcessDefinitionQuery.of(q -> q.filter(f -> f.processDefinitionKeys(keysList))));
+            ProcessDefinitionQuery.of(
+                q ->
+                    q.filter(f -> f.processDefinitionKeys(keysList))
+                        .page(p -> p.size(processDefinitionKeys.size()))));
 
     for (final var processDefinition : result.items()) {
-      extractFlowNodeNames(processDefinition, flowNodeConsumer);
+      extractFlowNodeNames(processDefinition, processDefinitionKeyFlowNodeConsumer);
     }
   }
 

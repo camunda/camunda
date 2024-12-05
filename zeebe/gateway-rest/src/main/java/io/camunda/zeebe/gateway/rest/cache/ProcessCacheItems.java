@@ -9,9 +9,9 @@ package io.camunda.zeebe.gateway.rest.cache;
 
 import java.util.Map;
 
-public record ProcessCacheItems(Map<Long, ProcessCacheItem> processCacheItems) {
-  public String getFlowNodeName(final Long processDefinitionKey, final String key) {
-    final var processCacheItem = processCacheItems.get(processDefinitionKey);
-    return processCacheItem != null ? processCacheItem.getFlowNodeName(key) : key;
+public record ProcessCacheItems(Map<Long, ProcessCacheItem> processDefinitionKeyItemMap) {
+  public String getFlowNodeName(final Long processDefinitionKey, final String flowNodeId) {
+    final var processCacheItem = processDefinitionKeyItemMap.get(processDefinitionKey);
+    return processCacheItem != null ? processCacheItem.getFlowNodeName(flowNodeId) : flowNodeId;
   }
 }
