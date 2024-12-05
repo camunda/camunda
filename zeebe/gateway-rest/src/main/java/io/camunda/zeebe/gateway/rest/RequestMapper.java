@@ -32,6 +32,7 @@ import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserCreateRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserValidator.validateUserUpdateRequest;
 
+import com.google.monitoring.v3.UpdateGroupRequest;
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.authentication.tenant.TenantAttributeHolder;
 import io.camunda.document.api.DocumentMetadataModel;
@@ -65,6 +66,8 @@ import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentMetadata;
 import io.camunda.zeebe.gateway.protocol.rest.EvaluateDecisionRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupCreateRequest;
+import io.camunda.zeebe.gateway.protocol.rest.GroupUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.JobErrorRequest;
@@ -88,6 +91,7 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskAssignmentRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskCompletionRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.UserUpdateRequest;
+import io.camunda.zeebe.gateway.rest.validator.GroupRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.RoleRequestValidator;
 import io.camunda.zeebe.gateway.rest.validator.TenantRequestValidator;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -279,6 +283,20 @@ public class RequestMapper {
     return getResult(
         RoleRequestValidator.validateCreateRequest(roleCreateRequest),
         () -> new CreateRoleRequest(roleCreateRequest.getName()));
+  }
+
+  public static Either<ProblemDetail, CreateGroupRequest> toGroupCreateRequest(
+      final GroupCreateRequest groupCreateRequest) {
+    return getResult(
+        GroupRequestValidator.validateCreateRequest(groupCreateRequest),
+        () -> new CreateGroupRequest(groupCreateRequest.getName()));
+  }
+
+  public static Either<ProblemDetail, UpdateGroupRequest> toGroupUpdateRequest(
+      final GroupUpdateRequest groupUpdateRequest, final long groupKey) {
+    return getResult(
+        GroupRequestValidator.validateUpdateRequest(groupUpdateRequest),
+        () -> new UpdateGroupRequest(groupKey, groupUpdateRequest.getChangeset().getName()));
   }
 
   public static Either<ProblemDetail, PatchAuthorizationRequest> toAuthorizationPatchRequest(
@@ -793,4 +811,8 @@ public class RequestMapper {
   public record UpdateRoleRequest(long roleKey, String name) {}
 
   public record CreateTenantRequest(String tenantId, String name) {}
+
+  public record CreateGroupRequest(String name) {}
+
+  public record UpdateGroupRequest(long groupKey, String name) {}
 }

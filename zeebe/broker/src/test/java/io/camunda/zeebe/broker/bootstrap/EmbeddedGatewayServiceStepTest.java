@@ -13,6 +13,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
@@ -80,7 +81,8 @@ class EmbeddedGatewayServiceStepTest {
               mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               mock(BrokerClient.class),
               Collections.emptyList(),
-              TEST_SHUTDOWN_TIMEOUT);
+              TEST_SHUTDOWN_TIMEOUT,
+              new SecurityConfiguration());
 
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
@@ -149,7 +151,8 @@ class EmbeddedGatewayServiceStepTest {
               mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
               mock(BrokerClient.class),
               Collections.emptyList(),
-              TEST_SHUTDOWN_TIMEOUT);
+              TEST_SHUTDOWN_TIMEOUT,
+              new SecurityConfiguration());
 
       testBrokerStartupContext.setEmbeddedGatewayService(mockEmbeddedGatewayService);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();

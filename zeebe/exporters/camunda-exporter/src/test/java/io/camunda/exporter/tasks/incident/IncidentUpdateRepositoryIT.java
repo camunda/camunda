@@ -79,6 +79,7 @@ import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+@SuppressWarnings("resource")
 @Testcontainers
 @AutoCloseResources
 abstract sealed class IncidentUpdateRepositoryIT {

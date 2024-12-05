@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.broker.system.configuration.engine;
 
-import io.camunda.zeebe.broker.system.configuration.AuthorizationsCfg;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import io.camunda.zeebe.engine.EngineConfiguration;
@@ -18,7 +17,6 @@ public final class EngineCfg implements ConfigurationEntry {
   private CachesCfg caches = new CachesCfg();
   private JobsCfg jobs = new JobsCfg();
   private ValidatorsCfg validators = new ValidatorsCfg();
-  private AuthorizationsCfg authorizations = new AuthorizationsCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -26,7 +24,6 @@ public final class EngineCfg implements ConfigurationEntry {
     caches.init(globalConfig, brokerBase);
     jobs.init(globalConfig, brokerBase);
     validators.init(globalConfig, brokerBase);
-    authorizations.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -61,14 +58,6 @@ public final class EngineCfg implements ConfigurationEntry {
     this.validators = validators;
   }
 
-  public AuthorizationsCfg getAuthorizations() {
-    return authorizations;
-  }
-
-  public void setAuthorizations(final AuthorizationsCfg authorizations) {
-    this.authorizations = authorizations;
-  }
-
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -80,8 +69,6 @@ public final class EngineCfg implements ConfigurationEntry {
         + jobs
         + ", validators="
         + validators
-        + ", authorizations="
-        + authorizations
         + '}';
   }
 
@@ -95,7 +82,6 @@ public final class EngineCfg implements ConfigurationEntry {
         .setProcessCacheCapacity(caches.getProcessCacheCapacity())
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
-        .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
-        .setEnableAuthorization(authorizations.isEnableAuthorization());
+        .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize());
   }
 }

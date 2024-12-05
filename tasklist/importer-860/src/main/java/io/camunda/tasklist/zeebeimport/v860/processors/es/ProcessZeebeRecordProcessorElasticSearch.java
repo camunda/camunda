@@ -11,13 +11,13 @@ import static io.camunda.tasklist.util.ConversionUtils.toStringOrNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.deployment.DeployedProcessImpl;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -52,7 +52,9 @@ public class ProcessZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("tasklistProcessIndex")
+  private ProcessIndex processIndex;
 
   @Autowired private FormIndex formIndex;
 
@@ -96,7 +98,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
       final BiConsumer<String, String> userTaskFormCollector)
       throws PersistenceException {
 
-    final ProcessEntity processEntity = createEntity(process, userTaskFormCollector);
+    final var processEntity = createEntity(process, userTaskFormCollector);
     LOGGER.debug("Process: key {}", processEntity.getKey());
 
     try {
@@ -133,7 +135,7 @@ public class ProcessZeebeRecordProcessorElasticSearch {
         userTaskFormCollector,
         processEntity::setFormKey,
         formId -> processEntity.setFormId(formId),
-        processEntity::setStartedByForm);
+        processEntity::setIsPublic);
 
     Optional.ofNullable(processEntity.getFormKey())
         .ifPresent(key -> processEntity.setIsFormEmbedded(true));

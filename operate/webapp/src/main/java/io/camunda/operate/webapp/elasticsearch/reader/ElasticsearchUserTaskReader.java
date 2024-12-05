@@ -14,13 +14,19 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.UserTaskReader;
-import io.camunda.webapps.schema.descriptors.operate.template.UserTaskTemplate;
-import io.camunda.webapps.schema.entities.operate.UserTaskEntity;
+import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
+import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
+import io.camunda.webapps.schema.entities.tasklist.TaskJoinRelationship.TaskJoinRelationshipType;
+import io.camunda.webapps.schema.entities.tasklist.TaskVariableEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.ExistsQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.join.query.HasParentQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,21 +39,21 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchUserTaskReader.class);
 
-  private final UserTaskTemplate userTaskTemplate;
+  private final TaskTemplate taskTemplate;
 
-  public ElasticsearchUserTaskReader(final UserTaskTemplate userTaskTemplate) {
-    this.userTaskTemplate = userTaskTemplate;
+  public ElasticsearchUserTaskReader(final TaskTemplate taskTemplate) {
+    this.taskTemplate = taskTemplate;
   }
 
   @Override
-  public List<UserTaskEntity> getUserTasks() {
+  public List<TaskEntity> getUserTasks() {
     LOGGER.debug("retrieve all user tasks");
     try {
       final QueryBuilder query = matchAllQuery();
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
+          ElasticsearchUtil.createSearchRequest(taskTemplate, ALL)
               .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
-      return scroll(searchRequest, UserTaskEntity.class);
+      return scroll(searchRequest, TaskEntity.class);
     } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
@@ -56,19 +62,17 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
   }
 
   @Override
-  public Optional<UserTaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
+  public Optional<TaskEntity> getUserTaskByFlowNodeInstanceKey(final long flowNodeInstanceKey) {
     LOGGER.debug("Get UserTask by flowNodeInstanceKey {}", flowNodeInstanceKey);
     try {
-      final QueryBuilder query =
-          termQuery(UserTaskTemplate.ELEMENT_INSTANCE_KEY, flowNodeInstanceKey);
+      final QueryBuilder query = termQuery(TaskTemplate.FLOW_NODE_INSTANCE_ID, flowNodeInstanceKey);
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(userTaskTemplate, ALL)
+          ElasticsearchUtil.createSearchRequest(taskTemplate, ALL)
               .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
       final var hits = tenantAwareClient.search(searchRequest).getHits();
       if (hits.getTotalHits().value == 1) {
         return Optional.of(
-            ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, UserTaskEntity.class)
-                .get(0));
+            ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, TaskEntity.class).get(0));
       }
     } catch (final IOException e) {
       final String message =
@@ -76,5 +80,33 @@ public class ElasticsearchUserTaskReader extends AbstractReader implements UserT
       throw new OperateRuntimeException(message, e);
     }
     return Optional.empty();
+  }
+
+  @Override
+  public List<TaskVariableEntity> getUserTaskVariables(final long flowNodeInstanceKey) {
+    LOGGER.debug("Get UserTask Completed Variables by flowNodeInstanceKey {}", flowNodeInstanceKey);
+
+    final HasParentQueryBuilder hasParentQuery =
+        new HasParentQueryBuilder(
+            TaskJoinRelationshipType.TASK.getType(),
+            QueryBuilders.termQuery(TaskTemplate.ID, flowNodeInstanceKey),
+            false);
+
+    // Make sure `name` field exists, indicating only variables are present in the result set
+    final ExistsQueryBuilder existsQuery = QueryBuilders.existsQuery(TaskTemplate.VARIABLE_NAME);
+
+    final BoolQueryBuilder combinedQuery =
+        QueryBuilders.boolQuery().must(hasParentQuery).must(existsQuery);
+    try {
+      final SearchRequest searchRequest =
+          ElasticsearchUtil.createSearchRequest(taskTemplate, ALL)
+              .source(new SearchSourceBuilder().query(constantScoreQuery(combinedQuery)));
+      return ElasticsearchUtil.scroll(
+          searchRequest, TaskVariableEntity.class, objectMapper, esClient);
+    } catch (final IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining user task list: %s", e.getMessage());
+      throw new OperateRuntimeException(message, e);
+    }
   }
 }

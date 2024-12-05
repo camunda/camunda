@@ -5,6 +5,6 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.schema.backup;
+package io.camunda.webapps.schema.descriptors.backup;
 
-public interface Prio2Backup extends BackupPriority {}
+public interface Prio5Backup extends BackupPriority {}

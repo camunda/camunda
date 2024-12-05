@@ -39,9 +39,11 @@ import java.util.function.Supplier;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 @ZeebeIntegration
+@Disabled("reworked in https://github.com/camunda/camunda/pull/25469")
 public class OperatePermissionsIT {
 
   private static final String OPERATE_USER = "demo";

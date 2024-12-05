@@ -12,11 +12,13 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.PermissionValue;
@@ -40,7 +42,7 @@ public class IdentitySetupInitializeTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldCreateRoleAndUser() {
+  public void shouldCreateRoleUserAndTenant() {
     // given
     final var roleKey = 1;
     final var roleName = "roleName";
@@ -57,9 +59,20 @@ public class IdentitySetupInitializeTest {
             .setName(userName)
             .setPassword(password)
             .setEmail(mail);
+    final var tenantKey = 3;
+    final var tenantId = "tenant-id";
+    final var tenantName = "tenant-name";
+    final var tenant =
+        new TenantRecord().setTenantKey(tenantKey).setName(tenantName).setTenantId(tenantId);
 
     // when
-    engine.identitySetup().initialize().withRole(role).withUser(user).initialize();
+    engine
+        .identitySetup()
+        .initialize()
+        .withRole(role)
+        .withUser(user)
+        .withTenant(tenant)
+        .initialize();
 
     // then
     assertThat(RecordingExporter.roleRecords(RoleIntent.CREATED).getFirst().getValue())
@@ -71,6 +84,10 @@ public class IdentitySetupInitializeTest {
         .hasName(userName)
         .hasPassword(password)
         .hasEmail(mail);
+    assertThat(RecordingExporter.tenantRecords(TenantIntent.CREATED).getFirst().getValue())
+        .hasTenantKey(tenantKey)
+        .hasName(tenantName)
+        .hasTenantId(tenantId);
     assertUserIsAssignedToRole(roleKey, userKey);
     assertThatAllPermissionsAreAddedToRole(roleKey);
   }
@@ -144,6 +161,28 @@ public class IdentitySetupInitializeTest {
                 .asList())
         .describedAs("No permissions should be added. The role should not be modified.")
         .isEmpty();
+  }
+
+  @Test
+  public void shouldNotCreateTenantIfAlreadyExists() {
+    // given
+    final var tenantId = "tenant-id";
+    final var tenantName = "tenant-name";
+    final var tenant = new TenantRecord().setTenantKey(1).setTenantId(tenantId).setName(tenantName);
+    engine.tenant().newTenant().withTenantId(tenantId).withName(tenantName).create().getKey();
+
+    // when
+    final var initializeRecord =
+        engine
+            .identitySetup()
+            .initialize()
+            .withUser(new UserRecord().setUserKey(2))
+            .withRole(new RoleRecord().setRoleKey(3))
+            .withTenant(tenant)
+            .initialize();
+
+    // then
+    assertTenantIsNotCreated(initializeRecord.getSourceRecordPosition());
   }
 
   @Test
@@ -270,6 +309,15 @@ public class IdentitySetupInitializeTest {
                 .roleRecords()
                 .withIntent(RoleIntent.CREATED)
                 .toList())
+        .isEmpty();
+  }
+
+  private static void assertTenantIsNotCreated(final long initializePosition) {
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .after(initializePosition)
+                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
+                .withIntent(TenantIntent.CREATED))
         .isEmpty();
   }
 

@@ -7,10 +7,10 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.index;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateIndexDescriptor;
 
-public class ProcessIndex extends OperateIndexDescriptor implements Prio4Backup {
+public class ProcessIndex extends OperateIndexDescriptor implements Prio5Backup {
 
   public static final String INDEX_NAME = "process";
   public static final String ID = "id";

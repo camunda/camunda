@@ -58,7 +58,9 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
   @Override
   public WebSession findById(final String id) {
     LOGGER.debug("Retrieve session {}", id);
-    return Optional.ofNullable(persistentWebSessionClient.getPersistentWebSession(id))
+    return Optional.ofNullable(id)
+        .filter(this::isSessionIdNotEmpty)
+        .map(persistentWebSessionClient::getPersistentWebSession)
         .map(this::getWebSessionIfNotExpired)
         .orElse(null);
   }
@@ -66,7 +68,9 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
   @Override
   public void deleteById(final String id) {
     LOGGER.debug("Delete session {}", id);
-    persistentWebSessionClient.deletePersistentWebSession(id);
+    Optional.ofNullable(id)
+        .filter(this::isSessionIdNotEmpty)
+        .ifPresent(persistentWebSessionClient::deletePersistentWebSession);
   }
 
   public void deleteExpiredWebSessions() {
@@ -135,5 +139,9 @@ public class WebSessionRepository implements SessionRepository<WebSession> {
           e);
     }
     return isPollingRequest;
+  }
+
+  private boolean isSessionIdNotEmpty(final String sessionId) {
+    return sessionId != null && !sessionId.isEmpty();
   }
 }

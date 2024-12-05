@@ -264,7 +264,7 @@ public class UserTaskListenersTest {
 
     final var rejectionReason =
         String.format(
-            "Command 'COMPLETE' rejected with code 'INVALID_STATE': Completion of the User Task with key '%s' was rejected by Task Listener",
+            "Command 'COMPLETE' rejected with code 'INVALID_STATE': Completion of the User Task with key '%s' was denied by Task Listener",
             userTaskKey);
 
     // verify the rejection

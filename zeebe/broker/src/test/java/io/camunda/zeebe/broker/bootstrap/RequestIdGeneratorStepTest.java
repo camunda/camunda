@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
@@ -56,7 +57,8 @@ class RequestIdGeneratorStepTest {
             mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
             mock(BrokerClient.class),
             Collections.emptyList(),
-            TEST_SHUTDOWN_TIMEOUT);
+            TEST_SHUTDOWN_TIMEOUT,
+            new SecurityConfiguration());
     testBrokerStartupContext.setConcurrencyControl(spyConcurrencyControl);
   }
 

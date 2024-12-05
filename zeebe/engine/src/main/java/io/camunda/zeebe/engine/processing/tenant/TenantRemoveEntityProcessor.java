@@ -64,9 +64,9 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   public void processNewCommand(final TypedRecord<TenantRecord> command) {
     final var record = command.getValue();
     final var tenantKey = record.getTenantKey();
-    final var persistedTenantRecord = tenantState.getTenantByKey(tenantKey);
+    final var persistedTenant = tenantState.getTenantByKey(tenantKey);
 
-    if (persistedTenantRecord.isEmpty()) {
+    if (persistedTenant.isEmpty()) {
       rejectCommand(
           command,
           RejectionType.NOT_FOUND,
@@ -77,10 +77,10 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
 
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
-            .addResourceId(persistedTenantRecord.get().getTenantId());
+            .addResourceId(persistedTenant.get().getTenantId());
     if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
       rejectCommandWithUnauthorizedError(
-          command, authorizationRequest, persistedTenantRecord.get().getTenantId());
+          command, authorizationRequest, persistedTenant.get().getTenantId());
       return;
     }
 

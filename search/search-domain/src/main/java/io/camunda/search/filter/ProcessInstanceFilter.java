@@ -30,7 +30,8 @@ public record ProcessInstanceFilter(
     List<Operation<OffsetDateTime>> endDateOperations,
     List<Operation<String>> stateOperations,
     Boolean hasIncident,
-    List<Operation<String>> tenantIdOperations)
+    List<Operation<String>> tenantIdOperations,
+    List<VariableValueFilter> variableFilters)
     implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceFilter> {
@@ -49,6 +50,7 @@ public record ProcessInstanceFilter(
     private List<Operation<String>> stateOperations;
     private Boolean hasIncident;
     private List<Operation<String>> tenantIdOperations;
+    private List<VariableValueFilter> variableFilters;
 
     public Builder processInstanceKeyOperations(final List<Operation<Long>> operations) {
       processInstanceKeyOperations = addValuesToList(processInstanceKeyOperations, operations);
@@ -248,6 +250,11 @@ public record ProcessInstanceFilter(
       return tenantIdOperations(collectValues(operation, operations));
     }
 
+    public Builder variables(final List<VariableValueFilter> values) {
+      variableFilters = addValuesToList(variableFilters, values);
+      return this;
+    }
+
     @Override
     public ProcessInstanceFilter build() {
       return new ProcessInstanceFilter(
@@ -265,7 +272,8 @@ public record ProcessInstanceFilter(
           Objects.requireNonNullElse(endDateOperations, Collections.emptyList()),
           Objects.requireNonNullElse(stateOperations, Collections.emptyList()),
           hasIncident,
-          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()));
+          Objects.requireNonNullElse(tenantIdOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(variableFilters, Collections.emptyList()));
     }
   }
 }

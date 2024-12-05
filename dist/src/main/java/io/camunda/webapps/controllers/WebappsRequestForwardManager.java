@@ -7,9 +7,11 @@
  */
 package io.camunda.webapps.controllers;
 
+import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
+import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
+
 import io.camunda.webapps.WebappsModuleConfiguration.WebappsProperties;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +26,6 @@ public class WebappsRequestForwardManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(WebappsRequestForwardManager.class);
 
   private static final String LOGIN_RESOURCE = "/api/login";
-  private static final String REQUESTED_URL = "requestedUrl";
 
   @Autowired private WebappsProperties webappsProperties;
 
@@ -44,15 +45,6 @@ public class WebappsRequestForwardManager {
         request.getRequestURI().substring(request.getContextPath().length()),
         LOGIN_RESOURCE);
     return "forward:" + LOGIN_RESOURCE;
-  }
-
-  public static String getRequestedUrl(final HttpServletRequest request) {
-    final String requestedPath =
-        request.getRequestURI().substring(request.getContextPath().length());
-    final String queryString = request.getQueryString();
-    final String requestedUrl =
-        StringUtils.isEmpty(queryString) ? requestedPath : requestedPath + "?" + queryString;
-    return requestedUrl;
   }
 
   private boolean isNotLoggedIn() {

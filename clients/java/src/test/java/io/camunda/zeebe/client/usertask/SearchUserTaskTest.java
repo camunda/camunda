@@ -186,12 +186,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     listFilter.add(userTaskVariableFilterRequest);
 
-    client.newUserTaskQuery().filter(f -> f.variables(listFilter)).send().join();
+    client.newUserTaskQuery().filter(f -> f.processInstanceVariables(listFilter)).send().join();
 
     // then
     final UserTaskSearchQueryRequest request =
         gatewayService.getLastRequest(UserTaskSearchQueryRequest.class);
-    assertThat(request.getFilter().getVariables()).isEqualTo(listFilter);
+    assertThat(request.getFilter().getProcessInstanceVariables()).isEqualTo(listFilter);
   }
 
   @Test

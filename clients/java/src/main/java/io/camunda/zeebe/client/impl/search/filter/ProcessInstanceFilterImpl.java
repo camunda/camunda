@@ -29,7 +29,9 @@ import io.camunda.zeebe.client.impl.search.filter.builder.ProcessInstanceStatePr
 import io.camunda.zeebe.client.impl.search.filter.builder.StringPropertyImpl;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceStateEnum;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceVariableFilterRequest;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class ProcessInstanceFilterImpl
@@ -227,6 +229,13 @@ public class ProcessInstanceFilterImpl
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setTenantId(property.build());
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceFilter variables(
+      List<ProcessInstanceVariableFilterRequest> variableValueFilters) {
+    filter.setVariables(variableValueFilters);
     return this;
   }
 

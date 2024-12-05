@@ -30,9 +30,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: operate/client/yarn.lock
+          node-version: "20"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: operate/client
       - run: yarn install --frozen-lockfile
         name: Install dependencies
       - run: yarn ts-check

@@ -58,8 +58,7 @@ public class JobBatchActivateAuthorizationIT {
   private TestStandaloneBroker broker =
       new TestStandaloneBroker()
           .withRecordingExporter(true)
-          .withBrokerConfig(
-              b -> b.getExperimental().getEngine().getAuthorizations().setEnableAuthorization(true))
+          .withSecurityConfig(c -> c.getAuthorizations().setEnabled(true))
           .withGatewayConfig(c -> c.getLongPolling().setEnabled(false))
           .withAdditionalProfile(Profile.AUTH_BASIC);
 

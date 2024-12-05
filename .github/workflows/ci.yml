@@ -411,12 +411,12 @@ jobs:
         working-directory: identity/client
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'yarn'
-          cache-dependency-path: identity/client/yarn.lock
+          node-version: "20"
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: identity/client
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Check formatting
@@ -541,12 +541,12 @@ jobs:
         uses: YunaBraska/java-info-action@main
         with:
           work-dir: ./optimize
-      - name: Set Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+      - uses: actions/setup-node@v4
         with:
           node-version: ${{ steps.pom_info.outputs.x_version_node }}
-          cache: yarn
-          cache-dependency-path: optimize/client/yarn.lock
+      - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        with:
+          directory: optimize/client
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Unit tests

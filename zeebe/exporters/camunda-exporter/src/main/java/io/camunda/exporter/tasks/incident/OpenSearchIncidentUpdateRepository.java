@@ -30,6 +30,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
@@ -79,7 +80,7 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
       final String listViewAlias,
       final String flowNodeAlias,
       final String operationAlias,
-      final OpenSearchAsyncClient client,
+      @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
       final Logger logger) {
     this.partitionId = partitionId;
@@ -91,6 +92,11 @@ public final class OpenSearchIncidentUpdateRepository implements IncidentUpdateR
     this.client = client;
     this.executor = executor;
     this.logger = logger;
+  }
+
+  @Override
+  public void close() throws Exception {
+    client._transport().close();
   }
 
   @Override

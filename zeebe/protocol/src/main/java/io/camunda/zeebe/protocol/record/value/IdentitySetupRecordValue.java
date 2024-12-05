@@ -26,4 +26,6 @@ public interface IdentitySetupRecordValue extends RecordValue {
   RoleRecordValue getDefaultRole();
 
   UserRecordValue getDefaultUser();
+
+  TenantRecordValue getDefaultTenant();
 }

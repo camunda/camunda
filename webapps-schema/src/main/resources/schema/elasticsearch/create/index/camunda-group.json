@@ -5,7 +5,7 @@
       "id": {
         "type": "keyword"
       },
-      "groupKey": {
+      "key": {
         "type": "long"
       },
       "name": {

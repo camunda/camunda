@@ -25,6 +25,8 @@ import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
+import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.security.impl.AuthorizationChecker;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.ClockServices;
 import io.camunda.service.DecisionDefinitionServices;
@@ -259,5 +261,18 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final MappingSearchClient mappingSearchClient) {
     return new MappingServices(brokerClient, securityContextProvider, mappingSearchClient, null);
+  }
+
+  @Bean
+  public SecurityContextProvider securityContextProvider(
+      final SecurityConfiguration securityConfiguration,
+      final AuthorizationChecker authorizationChecker) {
+    return new SecurityContextProvider(securityConfiguration, authorizationChecker);
+  }
+
+  @Bean
+  public AuthorizationChecker authorizationChecker(
+      final AuthorizationSearchClient authorizationSearchClient) {
+    return new AuthorizationChecker(authorizationSearchClient);
   }
 }

@@ -11,13 +11,13 @@ import static io.camunda.tasklist.util.ConversionUtils.toStringOrNull;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.tasklist.entities.ProcessEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
-import io.camunda.tasklist.schema.indices.ProcessIndex;
 import io.camunda.tasklist.zeebeimport.common.ProcessDefinitionDeletionProcessor;
 import io.camunda.tasklist.zeebeimport.util.XMLUtil;
 import io.camunda.tasklist.zeebeimport.v870.record.value.deployment.DeployedProcessImpl;
+import io.camunda.webapps.schema.descriptors.operate.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.tasklist.index.FormIndex;
+import io.camunda.webapps.schema.entities.operate.ProcessEntity;
 import io.camunda.webapps.schema.entities.tasklist.FormEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
@@ -52,7 +52,9 @@ public class ProcessZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("tasklistProcessIndex")
+  private ProcessIndex processIndex;
 
   @Autowired private FormIndex formIndex;
 
@@ -124,6 +126,12 @@ public class ProcessZeebeRecordProcessorElasticSearch {
     processEntity.setBpmnXml(new String(process.getResource()));
 
     final byte[] byteArray = process.getResource();
+    processEntity.setResourceName(process.getResourceName());
+
+    final var versionTag = process.getVersionTag();
+    if (versionTag != null && !versionTag.isEmpty()) {
+      processEntity.setVersionTag(versionTag);
+    }
 
     xmlUtil.extractDiagramData(
         byteArray,
@@ -133,7 +141,10 @@ public class ProcessZeebeRecordProcessorElasticSearch {
         userTaskFormCollector,
         processEntity::setFormKey,
         formId -> processEntity.setFormId(formId),
-        processEntity::setStartedByForm);
+        processEntity::setIsPublic);
+
+    final var isPublic = Optional.ofNullable(processEntity.getIsPublic()).orElse(false);
+    processEntity.setIsPublic(isPublic);
 
     Optional.ofNullable(processEntity.getFormKey())
         .ifPresent(key -> processEntity.setIsFormEmbedded(true));

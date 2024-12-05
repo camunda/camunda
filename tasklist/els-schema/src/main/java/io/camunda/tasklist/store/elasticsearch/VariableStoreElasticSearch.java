@@ -176,7 +176,7 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   public Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(final List<String> taskIds) {
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(taskVariableTemplate.getAlias())
+        ElasticsearchUtil.createSearchRequest(taskVariableTemplate)
             .source(
                 SearchSourceBuilder.searchSource()
                     .query(termsQuery(SnapshotTaskVariableTemplate.TASK_ID, taskIds))
@@ -283,7 +283,7 @@ public class VariableStoreElasticSearch implements VariableStore {
         new SearchSourceBuilder().query(idsQuery().addIds(variableId));
     applyFetchSourceForTaskVariableTemplate(searchSourceBuilder, fieldNames);
     final SearchRequest request =
-        createSearchRequest(taskVariableTemplate.getAlias()).source(searchSourceBuilder);
+        createSearchRequest(taskVariableTemplate).source(searchSourceBuilder);
     try {
       final SearchResponse response = tenantAwareClient.search(request);
       if (response.getHits().getTotalHits().value == 1) {

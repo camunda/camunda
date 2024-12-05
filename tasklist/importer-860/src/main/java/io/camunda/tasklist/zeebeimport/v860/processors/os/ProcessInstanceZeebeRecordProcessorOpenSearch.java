@@ -13,7 +13,6 @@ import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.PersistenceException;
 import io.camunda.tasklist.util.ConversionUtils;
-import io.camunda.tasklist.zeebeimport.util.EnvironmentUtil;
 import io.camunda.tasklist.zeebeimport.v860.record.value.ProcessInstanceRecordValueImpl;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.operate.FlowNodeInstanceEntity;
@@ -56,8 +55,6 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     FLOW_NODE_STATES.add(ELEMENT_ACTIVATING.name());
   }
 
-  @Autowired private EnvironmentUtil environment;
-
   @Autowired
   @Qualifier("tasklistFlowNodeInstanceTemplate")
   private FlowNodeInstanceTemplate flowNodeInstanceIndex;
@@ -67,9 +64,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
 
     final ProcessInstanceRecordValueImpl recordValue =
         (ProcessInstanceRecordValueImpl) record.getValue();
-    if (environment.isTestProfileEnabled()
-        && isVariableScopeType(recordValue)
-        && FLOW_NODE_STATES.contains(record.getIntent().name())) {
+    if (isVariableScopeType(recordValue) && FLOW_NODE_STATES.contains(record.getIntent().name())) {
       final FlowNodeInstanceEntity flowNodeInstance = createFlowNodeInstance(record);
       operations.add(getFlowNodeInstanceQuery(flowNodeInstance));
     }

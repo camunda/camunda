@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -24,13 +24,13 @@ public final class IdentitySetupProcessors {
       final MutableProcessingState processingState,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
-      final EngineConfiguration config) {
+      final SecurityConfiguration securityConfig) {
     typedRecordProcessors
         .onCommand(
             ValueType.IDENTITY_SETUP,
             IdentitySetupIntent.INITIALIZE,
             new IdentitySetupInitializeProcessor(
                 processingState, writers, keyGenerator, distributionBehavior))
-        .withListener(new IdentitySetupInitializer(keyGenerator, config, processingState));
+        .withListener(new IdentitySetupInitializer(keyGenerator, securityConfig, processingState));
   }
 }

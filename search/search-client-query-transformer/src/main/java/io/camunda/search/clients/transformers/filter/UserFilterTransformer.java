@@ -32,6 +32,6 @@ public class UserFilterTransformer implements FilterTransformer<UserFilter> {
 
   @Override
   public List<String> toIndices(final UserFilter filter) {
-    return List.of("identity-users-8.7.0_alias");
+    return List.of("camunda-user-8.7.0_alias");
   }
 }

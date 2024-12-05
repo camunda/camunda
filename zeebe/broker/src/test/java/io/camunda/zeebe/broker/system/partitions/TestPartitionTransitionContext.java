@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
@@ -75,6 +76,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private BackupStore backupStore;
   private DynamicPartitionConfig partitionConfig;
   private ControllableStreamClock clock;
+  private SecurityConfiguration securityConfig;
 
   @Override
   public int getPartitionId() {
@@ -248,6 +250,11 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   }
 
   @Override
+  public SecurityConfiguration getSecurityConfig() {
+    return securityConfig;
+  }
+
+  @Override
   public QueryService getQueryService() {
     return queryService;
   }
@@ -326,6 +333,10 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
 
   public void setDiskSpaceUsageMonitor(final DiskSpaceUsageMonitor diskSpaceUsageMonitor) {
     this.diskSpaceUsageMonitor = diskSpaceUsageMonitor;
+  }
+
+  public void setBrokerCfg(final SecurityConfiguration securityConfig) {
+    this.securityConfig = securityConfig;
   }
 
   public void setBrokerCfg(final BrokerCfg brokerCfg) {

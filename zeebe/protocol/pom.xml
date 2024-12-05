@@ -138,6 +138,7 @@
           <compilerArgs combine.children="append">
             <!-- required by javac detection logic in immutables -->
             <arg>-J--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED</arg>
+            <arg>-proc:full</arg>
           </compilerArgs>
           <fork>true</fork>
         </configuration>

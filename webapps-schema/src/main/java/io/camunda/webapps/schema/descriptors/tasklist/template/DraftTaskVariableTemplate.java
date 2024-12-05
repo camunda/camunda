@@ -7,10 +7,10 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist.template;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 
-public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor implements Prio3Backup {
+public class DraftTaskVariableTemplate extends TasklistTemplateDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "draft-task-variable";
   public static final String INDEX_VERSION = "8.3.0";

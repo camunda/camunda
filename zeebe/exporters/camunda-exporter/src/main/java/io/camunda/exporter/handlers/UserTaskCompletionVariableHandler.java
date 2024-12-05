@@ -31,7 +31,7 @@ public class UserTaskCompletionVariableHandler
   private static final Logger LOGGER =
       LoggerFactory.getLogger(UserTaskCompletionVariableHandler.class);
 
-  private static final String ID_PATTERN = "%s-%s";
+  private static final String ID_PATTERN = "%s-%s" + TaskTemplate.LOCAL_VARIABLE_SUFFIX;
   private static final ObjectMapper MAPPER = new ObjectMapper();
   protected final int variableSizeThreshold;
   private final String indexName;
@@ -114,7 +114,7 @@ public class UserTaskCompletionVariableHandler
 
     final TaskJoinRelationship joinRelationship = new TaskJoinRelationship();
     joinRelationship.setParent(entity.getScopeKey());
-    joinRelationship.setName(TaskJoinRelationshipType.TASK_VARIABLE.getType());
+    joinRelationship.setName(TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
     entity.setJoin(joinRelationship);
   }
 
@@ -128,7 +128,11 @@ public class UserTaskCompletionVariableHandler
     updateFields.put(TaskTemplate.JOIN_FIELD_NAME, entity.getJoin());
 
     batchRequest.upsertWithRouting(
-        indexName, entity.getId(), entity, updateFields, String.valueOf(entity.getScopeKey()));
+        indexName,
+        entity.getId(),
+        entity,
+        updateFields,
+        String.valueOf(entity.getProcessInstanceId()));
   }
 
   @Override

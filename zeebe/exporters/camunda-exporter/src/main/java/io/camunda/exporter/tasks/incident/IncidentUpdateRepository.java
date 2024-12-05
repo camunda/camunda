@@ -22,7 +22,7 @@ import java.util.stream.Stream;
  * Encapsulates all accesses to the underlying storage for the {@link IncidentUpdateTask}, allowing
  * it to work with various databases.
  */
-public interface IncidentUpdateRepository {
+public interface IncidentUpdateRepository extends AutoCloseable {
 
   /**
    * Returns the next batch of sorted pending incident updates.
@@ -223,6 +223,9 @@ public interface IncidentUpdateRepository {
         final Collection<String> treePathTerms) {
       return CompletableFuture.completedFuture(List.of());
     }
+
+    @Override
+    public void close() throws Exception {}
   }
 
   /**

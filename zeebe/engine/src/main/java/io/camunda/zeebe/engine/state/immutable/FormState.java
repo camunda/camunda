@@ -56,6 +56,14 @@ public interface FormState {
       String formId, String versionTag, final String tenantId);
 
   /**
+   * Iterates over all persisted forms until the visitor returns false or all processes have been
+   * visited. If {@code previousForm} is not null, the iteration skips all forms that appear before
+   * it. The visitor is <em>not</em> called with a copy of the form to avoid needless copies of the
+   * relatively large {@link PersistedForm} instances.
+   */
+  void forEachForm(FormIdentifier previousForm, PersistedFormVisitor visitor);
+
+  /**
    * Gets the next version a form of a given id will receive. This is used, for example, when a new
    * deployment is done. Using this method we decide the version the newly deployed form receives.
    *
@@ -64,4 +72,10 @@ public interface FormState {
   int getNextFormVersion(String formId, String tenantId);
 
   void clearCache();
+
+  record FormIdentifier(String tenantId, long key) {}
+
+  interface PersistedFormVisitor {
+    boolean visit(final PersistedForm form);
+  }
 }

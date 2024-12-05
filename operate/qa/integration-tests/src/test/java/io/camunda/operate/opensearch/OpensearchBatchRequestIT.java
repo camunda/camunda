@@ -29,12 +29,15 @@ import org.junit.Test;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
 
   @Autowired RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("operateProcessIndex")
+  ProcessIndex processIndex;
 
   @Autowired SchemaManager schemaManager;
 

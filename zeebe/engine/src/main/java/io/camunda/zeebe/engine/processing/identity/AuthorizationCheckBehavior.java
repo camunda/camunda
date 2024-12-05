@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -31,15 +31,15 @@ public final class AuthorizationCheckBehavior {
   public static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
   private final UserState userState;
-  private final EngineConfiguration engineConfig;
+  private final SecurityConfiguration securityConfig;
 
   public AuthorizationCheckBehavior(
       final AuthorizationState authorizationState,
       final UserState userState,
-      final EngineConfiguration engineConfig) {
+      final SecurityConfiguration securityConfig) {
     this.authorizationState = authorizationState;
     this.userState = userState;
-    this.engineConfig = engineConfig;
+    this.securityConfig = securityConfig;
   }
 
   /**
@@ -54,7 +54,7 @@ public final class AuthorizationCheckBehavior {
    * @return true if the entity is authorized, false otherwise
    */
   public boolean isAuthorized(final AuthorizationRequest request) {
-    if (!engineConfig.isEnableAuthorization()) {
+    if (!securityConfig.getAuthorizations().isEnabled()) {
       return true;
     }
 
@@ -83,7 +83,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Set<String> getAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
-    if (!engineConfig.isEnableAuthorization()) {
+    if (!securityConfig.getAuthorizations().isEnabled()) {
       return Set.of(WILDCARD_PERMISSION);
     }
 

@@ -7,10 +7,10 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 
-public class MessageTemplate extends OperateTemplateDescriptor implements Prio3Backup {
+public class MessageTemplate extends OperateTemplateDescriptor implements Prio4Backup {
 
   public static final String INDEX_NAME = "message";
 

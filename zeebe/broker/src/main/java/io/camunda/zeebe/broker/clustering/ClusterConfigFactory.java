@@ -81,7 +81,9 @@ public final class ClusterConfigFactory {
             .setInterfaces(Collections.singletonList(network.getInternalApi().getHost()))
             .setPort(network.getInternalApi().getPort())
             .setSocketReceiveBuffer((int) network.getSocketReceiveBuffer().toBytes())
-            .setSocketSendBuffer((int) network.getSocketSendBuffer().toBytes());
+            .setSocketSendBuffer((int) network.getSocketSendBuffer().toBytes())
+            .setHeartbeatTimeout(network.getHeartbeatTimeout())
+            .setHeartbeatInterval(network.getHeartbeatInterval());
 
     if (network.getSecurity().isEnabled()) {
       final var security = network.getSecurity();

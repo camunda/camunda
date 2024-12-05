@@ -50,8 +50,10 @@ jobs:
         include:
           - database: elasticsearch
             testProfile: docker-es
+            url: http://localhost:9200
           - database: opensearch
             testProfile: docker-os
+            url: http://localhost:9205
     steps:
       # Setup: checkout branch
       - name: Checkout '${{ inputs.branch }}' branch
@@ -77,7 +79,7 @@ jobs:
       # Run integration tests in parallel
       - name: Run Integration Tests
         run: |
-          ./mvnw -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }}
+          ./mvnw -f tasklist -T${{ env.LIMITS_CPU }} verify -P ${{ matrix.testProfile }},skipFrontendBuild -B --fail-at-end -Dfailsafe.rerunFailingTestsCount=2 -Dcamunda.tasklist.database=${{ matrix.database }} -Dcamunda.database.url=${{ matrix.url }}
 
       # Sanitize the branch name to replace non alphanumeric characters with `-`
       - id: sanitize

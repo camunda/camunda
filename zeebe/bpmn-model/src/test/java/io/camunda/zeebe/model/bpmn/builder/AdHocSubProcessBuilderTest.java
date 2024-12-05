@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
+import io.camunda.zeebe.model.bpmn.instance.ExtensionElements;
 import io.camunda.zeebe.model.bpmn.instance.FlowElement;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 import org.junit.jupiter.api.Test;
 
@@ -50,5 +52,33 @@ class AdHocSubProcessBuilderTest {
         .hasSize(2)
         .extracting(FlowElement::getId)
         .contains("A", "B");
+  }
+
+  @Test
+  void shouldSetActiveElementsCollection() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .adHocSubProcess(
+                "ad-hoc",
+                adHocSubProcess -> {
+                  adHocSubProcess.zeebeActiveElementsCollectionExpression("[\"A\"]");
+                  adHocSubProcess.task("A");
+                })
+            .endEvent()
+            .done();
+
+    // when/then
+    final ModelElementInstance adHocSubProcess = process.getModelElementById("ad-hoc");
+
+    final ExtensionElements extensionElements =
+        (ExtensionElements) adHocSubProcess.getUniqueChildElementByType(ExtensionElements.class);
+    assertThat(extensionElements).isNotNull();
+
+    assertThat(extensionElements.getChildElementsByType(ZeebeAdHoc.class))
+        .hasSize(1)
+        .extracting(ZeebeAdHoc::getActiveElementsCollection)
+        .contains("=[\"A\"]");
   }
 }

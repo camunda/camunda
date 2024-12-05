@@ -28,6 +28,6 @@ public class MappingFilterTransformer implements FilterTransformer<MappingFilter
 
   @Override
   public List<String> toIndices(final MappingFilter filter) {
-    return List.of("identity-mappings-8.7.0_alias");
+    return List.of("camunda-mapping-8.7.0_alias");
   }
 }
