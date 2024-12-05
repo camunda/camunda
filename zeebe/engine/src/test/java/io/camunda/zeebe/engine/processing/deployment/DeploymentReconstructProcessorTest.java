@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.value.deployment.FormMetadataValue;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.impl.state.DbKeyGenerator;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -248,7 +249,12 @@ final class DeploymentReconstructProcessorTest {
                   .asInstanceOf(InstanceOfAssertFactories.type(DeploymentRecord.class))
                   .satisfies(
                       deploymentRecord -> {
-                        assertThat(deploymentRecord.getFormMetadata()).hasSize(1);
+                        assertThat(deploymentRecord.getFormMetadata())
+                            .singleElement()
+                            .returns(formKey, FormMetadataValue::getFormKey)
+                            .returns("form", FormMetadataValue::getFormId)
+                            .returns("form.form", FormMetadataValue::getResourceName)
+                            .returns(1, FormMetadataValue::getVersion);
                         assertThat(deploymentRecord.getDeploymentKey()).isEqualTo(formKey);
                       });
             });
