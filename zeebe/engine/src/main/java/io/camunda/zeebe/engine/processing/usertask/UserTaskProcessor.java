@@ -109,10 +109,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
                 switch (attribute) {
                   case "assignee" ->
                       intermediateUserTaskRecord.setAssignee(command.getValue().getAssignee());
-                  case "candidateGroups" ->
+                  case "candidateGroupsList" ->
                       intermediateUserTaskRecord.setCandidateGroupsList(
                           command.getValue().getCandidateGroupsList());
-                  case "candidateUsers" ->
+                  case "candidateUsersList" ->
                       intermediateUserTaskRecord.setCandidateUsersList(
                           command.getValue().getCandidateUsersList());
                   case "dueDate" ->
@@ -145,12 +145,10 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       userTaskRecord.addChangedAttribute("assignee");
     }
     if (!currentUserTask.getCandidateGroupsList().equals(userTaskRecord.getCandidateGroupsList())) {
-      // todo: change to candidateGroupsList
-      userTaskRecord.addChangedAttribute("candidateGroups");
+      userTaskRecord.addChangedAttribute("candidateGroupsList");
     }
     if (!currentUserTask.getCandidateUsersList().equals(userTaskRecord.getCandidateUsersList())) {
-      // todo: change to candidateUsersList
-      userTaskRecord.addChangedAttribute("candidateUsers");
+      userTaskRecord.addChangedAttribute("candidateUsersList");
     }
     if (!currentUserTask.getDueDateBuffer().equals(userTaskRecord.getDueDateBuffer())) {
       userTaskRecord.addChangedAttribute("dueDate");
