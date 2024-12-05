@@ -152,15 +152,52 @@ func validateKeystore(settings C8RunSettings, parentDir string) error {
 	return nil
 }
 
+func startDocker(extractedComposePath string) error {
+	os.Chdir(extractedComposePath)
+
+	_, err := exec.LookPath("docker")
+	if err != nil {
+		return err
+	}
+
+	composeCmd := exec.Command("docker", "compose", "up", "-d")
+	composeCmd.Stdout = os.Stdout
+	composeCmd.Stderr = os.Stderr
+	err = composeCmd.Run()
+	if err != nil {
+		return err
+	}
+	os.Chdir("..")
+	return nil
+}
+
+func stopDocker(extractedComposePath string) error {
+	os.Chdir(extractedComposePath)
+	_, err := exec.LookPath("docker")
+	if err != nil {
+		return err
+	}
+	composeCmd := exec.Command("docker", "compose", "down")
+	composeCmd.Stdout = os.Stdout
+	composeCmd.Stderr = os.Stderr
+	err = composeCmd.Run()
+	if err != nil {
+		return err
+	}
+	os.Chdir("..")
+	return nil
+}
+
 func main() {
 	c8 := getC8RunPlatform()
 	baseDir, _ := os.Getwd()
-	// parentDir, _ := filepath.Dir(baseDir)
 	parentDir := baseDir
-	// deploymentDir := filepath.Join(parentDir, "configuration", "resources")
 	elasticsearchVersion := "8.13.4"
 	camundaVersion := "8.7.0-alpha2"
 	connectorsVersion := "8.7.0-alpha2.1"
+	composeTag := "8.7-alpha1"
+	composeExtractedFolder := "camunda-platform-8.7-alpha1"
+
 	if os.Getenv("CAMUNDA_VERSION") != "" {
 		camundaVersion = os.Getenv("CAMUNDA_VERSION")
 	}
@@ -215,9 +252,12 @@ func main() {
 	startFlagSet.StringVar(&settings.keystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.logLevel, "log-level", "", "Adjust the log level of Camunda")
 	startFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (still requires Elasticsearch to be running outside of c8run)")
+	startFlagSet.BoolVar(&settings.docker, "docker", false, "Run Camunda from docker-compose.")
 
 	stopFlagSet := flag.NewFlagSet("stop", flag.ExitOnError)
 	stopFlagSet.BoolVar(&settings.disableElasticsearch, "disable-elasticsearch", false, "Do not stop Elasticsearch")
+	stopFlagSet.BoolVar(&settings.docker, "docker", false, "Stop docker-compose distribution of camunda.")
+
 
 	switch baseCommand {
 	case "start":
@@ -234,6 +274,24 @@ func main() {
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
+	}
+
+	if settings.docker && baseCommand == "start" {
+		err = startDocker(composeExtractedFolder)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}
+
+	if settings.docker && baseCommand == "stop" {
+		err = stopDocker(composeExtractedFolder)
+		if err != nil {
+			fmt.Println(err.Error())
+			os.Exit(1)
+		}
+		os.Exit(0)
 	}
 
 	javaHome := os.Getenv("JAVA_HOME")
@@ -414,13 +472,13 @@ func main() {
 
 	if baseCommand == "package" {
 		if runtime.GOOS == "windows" {
-			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion)
+			err := PackageWindows(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)
 			}
 		} else if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion)
+			err := PackageUnix(camundaVersion, elasticsearchVersion, connectorsVersion, composeTag)
 			if err != nil {
 				fmt.Printf("%+v", err)
 				os.Exit(1)
