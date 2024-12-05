@@ -20,8 +20,6 @@ public final class OperateURIs {
   public static final String SSO_CALLBACK_URI = "/sso-callback";
   public static final String NO_PERMISSION = "/noPermission";
   public static final String IDENTITY_CALLBACK_URI = "/identity-callback";
-  public static final String // For redirects after login
-      REQUESTED_URL = "requestedUrl";
   public static final String[] AUTH_WHITELIST = {
     "/swagger-resources",
     "/swagger-resources/**",

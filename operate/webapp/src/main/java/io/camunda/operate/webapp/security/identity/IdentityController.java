@@ -9,6 +9,7 @@ package io.camunda.operate.webapp.security.identity;
 
 import static io.camunda.operate.OperateProfileService.IDENTITY_AUTH_PROFILE;
 import static io.camunda.operate.webapp.security.OperateURIs.*;
+import static io.camunda.webapps.util.HttpUtils.REQUESTED_URL;
 
 import io.camunda.identity.sdk.authentication.dto.AuthCodeDto;
 import jakarta.servlet.http.HttpServletRequest;
