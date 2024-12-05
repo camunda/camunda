@@ -16,7 +16,6 @@
         http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
         http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-latest.xsd">
 
-  <include file="db/changelog/rdbms-support/changesets/create_exporter.xml" />
-  <include file="db/changelog/rdbms-support/changesets/create_engine.xml" />
-
+  <include relativeToChangelogFile="true" file="changesets/create_exporter.xml" />
+  <include relativeToChangelogFile="true" file="changesets/create_engine.xml" />
 </databaseChangeLog>
