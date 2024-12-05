@@ -67,12 +67,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: camunda/infra-global-github-actions/actionlint@gh-620-centralized-infracheck-workflow
         with:
-          version: ${{ env.ACTIONLINT_VERSION }}
           ignore: |
             property "vault_.+" is not defined in object type
             object type "{}" cannot be filtered by object filtering `.*` since it has no object element
-          custom-config-file: .github/actionlint.yaml
-          sanitize-runner-labels: "false"
       - run: |
           curl -s -L "https://github.com/open-policy-agent/conftest/releases/download/v${CONFTEST_VERSION}/conftest_${CONFTEST_VERSION}_Linux_x86_64.tar.gz" | tar xvz conftest
           ./conftest test -o github --policy .github/conftest-*.rego .github/workflows/*.yml
