@@ -63,6 +63,7 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             authCheckBehavior,
             List.of(
                 this::checkVariablesNotProvidedForTaskListenerJob,
+                this::checkTaskListenerJobForDenyingWithCorrections,
                 this::checkTaskListenerJobForUnknownPropertyCorrections));
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
@@ -156,6 +157,27 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
 
   private boolean hasVariables(final TypedRecord<JobRecord> command) {
     return !DocumentValue.EMPTY_DOCUMENT.equals(command.getValue().getVariablesBuffer());
+  }
+
+  private Either<Rejection, JobRecord> checkTaskListenerJobForDenyingWithCorrections(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    if (job.getJobKind() != JobKind.TASK_LISTENER) {
+      return Either.right(job);
+    }
+
+    final var jobResult = command.getValue().getResult();
+    if (jobResult.isDenied() && !jobResult.getCorrectedAttributes().isEmpty()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              """
+              Expected to complete task listener job with corrections, but the job result is \
+              denied. The corrections would be reverted by the denial. Either complete the job with \
+              corrections without setting denied, or complete the job with a denied result but no \
+              corrections."""));
+    } else {
+      return Either.right(job);
+    }
   }
 
   private Either<Rejection, JobRecord> checkTaskListenerJobForUnknownPropertyCorrections(
