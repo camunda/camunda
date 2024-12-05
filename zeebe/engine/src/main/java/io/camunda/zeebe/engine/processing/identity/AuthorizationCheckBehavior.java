@@ -75,14 +75,17 @@ public final class AuthorizationCheckBehavior {
     final var userKey = getUserKey(request);
     if (userKey.isPresent()) {
       final var userOptional = userState.getUser(userKey.get());
+      if (userOptional.isEmpty()) {
+        return Either.left(RejectionType.UNAUTHORIZED);
+      }
       // verify if the user is authorized for the tenant
-      if (!isUserAuthorizedForTenant(request, userOptional)) {
+      if (!isUserAuthorizedForTenant(request, userOptional.get())) {
         return Either.left(RejectionType.NOT_FOUND);
       }
 
       authorizedResourceIdentifiers =
           getUserAuthorizedResourceIdentifiers(
-              userOptional, request.getResourceType(), request.getPermissionType());
+              userOptional.get(), request.getResourceType(), request.getPermissionType());
     } else {
       authorizedResourceIdentifiers = Stream.empty();
     }
@@ -101,17 +104,12 @@ public final class AuthorizationCheckBehavior {
   }
 
   private boolean isUserAuthorizedForTenant(
-      final AuthorizationRequest request, final Optional<PersistedUser> userOptional) {
+      final AuthorizationRequest request, final PersistedUser user) {
     final var tenantId = request.tenantId;
     if (tenantId.equals(TenantOwned.DEFAULT_TENANT_IDENTIFIER)) {
       return true;
     }
 
-    if (userOptional.isEmpty()) {
-      return false;
-    }
-
-    final var user = userOptional.get();
     return user.getTenantIdsList().contains(tenantId);
   }
 
@@ -124,8 +122,11 @@ public final class AuthorizationCheckBehavior {
         .map(
             userKey -> {
               final var userOptional = userState.getUser(userKey);
-              return getUserAuthorizedResourceIdentifiers(
-                  userOptional, request.getResourceType(), request.getPermissionType());
+              if (userOptional.isEmpty()) {
+      return new HashSet<>();
+    }
+    return getUserAuthorizedResourceIdentifiers(
+        userOptional.get(), request.getResourceType(), request.getPermissionType());
             })
         .orElseGet(Stream::empty)
         .collect(Collectors.toSet());
@@ -157,7 +158,11 @@ public final class AuthorizationCheckBehavior {
       case USER ->
           {
         final var userOptional = userState.getUser(ownerKey);
-        yield getUserAuthorizedResourceIdentifiers(userOptional, resourceType, permissionType)
+        if (userOptional.isEmpty()) {
+          yield new HashSet<>();
+        }
+        yield getUserAuthorizedResourceIdentifiers(
+            userOptional.get(), resourceType, permissionType)
               .collect(Collectors.toSet());
       }
       case ROLE, GROUP ->
@@ -169,15 +174,9 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Stream<String> getUserAuthorizedResourceIdentifiers(
-      final Optional<PersistedUser> userOptional,
+      final PersistedUser user,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    if (userOptional.isEmpty()) {
-      return Stream.empty();
-    }
-
-    final var user = userOptional.get();
-
     // Get resource identifiers for this user
     final var userAuthorizedResourceIdentifiers =
         authorizationState.getResourceIdentifiers(user.getUserKey(), resourceType, permissionType);
