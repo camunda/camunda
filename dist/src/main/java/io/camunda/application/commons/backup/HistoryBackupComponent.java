@@ -17,6 +17,8 @@ import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -27,6 +29,7 @@ import org.springframework.stereotype.Component;
 @Configuration
 @ProfileOperateTasklist
 public class HistoryBackupComponent {
+  private static final Logger LOG = LoggerFactory.getLogger(HistoryBackupComponent.class);
 
   private final ThreadPoolTaskExecutor threadPoolTaskExecutor;
   private final List<Prio1Backup> prio1BackupIndices;
@@ -44,6 +47,10 @@ public class HistoryBackupComponent {
       final List<Prio4Backup> prio4BackupIndices,
       final BackupRepositoryProps backupRepositoryProps,
       final BackupRepository backupRepository) {
+    LOG.debug("Prio1BackupIndices are {}", prio1BackupIndices);
+    LOG.debug("Prio2BackupTemplates are {}", prio2BackupTemplates);
+    LOG.debug("Prio3BackupTemplates are {}", prio3BackupTemplates);
+    LOG.debug("Prio4BackupIndices are {}", prio4BackupIndices);
     this.threadPoolTaskExecutor = threadPoolTaskExecutor;
     this.prio1BackupIndices = prio1BackupIndices;
     this.prio2BackupTemplates = prio2BackupTemplates;
