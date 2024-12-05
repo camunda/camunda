@@ -105,8 +105,9 @@ public final class AuthorizationCheckBehavior {
       case USER -> getUserAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType);
       case ROLE ->
           getRoleAuthorizedResourceIdentifiers(List.of(ownerKey), resourceType, permissionType);
+      case GROUP ->
+          getGroupAuthorizedResourceIdentifiers(List.of(ownerKey), resourceType, permissionType);
       // TODO add MAPPING
-      // TODO add GROUP
       default -> new HashSet<>();
     };
   }
@@ -128,9 +129,15 @@ public final class AuthorizationCheckBehavior {
     // Get resource identifiers for the user's roles
     final var roleAuthorizedResourceIdentifiers =
         getRoleAuthorizedResourceIdentifiers(user.getRoleKeysList(), resourceType, permissionType);
-
+    // Get resource identifiers for the user's groups
+    final var groupAuthorizedResourceIdentifiers =
+        getGroupAuthorizedResourceIdentifiers(
+            user.getGroupKeysList(), resourceType, permissionType);
     return Stream.concat(
-            userAuthorizedResourceIdentifiers.stream(), roleAuthorizedResourceIdentifiers.stream())
+            userAuthorizedResourceIdentifiers.stream(),
+            Stream.concat(
+                roleAuthorizedResourceIdentifiers.stream(),
+                groupAuthorizedResourceIdentifiers.stream()))
         .collect(Collectors.toSet());
   }
 
@@ -143,6 +150,19 @@ public final class AuthorizationCheckBehavior {
             roleKey ->
                 authorizationState
                     .getResourceIdentifiers(roleKey, resourceType, permissionType)
+                    .stream())
+        .collect(Collectors.toSet());
+  }
+
+  private Set<String> getGroupAuthorizedResourceIdentifiers(
+      final List<Long> groupKeys,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    return groupKeys.stream()
+        .flatMap(
+            groupKey ->
+                authorizationState
+                    .getResourceIdentifiers(groupKey, resourceType, permissionType)
                     .stream())
         .collect(Collectors.toSet());
   }
