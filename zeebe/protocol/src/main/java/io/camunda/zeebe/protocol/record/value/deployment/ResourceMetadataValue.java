@@ -50,6 +50,11 @@ public interface ResourceMetadataValue extends RecordValue, TenantOwned {
   byte[] getChecksum();
 
   /**
+   * @return the name of the resource through which this resource was deployed
+   */
+  String getResourceName();
+
+  /**
    * @return {@code true} if the Resource is a duplicate (and has been deployed previously),
    *     otherwise {@code false}
    */
