@@ -91,7 +91,6 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
             elementInstanceKey,
             ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER,
             elementInstance.getValue());
-        return;
       }
       case TASK_LISTENER -> {
         /*
@@ -117,8 +116,6 @@ public final class JobCompleteProcessor implements CommandProcessor<JobRecord> {
           commandWriter.appendFollowUpCommand(
               userTask.getUserTaskKey(), UserTaskIntent.COMPLETE_TASK_LISTENER, userTask);
         }
-
-        return;
       }
       default -> {
         final long scopeKey = elementInstance.getValue().getFlowScopeKey();
