@@ -32,7 +32,7 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   public IdentitySetupRecord setDefaultRole(final RoleRecord role) {
-    defaultRoleProp.getValue().copy(role);
+    defaultRoleProp.getValue().copyFrom(role);
     return this;
   }
 
@@ -42,7 +42,7 @@ public class IdentitySetupRecord extends UnifiedRecordValue implements IdentityS
   }
 
   public IdentitySetupRecord setDefaultUser(final UserRecord user) {
-    defaultUserProp.getValue().copy(user);
+    defaultUserProp.getValue().copyFrom(user);
     return this;
   }
 }

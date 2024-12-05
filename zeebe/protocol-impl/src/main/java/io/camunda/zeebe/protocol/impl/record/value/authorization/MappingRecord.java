@@ -24,10 +24,6 @@ public class MappingRecord extends UnifiedRecordValue implements MappingRecordVa
     declareProperty(mappingKeyProp).declareProperty(claimNameProp).declareProperty(claimValueProp);
   }
 
-  public void copy(final MappingRecord record) {
-    copyFrom(record);
-  }
-
   @Override
   public long getMappingKey() {
     return mappingKeyProp.getValue();

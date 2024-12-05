@@ -63,7 +63,7 @@ public class DbTenantState implements MutableTenantState {
   public void createTenant(final TenantRecord tenantRecord) {
     tenantKey.wrapLong(tenantRecord.getTenantKey());
     tenantId.wrapString(tenantRecord.getTenantId());
-    persistedTenant.copy(tenantRecord);
+    persistedTenant.from(tenantRecord);
     tenantsColumnFamily.insert(tenantKey, persistedTenant);
     tenantByIdColumnFamily.insert(tenantId, fkTenantKey);
   }

@@ -37,10 +37,6 @@ public final class UserRecord extends UnifiedRecordValue implements UserRecordVa
         .declareProperty(userTypeProp);
   }
 
-  public void copy(final UserRecord record) {
-    copyFrom(record);
-  }
-
   @Override
   public Long getUserKey() {
     return userKeyProp.getValue();

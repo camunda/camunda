@@ -31,10 +31,6 @@ public class RoleRecord extends UnifiedRecordValue implements RoleRecordValue {
         .declareProperty(entityTypeProp);
   }
 
-  public void copy(final RoleRecord record) {
-    copyFrom(record);
-  }
-
   @Override
   public long getRoleKey() {
     return roleKeyProp.getValue();

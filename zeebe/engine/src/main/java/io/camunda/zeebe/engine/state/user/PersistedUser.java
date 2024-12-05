@@ -50,7 +50,7 @@ public class PersistedUser extends UnpackedObject implements DbValue {
   }
 
   public void setUser(final UserRecord record) {
-    userProp.getValue().copy(record);
+    userProp.getValue().copyFrom(record);
   }
 
   public long getUserKey() {

@@ -70,8 +70,4 @@ public class GroupRecord extends UnifiedRecordValue implements GroupRecordValue 
     entityTypeProp.setValue(entityType);
     return this;
   }
-
-  public void copy(final GroupRecord groupRecord) {
-    copyFrom(groupRecord);
-  }
 }
