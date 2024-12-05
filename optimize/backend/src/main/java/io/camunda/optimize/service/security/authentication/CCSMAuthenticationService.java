@@ -65,7 +65,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
     try {
       tokens = ccsmTokenService.exchangeAuthCode(authCode, requestContext);
       accessToken = ccsmTokenService.verifyToken(tokens.getAccessToken());
-    } catch (NotAuthorizedException ex) {
+    } catch (final NotAuthorizedException ex) {
       return Response.status(Response.Status.FORBIDDEN)
           .entity(
               "User has no authorization to access Optimize. Please check your Identity configuration")
@@ -88,7 +88,7 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       try {
         Optional.ofNullable(cookies.get(OPTIMIZE_REFRESH_TOKEN))
             .ifPresent(refreshCookie -> ccsmTokenService.revokeToken(refreshCookie.getValue()));
-      } catch (IdentityException exception) {
+      } catch (final IdentityException exception) {
         // We catch the exception even if the token revoke failed, so we can still delete the
         // Optimize cookies
       } finally {
@@ -114,6 +114,14 @@ public class CCSMAuthenticationService extends AbstractAuthenticationService {
       }
       redirectUri += configurationService.getContextPath().orElse("");
     }
+
+    // Instead of redirecting to the home page, we redirect to a redirector that
+    // will redirect again to the home page. The reason is that we need to attach
+    // auth cookies to the request, and this only happens if the redirection is initiated
+    // by a human. Having a redirector that does window.location=<url> simulates the behavior.
+    final String targetUri = redirectUri;
+    redirectUri += "/external/static/redirect.html?url=" + targetUri;
+
     log.trace("Using root redirect Url: {}", redirectUri);
     return redirectUri;
   }
