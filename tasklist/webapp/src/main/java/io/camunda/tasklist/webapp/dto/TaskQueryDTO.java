@@ -5,12 +5,8 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.graphql.entity;
+package io.camunda.tasklist.webapp.dto;
 
-import graphql.annotations.annotationTypes.GraphQLConstructor;
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLName;
-import graphql.annotations.annotationTypes.GraphQLType;
 import io.camunda.tasklist.queries.*;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity.TaskImplementation;
 import io.camunda.webapps.schema.entities.tasklist.TaskState;
@@ -18,38 +14,34 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
-@GraphQLType
-@GraphQLName("TaskQuery")
 public class TaskQueryDTO {
 
   public static final int DEFAULT_PAGE_SIZE = 50;
-  @GraphQLField private TaskState state;
-  @GraphQLField private Boolean assigned;
-  @GraphQLField private String assignee;
+  private TaskState state;
+  private Boolean assigned;
+  private String assignee;
   private String[] assignees;
-  @GraphQLField private String taskDefinitionId;
-  @GraphQLField private String candidateGroup;
+  private String taskDefinitionId;
+  private String candidateGroup;
   private String[] candidateGroups;
-  @GraphQLField private String candidateUser;
+  private String candidateUser;
   private String[] candidateUsers;
-  @GraphQLField private String processDefinitionId;
-  @GraphQLField private String processInstanceId;
+  private String processDefinitionId;
+  private String processInstanceId;
   private TaskByVariables[] taskVariables;
   private String[] tenantIds;
-  @GraphQLField private int pageSize = DEFAULT_PAGE_SIZE;
-  @GraphQLField private String[] searchAfter;
-  @GraphQLField private String[] searchAfterOrEqual;
-  @GraphQLField private String[] searchBefore;
-  @GraphQLField private String[] searchBeforeOrEqual;
-  @GraphQLField private DateFilter followUpDate;
-  @GraphQLField private DateFilter dueDate;
-  @GraphQLField private TaskOrderBy[] sort;
+  private int pageSize = DEFAULT_PAGE_SIZE;
+  private String[] searchAfter;
+  private String[] searchAfterOrEqual;
+  private String[] searchBefore;
+  private String[] searchBeforeOrEqual;
+  private DateFilter followUpDate;
+  private DateFilter dueDate;
+  private TaskOrderBy[] sort;
   private TaskByCandidateUserOrGroup taskByCandidateUserOrGroup;
-  @GraphQLField private TaskImplementation implementation;
+  private TaskImplementation implementation;
   private RangeValueFilter priority;
 
-  // Constructor used by GraphQL, it should initialize fields annotated with @GraphQLField
-  @GraphQLConstructor
   public TaskQueryDTO(
       final TaskState state,
       final Boolean assigned,

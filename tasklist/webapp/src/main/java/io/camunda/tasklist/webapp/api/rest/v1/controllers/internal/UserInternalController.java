@@ -8,7 +8,7 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import io.camunda.tasklist.webapp.api.rest.v1.controllers.ApiErrorController;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.swagger.v3.oas.annotations.Operation;

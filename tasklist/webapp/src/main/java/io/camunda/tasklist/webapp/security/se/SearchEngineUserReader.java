@@ -12,7 +12,7 @@ import static io.camunda.tasklist.webapp.security.TasklistProfileService.SSO_AUT
 
 import io.camunda.authentication.entity.CamundaUser;
 import io.camunda.tasklist.util.CollectionUtil;
-import io.camunda.tasklist.webapp.graphql.entity.UserDTO;
+import io.camunda.tasklist.webapp.dto.UserDTO;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.tasklist.webapp.security.se.store.UserStore;
 import java.util.List;

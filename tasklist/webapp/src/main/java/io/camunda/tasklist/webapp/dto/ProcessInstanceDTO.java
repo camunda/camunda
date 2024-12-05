@@ -5,27 +5,30 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.graphql.entity;
+package io.camunda.tasklist.webapp.dto;
 
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
 import java.util.Objects;
 
 public class ProcessInstanceDTO {
 
-  @GraphQLField @GraphQLNonNull private Long id;
+  private Long id;
 
   public Long getId() {
     return id;
   }
 
-  public ProcessInstanceDTO setId(Long id) {
+  public ProcessInstanceDTO setId(final Long id) {
     this.id = id;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(id);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -34,10 +37,5 @@ public class ProcessInstanceDTO {
     }
     final ProcessInstanceDTO that = (ProcessInstanceDTO) o;
     return Objects.equals(id, that.id);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(id);
   }
 }

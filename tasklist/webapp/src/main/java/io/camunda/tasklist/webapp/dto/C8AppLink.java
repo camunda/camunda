@@ -5,22 +5,20 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.webapp.graphql.entity;
+package io.camunda.tasklist.webapp.dto;
 
-import graphql.annotations.annotationTypes.GraphQLField;
-import graphql.annotations.annotationTypes.GraphQLNonNull;
 import java.util.Objects;
 
 public class C8AppLink {
 
-  @GraphQLField @GraphQLNonNull private String name;
-  @GraphQLField @GraphQLNonNull private String link;
+  private String name;
+  private String link;
 
   public String getName() {
     return name.toLowerCase();
   }
 
-  public C8AppLink setName(String name) {
+  public C8AppLink setName(final String name) {
     this.name = name.toLowerCase();
     return this;
   }
@@ -29,13 +27,18 @@ public class C8AppLink {
     return link;
   }
 
-  public C8AppLink setLink(String link) {
+  public C8AppLink setLink(final String link) {
     this.link = link;
     return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public int hashCode() {
+    return Objects.hash(name, link);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -44,11 +47,6 @@ public class C8AppLink {
     }
     final C8AppLink c8AppLink = (C8AppLink) o;
     return Objects.equals(name, c8AppLink.name) && Objects.equals(link, c8AppLink.link);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(name, link);
   }
 
   @Override

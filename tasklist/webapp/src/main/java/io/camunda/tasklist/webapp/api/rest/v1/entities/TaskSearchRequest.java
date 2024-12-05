@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.api.rest.v1.entities;
 
-import static io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO.DEFAULT_PAGE_SIZE;
+import static io.camunda.tasklist.webapp.dto.TaskQueryDTO.DEFAULT_PAGE_SIZE;
 
 import io.camunda.tasklist.queries.DateFilter;
 import io.camunda.tasklist.queries.RangeValueFilter;
