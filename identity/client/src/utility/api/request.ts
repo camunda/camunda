@@ -79,6 +79,9 @@ const apiRequest: <R, P>(
         credentials: "include",
       },
     );
+    if (response.status === 401) {
+      window.location.href = "/login";
+    }
     let data = null;
     try {
       data = await response.json();
