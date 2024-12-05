@@ -5609,6 +5609,46 @@ components:
             As a result, the completion request is rejected and the task remains active.
             Defaults to false.
           nullable: true
+        corrections:
+          $ref: "#/components/schemas/JobResultCorrections"
+    JobResultCorrections:
+      type: object
+      description: Attributes that were corrected by the worker. Others are considered not corrected.
+      nullable: true
+      properties:
+        assignee:
+          type: string
+          description: Assignee of the task.
+        dueDate:
+          type: string
+          format: date-time
+          description: The due date of the task.
+          nullable: true
+        followUpDate:
+          type: string
+          format: date-time
+          description: The follow-up date of the task.
+          nullable: true
+        candidateUsers:
+          type: array
+          description: The list of candidate users of the task.
+          items:
+            type: string
+          nullable: true
+        candidateGroups:
+          type: array
+          description: The list of candidate groups of the task.
+          items:
+            type: string
+          nullable: true
+        priority:
+          type: integer
+          format: int32
+          description: The priority of the task.
+          minimum: 0
+          default: 50
+          maximum: 100
+          nullable: true
     JobUpdateRequest:
       type: object
       properties:
