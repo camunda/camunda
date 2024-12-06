@@ -107,10 +107,8 @@ public class DmnModelUtilTest {
 
   @Test
   void shouldThrowExceptionWhenInputDecisionKeyIsNull() {
-    // given
-    final DmnModelInstance model = Mockito.mock(DmnModelInstance.class);
-
     // when
+    final DmnModelInstance model = Mockito.mock(DmnModelInstance.class);
 
     // then
     assertThatThrownBy(() -> DmnModelUtil.extractInputVariables(model, null))
@@ -120,10 +118,8 @@ public class DmnModelUtilTest {
 
   @Test
   void shouldThrowExceptionWhenOutputDecisionKeyIsNull() {
-    // given
-    final DmnModelInstance model = Mockito.mock(DmnModelInstance.class);
-
     // when
+    final DmnModelInstance model = Mockito.mock(DmnModelInstance.class);
 
     // then
     assertThatThrownBy(() -> DmnModelUtil.extractOutputVariables(model, null))
