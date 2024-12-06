@@ -112,6 +112,27 @@ message JobResult{
   // As a result, the completion request is rejected and the task remains active.
   // Defaults to false.
   optional bool denied = 1;
+  // Attributes that were corrected by the worker. Others are considered not corrected.
+  optional JobResultCorrections corrections = 2;
+}
+
+message JobResultCorrections {
+  // The assignee of the task.
+  optional string assignee = 1;
+  // The due date of the task.
+  optional string dueDate = 2;
+  // The follow-up date of the task.
+  optional string followUpDate = 3;
+  // The list of candidate users of the task.
+  optional StringList candidateUsersList = 4;
+  // The list of candidate groups of the task.
+  optional StringList candidateGroupsList = 5;
+  // The priority of the task.
+  optional int32 priority = 6;
+}
+
+message StringList {
+  repeated string values = 1;
 }
 
 message CompleteJobResponse {
