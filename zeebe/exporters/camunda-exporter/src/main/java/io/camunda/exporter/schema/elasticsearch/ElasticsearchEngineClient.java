@@ -204,7 +204,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               "Failed to search documents in the import position index for partition [%s]",
               partitionId);
       LOG.error(errMsg, e);
-      throw new ElasticsearchExporterException(errMsg, e);
+      return false;
     }
   }
 

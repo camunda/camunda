@@ -170,8 +170,6 @@ public class CamundaExporter implements Exporter {
       return;
     }
 
-    writer.addRecord(record);
-
     if (configuration.getIndex().shouldWaitForImporters() && !importersCompleted) {
       ensureCachedRecordsLessThanBulkSize(record);
 
@@ -184,6 +182,9 @@ public class CamundaExporter implements Exporter {
     if (writer.getBatchSize() == 0) {
       metrics.startFlushLatencyMeasurement();
     }
+
+    writer.addRecord(record);
+
     lastPosition = record.getPosition();
 
     if (shouldFlush()) {
