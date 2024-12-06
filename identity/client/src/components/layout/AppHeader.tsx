@@ -1,22 +1,18 @@
-import {C3Navigation} from "@camunda/camunda-composite-components";
-import {useGlobalRoutes} from "src/components/global/useGlobalRoutes";
-import {useNavigate} from "react-router";
-import {useApi} from "src/utility/api";
-import {checkLicense, License} from "src/utility/api/headers";
-import {baseUrl} from "src/configuration";
-import {getAuthentication} from "src/utility/api/authentication";
-import {useCallback} from "react";
-import {ArrowRight} from "@carbon/react/icons";
+import { C3Navigation } from "@camunda/camunda-composite-components";
+import { useGlobalRoutes } from "src/components/global/useGlobalRoutes";
+import { useNavigate } from "react-router";
+import { useApi } from "src/utility/api";
+import { checkLicense, License } from "src/utility/api/headers";
+import { baseUrl } from "src/configuration";
+import { getAuthentication } from "src/utility/api/authentication";
+import { ArrowRight } from "@carbon/react/icons";
+import { logout } from "src/utility/auth";
 
-const AppHeader = () => {
+const AppHeader: React.FC = () => {
   const routes = useGlobalRoutes();
   const navigate = useNavigate();
   const { data: license } = useApi(checkLicense);
   const { data: camundaUser } = useApi(getAuthentication);
-
-  const logout = useCallback(() => {
-    console.log("logout");
-  }, []);
 
   return (
     <C3Navigation
@@ -35,7 +31,7 @@ const AppHeader = () => {
         elements: routes.map((route) => ({
           ...route,
           routeProps: {
-            onClick: () => navigate(`${baseUrl}/${route.key}`),
+            onClick: () => navigate(baseUrl + route.key),
           },
         })),
         licenseTag: getLicenseTag(license),
@@ -78,7 +74,7 @@ const AppHeader = () => {
             },
           },
         ],
-        bottomElements: camundaUser?.canLogout
+        bottomElements: camundaUser
           ? [
               {
                 key: "logout",

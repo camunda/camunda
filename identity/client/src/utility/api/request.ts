@@ -1,3 +1,6 @@
+import { CSRF_REQUEST_HEADER, getCsrfToken } from "src/utility/csrf.ts";
+import { redirectToLogin } from "src/utility/auth";
+
 export type ApiResult<R> =
   | {
       data: R;
@@ -69,6 +72,8 @@ const apiRequest: <R, P>(
     headers["Content-Type"] = "application/json";
   }
 
+  headers[CSRF_REQUEST_HEADER] = getCsrfToken();
+
   try {
     const response = await fetch(
       requestUrl(baseUrl || "", url, !hasBody ? params : undefined),
@@ -77,10 +82,11 @@ const apiRequest: <R, P>(
         body,
         headers,
         credentials: "include",
+        redirect: "manual",
       },
     );
     if (response.status === 401) {
-      window.location.href = "/login";
+      redirectToLogin();
     }
     let data = null;
     try {

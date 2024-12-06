@@ -19,6 +19,7 @@
     "@camunda/camunda-composite-components": "0.11.0",
     "@carbon/react": "1.71.0",
     "i18next": "23.16.8",
+    "js-cookie": "3.0.5",
     "react": "18.3.1",
     "react-debounced": "1.1.2",
     "react-dom": "18.3.1",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@types/event-source-polyfill": "1.0.5",
+    "@types/js-cookie": "3.0.6",
     "@types/node": "22.10.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
