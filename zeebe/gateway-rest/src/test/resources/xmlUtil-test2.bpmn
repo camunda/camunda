@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_13gwn7q" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.4.0">
+  <bpmn:process id="parent_process_v1" name="Parent process v1" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_1a3emhl</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_1a3emhl" sourceRef="StartEvent_1" targetRef="taskX" />
+    <bpmn:callActivity id="call_activity" name="Call Activity">
+      <bpmn:extensionElements>
+        <zeebe:calledElement processId="child_process_v1" propagateAllChildVariables="false" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0ohshru</bpmn:incoming>
+      <bpmn:outgoing>Flow_1j9hrgw</bpmn:outgoing>
+    </bpmn:callActivity>
+    <bpmn:endEvent id="Event_1p0nsc7">
+      <bpmn:incoming>Flow_1pr3266</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_1j9hrgw" sourceRef="call_activity" targetRef="taskY" />
+    <bpmn:sequenceFlow id="Flow_0ohshru" sourceRef="taskX" targetRef="call_activity" />
+    <bpmn:manualTask id="taskX" name="TaskX">
+      <bpmn:incoming>Flow_1a3emhl</bpmn:incoming>
+      <bpmn:outgoing>Flow_0ohshru</bpmn:outgoing>
+    </bpmn:manualTask>
+    <bpmn:sequenceFlow id="Flow_1pr3266" sourceRef="taskY" targetRef="Event_1p0nsc7" />
+    <bpmn:manualTask id="taskY" name="TaskY">
+      <bpmn:incoming>Flow_1j9hrgw</bpmn:incoming>
+      <bpmn:outgoing>Flow_1pr3266</bpmn:outgoing>
+    </bpmn:manualTask>
+  </bpmn:process>
+</bpmn:definitions>
