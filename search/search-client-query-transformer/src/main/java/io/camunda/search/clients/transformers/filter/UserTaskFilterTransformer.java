@@ -72,13 +72,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
         .ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), f)));
 
     // Local Variable Query: Check if localVariable with specified varName and varValue exists
-    ofNullable(getLocalVariablesQuery(filter.localVariableFilters()))
-        // This condition won't work because the routing of localVariable is pointing to the Process Instance
-        // TDB - Open a bug in order to fix
-        //.ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.TASK.getType(), f)));
-
-        // Only ifPresent is already enough, once localVariable is the only child type of Task
-        .ifPresent(queries::add);
+    // No need validate parent as the localVariable is the only children from Task
+    ofNullable(getLocalVariablesQuery(filter.localVariableFilters())).ifPresent(queries::add);
 
     queries.add(exists("flowNodeInstanceId")); // Default to task
 
