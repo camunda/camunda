@@ -29,12 +29,18 @@ public class CamundaUser extends User {
   private Map<ClusterMetadata.AppName, String> c8Links = new HashMap<>();
   private boolean canLogout;
   private boolean apiUser;
+  private final String email;
 
   public CamundaUser(
-      final Long userKey, final String displayName, final String username, final String password) {
+      final Long userKey,
+      final String displayName,
+      final String username,
+      final String password,
+      final String email) {
     super(username, password, Collections.emptyList());
     this.userKey = userKey;
     this.displayName = displayName;
+    this.email = email;
     c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
   }
 
@@ -43,9 +49,19 @@ public class CamundaUser extends User {
       final String username,
       final String password,
       final List<String> roles) {
+    this(displayName, username, password, null, roles);
+  }
+
+  public CamundaUser(
+      final String displayName,
+      final String username,
+      final String password,
+      final String email,
+      final List<String> roles) {
     super(username, password, prepareAuthorities(roles));
     userKey = null;
     this.displayName = displayName;
+    this.email = email;
     c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
   }
 
@@ -54,6 +70,7 @@ public class CamundaUser extends User {
       final String displayName,
       final String username,
       final String password,
+      final String email,
       final List<String> roles,
       final List<String> authorizedApplications,
       final List<TenantDTO> tenants,
@@ -72,6 +89,7 @@ public class CamundaUser extends User {
     this.c8Links = Objects.requireNonNullElse(c8Links, Collections.emptyMap());
     this.canLogout = canLogout;
     this.apiUser = apiUser;
+    this.email = email;
   }
 
   public Long getUserKey() {
@@ -122,6 +140,10 @@ public class CamundaUser extends User {
     return apiUser;
   }
 
+  public String getEmail() {
+    return email;
+  }
+
   private static List<SimpleGrantedAuthority> prepareAuthorities(final List<String> roles) {
     return roles.stream().map(SimpleGrantedAuthority::new).toList();
   }
@@ -131,6 +153,7 @@ public class CamundaUser extends User {
     private String name;
     private String username;
     private String password;
+    private String email;
     private List<String> roles = List.of();
     private List<String> authorizedApplications = List.of();
     private List<TenantDTO> tenants = List.of();
@@ -163,6 +186,11 @@ public class CamundaUser extends User {
 
     public CamundaUserBuilder withPassword(final String password) {
       this.password = password;
+      return this;
+    }
+
+    public CamundaUserBuilder withEmail(final String email) {
+      this.email = email;
       return this;
     }
 
@@ -213,6 +241,7 @@ public class CamundaUser extends User {
           name,
           username,
           password,
+          email,
           roles,
           authorizedApplications,
           tenants,
