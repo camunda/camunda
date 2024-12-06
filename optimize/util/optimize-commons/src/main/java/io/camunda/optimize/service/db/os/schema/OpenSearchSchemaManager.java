@@ -563,7 +563,7 @@ public class OpenSearchSchemaManager
       updateDynamicSettingsAndMappings(osClient, mapping);
     }
     final List<IndexMappingCreator<Builder>> allDynamicMappings =
-        new MappingMetadataUtilOS(osClient)
+        new MappingMetadataUtilOS(osClient.documentBasedSearchClient())
             .getAllDynamicMappings(indexNameService.getIndexPrefix());
     for (final IndexMappingCreator<Builder> mapping : allDynamicMappings) {
       updateDynamicSettingsAndMappings(osClient, mapping);
