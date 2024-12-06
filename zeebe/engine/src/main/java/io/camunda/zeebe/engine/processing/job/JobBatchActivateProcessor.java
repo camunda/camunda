@@ -35,6 +35,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.ByteValue;
 import io.camunda.zeebe.util.Either;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 
@@ -84,8 +85,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final var record = command.getValue();
     // if all the provided tenantIds are not authorized, the command is rejected
     final var tenantIds = record.getTenantIds();
-    final var authorizedTenantIds = authorizationCheckBehavior.getAuthorizedTenantIds(command);
-    if (tenantIds.stream().noneMatch(authorizedTenantIds::contains)) {
+    final var authorizedTenantIds =
+        new HashSet<>(authorizationCheckBehavior.getAuthorizedTenantIds(command));
+    if (!authorizedTenantIds.containsAll(tenantIds)) {
       return false;
     }
     return record.getMaxJobsToActivate() > 0
@@ -130,8 +132,10 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
       rejectionType = RejectionType.INVALID_ARGUMENT;
       rejectionReason = String.format(format, "type", "present", "blank");
     } else {
-      rejectionType = RejectionType.NOT_FOUND;
-      rejectionReason = "No jobs found to activate";
+      rejectionType = RejectionType.UNAUTHORIZED;
+      rejectionReason =
+          "User is not authorized to activate jobs for tenants '%s'"
+              .formatted(value.getTenantIds());
     }
 
     rejectionWriter.appendRejection(record, rejectionType, rejectionReason);
