@@ -8,6 +8,8 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.clients.auth.DocumentAuthorizationQueryStrategy;
+import io.camunda.search.clients.core.SearchQueryRequest;
+import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
@@ -39,11 +41,16 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.SecurityContext;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.RoleIndex;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class SearchClients
     implements AuthorizationSearchClient,
@@ -81,6 +88,17 @@ public class SearchClients
     this.searchClient = searchClient;
     this.transformers = transformers;
     this.securityContext = securityContext;
+  }
+
+  private <T> SearchQueryResult<T> execute(
+      final TypedSearchQuery<?, ?> query, final Class<?> documentClass) {
+    final var executor =
+        new SearchClientBasedQueryExecutor(
+            searchClient,
+            transformers,
+            new DocumentAuthorizationQueryStrategy(this),
+            securityContext);
+    return executor.search(query, documentClass);
   }
 
   @Override
@@ -260,15 +278,42 @@ public class SearchClients
   }
 
   @Override
-  public SearchQueryResult<UserEntity> searchUsers(final UserQuery filter) {
-    final var executor =
-        new SearchClientBasedQueryExecutor(
-            searchClient,
-            transformers,
-            new DocumentAuthorizationQueryStrategy(this),
-            securityContext);
-    return executor.search(
-        filter, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
+  public SearchQueryResult<UserEntity> searchUsers(final UserQuery query) {
+    final var roleKey = query.filter().roleKey();
+    var effectiveUserQuery = query;
+    if (roleKey != null) {
+      final Set<Long> userKeys =
+          searchClient
+              .findAll(
+                  SearchQueryRequest.of(
+                      builder ->
+                          builder
+                              .index(List.of())
+                              .query(
+                                  SearchQuery.of(
+                                      q ->
+                                          q.term(
+                                              t ->
+                                                  t.field(RoleIndex.JOIN)
+                                                      .value(
+                                                          IdentityJoinRelationshipType.MEMBER
+                                                              .getType()))))),
+                  io.camunda.webapps.schema.entities.usermanagement.RoleEntity.class)
+              .stream()
+              .map(io.camunda.webapps.schema.entities.usermanagement.RoleEntity::getMemberKey)
+              .filter(
+                  userKey ->
+                      query.filter().keys() == null
+                          || query.filter().keys().isEmpty()
+                          || query.filter().keys().contains(userKey))
+              .collect(Collectors.toSet());
+      effectiveUserQuery =
+          query.toBuilder()
+              .filter(query.filter().toBuilder().roleKey(null).keys(userKeys).build())
+              .build();
+    }
+    return execute(
+        effectiveUserQuery, io.camunda.webapps.schema.entities.usermanagement.UserEntity.class);
   }
 
   @Override

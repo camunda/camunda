@@ -22,6 +22,10 @@ public record UserQuery(UserFilter filter, UserSort sort, SearchQueryPage page)
     return fn.apply(new Builder()).build();
   }
 
+  public Builder toBuilder() {
+    return new Builder().filter(filter).sort(sort).page(page);
+  }
+
   public static final class Builder extends SearchQueryBase.AbstractQueryBuilder<Builder>
       implements TypedSearchQueryBuilder<UserQuery, UserQuery.Builder, UserFilter, UserSort> {
     private static final UserFilter EMPTY_FILTER = FilterBuilders.user().build();
