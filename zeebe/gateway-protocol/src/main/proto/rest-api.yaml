@@ -5611,6 +5611,12 @@ components:
           nullable: true
         corrections:
           $ref: "#/components/schemas/JobResultCorrections"
+        correctedAttributes:
+          type: array
+          description: List of the attributes that were corrected by the worker.
+          items:
+            type: string
+          nullable: true
     JobResultCorrections:
       type: object
       description: Attributes that were corrected by the worker. Others are considered not corrected.

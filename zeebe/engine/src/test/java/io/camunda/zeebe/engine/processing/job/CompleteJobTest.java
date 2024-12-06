@@ -277,7 +277,12 @@ public final class CompleteJobTest {
     corrections.setCandidateGroups(List.of("groupA", "groupB"));
     corrections.setPriority(20);
 
-    final JobResult result = new JobResult().setCorrections(corrections);
+    final List<String> correctedAttributes =
+        List.of(
+            "assignee", "dueDate", "followUpDate", "candidateUsers", "candidateGroups", "priority");
+
+    final JobResult result =
+        new JobResult().setCorrections(corrections).setCorrectedAttributes(correctedAttributes);
 
     // when
     final Record<JobRecordValue> completedRecord =
@@ -307,7 +312,11 @@ public final class CompleteJobTest {
     corrections.setFollowUpDate("2025-06-23T01:02:03+01:00");
     corrections.setPriority(20);
 
-    final JobResult result = new JobResult().setCorrections(corrections);
+    final List<String> correctedAttributes =
+        List.of("assignee", "dueDate", "followUpDate", "priority");
+
+    final JobResult result =
+        new JobResult().setCorrections(corrections).setCorrectedAttributes(correctedAttributes);
 
     // when
     final Record<JobRecordValue> completedRecord =
