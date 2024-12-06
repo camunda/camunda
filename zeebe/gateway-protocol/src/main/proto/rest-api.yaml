@@ -685,6 +685,89 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /tenants/{tenantKey}/groups/{groupKey}:
+    put:
+      tags:
+        - Tenant
+      operationId: assignGroupToTenant
+      summary: Assign a group to a tenant
+      description: Assign a single group to a specified tenant.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: groupKey
+          in: path
+          required: true
+          description: The unique identifier of the group.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The group was successfully assigned to the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or group was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags:
+        - Tenant
+      operationId: removeGroupFromTenant
+      summary: Remove a group from a tenant
+      description: Removes a single group from a specified tenant without deleting the group.
+      parameters:
+        - name: tenantKey
+          in: path
+          required: true
+          description: The unique identifier of the tenant.
+          schema:
+            type: integer
+            format: int64
+        - name: groupKey
+          in: path
+          required: true
+          description: The unique identifier of the group.
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "202":
+          description: The group was successfully removed from the tenant.
+        "400":
+          description: The provided data is not valid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Not found. The tenant or group was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /tenants/search:
     post:
       tags:
