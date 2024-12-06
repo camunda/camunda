@@ -80,7 +80,9 @@ public final class VariableDocumentUpdateProcessor
                   authRequest.getResourceType(),
                   "BPMN process id '%s'".formatted(scope.getValue().getBpmnProcessId()))
               : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "update variables", scope.getValue().getTenantId());
+                  "update variables for element",
+                  scope.getValue().getProcessInstanceKey(),
+                  "such element");
       writers.rejection().appendRejection(record, rejectionType, errorMessage);
       writers.response().writeRejectionOnCommand(record, rejectionType, errorMessage);
       return;

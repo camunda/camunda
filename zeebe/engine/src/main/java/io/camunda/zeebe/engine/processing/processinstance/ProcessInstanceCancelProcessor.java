@@ -107,7 +107,9 @@ public final class ProcessInstanceCancelProcessor
                   request.getResourceType(),
                   "BPMN process id '%s'".formatted(elementInstance.getValue().getBpmnProcessId()))
               : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "cancel process instance", elementInstance.getValue().getTenantId());
+                  "cancel a process instance",
+                  elementInstance.getValue().getProcessInstanceKey(),
+                  "such process");
       rejectionWriter.appendRejection(command, rejectionType, errorMessage);
       responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       return false;

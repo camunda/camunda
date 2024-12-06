@@ -136,7 +136,9 @@ public class ProcessInstanceMigrationMigrateProcessor
                   authorizationRequest.getResourceType(),
                   "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()))
               : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "migrate process instance", processInstance.getValue().getTenantId());
+                  "migrate a process instance",
+                  processInstance.getValue().getProcessInstanceKey(),
+                  "such process instance");
       rejectionWriter.appendRejection(command, rejectionType, errorMessage);
       responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       return;

@@ -84,7 +84,7 @@ public class DecisionEvaluationEvaluteProcessor
                     authRequest.getResourceType(),
                     "decision id '%s'".formatted(decisionId))
                 : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                    "evaluate decision", record.getTenantId());
+                    "evaluate a decision", record.getDecisionKey(), "such decision");
         responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
         rejectionWriter.appendRejection(command, rejectionType, errorMessage);
         return;

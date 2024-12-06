@@ -34,7 +34,7 @@ public final class AuthorizationCheckBehavior {
   public static final String UNAUTHORIZED_ERROR_MESSAGE_WITH_RESOURCE =
       UNAUTHORIZED_ERROR_MESSAGE + " with %s";
   public static final String NOT_FOUND_ERROR_MESSAGE =
-      "Expected to %s for tenant '%s', but no tenant found";
+      "Expected to %s with key '%s', but no %s was found";
   public static final String WILDCARD_PERMISSION = "*";
   private final AuthorizationState authorizationState;
   private final UserState userState;

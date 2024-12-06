@@ -161,7 +161,9 @@ public final class ProcessInstanceCreationCreateProcessor
                 request.getResourceType(),
                 "BPMN process id '%s'".formatted(processId))
             : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                "create process instance", command.getValue().getTenantId());
+                "create an instance of process",
+                command.getValue().getProcessDefinitionKey(),
+                "such process");
     return Either.left(new Rejection(rejectionType, errorMessage));
   }
 

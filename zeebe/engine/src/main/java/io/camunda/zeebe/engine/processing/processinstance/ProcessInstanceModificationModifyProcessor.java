@@ -207,7 +207,9 @@ public final class ProcessInstanceModificationModifyProcessor
                   authRequest.getResourceType(),
                   "BPMN process id '%s'".formatted(processInstance.getValue().getBpmnProcessId()))
               : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "create deployment", processInstance.getValue().getTenantId());
+                  "modify a process instance",
+                  processInstance.getValue().getProcessInstanceKey(),
+                  "such process instance");
       responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       rejectionWriter.appendRejection(command, rejectionType, errorMessage);
       return;

@@ -102,8 +102,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
           RejectionType.UNAUTHORIZED.equals(rejectionType)
               ? UNAUTHORIZED_ERROR_MESSAGE.formatted(
                   authRequest.getPermissionType(), authRequest.getResourceType())
-              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "publish message", command.getValue().getTenantId());
+              : "Expected to publish a new message for tenant '%s', but no such tenant was found"
+                  .formatted(command.getValue().getTenantId());
       rejectionWriter.appendRejection(command, rejectionType, errorMessage);
       responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       return;

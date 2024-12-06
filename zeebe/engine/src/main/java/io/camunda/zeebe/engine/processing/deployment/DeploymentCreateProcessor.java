@@ -137,8 +137,8 @@ public final class DeploymentCreateProcessor
           RejectionType.UNAUTHORIZED.equals(rejectionType)
               ? UNAUTHORIZED_ERROR_MESSAGE.formatted(
                   authorizationRequest.getPermissionType(), authorizationRequest.getResourceType())
-              : AuthorizationCheckBehavior.NOT_FOUND_ERROR_MESSAGE.formatted(
-                  "create deployment", command.getValue().getTenantId());
+              : "Expected to create a deployment for tenant '%s', but no such tenant was found"
+                  .formatted(command.getValue().getTenantId());
       rejectionWriter.appendRejection(command, rejectionType, errorMessage);
       responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       return;
