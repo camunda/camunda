@@ -126,13 +126,21 @@ public final class DeploymentCreateProcessor
   public void processNewCommand(final TypedRecord<DeploymentRecord> command) {
     final var authorizationRequest =
         new AuthorizationRequest(
-            command, AuthorizationResourceType.DEPLOYMENT, PermissionType.CREATE);
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
-      final var errorMessage =
-          UNAUTHORIZED_ERROR_MESSAGE.formatted(
-              authorizationRequest.getPermissionType(), authorizationRequest.getResourceType());
-      rejectionWriter.appendRejection(command, RejectionType.UNAUTHORIZED, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.UNAUTHORIZED, errorMessage);
+            command,
+            AuthorizationResourceType.DEPLOYMENT,
+            PermissionType.CREATE,
+            command.getValue().getTenantId());
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejectionType = isAuthorized.getLeft();
+      final String errorMessage =
+          RejectionType.UNAUTHORIZED.equals(rejectionType)
+              ? UNAUTHORIZED_ERROR_MESSAGE.formatted(
+                  authorizationRequest.getPermissionType(), authorizationRequest.getResourceType())
+              : "Expected to create a deployment for tenant '%s', but no such tenant was found"
+                  .formatted(command.getValue().getTenantId());
+      rejectionWriter.appendRejection(command, rejectionType, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, rejectionType, errorMessage);
       return;
     }
 

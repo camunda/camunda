@@ -27,7 +27,6 @@ public final class ContextInspectingInterceptor implements ServerInterceptor {
       final Metadata headers,
       final ServerCallHandler<ReqT, RespT> next) {
     CONTEXT_QUERY_API.set(InterceptorUtil.getQueryApiKey().get());
-    CONTEXT_TENANT_IDS.set(InterceptorUtil.getAuthorizedTenantsKey().get());
     return next.startCall(call, headers);
   }
 }

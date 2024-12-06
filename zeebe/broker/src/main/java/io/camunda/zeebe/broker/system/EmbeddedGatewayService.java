@@ -40,7 +40,6 @@ public final class EmbeddedGatewayService implements AutoCloseable {
         new Gateway(
             shutdownTimeout,
             configuration.getGateway(),
-            identityConfiguration,
             brokerClient,
             actorScheduler,
             jobStreamClient.streamer());

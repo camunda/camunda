@@ -78,7 +78,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.UPDATE)
             .addResourceId(persistedTenant.get().getTenantId());
-    if (!authCheckBehavior.isAuthorized(authorizationRequest)) {
+    if (authCheckBehavior.isAuthorized(authorizationRequest).isLeft()) {
       rejectCommandWithUnauthorizedError(
           command, authorizationRequest, persistedTenant.get().getTenantId());
       return;

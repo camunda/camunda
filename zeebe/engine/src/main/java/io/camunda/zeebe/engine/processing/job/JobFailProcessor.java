@@ -88,7 +88,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
     this.authCheckBehavior = authCheckBehavior;
     preconditionChecker =
         new JobCommandPreconditionChecker(
-            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED));
+            jobState, "fail", List.of(State.ACTIVATABLE, State.ACTIVATED), authCheckBehavior);
     this.keyGenerator = keyGenerator;
     this.jobBackoffChecker = jobBackoffChecker;
     this.jobMetrics = jobMetrics;
@@ -208,7 +208,7 @@ public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
                 PermissionType.UPDATE_PROCESS_INSTANCE)
             .addResourceId(job.getBpmnProcessId());
 
-    if (authCheckBehavior.isAuthorized(request)) {
+    if (authCheckBehavior.isAuthorized(request).isRight()) {
       return Either.right(job);
     }
 

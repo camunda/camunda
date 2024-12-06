@@ -132,9 +132,6 @@ public class JwtAuthorizationDecoder
             .withSubject(subject)
             .ignoreIssuedAt();
 
-    for (final String claim : claims) {
-      verificationBuilder.withClaimPresence(claim);
-    }
     final JWTVerifier jwtVerification = verificationBuilder.build();
 
     try {
