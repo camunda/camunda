@@ -27,6 +27,12 @@ import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
+<<<<<<< HEAD
+=======
+import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
+import org.slf4j.Logger;
+>>>>>>> b0829f25 (fix: adding a check to avoid misleading log message)
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -77,6 +83,7 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
             .map(Result::dashboardId)
             .toList();
 
+<<<<<<< HEAD
     if (!dashboardIdsToBeDeleted.isEmpty()) {
       dashboardIdsToBeDeleted.forEach(
           id ->
@@ -96,6 +103,35 @@ public class InstantDashboardMetadataWriterOS implements InstantDashboardMetadat
               dashboardIdsToBeDeleted));
     }
 
+=======
+    final BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
+    LOG.debug(
+        "Deleting [{}] instant dashboard documents by id with bulk request.",
+        searchResponse.hits().hits().size());
+    final List<BulkOperation> bulkOperations = new ArrayList<>();
+    searchResponse
+        .hits()
+        .hits()
+        .forEach(
+            hit -> {
+              assert hit.source() != null;
+              dashboardIdsToBeDeleted.add(hit.source().getDashboardId());
+              bulkOperations.add(
+                  BulkOperation.of(
+                      o ->
+                          o.delete(
+                              OptimizeDeleteOperationBuilderOS.of(
+                                  d ->
+                                      d.optimizeIndex(osClient, INSTANT_DASHBOARD_INDEX_NAME)
+                                          .id(hit.id())))));
+            });
+
+    if (!bulkOperations.isEmpty()) {
+      bulkRequestBuilder.operations(bulkOperations);
+      osClient.bulk(
+          bulkRequestBuilder, "Some errors occurred while deleting outdated instant dashboards.");
+    }
+>>>>>>> b0829f25 (fix: adding a check to avoid misleading log message)
     return dashboardIdsToBeDeleted;
   }
 }
