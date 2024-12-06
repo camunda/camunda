@@ -68,8 +68,17 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
 
     // Process Instance Variable Query: Check if processVariable  with specified varName and
     // varValue exists
-    ofNullable(getProcessVariablesQuery(filter.processInstanceVariableFilter()))
+    ofNullable(getProcessInstanceVariablesQuery(filter.processInstanceVariableFilter()))
         .ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.PROCESS.getType(), f)));
+
+    // Local Variable Query: Check if localVariable with specified varName and varValue exists
+    ofNullable(getLocalVariablesQuery(filter.localVariableFilters()))
+        // This condition won't work because the routing of localVariable is pointing to the Process Instance
+        // TDB - Open a bug in order to fix
+        //.ifPresent(f -> queries.add(hasParentQuery(TaskJoinRelationshipType.TASK.getType(), f)));
+
+        // Only ifPresent is already enough, once localVariable is the only child type of Task
+        .ifPresent(queries::add);
 
     queries.add(exists("flowNodeInstanceId")); // Default to task
 
@@ -129,7 +138,8 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return stringTerms(FLOW_NODE_BPMN_ID, taskDefinitionId);
   }
 
-  private SearchQuery getProcessVariablesQuery(final List<VariableValueFilter> variableFilters) {
+  private SearchQuery getProcessInstanceVariablesQuery(
+      final List<VariableValueFilter> variableFilters) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var transformer = getVariableValueFilterTransformer();
       final var queries =
@@ -142,7 +152,7 @@ public class UserTaskFilterTransformer implements FilterTransformer<UserTaskFilt
     return null;
   }
 
-  private SearchQuery getTaskVariablesQuery(final List<VariableValueFilter> variableFilters) {
+  private SearchQuery getLocalVariablesQuery(final List<VariableValueFilter> variableFilters) {
     if (variableFilters != null && !variableFilters.isEmpty()) {
       final var transformer = getVariableValueFilterTransformer();
 

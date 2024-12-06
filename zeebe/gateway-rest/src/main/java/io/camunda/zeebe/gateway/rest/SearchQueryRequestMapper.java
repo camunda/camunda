@@ -556,6 +556,9 @@ public final class SearchQueryRequestMapper {
                   .filter(variables -> !variables.isEmpty())
                   .ifPresent(
                       vars -> builder.processInstanceVariables(toVariableValueFilters(vars)));
+              Optional.ofNullable(f.getLocalVariables())
+                  .filter(variables -> !variables.isEmpty())
+                  .ifPresent(vars -> builder.localVariables(toVariableValueFilters(vars)));
             });
 
     return builder.build();
