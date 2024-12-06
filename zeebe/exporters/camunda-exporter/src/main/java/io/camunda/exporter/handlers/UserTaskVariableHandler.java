@@ -56,8 +56,8 @@ public class UserTaskVariableHandler
     final String id =
         ID_PATTERN.formatted(record.getValue().getScopeKey(), record.getValue().getName());
 
-    /* Process Variable */
-    if (record.getValue().getScopeKey() == record.getValue().getProcessInstanceKey()) {
+    /* Process Instance Variable */
+    if (isProcessInstanceVariable(record.getValue())) {
       return List.of(id);
     }
     /*
@@ -94,16 +94,16 @@ public class UserTaskVariableHandler
       entity.setIsTruncated(false);
     }
 
-    final TaskJoinRelationship joinRelationship = new TaskJoinRelationship();
-    final boolean isLocalVariable = isLocalVariable(entity);
+    final boolean isProcessInstanceVariable = isProcessInstanceVariable(record.getValue());
 
+    final TaskJoinRelationship joinRelationship = new TaskJoinRelationship();
     joinRelationship.setParent(
-        isLocalVariable ? entity.getScopeKey() : entity.getProcessInstanceId());
+        isProcessInstanceVariable ? entity.getProcessInstanceId() : entity.getScopeKey());
 
     joinRelationship.setName(
-        isLocalVariable
-            ? TaskJoinRelationshipType.LOCAL_VARIABLE.getType()
-            : TaskJoinRelationshipType.PROCESS_VARIABLE.getType());
+        isProcessInstanceVariable
+            ? TaskJoinRelationshipType.PROCESS_VARIABLE.getType()
+            : TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
     entity.setJoin(joinRelationship);
   }
 
@@ -128,7 +128,7 @@ public class UserTaskVariableHandler
     return indexName;
   }
 
-  private boolean isLocalVariable(final TaskVariableEntity entity) {
-    return entity.getId().endsWith(TaskTemplate.LOCAL_VARIABLE_SUFFIX);
+  private boolean isProcessInstanceVariable(final VariableRecordValue recordValue) {
+    return recordValue.getScopeKey() == recordValue.getProcessInstanceKey();
   }
 }
