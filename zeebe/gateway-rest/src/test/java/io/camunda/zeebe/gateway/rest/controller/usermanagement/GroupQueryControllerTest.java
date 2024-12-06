@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,8 +24,12 @@ import io.camunda.service.GroupServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -32,7 +37,35 @@ import org.springframework.http.MediaType;
 @WebMvcTest(value = GroupQueryController.class, properties = "camunda.rest.query.enabled=true")
 public class GroupQueryControllerTest extends RestControllerTest {
 
+  static final String EXPECTED_SEARCH_RESPONSE =
+      """
+      {
+        "items":[
+          {
+            "key":111,
+            "name":"Group 1",
+            "assignedMemberKeys":[]
+          },
+          {
+            "key":222,
+            "name":"Group 2",
+            "assignedMemberKeys":[]
+          },
+          {
+            "key":333,
+            "name":"Group 3",
+            "assignedMemberKeys":[]
+          }
+        ],
+        "page":{
+          "totalItems":3,
+          "firstSortValues":[],
+          "lastSortValues":[]
+        }
+      }
+      """;
   private static final String GROUP_BASE_URL = "/v2/groups";
+  private static final String GROUP_SEARCH_URL = GROUP_BASE_URL + "/search";
 
   @MockBean private GroupServices groupServices;
 
@@ -125,7 +158,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri("%s/search".formatted(GROUP_BASE_URL))
+        .uri(GROUP_SEARCH_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue("{}")
@@ -193,18 +226,134 @@ public class GroupQueryControllerTest extends RestControllerTest {
             """
             {
               "sort":  [{"field": "name", "order":  "asc"}],
-              "page":  {"from":  20, "limit":  10}
+              "page":  {"from":  20, "limit":  2}
             }
-             """)
+            """)
         .exchange()
         .expectStatus()
-        .isOk();
+        .isOk()
+        .expectBody()
+        .json(EXPECTED_SEARCH_RESPONSE);
 
     verify(groupServices)
         .search(
             new GroupQuery.Builder()
                 .sort(GroupSort.of(builder -> builder.name().asc()))
-                .page(SearchQueryPage.of(builder -> builder.from(20).size(10)))
+                .page(SearchQueryPage.of(builder -> builder.from(20).size(2)))
                 .build());
+  }
+
+  @Test
+  void shouldFailAnInvalidSearchQuery() {}
+
+  @ParameterizedTest
+  @MethodSource("invalidGroupSearchQueries")
+  void shouldInvalidateAuthorizationsSearchQueryWithBadQueries(
+      final String request, final String expectedResponse) {
+    // when / then
+    webClient
+        .post()
+        .uri(GROUP_SEARCH_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedResponse);
+
+    verify(groupServices, never()).search(any(GroupQuery.class));
+  }
+
+  public static Stream<Arguments> invalidGroupSearchQueries() {
+    return invalidGroupSearchQueriesForEndpoint(GROUP_SEARCH_URL);
+  }
+
+  private static Stream<Arguments> invalidGroupSearchQueriesForEndpoint(final String endpoint) {
+    return Stream.of(
+        Arguments.of(
+            // invalid sort order
+            """
+                {
+                    "sort": [
+                        {
+                            "field": "groupKey",
+                            "order": "dsc"
+                        }
+                    ]
+                }""",
+            String.format(
+                """
+                    {
+                      "type": "about:blank",
+                      "title": "INVALID_ARGUMENT",
+                      "status": 400,
+                      "detail": "Unknown sortOrder: dsc.",
+                      "instance": "%s"
+                    }""",
+                endpoint)),
+        Arguments.of(
+            // unknown field
+            """
+                {
+                    "sort": [
+                        {
+                            "field": "unknownField",
+                            "order": "asc"
+                        }
+                    ]
+                }""",
+            String.format(
+                """
+                    {
+                      "type": "about:blank",
+                      "title": "INVALID_ARGUMENT",
+                      "status": 400,
+                      "detail": "Unknown sortBy: unknownField.",
+                      "instance": "%s"
+                    }""",
+                endpoint)),
+        Arguments.of(
+            // missing sort field
+            """
+                {
+                    "sort": [
+                        {
+                            "order": "asc"
+                        }
+                    ]
+                }""",
+            String.format(
+                """
+                    {
+                      "type": "about:blank",
+                      "title": "INVALID_ARGUMENT",
+                      "status": 400,
+                      "detail": "Sort field must not be null.",
+                      "instance": "%s"
+                    }""",
+                endpoint)),
+        Arguments.of(
+            // conflicting pagination
+            """
+                {
+                    "page": {
+                        "searchAfter": ["a"],
+                        "searchBefore": ["b"]
+                    }
+                }""",
+            String.format(
+                """
+                    {
+                      "type": "about:blank",
+                      "title": "INVALID_ARGUMENT",
+                      "status": 400,
+                      "detail": "Both searchAfter and searchBefore cannot be set at the same time.",
+                      "instance": "%s"
+                    }""",
+                endpoint)));
   }
 }
