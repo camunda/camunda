@@ -107,10 +107,10 @@ public final class AuthorizationCheckBehavior {
           getUserAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType)
               .collect(Collectors.toSet());
       case ROLE ->
-          getRoleAuthorizedResourceIdentifiers(List.of(ownerKey), resourceType, permissionType)
+          getAuthorizedResourceIdentifiersForOwners(List.of(ownerKey), resourceType, permissionType)
               .collect(Collectors.toSet());
       case GROUP ->
-          getGroupAuthorizedResourceIdentifiers(List.of(ownerKey), resourceType, permissionType)
+          getAuthorizedResourceIdentifiersForOwners(List.of(ownerKey), resourceType, permissionType)
               .collect(Collectors.toSet());
       // TODO add MAPPING
       default -> new HashSet<>();
@@ -133,37 +133,26 @@ public final class AuthorizationCheckBehavior {
         authorizationState.getResourceIdentifiers(userKey, resourceType, permissionType);
     // Get resource identifiers for the user's roles
     final var roleAuthorizedResourceIdentifiers =
-        getRoleAuthorizedResourceIdentifiers(user.getRoleKeysList(), resourceType, permissionType);
+        getAuthorizedResourceIdentifiersForOwners(
+            user.getRoleKeysList(), resourceType, permissionType);
     // Get resource identifiers for the user's groups
     final var groupAuthorizedResourceIdentifiers =
-        getGroupAuthorizedResourceIdentifiers(
+        getAuthorizedResourceIdentifiersForOwners(
             user.getGroupKeysList(), resourceType, permissionType);
     return Stream.concat(
         userAuthorizedResourceIdentifiers.stream(),
         Stream.concat(roleAuthorizedResourceIdentifiers, groupAuthorizedResourceIdentifiers));
   }
 
-  private Stream<String> getRoleAuthorizedResourceIdentifiers(
-      final List<Long> roleKeys,
+  private Stream<String> getAuthorizedResourceIdentifiersForOwners(
+      final List<Long> ownerKeys,
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
-    return roleKeys.stream()
+    return ownerKeys.stream()
         .flatMap(
-            roleKey ->
+            ownerKey ->
                 authorizationState
-                    .getResourceIdentifiers(roleKey, resourceType, permissionType)
-                    .stream());
-  }
-
-  private Stream<String> getGroupAuthorizedResourceIdentifiers(
-      final List<Long> groupKeys,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType) {
-    return groupKeys.stream()
-        .flatMap(
-            groupKey ->
-                authorizationState
-                    .getResourceIdentifiers(groupKey, resourceType, permissionType)
+                    .getResourceIdentifiers(ownerKey, resourceType, permissionType)
                     .stream());
   }
 
