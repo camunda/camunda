@@ -83,7 +83,7 @@ public final class AuthorizationCheckBehavior {
         (Long) request.getCommand().getAuthorizations().get(Authorization.AUTHORIZED_USER_KEY));
   }
 
-  public Set<String> getAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
+  public Set<String> getAllAuthorizedResourceIdentifiers(final AuthorizationRequest request) {
     if (!securityConfig.getAuthorizations().isEnabled()) {
       return Set.of(WILDCARD_PERMISSION);
     }
@@ -97,7 +97,24 @@ public final class AuthorizationCheckBehavior {
         .collect(Collectors.toSet());
   }
 
-  public Set<String> getAuthorizedResourceIdentifiers(
+  /**
+   * Get direct authorized resource identifiers for a given owner, resource type and permission
+   * type. This does not include inherited authorizations, for example authorizations for users from
+   * assigned roles or groups.
+   */
+  public Set<String> getDirectAuthorizedResourceIdentifiers(
+      final long ownerKey,
+      final AuthorizationResourceType resourceType,
+      final PermissionType permissionType) {
+    return authorizationState.getResourceIdentifiers(ownerKey, resourceType, permissionType);
+  }
+
+  /**
+   * Get all authorized resource identifiers for a given owner, resource type and permission type.
+   * This includes direct authorizations and inherited authorizations, for example authorizations
+   * for users from assigned roles or groups.
+   */
+  public Set<String> getAllAuthorizedResourceIdentifiers(
       final long ownerKey,
       final AuthorizationOwnerType ownerType,
       final AuthorizationResourceType resourceType,
@@ -106,12 +123,9 @@ public final class AuthorizationCheckBehavior {
       case USER ->
           getUserAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType)
               .collect(Collectors.toSet());
-      case ROLE ->
-          getAuthorizedResourceIdentifiersForOwners(List.of(ownerKey), resourceType, permissionType)
-              .collect(Collectors.toSet());
-      case GROUP ->
-          getAuthorizedResourceIdentifiersForOwners(List.of(ownerKey), resourceType, permissionType)
-              .collect(Collectors.toSet());
+      case ROLE, GROUP ->
+          // Roles and groups can only have direct authorizations
+          getDirectAuthorizedResourceIdentifiers(ownerKey, resourceType, permissionType);
       // TODO add MAPPING
       default -> new HashSet<>();
     };
