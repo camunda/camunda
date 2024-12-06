@@ -174,7 +174,8 @@ public class UserTaskIT {
   }
 
   @TestTemplate
-  public void shouldFindUserTaskByProcessInstanceVariableName(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindUserTaskByProcessInstanceVariableName(
+      final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     final UserTaskDbModel randomizedUserTask = UserTaskFixtures.createRandomized();
@@ -209,7 +210,8 @@ public class UserTaskIT {
   }
 
   @TestTemplate
-  public void shouldFindUserTaskByLocalVariableName(final CamundaRdbmsTestApplication testApplication) {
+  public void shouldFindUserTaskByLocalVariableName(
+      final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
     final UserTaskDbModel randomizedUserTask = UserTaskFixtures.createRandomized();
