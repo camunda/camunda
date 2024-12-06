@@ -91,6 +91,7 @@ public class CamundaUserDetailsService implements UserDetailsService {
         .withAuthorizedApplications(authorizedApplications)
         .withRoles(roles)
         .withTenants(tenants)
+        .withCanLogout(true)
         .build();
   }
 }

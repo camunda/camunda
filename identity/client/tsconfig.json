@@ -21,7 +21,8 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "src/*": ["./src/*"]
+      "src/*": ["./src/*"],
+      "react": [ "./node_modules/@types/react" ] // https://github.com/facebook/react/issues/24304#issuecomment-1111184798
     }
   },
   "include": ["src"],

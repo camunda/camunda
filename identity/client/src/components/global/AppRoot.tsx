@@ -59,7 +59,11 @@ const GridMainContent = styled.div`
   grid-area: 1 / 1 / 1 / 4;
 `;
 
-const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
+interface Props {
+  children?: ReactNode;
+}
+
+const AppContent: FC<Props> = ({ children }) => {
   return (
     <>
       <GridHeader>
@@ -72,13 +76,15 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
   );
 };
 
-const AppRoot: FC<{ children?: ReactNode }> = ({ children }) => (
-  <AppRootWrapper>
-    <ErrorBoundary>
-      <GlobalStyle />
-      <AppContent>{children}</AppContent>
-    </ErrorBoundary>
-  </AppRootWrapper>
-);
+const AppRoot: FC<{ children?: ReactNode }> = ({ children }) => {
+  return (
+    <AppRootWrapper>
+      <ErrorBoundary>
+        <GlobalStyle />
+        <AppContent>{children}</AppContent>
+      </ErrorBoundary>
+    </AppRootWrapper>
+  );
+};
 
 export default AppRoot;

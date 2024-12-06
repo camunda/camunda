@@ -16,6 +16,12 @@ import io.camunda.service.AuthorizationServices;
 import io.camunda.service.RoleServices;
 import io.camunda.service.TenantServices;
 import io.camunda.service.UserServices;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -24,13 +30,23 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
+import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
+import org.springframework.util.StringUtils;
+import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -41,8 +57,8 @@ public class WebSecurityConfig {
       new String[] {
         "/login",
         "/logout",
-        // these are required for login
-        "/identity/assets/**",
+        // these are handled by the frontend
+        "/identity/**",
         // endpoint for failure forwarding
         "/error",
         // all actuator endpoints
@@ -52,6 +68,8 @@ public class WebSecurityConfig {
         "/health",
         "/startup"
       };
+  public static final String CSRF_TOKEN_HEADER = "X-CSRF-Token";
+
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
 
   @Bean
@@ -111,13 +129,55 @@ public class WebSecurityConfig {
       final HttpSecurity httpSecurity, final AuthFailureHandler authFailureHandler)
       throws Exception {
     LOG.info("Configuring basic auth login");
+    final var cookieCsrfTokenRepository = new CookieCsrfTokenRepository();
+    cookieCsrfTokenRepository.setHeaderName(CSRF_TOKEN_HEADER);
+    cookieCsrfTokenRepository.setCookieCustomizer(
+        responseCookieBuilder -> responseCookieBuilder.httpOnly(false));
     return baseHttpSecurity(httpSecurity, authFailureHandler)
         // .httpBasic(withDefaults())
         .formLogin(
-            formLoginConfigurer -> {
-              formLoginConfigurer.loginPage("/login"); // .loginProcessingUrl("/login");
-            })
-        .logout((logout) -> logout.logoutSuccessUrl("/"));
+            formLogin ->
+                formLogin
+                    .loginProcessingUrl("/login")
+                    .failureHandler(authFailureHandler)
+                    .successHandler(this::genericSuccessHandler))
+        .logout(
+            (logout) ->
+                logout.logoutUrl("/logout").logoutSuccessHandler(this::genericSuccessHandler))
+        .exceptionHandling(
+            exceptionHandling ->
+                exceptionHandling
+                    .authenticationEntryPoint(authFailureHandler)
+                    .accessDeniedHandler(authFailureHandler))
+        .addFilterAfter(
+            new OncePerRequestFilter() {
+              @Override
+              protected void doFilterInternal(
+                  final HttpServletRequest request,
+                  final HttpServletResponse response,
+                  final FilterChain filterChain)
+                  throws ServletException, IOException {
+                final var existingToken = cookieCsrfTokenRepository.loadToken(request);
+                if (existingToken == null) {
+                  final var token = cookieCsrfTokenRepository.generateToken(request);
+                  cookieCsrfTokenRepository.saveToken(token, request, response);
+                }
+                filterChain.doFilter(request, response);
+              }
+            },
+            CsrfFilter.class)
+        .csrf(
+            csrfConfigurer ->
+                csrfConfigurer
+                    .csrfTokenRepository(cookieCsrfTokenRepository)
+                    .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()));
+  }
+
+  private void genericSuccessHandler(
+      final HttpServletRequest request,
+      final HttpServletResponse response,
+      final Authentication authentication) {
+    response.setStatus(HttpStatus.NO_CONTENT.value());
   }
 
   private HttpSecurity baseHttpSecurity(
@@ -154,5 +214,27 @@ public class WebSecurityConfig {
   public FilterRegistrationBean<TenantRequestAttributeFilter>
       tenantRequestAttributeFilterRegistration(final MultiTenancyConfiguration configuration) {
     return new FilterRegistrationBean<>(new TenantRequestAttributeFilter(configuration));
+  }
+
+  final class SpaCsrfTokenRequestHandler implements CsrfTokenRequestHandler {
+    private final CsrfTokenRequestHandler plain = new CsrfTokenRequestAttributeHandler();
+    private final CsrfTokenRequestHandler xor = new XorCsrfTokenRequestAttributeHandler();
+
+    @Override
+    public void handle(
+        final HttpServletRequest request,
+        final HttpServletResponse response,
+        final Supplier<CsrfToken> csrfToken) {
+      xor.handle(request, response, csrfToken);
+      csrfToken.get();
+    }
+
+    @Override
+    public String resolveCsrfTokenValue(
+        final HttpServletRequest request, final CsrfToken csrfToken) {
+      final String headerValue = request.getHeader(csrfToken.getHeaderName());
+      return (StringUtils.hasText(headerValue) ? plain : xor)
+          .resolveCsrfTokenValue(request, csrfToken);
+    }
   }
 }
