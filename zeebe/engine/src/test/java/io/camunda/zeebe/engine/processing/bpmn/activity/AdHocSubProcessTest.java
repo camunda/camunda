@@ -218,6 +218,43 @@ public final class AdHocSubProcessTest {
   }
 
   @Test
+  public void shouldCompleteAdHocSubProcess() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("activateElements");
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A", "C"))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple("A", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple("C", ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(AD_HOC_SUB_PROCESS_ELEMENT_ID, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
   public void shouldApplyInputMappings() {
     // given
     final BpmnModelInstance process =
@@ -272,6 +309,54 @@ public final class AdHocSubProcessTest {
   }
 
   @Test
+  public void shouldApplyOutputMappings() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess
+                  .zeebeInputExpression("[]", "result")
+                  .zeebeActiveElementsCollectionExpression("activateElements")
+                  .zeebeOutputExpression("result", "adHocResult");
+
+              adHocSubProcess
+                  .serviceTask("A")
+                  .zeebeJobType("A")
+                  .zeebeOutputExpression("append(result, 1)", "result");
+
+              adHocSubProcess
+                  .serviceTask("B")
+                  .zeebeJobType("B")
+                  .zeebeOutputExpression("append(result, 2)", "result");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A", "B"))
+            .create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("A").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("B").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToProcessInstance(processInstanceKey)
+                .variableRecords())
+        .extracting(Record::getValue)
+        .extracting(
+            VariableRecordValue::getName,
+            VariableRecordValue::getValue,
+            VariableRecordValue::getScopeKey)
+        .contains(tuple("adHocResult", "[1,2]", processInstanceKey));
+  }
+
+  @Test
   public void shouldInvokeStartExecutionListener() {
     // given
     final BpmnModelInstance process =
@@ -317,6 +402,45 @@ public final class AdHocSubProcessTest {
             .getFirst();
 
     assertThat(variableCreated.getValue()).hasValue("[\"A\",\"B\"]");
+  }
+
+  @Test
+  public void shouldInvokeEndExecutionListener() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess
+                  .zeebeActiveElementsCollectionExpression("activateElements")
+                  .zeebeEndExecutionListener("end-EL");
+              adHocSubProcess.task("A");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A"))
+            .create();
+
+    // when
+    ENGINE.job().ofInstance(processInstanceKey).withType("end-EL").complete();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.TASK, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETING),
+            tuple(
+                BpmnElementType.AD_HOC_SUB_PROCESS,
+                ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER),
+            tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -417,5 +541,73 @@ public final class AdHocSubProcessTest {
             tuple(BpmnElementType.USER_TASK, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED),
             tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldCompleteMultiInstanceAdHocSubProcess() {
+    // given
+    final BpmnModelInstance process =
+        process(
+            adHocSubProcess -> {
+              adHocSubProcess
+                  .multiInstance()
+                  .zeebeInputCollectionExpression("activateElements")
+                  .zeebeInputElement("element");
+              adHocSubProcess.zeebeActiveElementsCollectionExpression("[element]");
+              adHocSubProcess.task("A");
+              adHocSubProcess.task("B");
+              adHocSubProcess.task("C");
+            });
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable("activateElements", List.of("A", "B", "C"))
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getBpmnElementType(), Record::getIntent)
+        .containsSubsequence(
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            // then complete:
+            tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.AD_HOC_SUB_PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.MULTI_INSTANCE_BODY, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(BpmnElementType.PROCESS, ProcessInstanceIntent.ELEMENT_COMPLETED));
+
+    final List<Long> adHocSubProcessKeys =
+        RecordingExporter.processInstanceRecords()
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.AD_HOC_SUB_PROCESS)
+            .limit(3)
+            .map(Record::getKey)
+            .toList();
+
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted()
+                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withElementType(BpmnElementType.TASK))
+        .extracting(Record::getValue)
+        .extracting(
+            ProcessInstanceRecordValue::getElementId, ProcessInstanceRecordValue::getFlowScopeKey)
+        .hasSize(3)
+        .containsExactly(
+            tuple("A", adHocSubProcessKeys.get(0)),
+            tuple("B", adHocSubProcessKeys.get(1)),
+            tuple("C", adHocSubProcessKeys.get(2)));
   }
 }
