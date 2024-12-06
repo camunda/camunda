@@ -35,10 +35,10 @@ public class MigrateParallelGatewayTest {
     final String sourceProcessId = helper.getBpmnProcessId();
     final String targetProcessId = helper.getBpmnProcessId() + "_target";
 
-    final String NON_EXISTING_EL_JOB_TYPE_EXP = "=source_execution_listener_job_type";
-    final String EXISTING_EL_JOB_TYPE_EXP = "=target_execution_listener_job_type";
-    final String EXISTING_EL_JOB_TYPE_VAR = "target_execution_listener_job_type";
-    final String EXISTING_EL_JOB_TYPE_VALUE = "elJobType";
+    final String nonExistingElJobTypeExp = "=source_execution_listener_job_type";
+    final String existingElJobTypeExp = "=target_execution_listener_job_type";
+    final String existingElJobTypeVar = "target_execution_listener_job_type";
+    final String existingElJobTypeValue = "elJobType";
 
     final var deployment =
         ENGINE
@@ -47,7 +47,7 @@ public class MigrateParallelGatewayTest {
                 Bpmn.createExecutableProcess(sourceProcessId)
                     .startEvent()
                     .parallelGateway("parallel1")
-                    .zeebeStartExecutionListener(NON_EXISTING_EL_JOB_TYPE_EXP)
+                    .zeebeStartExecutionListener(nonExistingElJobTypeExp)
                     .endEvent("end1")
                     .moveToLastGateway()
                     .endEvent()
@@ -56,7 +56,7 @@ public class MigrateParallelGatewayTest {
                 Bpmn.createExecutableProcess(targetProcessId)
                     .startEvent()
                     .parallelGateway("parallel2")
-                    .zeebeStartExecutionListener(EXISTING_EL_JOB_TYPE_EXP)
+                    .zeebeStartExecutionListener(existingElJobTypeExp)
                     .endEvent("end2")
                     .moveToLastGateway()
                     .endEvent()
@@ -69,7 +69,7 @@ public class MigrateParallelGatewayTest {
         ENGINE
             .processInstance()
             .ofBpmnProcessId(sourceProcessId)
-            .withVariable(EXISTING_EL_JOB_TYPE_VAR, EXISTING_EL_JOB_TYPE_VALUE)
+            .withVariable(existingElJobTypeVar, existingElJobTypeValue)
             .create();
 
     final var incident =
@@ -93,7 +93,7 @@ public class MigrateParallelGatewayTest {
 
     // then
     ENGINE.incident().ofInstance(processInstanceKey).withKey(incident.getKey()).resolve();
-    ENGINE.job().ofInstance(processInstanceKey).withType(EXISTING_EL_JOB_TYPE_VALUE).complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType(existingElJobTypeValue).complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
