@@ -160,4 +160,12 @@ public class SearchClientAdapter {
     }
     return "";
   }
+
+  public void refresh() throws IOException {
+    if (elsClient != null) {
+      elsClient.indices().refresh();
+    } else if (osClient != null) {
+      osClient.indices().refresh();
+    }
+  }
 }
