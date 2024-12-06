@@ -729,12 +729,8 @@ public class RequestMapper {
         getStringListOrEmpty(request, r -> r.getResult().getCorrections().getCandidateGroups()));
     corrections.setCandidateUsers(
         getStringListOrEmpty(request, r -> r.getResult().getCorrections().getCandidateUsers()));
-    /*
-     * Zeebe User Task priority is defined as a number between 0 and 100. The default assigned
-     * priority is 50.
-     */
     corrections.setPriority(
-        getIntOrDefault(request, r -> r.getResult().getCorrections().getPriority(), 50));
+        getIntOrDefault(request, r -> r.getResult().getCorrections().getPriority(), -1));
     return jobResult.setCorrections(corrections);
   }
 
