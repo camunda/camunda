@@ -31,11 +31,13 @@ import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutablePermissionValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableRoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -48,6 +50,8 @@ import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class RecordFixtures {
 
@@ -327,7 +331,8 @@ public class RecordFixtures {
       final AuthorizationIntent intent,
       final Long ownerKey,
       final AuthorizationOwnerType ownerType,
-      final AuthorizationResourceType resourceType) {
+      final AuthorizationResourceType resourceType,
+      final Map<PermissionType, Set<String>> permissions) {
     final Record<RecordValue> recordValueRecord = FACTORY.generateRecord(ValueType.AUTHORIZATION);
     return ImmutableRecord.builder()
         .from(recordValueRecord)
@@ -340,6 +345,15 @@ public class RecordFixtures {
                 .withOwnerKey(ownerKey)
                 .withOwnerType(ownerType)
                 .withResourceType(resourceType)
+                .withPermissions(
+                    permissions.entrySet().stream()
+                        .map(
+                            p ->
+                                ImmutablePermissionValue.builder()
+                                    .withPermissionType(p.getKey())
+                                    .addAllResourceIds(p.getValue())
+                                    .build())
+                        .toList())
                 .build())
         .build();
   }

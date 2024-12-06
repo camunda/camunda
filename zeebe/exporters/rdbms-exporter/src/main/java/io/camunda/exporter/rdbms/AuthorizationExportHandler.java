@@ -37,7 +37,12 @@ public class AuthorizationExportHandler implements RdbmsExportHandler<Authorizat
   @Override
   public void export(final Record<AuthorizationRecordValue> record) {
     final AuthorizationRecordValue value = record.getValue();
-    authorizationWriter.update(map(value));
+    switch (record.getIntent()) {
+      case AuthorizationIntent.PERMISSION_ADDED -> authorizationWriter.addPermissions(map(value));
+      case AuthorizationIntent.PERMISSION_REMOVED ->
+          authorizationWriter.removePermissions(map(value));
+      default -> LOG.warn("Unexpected intent {} for authorization record", record.getIntent());
+    }
   }
 
   private AuthorizationDbModel map(final AuthorizationRecordValue authorization) {

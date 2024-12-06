@@ -50,6 +50,7 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue.Permissio
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRecordValue;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
@@ -62,6 +63,8 @@ import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -574,7 +577,10 @@ class RdbmsExporterIT {
             AuthorizationIntent.PERMISSION_ADDED,
             1337L,
             AuthorizationOwnerType.USER,
-            AuthorizationResourceType.PROCESS_DEFINITION);
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource1", "resource2"),
+                PermissionType.CREATE, Set.of("resource3", "resource4")));
 
     // when
     exporter.export(authorizationRecord);
@@ -598,7 +604,10 @@ class RdbmsExporterIT {
             AuthorizationIntent.PERMISSION_ADDED,
             1337L,
             AuthorizationOwnerType.USER,
-            AuthorizationResourceType.PROCESS_DEFINITION);
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource5", "resource6"),
+                PermissionType.CREATE, Set.of("resource7", "resource8")));
 
     // when
     exporter.export(authorizationUpdatedRecord);
@@ -614,7 +623,79 @@ class RdbmsExporterIT {
                 recordValue.getOwnerType().name(),
                 recordValue.getResourceType().name())
             .orElse(null);
-    compareAuthorizations(updatedRecordValue, updatedAuthorization);
+
+    assertThat(updatedAuthorization).isNotNull();
+    assertThat(updatedAuthorization.permissions()).hasSize(2);
+    assertThat(updatedAuthorization.permissions())
+        .contains(
+            new Permission(
+                PermissionType.READ, Set.of("resource1", "resource2", "resource5", "resource6")));
+    assertThat(updatedAuthorization.permissions())
+        .contains(
+            new Permission(
+                PermissionType.CREATE, Set.of("resource3", "resource4", "resource7", "resource8")));
+  }
+
+  @Test
+  public void shouldExportAndRemoveAuthorization() {
+    // given
+    final var authorizationRecord =
+        getAuthorizationRecord(
+            AuthorizationIntent.PERMISSION_ADDED,
+            1337L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource1", "resource2"),
+                PermissionType.CREATE, Set.of("resource3", "resource4")));
+
+    // when
+    exporter.export(authorizationRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var recordValue = (AuthorizationRecordValue) authorizationRecord.getValue();
+    final var authorization =
+        rdbmsService
+            .getAuthorizationReader()
+            .findOne(
+                recordValue.getOwnerKey(),
+                recordValue.getOwnerType().name(),
+                recordValue.getResourceType().name())
+            .orElse(null);
+    assertThat(authorization).isNotNull();
+
+    // given
+    final var authorizationUpdatedRecord =
+        getAuthorizationRecord(
+            AuthorizationIntent.PERMISSION_REMOVED,
+            1337L,
+            AuthorizationOwnerType.USER,
+            AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION,
+            Map.of(
+                PermissionType.READ, Set.of("resource1"),
+                PermissionType.CREATE, Set.of("resource3")));
+
+    // when
+    exporter.export(authorizationUpdatedRecord);
+    exporter.flushExecutionQueue();
+
+    // then
+    final var updatedAuthorization =
+        rdbmsService
+            .getAuthorizationReader()
+            .findOne(
+                recordValue.getOwnerKey(),
+                recordValue.getOwnerType().name(),
+                recordValue.getResourceType().name())
+            .orElse(null);
+
+    assertThat(updatedAuthorization).isNotNull();
+    assertThat(updatedAuthorization.permissions()).hasSize(2);
+    assertThat(updatedAuthorization.permissions())
+        .contains(new Permission(PermissionType.READ, Set.of("resource2")));
+    assertThat(updatedAuthorization.permissions())
+        .contains(new Permission(PermissionType.CREATE, Set.of("resource4")));
   }
 
   private void compareAuthorizations(

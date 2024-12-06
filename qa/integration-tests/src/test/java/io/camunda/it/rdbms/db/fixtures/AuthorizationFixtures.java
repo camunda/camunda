@@ -51,7 +51,7 @@ public final class AuthorizationFixtures extends CommonFixtures {
   public static AuthorizationDbModel createAndSaveRandomAuthorization(
       final RdbmsWriter rdbmsWriter, final Function<Builder, Builder> builderFunction) {
     final var definition = AuthorizationFixtures.createRandomized(builderFunction);
-    rdbmsWriter.getAuthorizationWriter().update(definition);
+    rdbmsWriter.getAuthorizationWriter().addPermissions(definition);
     rdbmsWriter.flush();
     return definition;
   }
@@ -61,7 +61,7 @@ public final class AuthorizationFixtures extends CommonFixtures {
     for (int i = 0; i < 20; i++) {
       rdbmsWriter
           .getAuthorizationWriter()
-          .update(AuthorizationFixtures.createRandomized(builderFunction));
+          .addPermissions(AuthorizationFixtures.createRandomized(builderFunction));
     }
 
     rdbmsWriter.flush();
@@ -82,7 +82,7 @@ public final class AuthorizationFixtures extends CommonFixtures {
   public static void createAndSaveAuthorizations(
       final RdbmsWriter rdbmsWriter, final List<AuthorizationDbModel> userList) {
     for (final AuthorizationDbModel user : userList) {
-      rdbmsWriter.getAuthorizationWriter().update(user);
+      rdbmsWriter.getAuthorizationWriter().addPermissions(user);
     }
     rdbmsWriter.flush();
   }

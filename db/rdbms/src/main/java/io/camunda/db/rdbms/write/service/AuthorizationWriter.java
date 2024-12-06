@@ -20,20 +20,26 @@ public class AuthorizationWriter {
     this.executionQueue = executionQueue;
   }
 
-  public void update(final AuthorizationDbModel authorization) {
+  public void addPermissions(final AuthorizationDbModel authorization) {
     final String key = generateKey(authorization);
-    executionQueue.executeInQueue(
-        new QueueItem(
-            ContextType.AUTHORIZATION,
-            key,
-            "io.camunda.db.rdbms.sql.AuthorizationMapper.delete",
-            authorization));
     if (hasPermissions(authorization)) {
       executionQueue.executeInQueue(
           new QueueItem(
               ContextType.AUTHORIZATION,
               key,
               "io.camunda.db.rdbms.sql.AuthorizationMapper.insert",
+              authorization));
+    }
+  }
+
+  public void removePermissions(final AuthorizationDbModel authorization) {
+    final String key = generateKey(authorization);
+    if (hasPermissions(authorization)) {
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.AUTHORIZATION,
+              key,
+              "io.camunda.db.rdbms.sql.AuthorizationMapper.delete",
               authorization));
     }
   }
