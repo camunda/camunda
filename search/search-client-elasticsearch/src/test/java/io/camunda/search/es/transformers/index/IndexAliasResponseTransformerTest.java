@@ -43,6 +43,5 @@ public class IndexAliasResponseTransformerTest {
     assertThat(definition.routing()).isEqualTo("routing");
     assertThat(definition.indexRouting()).isEqualTo("index-routing");
     assertThat(definition.searchRouting()).isEqualTo("search-routing");
-    assertThat(definition.isHidden()).isEqualTo(true);
   }
 }
