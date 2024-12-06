@@ -16,9 +16,14 @@ import io.camunda.search.clients.core.SearchIndexRequest;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
 import io.camunda.search.clients.core.SearchWriteResponse;
+import io.camunda.search.clients.index.IndexAliasRequest;
+import io.camunda.search.clients.index.IndexAliasResponse;
 import io.camunda.search.clients.transformers.SearchTransfomer;
+import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.exception.SearchQueryExecutionException;
 import io.camunda.search.os.transformers.OpensearchTransformers;
+import io.camunda.search.os.transformers.index.IndexAliasRequestTransformer;
+import io.camunda.search.os.transformers.index.IndexAliasResponseTransformer;
 import io.camunda.search.os.transformers.search.SearchDeleteRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetRequestTransformer;
 import io.camunda.search.os.transformers.search.SearchGetResponseTransformer;
@@ -41,6 +46,8 @@ import org.opensearch.client.opensearch.core.ScrollResponse;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.indices.GetAliasRequest;
+import org.opensearch.client.opensearch.indices.GetAliasResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,6 +126,18 @@ public class OpensearchSearchClient
     } catch (final IOException | OpenSearchException ioe) {
       LOGGER.debug("Failed to execute get request", ioe);
       throw new SearchQueryExecutionException("Failed to execute search query", ioe);
+    }
+  }
+
+  @Override
+  public IndexAliasResponse getAlias(final IndexAliasRequest request) {
+    try {
+      final var requestTransformer = getIndexAliasRequestTransformer();
+      final var elasticRequest = requestTransformer.apply(request);
+      final var response = client.indices().getAlias(elasticRequest);
+      return getIndexAliasResponseTransformer().apply(response);
+    } catch (final IOException e) {
+      throw new CamundaSearchException(e);
     }
   }
 
@@ -204,6 +223,18 @@ public class OpensearchSearchClient
     final SearchTransfomer<WriteResponseBase, SearchWriteResponse> transformer =
         transformers.getTransformer(SearchWriteResponse.class);
     return (SearchWriteResponseTransformer) transformer;
+  }
+
+  private IndexAliasRequestTransformer getIndexAliasRequestTransformer() {
+    final SearchTransfomer<IndexAliasRequest, GetAliasRequest> transformer =
+        transformers.getTransformer(IndexAliasRequest.class);
+    return (IndexAliasRequestTransformer) transformer;
+  }
+
+  private IndexAliasResponseTransformer getIndexAliasResponseTransformer() {
+    final SearchTransfomer<GetAliasResponse, IndexAliasResponse> transformer =
+        transformers.getTransformer(IndexAliasResponse.class);
+    return (IndexAliasResponseTransformer) transformer;
   }
 
   @Override

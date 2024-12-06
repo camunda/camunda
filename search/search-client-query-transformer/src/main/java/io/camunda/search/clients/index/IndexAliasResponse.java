@@ -15,9 +15,5 @@ public record IndexAliasResponse(Map<String, IndexAliases> indices) {
 
   public record AliasDefinition(
       //      Query filter,
-      String indexRouting,
-      Boolean isWriteIndex,
-      String routing,
-      String searchRouting,
-      Boolean isHidden) {}
+      String indexRouting, Boolean isWriteIndex, String routing, String searchRouting) {}
 }

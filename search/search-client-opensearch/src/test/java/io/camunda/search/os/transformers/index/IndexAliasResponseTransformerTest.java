@@ -5,21 +5,21 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.es.transformers.index;
+package io.camunda.search.os.transformers.index;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import co.elastic.clients.elasticsearch.indices.AliasDefinition;
-import co.elastic.clients.elasticsearch.indices.GetAliasResponse;
-import co.elastic.clients.elasticsearch.indices.get_alias.IndexAliases;
 import io.camunda.search.clients.index.IndexAliasResponse;
-import io.camunda.search.es.transformers.ElasticsearchTransformers;
+import io.camunda.search.os.transformers.OpensearchTransformers;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.opensearch.indices.AliasDefinition;
+import org.opensearch.client.opensearch.indices.GetAliasResponse;
+import org.opensearch.client.opensearch.indices.get_alias.IndexAliases;
 
 public class IndexAliasResponseTransformerTest {
 
-  ElasticsearchTransformers transformers = new ElasticsearchTransformers();
+  private final OpensearchTransformers transformers = new OpensearchTransformers();
 
   @Test
   public void shouldDecodeCorrectly() {
