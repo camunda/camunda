@@ -10,7 +10,6 @@ package io.camunda.zeebe.gateway.impl.configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.utils.net.Address;
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
 import io.camunda.zeebe.test.util.TestConfigurationFactory;
 import io.camunda.zeebe.util.Environment;
@@ -31,7 +30,6 @@ public final class GatewayCfgTest {
   private static final String EMPTY_CFG_FILENAME = "/configuration/gateway.empty.yaml";
   private static final String CUSTOM_CFG_FILENAME = "/configuration/gateway.custom.yaml";
   private static final GatewayCfg CUSTOM_CFG = new GatewayCfg();
-  private static final SecurityConfiguration SECURITY_CONFIGURATION = new SecurityConfiguration();
   private static final String CUSTOM_MEMBERSHIP_CFG_FILENAME =
       "/configuration/gateway.membership.custom.yaml";
 
