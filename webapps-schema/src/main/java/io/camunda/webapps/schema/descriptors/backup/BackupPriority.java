@@ -7,6 +7,6 @@
  */
 package io.camunda.webapps.schema.descriptors.backup;
 
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-
-public interface BackupPriority extends IndexDescriptor {}
+public interface BackupPriority {
+  String getFullQualifiedName();
+}

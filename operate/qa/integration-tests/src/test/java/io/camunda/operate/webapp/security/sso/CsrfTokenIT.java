@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.Tokens;
-import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.operate.OperateProfileService;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.SpringContextHolder;
@@ -93,7 +93,7 @@ import org.springframework.web.client.RestTemplate;
       OperateProfileService.class,
       ProcessRestService.class,
       ProcessDefinitionController.class,
-      ServiceSecurityProperties.class,
+      CamundaSecurityProperties.class,
     },
     properties = {
       "server.servlet.context-path=" + CsrfTokenIT.CONTEXT_PATH,

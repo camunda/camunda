@@ -21,6 +21,7 @@ import io.camunda.zeebe.model.bpmn.instance.FlowElement;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
 import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnShape;
 import io.camunda.zeebe.model.bpmn.instance.dc.Bounds;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeAdHoc;
 
 public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBuilder<B>>
     extends AbstractSubProcessBuilder<B> {
@@ -32,6 +33,18 @@ public class AbstractAdHocSubProcessBuilder<B extends AbstractAdHocSubProcessBui
       final AdHocSubProcess element,
       final Class<?> selfType) {
     super(modelInstance, element, selfType);
+  }
+
+  /**
+   * Sets the expression to retrieve the collection of active elements.
+   *
+   * @param expression the expression for the active elements collection
+   * @return the builder object
+   */
+  public B zeebeActiveElementsCollectionExpression(final String expression) {
+    final ZeebeAdHoc adHoc = getCreateSingleExtensionElement(ZeebeAdHoc.class);
+    adHoc.setActiveElementsCollection(asZeebeExpression(expression));
+    return myself;
   }
 
   @Override

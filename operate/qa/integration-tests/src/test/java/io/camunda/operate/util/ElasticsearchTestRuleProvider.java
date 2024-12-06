@@ -104,7 +104,10 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
   @Qualifier("operateVariableTemplate")
   private VariableTemplate variableTemplate;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("operateProcessIndex")
+  private ProcessIndex processIndex;
+
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private IncidentTemplate incidentTemplate;

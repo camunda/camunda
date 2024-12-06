@@ -73,7 +73,10 @@ public class ParametersResolver {
 
   @Autowired private ObjectMapper objectMapper;
 
-  @Autowired private ProcessIndex processIndex;
+  @Autowired
+  @Qualifier("operateProcessIndex")
+  private ProcessIndex processIndex;
+
   @Autowired private ListViewTemplate listViewTemplate;
 
   @Autowired

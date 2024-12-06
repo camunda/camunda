@@ -62,8 +62,8 @@ public class TaskJoinRelationship {
 
   public enum TaskJoinRelationshipType {
     PROCESS("process"),
-    TASK_VARIABLE("taskVariable"),
-    PROCESS_VARIABLE("processVariable"),
+    LOCAL_VARIABLE("localVariable"),
+    PROCESS_VARIABLE("variable"),
     TASK("task");
 
     private final String type;

@@ -9,7 +9,7 @@ package io.camunda.operate.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.service.ServiceSecurityConfiguration.ServiceSecurityProperties;
+import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -25,7 +25,7 @@ import org.springframework.test.context.junit4.SpringRunner;
     classes = {
       TestApplicationWithNoBeans.class,
       OperateProperties.class,
-      ServiceSecurityProperties.class
+      CamundaSecurityProperties.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles({"test-properties", "operate", "standalone"})

@@ -32,6 +32,8 @@ import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.InvocationInterceptor;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 import org.junit.jupiter.api.extension.TestWatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * JUnit extension to cache successfully executed test methods and skip them on subsequent runs.
@@ -56,6 +58,10 @@ import org.junit.jupiter.api.extension.TestWatcher;
  */
 public final class CachedTestResultsExtension
     implements TestWatcher, AfterAllCallback, BeforeAllCallback, InvocationInterceptor {
+
+  public static final Logger LOGGER =
+      LoggerFactory.getLogger(CachedTestResultsExtension.class.getName());
+
   public static final String CACHE_KEY = "cache";
   public static final String SHUTDOWN_HOOK_KEY = "shutdownHook";
   public static final String PERIODIC_SAVE_KEY = "periodicSave";
@@ -249,6 +255,7 @@ public final class CachedTestResultsExtension
             reader
                 .lines()
                 .map(CachedInvocation::fromLine)
+                .<CachedInvocation>mapMulti(Optional::ifPresent)
                 .collect(Collectors.toCollection(TreeSet::new));
         return new InvocationCache(path, pairs);
       } catch (final IOException e) {
@@ -288,9 +295,14 @@ public final class CachedTestResultsExtension
       return "%s,%s".formatted(method(), arguments());
     }
 
-    static CachedInvocation fromLine(final String line) {
-      final var parts = line.split(",");
-      return new CachedInvocation(parts[0], parts[1]);
+    static Optional<CachedInvocation> fromLine(final String line) {
+      try {
+        final var parts = line.split(",");
+        return Optional.of(new CachedInvocation(parts[0], parts[1]));
+      } catch (final Exception e) {
+        LOGGER.warn("Cannot parse the following line into a cached invocation: {}", line);
+        return Optional.empty();
+      }
     }
   }
 }

@@ -193,7 +193,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   @Override
   public Map<String, String> getTaskVariablesIdsWithIndexByTaskIds(List<String> taskIds) {
     final SearchRequest.Builder searchRequest =
-        OpenSearchUtil.createSearchRequest(taskVariableTemplate.getAlias())
+        OpenSearchUtil.createSearchRequest(taskVariableTemplate)
             .query(
                 q ->
                     q.terms(
@@ -317,7 +317,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   public SnapshotTaskVariableEntity getTaskVariable(
       final String variableId, Set<String> fieldNames) {
 
-    final SearchRequest.Builder request = createSearchRequest(taskVariableTemplate.getAlias());
+    final SearchRequest.Builder request = createSearchRequest(taskVariableTemplate);
     request.query(q -> q.ids(ids -> ids.values(variableId)));
     applyFetchSourceForTaskVariableTemplate(request, fieldNames);
     try {

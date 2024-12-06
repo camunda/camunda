@@ -73,6 +73,21 @@ public class ProcessDefinitionQueryTest {
   }
 
   @Test
+  void shouldSearchByFromWithLimit() {
+    // when
+    final var resultAll = zeebeClient.newProcessDefinitionQuery().send().join();
+    final var thirdKey = resultAll.items().get(2).getProcessDefinitionKey();
+
+    final var resultSearchFrom =
+        zeebeClient.newProcessDefinitionQuery().page(p -> p.limit(2).from(2)).send().join();
+
+    // then
+    assertThat(resultSearchFrom.items().size()).isEqualTo(2);
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getProcessDefinitionKey())
+        .isEqualTo(thirdKey);
+  }
+
+  @Test
   void shouldThrownExceptionIfProcessDefinitionNotFoundByKey() {
     // given
     final long invalidProcessDefinitionKey = 0xC00L;

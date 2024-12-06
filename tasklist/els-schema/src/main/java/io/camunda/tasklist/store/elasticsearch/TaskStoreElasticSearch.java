@@ -32,6 +32,7 @@ import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.store.util.TaskVariableSearchUtil;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+import io.camunda.tasklist.util.ElasticsearchUtil.QueryType;
 import io.camunda.tasklist.views.TaskSearchView;
 import io.camunda.webapps.schema.descriptors.tasklist.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.tasklist.template.TaskTemplate;
@@ -110,8 +111,7 @@ public class TaskStoreElasticSearch implements TaskStore {
   public TaskEntity getTask(final String id) {
     try {
       final SearchHit response =
-          getRawResponseWithTenantCheck(
-              id, taskTemplate.getAlias(), taskTemplate.getIndexName(), tenantAwareClient);
+          getRawResponseWithTenantCheck(id, taskTemplate, QueryType.ALL, tenantAwareClient);
       return fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
@@ -121,7 +121,7 @@ public class TaskStoreElasticSearch implements TaskStore {
   @Override
   public List<String> getTaskIdsByProcessInstanceId(final String processInstanceId) {
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(taskTemplate.getAlias())
+        ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(
                 SearchSourceBuilder.searchSource()
                     .query(termQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceId))
@@ -137,7 +137,7 @@ public class TaskStoreElasticSearch implements TaskStore {
   public Map<String, String> getTaskIdsWithIndexByProcessDefinitionId(
       final String processDefinitionId) {
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(taskTemplate.getAlias())
+        ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(
                 SearchSourceBuilder.searchSource()
                     .query(termQuery(TaskTemplate.PROCESS_DEFINITION_ID, processDefinitionId))
@@ -176,10 +176,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     try {
       taskBeforeSearchHit =
           getRawResponseWithTenantCheck(
-              taskBefore.getId(),
-              taskTemplate.getAlias(),
-              taskTemplate.getIndexName(),
-              tenantAwareClient);
+              taskBefore.getId(), taskTemplate, QueryType.ALL, tenantAwareClient);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -220,10 +217,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     try {
       taskBeforeSearchHit =
           getRawResponseWithTenantCheck(
-              taskBefore.getId(),
-              taskTemplate.getAlias(),
-              taskTemplate.getIndexName(),
-              tenantAwareClient);
+              taskBefore.getId(), taskTemplate, QueryType.ALL, tenantAwareClient);
     } catch (final IOException e) {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
@@ -291,7 +285,7 @@ public class TaskStoreElasticSearch implements TaskStore {
     final QueryBuilder query = idsQuery().addIds(Arrays.toString(ids.toArray()));
 
     final SearchRequest request =
-        ElasticsearchUtil.createSearchRequest(taskTemplate.getAlias())
+        ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
 
     final SearchResponse response = tenantAwareClient.search(request);
@@ -389,7 +383,8 @@ public class TaskStoreElasticSearch implements TaskStore {
     applySorting(sourceBuilder, query);
 
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(getQueryTypeByTaskState(query.getState()))
+        ElasticsearchUtil.createSearchRequest(
+                taskTemplate, getQueryTypeByTaskState(query.getState()))
             .source(sourceBuilder);
     try {
       final SearchResponse response =
@@ -420,10 +415,8 @@ public class TaskStoreElasticSearch implements TaskStore {
     }
   }
 
-  private String getQueryTypeByTaskState(final TaskState taskState) {
-    return TaskState.CREATED == taskState
-        ? taskTemplate.getFullQualifiedName()
-        : taskTemplate.getAlias();
+  private QueryType getQueryTypeByTaskState(final TaskState taskState) {
+    return TaskState.CREATED == taskState ? QueryType.ONLY_RUNTIME : QueryType.ALL;
   }
 
   private boolean checkTaskIsFirst(final TaskQuery query, final String id) {
@@ -673,8 +666,7 @@ public class TaskStoreElasticSearch implements TaskStore {
   private void updateTask(final String taskId, final Map<String, Object> updateFields) {
     try {
       final SearchHit searchHit =
-          getRawResponseWithTenantCheck(
-              taskId, taskTemplate.getAlias(), taskTemplate.getIndexName(), tenantAwareClient);
+          getRawResponseWithTenantCheck(taskId, taskTemplate, QueryType.ALL, tenantAwareClient);
       // update task with optimistic locking
       // format date fields properly
       final Map<String, Object> jsonMap =

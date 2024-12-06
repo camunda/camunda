@@ -126,7 +126,17 @@ public class CompensationEventCompatibilityTest {
               BpmnElementType.MULTI_INSTANCE_BODY,
               b ->
                   b.manualTask()
-                      .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2]").sequential())));
+                      .multiInstance(m -> m.zeebeInputCollectionExpression("[1,2]").sequential())),
+          Scenario.of(
+              "ad-hoc subprocess",
+              BpmnElementType.AD_HOC_SUB_PROCESS,
+              b ->
+                  b.adHocSubProcess(
+                      "ad-hoc",
+                      adHocSubProcess -> {
+                        adHocSubProcess.zeebeActiveElementsCollectionExpression("[\"A\"]");
+                        adHocSubProcess.manualTask("A");
+                      })));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =

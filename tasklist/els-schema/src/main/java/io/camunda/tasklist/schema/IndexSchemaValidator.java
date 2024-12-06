@@ -8,7 +8,7 @@
 package io.camunda.tasklist.schema;
 
 import io.camunda.tasklist.schema.IndexMapping.IndexMappingProperty;
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;

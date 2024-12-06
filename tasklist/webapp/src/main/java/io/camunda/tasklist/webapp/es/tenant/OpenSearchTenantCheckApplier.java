@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.es.tenant;
 
-import static io.camunda.tasklist.schema.indices.IndexDescriptor.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.IndexDescriptor.TENANT_ID;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;

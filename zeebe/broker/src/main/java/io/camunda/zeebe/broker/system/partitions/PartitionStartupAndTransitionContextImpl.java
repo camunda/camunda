@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.partitions;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
@@ -112,6 +113,7 @@ public class PartitionStartupAndTransitionContextImpl
   private ControllableStreamClock clock;
   private final HealthTreeMetrics healthGraphMetrics;
   private final BrokerHealthCheckService brokerHealthCheckService;
+  private final SecurityConfiguration securityConfig;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -133,7 +135,8 @@ public class PartitionStartupAndTransitionContextImpl
       final AtomixServerTransport gatewayBrokerTransport,
       final TopologyManager topologyManager,
       final MeterRegistry brokerMeterRegistry,
-      final BrokerHealthCheckService brokerHealthCheckService) {
+      final BrokerHealthCheckService brokerHealthCheckService,
+      final SecurityConfiguration securityConfig) {
     this.nodeId = nodeId;
     this.partitionCount = partitionCount;
     this.clusterCommunicationService = clusterCommunicationService;
@@ -158,6 +161,7 @@ public class PartitionStartupAndTransitionContextImpl
     this.brokerMeterRegistry.config().commonTags(Tags.of("partition", String.valueOf(partitionId)));
     healthGraphMetrics = new HealthTreeMetrics(this.brokerMeterRegistry);
     this.brokerHealthCheckService = brokerHealthCheckService;
+    this.securityConfig = securityConfig;
   }
 
   public PartitionAdminControl getPartitionAdminControl() {
@@ -306,6 +310,11 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public BrokerCfg getBrokerCfg() {
     return brokerCfg;
+  }
+
+  @Override
+  public SecurityConfiguration getSecurityConfig() {
+    return securityConfig;
   }
 
   @Override

@@ -7,12 +7,12 @@
  */
 package io.camunda.webapps.schema.descriptors.tasklist.template;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.tasklist.TasklistTemplateDescriptor;
 
 public class TaskTemplate extends TasklistTemplateDescriptor
-    implements Prio3Backup, ProcessInstanceDependant {
+    implements Prio2Backup, ProcessInstanceDependant {
 
   public static final String INDEX_NAME = "task";
   public static final String INDEX_VERSION = "8.5.0";
@@ -61,6 +61,8 @@ public class TaskTemplate extends TasklistTemplateDescriptor
   public static final String PROCESS_DEFINITION_VERSION = "processDefinitionVersion";
 
   public static final String JOIN_FIELD_NAME = "join";
+
+  public static final String LOCAL_VARIABLE_SUFFIX = "-local";
 
   public TaskTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);

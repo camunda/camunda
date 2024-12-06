@@ -7,12 +7,12 @@
  */
 package io.camunda.webapps.schema.descriptors.operate.template;
 
-import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.operate.OperateTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.operate.ProcessInstanceDependant;
 
 public class JobTemplate extends OperateTemplateDescriptor
-    implements ProcessInstanceDependant, Prio3Backup {
+    implements ProcessInstanceDependant, Prio4Backup {
 
   public static final String INDEX_NAME = "job";
 
@@ -21,6 +21,8 @@ public class JobTemplate extends OperateTemplateDescriptor
   // String - human readable name
   public static final String FLOW_NODE_ID = "flowNodeId";
   public static final String TENANT_ID = "tenantId";
+  public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String JOB_TYPE = "type";
   public static final String JOB_WORKER = "worker";
   public static final String RETRIES = "retries";

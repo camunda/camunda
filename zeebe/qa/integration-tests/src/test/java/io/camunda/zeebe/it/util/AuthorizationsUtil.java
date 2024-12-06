@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.util;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
@@ -116,7 +117,11 @@ public class AuthorizationsUtil {
                     }
                   }"""
                           .formatted(username)))
-              .uri(new URI("http://%s/identity-users-8.7.0_/_count/".formatted(elasticsearchUrl)))
+              .uri(
+                  new URI(
+                      "http://%s/%s/_count/"
+                          .formatted(
+                              elasticsearchUrl, new UserIndex("", true).getFullQualifiedName())))
               .header("Content-Type", "application/json")
               .build();
     } catch (final URISyntaxException e) {

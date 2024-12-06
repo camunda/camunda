@@ -44,7 +44,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @Test
-  void createRoleShouldReturnAccepted() {
+  void createRoleShouldReturnCreated() {
     // given
     final var roleName = "Test Role";
     when(roleServices.createRole(roleName))
@@ -61,7 +61,7 @@ public class RoleControllerTest extends RestControllerTest {
         .bodyValue(new RoleCreateRequest().name(roleName))
         .exchange()
         .expectStatus()
-        .isAccepted();
+        .isCreated();
 
     // then
     verify(roleServices, times(1)).createRole(roleName);

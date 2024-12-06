@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.util;
 
-import io.camunda.tasklist.schema.indices.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.tasklist.TaskEntity;
 import java.io.IOException;
 import java.util.List;

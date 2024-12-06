@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 public class DbResourceState implements MutableResourceState {
 
@@ -128,8 +129,9 @@ public class DbResourceState implements MutableResourceState {
             .build(
                 new CacheLoader<>() {
                   @Override
-                  public PersistedResource load(final TenantIdAndResourceId key) {
-                    return findLatestResourceById(key.resourceId, key.tenantId).orElse(null);
+                  public PersistedResource load(final TenantIdAndResourceId key)
+                      throws ResourceNotFoundException {
+                    return getPersistedResourceById(key.resourceId, key.tenantId);
                   }
                 });
   }
@@ -231,17 +233,7 @@ public class DbResourceState implements MutableResourceState {
   @Override
   public Optional<PersistedResource> findLatestResourceById(
       final String resourceId, final String tenantId) {
-    tenantIdKey.wrapString(tenantId);
-    final Optional<PersistedResource> cachedResource = getResourceFromCache(tenantId, resourceId);
-    if (cachedResource.isPresent()) {
-      return cachedResource;
-    }
-
-    final PersistedResource persistedResource = getPersistedResourceById(resourceId, tenantId);
-    if (persistedResource == null) {
-      return Optional.empty();
-    }
-    return Optional.of(persistedResource);
+    return getResourceFromCache(tenantId, resourceId);
   }
 
   @Override
@@ -288,23 +280,38 @@ public class DbResourceState implements MutableResourceState {
     versionManager.clear();
   }
 
-  private PersistedResource getPersistedResourceById(
-      final String resourceId, final String tenantId) {
+  private PersistedResource getPersistedResourceById(final String resourceId, final String tenantId)
+      throws ResourceNotFoundException {
     dbResourceId.wrapString(resourceId);
+    tenantIdKey.wrapString(tenantId);
     final long latestVersion = versionManager.getLatestResourceVersion(resourceId, tenantId);
     resourceVersion.wrapLong(latestVersion);
     final Optional<PersistedResource> persistedResource =
         Optional.ofNullable(resourceByIdAndVersionColumnFamily.get(tenantAwareIdAndVersionKey))
             .flatMap(key -> findResourceByKey(key.inner().wrappedKey().getValue(), tenantId));
-    return persistedResource.map(PersistedResource::copy).orElse(null);
+
+    return persistedResource
+        .map(PersistedResource::copy)
+        .orElseThrow(ResourceNotFoundException::new);
   }
 
   private Optional<PersistedResource> getResourceFromCache(
       final String tenantId, final String resourceId) {
-    return Optional.ofNullable(
-        resourcesByTenantIdAndIdCache.getIfPresent(
-            new DbResourceState.TenantIdAndResourceId(tenantId, resourceId)));
+    try {
+      return Optional.of(
+          resourcesByTenantIdAndIdCache.get(new TenantIdAndResourceId(tenantId, resourceId)));
+    } catch (final ExecutionException e) {
+      // We reach this when we couldn't load the DRG from the state.
+      return Optional.empty();
+    }
   }
 
   private record TenantIdAndResourceId(String tenantId, String resourceId) {}
+
+  /**
+   * This exception is thrown when a DbResourceState cache can't find a PersistedResource in the
+   * state for the given parameters. This must be a checked exception, because of the way the {@link
+   * LoadingCache} works.
+   */
+  private static final class ResourceNotFoundException extends Exception {}
 }

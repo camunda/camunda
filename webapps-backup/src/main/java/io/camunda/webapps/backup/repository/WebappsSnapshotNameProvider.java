@@ -13,7 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class WebappsSnapshotNameProvider implements SnapshotNameProvider {
-  public static final String SNAPSHOT_NAME_PREFIX = "camunda_operate_";
+  public static final String SNAPSHOT_NAME_PREFIX = "camunda_webapps_";
   private static final String SNAPSHOT_NAME_PATTERN = "{prefix}{version}_part_{index}_of_{count}";
   private static final String SNAPSHOT_NAME_PREFIX_PATTERN = SNAPSHOT_NAME_PREFIX + "{backupId}_";
   private static final Pattern BACKUPID_PATTERN =

@@ -64,6 +64,8 @@ public class ZeebeConstants {
 
   public static final String ATTRIBUTE_PRIORITY = "priority";
 
+  public static final String ATTRIBUTE_ACTIVE_ELEMENTS_COLLECTION = "activeElementsCollection";
+
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
@@ -109,4 +111,6 @@ public class ZeebeConstants {
   public static final String USER_TASK_FORM_KEY_BPMN_LOCATION = "bpmn";
 
   public static final String ELEMENT_PRIORITY_DEFINITION = "priorityDefinition";
+
+  public static final String ELEMENT_AD_HOC = "adHoc";
 }

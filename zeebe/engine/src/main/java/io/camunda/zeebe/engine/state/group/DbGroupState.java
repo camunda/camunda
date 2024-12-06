@@ -69,7 +69,7 @@ public class DbGroupState implements MutableGroupState {
   public void create(final long groupKey, final GroupRecord group) {
     this.groupKey.wrapLong(groupKey);
     groupName.wrapString(group.getName());
-    persistedGroup.wrap(group);
+    persistedGroup.copyFrom(group);
 
     groupColumnFamily.insert(this.groupKey, persistedGroup);
     groupByNameColumnFamily.insert(groupName, fkGroupKey);
@@ -88,7 +88,7 @@ public class DbGroupState implements MutableGroupState {
       groupName.wrapString(group.getName());
       groupByNameColumnFamily.insert(groupName, fkGroupKey);
 
-      persistedGroup.wrap(group);
+      persistedGroup.copyFrom(group);
       groupColumnFamily.update(this.groupKey, persistedGroup);
     }
   }

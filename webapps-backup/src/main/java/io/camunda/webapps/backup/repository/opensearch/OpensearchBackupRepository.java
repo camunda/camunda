@@ -184,7 +184,7 @@ public class OpensearchBackupRepository implements BackupRepository {
                   groupingBy(
                       si -> {
                         final Metadata metadata =
-                            Metadata.fromMetadata(
+                            MetadataMarshaller.fromMetadata(
                                 si.getMetadata(), openSearchClient._transport().jsonpMapper());
                         Long backupId = metadata.backupId();
                         // backward compatibility with v. 8.1
@@ -222,7 +222,8 @@ public class OpensearchBackupRepository implements BackupRepository {
       final Runnable onFailure) {
     final Long backupId = backupId(snapshotRequest);
     final Map<String, JsonData> metadataJson =
-        snapshotRequest.metadata().asJson(openSearchClient._transport().jsonpMapper());
+        MetadataMarshaller.asJson(
+            snapshotRequest.metadata(), openSearchClient._transport().jsonpMapper());
 
     final var requestBuilder =
         createSnapshotRequestBuilder(
@@ -402,7 +403,7 @@ public class OpensearchBackupRepository implements BackupRepository {
       final Long backupId, final List<OpenSearchSnapshotInfo> snapshots) {
     final GetBackupStateResponseDto response = new GetBackupStateResponseDto(backupId);
     final Metadata metadata =
-        Metadata.fromMetadata(
+        MetadataMarshaller.fromMetadata(
             snapshots.getFirst().getMetadata(), openSearchClient._transport().jsonpMapper());
     final Integer expectedSnapshotsCount = metadata.partCount();
 

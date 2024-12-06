@@ -9,11 +9,12 @@ package io.camunda.search.filter;
 
 import io.camunda.util.ObjectBuilder;
 
-public record GroupFilter(Long groupKey, String name) implements FilterBase {
+public record GroupFilter(Long groupKey, String name, Long memberKey) implements FilterBase {
 
   public static final class Builder implements ObjectBuilder<GroupFilter> {
     private Long groupKey;
     private String name;
+    private Long memberKey;
 
     public Builder groupKey(final Long value) {
       groupKey = value;
@@ -25,9 +26,14 @@ public record GroupFilter(Long groupKey, String name) implements FilterBase {
       return this;
     }
 
+    public Builder memberKey(final Long value) {
+      memberKey = value;
+      return this;
+    }
+
     @Override
     public GroupFilter build() {
-      return new GroupFilter(groupKey, name);
+      return new GroupFilter(groupKey, name, memberKey);
     }
   }
 }

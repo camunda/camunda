@@ -37,6 +37,8 @@ public class MessagingConfig implements Config {
   private String keyStorePassword;
   private int socketSendBuffer = 1024 * 1024;
   private int socketReceiveBuffer = 1024 * 1024;
+  private Duration heartbeatTimeout = Duration.ofSeconds(15);
+  private Duration heartbeatInterval = Duration.ofSeconds(5);
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -285,6 +287,24 @@ public class MessagingConfig implements Config {
    */
   public MessagingConfig setSocketReceiveBuffer(final int socketReceiveBuffer) {
     this.socketReceiveBuffer = socketReceiveBuffer;
+    return this;
+  }
+
+  public Duration getHeartbeatTimeout() {
+    return heartbeatTimeout;
+  }
+
+  public MessagingConfig setHeartbeatTimeout(final Duration heartbeatTimeout) {
+    this.heartbeatTimeout = heartbeatTimeout;
+    return this;
+  }
+
+  public Duration getHeartbeatInterval() {
+    return heartbeatInterval;
+  }
+
+  public MessagingConfig setHeartbeatInterval(final Duration heartbeatInterval) {
+    this.heartbeatInterval = heartbeatInterval;
     return this;
   }
 

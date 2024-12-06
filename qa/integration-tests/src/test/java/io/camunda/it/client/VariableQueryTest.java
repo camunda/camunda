@@ -369,6 +369,21 @@ class VariableQueryTest {
     assertThat(values).isSortedAccordingTo(Comparator.reverseOrder());
   }
 
+  @Test
+  void shouldSearchByFromWithLimit() {
+    // when
+    final var resultAll = camundaClient.newVariableQuery().send().join();
+    final var thirdKey = resultAll.items().get(2).getVariableKey();
+
+    final var resultSearchFrom =
+        camundaClient.newVariableQuery().page(p -> p.limit(2).from(2)).send().join();
+
+    // then
+    assertThat(resultSearchFrom.items().size()).isEqualTo(2);
+    assertThat(resultSearchFrom.items().stream().findFirst().get().getVariableKey())
+        .isEqualTo(thirdKey);
+  }
+
   private static void waitForTasksBeingExported() {
     Awaitility.await("should receive data from ES")
         .atMost(Duration.ofMinutes(1))

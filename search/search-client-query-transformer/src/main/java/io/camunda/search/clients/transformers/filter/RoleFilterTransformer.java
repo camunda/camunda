@@ -34,6 +34,6 @@ public class RoleFilterTransformer implements FilterTransformer<RoleFilter> {
 
   @Override
   public List<String> toIndices(final RoleFilter filter) {
-    return List.of("identity-role-8.7.0_alias");
+    return List.of("camunda-role-8.7.0_alias");
   }
 }

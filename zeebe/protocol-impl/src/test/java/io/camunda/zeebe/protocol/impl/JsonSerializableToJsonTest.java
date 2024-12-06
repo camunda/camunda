@@ -3007,7 +3007,9 @@ final class JsonSerializableToJsonTest {
                             .setName("name")
                             .setEmail("email")
                             .setPassword("password")
-                            .setUserType(UserType.REGULAR)),
+                            .setUserType(UserType.REGULAR))
+                    .setDefaultTenant(
+                        new TenantRecord().setTenantKey(4).setTenantId("id").setName("name")),
         """
       {
         "defaultRole": {
@@ -3023,6 +3025,13 @@ final class JsonSerializableToJsonTest {
           "email": "email",
           "password": "password",
           "userType": "REGULAR"
+        },
+        "defaultTenant": {
+          "tenantKey": 4,
+          "tenantId": "id",
+          "name": "name",
+          "entityKey": -1,
+          "entityType": "UNSPECIFIED"
         }
       }
       """
@@ -3048,6 +3057,13 @@ final class JsonSerializableToJsonTest {
               "password": "",
               "email": "",
               "userType": "REGULAR"
+          },
+          "defaultTenant": {
+              "tenantKey": -1,
+              "tenantId": "",
+              "name": "",
+              "entityKey": -1,
+              "entityType": "UNSPECIFIED"
           }
       }
       """
