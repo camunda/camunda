@@ -2611,6 +2611,50 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /groups/{groupKey}/users/search:
+    post:
+      tags:
+        - Group
+      operationId: searchUsersInGroup
+      summary: List users assigned to a group
+      description: |
+        Returns a list of users assigned to a group.
+      parameters:
+        - name: groupKey
+          in: path
+          required: true
+          description: The unique identifier of the group.
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: false
+        description: User Query request with filter
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserSearchQueryRequest"
+      responses:
+        "200":
+          description: The user search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserSearchResponse"
+        "400":
+          description: >
+            The user search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /groups/{groupKey}/users/{userKey}:
     post:
       tags:
