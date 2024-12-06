@@ -5,11 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.backup.repository.opensearch;
+package io.camunda.webapps.backup.repository.elasticsearch;
 
 public enum SnapshotState {
   FAILED,
   PARTIAL,
-  STARTED,
-  SUCCESS;
+  IN_PROGRESS,
+  SUCCESS
 }
