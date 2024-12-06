@@ -48,7 +48,7 @@ public class MappingServicesTest {
 
   @BeforeEach
   public void before() {
-    authentication = Authentication.of(builder -> builder.user(1234L).token("auth_token"));
+    authentication = Authentication.of(builder -> builder.user(1234L));
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(MappingSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);
@@ -136,7 +136,6 @@ public class MappingServicesTest {
   public void shouldTriggerDeleteRequest() {
     // given
     final Authentication testAuthentication = mock(Authentication.class);
-    when(testAuthentication.token()).thenReturn("token");
     final BrokerClient mockBrokerClient = mock(BrokerClient.class);
     final MappingServices testMappingServices =
         new MappingServices(

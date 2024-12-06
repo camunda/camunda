@@ -40,7 +40,7 @@ public class RoleServiceTest {
 
   @BeforeEach
   public void before() {
-    authentication = Authentication.of(builder -> builder.user(1234L).token("auth_token"));
+    authentication = Authentication.of(builder -> builder.user(1234L));
     stubbedBrokerClient = new StubbedBrokerClient();
     client = mock(RoleSearchClient.class);
     when(client.withSecurityContext(any())).thenReturn(client);

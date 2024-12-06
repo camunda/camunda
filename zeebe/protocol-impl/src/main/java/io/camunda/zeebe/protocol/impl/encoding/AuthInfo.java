@@ -7,13 +7,10 @@
  */
 package io.camunda.zeebe.protocol.impl.encoding;
 
-import io.camunda.zeebe.auth.impl.Authorization;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.EnumProperty;
-import io.camunda.zeebe.msgpack.property.StringProperty;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -21,47 +18,39 @@ import org.agrona.concurrent.UnsafeBuffer;
 /** */
 public class AuthInfo extends UnpackedObject {
 
-  private final EnumProperty<AuthDataFormat> formatProp =
-      new EnumProperty<>("format", AuthDataFormat.class, AuthDataFormat.UNKNOWN);
-
-  private final StringProperty authDataProp = new StringProperty("authData", "");
+  private final DocumentProperty authDataProp = new DocumentProperty("authData");
 
   public AuthInfo() {
-    super(2);
-    declareProperty(formatProp).declareProperty(authDataProp);
+    super(1);
+    declareProperty(authDataProp);
   }
 
-  public AuthDataFormat getFormat() {
-    return formatProp.getValue();
+  public Map<String, Object> getAuthData() {
+    return MsgPackConverter.convertToMap(authDataProp.getValue());
   }
 
-  public AuthInfo setFormatProp(final AuthDataFormat format) {
-    formatProp.setValue(format);
-    return this;
-  }
-
-  public DirectBuffer getAuthDataBuffer() {
-    return authDataProp.getValue();
-  }
-
-  public String getAuthData() {
-    return BufferUtil.bufferAsString(authDataProp.getValue());
-  }
-
-  public AuthInfo setAuthData(final String authData) {
+  public AuthInfo setAuthData(final DirectBuffer authData) {
     authDataProp.setValue(authData);
     return this;
   }
 
+  public AuthInfo setAuthData(final Map<String, Object> authData) {
+    authDataProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authData)));
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getAuthDataBuffer() {
+    return authDataProp.getValue();
+  }
+
   public void wrap(final AuthInfo authInfo) {
-    formatProp.setValue(authInfo.getFormat());
-    authDataProp.setValue(authInfo.getAuthData());
+    authDataProp.setValue(authInfo.getAuthDataBuffer());
   }
 
   @Override
   public void reset() {
-    formatProp.setValue(AuthDataFormat.UNKNOWN);
-    authDataProp.setValue("");
+    authDataProp.reset();
   }
 
   public DirectBuffer toDirectBuffer() {
@@ -72,36 +61,8 @@ public class AuthInfo extends UnpackedObject {
     return buffer;
   }
 
-  public Map<String, Object> toDecodedMap() {
-    switch (getFormat()) {
-      case JWT -> {
-        final String jwtToken = getAuthData();
-        return Authorization.jwtDecoder(jwtToken)
-            .withClaim(Authorization.AUTHORIZED_TENANTS)
-            .decode();
-      }
-      default -> {
-        return Map.of(
-            Authorization.AUTHORIZED_TENANTS, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
-      }
-    }
-  }
-
   @Override
   public String toString() {
-    String data = getAuthData();
-    data = data.isEmpty() ? "" : "." + data;
-    return formatProp.getValue().toString() + data;
-  }
-
-  public enum AuthDataFormat {
-    UNKNOWN((short) 0),
-    JWT((short) 1);
-
-    public final short id;
-
-    AuthDataFormat(final short id) {
-      this.id = id;
-    }
+    return "AuthInfo{" + "authData=" + BufferUtil.bufferAsString(authDataProp.getValue()) + '}';
   }
 }

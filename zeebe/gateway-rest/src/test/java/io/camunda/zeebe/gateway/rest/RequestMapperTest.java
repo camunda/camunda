@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.camunda.authentication.entity.CamundaUser.CamundaUserBuilder;
 import io.camunda.zeebe.auth.impl.Authorization;
-import io.camunda.zeebe.auth.impl.JwtAuthorizationDecoder;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -46,14 +45,12 @@ class RequestMapperTest {
     setUsernamePasswordAuthenticationInContext(userKey);
 
     // when
-    final String token = RequestMapper.getAuthentication().token();
+    final var claims = RequestMapper.getAuthentication().claims();
 
     // then
-    final JwtAuthorizationDecoder decoder = new JwtAuthorizationDecoder(token);
-    final var decodedToken = decoder.decode();
-    assertNotNull(decodedToken);
-    assertThat(decodedToken).containsKey(Authorization.AUTHORIZED_USER_KEY);
-    assertThat(decodedToken.get(Authorization.AUTHORIZED_USER_KEY)).isEqualTo(userKey);
+    assertNotNull(claims);
+    assertThat(claims).containsKey(Authorization.AUTHORIZED_USER_KEY);
+    assertThat(claims.get(Authorization.AUTHORIZED_USER_KEY)).isEqualTo(userKey);
   }
 
   @Test
@@ -65,18 +62,16 @@ class RequestMapperTest {
     setJwtAuthenticationInContext(sub1, aud1);
 
     // when
-    final String token = RequestMapper.getAuthentication().token();
+    final var claims = RequestMapper.getAuthentication().claims();
 
     // then
-    final JwtAuthorizationDecoder decoder = new JwtAuthorizationDecoder(token);
-    final var decodedToken = decoder.decode();
-    assertNotNull(decodedToken);
-    assertThat(decodedToken).containsKey(USER_TOKEN_CLAIM_PREFIX + "sub");
-    assertThat(decodedToken).containsKey(USER_TOKEN_CLAIM_PREFIX + "aud");
-    assertThat(decodedToken).containsKey(USER_TOKEN_CLAIM_PREFIX + "groups");
-    assertThat(decodedToken.get(USER_TOKEN_CLAIM_PREFIX + "sub")).isEqualTo(sub1);
-    assertThat(decodedToken.get(USER_TOKEN_CLAIM_PREFIX + "aud")).isEqualTo(aud1);
-    assertThat(decodedToken.get(USER_TOKEN_CLAIM_PREFIX + "groups")).isEqualTo(List.of("g1", "g2"));
+    assertNotNull(claims);
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "sub");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "aud");
+    assertThat(claims).containsKey(USER_TOKEN_CLAIM_PREFIX + "groups");
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "sub")).isEqualTo(sub1);
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "aud")).isEqualTo(aud1);
+    assertThat(claims.get(USER_TOKEN_CLAIM_PREFIX + "groups")).isEqualTo(List.of("g1", "g2"));
   }
 
   private void setJwtAuthenticationInContext(final String sub, final String aud) {

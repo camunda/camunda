@@ -51,8 +51,7 @@ public class TenantServiceTest {
   @BeforeEach
   public void before() {
     stubbedBrokerClient = new StubbedBrokerClient();
-    final Authentication authentication =
-        Authentication.of(builder -> builder.user(1234L).token("auth_token"));
+    final Authentication authentication = Authentication.of(builder -> builder.user(1234L));
     client = mock(TenantSearchClient.class);
     final SecurityContextProvider securityContextProvider = mock(SecurityContextProvider.class);
     when(client.withSecurityContext(any())).thenReturn(client);
