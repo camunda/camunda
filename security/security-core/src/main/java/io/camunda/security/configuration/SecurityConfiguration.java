@@ -13,11 +13,21 @@ public class SecurityConfiguration {
 
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
 
+  private InitializationConfiguration initialization = new InitializationConfiguration();
+
   public AuthorizationsConfiguration getAuthorizations() {
     return authorizations;
   }
 
   public void setAuthorizations(final AuthorizationsConfiguration authorizations) {
     this.authorizations = authorizations;
+  }
+
+  public InitializationConfiguration getInitialization() {
+    return initialization;
+  }
+
+  public void setInitialization(final InitializationConfiguration initialization) {
+    this.initialization = initialization;
   }
 }
