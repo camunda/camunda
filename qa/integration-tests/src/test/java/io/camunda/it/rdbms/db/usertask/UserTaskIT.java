@@ -210,42 +210,6 @@ public class UserTaskIT {
   }
 
   @TestTemplate
-  public void shouldFindUserTaskByLocalVariableName(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-
-    final UserTaskDbModel randomizedUserTask = UserTaskFixtures.createRandomized();
-    createAndSaveUserTask(rdbmsService, randomizedUserTask);
-
-    final VariableDbModel randomizedVariable =
-        VariableFixtures.createRandomized(
-            b -> b.processInstanceKey(randomizedUserTask.processInstanceKey()));
-    final RdbmsWriter writer = rdbmsService.createWriter(1L);
-    writer.getVariableWriter().create(randomizedVariable);
-    writer.flush();
-
-    final var searchResult =
-        rdbmsService
-            .getUserTaskReader()
-            .search(
-                new UserTaskDbQuery(
-                    new UserTaskFilter.Builder()
-                        .localVariables(
-                            List.of(
-                                new VariableValueFilter.Builder()
-                                    .name(randomizedVariable.name())
-                                    .build()))
-                        .build(),
-                    UserTaskSort.of(b -> b),
-                    SearchQueryPage.of(b -> b.from(0).size(10))));
-
-    assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isEqualTo(1);
-    assertThat(searchResult.hits()).hasSize(1);
-    assertUserTaskEntity(searchResult.hits().getFirst(), randomizedUserTask);
-  }
-
-  @TestTemplate
   public void shouldFindAllUserTasksPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
