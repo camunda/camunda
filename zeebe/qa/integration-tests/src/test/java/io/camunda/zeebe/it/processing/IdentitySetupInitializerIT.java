@@ -26,7 +26,6 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.snapshots.impl.FileBasedSnapshotId;
 import io.camunda.zeebe.test.util.junit.AutoCloseResources.AutoCloseResource;
-import io.camunda.zeebe.test.util.record.RecordLogger;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -38,6 +37,8 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
@@ -53,15 +54,16 @@ final class IdentitySetupInitializerIT {
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
-  @Test
-  void shouldInitializeIdentity() {
-    // given a broker with authorization enabled
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldInitializeIdentity(final boolean enableAuthorizations) {
+    // given a broker with authorization enabled or disabled
     final var username = UUID.randomUUID().toString();
     final var name = UUID.randomUUID().toString();
     final var password = UUID.randomUUID().toString();
     final var email = UUID.randomUUID().toString();
     createBroker(
-        true,
+        enableAuthorizations,
         1,
         cfg -> {
           final var user = new ConfiguredUser(username, password, name, email);
@@ -91,26 +93,6 @@ final class IdentitySetupInitializerIT {
     Assertions.assertThat(createdTenant)
         .hasTenantId(IdentitySetupInitializer.DEFAULT_TENANT_ID)
         .hasName(IdentitySetupInitializer.DEFAULT_TENANT_NAME);
-  }
-
-  @Test
-  void shouldNotInitializeIdentityWhenAuthorizationsDisabled() {
-    // given a broker with authorization disabled
-    createBroker(false, 1);
-
-    // then identity should not be initialized
-    // We send a clock reset command so we have a record we can limit our RecordingExporter on
-    client.newClockResetCommand().send().join();
-
-    assertThat(
-            RecordingExporter.records()
-                .limit(r -> r.getIntent() == ClockIntent.RESETTED)
-                .withIntent(IdentitySetupIntent.INITIALIZE)
-                .toList())
-        .describedAs("No initialize command must be written")
-        .isEmpty();
-
-    RecordLogger.logRecords();
   }
 
   @Test
