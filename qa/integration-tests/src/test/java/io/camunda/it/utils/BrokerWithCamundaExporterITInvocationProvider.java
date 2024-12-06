@@ -92,8 +92,7 @@ public class BrokerWithCamundaExporterITInvocationProvider
   }
 
   public BrokerWithCamundaExporterITInvocationProvider withAuthorizationsEnabled() {
-    return withAdditionalSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true))
-        .withAdditionalProperty("camunda.security.authorizations.enabled", true);
+    return withAdditionalSecurityConfig(cfg -> cfg.getAuthorizations().setEnabled(true));
   }
 
   public BrokerWithCamundaExporterITInvocationProvider withUsers(final User... users) {

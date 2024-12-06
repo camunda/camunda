@@ -7,6 +7,9 @@
  */
 package io.camunda.zeebe.it.util;
 
+import static io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer.DEFAULT_USER_PASSWORD;
+import static io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer.DEFAULT_USER_USERNAME;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.webapps.schema.descriptors.usermanagement.index.UserIndex;
@@ -14,7 +17,7 @@ import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
-import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
+import io.camunda.zeebe.qa.util.cluster.TestGateway;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpClient;
@@ -30,13 +33,20 @@ public class AuthorizationsUtil {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
-  private final TestStandaloneBroker broker;
+  private final TestGateway<?> gateway;
   private final ZeebeClient client;
   private final String elasticsearchUrl;
 
+  public AuthorizationsUtil(final TestGateway<?> gateway, final String elasticsearchUrl) {
+    this(
+        gateway,
+        createClient(gateway, DEFAULT_USER_USERNAME, DEFAULT_USER_PASSWORD),
+        elasticsearchUrl);
+  }
+
   public AuthorizationsUtil(
-      final TestStandaloneBroker broker, final ZeebeClient client, final String elasticsearchUrl) {
-    this.broker = broker;
+      final TestGateway<?> gateway, final ZeebeClient client, final String elasticsearchUrl) {
+    this.gateway = gateway;
     this.client = client;
     this.elasticsearchUrl = elasticsearchUrl;
   }
@@ -72,12 +82,18 @@ public class AuthorizationsUtil {
   }
 
   public ZeebeClient createClient(final String username, final String password) {
-    return createClient(broker, username, password);
+    return createClient(gateway, username, password);
+  }
+
+  public ZeebeClient createUserAndClient(
+      final String username, final String password, final Permissions... permissions) {
+    createUserWithPermissions(username, password, permissions);
+    return createClient(gateway, username, password);
   }
 
   public static ZeebeClient createClient(
-      final TestStandaloneBroker broker, final String username, final String password) {
-    return broker
+      final TestGateway<?> gateway, final String username, final String password) {
+    return gateway
         .newClientBuilder()
         .preferRestOverGrpc(true)
         .defaultRequestTimeout(Duration.ofSeconds(15))
@@ -137,6 +153,10 @@ public class AuthorizationsUtil {
                   OBJECT_MAPPER.readValue(response.body(), UserExistsResponse.class);
               return userExistsResponse.count > 0;
             });
+  }
+
+  public ZeebeClient getDefaultClient() {
+    return client;
   }
 
   public record Permissions(
