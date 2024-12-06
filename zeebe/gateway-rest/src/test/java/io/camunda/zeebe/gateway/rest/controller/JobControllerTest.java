@@ -326,7 +326,8 @@ public class JobControllerTest extends RestControllerTest {
           {
             "result": {
               "denied": true,
-              "corrections": {}
+              "corrections": {},
+              "correctedAttributes": []
             }
           }
         """;
@@ -367,7 +368,10 @@ public class JobControllerTest extends RestControllerTest {
                 "candidateUsers": ["UserA", "UserB"],
                 "candidateGroups": ["GroupA", "GroupB"],
                 "priority": 20
-              }
+              },
+              "correctedAttributes": [
+                "assignee", "dueDate", "followUpDate", "candidateUsers", "candidateGroups", "priority"
+              ]
             }
           }
         """;
@@ -402,6 +406,10 @@ public class JobControllerTest extends RestControllerTest {
         List.of("GroupA", "GroupB"),
         jobResultArgumentCaptor.getValue().getCorrections().getCandidateGroups());
     Assertions.assertEquals(20, jobResultArgumentCaptor.getValue().getCorrections().getPriority());
+    Assertions.assertEquals(
+        List.of(
+            "assignee", "dueDate", "followUpDate", "candidateUsers", "candidateGroups", "priority"),
+        jobResultArgumentCaptor.getValue().getCorrectedAttributes());
   }
 
   @Test
@@ -420,7 +428,10 @@ public class JobControllerTest extends RestControllerTest {
                 "candidateUsers": ["UserA", "UserB"],
                 "candidateGroups": ["GroupA", "GroupB"],
                 "priority": 20
-              }
+              },
+              "correctedAttributes": [
+                "assignee", "candidateUsers", "candidateGroups", "priority"
+              ]
             }
           }
         """;
@@ -452,6 +463,9 @@ public class JobControllerTest extends RestControllerTest {
         List.of("GroupA", "GroupB"),
         jobResultArgumentCaptor.getValue().getCorrections().getCandidateGroups());
     Assertions.assertEquals(20, jobResultArgumentCaptor.getValue().getCorrections().getPriority());
+    Assertions.assertEquals(
+        List.of("assignee", "candidateUsers", "candidateGroups", "priority"),
+        jobResultArgumentCaptor.getValue().getCorrectedAttributes());
   }
 
   @Test
@@ -466,7 +480,8 @@ public class JobControllerTest extends RestControllerTest {
             "result": {
               "denied": false,
               "corrections": {}
-            }
+            },
+            "correctedAttributes": []
           }
         """;
 
