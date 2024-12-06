@@ -42,7 +42,14 @@ public class OldRoutesRedirectionControllerIT {
 
   static Stream<String> redirectionTestDataProvider() {
     return Stream.of(
-        "", "/processes", "/processes/order", "/login", "/decisions", "/decisions/order");
+        "",
+        "/processes",
+        "/processes/order",
+        "/login",
+        "/decisions",
+        "/decisions/order",
+        "/instances",
+        "/instances/12345");
   }
 
   @ParameterizedTest
