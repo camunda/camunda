@@ -2606,7 +2606,7 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
-  /mapping-ruless/search:
+  /mapping-rules/search:
     post:
       tags:
         - Mapping rule
