@@ -163,6 +163,47 @@ public class AuthorizationCheckBehaviorTest {
     assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
   }
 
+  @Test
+  public void shouldBeAuthorizedWhenGroupHasPermissions() {
+    // given
+    final var userKey = createUser();
+    final var groupKey = createGroup(userKey);
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(groupKey, resourceType, permissionType, resourceId);
+    final var command = mockCommand(userKey);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType).addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized).isTrue();
+  }
+
+  @Test
+  public void shouldGetResourceIdentifiersWhenGroupHasPermissions() {
+    // given
+    final var userKey = createUser();
+    final var groupKey = createGroup(userKey);
+    final var resourceType = AuthorizationResourceType.DEPLOYMENT;
+    final var permissionType = PermissionType.DELETE;
+    final var resourceId1 = UUID.randomUUID().toString();
+    final var resourceId2 = UUID.randomUUID().toString();
+    addPermission(groupKey, resourceType, permissionType, resourceId1, resourceId2);
+    final var command = mockCommand(userKey);
+
+    // when
+    final var request = new AuthorizationRequest(command, resourceType, permissionType);
+    final var resourceIdentifiers =
+        authorizationCheckBehavior.getAuthorizedResourceIdentifiers(request);
+
+    // then
+    assertThat(resourceIdentifiers).containsExactlyInAnyOrder(resourceId1, resourceId2);
+  }
+
   private long createUser() {
     return engine
         .user()
@@ -178,6 +219,12 @@ public class AuthorizationCheckBehaviorTest {
     final var roleKey = engine.role().newRole(UUID.randomUUID().toString()).create().getKey();
     engine.role().addEntity(roleKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
     return roleKey;
+  }
+
+  private long createGroup(final long userKey) {
+    final var groupKey = engine.group().newGroup(UUID.randomUUID().toString()).create().getKey();
+    engine.group().addEntity(groupKey).withEntityKey(userKey).withEntityType(EntityType.USER).add();
+    return groupKey;
   }
 
   private void addPermission(

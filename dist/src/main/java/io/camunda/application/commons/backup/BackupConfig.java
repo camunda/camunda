@@ -65,10 +65,10 @@ public class BackupConfig {
   public ThreadPoolTaskExecutor getTaskExecutor() {
     final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
     executor.setCorePoolSize(1);
-    executor.setMaxPoolSize(1);
+    executor.setMaxPoolSize(8);
+    executor.setKeepAliveSeconds(60);
     executor.setThreadNamePrefix("webapps_backup_");
-    // TODO why just 6?
-    executor.setQueueCapacity(6);
+    executor.setQueueCapacity(4096);
     executor.initialize();
     return executor;
   }
