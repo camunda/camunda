@@ -3471,6 +3471,11 @@ components:
           description: Process Instance variables associated with the user task.
           items:
             $ref: "#/components/schemas/UserTaskVariableFilterRequest"
+        localVariables:
+          type: array
+          description: Local variables associated with the user task.
+          items:
+            $ref: "#/components/schemas/UserTaskVariableFilterRequest"
     UserTaskVariableFilterRequest:
       type: object
       properties:

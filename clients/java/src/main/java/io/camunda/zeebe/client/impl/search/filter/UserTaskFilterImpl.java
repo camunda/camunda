@@ -140,6 +140,13 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
     return this;
   }
 
+  @Override
+  public UserTaskFilter localVariables(
+      final List<UserTaskVariableFilterRequest> variableValueFilters) {
+    filter.setLocalVariables(variableValueFilters);
+    return this;
+  }
+
   // elementInstanceKey
   @Override
   public UserTaskFilter elementInstanceKey(final Long elementInstanceKey) {
