@@ -77,6 +77,7 @@ import io.camunda.webapps.schema.descriptors.operate.template.DecisionInstanceTe
 import io.camunda.webapps.schema.descriptors.operate.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.operate.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.operate.template.PostImporterQueueTemplate;
@@ -150,7 +151,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 new DraftTaskVariableTemplate(globalPrefix, isElasticsearch)),
             entry(
                 SnapshotTaskVariableTemplate.class,
-                new SnapshotTaskVariableTemplate(globalPrefix, isElasticsearch)));
+                new SnapshotTaskVariableTemplate(globalPrefix, isElasticsearch)),
+            entry(JobTemplate.class, new JobTemplate(globalPrefix, isElasticsearch)));
 
     indexDescriptorsMap =
         Map.ofEntries(
