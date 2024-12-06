@@ -320,6 +320,7 @@ jobs:
     name: Test summary
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     needs:
       - smoke-tests
       - property-tests
@@ -440,6 +441,7 @@ jobs:
     # the GitHub token passed around.
     name: Auto-merge backport and release PRs
     runs-on: ubuntu-latest
+    timeout-minutes: 3
     needs: [ test-summary ]
     if: |
       github.repository == 'camunda/camunda' &&

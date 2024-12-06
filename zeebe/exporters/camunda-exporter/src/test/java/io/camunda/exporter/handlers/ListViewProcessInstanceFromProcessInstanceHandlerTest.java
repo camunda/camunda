@@ -8,6 +8,7 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.POSITION;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.ELEMENT_ACTIVATING;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue.Builder;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import java.time.Instant;
@@ -34,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -61,7 +64,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   public void shouldHandleRecord() {
     final Set<ProcessInstanceIntent> intents2Handle =
         Set.of(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING,
+            ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
             ProcessInstanceIntent.ELEMENT_TERMINATED,
             ProcessInstanceIntent.ELEMENT_MIGRATED);
@@ -94,7 +97,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   public void shouldNotHandleRecord() {
     final Set<ProcessInstanceIntent> intents2Handle =
         Set.of(
-            ProcessInstanceIntent.ELEMENT_ACTIVATING,
+            ELEMENT_ACTIVATING,
             ProcessInstanceIntent.ELEMENT_COMPLETED,
             ProcessInstanceIntent.ELEMENT_TERMINATED,
             ProcessInstanceIntent.ELEMENT_MIGRATED);
@@ -125,9 +128,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
-            r ->
-                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-                    .withValue(processInstanceRecordValue));
+            r -> r.withIntent(ELEMENT_ACTIVATING).withValue(processInstanceRecordValue));
     // when - then
     assertThat(underTest.handlesRecord(processInstanceRecord)).isFalse();
   }
@@ -146,9 +147,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
-            r ->
-                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
-                    .withValue(processInstanceRecordValue));
+            r -> r.withIntent(ELEMENT_ACTIVATING).withValue(processInstanceRecordValue));
 
     // when
     final var idList = underTest.generateIds(processInstanceRecord);
@@ -181,7 +180,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setPosition(123L)
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
-            .setState(ProcessInstanceState.ACTIVE);
+            .setState(ProcessInstanceState.ACTIVE)
+            .setTreePath("PI_111");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -189,10 +189,40 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION, 2);
     expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION_TAG, "versionTag");
     expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
+    expectedUpdateFields.put(ListViewTemplate.TREE_PATH, "PI_111");
     expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
     expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
     expectedUpdateFields.put(ListViewTemplate.START_DATE, inputEntity.getStartDate());
     expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
+    expectedUpdateFields.put(POSITION, 123L);
+
+    // when
+    underTest.flush(inputEntity, mockRequest);
+
+    // then
+    verify(mockRequest, times(1)).upsert(indexName, "111", inputEntity, expectedUpdateFields);
+  }
+
+  @Test
+  void shouldNotUpsertNullFields() {
+    // given
+    final ProcessInstanceForListViewEntity inputEntity =
+        new ProcessInstanceForListViewEntity()
+            .setId("111")
+            .setProcessName("process")
+            .setProcessVersion(2)
+            .setProcessDefinitionKey(444L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setPosition(123L)
+            .setState(ProcessInstanceState.ACTIVE);
+    final BatchRequest mockRequest = mock(BatchRequest.class);
+
+    final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_NAME, "process");
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_VERSION, 2);
+    expectedUpdateFields.put(ListViewTemplate.PROCESS_KEY, 444L);
+    expectedUpdateFields.put(ListViewTemplate.BPMN_PROCESS_ID, "bpmnProcessId");
+    expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
@@ -219,7 +249,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setPosition(123L)
             .setStartDate(OffsetDateTime.now())
             .setEndDate(OffsetDateTime.now())
-            .setState(ProcessInstanceState.ACTIVE);
+            .setState(ProcessInstanceState.ACTIVE)
+            .setTreePath("PI_111");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -231,6 +262,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE);
     expectedUpdateFields.put(ListViewTemplate.START_DATE, inputEntity.getStartDate());
     expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
+    expectedUpdateFields.put(ListViewTemplate.TREE_PATH, "PI_111");
     expectedUpdateFields.put(POSITION, 123L);
 
     // when
@@ -254,14 +286,18 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     final ProcessInstanceRecordValue processInstanceRecordValue =
         ImmutableProcessInstanceRecordValue.builder()
             .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withProcessInstanceKey(111)
+            .withProcessDefinitionKey(222)
             .withBpmnElementType(BpmnElementType.PROCESS)
+            .withElementInstancePath(List.of(List.of(111L)))
+            .withProcessDefinitionPath(List.of(222L))
             .build();
-
     final Record<ProcessInstanceRecordValue> processInstanceRecord =
         factory.generateRecord(
             ValueType.PROCESS_INSTANCE,
             r ->
-                r.withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATING)
+                r.withKey(111)
+                    .withIntent(ELEMENT_ACTIVATING)
                     .withTimestamp(timestamp)
                     .withPartitionId(3)
                     .withPosition(55L)
@@ -307,13 +343,96 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
         .isEqualTo(processInstanceRecordValue.getParentElementInstanceKey());
     assertThat(processInstanceForListViewEntity.getJoinRelation())
         .isEqualTo(new ListViewJoinRelation(ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
-    assertThat(processInstanceForListViewEntity.getTreePath())
-        .isEqualTo("PI_" + processInstanceRecordValue.getProcessInstanceKey());
+    assertThat(processInstanceForListViewEntity.getTreePath()).isEqualTo("PI_111");
 
     // process name and version tag is read from the cache
     assertThat(processInstanceForListViewEntity.getProcessName()).isEqualTo("test-process-name");
     assertThat(processInstanceForListViewEntity.getProcessVersionTag())
         .isEqualTo("test-version-tag");
+  }
+
+  @Test
+  public void shouldUpdateTreePathFromRecordWithCallActivity() {
+    // given
+    final long processDefinitionKey1 = 999L;
+    final Long pi1Key = 111L;
+    final Integer callActivityIndex1 = 3;
+    final String callActivityId1 = "callActivity1";
+    final long subprocess1Key = 987L;
+    final long callActivity1Key = 123L;
+    final long processDefinitionKey2 = 888L;
+    final Long pi2Key = 222L;
+    final Integer callActivityIndex2 = 1;
+    final String callActivityId2 = "callActivity2";
+    final long subprocess2Key = 876L;
+    final long callActivity2Key = 234L;
+    final Long pi3Key = 333L;
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        createProcessInstanceRecord(
+            List.of(
+                List.of(pi1Key, subprocess1Key, callActivity1Key),
+                List.of(pi2Key, subprocess2Key, callActivity2Key),
+                List.of(pi3Key)),
+            List.of(callActivityIndex1, callActivityIndex2),
+            List.of(processDefinitionKey1, processDefinitionKey2, 777L),
+            pi3Key);
+    processCache.put(
+        processDefinitionKey1,
+        new CachedProcessEntity(null, null, List.of("0", "1", "2", callActivityId1)));
+
+    processCache.put(
+        processDefinitionKey2, new CachedProcessEntity(null, null, List.of("0", callActivityId2)));
+
+    // when called process 3rd level
+    final ProcessInstanceForListViewEntity processInstanceForListViewEntity3 =
+        new ProcessInstanceForListViewEntity().setId(String.valueOf(pi3Key));
+    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity3);
+    // then
+    assertThat(processInstanceForListViewEntity3.getTreePath())
+        .isEqualTo("PI_111/FN_callActivity1/FNI_123/PI_222/FN_callActivity2/FNI_234/PI_333");
+  }
+
+  @Test
+  public void shouldUpdateTreePathFromRecordWithoutCallActivity() {
+    // given
+    final Long pi1Key = 111L;
+    final long subprocess1Key = 987L;
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        createProcessInstanceRecord(
+            List.of(List.of(pi1Key, subprocess1Key, 345L)), List.of(), List.of(777L), pi1Key);
+
+    // when called process 3rd level
+    final ProcessInstanceForListViewEntity processInstanceForListViewEntity3 =
+        new ProcessInstanceForListViewEntity().setId(String.valueOf(pi1Key));
+    underTest.updateEntity(processInstanceRecord, processInstanceForListViewEntity3);
+    // then
+    assertThat(processInstanceForListViewEntity3.getTreePath()).isEqualTo("PI_111");
+  }
+
+  private Record<ProcessInstanceRecordValue> createProcessInstanceRecord(
+      final List<List<Long>> elementInstancePath,
+      final List<Integer> callingElementPath,
+      final List<Long> processDefinitionPath,
+      final Long processInstanceKey) {
+    final Builder builder =
+        ImmutableProcessInstanceRecordValue.builder()
+            .withElementInstancePath(elementInstancePath)
+            .withProcessInstanceKey(processInstanceKey);
+    if (callingElementPath != null) {
+      builder.withCallingElementPath(callingElementPath);
+    }
+    if (processDefinitionPath != null) {
+      builder.withProcessDefinitionPath(processDefinitionPath);
+    }
+    final ProcessInstanceRecordValue processInstanceValue = builder.build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r ->
+                r.withIntent(ELEMENT_ACTIVATING)
+                    .withKey(processInstanceKey)
+                    .withValue(processInstanceValue));
+    return processInstanceRecord;
   }
 
   @Test

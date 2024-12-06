@@ -9,11 +9,12 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"strconv"
 	"syscall"
 )
 
-func (w *UnixC8Run) OpenBrowser(protocol string) error {
-	operateUrl := protocol + "://localhost:8080/operate/login"
+func (w *UnixC8Run) OpenBrowser(protocol string, port int) error {
+	operateUrl := protocol + "://localhost:" + strconv.Itoa(port) + "/operate/login"
 	var openBrowserCmdString string
 	if runtime.GOOS == "darwin" {
 		openBrowserCmdString = "open"

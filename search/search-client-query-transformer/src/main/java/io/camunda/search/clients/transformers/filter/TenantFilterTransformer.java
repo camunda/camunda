@@ -15,6 +15,8 @@ import static io.camunda.webapps.schema.descriptors.usermanagement.index.TenantI
 
 import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.webapps.schema.descriptors.usermanagement.index.TenantIndex;
+import io.camunda.webapps.schema.entities.usermanagement.EntityJoinRelation.IdentityJoinRelationshipType;
 import java.util.List;
 
 public class TenantFilterTransformer implements FilterTransformer<TenantFilter> {
@@ -23,6 +25,7 @@ public class TenantFilterTransformer implements FilterTransformer<TenantFilter> 
   public SearchQuery toSearchQuery(final TenantFilter filter) {
 
     return and(
+        term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType()),
         filter.key() == null ? null : term(KEY, filter.key()),
         filter.tenantId() == null ? null : term(TENANT_ID, filter.tenantId()),
         filter.name() == null ? null : term(NAME, filter.name()));

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.config;
+package io.camunda.application.commons.backup;
 
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -14,6 +14,7 @@ import java.util.Objects;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 @Configuration
 public class BackupConfig {
@@ -58,6 +59,18 @@ public class BackupConfig {
     } else {
       return BackupRepositoryProps.EMPTY;
     }
+  }
+
+  @Bean("backupThreadPoolExecutor")
+  public ThreadPoolTaskExecutor getTaskExecutor() {
+    final ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+    executor.setCorePoolSize(1);
+    executor.setMaxPoolSize(1);
+    executor.setThreadNamePrefix("webapps_backup_");
+    // TODO why just 6?
+    executor.setQueueCapacity(6);
+    executor.initialize();
+    return executor;
   }
 
   public static BackupRepositoryProps props(

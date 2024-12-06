@@ -115,7 +115,8 @@ public class UserTaskCompletionVariableHandlerTest {
     // then
     assertThat(idList)
         .containsExactlyInAnyOrder(
-            elementInstanceKey + "-" + "var1", elementInstanceKey + "-" + "var2");
+            elementInstanceKey + "-" + "var1" + TaskTemplate.LOCAL_VARIABLE_SUFFIX,
+            elementInstanceKey + "-" + "var2" + TaskTemplate.LOCAL_VARIABLE_SUFFIX);
   }
 
   @Test
@@ -132,7 +133,7 @@ public class UserTaskCompletionVariableHandlerTest {
   void shouldAddEntityOnFlush() {
     // given
     final var join = new TaskJoinRelationship();
-    join.setName(TaskJoinRelationshipType.TASK_VARIABLE.getType());
+    join.setName(TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
     join.setParent(123L);
     final TaskVariableEntity inputEntity =
         new TaskVariableEntity()
@@ -159,7 +160,7 @@ public class UserTaskCompletionVariableHandlerTest {
             inputEntity.getId(),
             inputEntity,
             updateFieldsMap,
-            String.valueOf(inputEntity.getScopeKey()));
+            String.valueOf(inputEntity.getProcessInstanceId()));
   }
 
   @Test
@@ -188,7 +189,7 @@ public class UserTaskCompletionVariableHandlerTest {
     assertThat(variableEntity.getJoin()).isNotNull();
     assertThat(variableEntity.getJoin().getParent()).isEqualTo(scopeKey);
     assertThat(variableEntity.getJoin().getName())
-        .isEqualTo(TaskJoinRelationshipType.TASK_VARIABLE.getType());
+        .isEqualTo(TaskJoinRelationshipType.LOCAL_VARIABLE.getType());
   }
 
   @Test

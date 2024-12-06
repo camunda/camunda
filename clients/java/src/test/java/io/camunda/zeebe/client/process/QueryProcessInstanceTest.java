@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.protocol.rest.*;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayService;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -57,6 +58,10 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     // when
     final OffsetDateTime startDate = OffsetDateTime.now().minusDays(1);
     final OffsetDateTime endDate = OffsetDateTime.now();
+    final List<ProcessInstanceVariableFilterRequest> variables =
+        Arrays.asList(
+            new ProcessInstanceVariableFilterRequest().name("n1").value("v1"),
+            new ProcessInstanceVariableFilterRequest().name("n2").value("v2"));
     client
         .newProcessInstanceQuery()
         .filter(
@@ -74,7 +79,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .endDate(endDate)
                     .state("ACTIVE")
                     .hasIncident(true)
-                    .tenantId("tenant"))
+                    .tenantId("tenant")
+                    .variables(variables))
         .send()
         .join();
     // then
@@ -96,6 +102,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     assertThat(filter.getState().get$Eq()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasIncident()).isEqualTo(true);
     assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
+    assertThat(filter.getVariables()).isEqualTo(variables);
   }
 
   @Test
@@ -151,6 +158,25 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     final DateTimeFilterProperty startDate = filter.getStartDate();
     assertThat(startDate).isNotNull();
     assertThat(startDate.get$Gt()).isEqualTo(now.toString());
+  }
+
+  @Test
+  void shouldSearchProcessInstanceByVariablesFilter() {
+    // given
+    final List<ProcessInstanceVariableFilterRequest> variables =
+        Arrays.asList(
+            new ProcessInstanceVariableFilterRequest().name("n1").value("v1"),
+            new ProcessInstanceVariableFilterRequest().name("n2").value("v2"));
+
+    // when
+    client.newProcessInstanceQuery().filter(f -> f.variables(variables)).send().join();
+
+    // then
+    final ProcessInstanceSearchQueryRequest request =
+        gatewayService.getLastRequest(ProcessInstanceSearchQueryRequest.class);
+    final ProcessInstanceFilterRequest filter = request.getFilter();
+    assertThat(filter).isNotNull();
+    assertThat(filter.getVariables()).isEqualTo(variables);
   }
 
   @Test
