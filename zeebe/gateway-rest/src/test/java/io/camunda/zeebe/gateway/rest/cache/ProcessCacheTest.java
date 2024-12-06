@@ -129,14 +129,12 @@ class ProcessCacheTest {
 
     // then
     verify(xmlUtil).extractFlowNodeNames(eq(Set.of(1L, 2L, 3L)), any());
-    assertThat(actual.processDefinitionKeyItemMap()).hasSize(3);
-    assertThat(actual.processDefinitionKeyItemMap().keySet()).containsOnly(1L, 2L, 3L);
-    assertThat(actual.processDefinitionKeyItemMap().get(1L).flowNodeIdNameMap())
-        .containsOnly(entry("id1", "Name 1"));
-    assertThat(actual.processDefinitionKeyItemMap().get(2L).flowNodeIdNameMap())
+    assertThat(actual).hasSize(3);
+    assertThat(actual.keySet()).containsOnly(1L, 2L, 3L);
+    assertThat(actual.get(1L).flowNodeIdNameMap()).containsOnly(entry("id1", "Name 1"));
+    assertThat(actual.get(2L).flowNodeIdNameMap())
         .containsOnly(entry("id21", "Name 21"), entry("id22", "Name 22"));
-    assertThat(actual.processDefinitionKeyItemMap().get(3L).flowNodeIdNameMap())
-        .containsOnly(entry("id3", "Name 3"));
+    assertThat(actual.get(3L).flowNodeIdNameMap()).containsOnly(entry("id3", "Name 3"));
     final var cacheMap = getCacheMap();
     assertThat(cacheMap).hasSize(3);
     assertThat(cacheMap).containsOnlyKeys(1L, 2L, 3L);
@@ -154,22 +152,6 @@ class ProcessCacheTest {
 
     // when
     final var actual = cacheItem.getFlowNodeName("non-existing");
-
-    // then
-    assertThat(actual).isNotNull();
-    assertThat(actual).isEqualTo("non-existing");
-  }
-
-  @Test
-  void shouldResolveAnyProcessDefinitionAndFlowNode() {
-    // given
-    mockLoad(
-        Tuple.of(1L, new ProcessFlowNode("id1", "Name 1")),
-        Tuple.of(2L, new ProcessFlowNode("id2", "Name 2")));
-    final var cacheItem = processCache.getCacheItems(Set.of(1L, 2L));
-
-    // when
-    final var actual = cacheItem.getFlowNodeName(99L, "non-existing");
 
     // then
     assertThat(actual).isNotNull();

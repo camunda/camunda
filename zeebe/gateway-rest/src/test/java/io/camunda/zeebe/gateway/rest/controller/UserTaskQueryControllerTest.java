@@ -30,7 +30,6 @@ import io.camunda.service.UserTaskServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCache;
 import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
-import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItems;
 import io.camunda.zeebe.gateway.rest.config.JacksonConfig;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -241,9 +240,8 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
     final var processCacheItem = mock(ProcessCacheItem.class);
     when(processCacheItem.getFlowNodeName(any())).thenReturn("name");
     final Map<Long, ProcessCacheItem> processDefinitionMap = mock(HashMap.class);
-    when(processDefinitionMap.get(any())).thenReturn(processCacheItem);
-    when(processCache.getUserTaskNames(any()))
-        .thenReturn(new ProcessCacheItems(processDefinitionMap));
+    when(processDefinitionMap.getOrDefault(any(), any())).thenReturn(processCacheItem);
+    when(processCache.getUserTaskNames(any())).thenReturn(processDefinitionMap);
   }
 
   @Test

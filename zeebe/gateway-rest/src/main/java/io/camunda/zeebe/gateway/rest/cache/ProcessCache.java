@@ -52,11 +52,11 @@ public class ProcessCache {
     return cache.get(processDefinitionKey);
   }
 
-  public ProcessCacheItems getCacheItems(final Set<Long> processDefinitionKeys) {
-    return new ProcessCacheItems(cache.getAll(processDefinitionKeys));
+  public Map<Long, ProcessCacheItem> getCacheItems(final Set<Long> processDefinitionKeys) {
+    return cache.getAll(processDefinitionKeys);
   }
 
-  public ProcessCacheItems getUserTaskNames(final List<UserTaskEntity> items) {
+  public Map<Long, ProcessCacheItem> getUserTaskNames(final List<UserTaskEntity> items) {
     return getCacheItems(
         items.stream().map(UserTaskEntity::processDefinitionKey).collect(Collectors.toSet()));
   }
@@ -65,7 +65,7 @@ public class ProcessCache {
     return getCacheItem(userTask.processDefinitionKey()).getFlowNodeName(userTask.elementId());
   }
 
-  public ProcessCacheItems getFlowNodeNames(final List<FlowNodeInstanceEntity> items) {
+  public Map<Long, ProcessCacheItem> getFlowNodeNames(final List<FlowNodeInstanceEntity> items) {
     return getCacheItems(
         items.stream()
             .map(FlowNodeInstanceEntity::processDefinitionKey)

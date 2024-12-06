@@ -7,11 +7,17 @@
  */
 package io.camunda.zeebe.gateway.rest.cache;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 public record ProcessCacheItem(Map<String, String> flowNodeIdNameMap) {
 
   public String getFlowNodeName(final String flowNodeId) {
     return flowNodeIdNameMap.getOrDefault(flowNodeId, flowNodeId);
+  }
+
+  public static ProcessCacheItem empty() {
+    return new ProcessCacheItem(Collections.unmodifiableMap(new HashMap<>()));
   }
 }

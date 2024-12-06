@@ -68,10 +68,11 @@ import io.camunda.zeebe.gateway.protocol.rest.UserTaskItem;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskSearchQueryResponse;
 import io.camunda.zeebe.gateway.protocol.rest.VariableItem;
 import io.camunda.zeebe.gateway.protocol.rest.VariableSearchQueryResponse;
-import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItems;
+import io.camunda.zeebe.gateway.rest.cache.ProcessCacheItem;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class SearchQueryResponseMapper {
@@ -144,7 +145,7 @@ public final class SearchQueryResponseMapper {
 
   public static FlowNodeInstanceSearchQueryResponse toFlowNodeInstanceSearchQueryResponse(
       final SearchQueryResult<FlowNodeInstanceEntity> result,
-      final ProcessCacheItems processCacheItems) {
+      final Map<Long, ProcessCacheItem> processCacheItems) {
     final var page = toSearchQueryPageResponse(result);
     return new FlowNodeInstanceSearchQueryResponse()
         .page(page)
@@ -166,7 +167,8 @@ public final class SearchQueryResponseMapper {
   }
 
   public static UserTaskSearchQueryResponse toUserTaskSearchQueryResponse(
-      final SearchQueryResult<UserTaskEntity> result, final ProcessCacheItems processCacheItems) {
+      final SearchQueryResult<UserTaskEntity> result,
+      final Map<Long, ProcessCacheItem> processCacheItems) {
     final var page = toSearchQueryPageResponse(result);
     return new UserTaskSearchQueryResponse()
         .page(page)
@@ -290,13 +292,15 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<FlowNodeInstanceItem> toFlowNodeInstance(
-      final List<FlowNodeInstanceEntity> instances, final ProcessCacheItems processCacheItems) {
+      final List<FlowNodeInstanceEntity> instances,
+      final Map<Long, ProcessCacheItem> processCacheItems) {
     return instances.stream()
         .map(
             instance -> {
-              final String flowNodeName =
-                  processCacheItems.getFlowNodeName(
-                      instance.processDefinitionKey(), instance.flowNodeId());
+              final var flowNodeName =
+                  processCacheItems
+                      .getOrDefault(instance.processDefinitionKey(), ProcessCacheItem.empty())
+                      .getFlowNodeName(instance.flowNodeId());
               return toFlowNodeInstance(instance, flowNodeName);
             })
         .toList();
@@ -344,12 +348,16 @@ public final class SearchQueryResponseMapper {
   }
 
   private static List<UserTaskItem> toUserTasks(
-      final List<UserTaskEntity> tasks, final ProcessCacheItems processCacheItems) {
+      final List<UserTaskEntity> tasks, final Map<Long, ProcessCacheItem> processCacheItems) {
     return tasks.stream()
         .map(
-            (UserTaskEntity t) ->
-                toUserTask(
-                    t, processCacheItems.getFlowNodeName(t.processDefinitionKey(), t.elementId())))
+            (final UserTaskEntity t) -> {
+              final var name =
+                  processCacheItems
+                      .getOrDefault(t.processDefinitionKey(), ProcessCacheItem.empty())
+                      .getFlowNodeName(t.elementId());
+              return toUserTask(t, name);
+            })
         .toList();
   }
 
