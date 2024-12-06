@@ -22,6 +22,7 @@ import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.UsageMetricsEntity;
 import io.camunda.search.entities.UserEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
@@ -39,6 +40,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.VariableQuery;
@@ -61,7 +63,8 @@ public class SearchClients
         UserSearchClient,
         VariableSearchClient,
         MappingSearchClient,
-        GroupSearchClient {
+        GroupSearchClient,
+        UsageMetricsSearchClient {
 
   private final DocumentBasedSearchClient searchClient;
   private final ServiceTransformers transformers;
@@ -291,5 +294,11 @@ public class SearchClients
             new DocumentAuthorizationQueryStrategy(this),
             securityContext);
     return executor.search(filter, io.camunda.webapps.schema.entities.operate.VariableEntity.class);
+  }
+
+  @Override
+  public UsageMetricsEntity searchUsageMetrics(final UsageMetricsQuery query) {
+    // TODO: Search Operate and Tasklist
+    return new UsageMetricsEntity(1L, 2L, 3L);
   }
 }
