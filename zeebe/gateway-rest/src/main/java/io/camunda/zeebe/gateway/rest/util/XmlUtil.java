@@ -51,7 +51,8 @@ public class XmlUtil {
       final Long processDefinitionKey,
       final BiConsumer<Long, ProcessFlowNode> processDefinitionKeyFlowNodeConsumer) {
     final var processDefinition = processDefinitionServices.getByKey(processDefinitionKey);
-    extractFlowNodeNames(processDefinition, processDefinitionKeyFlowNodeConsumer);
+    extractFlowNodeNames(
+        getSAXParserFactory(), processDefinition, processDefinitionKeyFlowNodeConsumer);
   }
 
   public void extractFlowNodeNames(
@@ -65,15 +66,21 @@ public class XmlUtil {
                     q.filter(f -> f.processDefinitionKeys(keysList))
                         .page(p -> p.size(processDefinitionKeys.size()))));
 
-    for (final var processDefinition : result.items()) {
-      extractFlowNodeNames(processDefinition, processDefinitionKeyFlowNodeConsumer);
+    if (result.total() > result.items().size()) {
+      LOG.warn("Could not load all required process definitions");
+    }
+
+    final var saxParserFactory = getSAXParserFactory();
+    for (final ProcessDefinitionEntity processDefinition : result.items()) {
+      extractFlowNodeNames(
+          saxParserFactory, processDefinition, processDefinitionKeyFlowNodeConsumer);
     }
   }
 
   private void extractFlowNodeNames(
+      final SAXParserFactory saxParserFactory,
       final ProcessDefinitionEntity processDefinition,
       final BiConsumer<Long, ProcessFlowNode> flowNodeConsumer) {
-    final var saxParserFactory = getSAXParserFactory();
     final var is =
         new ByteArrayInputStream(processDefinition.bpmnXml().getBytes(StandardCharsets.UTF_8));
     final var handler = new BpmnXmlParserHandler(processDefinition, flowNodeConsumer);

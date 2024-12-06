@@ -191,6 +191,7 @@ class XmlUtilTest {
         .thenReturn(
             new SearchQueryResult.Builder<ProcessDefinitionEntity>()
                 .items(List.of(processDefinition, processDefinition2, processDefinition3))
+                .total(3)
                 .build());
     // when
     xmlUtil.extractFlowNodeNames(Set.of(PROC_DEF_KEY, 2L, 3L), mockConsumer);
