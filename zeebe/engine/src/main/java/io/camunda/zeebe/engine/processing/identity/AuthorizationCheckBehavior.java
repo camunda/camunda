@@ -122,11 +122,12 @@ public final class AuthorizationCheckBehavior {
         .map(
             userKey -> {
               final var userOptional = userState.getUser(userKey);
-              if (userOptional.isEmpty()) {
-      return new HashSet<>();
-    }
-    return getUserAuthorizedResourceIdentifiers(
-        userOptional.get(), request.getResourceType(), request.getPermissionType());
+              return userOptional
+                  .map(
+                      user ->
+                          getUserAuthorizedResourceIdentifiers(
+                              user, request.getResourceType(), request.getPermissionType()))
+                  .orElseGet(Stream::empty);
             })
         .orElseGet(Stream::empty)
         .collect(Collectors.toSet());
@@ -155,15 +156,13 @@ public final class AuthorizationCheckBehavior {
       final AuthorizationResourceType resourceType,
       final PermissionType permissionType) {
     return switch (ownerType) {
-      case USER ->
-          {
+      case USER -> {
         final var userOptional = userState.getUser(ownerKey);
         if (userOptional.isEmpty()) {
           yield new HashSet<>();
         }
-        yield getUserAuthorizedResourceIdentifiers(
-            userOptional.get(), resourceType, permissionType)
-              .collect(Collectors.toSet());
+        yield getUserAuthorizedResourceIdentifiers(userOptional.get(), resourceType, permissionType)
+            .collect(Collectors.toSet());
       }
       case ROLE, GROUP ->
           // Roles and groups can only have direct authorizations

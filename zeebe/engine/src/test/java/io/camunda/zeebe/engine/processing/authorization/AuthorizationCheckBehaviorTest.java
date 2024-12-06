@@ -181,7 +181,7 @@ public class AuthorizationCheckBehaviorTest {
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
     // then
-    assertThat(authorized).isTrue();
+    assertThat(authorized.isRight()).isTrue();
   }
 
   @Test

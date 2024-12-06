@@ -69,7 +69,8 @@ public class TenantAwareActivateJobBatchTest {
         .add();
 
     // when
-    final var tenantIds = new java.util.ArrayList<>(List.of("custom-tenant", "another-tenant", "tenantId"));
+    final var tenantIds =
+        new java.util.ArrayList<>(List.of("custom-tenant", "another-tenant", "tenantId"));
     final var rejection =
         ENGINE.jobs().withTenantIds(tenantIds).withType("test").expectRejection().activate(userKey);
 

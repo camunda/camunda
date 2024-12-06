@@ -130,7 +130,7 @@ public class TenantAwareModifyProcessInstanceTest {
     assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to modify a process instance with key '%s', but no process instance was found"
+            "Expected to modify a process instance with key '%s', but no such process instance was found"
                 .formatted(processInstanceKey));
   }
 
