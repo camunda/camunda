@@ -123,7 +123,7 @@ public final class AuthorizationCheckBehavior {
       final PermissionType permissionType) {
     final var userOptional = userState.getUser(userKey);
     if (userOptional.isEmpty()) {
-      return Stream.of();
+      return Stream.empty();
     }
 
     final var user = userOptional.get();
