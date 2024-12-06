@@ -11,7 +11,9 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
+import io.camunda.tasklist.zeebeimport.RecordsReaderAbstract;
 import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
+import io.camunda.tasklist.zeebeimport.os.RecordsReaderOpenSearch;
 import io.camunda.webapps.schema.descriptors.tasklist.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.entities.operate.ImportPositionEntity;
 import java.time.Duration;
@@ -39,8 +41,12 @@ public class RecordsReaderOpensearchIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldWriteDefaultEmptyDefaultImportPositionDocumentsOnRecordReaderStart() {
+    recordsReaderHolder.getAllRecordsReaders().stream()
+        .map(RecordsReaderOpenSearch.class::cast)
+        .forEach(RecordsReaderAbstract::postConstruct);
+
     Awaitility.await()
-        .atMost(Duration.ofSeconds(60))
+        .atMost(Duration.ofSeconds(30))
         .until(
             () -> {
               final var searchRequest =
