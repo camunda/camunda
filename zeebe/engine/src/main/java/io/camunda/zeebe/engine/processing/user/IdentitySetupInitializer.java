@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
-import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.state.immutable.RoleState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
@@ -40,18 +39,14 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public static final String DEFAULT_TENANT_NAME = "Default";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private final KeyGenerator keyGenerator;
-  private final SecurityConfiguration securityConfig;
   private final PasswordEncoder passwordEncoder;
   private final RoleState roleState;
   private final UserState userState;
   private final TenantState tenantState;
 
   public IdentitySetupInitializer(
-      final KeyGenerator keyGenerator,
-      final SecurityConfiguration securityConfig,
-      final MutableProcessingState processingState) {
+      final KeyGenerator keyGenerator, final MutableProcessingState processingState) {
     this.keyGenerator = keyGenerator;
-    this.securityConfig = securityConfig;
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
     userState = processingState.getUserState();
     roleState = processingState.getRoleState();
@@ -60,12 +55,6 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
 
   @Override
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
-    if (!securityConfig.getAuthorizations().isEnabled()) {
-      // If authorization is disabled we don't need to setup identity.
-      LOG.debug("Skipping identity setup as authorization is disabled");
-      return;
-    }
-
     if (context.getPartitionId() != Protocol.DEPLOYMENT_PARTITION) {
       // We should only create users on the deployment partition. The command will be distributed to
       // the other partitions using our command distribution mechanism.
