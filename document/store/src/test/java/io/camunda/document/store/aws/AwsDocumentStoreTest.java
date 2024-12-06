@@ -43,6 +43,7 @@ class AwsDocumentStoreTest {
 
   public static final String BUCKET_NAME = "test-bucket";
   public static final Long BUCKET_TTL = 30L;
+  public static final String BUCKET_PATH = "/test/";
 
   @Mock private S3Client s3Client;
   @Mock private S3Presigner preSigner;
@@ -52,7 +53,12 @@ class AwsDocumentStoreTest {
   void setUp() {
     documentStore =
         new AwsDocumentStore(
-            BUCKET_NAME, BUCKET_TTL, s3Client, Executors.newSingleThreadExecutor(), preSigner);
+            BUCKET_NAME,
+            BUCKET_TTL,
+            BUCKET_PATH,
+            s3Client,
+            Executors.newSingleThreadExecutor(),
+            preSigner);
   }
 
   @Test
