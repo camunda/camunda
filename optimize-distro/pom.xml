@@ -32,21 +32,6 @@
     </dependency>
   </dependencies>
 
-  <profiles>
-    <profile>
-      <id>add-license-key</id>
-      <properties>
-        <exclude.from.config />
-      </properties>
-    </profile>
-    <profile>
-      <id>runAssembly</id>
-      <properties>
-        <assembly.skipAssembly>false</assembly.skipAssembly>
-      </properties>
-    </profile>
-  </profiles>
-
   <build>
     <finalName>camunda-optimize-${project.version}</finalName>
     <plugins>
@@ -56,10 +41,10 @@
         <executions>
           <execution>
             <id>assemble</id>
-            <phase>package</phase>
             <goals>
               <goal>single</goal>
             </goals>
+            <phase>package</phase>
             <configuration>
               <descriptors>
                 <descriptor>assembly-distro-demo.xml</descriptor>
@@ -144,10 +129,10 @@
         <version>1.13.0</version>
         <executions>
           <execution>
-            <phase>process-resources</phase>
             <goals>
               <goal>wget</goal>
             </goals>
+            <phase>process-resources</phase>
             <configuration>
               <url>https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-${elasticsearch.demo.version}-windows-x86_64.zip</url>
               <unpack>true</unpack>
@@ -159,4 +144,19 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>add-license-key</id>
+      <properties>
+        <exclude.from.config></exclude.from.config>
+      </properties>
+    </profile>
+    <profile>
+      <id>runAssembly</id>
+      <properties>
+        <assembly.skipAssembly>false</assembly.skipAssembly>
+      </properties>
+    </profile>
+  </profiles>
 </project>
