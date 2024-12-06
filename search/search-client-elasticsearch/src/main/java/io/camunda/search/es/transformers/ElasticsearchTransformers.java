@@ -13,20 +13,13 @@ import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
 import io.camunda.search.clients.aggregation.SearchAggregation;
 import io.camunda.search.clients.aggregation.SearchCardinalityAggregate;
 import io.camunda.search.clients.aggregation.SearchCardinalityAggregation;
+import io.camunda.search.clients.aggregation.SearchTermsAggregate;
 import io.camunda.search.clients.aggregation.SearchTermsAggregation;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.CardinalityAggregate;
-import co.elastic.clients.elasticsearch._types.aggregations.LongTermsAggregate;
-import io.camunda.search.clients.aggregation.SearchAggregation;
-import io.camunda.search.clients.aggregation.SearchCardinalityAggregate;
-import io.camunda.search.clients.aggregation.SearchCardinalityAggregation;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchDeleteRequest;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchIndexRequest;
-import io.camunda.search.clients.aggregation.SearchTermsAggregation;
-import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.core.SearchQueryHit;
 import io.camunda.search.clients.core.SearchQueryRequest;
 import io.camunda.search.clients.core.SearchQueryResponse;
@@ -111,6 +104,15 @@ public final class ElasticsearchTransformers {
     mappers.put(SearchQueryResponse.class, new SearchResponseTransformer(mappers));
     mappers.put(SearchQueryHit.class, new SearchRequestTransformer(mappers));
 
+    // get request/response
+    mappers.put(SearchGetRequest.class, new SearchGetRequestTransformer(mappers));
+    mappers.put(SearchGetResponse.class, new SearchGetResponseTransformer(mappers));
+
+    // write request/response
+    mappers.put(SearchIndexRequest.class, new SearchIndexRequestTransformer(mappers));
+    mappers.put(SearchDeleteRequest.class, new SearchDeleteRequestTransformer(mappers));
+    mappers.put(SearchWriteResponse.class, new SearchWriteResponseTransformer(mappers));
+
     // queries
     mappers.put(SearchQuery.class, new QueryTransformer(mappers));
     mappers.put(SearchBoolQuery.class, new BoolQueryTransformer(mappers));
@@ -136,17 +138,18 @@ public final class ElasticsearchTransformers {
     // types
     mappers.put(TypedValue.class, new TypedValueTransformer(mappers));
 
-    // aggregations
+    // source
+    mappers.put(SearchSourceConfig.class, new SourceConfigTransformer(mappers));
+    mappers.put(SearchSourceFilter.class, new SourceFilterTransformer(mappers));
+
+    // Aggregations
     mappers.put(SearchAggregation.class, new SearchAggregationTransformer(mappers));
     mappers.put(SearchCardinalityAggregation.class, new CardinalityAggregationTransformer(mappers));
     mappers.put(SearchTermsAggregation.class, new TermsAggregationTransformer(mappers));
 
     // aggregates
     mappers.put(SearchCardinalityAggregate.class, new CardinalityAggregateTransformer(mappers));
-
-    // source
-    mappers.put(SearchSourceConfig.class, new SourceConfigTransformer(mappers));
-    mappers.put(SearchSourceFilter.class, new SourceFilterTransformer(mappers));
+    mappers.put(SearchTermsAggregate.class, new TermsAggregateTransformer(mappers));
     mappers.put(Aggregate.class, new SearchAggregateTransformer(mappers));
     mappers.put(CardinalityAggregate.class, new CardinalityAggregateTransformer(mappers));
     mappers.put(LongTermsAggregate.class, new TermsAggregateTransformer(mappers));
