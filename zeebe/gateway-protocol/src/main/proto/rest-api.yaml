@@ -2747,6 +2747,49 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
+  /groups/{groupKey}/users/search:
+    post:
+      tags:
+        - Group
+      operationId: searchUsersInGroup
+      summary: Query users assigned to a group
+      description: |
+        Search for users assigned to a group based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: The users search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupSearchUserQueryResponse"
+        "400":
+          description: >
+            The users search query failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The group with the groupKey is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          description: An internal error occurred while processing the request.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
   /groups/{groupKey}/users/{userKey}:
     post:
       tags:
@@ -2840,6 +2883,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"                
         "500":
           $ref: "#/components/responses/InternalServerError"
+
   /groups/search:
     post:
       tags:

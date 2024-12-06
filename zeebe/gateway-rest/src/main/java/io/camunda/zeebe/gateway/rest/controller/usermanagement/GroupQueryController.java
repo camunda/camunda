@@ -55,6 +55,17 @@ public class GroupQueryController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @PostMapping(
+      path = "/{groupKey}/users/search",
+      produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_PROBLEM_JSON_VALUE},
+      consumes = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<GroupSearchQueryResponse> searchUsersInGroup(
+      @PathVariable final long groupKey,
+      @RequestBody(required = false) final GroupSearchQueryRequest query) {
+    return SearchQueryRequestMapper.toGroupQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
   private ResponseEntity<GroupSearchQueryResponse> search(final GroupQuery query) {
     try {
       final var result = groupServices.search(query);
